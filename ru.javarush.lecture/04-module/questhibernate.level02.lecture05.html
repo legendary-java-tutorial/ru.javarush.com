@@ -1,0 +1,124 @@
+Агрегатные функции
+<p>----------------------------------------</p>
+Список агрегатный функций
+Анализируем зарплаты сотрудников
+<p>----------------------------------------</p>
+<h2>6.1 Список агрегатных функций</h2>
+<p>Когда ты используешь группировку строк в SQL с помощью оператора <code>GROUP BY</code>, то можешь использовать в операторе <code>SELECT</code> функции, которые работают над сгруппированными данными. Такие функции еще называют агрегатными функциями.</p>
+<p>Вот список самых популярных из них:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>#</th>
+        <th>Функция</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td><strong>COUNT()</strong></td>
+        <td>Возвращает количество значений в группе</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td><strong>SUM()</strong></td>
+        <td>Возвращает сумму значений в группе</td>
+    </tr>
+    <tr>
+        <td></td>
+        <td><strong></strong></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td><strong>MAX()</strong></td>
+        <td>Возвращает максимальное значение группы</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td><strong>MIN()</strong></td>
+        <td>Возвращает минимальное значение группы</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td><strong>AVG()</strong></td>
+        <td>Возвращает среднее значение группы</td>
+    </tr>
+    <tr>
+        <td></td>
+        <td><strong></strong></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td><strong>BIT_AND()</strong></td>
+        <td>Выполняет побитовое AND над всеми значениями группы</td>
+    </tr>
+    <tr>
+        <td>7</td>
+        <td><strong>BIT_OR()</strong></td>
+        <td>Выполняет побитовое OR над всеми значениями группы</td>
+    </tr>
+    <tr>
+        <td>8</td>
+        <td><strong>BIT_XOR()</strong></td>
+        <td>Выполняет побитовое XOR над всеми значениями группы</td>
+    </tr>
+    <tr>
+        <td></td>
+        <td><strong></strong></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>9</td>
+        <td><strong>GROUP_CONCAT()</strong></td>
+        <td>Склеивает все значения группы в одну строку</td>
+    </tr>
+    </tbody>
+</table>Это не полный список агрегатных функций, но остальные очень специфические и я не думаю, что ты будешь ими пользоваться в ближайшие лет 5. Если же они все же вам понадобятся, вы всегда можете почитать официальную документацию по вашей СУБД.
+<p>А теперь давай рассмотрим несколько примеров с нашими агрегатными функциями.</p>
+<h2>6.2 Анализируем зарплаты сотрудников</h2>
+<p>Давай вычислим некоторую статистику по нашим сотрудникам из таблицы <strong>employee</strong>.</p>
+<p>Вопрос первый: <strong>сколько у нас сотрудников?</strong></p>
+<p>Если мы хотим узнать количество всех записей в таблице, то для этого можно использовать агрегатную функцию <code>COUNT</code>. Запрос будет выглядеть так:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">SELECT</span> <span class="text-user">COUNT</span>(*) <span class="text-brown">FROM</span> <span class="text-yellow">employee</span>
+        </code></pre>
+</div>
+<p>И в качестве ответа MySQL вернет число 6. У нас 6 сотрудников в отделе, включая кота. Все верно.</p>
+<p>Вопрос второй: <strong>сколько мы платим в месяц всем сотрудникам?</strong></p>
+<p>Чтобы ответить на этот вопрос нам нужно просуммировать зарплаты всех сотрудников. Для этого воспользуемся агрегатной функцией <code>SUM()</code></p>
+<p>Запрос будет выглядеть так:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">SELECT</span> <span class="text-user">SUM</span>(<span class="text-green">salary</span>) <span class="text-brown">FROM</span> <span class="text-yellow">employee</span>
+        </code></pre>
+</div>
+<p>Обрати внимание, что в этот раз мы обязаны указать значения какой колонки мы суммируем. Мы указали колонку <strong>salary</strong>. Мы же не можем просто просуммировать все поля таблицы.</p>
+<p>И в качестве ответа MySQL вернет число 461000. У нас 6 сотрудников в отделе, а зарплата 461 тысяча. Многовато.</p>
+<p>И наконец третий вопрос: <strong>какая у нас максимальная и минимальная зарплаты в отделе?</strong> Ну и еще давайте среднюю зарплату посчитаем. Для этого нам понадобятся функции <code>MIN</code>, <code>MAX</code> и <code>AVG</code>.</p>
+<p>Запрос будет немного посложнее в этот раз выглядеть так:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">SELECT</span> <span class="text-user">MIN</span>(<span class="text-green">salary</span>), <span class="text-user">AVG</span>(<span class="text-green">salary</span>), <span class="text-user">MAX</span>(<span class="text-green">salary</span>)
+<span class="text-brown">FROM</span> <span class="text-yellow">employee</span>
+        </code></pre>
+</div>
+<p>Результат этого запроса будет таким:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>MIN(salary)</th>
+        <th>AVG(salary)</th>
+        <th>MAX(salary)</th>
+    </tr>
+    <tr>
+        <td>1000</td>
+        <td>76833.3333</td>
+        <td>200000</td>
+    </tr>
+
+    </tbody>
+</table>
+<p>Минимальная зарплата в нашем отделе 1000 долларов – очень хорошо. Максимальная зарплата – 200 тысяч, но это директор.</p>
+<p>А вот средняя зарплата слишком высокая, нужно как-то оптимизировать затраты. Наймем еще одного кота и дело с концом :)</p>

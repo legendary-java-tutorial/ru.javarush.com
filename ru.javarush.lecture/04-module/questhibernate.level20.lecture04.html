@@ -1,0 +1,323 @@
+BigData: Приемы и стратегии разработки MapReduce-приложений
+<p>----------------------------------------</p>
+Map only job. 
+Combine. 
+Цепочки MapReduce-задач. 
+Distributed cache. 
+Reduce Join. 
+MapJoin.
+<p>----------------------------------------</p>
+<h2>5.1 Map only job </h2>
+
+<p>Пришла пора описать различные приёмы, которые позволяют эффективно использовать MapReduce для решения практических задач, а также показать некоторые особенности Hadoop, которые позволяют упростить разработку или существенно ускорить выполнение MapReduce-задачи на кластере. </p>
+
+<p>Как мы помним, MapReduce состоит из стадий Map, Shuffle и Reduce. Как правило, в практических задачах самой тяжёлой оказывается стадия Shuffle, так как на этой стадии происходит сортировка данных. На самом деле существует ряд задач, в которых можно обойтись только стадией Map. Вот примеры таких задач: </p>
+
+<ul>
+<li>Фильтрация данных (например, «Найти все записи с IP-адреса 123.123.123.123» в логах web-сервера); </li>
+<li>Преобразование данных («Удалить колонку в csv-логах»); </li>
+<li>Загрузка и выгрузка данных из внешнего источника («Вставить все записи из лога в базу данных»). </li>
+</ul>
+
+<p>Такие задачи решаются при помощи Map-Only. При создании Map-Only задачи в Hadoop нужно указать нулевое количество reducer’ов: </p>
+
+<img data-max-width="512" data-id="38d1e29c-fa4f-417d-ab05-44791ce19834" src="https://cdn.javarush.com/images/article/38d1e29c-fa4f-417d-ab05-44791ce19834/512.jpeg" alt="">
+ 
+<p>Пример конфигурации map-only задачи на hadoop: </p>
+
+<table>
+<tbody>
+<tr>
+<th>Native interface </th>
+<th>Hadoop Streaming Interface </th>
+</tr>
+<tr>
+<td><p>Указать нулевое количество редьюсеров при конфигурации job’a: </p>
+ 
+<pre><code>job.setNumReduceTasks(0); 
+</code></pre></td>
+
+<td><p>Не указываем редьюсер и указываем нулевое количество редьюсеров. Пример: </p>
+ 
+<pre><code>hadoop jar hadoop-streaming.jar \ 
+ -D mapred.reduce.tasks=0\ 
+-input input_dir\ 
+-output output_dir\ 
+-mapper "python mapper.py"\ 
+-file "mapper.py"
+</code></pre> 
+</td> 
+</tr>
+</tbody>
+</table>
+ 
+<p>Map Only jobs на самом деле могут быть очень полезными. Например, в платформе Facetz.DCA для выявления характеристик пользователей по их поведению используется именно один большой map-only, каждый маппер которого принимает на вход пользователя и на выход отдаёт его характеристики. </p>
+ 
+<h2>5.2 Combine </h2>
+
+<p>Как я уже писал, обычно самая тяжёлая стадия при выполнении Map-Reduce задачи – это стадия shuffle. Происходит это потому, что промежуточные результаты (выход mapper’a) записываются на диск, сортируются и передаются по сети. Однако существуют задачи, в которых такое поведение кажется не очень разумным. Например, в той же задаче подсчёта слов в документах можно предварительно предагрегировать результаты выходов нескольких mapper’ов на одном узле map-reduce задачи, и передавать на reducer уже просуммированные значения по каждой машине. </p>
+
+ <img data-max-width="512" data-id="5d08e85a-d51f-43eb-8dad-32824da03ce9" src="https://cdn.javarush.com/images/article/5d08e85a-d51f-43eb-8dad-32824da03ce9/original.jpeg" alt="">
+ 
+<p>В hadoop для этого можно определить комбинирующую функцию, которая будет обрабатывать выход части mapper-ов. Комбинирующая функция очень похожа на reduce – она принимает на вход выход части mapper’ов и выдаёт агрегированный результат для этих mapper’ов, поэтому очень часто reducer используют и как combiner. Важное отличие от reduce – <strong>на комбинирующую функцию попадают не все значения, соответствующие одному ключу</strong>. </p>
+
+<p>Более того, hadoop не гарантирует того, что комбинирующая функция вообще будет выполнена для выхода mapper’a. Поэтому комбинирующая функция не всегда применима, например, в случае поиска медианного значения по ключу. Тем не менее, в тех задачах, где комбинирующая функция применима, её использование позволяет добиться существенного прироста к скорости выполнения MapReduce-задачи. </p>
+
+<p>Использование Combiner’a на hadoop: </p>
+
+<table>
+<tbody>
+<tr>
+<th>Native Interface </th>
+<th>Hadoop streaming </th>
+</tr>
+<tr>
+<td><p>При конфигурации job-a указать класс-Combiner. Как правило, он совпадает с Reducer: </p>
+<pre><code>job.setMapperClass(TokenizerMapper.class); 
+job.setCombinerClass(IntSumReducer.class); 
+job.setReducerClass(IntSumReducer.class); 
+</code></pre></td>
+ 
+<td><p>В параметрах командной строки указать команду -combiner. Как правило, эта команда совпадает с командой reducer’a. Пример: </p>
+ 
+<pre><code>hadoop jar hadoop-streaming.jar \ 
+-input input_dir\ 
+-output output_dir\ 
+-mapper "python mapper.py"\ 
+-reducer "python reducer.py"\ 
+-combiner "python reducer.py"\ 
+-file "mapper.py"\ 
+-file "reducer.py"\
+</code></pre> 
+</td>
+</tr>
+</tbody>
+</table> 
+ 
+<h2>5.3 Цепочки MapReduce-задач </h2>
+
+<p>Бывают ситуации, когда для решения задачи одним MapReduce не обойтись. Например, рассмотрим немного видоизмененную задачу WordCount: имеется набор текстовых документов, необходимо посчитать, сколько слов встретилось от 1 до 1000 раз в наборе, сколько слов от 1001 до 2000, сколько от 2001 до 3000 и так далее. 
+Для решения нам потребуется 2 MapReduce job’а: </p>
+
+<ul>
+<li>Видоизменённый wordcount, который для каждого слова рассчитает, в какой из интервалов оно попало; </li>
+<li>MapReduce, подсчитывающий, сколько раз в выходе первого MapReduce встретился каждый из интервалов. </li>
+</ul>
+
+<p>Решение на псевдокоде: </p>
+
+<table>
+<tbody>
+<tr>
+<td><pre><code>#map1 
+def map(doc): 
+for word in doc: 
+yield word, 1</code></pre></td>
+<td><pre><code>#reduce1 
+def reduce(word, values): 
+yield int(sum(values)/1000), 1 </code></pre></td>
+</tr>
+<tr>
+<td><pre><code>#map2 
+def map(doc): 
+interval, cnt = doc.split() 
+yield interval, cnt </code></pre></td>
+<td><pre><code>#reduce2 
+def reduce(interval, values): 
+yield interval*1000, sum(values) </code></pre></td>
+</tr>
+</tbody>
+</table>
+
+<p>Для того, чтобы выполнить последовательность MapReduce-задач на hadoop, достаточно просто в качестве входных данных для второй задачи указать папку, которая была указана в качестве output для первой и запустить их по очереди. </p>
+
+<p>На практике цепочки MapReduce-задач могут представлять собой достаточно сложные последовательности, в которых MapReduce-задачи могут быть подключены как последовательно, так и параллельно друг другу. Для упрощения управления такими планами выполнения задач существуют отдельные инструменты типа oozie и luigi, которым будет посвящена отдельная статья данного цикла. </p>
+
+<img data-max-width="512" data-id="e75b9c38-86ca-4edc-a989-48ec6139d6ca" src="https://cdn.javarush.com/images/article/e75b9c38-86ca-4edc-a989-48ec6139d6ca/original.png" alt="">
+ 
+<h2>5.4 Distributed cache </h2>
+
+<p>Важным механизмом в Hadoop является Distributed Cache. Distributed Cache позволяет добавлять файлы (например, текстовые файлы, архивы, jar-файлы) к окружению, в котором выполняется MapReduce-задача. </p>
+
+<p>Можно добавлять файлы, хранящиеся на HDFS, локальные файлы (локальные для той машины, с которой выполняется запуск задачи). Я уже неявно показывал, как использовать Distributed Cache вместе с hadoop streaming: добавляя через опцию -file файлы mapper.py и reducer.py. На самом деле можно добавлять не только mapper.py и reducer.py, а вообще произвольные файлы, и потом пользоваться ими как будто они находятся в локальной папке. </p>
+
+<p>Использование Distributed Cache: </p>
+
+<table>
+<tody>
+<tr>
+<th>Native API </th>
+</tr>
+<tr>
+<td><pre class='language-java line-numbers'><code>
+//конфигурация Job’a 
+JobConf job = new JobConf(); 
+DistributedCache.addCacheFile(new URI("/myapp/lookup.dat#lookup.dat"),  job); 
+DistributedCache.addCacheArchive(new URI("/myapp/map.zip", job); 
+DistributedCache.addFileToClassPath(new Path("/myapp/mylib.jar"), job); 
+DistributedCache.addCacheArchive(new URI("/myapp/mytar.tar", job); 
+DistributedCache.addCacheArchive(new URI("/myapp/mytgz.tgz", job); 
+ 
+//пример использования в mapper-e: 
+public static class MapClass extends MapReduceBase   
+implements Mapper&lt;K, V, K, V> { 
+ 
+ private Path[] localArchives; 
+ private Path[] localFiles; 
+  
+ public void configure(JobConf job) { 
+   // получаем кэшированные данные из архивов 
+   File f = new File("./map.zip/some/file/in/zip.txt"); 
+ } 
+  
+ public void map(K key, V value,  
+             	OutputCollector&lt;K, V> output, Reporter reporter)  
+ throws IOException { 
+   // используем данные тут 
+   // ... 
+   // ... 
+   output.collect(k, v); 
+ } 
+}
+</code></pre> </td>
+ </tr>
+</tbod>
+ </table>
+ 
+<table>
+<tbody>
+<tr>
+<th>Hadoop Streaming </th>
+</tr>
+<tr>
+<td><p>#перечисляем файлы, которые необходимо добавить в distributed cache в параметре –files. Параметр –files должен идти перед другими параметрами. </p>
+ 
+<pre><code>yarn  hadoop-streaming.jar\ 
+-files mapper.py,reducer.py,some_cached_data.txt\ 
+-input '/some/input/path' \ 
+-output '/some/output/path' \  
+-mapper 'python mapper.py' \ 
+-reducer 'python reducer.py' \
+</code></pre> 
+ 
+<p>пример использования: </p>
+
+<pre><code>import sys 
+#просто читаем файл из локальной папки 
+data = open('some_cached_data.txt').read() 
+ 
+for line in sys.stdin() 
+#processing input 
+#use data here
+</code></pre> </tr>
+ </tbody>
+</table>
+ 
+<h2>5.5 Reduce Join </h2>
+
+<p>Те, кто привык работать с реляционными базами, часто пользуются очень удобной операцией Join, позволяющей совместно обработать содержание некоторых таблиц, объединив их по некоторому ключу. При работе с большими данными такая задача тоже иногда возникает. Рассмотрим следующий пример: </p>
+
+<p>Имеются логи двух web-серверов, каждый лог имеет следующий вид:</p> 
+
+<pre><code>t\t
+</code></pre>
+
+<p>Пример кусочка лога:  </p>
+ 
+<pre><code>1446792139	
+178.78.82.1	
+/sphingosine/unhurrying.css 
+1446792139	
+126.31.163.222	
+/accentually.js 
+1446792139	
+154.164.149.83	
+/pyroacid/unkemptly.jpg 
+1446792139	
+202.27.13.181	
+/Chawia.js 
+1446792139	
+67.123.248.174	
+/morphographical/dismain.css 
+1446792139	
+226.74.123.135	
+/phanerite.php 
+1446792139	
+157.109.106.104	
+/bisonant.css
+</code></pre> 
+ 
+<p>Необходимо посчитать для каждого IP-адреса на какой из 2-х серверов он чаще заходил. Результат должен быть представлен в виде: </p>
+
+<pre><code>\t
+</code></pre>
+
+<p>Пример части результата: </p>
+ 
+<pre><code>178.78.82.1	
+first 
+126.31.163.222	
+second 
+154.164.149.83	
+second 
+226.74.123.135	
+first
+</code></pre> 
+ 
+<p>К сожалению, в отличие от реляционных баз данных, в общем случае объединение двух логов по ключу (в данном случае – по IP-адресу) представляет собой достаточно тяжёлую операцию и решается при помощи 3-х MapReduce и паттерна Reduce Join: </p>
+
+<img data-max-width="512" data-id="2398da09-c1ab-4233-a8ff-83f07aa50d55" src="https://cdn.javarush.com/images/article/2398da09-c1ab-4233-a8ff-83f07aa50d55/original.png" alt=""> 
+
+<p>ReduceJoin работает следующим образом: </p>
+
+<p><strong>1)</strong> На каждый из входных логов запускается отдельный MapReduce (Map only), преобразующий входные данные к следующему виду: </p>
+
+<pre><code>key -> (type, value
+</code></pre>
+
+<p>Где key – это ключ, по которому нужно объединять таблицы, Type – тип таблицы (first или second в нашем случае), а Value – это любые дополнительные данные, привязанные к ключу. </p>
+
+<p><strong>2)</strong> Выходы обоих MapReduce подаются на вход 3-му MapReduce, который, собственно, и выполняет объединение. Этот MapReduce содержит пустой Mapper, который просто копирует входные данные. Дальше shuffle раскладывает данные по ключам и подаёт на вход редьюсеру в виде: </p>
+
+<pre><code>key -> [(type, value)]
+</code></pre> 
+ 
+<p>Важно, что в этот момент на редьюсер попадают записи из обоих логов и при этом по полю type можно идентифицировать, из какого из двух логов попало конкретное значение. Значит данных достаточно, чтобы решить исходную задачу. В нашем случае reducer просто должен посчитать для каждого ключа записей, с каким type встретилось больше и вывести этот type. </p>
+ 
+<h2>5.6 MapJoin </h2>
+
+<p>Паттерн ReduceJoin описывает общий случай объединения двух логов по ключу. Однако есть частный случай, при котором задачу можно существенно упростить и ускорить. Это случай, при котором один из логов имеет размер существенно меньшего размера, чем другой. Рассмотрим следующую задачу: </p>
+
+<p>Имеются 2 лога. Первый лог содержит лог web-cервера (такой же как в предыдущей задаче), второй файл (размером в 100кб) содержит соответствие URL-> Тематика.  Пример 2-го файла: </p>
+
+<pre><code>/toyota.php 	
+auto 
+/football/spartak.html 	
+sport 
+/cars 	
+auto 
+/finances/money 	
+business
+</code></pre> 
+
+<p>Для каждого IP-адреса необходимо рассчитать страницы какой категории с данного IP-адреса загружались чаще всего. </p>
+
+<p>В этом случае нам тоже необходимо выполнить Join 2-х логов по URL. Однако в этом случае нам не обязательно запускать 3 MapReduce, так как второй лог полностью влезет в память. Для того, чтобы решить задачу при помощи 1-го MapReduce, мы можем загрузить второй лог в Distributed Cache, а при инициализации Mapper’a просто считать его в память, положив его в словарь -> topic. </p>
+
+<p>Далее задача решается следующим образом: </p>
+
+<p><strong>Map:</strong> </p>
+
+<pre><code># находим тематику каждой из страниц первого лога</em> 
+input_line -> [ip,  topic] 
+</code></pre>
+ 
+<p><strong>Reduce:</strong> </p>
+
+<pre><code>
+Ip -> [topics] -> [ip, most_popular_topic]
+</code></pre> 
+ 
+<p>Reduce получает на вход ip и список всех тематик, просто вычисляет, какая из тематик встретилась чаще всего. Таким образом задача решена при помощи 1-го MapReduce, а собственно Join вообще происходит внутри map (поэтому если бы не нужна была дополнительная агрегация по ключу – можно было бы обойтись MapOnly job-ом): </p>
+
+<img data-max-width="256" data-id="c01e7545-8894-4036-86a2-28bbc2321949" src="https://cdn.javarush.com/images/article/c01e7545-8894-4036-86a2-28bbc2321949/original.png" alt="">

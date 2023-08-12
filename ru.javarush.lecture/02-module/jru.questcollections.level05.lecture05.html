@@ -1,0 +1,80 @@
+Generics: super, extends, list
+<p>----------------------------------------</p>
+&#8212; Новая интересная тема &#8212; wildcards. По смыслу, это что-то вроде шаблона «*», который совпадает с чем угодно. Но давай начнем издалека. Представь, что у тебя есть класс «Warrior(Воин)» и метод, который вычисляет, какой из двух воинов сильнее. Вот как, например, это могло бы выглядеть: Пример 1 class WarriorManager { public static boolean fight(Warrior w1, ...
+<p>----------------------------------------</p>
+<p>&#8212; Новая интересная тема &#8212; wildcards.</p>
+<p>По смыслу, это что-то вроде шаблона «*», который совпадает с чем угодно.</p>
+<p>Но давай начнем издалека.</p>
+<p>Представь, что у тебя есть класс «Warrior(Воин)» и метод, который вычисляет, какой из двух воинов сильнее. Вот как, например, это могло бы выглядеть:</p>
+<div class="code-heading">Пример 1</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class WarriorManager
+{
+ public static boolean fight(<span class="text-green">Warrior w1</span>, <span class="text-user">Warrior w2</span>)
+ {
+  return <span class="text-green">w1</span>.power &gt; <span class="text-user">w2</span>.power;
+ }
+}</code></pre>
+<div class="code-heading">Пример вызова</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-green">MagicWarrior mag</span> = new <span class="text-green">MagicWarrior</span>();
+<span class="text-user">ArcherWarrior archer</span> = new <span class="text-user">ArcherWarrior</span>();
+
+boolean isMagicCooler = <span class="text-viola">WarriorManager</span>.fight(<span class="text-green">mag</span>, <span class="text-user">archer</span>);</code></pre>
+<p><span class="text-green">MagicWarrior и <span class="text-user">ArcherWarrior</span> – это классы-наследники от <span class="text-viola">Warrior</span>.</span></p>
+<p>Немного простовато, но для примера сойдет.</p>
+<p><span class="text-user">&#8212; Ок.</span></p>
+<p>&#8212; И вот допустим, ты решил сделать аналогичный метод, где уже дерутся воины стенка на стенку.</p>
+<div class="code-heading">Пример 1</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class WarriorManager
+{
+ public static boolean fight(<span class="text-green">Warrior w1</span>, <span class="text-user">Warrior w2</span>)
+ {
+  return <span class="text-green">w1</span>.power &gt; <span class="text-user">w2</span>.power;
+ }
+
+ public static boolean fight(<span class="text-green">List&lt;Warrior&gt; w1</span>, <span class="text-user">List&lt;Warrior&gt; w2</span>)
+ {
+  return <span class="text-green">…</span>
+ }
+}</code></pre>
+<div class="code-heading">Пример вызова</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>ArrayList&lt;<span class="green_text text-green">MagicWarrior</span>&gt; <span class="text-green">magi</span> = new ArrayList&lt;<span class="green_text text-green">MagicWarrior</span>&gt;();
+for(int i=0;i&lt;10;i++)
+ <span class="text-green">magi</span>.add(new <span class="text-green">MagicWarrior</span>());
+
+ArrayList&lt;<span class="dblue_text text-user">ArcherWarrior</span>&gt; <span class="text-user">archers</span> = new ArrayList&lt;<span class="dblue_text text-user">ArcherWarrior</span>&gt;();
+for(int i=0;i&lt;10;i++)
+<span class="text-user"> archers</span>.add(new <span class="text-user">ArcherWarrior</span>());
+
+boolean isMagicCooler = <span class="text-viola">WarriorManager</span>.fight(<span class="text-user">magi, archers</span>); <span class="text-red">//ошибка компиляции!</span></code></pre>
+<p>И вот тут ты встречаешь ошибку компиляции и недоумеваешь, а что не так-то?</p>
+<p>Все дело в том, что <span class="text-red">MagicWarrior – это наследник Warrior</span> и его объекты можно передавать в метод fight(Warrior, Warrior)</p>
+<p>А вот <span class="text-red">List&lt;MagicWarrior&gt; &#8212; это не наследник List&lt;Warrior&gt;</span>. И передавать его туда нельзя!</p>
+<p><span class="text-user">&#8212; Как это не наследник?</span></p>
+<p>&#8212; А вот так. То List и то – List. Пусть и с параметрами.</p>
+<p><span class="text-user">&#8212; Да, а я как-то сразу не обратил внимание. И что, есть уже решение этой проблемы?</span></p>
+<p>&#8212; Ага. Для этого используется более сложная конструкция. Выглядит это так:</p>
+<div class="code-heading">Пример 1</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class WarriorManager
+{
+ public static boolean fight(<span class="text-green">Warrior w1</span>, <span class="text-user">Warrior w2</span>)
+ {
+  return <span class="text-green">w1</span>.power &gt; <span class="text-user">w2</span>.power;
+ }
+
+ public static boolean fight(<span class="text-green">List</span>&lt;? extends <span class="text-green">Warrior</span>&gt; <span class="text-green">w1</span>, <span class="text-user">List</span>&lt;? extends <span class="text-user">Warrior</span>&gt; <span class="text-user">w2</span>)
+ {
+  return …
+ }
+}</code></pre>
+<p><strong><span class="text-red">«? extends Warrior» обозначает «любой тип, унаследованный от Warrior ».</span></strong></p>
+<p>Т.е. туда можно передать список List&lt;MagicWarrior&gt; и список List&lt;ArcherWarrior&gt;, и все будет работать.</p>
+<p><span class="text-user">&#8212; Так это же отлично. Чем меньше всяких таких проблем, тем лучше.</span></p>
+<p>&#8212; Так и я о том же.</p>
+<p><span class="text-user">&#8212; А если мне не нужен наследник Warrior? Что если я хочу, чтобы в метод можно было передать любой List с любым параметром? Так можно?</span></p>
+<p>&#8212; Да, для описания этой ситуации существует две записи:</p>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>List&lt;? extends Object&gt;</code></pre>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>List&lt;?&gt;</code></pre>
+<p>Они эквивалентны по смыслу, поэтому обычно используют вторую.</p>
+<p>У меня – все.</p>
+<p>&#8212; Спасибо, Элли, действительно узнал сегодня много нового.</p>
+<div></div>

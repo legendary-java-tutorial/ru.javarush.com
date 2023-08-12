@@ -1,0 +1,57 @@
+Оборачивание исключения
+<p>----------------------------------------</p>
+Checked-исключения казались классной вещью в теории и оказались полным разочарованием на практике. Решение - оборачивание исключения
+<p>----------------------------------------</p>
+<h2>3. Обертывание исключений</h2>
+<p><span class="term">Checked-исключения</span> казались классной вещью в теории и оказались полным разочарованием на практике.</p>
+<p>Допустим, у вас в проекте есть суперпопулярный метод, который вызывается из сотен мест программы. И вы решили добавить в него новое <span class="term">checked-исключение</span>. И вполне может оказаться, что это <span class="term">checked-исключение</span> действительно такое важное и особенное, что только метод <code>main()</code> знает, что делать в случае захвата этого исключения.</p>
+<p>Поэтому <span class="text-orange">вам придется добавить <span class="term"><span class="text-orange">checked-исключение</span></span> в <code>throws</code> всех методов,</span> которые вызывают ваш суперпопулярный метод. А также в <code>throws</code> всех методов, которые вызывают те методы. И в методы, которые вызывает те методы.</p>
+<p>В результате у вас в <code>throws</code> у половины методов проекта будет добавлено новое <span class="term">checked-исключение</span>. А потом окажется, что у вас проект покрыт тестами, и тесты не компилируются. И вам придется править throws еще и в тестах.</p>
+<p><span class="text-green">А потом весь ваш код (изменения в сотнях файлов) должны будут ревьюить другие программисты. </span>И тут мы задаем себе вопрос: а ради чего мы вносили в проект дохреналион изменений? День(дни?) работы, сломанные тесты, и все ради добавления одного <span class="term">checked-исключения</span>?</p>
+<p>А ведь есть еще проблемы с наследованием и переопределением методов. <span class="text-red">Проблем от <span class="term"><span class="text-red">checked-исключений</span></span> гораздо больше, чем пользы.</span> В общем, сейчас мало кто их любит и мало кто использует.</p>
+<p>Однако все еще много кода (в том числе и код стандартных библиотек Java) содержат эти самые <span class="term">checked-исключения</span>. И что же с ними делать? Игнорировать нельзя, обрабатывать &#8211; неизвестно как.</p>
+<p>Java-программисты предложили «заворачивать» <span class="term">checked-исключения</span> внутрь <code>RuntimeException</code>. Другими словами, перехватывать все <span class="term">checked-исключения</span>, создавать вместо них <span class="term">unchecked-исключения</span> (например, <code>RuntimeException</code>) и выбрасывать уже их. Выглядит это все примерно так:</p>
+<div class="lesson-example lesson-example--center">
+<pre class="lecture-code lecture-code--present-sm language-java"><code>try
+{
+   <span class="text-green">код, где может возникнуть checked-исключение</span>
+}
+catch(<span class="text-neon">Exception exp</span>)
+{
+   throw new <span class="text-viola">RuntimeException</span>(<span class="text-viola">exp</span>);
+}</code></pre>
+</div>
+<p>Не сильно красивое решение, но ничего криминального: исключение просто положили внутрь исключения <code>RuntimeException</code>.</p>
+<p>При желании его можно оттуда легко достать. Пример:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Примечание</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>try
+{
+   // код где мы запаковали checked исключение
+   // в RuntimeException
+}
+catch(<span class="text-viola">RuntimeException</span> <span class="code"><span class="text-viola">e</span></span>)
+{
+   Throwable <span class="code"><span class="text-green">cause</span></span> = <span class="code"><span class="text-viola">e</span></span>.getCause();
+   if (<span class="code"><span class="text-green">cause</span></span> instanceof <span class="text-neon">Exception</span>)
+   {
+      <span class="text-neon">Exception <span class="code">exp</span></span> = (<span class="text-neon">Exception</span>) <span class="code"><span class="text-green">cause</span></span>;
+      // тут код по обработке Exception
+   }
+}</code></pre>
+        </td>
+        <td><br><br><br><br><br><br><br>Получаем исключение, сохраненное внутри объекта <code>RuntimeException</code>. <code><span class="text-green">cause</span></code> может быть <code>null</code><br><br>
+            Определяем его тип и преобразовываем к переменной <span class="term">checked</span>-типа.
+        </td>
+    </tr>
+    </tbody>
+</table>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task14.task1410"></div>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task14.task1411"></div>

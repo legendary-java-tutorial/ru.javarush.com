@@ -1,0 +1,481 @@
+@ManyToMany
+<p>----------------------------------------</p>
+Служебная таблица. 
+Связь на уровне таблиц. 
+Связь на уровне Java-классов. 
+Аннотация @ManyToMany. 
+Примеры запросов.
+<p>----------------------------------------</p>
+<h2>Служебная таблица</h2>
+
+<p>Теперь разберем еще один часто встречающийся случай – many-to-many. Давай представим, что у нас отношение между задачами и сотрудниками <strong>многие-ко-многим</strong>:</p>
+
+<ul>
+<li>Один сотрудник в таблице employee может делать много задач из таблицы task.</li>
+<li>Одна задача в таблице task может быть назначена на несколько сотрудников.</li>
+</ul>
+
+<p>Такая связь между сущностями называется многие-ко-многим. И чтобы ее реализовать на уровне SQL, нам понадобится дополнительная служебная таблица. Назовем ее, например, employee_task.</p>
+
+<p>Таблица employee_task будет содержать всего две колонки:</p>
+
+<ul>
+<li>employee_id</li>
+<li>task_id</li>
+</ul>
+
+<p>Каждый раз, когда мы будем назначать определенную задачу определенному пользователю, в эту таблицу будет добавляться новая строка. Пример:</p>
+
+<table>
+<tbody>
+<tr>
+<th>employee_id</th>
+<th>task_id</th>
+</tr>
+<tr>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>1</td>
+<td>2</td>
+</tr>
+<tr>
+<td>2</td>
+<td>3</td>
+</tr>
+</tbody>
+</table>
+ 
+<p>Ну, а <strong>таблица task</strong> должна лишиться <strong>колонки employee_id</strong>. В ней есть смысл, только если задача может быть назначена только на одного сотрудника. Если же задача может быть назначена на нескольких сотрудников, то эту информацию нужно хранить в служебной <strong>таблице employee_task</strong>.</p>
+ 
+<h2>Связь на уровне таблиц</h2>
+
+<p>Вот как будут выглядеть наши новые таблицы:</p>
+
+<table>
+<tbody>
+<tr>
+<th>id</th>
+<th>name</th>
+<th>occupation</th>
+<th>salary</th>
+<th>age</th>
+<th>join_date</th>
+</tr>
+<tr>
+<td>1</td>
+<td>Иванов Иван</td>
+<td>Программист</td>
+<td>100000</td>
+<td>25</td>
+<td>2012-06-30</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Петров Петр</td>
+<td>Программист</td>
+<td>80000</td>
+<td>23</td>
+<td>2013-08-12</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Иванов Сергей</td>
+<td>Тестировщик</td>
+<td>40000</td>
+<td>30</td>
+<td>2014-01-01</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Рабинович Мойша</td>
+<td>Директор</td>
+<td>200000</td>
+<td>35</td>
+<td>2015-05-12</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Кириенко Анастасия</td>
+<td>Офис-менеджер</td>
+<td>40000</td>
+<td>25</td>
+<td>2015-10-10</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Васька</td>
+<td>Кот</td>
+<td>1000</td>
+<td>3</td>
+<td>2018-11-11</td>
+</tr>
+</tbody>
+</table>
+
+<p><strong>Таблица employee (<span class="text-red">не изменилась</span>)</strong>:</p>
+
+<p>В этой таблице есть такие колонки:</p>
+
+<ul>
+<li><strong>id</strong> INT</li>
+<li><strong>name</strong> VARCHAR</li>
+<li><strong>occupation</strong> VARCHAR</li>
+<li><strong>salary</strong> INT</li>
+<li><strong>age</strong> INT</li>
+<li><strong>join_date</strong> DATE</li>
+</ul>
+
+<p>А вот так выглядит <strong>таблица task</strong>, <span class="text-red">потеряла колонку employee_id</span> (отмечена красным):</p>
+
+<table>
+<tbody>
+<tr>
+<th>id</th>
+<th><span class="text-red">emploee_id</span></th>
+<th>name</th>
+<th>deadline</th>
+</tr>
+<tr>
+<td>1</td>
+<td><span class="text-red">1</span></td>
+<td>Исправить багу на фронтенде</td>
+<td>2022-06-01</td>
+</tr>
+<tr>
+<td>2</td>
+<td><span class="text-red">2</span></td>
+<td>Исправить багу на бэкенде</td>
+<td>2022-06-15</td>
+</tr>
+<tr>
+<td>3</td>
+<td><span class="text-red">5</span></td>
+<td>Купить кофе</td>
+<td>2022-07-01</td>
+</tr>
+<tr>
+<td>4</td>
+<td><span class="text-red">5</span></td>
+<td>Купить кофе</td>
+<td>2022-08-01</td>
+</tr>
+<tr>
+<td>5</td>
+<td><span class="text-red">5</span></td>
+<td>Купить кофе</td>
+<td>2022-09-01</td>
+</tr>
+<tr>
+<td>6</td>
+<td><span class="text-red">(NULL)</span></td>
+<td>Убрать офис</td>
+<td>(NULL)</td>
+</tr>
+<tr>
+<td>7</td>
+<td><span class="text-red">4</span></td>
+<td>Наслаждаться жизнью</td>
+<td>(NULL)</td>
+</tr>
+<tr>
+<td>8</td>
+<td><span class="text-red">6</span></td>
+<td>Наслаждаться жизнью</td>
+<td>(NULL)</td>
+</tr>
+</tbody>
+</table>
+
+<p>В этой таблице теперь есть всего 3 колонки:</p>
+
+<ul>
+<li><strong>id</strong> – уникальный номер задания (и строки в таблице)</li>
+<li><strong><span class="text-red">employee_id</span></strong> – (удалена)</li>
+<li><strong>name</strong> – название и описание задачи</li>
+<li><strong>deadline</strong> – время, до которого нужно выполнить задачу</li>
+</ul>
+
+<p>Также у нас есть служебная <strong>таблица employee_task</strong>, куда перекочевали данные об employee_id из таблицы task:</p>
+
+<table>
+<tbody>
+<tr>
+<th>employee_id</th>
+<th>task_id</th>
+</tr>
+<tr>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>2</td>
+</tr>
+<tr>
+<td>5</td>
+<td>3</td>
+</tr>
+<tr>
+<td>5</td>
+<td>4</td>
+</tr>
+<tr>
+<td>5</td>
+<td>5</td>
+</tr>
+<tr>
+<td>(NULL)</td>
+<td>6</td>
+</tr>
+<tr>
+<td>4</td>
+<td>7</td>
+</tr>
+<tr>
+<td>6</td>
+<td>8</td>
+</tr>
+</tbody>
+</table>
+
+<p>Я специально временно сохранил удаленную колонку в таблице task, чтобы ты мог увидеть, что данные из нее переехали в таблицу employee_task.</p>
+
+<p>Еще один важный момент – красная строка <strong><span class="text-red">"(NULL) 6"</span></strong> в таблице employee_task. Я отметил ее красным, так как ее не будет в <strong>таблице employee_task</strong>.</p>
+
+<p>Если таск 7 назначен на пользователя 4, то в таблице employee_task должна быть строка (4, 7).</p>
+
+<p>Если таск 6 ни на кого не назначен, то просто в таблице employee_task для него не будет никакой записи. Вот как будут выглядеть финальные версии этих таблиц:</p>
+
+<p><strong>Таблица task</strong>:</p>
+
+<table>
+<tbody>
+<tr>
+<th>id</th>
+<th>name</th>
+<th>deadline</th>
+</tr>
+<tr>
+<td>1</td>
+<td>Исправить багу на фронтенде</td>
+<td>2022-06-01</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Исправить багу на бэкенде</td>
+<td>2022-06-15</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Купить кофе</td>
+<td>2022-07-01</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Купить кофе</td>
+<td>2022-08-01</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Купить кофе</td>
+<td>2022-09-01</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Убрать офис</td>
+<td>(NULL)</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Наслаждаться жизнью</td>
+<td>(NULL)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Наслаждаться жизнью</td>
+<td>(NULL)</td>
+</tr>
+</tbody>
+</table>
+ 
+<p>Tаблица employee_task:</p>
+
+<table>
+<tbody>
+<tr>
+<th>employee_id</th>
+<th>task_id</th>
+</tr>
+<tr>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>2</td>
+</tr>
+<tr>
+<td>5</td>
+<td>3</td>
+</tr>
+<tr>
+<td>5</td>
+<td>4</td>
+</tr>
+<tr>
+<td>5</td>
+<td>5</td>
+</tr>
+<tr>
+<td>4</td>
+<td>7</td>
+</tr>
+<tr>
+<td>6</td>
+<td>8</td>
+</tr>
+</tbody>
+</table>
+ 
+<h2>Связь на уровне Java-классов</h2>
+
+<p>Зато со связью на уровне Entity-классов у нас полный порядок. Начнем с хороших новостей.</p>
+
+<p>Во-первых, у Hibernate есть специальная аннотация <span class="text-yellow"><span class="text-bold">@ManyToMany</span></span>, которая позволяет хорошо описать случай отношения таблиц many-to-many.</p>
+
+<p>Во-вторых, нам по-прежнему достаточно двух Entity-классов. Класс для служебной таблицы нам не нужен.</p>
+
+<p>Вот как будут выглядеть наши классы. Класс <span class="code"><span class="text-green">Employee</span></span> в изначальном виде:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+class Employee {
+   @Column(name="id")
+   public Integer id;
+ 
+   @Column(name="name")
+   public String name;
+ 
+   @Column(name="occupation")
+   public String occupation;
+ 
+   @Column(name="salary")
+   public Integer salary;
+ 
+   @Column(name="join_date")
+   public Date join;
+}
+</code></pre>
+
+<p>И класс <span class="code"><span class="text-green">EmployeeTask</span></span> в его изначальном виде:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="task")
+class EmployeeTask {
+   @Column(name="id")
+   public Integer id;
+ 
+   @Column(name="name")
+   public String description;
+ 
+   @Column(name="deadline")
+   public Date deadline;
+}
+</code></pre>
+
+<h2>Аннотация @ManyToMany</h2>
+
+<p>Я опущу в примерах существующие поля, зато добавлю новые. Вот как они будут выглядеть. Класс <span class="code"><span class="text-green">Employee</span></span>:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="employee")
+class Employee {
+   @Column(name="id")
+   public Integer id;
+ 
+   @ManyToMany(cascade = CascadeType.ALL)
+   @JoinTable(name="employee_task",
+	       joinColumns=  @JoinColumn(name="employee_id", referencedColumnName="id"),
+           inverseJoinColumns= @JoinColumn(name="task_id", referencedColumnName="id") )  
+   private Set&lt;EmployeeTask> tasks = new HashSet&lt;EmployeeTask>();
+ 
+}
+</code></pre>
+
+<p>И класс <span class="code"><span class="text-green">EmployeeTask</span></span>:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="task")
+class EmployeeTask {
+   @Column(name="id")
+   public Integer id;
+ 
+   @ManyToMany(cascade = CascadeType.ALL)
+   @JoinTable(name="employee_task",
+       	joinColumns=  @JoinColumn(name="task_id", referencedColumnName="id"),
+       	inverseJoinColumns= @JoinColumn(name=" employee_id", referencedColumnName="id") )  
+   private Set&lt;Employee> employees = new HashSet&lt;Employee>();
+ 
+}
+</code></pre>
+
+<p>Кажется, что все сложно, но на самом деле там все просто.</p>
+
+<p>Во-первых, там используется аннотация <span class="text-yellow"><span class="text-bold">@JoinTable</span></span> (не путать с @JoinColumn), которая описывает служебную таблицу employee_task.</p>
+
+<p>Во-вторых, там описывается, что колонка task_id таблицы employee_task ссылается на колонку id таблицы task.</p>
+
+<p>В-третьих, там говориться, что колонка employee_id таблицы employee_task ссылается на колонку id таблицы employee.</p>
+
+<p>Мы фактически с помощью аннотаций описали какие данные содержатся в таблице employee_task и как Hibernate должен их интерпретировать.</p>
+
+<p>Зато мы теперь очень просто можем добавить (и удалить) задание любому сотруднику. А также добавить любого исполнителя любому заданию.</p>
+
+<h2>Примеры запросов</h2>
+
+<p>Давай напишем пару интересных запросов, чтобы лучше понять, как работают эти ManyToMany поля. А работают они абсолютно так, как и ожидается.</p>
+
+<p>Во-первых, наш старый код будет работать без изменений, так как у директора и раньше было поле tasks:</p>
+
+<pre class='language-java line-numbers'><code>
+EmployeeTask task1 = new EmployeeTask();
+task1.description = "Сделать что-то важное";
+session.persist(task1);
+ 
+EmployeeTask task2 = new EmployeeTask();
+task2.description = "Ничего не делать";
+session.persist(task2);
+session.flush();
+ 
+Employee director = session.find(Employee.class, 4);
+director.tasks.add(task1);
+director.tasks.add(task2);
+ 
+session.update(director);
+session.flush();
+</code></pre>
+ 
+<p>Во-вторых, если мы захотим назначить какому-то заданию еще одного исполнителя, то сделать это еще проще:</p>
+
+<pre class='language-java line-numbers'><code>
+Employee director = session.find(Employee.class, 4);
+EmployeeTask task = session.find(EmployeeTask.class, 101);
+task.employees.add(director);
+ 
+session.update(task);
+session.flush();
+</code></pre>
+ 
+<p><strong>Важно!</strong> В результате выполнения этого запроса не только у задачи появится исполнитель-директор, но еще и у директора появится задача № 101.</p>
+
+<p>Во-первых, факт о связи директора и задачи в таблице employee_task будет сохранен в виде строки: (4,101).</p>
+
+<p>Во-вторых, поля, помеченные аннотациями <span class="text-yellow"><span class="text-bold">@ManyToMany</span></span>, являются proxy-объектами и при обращении к ним всегда выполняется запрос к базе данных.</p>
+
+<p>Так что если добавить задачу к сотруднику и сохранить информацию о сотруднике в базу, то после этого у задачи в списке исполнителей появится новый исполнитель.</p>

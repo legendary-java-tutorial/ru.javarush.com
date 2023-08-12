@@ -1,0 +1,194 @@
+Работа с пулом потоков
+<p>----------------------------------------</p>
+Пул соединений (Connection pool)
+Интерфейс DataSource и ConnectionPoolDataSource
+Интерфейс JNDI
+Примеры Connection Pool’ов
+<p>----------------------------------------</p>
+<h2>7.1 Пул соединений (Connection pool)</h2>
+<p>Сегодня мы научимся работать с базой данных еще более профессионально. И поговорим мы сейчас о пуле потоков, или <strong>connection pool</strong> по-английски.</p>
+<p>Коннект к базе данных требует затрат определенного времени. Особенно если база данных удаленная. Если под каждый запрос делать подключение к базе, то отклик нашего приложения будет невероятно низким по скорости. Не говоря уже о ресурсах, которые оно потребит.</p>
+<p>В качестве решения таких проблем было предложено хранить соединения с базой в некотором множестве, которое называют пулом потоков.</p>
+<p>Когда мы запрашиваем новое соединение, то connection pool его создаёт, а при закрытии он не закрывает его, а сохраняет в connection pool. И если мы снова запросим соединение у connection pool, то он даст нам одно из старых вместо того, чтобы создавать новое.</p>
+<p>По сути приложение работает через специальный драйвер, который является оберткой для обычного JDBC-драйвера и который имеет дополнительный функционал по работе с пулом. Эту ситуацию можно представить такой картинкой:</p>
+<img data-max-width="512" data-id="e78b46ca-34d3-4730-81b4-96d4fd7e018c" src="https://cdn.javarush.com/images/article/e78b46ca-34d3-4730-81b4-96d4fd7e018c/512.jpeg" alt="Connection pool">
+<p>Настройки для пула соединений программист может прописать вручную: количество активных соединений, время ожидания и т. д.</p>
+<p>Для особенно экстремальных ситуаций можно написать свой connection pool: класс, который буде иметь список соединений. У него будет переопределена функция close, которая будет возвращать соединение обратно в список, и будет много других плюшек вроде таймера открытого соединения. Когда нет конекшина долгое время, соединение закрывается.</p>
+<h2>7.2* Интерфейс DataSource и ConnectionPoolDataSource</h2>
+<p>Пул потоков обычно работает в паре с объектом DataSource. Этот объект можно рассматривать как некую абстракцию удаленной базы данных. Само название Data Source можно дословно перевести как Источник Данных. Что как бы намекает.</p>
+<p>DataSource-объекты используются для получения физического соединения с базой данных и являются альтернативой DriverManager. При этом нет необходимости регистрировать JDBC-драйвер. Нужно только выставить соответствующие параметры для установки соединения и <mark class="green">выполнить метод getConnection()</mark>.</p>
+<p>При создании объекта типа DataSource локально (прямо в приложении) параметры соединения задаются соответствующими методами, предусмотренными поставщиком JDBC-драйвера. Эти методы не определены интерфейсом DataSource, так как параметры для соединения с СУБД разных производителей могут отличаться как по типу, так и по количеству (например, не для всех СУБД необходимо указывать тип драйвера или сетевой протокол).</p>
+<p>Так, при работе с СУБД Oracle для использования соответствующих set и get методов необходимо получить объект типа OracleDataSource, который является экземпляром одноименного класса, реализующего интерфейс DataSource. Поэтому такой способ создания объектов типа DataSource делает твой код менее переносимым и зависимым от конкретной реализации драйвера.</p>
+<p>Ниже приведен пример кода, иллюстрирующий локальное использование объектов типа DataSource.</p>
+<pre class='language-java line-numbers'><code>
+import java.sql.*;
+import javax.sql.*;
+import oracle.jdbc.driver.*;
+import oracle.jdbc.pool.*;
+ 
+public class DataSource {
+    public static void main(String[] args) {
+    	try {
+        	OracleDataSource ods = new OracleDataSource();
+        	
+        	<span class="text-brown">ods</span>.setUser("root");
+        	<span class="text-brown">ods</span>.setPassword("secret");
+        	<span class="text-brown">ods</span>.setDriverType("thin");
+        	<span class="text-brown">ods</span>.setDatabaseName("test");
+        	<span class="text-brown">ods</span>.setServerName("localhost");
+        	<span class="text-brown">ods</span>.setPortNumber(1521);
+        	
+        	Connection connection = ods.getConnection();
+        	System.out.println("Connection successful!!!");
+        	
+    	} catch (SQLException se) {
+        	se.printStackTrace();
+    	}
+    	System.out.println("Goodbye!");
+	}  
+}
+
+</code></pre>
+<h2>7.3* Интерфейс JNDI</h2>
+<p>Полностью возможности объектов типа DataSource проявляются в сочетании с использованием интерфейса JNDI. JNDI — это специальный сервис (что-то вроде каталога) для больших серверных приложений, который позволяет одним сервисам устанавливать соединение с другими.</p>
+<p>Использование службы имен и каталогов позволяет хранить заранее созданные системным администратором объекты типа DataSource с предустановленными параметрами соединения. Ниже приведены некоторые стандартные имена свойств (параметров), разработанные компанией Sun:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Имя свойства</th>
+        <th>Тип данных Java</th>
+        <th>Назначение</th>
+    </tr>
+    <tr>
+        <td><strong>databaseName </strong></td>
+        <td>String </td>
+        <td>Имя базы данных</td>
+    </tr>
+    <tr>
+        <td><strong>serverName</strong></td>
+        <td>String </td>
+        <td>Имя сервера</td>
+    </tr>
+    <tr>
+        <td><strong>user</strong></td>
+        <td>String</td>
+        <td>Имя пользователя (ID)</td>
+    </tr>
+    <tr>
+        <td><strong>password</strong></td>
+        <td>String</td>
+        <td>Пароль пользователя</td>
+    </tr>
+    <tr>
+        <td><strong>portNumber </strong></td>
+        <td>Int </td>
+        <td>Номер порта сервера СУБД</td>
+    </tr>
+
+    </tbody>
+</table>
+<p>Комбинирование интерфейсов DataSource и JNDI играет ключевую роль в разработке многоуровневых корпоративных приложений, основанных на компонентной технологии J2EE.</p>
+<p>В случае использования комбинации интерфейсов DataSource и JNDI в программном коде приложения необходимо только затребовать объект типа DataSource у службы имен и каталогов. При этом детали соединения и зависимый от конкретной реализации драйвера программный код оказывается скрытым от приложения в хранящемся в службе имен и каталогов объекте.</p>
+<p>Таким образом совместное использование объектов типа DataSource и JNDI предполагает наличие двух выполняемых независимо друг от друга шагов:</p>
+<ol>
+	<li>Необходимо сохранить именованный объект типа DataSource в службе имен и каталогов, используя метод <code>Context.bind()</code> пакета <code>javax.naming</code>.</li>
+	<li>Затребовать в приложении объект типа DataSource у службы имен и каталогов, используя метод <code>Context.lookup()</code>. После чего можно использовать его метод <code>DataSource.getConnection()</code> для получения соединения с базой данных.</li>
+</ol>
+<p>Ниже приведен пример совместного использования интерфейса JNDI и объекта типа OracleDataSource.</p>
+<pre class='language-java line-numbers'><code>
+// Создаем ключевой JNDI объект
+Hashtable <span class="text-user">env</span> = new Hashtable();
+<span class="text-user">env</span>.put (Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.fscontext.RefFSContextFactory");
+<span class="text-user">env</span>.put (Context.PROVIDER_URL, "file:JNDI");
+Context <span class="text-viola">ctx</span> = new InitialContext(<span class="text-user">env</span>);
+ 
+// Получаем объект DataSource по его имени
+DataSource <span class="text-brown">ods</span> = (DataSource) <span class="text-viola">ctx</span>.<span class="text-red">lookup</span>("myDatabase");
+ 
+// Получаем Connection из объекта DataSource
+Connection <span class="text-user">connection</span> = <span class="text-brown">ods.getConnection</span>();
+System.out.println("Connection successful!!!");
+
+</code></pre>
+<p>Разбирать работу JNDI мы не будем. Это выходит за рамки данного курса. Просто хочу, чтобы ты знал, что такой подход очень часто используется в крупных приложениях. Не теряйся, если увидишь в будущем такой код.</p>
+<p>Неважно, как это работает. Теб нужно просто знать, что с помощью JNDI сервиса ты можешь получить proxy-объект любого сервиса, зарегистрированного в каталоге сервисов. Именно таким образом получают объект DataSource и с его помощью работают с базой данных.</p>
+<h2>7.4 Примеры Connection Pool’ов</h2>
+<p>Давай лучше вернемся к тому, с чего начали — к пулам соединений (connections pool).</p>
+<img data-max-width="800" data-id="06bf9536-2834-4e06-98f2-d2c2902a901d" src="https://cdn.javarush.com/images/article/06bf9536-2834-4e06-98f2-d2c2902a901d/800.jpeg" alt="">
+<p>Java-программисты в своих программах очень часто используют библиотеки, которые содержат в себе различные реализации connection pool’ов. Среди них есть три самых популярных:</p>
+<ul>
+	<li><strong>Apache Commons DBCP</strong></li>
+	<li><strong>C3PO</strong></li>
+	<li><strong>HikariCP</strong></li>
+</ul>
+<p>Первым создали хороший connection pool программисты из проекта Apache, он так же используется внутри веб-сервера Tomcat. Пример работы с ним:</p>
+<pre class='language-java line-numbers'><code>
+public class DBCPDataSource {
+ 
+    private static <span class="text-green">BasicDataSource</span> <span class="text-orange">ds</span> = new <span class="text-green">BasicDataSource</span>();
+    static {
+    	<span class="text-orange">ds</span>.setUrl("jdbc:h2:mem:test");
+    	<span class="text-orange">ds</span>.setUsername("user");
+    	<span class="text-orange">ds</span>.setPassword("password");
+    	<span class="text-orange">ds</span>.setMinIdle(5);
+    	<span class="text-orange">ds</span>.setMaxIdle(10);
+    	<span class="text-orange">ds</span>.setMaxOpenPreparedStatements(100);
+    }
+   
+    public static <span class="text-brown">Connection getConnection()</span> throws SQLException {
+    	return <span class="text-orange">ds</span>.getConnection();
+    }
+   
+    private <span class="text-user">DBCPDataSource</span>(){ }
+}
+</code></pre>
+<p>Второй очень популярный пул — это <strong>C3PO</strong>. Странные названия, согласен. Название C3PO — это отсылка к имени робота c3po из Звездных Войн. А также CP — это сокращение от Connection Pool.</p>
+<pre class='language-java line-numbers'><code>
+public class <span class="text-user">C3p0DataSource</span> {
+ 
+    private static <span class="text-green">ComboPooledDataSource</span> <span class="text-orange">cpds</span> = new <span class="text-green">ComboPooledDataSource</span>();
+    static {
+    	try {
+        	<span class="text-orange">cpds</span>.setDriverClass("org.h2.Driver");
+        	<span class="text-orange">cpds</span>.setJdbcUrl("jdbc:h2:mem:test");
+        	<span class="text-orange">cpds</span>.setUser("user");
+        	<span class="text-orange">cpds</span>.setPassword("password");
+    	} catch (PropertyVetoException e) {
+            // handle the exception
+    	}
+    }
+  
+    public static <span class="text-brown">Connection getConnection()</span> throws SQLException {
+    	return <span class="text-orange">cpds</span>.getConnection();
+    }
+  
+    private <span class="text-user">C3p0DataSource</span>(){}
+}
+</code></pre>
+<p>С документацией по нему можно ознакомиться на <a href="https://www.mchange.com/projects/c3p0/" target="_blank">официальной странице</a>.</p>
+<p>И наконец самый популярный Connection Pool в наше время — это <strong>HikariCP</strong>:</p>
+<pre class='language-java line-numbers'><code>
+public class HikariCPDataSource {
+   
+    private static <span class="text-green">HikariConfig</span> <span class="text-orange">config</span> = new HikariConfig();
+    private static <span class="text-green">HikariDataSource ds</span>;
+   
+    static {
+    	<span class="text-orange">config</span>.setJdbcUrl("jdbc:h2:mem:test");
+    	<span class="text-orange">config</span>.setUsername("user");
+    	<span class="text-orange">config</span>.setPassword("password");
+    	<span class="text-orange">config</span>.addDataSourceProperty("cachePrepStmts", "true");
+    	<span class="text-orange">config</span>.addDataSourceProperty("prepStmtCacheSize", "250");
+    	<span class="text-orange">config</span>.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+    	<span class="text-green">ds</span> = new <span class="text-green">HikariDataSource</span>(<span class="text-orange">config</span>);
+    }
+   
+    public static Connection getConnection() throws SQLException {
+    	return <span class="text-green">ds</span>.getConnection();
+    }
+   
+    private <span class="text-user">HikariCPDataSource</span>(){}
+}
+</code></pre>
+<p>Вот его официальная страничка в <a href="https://github.com/brettwooldridge/HikariCP" target="_blank">GitHub</a>.</p>
+<p>И <a href="https://www.baeldung.com/hikaricp" target="_blank">хорошая статья</a> по конфигурированию.</p>

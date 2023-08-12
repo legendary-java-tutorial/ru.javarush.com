@@ -1,0 +1,175 @@
+Дискриминатор
+<p>----------------------------------------</p>
+Описание. 
+@DiscriminatorValue. 
+@DiscriminatorFormula.
+<p>----------------------------------------</p>
+<h2>Описание</h2>
+
+<p>В предыдущей лекции ты видел, что Hibernate использует специальную колонку DTYPE VARCHAR для хранения имени Entity-класса. Такая колонка называется <strong>дискриминатор</strong>. Ее используют для того, чтобы однозначно определить какой класс нужно создать для данной строки базы данных.</p>
+
+<p>Ты можешь управлять этой колонкой с помощью аннотации <span class="text-yellow"><span class="text-bold">@DiscriminatorColumn</span></span>. Пример:</p>
+ 
+<pre class='language-java line-numbers'><code>
+@DiscriminatorColumn(name="имя_колонки",   discriminatorType = DiscriminatorType.INTEGER)
+</code></pre>
+ 
+<p>Согласно спецификации JPA дискриминатор может иметь такие типы:</p>
+
+<ul>
+<li>STRING</li>
+<li>CHAR</li>
+<li>INTEGER</li>
+</ul>
+
+<p>Однако Hibernate позволяет немного расширить этот список. Он поддерживает такие Java-типы: String, char, int, byte, short, boolean.</p>
+
+<p>Если мы используем тип INTEGER, то как в нем кодировать имя Entity-класса? Для этого используется еще одна аннотация – <span class="text-yellow"><span class="text-bold">@DiscriminatorValue</span></span>.</p>
+
+<p>Посмотри на пример:</p>
+
+<pre class='language-java line-numbers'><code>
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name="user_type",   discriminatorType = DiscriminatorType.INTEGER)
+@Entity
+class User {
+  int id;
+  String name;
+  LocalDate birthday;
+}
+</code></pre>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@DiscriminatorValue("1")
+class Employee extends User {
+ 	String occupation;
+ 	int salary;
+ 	LocalDate join;
+}
+</code></pre>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@DiscriminatorValue("2")
+class Client extends User {
+   String address;
+}
+</code></pre>
+
+<p>В примере выше мы сказали Hibernate, что для дискриминатора будет использоваться колонка user_type, которая будет хранить числа. Если в ней хранится значение 1, то это значит, что тип строки – Employee, если хранится 2, то тип строки – Client. Просто и красиво.</p>
+
+<h2>@DiscriminatorValue</h2>
+
+<p>Но и это еще не все. Ты можешь указать Hibernate, как интерпретировать тип строки, когда ее дискриминатор равен NULL.</p>
+
+<p>На самом деле это очень просто. Ты указываешь значение null у аннотации <span class="text-yellow"><span class="text-bold">@DiscriminatorValue</span></span>. Например, так:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">@DiscriminatorValue("null")</span></code></pre>
+    </div>
+
+<p>Пример класса:</p>
+
+<pre class='language-java line-numbers'><code>
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name="user_type",   discriminatorType = DiscriminatorType.INTEGER)
+@DiscriminatorValue("null")
+@Entity
+class User {
+  int id;
+  String name;
+  LocalDate birthday;
+}
+</code></pre>
+
+<p>Мы указали Hibernate, что любая строка таблицы, где в колонке user_type стоит NULL, должна быть интерпретирована как объект типа User.</p>
+
+<p>Но и это еще не все. Есть еще одно интересное значение у аннотации @DiscriminatorValue</span></span>.</p>
+
+<p>Вот такое:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">@DiscriminatorValue("not null")</span></code></pre>
+    </div>
+ 
+<p>Пример класса:</p>
+
+<pre class='language-java line-numbers'><code>
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name="user_type",   discriminatorType = DiscriminatorType.INTEGER)
+@DiscriminatorValue("not null")
+@Entity
+class User {
+  int id;
+  String name;
+  LocalDate birthday;
+}
+</code></pre>
+
+<p>С помощью этой аннотации мы указали Hibernate, что любая строка таблицы, где в колонке user_type стоит значение не NULL, должна быть интерпретирована как объект типа User. Но это только для случая, если не будет найден класс, у которого явно указан нужный номер.</p>
+
+<p>Так работать это будет для разных значений дискриминаторов:</p>
+
+<ul>
+<li>0 – создаем объект типа User</li>
+<li>1 – создаем объект типа <strong>Employee</strong></li>
+<li>2 – создаем объект типа <strong>Client</strong></li>
+<li>3 – создаем объект типа User</li>
+<li>4 – создаем объект типа User</li>
+</ul>
+ 
+<h2>@DiscriminatorFormula</h2>
+
+<p>Но и это еще не все. Для нашего дискриминатора мы можем указать целую формулу, по которой он будет вычислять значения для аннотации <span class="text-yellow"><span class="text-bold">@DiscriminatorValue</span></span>.</p>
+
+<p>Для этого есть специальная аннотация, она так и называется <span class="text-yellow"><span class="text-bold">@DiscriminatorFormula</span></span>.</p>
+
+<p>Пример:</p>
+
+<pre class='language-java line-numbers'><code>
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name="user_type",   discriminatorType = DiscriminatorType.INTEGER)
+@DiscriminatorFormula("case when ‘join’ is not null then 1 else 2 end")
+@Entity
+class User {
+  int id;
+  String name;
+  LocalDate birthday;
+}
+</code></pre>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@DiscriminatorValue("1")
+class Employee extends User {
+ 	String occupation;
+ 	int salary;
+ 	LocalDate join;
+}
+</code></pre>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@DiscriminatorValue("2")
+class Client extends User {
+   String address;
+}
+</code></pre>
+
+<p>Значения, которые возвращает <span class="text-yellow"><span class="text-bold">@DiscriminatorFormula</span></span>, будут сравниваться Hibernate со значениями, указанными в аннотациях <span class="text-yellow"><span class="text-bold">@DiscriminatorValue</span></span>. С ее помощью можно записывать довольно сложные сценарии:</p>
+
+<pre class='language-java line-numbers'><code>
+@DiscriminatorFormula(
+           	"case when address is not null " +
+           	"then 'Client' " +
+           	"else (" +
+           	"   case when occupation is not null " +
+           	"   then 'Employee' " +
+           	"   else 'Unknown' " +
+           	"   end) " +
+           	"end "
+)
+</code></pre>

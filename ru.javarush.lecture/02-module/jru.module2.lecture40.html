@@ -1,0 +1,165 @@
+Обработка аннотаций в рантайме
+<p>----------------------------------------</p>
+Создание аннотаций — процесс довольно простой, хоть и ограниченый некоторыми правилами. Теперь нам нужно разобраться, в чем их польза на практике. Давай вспомним, как мы создаем свою аннотацию...
+<p>----------------------------------------</p>
+    <p>Создание аннотаций — процесс довольно простой, хоть и ограниченый некоторыми правилами. Теперь нам нужно разобраться, в чем их польза на практике.</p>
+
+    <p>Давай вспомним, как мы создаем свою аннотацию.</p>
+
+    <p>Пишем аннотацию, которая будет аннотировать классы и методы и содержать информацию об авторе и версии:</p>
+
+    <pre class='language-java line-numbers'><code>
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Info {
+   String author() default "Author";
+   String version() default "0.0";
+}
+</code></pre>
+
+    <p>Наши классы, к которым мы добавили аннотацию: </p>
+
+    <pre class='language-java line-numbers'><code>
+@Info
+public class MyClass1 {
+   @Info
+   public void myClassMethod() {}
+}
+ 
+@Info(version = "2.0")
+public class MyClass2 {
+   @Info(author = "Anonymous")
+   public void myClassMethod() {}
+}
+ 
+@Info(author = "Anonymous", version = "2.0")
+public class MyClass3 {
+   @Info(author = "Anonymous", version = "4.0")
+   public void myClassMethod() {}
+}
+</code></pre>
+
+    <p>Как же нам воспользоваться этими данными на этапе работы программы?</p>
+
+    <p>Извлечь метаданные из аннотаций можно с помощью рефлексии. Вспомним, что такое рефлексия. Это механизм исследования данных о программе во время ее выполнения. Рефлексия позволяет получать информацию о полях, методах, конструкторах классов, а также о классах.</p>
+
+    <p>С помощью рефлексии мы прочитаем аннотации в классе и выведем необходимую нами информацию.</p>
+
+    <p>Распознаем данные из наших классов в <span class="code text-orange">main</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.Method;
+ 
+public class Main {
+   public static void main(String[] args) throws NoSuchMethodException {
+       readMyClass(MyClass1.class);
+       readMyClass(MyClass2.class);
+       readMyClass(MyClass3.class);
+   }
+ 
+   static void readMyClass(Class&lt;?&gt; myClassObj) throws NoSuchMethodException {
+       System.out.println("\nКласс " + myClassObj.getName());
+       readAnnotation(myClassObj);
+       Method method = myClassObj.getMethod("myClassMethod");
+       readAnnotation(method);
+   }
+ 
+   static void readAnnotation(AnnotatedElement element) {
+       try {
+           System.out.println("Поиск аннотаций в " + element.getClass().getName());
+           Annotation[] annotations = element.getAnnotations();
+           for (Annotation annotation : annotations) {
+               if (annotation instanceof Info) {
+                   final Info fileInfo = (Info) annotation;
+                   System.out.println("Автор: " + fileInfo.author());
+                   System.out.println("Версия: " + fileInfo.version());
+               }
+           }
+       } catch (Exception e) {
+           e.printStackTrace();
+       }
+   }
+}
+</code></pre>
+ 
+    <p>В метод <span class="code text-orange">readMyClass</span> мы передаем экземпляр нашего класса на обработку. </p>
+
+    <p>Далее в метод <span class="code text-orange">readAnnotation</span> мы можем передать как класс, так и метод. Так и поступим: передаем туда объект класса и объект метода. Принимается объект, который реализует контракт <span class="text-neon"><span class="text-bold"><em>AnnotatedElement</em></span></span>. Это позволяет достать из него список аннотаций и прочитать информацию по каждой из них.</p>
+
+    <p>Обрати внимание на то, что мы не достанем информацию, не проверив принадлежность аннотации к нашему типу аннотации 
+(<span class="code">if (annotation instanceof Info)</span>).</p>
+
+    <p>На выходе мы получаем полную информацию из аннотаций: </p>
+
+    <div class="terminal">Класс annotation.MyClass1<br />
+Поиск аннотаций в java.lang.Class<br />
+Автор: Author<br />
+Версия: 0.0<br />
+Поиск аннотаций в java.lang.reflect.Method<br />
+Автор: Author<br />
+Версия: 0.0<br />
+  <br />
+Класс annotation.MyClass2<br />
+Поиск аннотаций в java.lang.Class<br />
+Автор: Author<br />
+Версия: 2.0<br />
+Поиск аннотаций в java.lang.reflect.Method<br />
+Автор: Anonymous<br />
+Версия: 0.0<br />
+ <br />
+Класс annotation.MyClass3<br />
+Поиск аннотаций в java.lang.Class<br />
+Автор: Anonymous<br />
+Версия: 2.0<br />
+Поиск аннотаций в java.lang.reflect.Method<br />
+Автор: Anonymous<br />
+Версия: 4.0</div>
+ 
+    <p>Так с помощью рефлексии мы смогли извлечь метаинформацию. </p>
+
+    <p>Теперь рассмотрим пример использования аннотаций для усовершенствования кода, в том числе повышения читаемости, скорости роботы и качества в целом. В этом нам поможет Lombok.</p>
+
+    <p>Lombok — это плагин-надстройка компилятора, который с помощью ключевых слов-аннотаций скрывает огромное количество кода, расширяя язык и тем самым упрощая разработку и добавляя некоторую функциональность. </p>
+
+    <p>Рассмотрим пример аннотаций из Lombok: </p>
+
+    <table>
+        <tbody>
+            <tr>
+                <td><span class="text-yellow"><span class="text-bold">@ToString</span></span></td>
+                <td>Генерирует реализацию для метода <span class="code text-orange">toString()</span>, которая состоит из аккуратного представления объекта: имя класса, все поля и их значения.</td>
+                <td><pre class='language-java line-numbers'><code>
+@ToString
+public class Example
+</code></pre></td>
+            </tr>
+            <tr>
+                <td><span class="text-yellow"><span class="text-bold">@EqualsAndHashCode</span></span></td>
+                <td>Генерирует реализации <span class="code text-orange">equals</span> и <span class="code text-orange">hashCode</span>, которые по умолчанию используют нестатические и нестационарные поля, но настраиваются.</td>
+                <td>Подробнее можно прочитать <a href="https://projectlombok.org/features/EqualsAndHashCode" target="_blank">на сайте проекта</a>. Там описан пример с использованием <span class="text-yellow"><span class="text-bold">@EqualsAndHashCode</span></span> и без него со стандартной реализацией.</td>
+            </tr>
+            <tr>
+                <td><span class="text-yellow"><span class="text-bold">@Getter</span></span> / <span class="text-yellow"><span class="text-bold">@Setter</span></span></td>
+                <td>Генерирует геттеры и сеттеры для частных полей.</td>
+                <td><pre class='language-java line-numbers'><code>
+@Getter 
+@Setter 
+private String name = “name”;
+</code></pre></td>
+            </tr>
+            <tr>
+                <td><span class="text-yellow"><span class="text-bold">@NonNull</span></span></td>
+                <td>Используются для утверждения, что поля не являются null при создании экземпляра объекта. Иначе выбрасывается исключение <span class="text-red"><span class="text-bold">NullPointerException</span></span>.</td>
+                <td><pre class='language-java line-numbers'><code>
+public Example(@NonNull P p) {
+ super("Hello");
+ this.name = p.getName();
+}
+</code></pre></td>
+            </tr>
+        </tbody>
+    </table>
+ 
+    <p>У Lombok есть еще много полезных аннотаций, которые используются реже. Мы рассмотрели простую часть его аннотаций. Про сам проект можно почитать больше <a href="https://projectlombok.org" target="_blank">на официальном сайте</a>.</p>

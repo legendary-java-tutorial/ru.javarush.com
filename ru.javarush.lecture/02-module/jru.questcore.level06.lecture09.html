@@ -1,0 +1,65 @@
+Остановить бушующий поток: официальная версия
+<p>----------------------------------------</p>
+В этой лекции будет много агрессивных слов, значение которых переводится как «вмешаться» или «прервать». А всё потому, что мы продолжаем изучать возможности и особенности остановки нитей. Или потоков, как их все называют. Изучаем, как пользоваться переменной isInterrupted и что делают методы isInterrupted() и interrupt().
+<p>----------------------------------------</p>
+<p>&#8212; Привет, Амиго! Согласись, Элли хорошо придумала с этим Cancel?</p>
+<p><span class="text-user">&#8212; Ага.</span></p>
+<p>&#8212; На самом деле нечто подобное существует в классе Thread. Только переменная называется не isCancel, а isInterrupted, и метод остановки, соответственно, не cancel(), а interrupt().</p>
+<p><span class="text-user">&#8212; Да?</span></p>
+<p>&#8212; Ага. Вот смотри:</p>
+<table>
+<tbody>
+<tr>
+<th>Код</th>
+<th>Описание</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Clock <span class="text-user">implements Runnable</span> {
+&ensp;&ensp;public void run() {
+&ensp;&ensp;&ensp;&ensp;<span class="text-user">Thread current = Thread.currentThread();</span>
+
+&ensp;&ensp;&ensp;&ensp;while (<span class="text-red">!current.isInterrupted()</span>) {
+&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;try {
+&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;Thread.sleep(1000);
+&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;} catch (InterruptedException e) {
+&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;e.printStackTrace();
+&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;<span class="text-red">current.interrupt();</span>
+&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;}
+&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;System.out.println("Tik");
+&ensp;&ensp;}
+&ensp;&ensp;}
+}</code></pre>
+</td>
+<td>Т.к. много нитей могут вызвать метод run одного объекта, то <span class="text-user">объект Clock в своем методе run получает объект вызвавшей его нити</span> («текущей нити»).</p>
+<p>Класс Clock (часы) будет писать в консоль раз в секунду слово «Tik», пока переменная <strong>isInterrupted</strong> текущей нити равна false.</p>
+<p>Когда переменная <strong>isInterrupted</strong> станет равной <strong>true</strong>, метод <strong>run</strong> завершится.</td>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public static void main(String[] args) throws Exception {
+&ensp;&ensp;<span class="text-user">Clock clock = new Clock();
+&ensp;&ensp;Thread clockThread = new Thread(clock);
+&ensp;&ensp;clockThread.start();</span>
+
+&ensp;&ensp;<span class="text-green">Thread.sleep(10000);</span>
+&ensp;&ensp;<span class="text-red">clockThread.interrupt();</span>
+}</code></pre>
+</td>
+<td>Главная нить, запускает дочернюю нить – часы, которая должна работать вечно.</p>
+<p><span class="text-green">Ждет 10 секунд и</span> <span class="text-red">отменяет задание, вызовом метода interrupt.</span></p>
+<p>Главная нить завершает свою работу.</p>
+<p>Нить часов завершает свою работу.</td>
+</tr>
+</tbody>
+</table>
+<p>Более того, в методе <strong>sleep</strong>, который так любят использовать для организации вечного цикла в методе run, есть автоматическая проверка переменной <strong>isInterrupted</strong>. Если нить вызовет метод <strong>sleep</strong>, то этот метод сначала проверит, а не установлена ли для текущей (вызвавшей его нити) переменная <strong>isInterrupted</strong> в true. И если установлена, то метод не будет спать, а выкинет исключение <span class="text-red"><strong>InterruptedException</strong></span>.</p>
+<p><span class="text-user">&#8212; А зачем выкидывать исключение? Не лучше ли тоже просто в цикле вместо isCancel подставить isInterrupted()?</span></p>
+<p>&#8212; <strong>Во-первых</strong>, не всегда в методе run есть цикл. Метод может состоять просто из двух десятков вызовов других методов. Тогда перед вызовом каждого придется добавлять проверку isInterrupted.</p>
+<p><strong>Во-вторых</strong>, вдруг какой-то метод очень долго исполняется, т.к. делает много разных действий.</p>
+<p><strong>В-третьих</strong>, выкидывание исключения – это не замена проверке isInterrupted, а скорее удобное дополнение. Выкинутое исключение позволяет быстро раскрутить стек вызовов до самого run.</p>
+<p><strong>В-четвертых</strong>, метод sleep часто используют, и, получается, к такому полезному методу неявно добавили не менее полезную проверку. <strong>Вроде бы никто специально проверку не добавлял, а она есть. </strong>Это очень ценно, когда ты используешь много чужого кода и не можешь сам добавить в него проверку.</p>
+<p><strong>В-пятых</strong>, дополнительная проверка не приводит к снижению производительности. Вызов метода sleep значит, что нить должна ничего не делать (спать), поэтому дополнительная работа никому не мешает.</p>
+<p><span class="text-user">&#8212; Серьёзные аргументы.</span></p>
+<p>&#8212; И, наконец, последнее: ты можешь в своем методе run вызывать чужой код, к которому у тебя нет доступа (исходников и/или прав их менять). Он может не иметь проверок на isInterrupted, а также перехватывать с помощью try…catch(Exception e) все возникшие исключения.</p>
+<p><span class="text-red"><strong>Никто не гарантирует, что нить можно остановить. Она может остановиться только сама.</strong></span></p>

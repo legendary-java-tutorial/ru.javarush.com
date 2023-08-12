@@ -1,0 +1,92 @@
+Подключаемся к базе данных из Java-приложения
+<p>----------------------------------------</p>
+Java DataBase Connectivity. 
+JDBC Driver Manager. 
+Подключаемся к MySQL-серверу.
+<p>----------------------------------------</p>
+<h2>Java DataBase Connectivity</h2>
+
+<p>Ты знаешь основы SQL. Это хорошо. Но сегодня тебе станет еще лучше. Сегодня ты начнешь изучать, как работать с базой данных из Java-приложения.</p>
+
+<p>Различных СУБД очень много, поэтому создатели Java решили стандартизировать работу Java-приложения с базами данных. И назвали они этот стандарт – <strong><span class="text-red">JDBC</span>: Java DataBase Connectivity</strong>.</p>
+
+<img data-max-width="512" data-id="04001c5f-340f-421f-9e18-cca890d35d6f" src="https://cdn.javarush.com/images/article/04001c5f-340f-421f-9e18-cca890d35d6f/original.png" alt="">
+
+<p>В JDBC есть 3 основных интерфейса:</p>
+
+<ul>
+<li><strong>Connection</strong> – отвечает за соединение с базой данных</li>
+<li><strong>Statement</strong> – отвечает за запрос к базе данных</li>
+<li><strong>ResultSet</strong> – отвечает за результат запроса к базе данных</li>
+</ul>
+
+<p>Фактически, это все. И мы даже не будем изучать все методы всех интерфейсов. Только рабочие примеры, которые понемногу будем усложнять.</p>
+
+<p>JDBC чем-то напоминает работу с сервлетами. Создатели JDBC написали несколько интерфейсов и гордо назвали это Java DataBase API. А реализацию этих интерфейсов возложили на… создателей СУБД. Как оно там реализовано – никого не интересует. Работает и ладно.</p>
+
+<p>Есть четыре версии JDBC и мы будет изучать самую последнюю. И не потому, что она самая крутая, а потому что она самая простая.</p>
+
+<h2>JDBC Driver Manager</h2>
+
+<p>Java-приложение и база данных общаются друг с другом посредством библиотеки, которая называется JDBC Driver. Это набор классов, которые реализуют JDBC API для конкретной СУБД.</p>
+
+<p>Правильные JDBC драйвер же выбирается с помощью класса под названием <strong>DriverManager</strong>. Их взаимодействие можно представить такой картинкой:</p>
+
+<img data-max-width="800" data-id="25dcf3c0-0d46-4dde-af85-3c1f0233a3d6" src="https://cdn.javarush.com/images/article/25dcf3c0-0d46-4dde-af85-3c1f0233a3d6/original.png" alt="">
+
+<p>Штука в том, что ты можешь использовать In-Memory-DB, No-SQL-DB или даже базу данных, встроенную в Android-приложение. Тебя, как Java-разработчика, эти нюансы вообще не касаются. <span class="text-green">Driver Manager выберет вам правильный JDBC драйвер</span> и все будет работать как часы.</p>
+
+<p>Кстати, а как он это делает?</p>
+
+<h2>Подключаемся к MySQL-серверу</h2>
+
+<p>Помнишь, что тебе было нужно, чтобы подключиться к локальному SQL-серверу через MySQL Workbench? Если забыл, то я напомню, тебе были нужны три вещи:</p>
+
+<ul>
+<li>host</li>
+<li>login</li>
+<li>password</li>
+</ul>
+
+<p>С логином и паролем все понятно, а host, если ты помнишь – это имя компьютера, на котором расположен сервер. Если он расположен у тебя на локальном компьютере, то в качестве имени хоста нужно указать localhost. А если не на локальном?</p>
+
+<p>Тогда нужно использовать … URL. URL расшифровывается как <strong>Universal Resource Locator</strong>. Его можно использовать для указания месторасположения чего-угодно в сети: сайта, принтера, SQL-сервера. На самом деле URL используется и для доступа к локальному SQL-серверу. Он имеет примерно такой вид:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">mysql</span>://<span class="text-green">localhost</span>:<span class="text-neon">3306</span>/<span class="text-viola">db_scheme</span></code></pre>
+    </div>
+
+<ul>
+<li><span class="text-red"><strong>mysql</strong></span> – это протокол работы с сервером</li>
+<li><span class="text-green"><strong>localhost</strong></span> – имя хоста в сети</li>
+<li><span class="text-neon"><strong>3306</strong></span> – порт, по которому идут запросы</li>
+<li><span class="text-viola"><strong>db_scheme</strong></span> – имя схемы (имя базы данных)</li>
+</ul>
+
+<p><strong>Примечание.</strong> Имя базы данных можно не указывать. Но если сервер хранит много схем баз данных, то обычно к ним создают разных пользователей и разными правами доступа. И если у пользователя, под которым ты логинишься на SQL-сервер нет доступа ко всем базам, то тебе обязательно нужно указать имя конкретной базы, к которой у тебя есть доступ.</p>
+
+<p>В конце этого url могут идти различные параметры, типы кодировки, timezone, которые считаются параметрами для нового устанавливаемого соединения с базой данных.</p>
+
+<p>Также протокол может быть составным. Если все общение с сервером базы данных идет по зашифрованному каналу с помощью SSH-протокола, тогда URL может быть указан так:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">ssh:<span class="text-red">mysql</span>://<span class="text-green">localhost</span>:<span class="text-neon">3306</span>/<span class="text-viola">db_scheme</span></code></pre>
+    </div>
+ 
+<p>Протокол – это не обязательно внешняя программа. Например, если ты работаешь с сервером по протоколу JNDI, то можешь указать его так:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">jndi</span>:<span class="text-red">mysql</span>://<span class="text-green">localhost</span>:<span class="text-neon">3306</span>/<span class="text-viola">db_scheme</span></code></pre>
+    </div>
+ 
+<p>А если хочешь работать по протоколу JDBC API, то нужно писать так:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">jdbc</span>:<span class="text-red">mysql</span>://<span class="text-green">localhost</span>:<span class="text-neon">3306</span>/<span class="text-viola">db_scheme</span></code></pre>
+    </div>
+ 
+<p>Когда ты пытаешься создать подключение к базе данных, то JDBC Driver Manager анализирует ваш SQL-db-URL и определяет имя JDBC-драйвера по имени протокола. Вот такая вот маленькая хитрость.</p>

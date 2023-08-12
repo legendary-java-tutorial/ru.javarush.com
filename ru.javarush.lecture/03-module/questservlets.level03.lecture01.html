@@ -1,0 +1,126 @@
+Первые тесты с помощью JUnit
+<p>----------------------------------------</p>
+Подключаем фреймворк JUnit. 
+Аннотация @Test. 
+Примеры тестов JUnit.
+<p>----------------------------------------</p>
+<h2>Подключаем фреймворк JUnit</h2>
+
+<p>Для тестирования Java-кода у нас есть шикарный фреймворк под названием <span class="text-bold">JUnit</span>. Он отлично работает, постоянно обновляется, очень популярен и, конечно, с ним очень плотно интегрирована Intellij IDEA.</p>
+
+<p>Сейчас все пользуются пятой версией этого фреймворка — <span class="text-bold">JUnit 5</span>, хотя во многих проектах ты еще можешь встретить его четвертую версию. Они не сильно отличаются, но мы все равно рассмотрим самую последнюю. Думаю, к тому времени, когда ты начнешь активно писать тесты, ты одобришь мой выбор.</p>
+
+<p>Итак, как добавить в проект JUnit? После изучения Maven это будет просто: просто добавь этот код в свой pom.xml:</p>
+ 
+<pre><code><span class="text-viola">&lt;dependency>
+    &lt;groupId>org.junit.jupiter&lt;/groupId>
+    &lt;artifactId>junit-jupiter-engine&lt;/artifactId>
+	&lt;version>5.8.1&lt;/version>
+	&lt;scope>test&lt;/scope>
+&lt;/dependency></span>
+</code></pre>
+ 
+<p>Кстати, если ты хочешь, чтобы Maven на этапе сборки (<span class="text-bold">test stage</span>) запустил твои тесты, то в pom.xml нужно добавить еще один фрагмент:</p>
+ 
+<pre><code><span class="text-viola">&lt;plugin>
+    &lt;artifactId>maven-surefire-plugin&lt;/artifactId>
+	&lt;version>2.19.1&lt;/version>
+	&lt;dependencies>
+    	&lt;dependency>
+            &lt;groupId>org.junit.platform&lt;/groupId>
+            &lt;artifactId>junit-platform-surefire-provider&lt;/artifactId>
+            &lt;version>1.3.2&lt;/version>
+    	&lt;/dependency>
+	&lt;/dependencies>
+&lt;/plugin></span>
+</code></pre>
+ 
+<h2>Аннотация @Test</h2>
+
+<p>Допустим, у тебя есть класс, который ты хочешь протестировать. Как это лучше всего сделать? Давай начнем с какого-нибудь примера, а то сложно тестировать абстрактный класс :)</p>
+
+<p>Предположим, у нас есть класс <span class="code"><span class="text-green">Calculator</span></span>, которые умеет выполнять 4 базовые операции: сложение, вычитание, умножение и деление. Напишем его:</p>
+ 
+<pre class='language-java line-numbers'><code>
+    class Calculator {
+    	public int add(int a, int b) {
+        	return a+b;
+    	}
+ 
+    	public int sub(int a, int b) {
+        	return a-b;
+    	}
+ 
+    	public int mul (int a, int b) {
+        	return a*b;
+    	}
+ 
+    	public int div(int a, int b) {
+        	return a/b;
+    	}
+}
+</code></pre>
+ 
+<p>Мы хотим протестировать методы этого класса. Мало ли, в будущем наменяют чего-нибудь и все перестанет работать. Как нам написать для него тесты?</p>
+
+<p>Нам нужно создать еще один класс. <span class="text-neon">Для этого обычно берут то же имя и добавляют суффикс Test</span>. Для каждого метода нужно добавить хотя бы один тестовый метод. Пример:</p>
+ 
+<pre class='language-java line-numbers'><code>
+    class CalculatorTest {
+   	@Test
+    	public void add() {
+    	}
+   	@Test
+    	public void sub() {
+        }
+   	@Test
+    	public void mul() {
+    	}
+   	@Test
+    	public void div() {
+    	}
+}
+</code></pre>
+ 
+<p>Раньше существовало требование, чтобы имя метода начиналось со слова <span class="text-bold">test</span>, но теперь это не нужно.</p>
+
+<h2>Примеры тестов JUnit</h2>
+
+<p>Давай напишем несколько примеров, в которых протестируем методы нашего класса <span class="code"><span class="text-green">CalculatorTest </span></span>:</p>
+ 
+<pre class='language-java line-numbers'><code>
+	class CalculatorTest {
+   	@Test
+    	public void add() {
+        	Calculator calc = new Calculator();
+        	int result = calc.add(2, 3);
+        	assertEquals(5, result);
+    	}
+ 
+   	@Test
+    	public void sub() {
+        	Calculator calc = new Calculator();
+        	int result = calc.sub(10, 10);
+        	assertEquals(0, result);
+        }
+ 
+   	@Test
+    	public void mul() {
+        	Calculator calc = new Calculator();
+        	int result = calc.mul(-5, -3);
+        	assertEquals(15, result);
+    	}
+ 
+   	@Test
+    	public void div() {
+        	Calculator calc = new Calculator();
+        	int result = calc.div(2, 3);
+        	assertEquals(0, result);
+    	}
+}
+</code></pre>
+ 
+
+<p>Вот так выглядит типичный тест с использованием JUnit. Из интересного: тут используется специальный метод <span class="code text-orange">assertEquals()</span>: он сравнивает переданные ему параметры, о чем говорит слово equals в его названии.</p>
+
+<p>Если параметры, переданные в <span class="code text-orange">assertEquals()</span>, неравны, то метод кинет исключение и тест будет считаться проваленным. Это исключение не помешает выполнению остальных тестов.</p>

@@ -1,0 +1,104 @@
+Выполнение запросов
+<p>----------------------------------------</p>
+Знакомство со Statement. 
+executeUpdate(). 
+execute ().
+<p>----------------------------------------</p>
+<h2>Знакомство со Statement </h2>
+
+<p>Все SQL-запросы можно условно разделить на две группы:</p>
+
+<ul>
+<li><strong>Получение данных</strong> — к ним относится оператор <span class="text-viola">SELECT</span>.</li>
+<li><strong>Изменение данных</strong> — к ним относятся операторы <span class="text-viola">INSERT</span>, <span class="text-viola">UPDATE</span> и <span class="text-viola">DELETE</span>.</li>
+</ul>
+
+<p>Для первой группы используется уже знакомый нам метод интерфейса <span class="text-neon"><span class="text-bold"><em>Statement</em></span></span> — <span class="code text-orange">executeQuery()</span>. В принципе для начала этого метода вполне достаточно. Он покрывает очень большой процент запросов, которые вам придется использовать на реальной работе.</p>
+
+<p>Позже мы познакомимся с дополнительными возможностями, но на данный момент советую запомнить — если ты хочешь просто получить данные из таблицы, то метод <span class="code text-orange">executeQuery()</span> в подавляющем большинстве случаев будет самым правильным выбором.</p>
+
+<p>Для второй группы запросов нужно использовать другой метод интерфейса Statement — <span class="code text-orange">executeUpdate()</span>. В отличии от метода <span class="code text-orange">executeQuery()</span>, который возвращает ResultSet, этот метод возвращает целое число, которое говорит <span class="text-green">сколько строк в таблице было изменено при исполнении вашего запроса</span>.</p>
+
+<p>Например, ты можешь оператором <span class="text-viola">DELETE FROM</span> employee удалить все строки (посему будьте очень аккуратны). В этом случае метод <span class="code text-orange">executeUpdate()</span> вернет количество удаленных строк. В некоторых ситуациях знание о количестве измененных строк бывает удобным для построения алгоритмов работы с данными.</p>
+
+<p>В принципе с этим вопросов можно закончить — главное мы уже увидели. Для выборки данных — <span class="code text-orange">executeQuery()</span>. Для изменения данных — <span class="code text-orange">executeUpdate()</span>.</p>
+
+<p>Получим <span class="text-neon">количество пользователей в таблице <strong>user</strong></span> с помощью методa <span class="code text-orange">executeQuery()</span>:</p>
+ 
+<pre class='language-java line-numbers'><code>
+	ResultSet results = statement.executeQuery("SELECT Count(*) FROM user");
+	results.next();
+    int count = results.getInt(1);
+</code></pre>
+ 
+<h2>executeUpdate()</h2>
+
+<p>Метод <span class="code text-orange">executeUpdate()</span> используется тогда, когда твой запрос что-то меняет в таблице. Это может быть что угодно:</p>
+
+<ul>
+<li>оператор <span class="text-viola">UPDATE</span></li>
+<li>оператор <span class="text-viola">INSERT</span></li>
+<li>оператор <span class="text-viola">DELETE</span></li>
+<li>оператор <span class="text-viola">CALL PROCEDURE</span></li>
+</ul>
+
+<p>Этот метод возвращает количество измененный (или удаленных) строк.</p>
+
+<p>Давай напишем запрос, который увеличит зарплату всех наших сотрудников на 1000 рублей.</p>
+ 
+<pre class='language-java line-numbers'><code>
+   int rowsCount = statement.executeUpdate("UPDATE  employee SET salary = salary+1000");
+</code></pre>
+ 
+<p>После того как я выполнил этот код, на своей таблице он вернул число 6. В моей таблице было 6 строк. Значит все строки были изменены.</p>
+
+<h2>execute () </h2>
+
+<p>Иногда в твоей жизни могут возникнуть ситуации, когда ты точно не знаешь, какой запрос тебе приходится исполнять — выборка или изменение данных. На этот случай создатели JDBC добавили в него еще один универсальный метод — <span class="code text-orange">execute()</span>.</p>
+
+<p>Этот метод можно использовать вместо <span class="code text-orange">executeQuery()</span> и <span class="code text-orange">executeUpdate()</span> методов. А помнишь, чем эти методы отличались? Правильно. Типом результата. Поэтому создатели JDBC придумали такое решение.</p>
+
+<p>Метод <span class="code text-orange">execute()</span> возвращает boolean. Если это значение равно <span class="text-green"><em>true</em></span>, то значит выполнялся запрос на получение данных, и тебе нужно вызвать метод <span class="code text-orange">getResultSet()</span>, чтобы получить данные. Пример:</p>
+ 
+<pre class='language-java line-numbers'><code>
+    boolean hasResults = statement.execute("SELECT Count(*) FROM user");
+    if ( hasResults ) {
+        	ResultSet results =  statement.getResultSet();
+        	results.next();
+        	int count = results.getInt(1);
+ 	}
+</code></pre>
+ 
+<p>Если это значение равно <span class="text-red"><em>false</em></span>, то значит выполнялся запрос на изменение данных, и тебе нужно вызвать метод <span class="code text-orange">getUpdateCount()</span>, чтобы получить количество измененных строк. Пример:</p>
+ 
+<pre class='language-java line-numbers'><code>
+    boolean hasResults = statement.execute("UPDATE  employee SET salary = salary+1000");
+    if ( !hasResults ) {
+      	int count = statement.getUpdateCount();
+ 	}
+</code></pre>
+ 
+<p>Давай напишем метод, который выводит на экран результат запроса:</p>
+ 
+<pre class='language-java line-numbers'><code>
+	public void executeAndPrintSQLQuery(String sqlQuery) {
+ 
+        boolean hasResults = statement.execute(sqlQuery);
+        if ( hasResults ) {
+ 	          ResultSet results =  statement.getResultSet();
+           	System.out.println(“Строки вашего запроса ниже: ”);
+ 
+           	while (results.next()) {
+ 	                 Integer id = results.getInt(1);
+     	             String name = results.getString(2);
+                      System.out.println(results.getRow() + ". " + id + "\t"+ name);
+  	        }
+       }
+ 	  else {
+            int count = statement.getUpdateCount();
+        	System.out.println(“Количество именных строк: ” + count);
+  	}
+}
+</code></pre>
+ 
+<p>Вот так метод <span class="code text-orange">execute()</span> обычно применяется на практике.</p>

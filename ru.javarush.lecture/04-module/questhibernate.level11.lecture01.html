@@ -1,0 +1,99 @@
+Как сохранить объект в Hibernate
+<p>----------------------------------------</p>
+Возможные варианты статуса объекта. 
+Нюансы работы методы persist(). 
+Нюансы работы метода save().
+<p>----------------------------------------</p>
+<h2>Возможные варианты статуса объекта</h2>
+
+<p>Как ты уже наверное обратил внимание, когда объект присоединен к Hibernate, его состояние называется <strong>Persistent</strong> или <strong>Managed</strong>. Как правильно? Persist или Managed?</p>
+
+<p>Можно и так, и так. Согласно спецификации JPA объект имеет статус Persist, а согласно спецификации Hibernate его состояние называется Managed.</p>
+
+<p>В Hibernate работа с базой ведется через объект типа <strong>org.hibernate.Session</strong>. Согласно же JPA класс должен называться javax.persistence.EntityManager. На самом деле большой проблемы тут нет, так как оба типа являются интерфейсами.</p>
+
+<p>Интерфейс <span class="text-neon"><span class="text-bold"><em>org.hibernate.Session</em></span></span> объявлен так:</p>
+ 
+<pre class='language-java line-numbers'><code>
+interface Session extends java.lang.AutoCloseable, javax.persistence.EntityManager, HibernateEntityManager,    QueryProducer, java.io.Serializable, SharedSessionContract {
+ 
+}
+</code></pre>
+
+<p>Поэтому в интерфейсе <span class="text-neon"><span class="text-bold"><em>Session</em></span></span> есть все методы, которые есть в интерфейсе <span class="text-neon"><span class="text-bold"><em>EntityManager</em></span></span>. Но также есть и свои, которые достались ему от более ранних версий Hibernate, когда еще не было спецификации JPA.</p>
+
+<p>Описывается эта вся ситуация вот такой картинкой:</p>
+
+<img data-max-width="1024" data-id="cf37099a-e8cc-4f2b-a7c9-8d53c3159875" src="https://cdn.javarush.com/images/article/cf37099a-e8cc-4f2b-a7c9-8d53c3159875/original.png" alt="">
+
+<p>Давай же разберем все методы, которые есть у интерфейса session, а также нюансы их работы.</p>
+
+<h2>Нюансы работы метода persist()</h2>
+
+<p>При сохранении объекта в базу данных тебе нужно помнить две вещи.</p>
+
+<p>Во-первых, сохранение объекта в итоге приведет к выполнению одной из команд SQL: INSERT или UPDATE. Во-вторых, эти действия произойдут не сразу после вызова метода объекта <mark class="green">session</mark>, а только после закрытия транзакции.</p>
+
+<p>Давай рассмотрим какую-нибудь простую ситуацию, например, у тебя есть класс <span class="code"><span class="text-green">User</span></span>:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+public class User {
+	@Id
+	@GeneratedValue
+    public Integer id;
+ 
+	@Columnt(name=”user_name”)
+    public String name;
+}
+</code></pre>
+
+<p>Давай сохраним в базу его объект с помощью метода <span class="code text-orange">persist()</span>.</p>
+ 
+<pre class='language-java line-numbers'><code>
+User user = new User();
+user.setName("Колян");
+session.persist(user);
+</code></pre>
+ 
+<p>Задача этого метода сохранить в базу данных новый объект. Если такого объекта еще нет, то он будет добавлен в базу через вызов SQL-метода <strong>INSERT</strong>.</p>
+
+<p>Если же объект уже есть в базе, то ничего не произойдет. Однако возможет еще и третий случай – попытка сохранить в базу объект со статусом Detached. В этом случае кинется исключение. Пример:</p>
+ 
+<pre class='language-java line-numbers'><code>
+User user = new User();
+user.setName("Колян");
+session.persist(user);
+ 
+session.evict(user);     // отсоединяем объект от сессии
+session.persist(user); // тут кинется исключение PersistenceException!
+</code></pre>
+ 
+<h2>Нюансы работы метода save()</h2>
+
+<p>Метод save() достался нынешнему Hibernate от его предыдущих версий. По своей сути он очень похож на метод <span class="code text-orange">persist()</span>, он тоже добавляет новую запись в таблицу с помощью метода INSERT. Однако у него есть несколько интересных нюансов.</p>
+
+<p>Во-первых, этот метод <strong>возвращает значение – новое ID объекта</strong>. Как ты уже знаешь, обычно до добавления в базу у объектов нет ID и оно присваивается уже базой данных. Так вот, метод <span class="code text-orange">save()</span> объекта session возвращает ID, которая была присвоена сохраняемому объекту.</p>
+
+<p><strong>Важно!</strong> Согласно спецификации Hibernate ID может быть любой сериализуемый объект, не только число. Это может быть строка, число, enum, вообще что угодно, что можно целиком положить в одну колонку таблицы в базе.</p>
+
+<p>Метод <span class="code text-orange">save()</span> имеет тип результата Serialized, поэтому его результат нужно приводить к правильному типу:</p>
+ 
+<pre class='language-java line-numbers'><code>
+User user = new User();
+user.setName("Колян");
+Integer id = (Integer) session.save(user);
+</code></pre>
+ 
+<p>Также у метода <span class="code text-orange">save()</span> другое поведение в случае с Detached состоянием объекта. Такой объект он рассматривает как новый и просто добавляет еще одну запись:</p>
+ 
+<pre class='language-java line-numbers'><code>
+User user = new User();
+user.setName("Колян");
+Integer id = (Integer) session.save(user);
+ 
+session.evict(user); 	// отсоединяем объект от сессии
+Integer id2 = (Integer) session.save(user);
+</code></pre>
+ 
+<p>Переменные id и id2 будут отличаться. В таблице в базе данных будут добавлены две записи: по одной для каждой операции <span class="code text-orange">save()</span>.</p>

@@ -1,0 +1,659 @@
+Проект по теме: SQL, JDBC и Hibernate
+<p>----------------------------------------</p>
+
+<p>----------------------------------------</p>
+<p>Сегодня будем делать финальный проект по четвертому модулю JRU. Что это будет? Попробуем поработать с разными технологиями: MySQL, Hibernate, Redis, Docker. Теперь предметнее. </p>
+<p><strong>Задание: у нас есть реляционная БД MySQL с схемой (страна-город, язык по стране). И есть частый запрос города, который тормозит. Мы придумали решение – вынести все данные, которые запрашиваются часто, в Redis (in memory storage типа ключ-значение).</strong> </p>
+<p>И нужны нам, не все данные, которые хранятся в MySQL, а только выбранный набор полей. Проект будет в виде туториала. То есть, здесь будем поднимать проблему и сразу же ее решать.</p>
+<p>Итак, начнем с того, какой софт нам будет нужен: </p>
+<ol>
+	<li>IDEA Ultimate (у кого закончился ключ – пишите в слаке Роману) </li>
+	<li>Workbench (или любой другой клиент для MySQL) </li>
+	<li><a href="https://www.docker.com/products/docker-desktop/" target="_blank">Docker</a></li>
+	<li><a href="https://redis.com/redis-enterprise/redis-insight/" target="_blank">redis-insight</a> – опционально</li>
+</ol>
+<p><strong>Наш план действий: </strong></p>
+<ol>
+	<li>Настроить докер (в туториале это не буду делать, т.к. для каждой ОС будут свои особенности и в интернете куча ответов на вопросы типа «how to install docker on windows»), проверить что все работает. </li>
+	<li>Запустить MySQL сервер как докер-контейнер.</li>
+	<li>Развернуть <a href="https://javarush.com/downloads/ide/javarush/dump-hibernate-final.sql" target="_blank">дамп</a>.</li>
+	<li>Создать проект в Идее, добавить зависимости maven.</li>
+	<li>Сделать слой domain.</li>
+	<li>Написать метод получения всех данных из MySQL.</li>
+	<li>Написать метод трансформации данных (в Redis будем писать только те данные, который запрашиваются часто).</li>
+	<li>Запустить Redis сервер как докер-контейнер.</li>
+	<li>Записать данные в Redis.</li>
+	<li>Опционально: установить redis-insight, посмотреть на данные, которые хранятся в Redis.</li>
+	<li>Написать метод получение данных из Redis.</li>
+	<li>Написать метод получение данных из MySQL.</li>
+	<li>Сравнить скорость получения одних и тех же данных из MySQL и Redis.</li>
+</ol>
+<h2>Настройка Docker</h2>
+<p>Докер – это открытая платформа для разработки, доставки и эксплуатации приложений. Мы его будем использовать для того, чтоб не устанавливать и настраивать Redis на локальной машине, а использовать уже готовый image. Подробнее о докере можно почитать <a href="https://habr.com/ru/post/253877/" target="_blank">здесь</a> или посмотреть <a href="https://www.youtube.com/watch?v=3c-iBn73dDE&ab_channel=TechWorldwithNana" target="_blank">здесь</a>. Если не знаком с докером – рекомендую посмотреть как раз вторую ссылку.  </p>
+<p>Для того, чтоб убедиться, что докер у тебя установлен и настроен, выполни команду: <code>docker -v</code> </p>
+<p>Если все ОК, ты увидишь версию докера </p>
+<img data-max-width="512" data-id="1bc6d1a9-3231-461f-a31c-46ce4a487c04" src="https://cdn.javarush.com/images/article/1bc6d1a9-3231-461f-a31c-46ce4a487c04/512.jpeg" alt="">
+<h2>Запустить MySQL сервер как докер-контейнер </h2>
+<p>Для того, чтоб можно было сравнить время отдачи данных из MySQL и Redis, MySQL тоже будем использовать в докере. В PowerShell (или другом консольном терминале, если у тебя не Windows) выполни команду: </p>
+<pre><code>docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root --restart unless-stopped -v mysql:/var/lib/mysql mysql:8 
+</code></pre>
+<p>Рассмотрим, что мы делаем этой командой: </p>
+<ul>
+	<li><code>docker run</code> – запуск (и скачивание, если он еще не скачан на локальную машину) имиджа. В результате запуска получим запущенный контейнер.</li>
+	<li><code>--name mysql</code> – задаем имя контейнера mysql.</li>
+	<li><code>-d</code> – флаг, который говорит, что контейнер должен продолжать работать, даже если закрыть окно терминала, откуда этот контейнер запускался.</li>
+	<li><code>-p 3306:3306</code> – указывает порты. До двоеточия – порт на локальной машине, после двоеточия – порт в контейнере.</li>
+	<li><code>-e MYSQL_ROOT_PASSWORD=root</code> – передача переменной окружения MYSQL_ROOT_PASSWORD со значением root в контейнер. Флаг специфичный именно для образа mysql/</li>
+	<li><code>--restart unless-stopped</code> – установка политики поведения (должен ли контейнер перезапускаться при закрытии). Значение unless-stopped значит перезапускать всегда, кроме случая, когда контейнер был остановлен /</li>
+	<li><code>-v mysql:/var/lib/mysql </code> – добавить volume (образ для хранения информации).</li>
+	<li><code>mysql:8 </code>  – название имиджа и его версия.</li>
+</ul>
+<p>После выполнения команды в терминале докер скачает все слои имиджа и запустит контейнер: </p>
+<img data-max-width="1024" data-id="2d4880df-a10e-4553-9354-b854018f53c7" src="https://cdn.javarush.com/images/article/2d4880df-a10e-4553-9354-b854018f53c7/1024.jpeg" alt="">
+<p><span class="text-red">Важное примечание:</span> если у тебя на локальном компьютере установлен MySQL как сервис и он запущен – нужно в команде запуска указать другой порт, либо остановить этот запущенный сервис. </p>
+<img data-max-width="1024" data-id="5354d6b9-187d-4514-b504-e157b1ef003a" src="https://cdn.javarush.com/images/article/5354d6b9-187d-4514-b504-e157b1ef003a/1024.jpeg" alt="">
+<h2>Развернуть дамп </h2>
+<p>Для разворачивания дампа нужно из Workbench создать новый конекшн к БД, где указать параметры. Я использовал стандартный порт (3306), не изменял имя пользователя (root по умолчанию) и задал пароль для рутового пользователя (root).</p>
+<img data-max-width="1024" data-id="7e1b4972-af30-4aa7-9212-c99ff69920f2" src="https://cdn.javarush.com/images/article/7e1b4972-af30-4aa7-9212-c99ff69920f2/1024.jpeg" alt="">
+<p>В Workbench-е делаем <code>Data Import/Restore</code> и выбираем <code>Import from Self Contained File</code>. В качестве файла укажи куда ты скачал <a href="https://javarush.com/downloads/ide/javarush/dump-hibernate-final.sql" target="_blank">дамп</a>. Схему заранее создавать не нужно – ее создание включено в дамп-файл. После успешного импорта, у тебя будет схема world с тремя таблицами:</p>
+<ol>
+	<li>city – это таблица городов.</li>
+	<li>country – таблица стран.</li>
+	<li>country_language – таблица, в которой указывается какой процент населения в стране говорит на определенном языке.</li>
+</ol>
+<img data-max-width="512" data-id="697339c6-8214-483a-9283-6696ad2ecf7d" src="https://cdn.javarush.com/images/article/697339c6-8214-483a-9283-6696ad2ecf7d/512.jpeg" alt="">
+<p>Так как при запуске контейнера мы использовали вольюм, после остановки и даже удаления контейнера mysql и повторного выполнения команды запуска (<code>docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root --restart unless-stopped -v mysql:/var/lib/mysql mysql:8</code>), повторно дамп разворачивать не нужно будет – он уже развернут в вольюме.</p>
+<h2>Создать проект в Идее, добавить зависимости maven </h2>
+<p>Как в Идее создать проект ты уже давно знаешь – это самый легкий пункт в сегодняшнем проекте.</p>
+<img data-max-width="1024" data-id="db14c218-aea0-4108-9a23-0ce172271cf0" src="https://cdn.javarush.com/images/article/db14c218-aea0-4108-9a23-0ce172271cf0/1024.jpeg" alt="">
+<p>Добавляем в pom-файл зависимости: </p>
+<pre><code>
+&lt;dependencies&gt; 
+   &lt;dependency&gt; 
+      &lt;groupId&gt;mysql&lt;/groupId&gt; 
+      &lt;artifactId&gt;mysql-connector-java&lt;/artifactId&gt; 
+      &lt;version&gt;8.0.30&lt;/version&gt; 
+   &lt;/dependency&gt; 
+ 
+   &lt;dependency&gt; 
+      &lt;groupId&gt;org.hibernate&lt;/groupId&gt; 
+      &lt;artifactId&gt;hibernate-core-jakarta&lt;/artifactId&gt; 
+      &lt;version&gt;5.6.14.Final&lt;/version&gt; 
+   &lt;/dependency&gt; 
+ 
+   &lt;dependency&gt; 
+      &lt;groupId&gt;p6spy&lt;/groupId&gt; 
+      &lt;artifactId&gt;p6spy&lt;/artifactId&gt; 
+      &lt;version&gt;3.9.1&lt;/version&gt; 
+   &lt;/dependency&gt; 
+    
+   &lt;dependency&gt; 
+      &lt;groupId&gt;io.lettuce&lt;/groupId&gt; 
+      &lt;artifactId&gt;lettuce-core&lt;/artifactId&gt; 
+      &lt;version&gt;6.2.2.RELEASE&lt;/version&gt; 
+   &lt;/dependency&gt; 
+ 
+   &lt;dependency&gt; 
+      &lt;groupId&gt;com.fasterxml.jackson.core&lt;/groupId&gt; 
+      &lt;artifactId&gt;jackson-databind&lt;/artifactId&gt; 
+      &lt;version&gt;2.14.0&lt;/version&gt; 
+   &lt;/dependency&gt; 
+&lt;/dependencies&gt; 
+</code></pre>
+<p>Первых три зависимости тебе уже давно знакомы. </p>
+<p><code>lettuce-core</code> – это один из доступных Java клиентов для работы с Redis.</p>
+<p><code>jackson-databind</code> – зависимость для использования ObjectMapper (для преобразования данных для их хранения в Redis (ключ-значение типа String)). </p>
+<p>Так же в папку ресурсов (src/main/resources) добавь spy.properties для просмотра запросов с параметрами, которые выполняет Hibernate. Содержимое файла: </p>
+<pre><code>driverlist=com.mysql.cj.jdbc.Driver 
+dateformat=yyyy-MM-dd hh:mm:ss a 
+appender=com.p6spy.engine.spy.appender.StdoutLogger 
+logMessageFormat=com.p6spy.engine.spy.appender.MultiLineFormat 
+</code></pre>
+<h2>Сделать слой domain</h2>
+<p>Создай пакет com.javarush.domain</p>
+<p>Мне удобно при мапинге таблиц на ентити пользоваться структурой таблицы в Идее, поэтому добавим подключение БД в Идее.</p>
+<img data-max-width="800" data-id="7c7320ea-4dd5-4eff-b757-503a401565fb" src="https://cdn.javarush.com/images/article/7c7320ea-4dd5-4eff-b757-503a401565fb/800.jpeg" alt="">
+<img data-max-width="1024" data-id="91b9ed51-e724-4cb9-900c-56e06d499c43" src="https://cdn.javarush.com/images/article/91b9ed51-e724-4cb9-900c-56e06d499c43/1024.jpeg" alt="">
+<p>Энтити я предлагаю создавать в таком порядке: </p>
+<ul>
+	<li>Country</li>
+	<li>City</li>
+	<li>CountryLanguage </li>
+</ul>
+<p><span class="text-red">Желательно чтоб маппинг ты выполнил самостоятельно.</span></p>
+<p>Код класса Country:</p>
+<pre class='language-java line-numbers'><code>
+package com.javarush.domain; 
+ 
+import jakarta.persistence.*; 
+ 
+import java.math.BigDecimal; 
+import java.util.Set; 
+ 
+@Entity 
+@Table(schema = "world", name = "country") 
+public class Country { 
+    @Id 
+    @Column(name = "id") 
+    private Integer id; 
+ 
+    private String code; 
+ 
+    @Column(name = "code_2") 
+    private String alternativeCode; 
+ 
+    private String name; 
+ 
+    @Column(name = "continent") 
+    @Enumerated(EnumType.ORDINAL) 
+    private Continent continent; 
+ 
+    private String region; 
+ 
+    @Column(name = "surface_area") 
+    private BigDecimal surfaceArea; 
+ 
+    @Column(name = "indep_year") 
+    private Short independenceYear; 
+ 
+    private Integer population; 
+ 
+    @Column(name = "life_expectancy") 
+    private BigDecimal lifeExpectancy; 
+ 
+    @Column(name = "gnp") 
+    private BigDecimal GNP; 
+ 
+    @Column(name = "gnpo_id") 
+    private BigDecimal GNPOId; 
+ 
+    @Column(name = "local_name") 
+    private String localName; 
+ 
+    @Column(name = "government_form") 
+    private String governmentForm; 
+ 
+    @Column(name = "head_of_state") 
+    private String headOfState; 
+ 
+    @OneToOne 
+    @JoinColumn(name = "capital") 
+    private City city; 
+ 
+    @OneToMany(fetch = FetchType.EAGER) 
+    @JoinColumn(name = "country_id") 
+    private Set&lt;CountryLanguage&gt; languages; 
+
+ 
+    //Getters and Setters omitted 
+
+} 
+</code></pre>
+<p>В коде есть 3 интересных момента.</p>
+<p><strong>Первое – это энам Continent</strong>, который в БД хранится в качестве ordinal значений. В структуре таблицы country в комментарии к полю continent можно посмотреть какое числовое значение соответствует какому континенту.</p>
+<pre class='language-java line-numbers'><code>
+package com.javarush.domain; 
+ 
+public enum Continent { 
+    ASIA, 
+    EUROPE, 
+    NORTH_AMERICA, 
+    AFRICA, 
+    OCEANIA, 
+    ANTARCTICA, 
+    SOUTH_AMERICA 
+} 
+</code></pre>
+<p><strong>Второй момент – это сет сущностей <code>CountryLanguage</code></strong>. Здесь связь <code>@OneToMany</code>, которой не было во втором проекте этого модуля. По умолчанию Hibernate не будет вытягивать значение этого сета при запросе энтити страны. Но так как нам нужно вычитать все значения из реляционной БД для кеширования, здесь добавлен параметр <code>FetchType.EAGER</code>. </p>
+<p><strong>Третье – поле city</strong>. Связь <code>@OneToOne</code> – вроде все привычно и понятно. Но, если посмотреть на структуру foreign key в БД, то видим что у страны (country) есть связь на столицу (city), а у города (city) – на страну (country). Налицо циклическая зависимость.</p>
+<p>Пока с этим ничего делать не будем, но, когда дойдем до пункта «Написать метод получения всех данных из MySQL», посмотрим какие запросы выполняет Hibernate, посмотрим на их количество, и вспомним про этот пункт.Hibernate </p>
+<p>Код класса City:</p>
+<pre class='language-java line-numbers'><code>
+package com.javarush.domain; 
+ 
+import jakarta.persistence.*; 
+ 
+@Entity 
+@Table(schema = "world", name = "city") 
+public class City { 
+    @Id 
+    @GeneratedValue(strategy = GenerationType.IDENTITY) 
+    private Integer id; 
+ 
+    private String name; 
+ 
+    @ManyToOne 
+    @JoinColumn(name = "country_id") 
+    private Country country; 
+ 
+    private String district; 
+ 
+    private Integer population; 
+
+
+    //Getters and Setters omitted 
+
+} 
+</code></pre>
+<p>Код класса CountryLanguage:</p>
+<pre class='language-java line-numbers'><code>
+package com.javarush.domain; 
+ 
+import jakarta.persistence.*; 
+import org.hibernate.annotations.Type; 
+ 
+import java.math.BigDecimal; 
+ 
+@Entity 
+@Table(schema = "world", name = "country_language") 
+public class CountryLanguage { 
+    @Id 
+    @GeneratedValue(strategy = GenerationType.IDENTITY) 
+    @Column(name = "id") 
+    private Integer id; 
+ 
+    @ManyToOne 
+    @JoinColumn(name = "country_id") 
+    private Country country; 
+ 
+    private String language; 
+ 
+    @Column(name = "is_official", columnDefinition = "BIT") 
+    @Type(type = "org.hibernate.type.NumericBooleanType") 
+    private Boolean isOfficial; 
+ 
+    private BigDecimal percentage; 
+
+ 
+    //Getters and Setters omitted 
+} 
+</code></pre>
+<h2>Написать метод получения всех данных из MySQL</h2>
+<p>В классе Main объявим поля: </p>
+<pre class='language-java line-numbers'><code>
+private final SessionFactory sessionFactory; 
+private final RedisClient redisClient; 
+ 
+private final ObjectMapper mapper; 
+ 
+private final CityDAO cityDAO; 
+private final CountryDAO countryDAO; 
+</code></pre>
+<p>и инициализируем их в конструкторе класса Main: </p>
+<pre class='language-java line-numbers'><code>
+public Main() { 
+    sessionFactory = prepareRelationalDb(); 
+    cityDAO = new CityDAO(sessionFactory); 
+    countryDAO = new CountryDAO(sessionFactory); 
+ 
+    redisClient = prepareRedisClient(); 
+    mapper = new ObjectMapper(); 
+} 
+</code></pre>
+<p>Как видишь, не хватает методов и классов – давай их напишем. </p>
+<p>Объяви пакет com.javarush.dao и добавь в него 2 класса: </p>
+<pre class='language-java line-numbers'><code>
+package com.javarush.dao; 
+ 
+import com.javarush.domain.Country; 
+import org.hibernate.SessionFactory; 
+import org.hibernate.query.Query; 
+ 
+import java.util.List; 
+ 
+public class CountryDAO { 
+    private final SessionFactory sessionFactory; 
+ 
+    public CountryDAO(SessionFactory sessionFactory) { 
+        this.sessionFactory = sessionFactory; 
+    } 
+ 
+    public List&lt;Country&gt; getAll() { 
+        Query&lt;Country&gt; query = sessionFactory.getCurrentSession().createQuery("select c from Country c", Country.class); 
+        return query.list(); 
+    } 
+} 
+</code></pre>
+<pre class='language-java line-numbers'><code>
+package com.javarush.dao; 
+ 
+import com.javarush.domain.City; 
+import org.hibernate.SessionFactory; 
+import org.hibernate.query.Query; 
+ 
+import java.util.List; 
+ 
+public class CityDAO { 
+    private final SessionFactory sessionFactory; 
+ 
+    public CityDAO(SessionFactory sessionFactory) { 
+        this.sessionFactory = sessionFactory; 
+    } 
+ 
+    public List&lt;City&gt; getItems(int offset, int limit) { 
+        Query&lt;City&gt; query = sessionFactory.getCurrentSession().createQuery("select c from City c", City.class); 
+        query.setFirstResult(offset); 
+        query.setMaxResults(limit); 
+        return query.list(); 
+    } 
+ 
+    public int getTotalCount() { 
+        Query&lt;Long&gt; query = sessionFactory.getCurrentSession().createQuery("select count(c) from City c", Long.class); 
+        return Math.toIntExact(query.uniqueResult()); 
+    } 
+} 
+</code></pre>
+<p>Теперь можно в Main заимпортить эти 2 класса. Еще не хватает двух методов:</p>
+<pre class='language-java line-numbers'><code>
+private SessionFactory prepareRelationalDb() { 
+    final SessionFactory sessionFactory; 
+    Properties properties = new Properties(); 
+    properties.put(Environment.DIALECT, "org.hibernate.dialect.MySQL8Dialect"); 
+    properties.put(Environment.DRIVER, "com.p6spy.engine.spy.P6SpyDriver"); 
+    properties.put(Environment.URL, "jdbc:p6spy:mysql://localhost:3306/world"); 
+    properties.put(Environment.USER, "root"); 
+    properties.put(Environment.PASS, "root"); 
+    properties.put(Environment.CURRENT_SESSION_CONTEXT_CLASS, "thread"); 
+    properties.put(Environment.HBM2DDL_AUTO, "validate"); 
+    properties.put(Environment.STATEMENT_BATCH_SIZE, "100"); 
+ 
+    sessionFactory = new Configuration() 
+            .addAnnotatedClass(City.class) 
+            .addAnnotatedClass(Country.class) 
+            .addAnnotatedClass(CountryLanguage.class) 
+            .addProperties(properties) 
+            .buildSessionFactory(); 
+    return sessionFactory; 
+} 
+</code></pre>
+<p>До редиса мы еще не дошли, поэтому имплементация инициализации клиента редиса пока останется заглушкой: </p>
+<pre class='language-java line-numbers'><code>
+private void shutdown() { 
+    if (nonNull(sessionFactory)) { 
+        sessionFactory.close(); 
+    } 
+    if (nonNull(redisClient)) { 
+        redisClient.shutdown(); 
+    } 
+} 
+</code></pre>
+<p>Наконец можно написать метод, в котором мы вытянем все города: </p>
+<pre class='language-java line-numbers'><code>
+    private List&lt;City&gt; fetchData(Main main) { 
+        try (Session session = main.sessionFactory.getCurrentSession()) { 
+            List&lt;City&gt; allCities = new ArrayList&lt;&gt;(); 
+            session.beginTransaction(); 
+ 
+            int totalCount = main.cityDAO.getTotalCount(); 
+            int step = 500; 
+            for (int i = 0; i &lt; totalCount; i += step) { 
+                allCities.addAll(main.cityDAO.getItems(i, step)); 
+            } 
+            session.getTransaction().commit(); 
+            return allCities; 
+        } 
+    } 
+</code></pre>
+<p>Особенность реализации такая, что города мы получаем по 500 штук. Это нужно для того, что существуют ограничения на объем передаваемых данных. Да, в нашем случае мы на них не попадем, т.к. у нас в БД всего 4079 городов. Но в продакшн приложениях, когда нужно получить много данных таким приемом пользуются часто. </p>
+<p>И реализация метода main:</p>
+<pre class='language-java line-numbers'><code>
+public static void main(String[] args) { 
+    Main main = new Main(); 
+    List&lt;City&gt; allCities = main.fetchData(main); 
+    main.shutdown(); 
+} 
+</code></pre>
+<p>Теперь можно первый раз запустить наше приложение в дебаге и посмотреть, как оно работает (или не работает – да, так часто бывает).</p>
+<img data-max-width="800" data-id="016f2ea1-822d-43eb-a572-39286c2c4830" src="https://cdn.javarush.com/images/article/016f2ea1-822d-43eb-a572-39286c2c4830/800.jpeg" alt="">
+<p>Города достаются. К каждому городу достается страна, если она еще не была вычитана из БД ранее для другого города. Давай примерно посчитаем сколько запросов Hibernate отправит в БД: </p>
+<ul>
+	<li>1 запрос узнать общее количество городов (нужно для цикла итерирования по 500 городов, чтоб знать когда остановиться). </li>
+	<li>4079 / 500 = 9 запросов (список городов). </li>
+	<li>К каждому из городов достается страна, если она не была вычитана ранее. Так как в БД 239 стран, это нам даст 239 запросов. </li>
+</ul>
+<p><code>Итого 249 запросов</code>. И это еще мы сказали, что вместе с страной сразу получать сет языков, иначе был бы вообще мрак. Но это все равно много, поэтому давай немного подтюним поведение. Начнем с размышлений: что делать, куда бежать? А если серьезно – почему так много запросов. Если смотреть на лог запросов, видим, что каждая страна запрашивается отдельно, поэтому первое простое решение: давай запросим все страны вместе, т. к. мы наперед знаем, что в этой транзакции они все нам будут нужны. </p>
+<p>В методе fetchData() сразу после начала транзакции добавь строку: </p>
+<pre><code>List&lt;Country&gt; countries = main.countryDAO.getAll(); 
+</code></pre>
+<p>Считаем запросы: </p>
+<ul>
+    <li>1 – получить все страны </li>
+    <li>239 – запрос по каждой стране ее столицы </li>
+    <li>1 – запрос количества городов </li>
+    <li>9 – запрос списков городов </li>
+</ul>
+<p><code>Итого 250</code>. Идея хорошая, но не сработало. Проблема в том, что в стране связь со столицей (city) <code>@OneToOne</code>. А такая связь по умолчанию загружается сразу (<code>FetchType.EAGER</code>). Давай поставим <code>FetchType.LAZY</code>, т.к. мы все равно потом в этой же транзакции загрузим все города. </p>
+<pre class='language-java line-numbers'><code>
+@OneToOne(fetch = FetchType.LAZY) 
+@JoinColumn(name = "capital") 
+private City city; 
+</code></pre>
+<p>Столицы отдельно перестали запрашиваться, но количество запросов не изменилось. Теперь по каждой стране запрашивается отдельным запросом список <strong>CountryLanguage</strong>. То есть, прогресс есть, и мы движемся в правильном направлении. Если помнишь, в лекциях предлагалось решение <strong>«join fetch»</strong> для того, чтоб путем добавления дополнительного джоина в запрос запрашивать сущность с зависимыми данными одним запросом. В <strong>CountryDAO</strong> перепиши HQL запрос в методе <code>getAll()</code> на: </p>
+<pre><code>"select c from Country c join fetch c.languages" 
+</code></pre>
+<p>Запуск. Смотрим лог, считаем запросы: </p>
+<ul>
+    <li>1 – все страны с языками </li>
+    <li>1 – количество городов </li>
+    <li>9 – списки городов. </li>
+</ul>
+<p><code>Итого 11</code> - у нас получилось)) Если ты не просто прочитал весь этот текст а и пробовал запускать после каждого шага тюнинга приложения, ты должен был даже визуально отметить ускорение отработки всего приложения в несколько раз. </p>
+<h2>Написать метод трансформации данных </h2>
+<p>Создадим пакет <code>com.javarush.redis</code>, в который добавим 2 класса: <strong>CityCountry</strong> (данные по городу и по стране, в которой этот город расположен) и <strong>Language</strong> (данные по языку). Сюда вынесены все поля, которые «по заданию» запрашиваются часто в «тормозящем запросе».</p>
+<pre class='language-java line-numbers'><code>
+package com.javarush.redis; 
+ 
+import com.javarush.domain.Continent; 
+ 
+import java.math.BigDecimal; 
+import java.util.Set; 
+ 
+public class CityCountry { 
+    private Integer id; 
+ 
+    private String name; 
+ 
+    private String district; 
+ 
+    private Integer population; 
+ 
+    private String countryCode; 
+ 
+    private String alternativeCountryCode; 
+ 
+    private String countryName; 
+ 
+    private Continent continent; 
+ 
+    private String countryRegion; 
+ 
+    private BigDecimal countrySurfaceArea; 
+ 
+    private Integer countryPopulation; 
+ 
+    private Set&lt;Language&gt; languages; 
+ 
+    //Getters and Setters omitted 
+}
+</code></pre>
+<pre class='language-java line-numbers'><code>
+package com.javarush.redis; 
+ 
+import java.math.BigDecimal; 
+ 
+public class Language { 
+    private String language; 
+    private Boolean isOfficial; 
+    private BigDecimal percentage; 
+ 
+    //Getters and Setters omitted 
+} 
+</code></pre>
+<p>В методе main после получения всех городов добавь строку </p>
+<pre><code>List&lt;CityCountry>&gt; preparedData = main.transformData(allCities); 
+</code></pre>
+<p>И реализуй этот метод: </p>
+<pre class='language-java line-numbers'><code>
+private List&lt;CityCountry&gt; transformData(List&lt;City&gt; cities) { 
+    return cities.stream().map(city -&gt; { 
+        CityCountry res = new CityCountry(); 
+        res.setId(city.getId()); 
+        res.setName(city.getName()); 
+        res.setPopulation(city.getPopulation()); 
+        res.setDistrict(city.getDistrict()); 
+ 
+        Country country = city.getCountry(); 
+        res.setAlternativeCountryCode(country.getAlternativeCode()); 
+        res.setContinent(country.getContinent()); 
+        res.setCountryCode(country.getCode()); 
+        res.setCountryName(country.getName()); 
+        res.setCountryPopulation(country.getPopulation()); 
+        res.setCountryRegion(country.getRegion()); 
+        res.setCountrySurfaceArea(country.getSurfaceArea()); 
+        Set&lt;CountryLanguage&gt; countryLanguages = country.getLanguages(); 
+        Set&lt;Language&gt; languages = countryLanguages.stream().map(cl -&gt; { 
+            Language language = new Language(); 
+            language.setLanguage(cl.getLanguage()); 
+            language.setOfficial(cl.getOfficial()); 
+            language.setPercentage(cl.getPercentage()); 
+            return language; 
+        }).collect(Collectors.toSet()); 
+        res.setLanguages(languages); 
+ 
+        return res; 
+    }).collect(Collectors.toList()); 
+} 
+</code></pre>
+<p>Думаю, этот метод пояснений не требует: просто создаем сущность <strong>CityCountry</strong> и заполняем данными из <strong>City</strong>, <strong>Country</strong>, <strong>CountryLanguage</strong>.</p>
+<h2>Запустить Redis сервер как докер-контейнер</h2>
+<p><strong>Здесь есть 2 варианта.</strong> Если ты будешь делать опциональный шаг «установить redis-insight, посмотреть на данные, которые хранятся в Redis», тогда команда для тебя:</p>
+<pre><code>docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:latest 
+</code></pre>
+<p>Если же решил пропустить этот шаг, тогда достаточно: </p>
+<pre><code>docker run -d --name redis -p 6379:6379 redis:latest 
+</code></pre>
+<p>Разница в том, что в первом варианте прокидывается порт 8001 на локальную машину, к которому можно подключиться внешним клиентом чтоб посмотреть что хранится внутри. И имена я привык давать значимые, поэтому <code>redis-stack</code> или <code>redis</code>. </p>
+<p>После запуска можно посмотреть список запущенных контейнеров. Для этого выполни команду:</p>
+<pre><code>docker container ls 
+</code></pre>
+<p>И увидишь что-то примерно такое:</p>
+<img data-max-width="1024" data-id="5c44653a-fa4e-4e4c-ac41-c4e5ed26ebf6" src="https://cdn.javarush.com/images/article/5c44653a-fa4e-4e4c-ac41-c4e5ed26ebf6/1024.jpeg" alt="">
+<p>Если нужно найти какую-то команду, можно либо в терминале посмотреть хелп (docker help) либо загуглить «how to …» (например, docker how to remove running container). </p>
+<p>И еще мы в конструкторе Main вызвали инициализацию редис-клиента, но сам метод не реализовали. Добавь реализацию: </p>
+<pre class='language-java line-numbers'><code>
+private RedisClient prepareRedisClient() { 
+    RedisClient redisClient = RedisClient.create(RedisURI.create("localhost", 6379)); 
+    try (StatefulRedisConnection&lt;String, String&gt; connection = redisClient.connect()) { 
+        System.out.println("\nConnected to Redis\n"); 
+    } 
+    return redisClient; 
+} 
+</code></pre>
+<p><i>sout добавлен в учебных целях чтоб в логе запуска видеть что все ОК и конекшн через редис-клиент прошел без ошибок.</i> </p>
+<h2>Записать данные в Redis </h2>
+<p>В метод main добавь вызов  </p>
+<pre><code>main.pushToRedis(preparedData); 
+</code></pre>
+<p>С такой реализацией метода:</p>
+<pre class='language-java line-numbers'><code>
+private void pushToRedis(List&lt;CityCountry&gt; data) { 
+    try (StatefulRedisConnection&lt;String, String&gt; connection = redisClient.connect()) { 
+        RedisStringCommands&lt;String, String&gt; sync = connection.sync(); 
+        for (CityCountry cityCountry : data) { 
+            try { 
+                sync.set(String.valueOf(cityCountry.getId()), mapper.writeValueAsString(cityCountry)); 
+            } catch (JsonProcessingException e) { 
+                e.printStackTrace(); 
+            } 
+        } 
+ 
+    } 
+} 
+</code></pre>
+<p>Здесь открывается синхронное соединение с редис-клиентом, и последовательно каждый объект типа <strong>CityCountry</strong> пишется в редис. Так как редис — это хранилище типа ключ-значение типа <strong>String</strong>, ключ (id города) преобразовывается к строке. А значение – тоже к строке, но используя <strong>ObjectMapper</strong> в JSON формат.</p>
+<p>Осталось запустить и проверить что нет ошибок в логе. Все отработало. </p>
+<h2>Установить redis-insight, посмотреть на данные, которые хранятся в Redis (опционально) </h2>
+<p>Скачиваем по <a href="https://redis.com/redis-enterprise/redis-insight/" target="_blank">ссылке</a>  redis-insight и устанавливаем его. После запуска у меня сразу показывает наш инстанс редиса в докер-контейнере: </p>
+<img data-max-width="800" data-id="15311a8f-a8af-4a6d-862b-cb10ca70d2ef" src="https://cdn.javarush.com/images/article/15311a8f-a8af-4a6d-862b-cb10ca70d2ef/800.jpeg" alt="">
+<p>Если зайти – увидим список всех ключей: </p>
+<img data-max-width="800" data-id="97477080-6693-421a-81da-742753a3de5e" src="https://cdn.javarush.com/images/article/97477080-6693-421a-81da-742753a3de5e/800.jpeg" alt="">
+<p>И можно зайти на любой ключ, чтоб посмотреть какие данные по нему хранятся: </p>
+<img data-max-width="800" data-id="7f0836ac-09ba-4c0a-a759-2f85b4c29947" src="https://cdn.javarush.com/images/article/7f0836ac-09ba-4c0a-a759-2f85b4c29947/800.jpeg" alt="">
+<h2>Написать метод получение данных из Redis</h2>
+<p>Для тестирования используем такой тест: получим 10 записей CityCountry. Каждый отдельным запросом, но в одном конекшне.</p>
+<p>Данные из редиса можно получить через наш редис-клиент. Для этого напишем метод, который принимает список id, которые нужно получить. </p>
+<pre class='language-java line-numbers'><code>
+private void testRedisData(List&lt;Integer&gt; ids) { 
+    try (StatefulRedisConnection&lt;String, String&gt; connection = redisClient.connect()) { 
+        RedisStringCommands&lt;String, String&gt; sync = connection.sync(); 
+        for (Integer id : ids) { 
+            String value = sync.get(String.valueOf(id)); 
+            try { 
+                mapper.readValue(value, CityCountry.class); 
+            } catch (JsonProcessingException e) { 
+                e.printStackTrace(); 
+            } 
+        } 
+    } 
+} 
+</code></pre>
+<p>Реализация, думаю, интуитивно-понятна: открываем синхронное соединение, и для каждого <strong>id</strong> получаем <strong>JSON String</strong>, который преобразовываем в нужный нам объект типа <strong>CityCountry</strong>. </p>
+<h2> Написать метод получение данных из MySQL </h2>
+<p>В классе <strong>CityDAO</strong> добавь метод <code>getById(Integer id)</code>, в котором получим город вместе с страной: </p>
+<pre class='language-java line-numbers'><code>
+public City getById(Integer id) { 
+    Query&lt;City&gt; query = sessionFactory.getCurrentSession().createQuery("select c from City c join fetch c.country where c.id = :ID", City.class); 
+    query.setParameter("ID", id); 
+    return query.getSingleResult(); 
+} 
+</code></pre>
+<p>По аналогии с предыдущим пунктом, добавим в класс Main аналогичный метод для MySQL:</p>
+<pre class='language-java line-numbers'><code>
+private void testMysqlData(List&lt;Integer&gt; ids) { 
+    try (Session session = sessionFactory.getCurrentSession()) { 
+        session.beginTransaction(); 
+        for (Integer id : ids) { 
+            City city = cityDAO.getById(id); 
+            Set&lt;CountryLanguage&gt; languages = city.getCountry().getLanguages(); 
+        } 
+        session.getTransaction().commit(); 
+    } 
+} 
+</code></pre>
+<p>Из особенностей, чтоб наверняка получить полный объект (без прокси-заглушек), явно запросим у страны список языков. </p>
+<h2>Сравнить скорость получения одних и тех же данных из MySQL и Redis</h2>
+<p>Здесь приведу сразу код метода main, и результат, который получается на моем локальном компьютере. </p>
+<pre class='language-java line-numbers'><code>
+public static void main(String[] args) { 
+    Main main = new Main(); 
+    List&lt;City&gt; allCities = main.fetchData(main); 
+    List&lt;CityCountry&gt; preparedData = main.transformData(allCities); 
+    main.pushToRedis(preparedData); 
+ 
+    //закроем текущую сессию, чтоб точно делать запрос к БД, а не вытянуть данные из кэша 
+    main.sessionFactory.getCurrentSession().close(); 
+ 
+    //выбираем случайных 10 id городов 
+    //так как мы не делали обработку невалидных ситуаций, используй существующие в БД id 
+    List&lt;Integer&gt; ids = List.of(3, 2545, 123, 4, 189, 89, 3458, 1189, 10, 102); 
+ 
+    long startRedis = System.currentTimeMillis(); 
+    main.testRedisData(ids); 
+    long stopRedis = System.currentTimeMillis(); 
+ 
+    long startMysql = System.currentTimeMillis(); 
+    main.testMysqlData(ids); 
+    long stopMysql = System.currentTimeMillis(); 
+ 
+    System.out.printf("%s:\t%d ms\n", "Redis", (stopRedis - startRedis)); 
+    System.out.printf("%s:\t%d ms\n", "MySQL", (stopMysql - startMysql)); 
+ 
+    main.shutdown(); 
+} 
+</code></pre>
+<p>При тестировании есть особенность – данные из MySQL только читаются, так что его можно не перезапускать между запусками нашего приложения. А в Redis пишутся.</p>
+<p>Хотя при попытке добавить дубликат по такому же ключу, данные просто обновятся, я б рекомендовал между запусками приложения в терминале выполнять команды остановки контейнера <code>docker stop redis-stack</code> и удаления контейнера <code>docker rm redis-stack</code>. После этого заново поднимать контейнер с редисом <code>docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:latest</code> и только после этого выполнять наше приложение.</p>
+<p>Вот мои результаты тестирования: </p>
+<img data-max-width="800" data-id="51a91b8a-d86c-433b-ab4a-085c73a0c814" src="https://cdn.javarush.com/images/article/51a91b8a-d86c-433b-ab4a-085c73a0c814/800.jpeg" alt="">
+<p>Итого, мы добились повышения производительности ответа на «тормозящий частый» запрос в полтора раза. И это еще с учетом того, что в тестировании мы использовали не самую быструю десериализацию через <strong>ObjectMapper</strong>. Если ее поменять на GSON, скорее всего, можно «выиграть» еще немного времени. </p>
+<p>В этот момент мне вспоминается <a href="https://pikabu.ru/story/plokhoy_kod_ubivaet_4456988" target="_blank">прикол про программиста и время:</a> почитайте и задумайтесь как нужно писать и оптимизировать свой код. </p>

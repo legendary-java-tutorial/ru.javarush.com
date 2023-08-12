@@ -1,0 +1,304 @@
+Специальное значение NULL
+<p>----------------------------------------</p>
+Отсутствие значения
+Сравнение с NULL
+IS NULL и IS NOT NULL
+<p>----------------------------------------</p>
+<h2>5.1 Отсутствие значения</h2>
+<p>В языке SQL, как и в языке Java, есть специальное ключевое слово для обозначения отсутствия значения – это null. Или как это часто пишут – <code>NULL</code>.</p>
+<p>Использование <code>NULL</code> в SQL очень похоже на использование null в Java. В Java могут быть объекты, поля которых содержат null-значения. В SQL могут быть таблицы, строки которых содержат NULL-значения.</p>
+<p>Давай я специально добавлю в нашу таблицу product пару продуктов без бренда. Если бренд продукта неизвестен, то в качестве значения будет <code>NULL</code>.</p>
+<p>Чтобы отобразить такие продукты, отсортируем нашу таблицу <strong>product</strong> по <strong>id</strong> в обратном порядке и возьмем 10 записей. Запрос будет выглядеть так:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-yellow">product</span>
+<span class="text-orange">ORDER BY</span> <span class="text-green">id</span> <span class="text-user">DESC</span>
+<span class="text-red">LIMIT</span> 10
+        </code></pre>
+</div>
+<p>Получим такой результат запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>brand</th>
+        <th>price</th>
+        <th>count</th>
+    </tr>
+    <tr>
+        <td>15</td>
+        <td>Заклепка</td>
+        <td><span class="text-red">NULL</span></td>
+        <td>0.01</td>
+        <td>1000</td>
+    </tr>
+    <tr>
+        <td>14</td>
+        <td>Шуруп</td>
+        <td><span class="text-red">NULL</span></td>
+        <td>0.10</td>
+        <td>1000</td>
+    </tr>
+    <tr>
+        <td>13</td>
+        <td>Подставка</td>
+        <td>IKEA</td>
+        <td>100.00</td>
+        <td>10</td>
+    </tr>
+    <tr>
+        <td>12</td>
+        <td>Вазон</td>
+        <td>SmartFlower</td>
+        <td>99.00</td>
+        <td>9</td>
+    </tr>
+    <tr>
+        <td>11</td>
+        <td>Кресло</td>
+        <td>Bosch</td>
+        <td>44.00</td>
+        <td>8</td>
+    </tr>
+    <tr>
+        <td>10</td>
+        <td>Плита</td>
+        <td>Bosch</td>
+        <td>199.00</td>
+        <td>10</td>
+    </tr>
+    <tr>
+        <td>9</td>
+        <td>Комод</td>
+        <td>IKEA</td>
+        <td>99.00</td>
+        <td>10</td>
+    </tr>
+    <tr>
+        <td>8</td>
+        <td>Лампа</td>
+        <td>LG</td>
+        <td>15.00</td>
+        <td>100</td>
+    </tr>
+    <tr>
+        <td>7</td>
+        <td>Телевизор</td>
+        <td>LG</td>
+        <td>350.00</td>
+        <td>4</td>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td>Полка</td>
+        <td>Bosch</td>
+        <td>25.00</td>
+        <td>114</td>
+    </tr>
+    </tbody>
+</table>
+<p>Да, я добавил в таблицу заклепки и шурупы. У них есть цена и количество, но нет бренда.</p>
+<h2>5.2 Сравнение с NULL</h2>
+<p>Помнишь, что тебя иногда бесило в Java при использовании null? Что нельзя сравнивать переменные, которые могут ссылаться на null-значения через equals(). Пример:</p>
+<pre class='language-java line-numbers'><code>
+Product <span class="text-green">product1</span> = new Product();
+Product <span class="text-user">product2</span> = null;
+if (<span class="text-user">product2</span>.equals(<span class="text-green">product1</span>) {  //тут возникнет исключение
+…
+}
+</code></pre>
+<p>Ты не поверишь, но в языке SQL тебя тоже ждут нюансы при работе с NULL-значениями. И звучит этот нюанс примерно так: <mark class="red">ничто не равно NULL</mark>.</p>
+<p>Если попробуешь отфильтровать все продукты, чей бренд равен <code>null</code>:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-yellow">product</span>
+<span class="text-red">WHERE</span> <span class="text-green">brand</span> = <span class="text-red">NULL</span>
+        </code></pre>
+</div>
+<p>То получишь пустую таблицу:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>brand</th>
+        <th>price</th>
+        <th>count</th>
+    </tr>
+    </tbody>
+</table>
+<p>Но если в запросе написать, что <strong>brand</strong> не равно <code>NULL</code>, получишь тот же результат: </p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-yellow">product</span>
+<span class="text-red">WHERE</span> <span class="text-green">brand</span> != <span class="text-red">NULL</span>
+        </code></pre>
+</div>
+<p>Ты опять получишь пустую таблицу:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>brand</th>
+        <th>price</th>
+        <th>count</th>
+    </tr>
+    </tbody>
+</table>
+<p><mark class="red">Любое сравнение / действие с NULL будет давать NULL</mark>:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Выражение</th>
+        <th>Результат</th>
+    </tr>
+    <tr>
+        <td>brand = NULL</td>
+        <td>NULL</td>
+    </tr>
+    <tr>
+        <td>brand != NULL</td>
+        <td>NULL</td>
+    </tr>
+    <tr>
+        <td>NULL = NULL</td>
+        <td>NULL</td>
+    </tr>
+    <tr>
+        <td>NULL != NULL</td>
+        <td>NULL</td>
+    </tr>
+
+    </tbody>
+</table>
+<p>Да, <mark class="red">даже если сравнивать NULL с NULL, то в ответе будет NULL</mark>.</p>
+<h2>5.3 IS NULL и IS NOT NULL</h2>
+<p>Так как же нам проверить, что какое-то поле (или какая-то колонка) имеет значение <code>NULL</code>? А для этого в языке SQL есть специальное выражение – <code>IS NULL</code>.  Выглядит это так.</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-green">переменная</span> <span class="text-red">IS NULL</span>
+        </code></pre>
+</div>
+<p>Если ты хочешь проверить не равна ли колонка твоей таблицы <code>NULL</code>, то нужно писать <code>IS NOT NULL</code>:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-green">переменная</span> <span class="text-red">IS NOT NULL</span>
+        </code></pre>
+</div>
+<p>Давай напишем запрос, который отберет все продукты из таблицы product, чей бренд равен <code>NULL</code>. Выглядеть такой запрос будет так:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-yellow">product</span>
+<span class="text-red">WHERE</span> <span class="text-green">brand</span> <span class="text-red">IS NULL</span>
+        </code></pre>
+</div>
+<p>И получим такой результат запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>brand</th>
+        <th>price</th>
+        <th>count</th>
+    </tr>
+    <tr>
+        <td>14</td>
+        <td>Шуруп</td>
+        <td><span class="text-red">NULL</span></td>
+        <td>0.10</td>
+        <td>1000</td>
+    </tr>
+    <tr>
+        <td>15</td>
+        <td>Заклепка</td>
+        <td><span class="text-red">NULL</span></td>
+        <td>0.01</td>
+        <td>1000</td>
+    </tr>
+    </tbody>
+</table>
+<p>А теперь давай отобразим все продукты, цена которых меньше 20 долларов:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-yellow">product</span>
+<span class="text-red">WHERE</span> <span class="text-green">price </span> &lt; 20
+        </code></pre>
+</div>
+<p>И получим такой результат запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>brand</th>
+        <th>price</th>
+        <th>count</th>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>Стул</td>
+        <td>IKEA</td>
+        <td>5.00</td>
+        <td>45</td>
+    </tr>
+    <tr>
+        <td>8</td>
+        <td>Лампа</td>
+        <td>LG</td>
+        <td>15.00</td>
+        <td>100</td>
+    </tr>
+    <tr>
+        <td>14</td>
+        <td>Шуруп</td>
+        <td><span class="text-red">NULL</span></td>
+        <td>0.10</td>
+        <td>1000</td>
+    </tr>
+    <tr>
+        <td>15</td>
+        <td>Заклепка</td>
+        <td><span class="text-red">NULL</span></td>
+        <td>0.01</td>
+        <td>1000</td>
+    </tr>
+    </tbody>
+</table>
+<p>Теперь укажем, что цена должна быть меньше 20 долларов и бренд не <code>NULL</code>.</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-yellow">product</span>
+<span class="text-red">WHERE</span> <span class="text-green">price </span> &lt; 20 AND <span class="text-green">brand</span> <span class="text-red">IS NOT NULL</span>
+
+        </code></pre>
+</div>
+<p>Получим такой результат запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>brand</th>
+        <th>price</th>
+        <th>count</th>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>Стул</td>
+        <td>IKEA</td>
+        <td>5.00</td>
+        <td>45</td>
+    </tr>
+    <tr>
+        <td>8</td>
+        <td>Лампа</td>
+        <td>LG</td>
+        <td>15.00</td>
+        <td>100</td>
+    </tr>
+    </tbody>
+</table>
+<p>Отлично, две последних строки исчезли. Вот как это работает. Немного непривычно, но все же определенная логика в этом есть.</p>

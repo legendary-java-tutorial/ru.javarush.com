@@ -1,0 +1,441 @@
+Создание объектов с помощью рефлексии
+<p>----------------------------------------</p>
+Представь: перед тобой встала задача: нужно создать объект, используя рефлексию. Приступаем? Начнем с начального класса, который мы хотим получить...
+
+<p>----------------------------------------</p>
+    <h2>Пример создания объекта через Class.newInstance()</h2>
+
+    <p>Представь: перед тобой встала задача: нужно создать объект, используя рефлексию. Приступаем?</p>
+
+    <p>Начнем с начального класса, который мы хотим получить:</p>
+
+    <pre class='language-java line-numbers'><code>
+public class Employee {
+    private String name;
+    private String surname;
+    private int age;
+
+    {
+        age = -1;
+        name = "Ivan";
+        surname = "Ivanov";
+    }
+
+    public Employee(String name, String surname, int age) {
+        this.name = name;
+        this.surname = surname;
+        this.age = age;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getSurname() {
+        return surname;
+    }
+
+    public void setSurname(String surname) {
+        this.surname = surname;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    @Override
+    public String toString() {
+        return "Employee{" +
+                "name='" + name + '\'' +
+                ", surname='" + surname + '\'' +
+                ", age=" + age +
+                '}';
+    }
+}
+</code></pre>
+
+    <p>Это будет наш класс, где есть несколько полей, конструктор с параметрами, геттеры и сеттеры, метод <span class="code text-orange">toString()</span> и блок инициализации. Теперь приступим ко второй части — созданию объекта с помощью рефлексии. Первый способ, который мы разберем, будет реализован через <span class="code text-orange">Class.newInstance()</span>.</p>
+
+    <pre class='language-java line-numbers'><code>
+public class Main {
+    public static void main(String[] args) throws InstantiationException, IllegalAccessException {
+        Employee employee = Employee.class.newInstance();
+        System.out.println("age is - " +  employee.getAge());
+    }
+}
+</code></pre>
+
+    <p>Отлично, запускаем наш код и ждем вывода возраста из инициализатора. Но получаем ошибку об отсутствии конструктора по умолчанию. Получается, с помощью этого метода мы можем получить только объект, созданный с помощью конструктора по умолчанию. Давайте добавим конструктор по умолчанию для нашего класса и протестируем код еще раз. </p>
+
+    <p>Сообщение об ошибке:</p>
+
+    <img data-max-width="1080" data-id="861bfa0c-3dfe-4f92-85e2-bb89f3b5160c" src="https://cdn.javarush.com/images/article/861bfa0c-3dfe-4f92-85e2-bb89f3b5160c/original.png" alt="">
+
+    <p>Код нового конструктора:</p>
+
+    <pre class='language-java line-numbers'><code>
+public Employee() { }
+</code></pre>
+
+    <p>Результат программы после добавления конструктора:</p>
+
+    <div class="terminal">age is - -1</div>
+
+    <p>Отлично, мы разобрались, как работает этот метод. Теперь давай заглянем к нему под капот. Открываем документацию и видим, что наш метод уже deprecated (<em>англ. — устаревший</em>):</p>
+
+    <img data-max-width="1080" data-id="b325ad00-c1a5-4573-bd8b-294789989ed3" src="https://cdn.javarush.com/images/article/b325ad00-c1a5-4573-bd8b-294789989ed3/original.png" alt="">
+
+    <p>А еще может выбросить исключения <span class="text-red"><span class="text-bold">InstantiationException</span></span>, <span class="text-red"><span class="text-bold">IllegalAccessException</span></span>. Поэтому в документации нам предлагают использовать второй способ создания объекта, а именно <span class="code text-orange">Constructor.newInstance()</span>. Давай разберем работу класса <span class="code"><span class="text-green">Constructor</span></span> и поговорим о нем подробнее.</p>
+
+    <h2>Методы getConstructors и getDeclaredConstructors</h2>
+
+    <p>Чтобы работать с классом <span class="code"><span class="text-green">Constructor</span></span>, нам нужно сначала получить его. Для этого у нас есть два метода: <span class="code text-orange">getConstructors</span> и <span class="code text-orange">getDeclaredConstructors</span>. </p>
+
+    <p>Первый возвращает список публичных конструкторов в виде массива, а второй возвращает список всех конструкторов класса в виде массива.</p>
+
+    <p>Давай добавим немного приватности нашему классу, а именно сделаем несколько приватных конструкторов для отображения работы наших методов.</p>
+
+    <p>Добавляем немного приватных конструкторов:</p>
+
+    <pre class='language-java line-numbers'><code>
+private Employee(String name, String surname) {
+    this.name = name;
+    this.surname = surname;
+}
+</code></pre>
+
+    <p>В структуре нашего класса отлично видно, что один из конструкторов приватный:</p>
+
+    <img data-max-width="512" data-id="47d3f047-fd52-4300-a6e6-6127c165a84b" src="https://cdn.javarush.com/images/article/47d3f047-fd52-4300-a6e6-6127c165a84b/original.png" alt="">
+
+    <p>Тестируем работу наших методов:</p>
+
+    <pre class='language-java line-numbers'><code>
+public class Main {
+	  public static void main(String[] args) {
+	      Class employeeClass = Employee.class;
+	
+	      System.out.println("getConstructors:");
+	      printAllConstructors(employeeClass);
+	
+	      System.out.println("\n" +"getDeclaredConstructors:");
+	      printDeclaredConstructors(employeeClass);
+	  }
+	
+	  static void printDeclaredConstructors(Class&lt;?&gt; c){
+	      for (Constructor&lt;?&gt; constructor : c.getDeclaredConstructors()   ) {
+	          System.out.println(constructor);
+	      }
+	  }
+	
+	  static void printAllConstructors(Class&lt;?&gt; c){
+	      for (Constructor&lt;?&gt; constructor : c.getConstructors()) {
+	          System.out.println(constructor);
+	      }
+	  }
+}
+</code></pre>
+
+    <p>И получаем такой результат: </p>
+
+    <div class="terminal">getConstructors:<br />
+public ru.javarush.Employee(java.lang.String,java.lang.String,int)<br />
+public.ru.javarush.Employee()<br />
+ <br />
+getDeclaredConstructors:<br />
+private ru.javarush.Employee(java.lang.String,java.lang.String)<br />
+public ru.javarush.Employee(java.lang.String,java.lang.String,int)<br />
+public ru.javarush.Employee()</div>
+
+    <p>Отлично, таким образом мы получаем доступ к классу <span class="code"><span class="text-green">Constructor</span></span>. Теперь можем поговорить о его возможностях.</p>
+
+    <h2>Класс java.lang.reflect.Constructor, его основные методы</h2>
+
+    <p>Давай взглянем на основные методы и как они работают:</p>
+
+    <table>
+        <tbody>
+            <tr>
+                <th>Метод</th>
+                <th>Описание</th>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getName()</span></td>
+                <td>Возвращает имя этого конструктора в виде строки.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getModifiers()</span></td>
+                <td>Возвращает модификаторы языка Java в виде числа.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getExceptionTypes()</span></td>
+                <td>Возвращает массив объектов класса, которые представляют типы исключений, объявленных конструктором.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getParameters()</span></td>
+                <td>Возвращает массив объектов <span class="text-neon">Parameter</span>, которые представляют все параметры. Возвращает массив длины 0, если конструктор не имеет параметров.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getParameterTypes()</span></td>
+                <td>Возвращает массив объектов класса, которые представляют формальные типы параметров в порядке объявления.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getGenericParameterTypes()</span></td>
+                <td>Возвращает массив объектов типа, которые представляют формальные типы параметров в порядке объявления.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>getName() & getModifiers()</h3>
+
+    <p>Давай обернем наш массив в <span class="text-neon"><span class="text-bold"><em>List</em></span></span>, чтобы нам было удобно работать, и напишем метод <span class="code text-orange">getName</span> и <span class="code text-orange">getModifiers</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+static List&lt;Constructor&lt;?&gt;&gt; getAllConstructors(Class&lt;?&gt; c) {
+    return new ArrayList&lt;&gt;(Arrays.asList(c.getDeclaredConstructors()));
+}
+
+static List&lt;String&gt; getConstructorNames(List&lt;Constructor&lt;?&gt;&gt; constructors) {
+    List&lt;String&gt; result = new ArrayList&lt;&gt;();
+    for (Constructor&lt;?&gt; constructor : constructors) {
+        result.add(constructor.toString());
+    }
+    return result;
+}
+
+static List&lt;String&gt; getConstructorModifiers(List&lt;Constructor&lt;?&gt;&gt; constructors) {
+    List&lt;String&gt; result = new ArrayList&lt;&gt;();
+    for (Constructor&lt;?&gt; constructor : constructors) {
+        result.add(Modifier.toString(constructor.getModifiers()));
+    }
+    return result;
+}
+</code></pre>
+
+    <p>И наш метод <span class="code text-orange">main</span>, где мы будем все вызывать:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) {
+    Class employeeClass = Employee.class;
+    var constructors = getAllConstructors(employeeClass);
+    var constructorNames = getConstructorNames(constructors);
+    var constructorModifiers = getConstructorModifiers(constructors);
+
+    System.out.println("Класс Employee:");
+    System.out.println("Конструкторы :");
+    System.out.println(constructorNames);
+    System.out.println("Модификаторы :");
+    System.out.println(constructorModifiers);
+}
+</code></pre>
+
+    <p>В результате увидим всю нужную для нас информацию:</p>
+
+    <div class="terminal">Класс Employee:<br />
+Конструкторы :<br />
+[private ru.javarush.Employee(java.lang.String), public <br />ru.javarush.Employee(java.lang.String,java.lang.String,int), public ru.javarush.Employee()]<br />
+Модификаторы :<br />
+[private, public, public]</div>
+
+    <h3>getExceptionTypes()</h3>
+
+    <p>Этот метод позволяет получить массив исключений, которые может выбросить наш конструктор. Давай модифицируем один из наших конструкторов и напишем новый метод.</p>
+
+    <p>Тут мы немного изменили наш текущий приватный конструктор:</p>
+
+    <pre class='language-java line-numbers'><code>
+private Employee(String name, String surname) throws Exception {
+    this.name = name;
+    this.surname = surname;
+}
+</code></pre>
+
+    <p>А тут у нас метод для получения типов исключений и добавления его в <span class="code text-orange">main</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+static List&lt;Class&lt;?&gt;&gt; getConstructorExceptionTypes(Constructor&lt;?&gt; c) {
+      return new ArrayList&lt;&gt;(Arrays.asList(c.getExceptionTypes()));
+}
+
+
+var constructorExceptionTypes = getConstructorExceptionTypes(constructors.get(0));
+System.out.println("Типы исключений :");
+System.out.println(constructorExceptionTypes);
+</code></pre>
+
+    <p>Выше мы обратились к первому конструктору из нашего списка. Как получить определенный конструктор, мы обсудим чуть позже.</p>
+
+    <p>И посмотрим на вывод после добавления <span class="text-user"><span class="text-bold">throws Exception</span></span>:</p>
+
+    <div class="terminal">Типы исключений :<br />
+[class java.lang.Exception]</div>
+
+    <p>И до добавления исключения:</p>
+
+    <div class="terminal">Типы исключений :<br />
+[]</div>
+
+    <p>Все прекрасно, но как посмотреть, какие параметры нужны для наших конструкторов? Давай разберем и эту часть.</p>
+
+    <h3>getParameters() & getParameterTypes() & getGenericParameterTypes()</h3>
+
+    <p>Начнем мы опять с доработки нашего приватного конструктора. Теперь он будет выглядеть вот так:</p>
+
+    <pre class='language-java line-numbers'><code>
+private Employee(String name, String surname, List&lt;String&gt; list) {
+    this.name = name;
+    this.surname = surname;
+}
+</code></pre>
+
+    <p>И у нас появляются три дополнительных метода: <span class="code text-orange">getParameters</span> для получения очередности параметров и их типов, <span class="code text-orange">getParameterTypes</span> для получения типов параметров и <span class="code text-orange">getGenericParameterTypes</span> для получения типов, обернутых в <span class="text-neon"><span class="text-bold"><em>generics</em></span></span>.</p>
+
+    <pre class='language-java line-numbers'><code>
+static List&lt;Parameter&gt; getConstructorParameters(Constructor&lt;?&gt; c) {
+    return new ArrayList&lt;&gt;(Arrays.asList(c.getParameters()));
+}
+
+static List&lt;Class&lt;?&gt;&gt; getConstructorParameterTypes(Constructor&lt;?&gt; c) {
+    return new ArrayList&lt;&gt;(Arrays.asList(c.getParameterTypes()));
+}
+
+static List&lt;Type&gt; getConstructorParametersGenerics(Constructor&lt;?&gt; c) {
+    return new ArrayList&lt;&gt;(Arrays.asList(c.getGenericParameterTypes()));
+}
+</code></pre>
+
+    <p>И в наш уже и не так маленький <span class="code text-orange">main</span> добавляем еще немного информации:</p>
+
+    <pre class='language-java line-numbers'><code>
+var constructorParameterTypes = getConstructorParameterTypes(constructors.get(0));
+var constructorParameters = getConstructorParameters(constructors.get(0));
+var constructorParametersGenerics = getConstructorParametersGenerics(constructors.get(0));
+
+System.out.println("Параметры конструкторов :");
+System.out.println(constructorParameters);
+
+System.out.println("Типы параметров :");
+System.out.println(constructorParameterTypes);
+
+System.out.println("Типы параметров конструкторов :");
+System.out.println(constructorParametersGenerics);
+</code></pre>
+
+    <p>Если мы взглянем на наш результат, то получим очень подробные данные о параметрах наших конструкторов:</p>
+
+    <div class="terminal">Параметры конструкторов :<br />
+[java.lang.String arg0, java.lang.String arg1, java.util.List&lt;java.lang.String&gt; arg2]<br />
+Типы параметров :<br />
+[class java.lang.String, class java.lang.String, interface java.util.List]<br />
+Типы параметров конструкторов :<br />
+[class java.lang.String, class java.lang.String, java.util.List&lt;java.lang.String&gt;]</div>
+
+    <p>Здесь отлично видно разницу каждого из методов. Мы видим, что можно отдельно получить данные о типах параметров, данные о классах обертках и о всем в целом.
+Супер! Мы закончили знакомство с классом <span class="code"><span class="text-green">Constructor</span></span> и теперь можем вернуться к основной теме нашей статьи — к созданию объектов.</p>
+
+    <h2>Создания объекта через Constructor.newInstance()</h2>
+
+    <p>Второй способ создания объектов — вызов метода <span class="code text-orange">newInstance</span> у конструктора. Давай взглянем на пример работы и посмотрим, как нам получить определенный конструктор.</p>
+
+    <p>Если перед тобой стоит задача получить один конструктор, тебе необходимо использовать метод <span class="code text-orange">getConstructor</span> (не путай с <span class="code text-orange">getConstructors</span>, который возвращает массив всех конструкторов). Метод <span class="code text-orange">getConstructor</span> возвращает конструктор по умолчанию.</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws NoSuchMethodException {
+    Class employeeClass = Employee.class;
+    Constructor&lt;?&gt; employeeConstructor = employeeClass.getConstructor();
+    System.out.println(employeeConstructor);
+}
+</code></pre>
+
+    <div class="terminal">public ru.javarush.Employee()</div>
+
+    <p>А если мы хотим получить определенный конструктор, нам нужно передавать в этот метод типы параметров, которые будут в конструкторе.</p>
+
+    <p>Не забывай о том, что наш приватный конструктор мы можем получить только с помощью метода <span class="code text-orange">getDeclaredConstructor</span>.</p>
+
+    <pre class='language-java line-numbers'><code>
+Constructor&lt;?&gt; employeeConstructor2 = employeeClass.getDeclaredConstructor(String.class, String.class, List.class);
+System.out.println(employeeConstructor2);
+</code></pre>
+
+    <p>Таким образом мы можем получить определенный конструктор. Теперь давай попробуем создать объект из приватного и публичного конструктора.</p>
+
+    <p>Публичный конструктор:</p>
+
+    <pre class='language-java line-numbers'><code>
+Class employeeClass = Employee.class;
+Constructor&lt;?&gt; employeeConstructor = employeeClass.getConstructor(String.class, String.class, int.class);
+System.out.println(employeeConstructor);
+
+Employee newInstance = (Employee) employeeConstructor.newInstance("NeIvan", "NeIvanov", 10);
+System.out.println(newInstance);
+</code></pre>
+
+    <p>И в результате у нас есть объект, с которым мы можем дальше работать:</p>
+
+    <div class="terminal">public ru.javarush.Employee(java.lang.String,java.lang.String,int)<br />
+Employee{name=’NeIvan’ surname=’NeIvanov’, age=10}</div>
+
+    <p>Все отлично работает! Теперь пробуем с приватным конструктором:</p>
+
+    <pre class='language-java line-numbers'><code>
+Constructor&lt;?&gt; declaredConstructor = employeeClass.getDeclaredConstructor(String.class, String.class, List.class);
+System.out.println(declaredConstructor);
+
+Employee newInstance2 = (Employee) declaredConstructor.newInstance("NeIvan", "NeIvanov", new ArrayList&lt;&gt;());
+System.out.printf(newInstance2.toString());
+</code></pre>
+
+    <p>И в результате мы получим ошибку о приватности нашего конструктора:</p>
+
+    <img data-max-width="1080" data-id="f61f26f0-38c5-4009-af83-95839943cba2" src="https://cdn.javarush.com/images/article/f61f26f0-38c5-4009-af83-95839943cba2/original.png" alt="">
+
+    <p>Java не смогла создать объект через этот конструктор, но на самом деле есть маленькая волшебная штука, которую мы укажем в методе <span class="code text-orange">main</span>. Она установит доступность к нашему конструктору и позволит создавать объекты нашего класса:</p>
+
+    <pre class='language-java line-numbers'><code>
+declaredConstructor.setAccessible(true);
+</code></pre>
+
+    <p>Результат создания объекта:</p>
+
+    <div class="terminal">private ru.javarush.Employee(java.lang.String,java.lang.String,java.util.List)<br />
+Employee{name=’NeIvan’, surname=’NeIvanov’, age=-1}</div>
+
+    <p>Мы не устанавливаем возраст в нашем конструкторе, и он остается такой же, как и при инициализации.</p>
+
+    <p>Замечательно, пора подводить итоги!</p>
+
+    <h2>Преимущества создания через Constructor.newInstance()</h2>
+
+    <p>По названию оба метода выглядят одинаково, но между ними есть различия:</p>
+
+    <table>
+        <tbody>
+            <tr>
+                <th><span class="code text-orange">Class.newInstance()</span></th>
+                <th><span class="code text-orange">Constructor.newInstance()</span></th>
+            </tr>
+            <tr>
+                <td>Может вызывать только конструктор <span class="code text-orange"><span class="text-bold">no-arg</span></span>.</td>
+                <td>Может вызывать любой конструктор независимо от количества параметров.</td>
+            </tr>
+            <tr>
+                <td>Требует, чтобы конструктор был виден.</td>
+                <td>Также может вызывать приватные конструкторы при определенных обстоятельствах.</td>
+            </tr>
+            <tr>
+                <td>Выдает любое исключение (проверяемое или нет), которое задекларировано конструктором.</td>
+                <td>Всегда обертывает выданное исключение с помощью <span class="text-red"><span class="text-bold">InvocationTargetException</span></span>.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>По этим причинам <span class="code text-orange">Constructor.newInstance()</span> предпочтительнее <span class="code text-orange">Class.newInstance()</span>, и именно он используется различными фреймворками и API, такими как Spring, Guava, Zookeeper, Jackson, Servlet и т. д.</p>

@@ -1,0 +1,174 @@
+Фазы Maven-проекта
+<p>----------------------------------------</p>
+Список фаз проекта
+Сборка проекта
+Циклы работы
+<p>----------------------------------------</p>
+<h2>5.1 Список фаз проекта</h2>
+<p>Наконец-то мы добрались до сборки проекта. И тут ты будешь немного удивлен. Ну или сильно, как получится. Maven пересмотрел подход к сборке проекта. И сейчас ты в этом убедишься.</p>
+<p>Вся сборка проекта была разбита на фазы, описание которых я приведу в таблице ниже:</p>
+
+<table>
+    <tbody>
+
+    <tr>
+        <th width="5%">Order</th>
+        <th>Фаза</th>
+        <th> </th>
+    </tr>
+
+    <tr>
+        <td>
+            1
+        </td> 
+        <td>
+           <strong>validate</strong>
+        </td>
+         <td>
+            проверяет корректность метаинформации о проекте     
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+             2   
+        </td>
+        <td>
+            <strong>compile</strong>
+        </td>
+         <td>
+            компилирует исходники
+        </td>
+    </tr>
+    
+    <tr>
+        <td>
+            3
+        </td>
+        <td>
+            <strong>test</strong>
+        </td>
+         <td>
+            прогоняет тесты классов из предыдущего шага
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            4
+        </td>
+        <td>
+            <strong>package</strong>
+        </td>
+         <td>
+            упаковывает скомпилированные классы в новый артефакт: jar, war, zip, …
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            5
+        </td>
+        <td>
+            <strong>verify</strong>
+        </td>
+         <td>
+            проверяет корректность артефакта и удовлетворение требованиям качества
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            6
+        </td>
+        <td>
+            <strong>install</strong>
+        </td>
+         <td>
+            кладет артефакт в локальный репозиторий
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            7
+        </td>
+        <td>
+            <strong>deploy</strong>
+        </td>
+         <td>
+            заливает артефакт на production-сервер или удаленный репозиторий
+        </td>
+    </tr>
+
+    </tbody>
+</table>
+
+<p>При этом  <span class="text-red">шаги четко последовательны</span>. Если ты скомандуешь Maven выполнить команду package, он перед этим выполнит фазы validate, compile, test и только затем package</p>
+<p>В принципе ничего нового тут нет, разве что появились отдельные фазы для контроля качества: validate, test, verify. И целых две фазы для деплоя сборки – install и deploy.</p>
+<p>Чтобы запустить определенную фазу, достаточно написать команду <strong>maven phase</strong>. Например, для сборки нужно выполнить команду <strong>maven package</strong>. И тому подобное.</p>
+<p>Intellij IDEA отлично умеет работать с этими фазами и у нее <strong>справа</strong> есть специальное меню для этих целей:</p>
+<img data-max-width="512" data-id="371a42b2-6c0f-4399-b875-2986c86af0a0" src="https://cdn.javarush.com/images/article/371a42b2-6c0f-4399-b875-2986c86af0a0/512.jpeg" alt="maven phase">
+<p>Тут кроме известных фаз, IDEA отображает еще 2 команды: <strong>clean</strong> и <strong>site</strong>. clean используется для того, чтобы полностью очистить папку target, а site умеет создавать документацию проекта.</p>
+
+<h2>5.2 Сборка проекта</h2>
+<p>Если ты хочешь скомпилировать проект, то нужно запустить фазу compile. Это можно сделать с помощью командной строки: <strong>mvn compile</strong> или через интерфейс IDEA – кликнув по пункту <strong>compile</strong>.</p>
+<p>После этого Maven запустит сборку проекта и ты увидишь лог процесса сборки подобный этому:</p>
+<pre class=><code>[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 0.742 s
+[INFO] Finished at: 2016-09-19T22:41:26+04:00
+[INFO] Final Memory: 7M/18M
+[INFO] ------------------------------------------------------------------------
+</code></pre>
+<p>Если что-то пошло не так, то лог будет типа такого:</p>
+<pre class=><code>[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.8.0:compile (default-compile) on project demo: Fatal error compiling: invalid target release: 11 -> [Help 1]
+[ERROR]
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR]
+[ERROR] For more information about the errors and possible sliutions, please read the flilowing articles:
+[ERROR] [Help 1]
+<a href="http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException" target="_blank">http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException</a> 
+</code></pre>
+<p>В логе будет куча полезной информации, со временем ты научишься ее понимать и ценить.</p>
+<h2>5.3 Циклы работы</h2>
+<p>Все команды maven делятся на три группы – lifecycles. Их называют <strong>жизненными циклами</strong>, так как они задают порядок фаз, которые выполняются во время сборки или определенного жизненного цикла, потому что не все действия Maven являются сборкой.</p>
+<p>Всего жизненных циклов три:</p>
+<ul><li><strong>clean;</strong></li>
+    <li><strong>default;</strong></li>
+    <li><strong>site.</strong></li>
+</ul>
+<p>И у каждого из них есть свой порядок фаз. У clean он самый короткий:</p>
+<ol><li><strong>pre-clean;</strong></li>
+    <li><strong>clean;</strong></li>
+    <li><strong>post-clean.</strong></li>
+</ol>
+<p>Были добавлены скрытые дополнительные фазы pre-clean и post-clean, чтобы сценарий очистки можно было сделать более гибким.</p>
+<p>Затем идет <span class="text-user">жизненный цикл site</span>, который, как вы уже знаете, предназначен для автоматической генерации документации по проекту. Он состоит из четырех фаз:</p>
+<ol><li><strong>pre-site</strong></li>
+    <li><strong>site;</strong></li>
+    <li><strong>post-site;</strong></li>
+    <li><strong>site-deploy.</strong></li>
+</ol>
+<p>Стандартные жизненные циклы могут быть дополнены функционалом с помощью <strong>Maven-плагинов</strong>. Об этом расскажем позднее, ведь это очень интересная тема, которая заслуживает отдельной лекции.</p>
+<p>И самый длинный список фаз у сценария default:</p>
+<ol><li><strong>validate;</strong></li>
+    <span class="text-green"><li><strong>generate-sources;</strong></li></span>
+    <span class="text-green"><li><strong>process-sources;</strong></li></span>
+    <span class="text-user"><li><strong>generate-resources;</strong></li></span>
+    <span class="text-user"><li><strong>process-resources;</strong></li></span>
+    <li><strong>compile;</strong></li>
+    <span class="text-orange"><li><strong>process-test-sources;</strong></li></span>
+    <span class="text-orange"><li><strong>process-test-resources;</strong></li></span>
+    <span class="text-orange"><li><strong>test-compile;</strong></li></span>
+    <li><strong>test;</strong></li>
+    <li><strong>package;</strong></li>
+    <li><strong>install;</strong></li>
+    <li><strong>deploy.</strong></li>
+</ol>
+<p>Тут есть все те же фазы, о которых вы уже знаете, но добавились еще несколько необязательных.</p>
+<p>Во-первых, популярный в больших проектах этап – <strong>generate-sources</strong>: генерация Java-кода на основе XML, например. И парный ему <strong>process-sources</strong>, который что-то с этим кодом делает.</p>
+<p>Во-вторых, генерация ресурсов – <strong>generate-resources</strong> и парный ему метод <strong>process resources</strong>. Ты будешь часто видеть какие-нибудь действия, привязанные к этим фазам в крупных проектах.</p>
+<p>И наконец – тестирование. Оно имеет три дополнительных необязательных фазы, которые помогают сделать запуск фазы тестирования максимально гибким: process-test-sources, process-test-resources, test-compile.</p>

@@ -1,0 +1,129 @@
+Тестирование Hibernate кода
+<p>----------------------------------------</p>
+База в памяти и тестирование. 
+Тестовые данные.
+<p>----------------------------------------</p>
+<h2>База в памяти и тестирование</h2>
+
+<p>А теперь самое интересное. При тестировании кода Hibernate очень часто хочется работать не с реальной базой, а с какой-нибудь заглушкой, реализующей минимальную функциональность.</p>
+
+<p>А ты представляешь заглушку, которая реализует большую часть стандарта SQL-сервера? Я — нет. Однако в качестве такой отлично подходят базы данных в памяти. Работает это примерно по такой схеме:</p>
+
+<ul>
+<li>В методе @BeforeAll мы инициализируем соединение с базой данных в памяти.</li>
+<li>В методе @BeforeEach мы получаем сессию и открываем транзакцию.</li>
+<li>В методе @Test мы работаем с текущей сессией и транзакцией.</li>
+<li>В методе @AfterEach мы комитим транзакцию.</li>
+<li>И наконец в методе AfterAll мы закрываем соединение с базой.</li>
+</ul>
+
+<p>Вот как выглядит подготовка к работе теста:</p>
+
+<pre class='language-java line-numbers'><code>
+@Test
+public class HelloTest {
+  private static SessionFactory sessionFactory = null;
+  private Session session = null;
+ 
+  @BeforeAll
+  static void setup(){
+    try {
+  	StandardServiceRegistry standardRegistry  = new StandardServiceRegistryBuilder()
+      	.configure("hibernate-test.cfg.xml").build();
+ 
+  	Metadata metadata = new MetadataSources(standardRegistry)
+      	.addAnnotatedClass(Employee.class)
+      	.getMetadataBuilder()
+      	.build();
+ 
+      sessionFactory = metadata.getSessionFactoryBuilder().build();
+ 
+    } catch (Throwable ex) {
+        throw new ExceptionInInitializerError(ex);
+    }
+  }
+ 
+  @BeforeEach
+  void setupThis(){
+      session = sessionFactory.openSession();
+      session.beginTransaction();
+  }
+ 
+  @AfterEach
+  void tearThis(){
+      session.getTransaction().commit();
+  }
+ 
+  @AfterAll
+  static void tear(){
+      sessionFactory.close();
+  }
+</code></pre>
+ 
+<p>А вот так выглядит сам тест с работой Hibernate:</p>
+
+<pre class='language-java line-numbers'><code>
+  @Test
+public class HelloTest {
+ 
+  @Test
+  void createSessionFactoryWithXML() {
+       Employee emp = new Employee();
+       emp.setEmail("demo-user@mail.com");
+       emp.setFirstName("demo");
+       emp.setLastName("user");
+ 
+       Assertions.assertNull(emp.getEmployeeId());
+       session.persist(emp);
+       Assertions.assertNotNull(emp.getEmployeeId());
+  }
+}
+</code></pre>
+
+<h2>Тестовые данные</h2>
+
+<p>Также ты можешь заполнить свою тестовую базу тестовыми данными.</p>
+
+<p>Обычно для этого делают два sql-файла:</p>
+
+<ul>
+<li>schema.sql содержит скрипт, который создает таблицы в базе</li>
+<li>test-data.sql содержит скрипт, который заполняет таблицы тестовыми данными</li>
+</ul>
+
+<p>Создание таблицы и тестовые данные обычно разносят по разным файлам, так как практически всегда появляются свои группы тестовых данных для разных групп тестов.</p>
+
+<p>Выполнение этих файлов выглядит так:</p>
+ 
+<pre class='language-java line-numbers'><code>
+  void runSqlScriptFile(String filePath){
+    	String sqlScript = new String( Files.readAllBytes(Paths.get(filePath)) );
+    	Session session = sessionFactory.openSession();
+        Query query = session.createNativeQuery("BEGIN " + sqlScript + " END;");
+        query.executeUpdate()
+  }
+</code></pre>
+ 
+<p>И твой метод <span class="code text-orange">setup</span> немного изменится:</p>
+
+<pre class='language-java line-numbers'><code>
+  @BeforeAll
+  static void setup(){
+    try {
+  	StandardServiceRegistry standardRegistry  = new StandardServiceRegistryBuilder()
+      	.configure("hibernate-test.cfg.xml").build();
+ 
+  	Metadata metadata = new MetadataSources(standardRegistry)
+      	.addAnnotatedClass(Employee.class)
+      	.getMetadataBuilder()
+      	.build();
+ 
+  	sessionFactory = metadata.getSessionFactoryBuilder().build();
+  	runSqlScriptFile(“scema.sql”);
+  	runSqlScriptFile(“test-data.sql”);
+ 
+    } catch (Throwable ex) {
+        throw new ExceptionInInitializerError(ex);
+    }
+  }
+</code></pre>

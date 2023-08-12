@@ -1,0 +1,222 @@
+Фильтры логов в Log4j
+<p>----------------------------------------</p>
+Список фильтров
+TimeFilter
+RegexFilter
+ThresholdFilter
+<p>----------------------------------------</p>
+<h2>5.1 Список фильтров</h2>
+<p>Логгер позволяет очень круто настроить фильтрацию сообщений. Для этого у него есть пара десятков фильтров со всевозможными параметрами. Ниже в таблице приведены самые популярные из них</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th width="200">Фильтры</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>BurstFilter</td>
+        <td>Позволяет управлять частотой сообщений в секунду для заданного уровня логирования.</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>CompositeFilter</td>
+        <td>Позволяет задать несколько последовательных фильтров.</td>
+    </tr>
+        <tr>
+        <td>3</td>
+        <td>DynamicThresholdFilter</td>
+        <td>Позволяет включать детальное логирование, если в логе встретилась определенная информация.</td>
+    </tr>
+        <tr>
+        <td>4</td>
+        <td>MapFilter</td>
+        <td>Позволяет построить сложное логическое выражение для фильтра из нескольких параметров.</td>
+    </tr>
+     <tr>
+        <td>5</td>
+        <td>MarkerFilter</td>
+        <td>Позволяет фильтровать сообщения по тегам, тег предварительно должен быть добавлен во время логирования события.</td>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td>RegexFilter</td>
+        <td>Позволяет задать маску – регулярное выражение.</td>
+    </tr>
+    <tr>
+        <td>7</td>
+        <td>StructuredDataFilter</td>
+        <td>Позволяет фильтровать сообщения по наличию в них определенных данных.</td>
+    </tr>
+        <tr>
+        <td>8</td>
+        <td>ThreadContextMapFilter</td>
+        <td>Позволяет управлять фильтрами на основе данных, взятых из контекста текущего потока.</td>
+    </tr>
+    <tr>
+        <td>9</td>
+        <td>ThresholdFilter</td>
+        <td>Управляет логированием на основе уровня сообщения лога.</td>
+    </tr>
+        <tr>
+        <td>10</td>
+        <td>TimeFilter</td>
+        <td>Позволяет включать и выключать фильтры в определенное время.</td>
+    </tr>
+    </tbody>
+</table>
+<p>Ниже мы расскажем всего про три из них.  Более детально вы можете ознакомиться с этими фильтрами на их <a href="https://logging.apache.org/log4j/2.x/manual/filters.html" target="_blank">официальном сайте</a>.</p>
+<h2>5.2 TimeFilter</h2>
+<p>Фильтр <code>TimeFilter</code> позволяет включать и выключать фильтры в определенное время, имеет 5 параметров:</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th width="150"></th>
+        <th></th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>start</td>
+        <td>Время старта логирования в формате <code>HH:mm:ss</code></td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>end</td>
+        <td>Время выключения логирования в формате <code>HH:mm:ss</code></td>
+    </tr>
+        <tr>
+        <td>3</td>
+        <td>timezone</td>
+        <td>Задает временную зону.</td>
+    </tr>
+     <tr>
+        <td>4</td>
+        <td>onMatch</td>
+        <td>Как логировать, если условие фильтра <strong>истинно</strong>. Может быть <code>ACCEPT</code>, <code>DENY</code> или <code>NEUTRAL</code>. По умолчанию <code>NEUTRAL</code>.
+     </tr> 
+     <tr>
+        <td>5</td>
+        <td>onMismatch</td>
+        <td>Как логировать, если условие фильтра <strong>ложно</strong>. Может быть <code>ACCEPT</code>, <code>DENY</code> или <code>NEUTRAL</code>. По умолчанию <code>NEUTRAL</code>.
+     </tr>      
+    </tbody>
+</table>
+<p>Давайте настроим фильтр, который будет включать логирование в 5 утра и выключать его в 5:30 утра каждый день. Пример с полной конфигурацией фильтра ниже:</p>
+<pre class='line-numbers'><code>
+    &lt;?xml version="1.0" encoding="UTF-8"?&gt;
+    &lt;Configuration status="warn" name="MyApp" packages=""&gt;
+    &lt;Appenders&gt;
+        &lt;RollingFile name="RollingFile" fileName="logs/app.log" filePattern="logs/app-%d{MM-dd-yyyy}.log.gz"&gt;
+<span class="text-red">        &lt;TimeFilter start="05:00:00" end="05:30:00" onMatch="ACCEPT" onMismatch="DENY"/&gt;</span>
+        &lt;PatternLayout&gt;
+            &lt;pattern&gt;%d %p %c{1.} [%t] %m%n&lt;/pattern&gt;
+        &lt;/PatternLayout&gt;
+        &lt;TimeBasedTriggeringPolicy /&gt;
+        &lt;/RollingFile&gt;
+    &lt;/Appenders&gt;
+    &lt;Loggers&gt;
+        &lt;Root level="error"&gt;
+        &lt;AppenderRef ref="RollingFile"/&gt;
+        &lt;/Root&gt;
+    &lt;/Loggers&gt;
+    &lt;/Configuration&gt;
+</code></pre>
+<h2>5.3 RegexFilter</h2>
+<p>Фильтр <code>RegexFilter</code> позволяет задать маску (регулярное выражение) для фильтрации сообщений. Этот фильтр имеет 4 параметра:</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th width="150"></th>
+        <th></th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>regex</td>
+        <td>Задает регулярное выражение – маску, которая применяется для фильтрации сообщений.<code>HH:mm:ss</code></td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>useRawMsg</td>
+        <td>Маска применяется в сообщении до форматирования (true) или после форматирования (false)</td>
+    </tr>
+     <tr>
+        <td>3</td>
+        <td>onMatch</td>
+        <td>Как логировать, если условие фильтра <strong>истинно</strong>. Может быть <code>ACCEPT</code>, <code>DENY</code> или <code>NEUTRAL</code>. По умолчанию <code>NEUTRAL</code>.
+     </tr> 
+     <tr>
+        <td>4</td>
+        <td>onMismatch</td>
+        <td>Как логировать, если условие фильтра <strong>ложно</strong>. Может быть <code>ACCEPT</code>, <code>DENY</code> или <code>NEUTRAL</code>. По умолчанию <code>NEUTRAL</code>.
+     </tr>      
+    </tbody>
+</table>
+<p>Давайте настроим фильтр, который будет пропускать только сообщения, содержащие слово javarush. Пример с полной конфигурацией фильтра ниже:</p>
+<pre class='line-numbers'><code>
+    &lt;?xml version="1.0" encoding="UTF-8"?&gt;
+    &lt;Configuration status="warn" name="MyApp" packages=""&gt;
+    &lt;Appenders&gt;
+        &lt;RollingFile name="RollingFile" fileName="logs/app.log"   filePattern="logs/app-%d{MM-dd-yyyy}.log.gz"&gt;
+<span class="text-red">        &lt;RegexFilter regex=".* javarush .*" onMatch="ACCEPT" onMismatch="DENY"/&gt;</span>
+        &lt;PatternLayout&gt;
+            &lt;pattern&gt;%d %p %c{1.} [%t] %m%n&lt;/pattern&gt;
+        &lt;/PatternLayout&gt;
+        &lt;TimeBasedTriggeringPolicy /&gt;
+        &lt;/RollingFile&gt;
+      &lt;/Appenders&gt;
+    &lt;Loggers&gt;
+        &lt;Root level="error"&gt;
+        &lt;AppenderRef ref="RollingFile"/&gt;
+        &lt;/Root&gt;
+    &lt;/Loggers&gt;
+    &lt;/Configuration&gt;
+</code></pre>
+<h2>5.4 ThresholdFilter</h2>
+<p>Фильтр <strong>ThresholdFilter</strong> позволяет настроить фильтрацию по уровню сообщений. Он имеет всего 3 параметра:</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th width="150"></th>
+        <th></th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>level</td>
+        <td>Задает имя уровня логирования сообщений: <code>ERROR</code>, <code>DEBUG</code>, …</td>
+    </tr>
+     <tr>
+        <td>2</td>
+        <td>onMatch</td>
+        <td>Как логировать, если условие фильтра <strong>истинно</strong>. Может быть <code>ACCEPT</code>, <code>DENY</code> или <code>NEUTRAL</code>. По умолчанию <code>NEUTRAL</code>.
+     </tr> 
+     <tr>
+        <td>3</td>
+        <td>onMismatch</td>
+        <td>Как логировать, если условие фильтра <strong>ложно</strong>. Может быть <code>ACCEPT</code>, <code>DENY</code> или <code>NEUTRAL</code>. По умолчанию <code>NEUTRAL</code>.
+     </tr>      
+    </tbody>
+</table>
+<p>Давайте настроим фильтр, который будет пропускать только сообщения уровня <code>DEBUG</code>. Пример с полной конфигурацией фильтра ниже:</p>
+<pre class='line-numbers'><code>
+    &lt;?xml version="1.0" encoding="UTF-8"?&gt;
+    &lt;Configuration status="warn" name="MyApp" packages=""&gt;
+    &lt;Appenders&gt;
+        &lt;RollingFile name="RollingFile" fileName="logs/app.log" filePattern="logs/app-%d{MM-dd-yyyy}.log.gz"&gt;
+<span class="text-red">           &lt;ThresholdFilter level="DEBUG" onMatch="ACCEPT" onMismatch="DENY"/&gt;</span>
+        &lt;PatternLayout&gt;
+            &lt;pattern&gt;%d %p %c{1.} [%t] %m%n&lt;/pattern&gt;
+        &lt;/PatternLayout&gt;
+        &lt;TimeBasedTriggeringPolicy /&gt;
+        &lt;/RollingFile&gt;
+    &lt;/Appenders&gt;
+    &lt;Loggers&gt;
+        &lt;Root level="error"&gt;
+        &lt;AppenderRef ref="RollingFile"/&gt;
+        &lt;/Root&gt;
+    &lt;/Loggers&gt;
+    &lt;/Configuration&gt;
+</code></pre>

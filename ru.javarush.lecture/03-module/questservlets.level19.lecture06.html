@@ -1,0 +1,75 @@
+Executor Services
+<p>----------------------------------------</p>
+Executor. 
+ThreadPoolExecutor. 
+Completion Service.
+<p>----------------------------------------</p>
+<h2>Executor</h2>
+
+<img data-max-width="800" data-id="83e7f607-1195-4d00-a2b8-f790515dc1a9" src="https://cdn.javarush.com/images/article/83e7f607-1195-4d00-a2b8-f790515dc1a9/800.jpeg" alt="">
+
+<p><span class="text-neon"><span class="text-bold"><em>Executor</em></span></span> — базовый интерфейс для классов, который  реализует запуск <span class="text-neon"><span class="text-bold"><em>Runnable</em></span></span> задач. Тем самым обеспечивается помощь с добавлением задачи и способом ее запуска.</p>
+
+<p><span class="text-neon"><span class="text-bold"><em>ExecutorService</em></span></span> — интерфейс, который расширяет свойства <span class="text-neon"><span class="text-bold"><em>Executor</em></span></span> и который описывает сервис для запуска <span class="text-neon"><span class="text-bold"><em>Runnable</em></span></span> или <span class="text-neon"><span class="text-bold"><em>Callable</em></span></span> задач. Методы submit на вход принимают задачу в виде <span class="text-neon"><span class="text-bold"><em>Callable</em></span></span> или <span class="text-neon"><span class="text-bold"><em>Runnable</em></span></span>, а в качестве возвращаемого значения идет Future, через который ты можешь получить результат. </p>
+
+<p>Метод <span class="code text-orange">invokeAll</span> отвечает за выполнение задач с возвращением списка задач с их статусом и результатами завершения. </p>
+
+<p>Метод <span class="code text-orange">invokeAny</span> отвечает за выполнение задач с возвращением результата успешно выполненной задачи (то есть без создания исключения), если таковые имеются.</p>
+
+<p><span class="text-neon"><span class="text-bold"><em>ScheduledExecutorService</em></span></span> — данный интерфейс добавляет возможность запускать отложенные задачи с определенной задержкой или определенным периодом.</p>
+
+<p><span class="code"><span class="text-green">AbstractExecutorService</span></span> — абстрактный класс для построения <span class="text-neon"><span class="text-bold"><em>ExecutorService</em></span></span>'a. Внутри есть имплементация методов <span class="code text-orange">submit</span>, <span class="code text-orange">invokeAll</span>, <span class="code text-orange">invokeAny</span>. От этого класса наследуются <span class="text-green"><span class="text-bold"><em>ThreadPoolExecutor</em></span></span>, <span class="text-green"><span class="text-bold"><em>ScheduledThreadPoolExecutor</em></span></span> и <span class="text-green"><span class="text-bold"><em>ForkJoinPool</em></span></span>.</p>
+
+<pre class='language-java line-numbers'><code>
+public static void main(String[] args) {
+   ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
+   Callable&lt;String> task = () -> {
+       System.out.println(Thread.currentThread().getName());
+       return Thread.currentThread().getName();
+   };
+   scheduledExecutorService.schedule(task, 10, TimeUnit.SECONDS);
+   scheduledExecutorService.shutdown();
+}
+</code></pre>
+
+<h2>ThreadPoolExecutor</h2>
+
+<img data-max-width="800" data-id="2b86fe3b-e258-4219-8c32-7d3ba93670ea" src="https://cdn.javarush.com/images/article/2b86fe3b-e258-4219-8c32-7d3ba93670ea/800.jpeg" alt="">
+
+<p><span class="code"><span class="text-green">Executors</span></span> — класс-фабрика для создания <span class="text-green"><span class="text-bold"><em>ThreadPoolExecutor</em></span></span>, <span class="text-green"><span class="text-bold"><em>ScheduledThreadPoolExecutor</em></span></span>. Если нужно создать один из этих пулов, то эта фабрика именно то, что нужно. Содержатся разные адаптеры Runnable-Callable, PrivilegedAction-Callable, PrivilegedExceptionAction-Callable и другие. Имеет статические методы для создания разных <span class="text-green"><span class="text-bold"><em>ThreadPool</em></span></span>.</p>
+
+<p><span class="text-green"><span class="text-bold"><em>ThreadPoolExecutor</em></span></span> — реализует интерфейсы <span class="text-neon"><span class="text-bold"><em>Executor</em></span></span> и <span class="text-neon"><span class="text-bold"><em>ExecutorService</em></span></span>  и разделяет создание задачи и ее выполнение. Нам необходимо реализовать объекты <span class="text-neon"><span class="text-bold"><em>Runnable</em></span></span> и отправить их исполнителю, а <span class="text-green"><span class="text-bold"><em>ThreadPoolExecutor</em></span></span> отвечает за их исполнение, создание экземпляров и работу с потоками.</p>
+
+<p><span class="text-green"><span class="text-bold"><em>ScheduledThreadPoolExecutor</em></span></span> — в дополнение к методам <span class="text-green"><span class="text-bold"><em>ThreadPoolExecutor</em></span></span> создает пул потоков, который может планировать выполнение команд после заданной задержки или для периодического выполнения.</p>
+
+<p><mark class="green">ThreadFactory</mark> — это объект, который создает новые потоки по требованию. Нам необходимо передать экземпляр в метод <span class="code text-orange">Executors.newSingleThreadExecutor(ThreadFactory threadFactory)</span>.</p>
+
+<pre class='language-java line-numbers'><code>
+ExecutorService executorService = Executors.newSingleThreadExecutor(new ThreadFactory() {
+ @Override public Thread newThread(Runnable r) { 
+Thread thread = new Thread(r, "MyThread"); 
+thread.setPriority(Thread.MAX_PRIORITY);
+ return thread; }
+ });
+</code></pre>
+
+<p><span class="text-neon"><span class="text-bold"><em>RejectedExecutionHandler</em></span></span> — позволяет определить обработчик для задач, которые по каким-то причинам не могут быть выполнены через <span class="text-green"><span class="text-bold"><em>ThreadPoolExecutor</em></span></span>. Такое происходит, когда нет свободных потоков или сервис выключается или выключен (shutdown). </p>
+
+<p>Несколько стандартных имплементаций находятся в классе <span class="code"><span class="text-green">ThreadPoolExecutor</span></span>:</p>
+
+<ul>
+<li>CallerRunsPolicy — запускает задачу в вызывающем потоке;</li>
+<li>AbortPolicy — кидает эксепшен;</li>
+<li>DiscardPolicy — игнорирует задачу;</li>
+<li>DiscardOldestPolicy — удаляет самую старую незапущенную задачу из очереди, затем пытается добавить новую задачу еще раз.</li>
+</ul>
+
+<h2>Completion Service</h2>
+
+<img data-max-width="512" data-id="52be544f-17a5-406c-9f5f-9864056f87a8" src="https://cdn.javarush.com/images/article/52be544f-17a5-406c-9f5f-9864056f87a8/512.jpeg" alt="">
+
+<p><span class="text-neon"><span class="text-bold"><em>CompletionService</em></span></span> — интерфейс сервиса с развязкой запуска асинхронных задач и получением результатов. Для добавления задач есть метод <span class="code text-orange">submit</span>, а для получения результатов уже завершенных задач используется блокирующий метод <span class="code text-orange">take</span> и неблокирующий <span class="code text-orange">poll</span>.</p>
+
+<p><span class="code"><span class="text-green">ExecutorCompletionService</span></span> — является оберткой над любым классом, который реализует интерфейс <span class="text-neon"><span class="text-bold"><em>Executor</em></span></span>, например, <span class="text-green"><span class="text-bold"><em>ThreadPoolExecutor</em></span></span> или <span class="text-green"><span class="text-bold"><em>ForkJoinPool</em></span></span>. Используется, когда нужно абстрагироваться от способа запуска задач и контроля за их исполнением. </p>
+
+<p>Если есть завершенные задачи, то вытаскиваем их. Если задач нет, то висим в take, пока что-нибудь не завершится. В основе сервиса используется LinkedBlockingQueue, но ты можешь передать любую реализацию BlockingQueue.</p>

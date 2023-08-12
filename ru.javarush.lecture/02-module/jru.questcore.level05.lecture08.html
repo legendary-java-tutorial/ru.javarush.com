@@ -1,0 +1,104 @@
+Порядок инициализации переменных
+<p>----------------------------------------</p>
+В предыдущих лекциях мы выяснили, что класс загружается сверху вниз. Поэтому важно, чтобы поле класса обращалось только к уже загруженным другим полям. А что происходит с переменными, в каком порядке они инициализируются? Об этом вам расскажет доктор Лага Билаабо.
+<p>----------------------------------------</p>
+<p>&#8212; Привет, Амиго! Билаабо сегодня будет рассказывать о порядке инициализации переменных.</p>
+<p>Представь, что ты видишь код. Какие значения получат переменные?</p>
+<div class="code-heading">Код</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Cat
+{
+ public int a = 5;
+ public int b = a + 1;
+ public int c = a * b;
+}</code></pre>
+<div class="code-heading">Код</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Cat
+{
+ public int a = getSum();
+ public int b = getSum() - a;
+ public int c = getSum() - a - b;
+
+ public int getSum()
+ {
+  return a + b + c;
+ }
+}</code></pre>
+<p><span class="text-user">&#8212; А разве так можно?</span></p>
+<p>&#8212; Конечно. Порядок объявления между методами и полями класса неважен.</p>
+<p>Класс загружается сверху вниз, поэтому важно, чтобы поле класса обращалось только к уже загруженным другим полям. В примере поле b может обращаться к a, но ничего не знает о c.</p>
+<p><span class="text-user">&#8212; И что же будет?</span></p>
+<p>&#8212; Когда переменные создаются, они получают дефолтовые значения (значения по умолчанию).</p>
+<table>
+<tbody>
+<tr>
+<th>Код</th>
+<th>Что происходит на самом деле</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java block-inline" data-line="" data-start=""><code>class Cat
+{
+ public <span class="text-green">int a</span> = <span class="text-red">5</span>;
+ public <span class="text-green">int b</span> = <span class="text-red">a + 1</span>;
+ public <span class="text-green">int c</span> = <span class="text-red">a * b</span>;
+}</code></pre>
+</td>
+<td>
+<pre class="line-numbers language-java block-inline" data-line="" data-start=""><code>class Cat
+{
+ public <span class="text-green">int a</span> = 0;
+ public <span class="text-green">int b</span> = 0;
+ public <span class="text-green">int c</span> = 0;
+
+ <span class="text-user">public Cat()
+ {
+  super();</span>
+
+<span class="text-red">  a = 5;</span>
+<span class="text-red">  b = a + 1;</span> //5+1 = 6
+<span class="text-red">  c = a * b;</span> //5*6 = 30
+ <span class="text-user">}</span>
+}</code></pre>
+</td>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java block-inline" data-line="" data-start=""><code>class Cat
+{
+ public <span class="text-green">int a</span> = <span class="text-red">getSum();</span>
+ public <span class="text-green">int b</span> = <span class="text-red">getSum() - a;</span>
+ public <span class="text-green">int c</span> = <span class="text-red">getSum() - a - b;</span>
+
+ public int getSum()
+ {
+  return a + b + c;
+ }
+}</code></pre>
+</td>
+<td>
+<pre class="line-numbers language-java block-inline" data-line="" data-start=""><code>class Cat
+{
+ public <span class="text-green">int a</span> = 0;
+ public <span class="text-green">int b</span> = 0;
+ public <span class="text-green">int c</span> = 0;
+
+ <span class="text-user">public Cat()
+ {
+  super();</span>
+
+  <span class="text-red">a = getSum();</span> //(a+b+c)=0
+ <span class="text-red"> b = getSum() - a;</span> //(a+b+c)-a=b=0
+  <span class="text-red">c = getSum() - a - b;</span> //(a+b+c)-a-b=c=0
+ <span class="text-user">}</span>
+
+ public int getSum()
+ {
+  return a + b + c;
+ }
+}</code></pre>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="text-user">&#8212; Ух ты! Оказывается, это так просто. Спасибо Билаабо, ты – настоящий друг!</span></p>
+<p>&#8212; Ура! У Билаабо появился друг!</p>

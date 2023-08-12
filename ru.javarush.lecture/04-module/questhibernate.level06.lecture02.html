@@ -1,0 +1,64 @@
+Вставка данных в таблицу
+<p>----------------------------------------</p>
+Оператор INSERT INTO VALUES(). 
+Оператор INSERT INTO SELECT.
+<p>----------------------------------------</p>
+<h2>Оператор INSERT INTO VALUES()</h2>
+
+<p>Мы разобрались, как создавать таблицы, давай теперь детально рассмотрим, как добавлять данные в таблицу с помощью SQL-запроса.</p>
+
+<p>На самом деле это делать очень просто, но есть несколько нюансов. Самый простой вариант вставки данных в таблицу требует указания двух вещей:</p>
+
+<ul>
+<li>имена колонок</li>
+<li>значения колонок (данные)</li>
+</ul>
+
+<p>Имена колонок нужно указывать обязательно, так как очень часто колонки имеют значения по умолчанию, которые не указывают при вставке данных. И обычно в каждой таблице есть хотя бы одна такая колонка, например, id строки.</p>
+
+<p>Общий вид запроса вставки данных в таблицу выглядит так:</p>
+ 
+<pre><code><strong><span class="text-red">INSERT INTO</span> <span class="text-orange">таблица</span> (<span class="text-green">колонка1</span>, <span class="text-green">колонка2</span>, <span class="text-green">колонка3</span>) <span class="text-red">VALUES</span>
+    (<span class="text-user">значение1</span>, <span class="text-user">значение2</span>, <span class="text-user">значение3</span>),
+    (<span class="text-user">значение1</span>, <span class="text-user">значение2</span>, <span class="text-user">значение3</span>),
+    (<span class="text-user">значение1</span>, <span class="text-user">значение2</span>, <span class="text-user">значение3</span>);</strong>
+</code></pre>
+ 
+<p>Например, ты хочешь вставить в таблицу user новую запись, вот как будет выглядеть такой запрос:</p>
+ 
+<pre><code><strong><span class="text-red">INSERT INTO</span> <span class="text-orange">user</span> (<span class="text-green">name</span>, <span class="text-green">level</span>, <span class="text-green">created_time</span>) <span class="text-red">VALUES</span>
+	(<span class="text-user">‘Рабинович’</span>, <span class="text-user">5</span>, <span class="text-user">‘2022-06-06’</span>);</strong>
+</code></pre>
+ 
+<h2>Оператор INSERT INTO SELECT</h2>
+
+<p>Еще один частый сценарий вставки данных в таблицу — это взять их из другой таблицы, схемы и даже СУБД.</p>
+
+<p>Для этого есть другой формат запроса INSERT INTO, у которого вместо части VALUES можно указать запрос на выборку данных.</p>
+
+<p>Общий вид такого запроса имеет вид:</p>
+ 
+<pre><code><strong><span class="text-red">INSERT INTO</span> <span class="text-orange">таблица</span> (<span class="text-green">колонка1</span>, <span class="text-green">колонка2</span>, <span class="text-green">колонка3</span>)
+SELECT-запрос;</strong>
+</code></pre>
+ 
+<p>Давай напишем запрос, с помощью которого добавим всех пользователей из таблицы employee в таблицу user:</p>
+ 
+<pre><code><strong><span class="text-red">INSERT INTO</span> <span class="text-orange">user</span> (<span class="text-green">name</span>, <span class="text-green">created_time</span>)
+   <span class="text-red">SELECT</span> <span class="text-orange">employee</span>.<span class="text-green">name</span>, <span class="text-orange">employee</span>.<span class="text-green">join_date</span>
+   <span class="text-red">FROM</span> <span class="text-orange">employee</span>;</strong>
+</code></pre>
+ 
+<p>У нас в таблице employee есть различные данные, но из них мы выбираем только два поля – имя и время прихода в компанию.</p>
+
+<p>Так же таблица user требует указать ей уровень пользователя – level. В таблице employee у сотрудников нет уровня, поэтому мы воспользуемся тем, что у таблицы user у поля level есть значение по умолчанию. Мы просто не будем указывать level, и SQL установит значение по умолчанию.</p>
+
+<p>Допустим, нас не устраивает значение по умолчанию, и мы хотим, чтобы level был 99, а user.created_time заменить на сегодняшнюю дату, тогда можно написать так:</p>
+ 
+<pre><code><strong><span class="text-red">INSERT INTO</span> <span class="text-orange">user</span> (<span class="text-green">name</span>, <span class="text-user">level</span>, <span class="text-green">created_time</span>)
+   <span class="text-red">SELECT</span> <span class="text-orange">employee</span>.<span class="text-green">name</span>, <span class="text-user">99</span>, <span class="text-neon">CURDATE()</span>
+   <span class="text-red">FROM</span> <span class="text-orange">employee</span>;</strong>
+</code></pre>
+ 
+<p>Можно наворотить еще кучу всего интересного, но, думаю, хватит пока и этого.  
+Подробнее можно почитать на официальный странице MySQL.</p>

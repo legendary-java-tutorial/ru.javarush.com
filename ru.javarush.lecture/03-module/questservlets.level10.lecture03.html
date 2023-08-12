@@ -1,0 +1,120 @@
+Выполнение запроса с помощью HttpClient
+<p>----------------------------------------</p>
+Метод send(), BodyHandlers. Метод followRedirects(). Метод send(), BodyHandlers.
+<p>----------------------------------------</p>
+<h2>4.1 Метод send(), BodyHandlers</h2>
+<p>Ты закончил изучать, как формировать <strong>http-запрос</strong>, значит можно переходить к самому главному – отправке этого запроса.  В самом простом случае это сделать легко:</p>
+<pre class='line-numbers'><code>
+HttpRequest <span class="text-green">request</span> = HttpRequest.newBuilder(new URI(<span class="text-green">"https://javarush.com"</span>)).build();
+ 
+   HttpClient <span class="text-red">client</span> = HttpClient.newBuilder()
+        .version(Version.HTTP_1_1)
+        .build();
+ 
+   HttpResponse&lt;String&gt; <span class="text-user">response</span> = <span class="text-red">client</span>.<span class="text-orange">send</span>(<span class="text-green">request</span>, <span class="text-yellow">BodyHandlers.ofString()</span>);
+   System.out.println(<span class="text-user">response</span>.statusCode() );
+   System.out.println(<span class="text-user">response</span>.body() ); 
+</code></pre>
+<p>А что это за <code class="text-yellow">BodyHandlers</code> такие? А как ты думаешь? Ты отправил запрос, а значит вам должен прийти ответ – <code>http response</code>. И у этого ответа может быть <code>response body</code>: строка, файл, массив байт, InputStream.</p>
+<p>Да, да, все верно. Так же, как и при формировании запроса, тебе нужно указать тип <code>response body</code> у ответа. Всего их может быть 8 штук:</p>
+<ul>
+    <li><code> BodyHandlers.<strong>ofByteArray</strong></code></li>
+    <li><code> BodyHandlers.<strong>ofString</strong></code></li>
+    <li><code> BodyHandlers.<strong>ofFile</strong></code></li>
+    <li><code> BodyHandlers.<strong>discarding</strong></code></li>
+    <li><code> BodyHandlers.<strong>replacing</strong></code></li>
+    <li><code> BodyHandlers.<strong>ofLines</strong></code></li>
+    <li><code> BodyHandlers.<strong>fromLineSubscriber</strong></code></li>
+</ul>
+<p>В зависимости от того, какой тип <code>BodyHandlers</code> ты передал в метод <code>send()</code>, такой тип результата он и вернет. Пример:</p>
+<pre class='language-java line-numbers'><code>
+   // response body <span class="text-red">игнорируется</span>
+   HttpResponse&lt;<span class="text-red">Void</span>&gt; response = client.send(request, BodyHandlers.<span class="text-red">discarding</span>()); 
+</code></pre>
+<pre class='language-java line-numbers'><code>
+  // response body это <span class="text-red">строка</span>
+   HttpResponse&lt;<span class="text-red">String</span>&gt;response = client.send(request, BodyHandlers.<span class="text-red">ofString</span>());
+ </code></pre>
+<pre class='language-java line-numbers'><code>
+   // response body это <span class="text-red">файл</span>
+   HttpResponse&lt;<span class="text-red">Path</span>&gt; response = client.send(request, BodyHandlers.<span class="text-red">ofFile</span>(<span class="text-user">Paths.get("readme.txt")</span>));
+</code></pre>
+<pre class='language-java line-numbers'><code>
+   // response body это <span class="text-red">InputStream</span>
+   HttpResponse&lt;<span class="text-red">InputStream</span>&gt; response = client.send(request, BodyHandlers.<span class="text-red">ofInputStream</span>());
+</code></pre>
+<p>Если в качестве ответа тебе должны прислать файл, то в метод <code>BodyHandlers.ofFile()</code> тебе нужно передать имя локального файла, куда он будет сохранен объектом HttpClient. </p>
+<h2>4.2 Метод followRedirects()</h2>
+<p>Также при отправке запроса ты можешь указать, что делать HttpClient’у, если сервер в ответ пришлет <code>301</code> или <code>302</code> (временный или постоянный редирект). Представь, что сервер прислал код <code>302</code>, и тебе нужно: отследить эту ситуацию, получить новый URL из ответа и отправить запрос по новому адресу.</p>
+<p>Не сильно бы хотелось таким заниматься, особенно учитывая, что эта ситуация встречается часто и уже давно автоматизирована во всех http-клиентах. Также и в этом HttpClient’е тебе нужно просто указать какой режим редиректа ты выбираешь при отправке запроса.</p>
+<pre class='language-java line-numbers'><code>
+HttpResponse<String> response = HttpClient.newBuilder()
+<span class="text-red">  .followRedirects( HttpClient.Redirect.ALWAYS )</span>
+  .build()
+  .send(request, BodyHandlers.ofString());
+
+</code></pre>
+<p>Есть всего 3 варианта для редиректа:</p>
+<ul>
+    <li><strong>ALWAYS </strong>– всегда;</li>
+    <li><strong>NEVER </strong>– никогда;</li>
+    <li><strong>NORMAL </strong>– всегда, кроме HTTPS -> HTTP.</li>
+</ul>
+<p>Как видишь, вариантов тут немного, но всегда лучше иметь возможность настройки, чем не иметь ее.</p>
+<h2>4.4 Метод proxy()</h2>
+<p>Есть еще пара полезных, но не часто используемых опций. Они тебе не нужны ровно до тех пор, пока не станут нужны :)</p>
+<p>Первый – это proxy. В обычной жизни ты не часто сталкиваешься с ними, но многие крупные корпорации имеют у себя внутри сложную систему безопасности интернет-трафика, а значит и различные настройки proxy.</p>
+<p>Ну, и конечно, твой софт, который будет работать где-то в недрах такой корпорации когда-то столкнется с тем, что ему нужно будет задействовать proxy. Поэтому хорошо, что такая опция тут тоже есть.</p>
+<p>Настроить прокси очень просто – пример:</p>
+<pre class='language-java line-numbers'><code>
+HttpResponse&lt;String&gt; response = HttpClient.newBuilder()
+<span class="text-red">  .proxy( ProxySelector.getDefault())</span>
+  .build()
+  .send(request, BodyHandlers.ofString());
+</code></pre>
+<p>Тут был выбран proxy по умолчанию, но ты можешь захотеть настроить свой: </p>
+<pre class='language-java line-numbers'><code>
+HttpResponse<String> response = HttpClient.newBuilder()
+<span class="text-red">  .proxy(ProxySelector.of(</span><span class="text-viola">new InetSocketAddress("proxy.microsoft.com", 80)</span><span class="text-red">))</span>
+  .build()
+  .send(request, BodyHandlers.ofString());
+</code></pre>
+<p>Как именно работать с proxy мы рассматривать не будем, так как это не входит в рамки данного курса.</p>
+<h2>4.5 authenticator()</h2>
+<p>И еще один важный момент. HTTP-протокол поддерживает аутентификацию. Прямо на уровне протокола.</p>
+<p>Сейчас таким подходом почти не пользуются, но лет 20 назад он был распространен. Выглядел такой Http-запрос так:</p>
+ <div class="lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+        http://<span class="text-green">username</span>@example.com/
+        </code></pre>
+</div>
+<p>Или даже так:</p>
+ <div class="lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+        http://<span class="text-green">username</span>:<span class="text-user">password</span>@example.com/
+        </code></pre>
+</div>
+<p>Это не почта. Это именно ссылка. И да, тебе не показалось. Логин и даже пароль можно было указать прямо в http-запросе. Да и сейчас можно. Поэтому я и пишу, что сейчас так обычно никто не делает. Но такая возможность есть.</p>
+<pre class='language-java line-numbers'><code>
+Authenticator <span class="text-red">auth</span> = new Authenticator() {
+    @Override
+    protected PasswordAuthentication getPasswordAuthentication() {
+    return new PasswordAuthentication(
+     "username",
+        "password".toCharArray());
+    }
+};
+ 
+HttpResponse&lt;String&gt; response = HttpClient.newBuilder()
+  .authenticator(<span class="text-red">auth</span>).build()
+  .send(request, BodyHandlers.ofString());
+</code></pre>
+<p><span class="text-green">Это интересно!</span> Знаете почему вместо <code>“password"</code> в коде написано <code>"password".toCharArray()</code> ?</p>
+<p>Потому что второй параметр конструктора <code>PasswordAuthentication </code>– не <code>String</code>, а <code>CharArray</code>.</p>
+<p>А почему второй параметр не <code>String</code>, а <code>CharArray</code>?</p>
+<p>Потому что <span class="text-red">все пароли в целях безопасности запрещается хранить в виде целой строки даже в своем собственном приложении</span>. То есть ваше приложение в своей памяти не должно хранить пароль в виде строки. Чтобы если кто-то сделал damp-памяти, из него нельзя было вытащить пароль…</p>
+<p>Но при этом пароль можно передать по незащищенному HTTP-протоколу через полмира :) :) :)</p>
+<p>Что ж. Мир не идеален.</p>
+<p>Более детально ты можешь ознакомиться с этой темой по ссылкам:</p>
+<p><a href="https://developer.mozilla.org/ru/docs/Web/HTTP/Authentication" target="_blank">HTTP аутентификация</a></p>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/framework/wcf/feature-details/understanding-http-authentication" target="_blank">Understanding HTTP Authentication</a></p>

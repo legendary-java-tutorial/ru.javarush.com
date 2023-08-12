@@ -1,0 +1,123 @@
+Стандартные интерфейсы: InputStream, OutputStream
+<p>----------------------------------------</p>
+Жили-были InputStream и OutputStream. Объявлены они как абстрактные классы, но, если присмотреться, так вроде бы они — самые настоящие интерфейсы. Почти все их методы абстрактные, кроме нескольких незначительных методов. Внимание, вопрос: в чём их особенность и почему их все-таки сделали абстрактными классами?
+<p>----------------------------------------</p>
+<p>&#8212; Привет, Амиго! Сейчас я тебе расскажу про два интерфейса – <strong>InputStream</strong> и <strong>OutputStream</strong>. Объявлены они как абстрактные классы, но если начать разбираться, то можно увидеть, что<strong> по своей сути – это интерфейсы.</strong> Почти все их методы абстрактные, кроме нескольких незначительных методов. Очень похожи на нашего «телохранителя», которого мы рассматривали.</p>
+<p>Это очень интересные интерфейсы. Пока что я специально буду называть их интерфейсы, чтобы ты понял, зачем они нужны. А потом мы поговорим, почему же их все-таки сделали абстрактными классами.</p>
+<p><span class="text-user">&#8212; Хорошо. Так что это за интерфейсы?</span></p>
+<p>&#8212; Сейчас расскажу.</p>
+<p>Есть такая интересная вещь в Java как «<strong>поток</strong>». <strong>Поток</strong> – это очень простая сущность. И его простота есть залог очень мощного механизма обмена данными. Потоки бывают двух видов: <strong>поток для чтения и поток для записи.</strong></p>
+<p>В поток для записи, как ты уже, наверное, догадался, <strong>можно записывать данные</strong>. Для этого у него есть метод <strong>write</strong>(). Из потока для чтения <strong>можно данные читать</strong>. Для этого у него есть метод <strong>read</strong>().</p>
+<p><strong>InputStream</strong> – это интерфейс потока чтения, описывающий такую способность: «из меня можно читать байты».</p>
+<p>А <strong>OutputStream</strong>– это, соответственно, интерфейс потока записи, описывающий способность: «в меня можно записывать байты».</p>
+<p><span class="text-user">&#8212; И это все?</span></p>
+<p>&#8212; Фактически да. Но все дело в том, что в Java есть очень много классов, которые умеют работать с интерфейсами <strong>InputStream</strong> и <strong>OutputStream</strong>. Например, ты хочешь прочитать файл с диска и вывести его содержимое на экран. Нет ничего проще.</p>
+<p>Для того, чтобы прочитать данные из файла на диске, есть специальный класс <strong>FileInputStream</strong>, который реализует интерфейс <strong>InputStream</strong>. Хочешь записать прочитанные данные в другой файл? Для этого есть класс <strong>FileOutputStream</strong>, который реализует интерфейс <strong>OutputStream</strong>. Вот как выглядит код копирования [данных одного] файла в другой.</p>
+<div class="code-heading">Код</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public static void main(String[] args) throws IOException
+{
+ InputStream <span class="text-green">inStream</span> = new FileInputStream("c:/source.txt");
+ OutputStream <span class="text-user">outStream</span> = new FileOutputStream("c:/result.txt");
+
+ while (<span class="text-green">inStream</span>.available() &gt; 0)
+ {
+  int data = <span class="text-green">inStream</span>.<span class="text-red">read</span>(); //читаем один байт из потока для чтения
+  <span class="text-user">outStream</span>.<span class="text-red">write</span>(data); //записываем прочитанный байт в другой поток.
+ }
+
+ <span class="text-green">inStream</span>.close(); //закрываем потоки
+ <span class="text-user">outStream</span>.close();
+}</code></pre>
+<p>Представь, что мы написали класс, и добавили ему способности <strong>InputStream</strong> и <strong>OutputStream</strong>.</p>
+<p>Если мы корректно реализовали поддержку этих интерфейсов, то объекты нашего класса теперь можно сохранить в файл на диске. Просто вычитав их содержимое через метод <strong>read</strong>. Или загрузить из файла, создав объект и записав в него содержимое файла через метод <strong>write</strong>.</p>
+<p><span class="text-user">&#8212; А можно пример?</span></p>
+<p>&#8212; Можно.</p>
+<table>
+<tbody>
+<tr>
+<th width="50%">Код</th>
+<th width="50%">Описание</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class MyClass
+{
+private List&lt;Integer&gt; list =
+ new ArrayList&lt;&gt;(Arrays.asList(111, 222, 333));
+}</code></pre>
+</td>
+<td>Для простоты представим, что наш класс содержит в себе один объект – ArrayList типа Integer. Наполним список тестовыми данными.</td>
+</tr>
+</tbody>
+</table>
+<p>Теперь добавим в него методы read и write</p>
+<table>
+<tbody>
+<tr>
+<th width="50%">Код</th>
+<th width="50%">Описание</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class MyClass
+{
+private List&lt;Integer&gt; list =
+ new ArrayList&lt;&gt;(Arrays.asList(111, 222, 333));
+
+public void write(int data)
+{
+list.add(data);
+}
+
+public int read()
+{
+int first = list.get(0);
+list.remove(0);
+return first;
+}
+
+public int available()
+{
+return list.size();
+}
+}</code></pre>
+</td>
+<td>Теперь у нас в классе реализован метод <strong>read</strong>, который позволяет последовательно вычитать все содержимое нашего списка <strong>list</strong>.</p>
+<p>И метод <strong>write</strong>, который позволяет записывать в наш list значения.</td>
+</tr>
+</tbody>
+</table>
+<p>Это, конечно, не реализация интерфейсов InputStream и OutputStream, но очень похоже.</p>
+<p><span class="text-user">&#8212; Да, это понятно. А как все-таки сохранить содержимое такого объекта в файл?</span></p>
+<p>&#8212; Давай я напишу тебе пример:</p>
+<div class="code-heading">Запись объекта MyClass в файл</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public static void main(String[] args) throws IOException
+{
+ MyClass <span class="text-green">myObject</span> = new <span class="text-green">MyClass</span>();
+ OutputStream outStream = new FileOutputStream ("c:/my-object-data.txt");
+
+ while (<span class="text-green">myObject</span>.available() &gt; 0)
+ {
+  int data = <span class="text-green">myObject</span>.<span class="text-red">read</span>(); //читаем один int из потока для чтения
+  <span class="text-user">outStream</span>.<span class="text-red">write</span>(data); //записываем прочитанный int в другой поток.
+ }
+
+ <span class="text-user">outStream</span>.close();
+}</code></pre>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.task13.task1330"></div>
+<div class="code-heading">Чтение объекта MyClass из файла</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public static void main(String[] args) throws IOException
+{
+ InputStream <span class="text-green">inStream</span> = new <span class="text-green">FileInputStream</span>("c:/my-object-data.txt");
+ MyClass myObject = new MyClass();
+
+ while (<span class="text-green">inStream</span>.available() &gt; 0)
+ {
+  int data = <span class="text-green">inStream</span>.<span class="text-red">read</span>(); //читаем один int из потока для чтения
+  <span class="text-user">myObject</span>.<span class="text-red">write</span>(data); //записываем прочитанный int в другой поток.
+ }
+
+ <span class="text-green">inStream</span>.close(); //закрываем потоки
+}</code></pre>
+<p><span class="text-user">&#8212; Ух ты! Действительно, очень похоже на работу с InputStream/OutputStream. Потоки – это крутая вещь!</span></p>
+<p>&#8212; А то!</p>

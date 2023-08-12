@@ -1,0 +1,81 @@
+Concurrent Collections
+<p>----------------------------------------</p>
+CopyOnWriteArrayList
+Интерфейс ConcurrentMap
+Реализации ConcurrentHashMap
+<p>----------------------------------------</p>
+<h2>CopyOnWriteArrayList</h2>
+
+<p>Операции <span class="text-viola">add</span>, <span class="text-viola">set</span>, <span class="text-viola">remove</span> в данной коллекции приводят к созданию новой копии внутреннего массива. Это гарантирует то, что мы не словим <span class="text-red"><span class="text-bold">ConcurrentModificationException</span></span>.</p>
+
+<p>Не забывай только о том, что при копировании массива копируются только ссылки на объекты, в том числе доступ к полям элементов не thread-safe. Такие коллекции лучше использовать в случаях с минимальным количеством write операций. </p>
+
+<img data-max-width="512" data-id="dd30e3f5-509c-479f-acb2-47f72f63b032" src="https://cdn.javarush.com/images/article/dd30e3f5-509c-479f-acb2-47f72f63b032/512.jpeg" alt="">
+
+<p><span class="code"><span class="text-green">CopyOnWriteArrayList&lt;E></span></span> — потокобезопасный аналог <span class="code"><span class="text-green">ArrayList</span></span>, реализованный на основе CopyOnWrite алгоритмов. Дополнительные методы и конструктор описаны внизу:</p>
+
+<table>
+<tbody>
+<tr>
+<td><span class="code text-orange">CopyOnWriteArrayList(E[] toCopyIn)</span></td>
+<td>Конструктор, принимающий на вход массив.</td>
+</tr>
+<tr>
+<td><span class="code text-orange">int indexOf(E e, int index)</span></td>
+<td>Возвращает индекс первого найденного элемента, начиная поиск с заданного индекса.</td>
+</tr>
+<tr>
+<td><span class="code text-orange">int lastIndexOf(E e, int index)</span></td>
+<td>Возвращает индекс первого найденного элемента при обратном поиске, начиная с заданного индекса.</td>
+</tr>
+<tr>
+<td><span class="code text-orange">boolean addIfAbsent(E e)</span></td>
+<td>Добавить элемент, если его нет в коллекции. Для сравнения элементов используется метод <span class="code text-orange">equals</span>.</td>
+</tr>
+<tr>
+<td><span class="code text-orange">int addAllAbsent(Collection&lt;? extends E> c)</span></td>
+<td>Добавить элементы, если они отсутствуют в коллекции. Возвращает количество добавленных элементов.</td>
+</tr>
+</tbody>
+</table>
+
+<h2>Интерфейс ConcurrentMap</h2>
+
+<p>Улучшенные реализации <span class="code"><span class="text-green">HashMap</span></span> и <span class="code"><span class="text-green">TreeMap</span></span> с поддержкой многопоточности и масштабируемости.</p>
+
+<img data-max-width="1024" data-id="b93ad73c-488f-4c46-91c8-9a76c7337e1a" src="https://cdn.javarush.com/images/article/b93ad73c-488f-4c46-91c8-9a76c7337e1a/1024.jpeg" alt="">
+
+<p><span class="text-neon"><span class="text-bold"><em>ConcurrentMap&lt;K, V></em></span></span> — интерфейс, расширяющий <span class="code"><span class="text-green">Map</span></span> дополнительными атомарными операциями. </p>
+
+<table>
+<tbody>
+<tr>
+<td><span class="code text-orange">V putIfAbsent(K key, V value)</span></td>
+<td>Добавляет новую пару key-value только в том случае, если ключа нет в коллекции. Возвращает предыдущее значение для заданного ключа.</td>
+</tr>
+<tr>
+<td><span class="code text-orange">boolean remove(Object key, Object value)</span></td>
+<td>Удаляет key-value пару только если заданному ключу соответствует заданное значение в Map. Возвращает true, если элемент был успешно удален.</td>
+</tr>
+<tr>
+<td><span class="code text-orange">boolean replace(K key, V oldValue, V newValue)</span></td>
+<td>Заменяет старое значение на новое по ключу только если старое значение соответствует заданному значению в Map. Возвращает true, если значение было заменено на новое.</td>
+</tr>
+<tr>
+<td><span class="code text-orange">V replace(K key, V value)</span></td>
+<td>Заменяет старое значение на новое по ключу только если ключ ассоциирован с любым значением. Возвращает предыдущее значение для заданного ключа.</td>
+</tr>
+</tbody>
+</table>
+
+<p><span class="text-neon"><span class="text-bold"><em>ConcurrentHashMap&lt;K, V></em></span></span> — здесь данные представлены в виде сегментов, которые разбиты по hash'ам ключей. По итогу, если вам нужен доступ, то лочится сегмент, а не объект. Итераторы не кидают <span class="text-red"><span class="text-bold">ConcurrentModificationException</span></span> и представляют данные на определенный отрезок времени.</p>
+
+<h2>Реализации ConcurrentHashMap</h2>
+
+<p><span class="text-neon"><span class="text-bold"><em>ConcurrentHashMap&lt;K, V></em></span></span> — тут данные представлены в виде сегментов, разбитых по hash'ам ключей. В результате, для доступа к данным лочится по сегментам, а не по одному объекту. В дополнение итераторы представляют данные на определенный срез времени и не кидают <span class="text-red"><span class="text-bold">ConcurrentModificationException</span></span>.</p>
+
+<p><span class="text-neon"><span class="text-bold"><em>ConcurrentNavigableMap&lt;K,V></em></span></span> — расширяет интерфейс <span class="text-neon"><span class="text-bold"><em>NavigableMap</em></span></span> и возвращает <span class="text-neon"><span class="text-bold"><em>ConcurrentNavigableMap</em></span></span>. Все итераторы безопасны для использования и не кидают <span class="text-red"><span class="text-bold">ConcurrentModificationException</span></span>.</p>
+
+<p><span class="text-neon"><span class="text-bold"><em>ConcurrentSkipListMap&lt;K, V></em></span></span> — является аналогом <span class="text-neon"><span class="text-bold"><em>TreeMap</em></span></span> для многопоточности. Данные сортируются по ключу и гарантируется усредненная производительность log(N) для <span class="text-viola">containsKey</span>, <span class="text-viola">get</span>, <span class="text-viola">put</span>, <span class="text-viola">remove</span> и других похожих операций.</p>
+
+<p><span class="text-neon"><span class="text-bold"><em>ConcurrentSkipListSet&lt;E></em></span></span> — имплементация интерфейса <span class="text-neon"><span class="text-bold"><em>Set</em></span></span> на основе <span class="text-neon"><span class="text-bold"><em>ConcurrentSkipListMap</em></span></span>.</p>

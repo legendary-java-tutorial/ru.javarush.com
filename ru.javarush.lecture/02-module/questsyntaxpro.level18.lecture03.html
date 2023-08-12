@@ -1,0 +1,496 @@
+Работа с потоками, часть 1
+<p>----------------------------------------</p>
+Список методов типа Stream Класс Stream был создан для того, чтобы можно было легко конструировать цепочки потоков данных.&nbsp; Для этого у объекта тип Stream&lt;T&gt; есть методы, которые возвращают новые объекты типа Stream. Каждый из этих потоков данных умеет делать одно простое действие, за
+<p>----------------------------------------</p>
+<h2>1. Список методов типа <code>Stream</code></h2>
+<p>Класс <code>Stream</code> был создан для того, чтобы можно было легко <span class="text-bold">конструировать</span> цепочки потоков данных. Для этого у объекта типа <code><span class="text-viola">Stream</span>&lt;T&gt;</code> есть методы, которые возвращают новые объекты типа <code>Stream</code>.</p>
+<p>Каждый из этих потоков данных умеет делать одно простое действие, зато если их объединить в цепочки, да еще и добавить к этому такую интересную вещь как <span class="term">лямбда-функции</span>, на выходе можно получить очень мощную вещь. Скоро вы в этом сами убедитесь.</p>
+<p>Вот какие методы есть у класса <code>Stream</code> (только самые основные):</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Методы</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>
+            <pre><code><span class="text-viola">Stream</span>&lt;T&gt; <span class="text-red">of</span>()</code></pre>
+        </td>
+        <td>Создает поток из набора объектов</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code><span class="text-viola">Stream</span>&lt;T&gt; <span class="text-red">generate</span>()</code></pre>
+        </td>
+        <td>Генерирует поток по заданному правилу</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code><span class="text-viola">Stream</span>&lt;T&gt; <span class="text-red">concat</span>()</code></pre>
+        </td>
+        <td>Объединяет вместе несколько потоков</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code><span class="text-viola">Stream</span>&lt;T&gt; <span class="text-red">filter</span>()</code></pre>
+        </td>
+        <td>Фильтрует данные: пропускает только данные, которые соответствуют заданному правилу</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code><span class="text-viola">Stream</span>&lt;T&gt; <span class="text-red">distinct</span>()</code></pre>
+        </td>
+        <td>Удаляет дубликаты: не пропускает данные, которые уже были</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code><span class="text-viola">Stream</span>&lt;T&gt; <span class="text-red">sorted</span>()</code></pre>
+        </td>
+        <td>Сортирует данные</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code><span class="text-viola">Stream</span>&lt;T&gt; <span class="text-red">peek</span>()</code></pre>
+        </td>
+        <td>Выполняет действие над каждым данным</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code><span class="text-viola">Stream</span>&lt;T&gt; <span class="text-red">limit</span>(n)</code></pre>
+        </td>
+        <td>Обрезает данные после достижения лимита</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code><span class="text-viola">Stream</span>&lt;T&gt; <span class="text-red">skip</span>(n)</code></pre>
+        </td>
+        <td>Пропускает первые n данных</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code><span class="text-viola">Stream</span>&lt;R&gt; <span class="text-red">map</span>()</code></pre>
+        </td>
+        <td>Преобразовывает данные из одного типа в другой</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code><span class="text-viola">Stream</span>&lt;R&gt; <span class="text-red">flatMap</span>()</code></pre>
+        </td>
+        <td>Преобразовывает данные из одного типа в другой</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>boolean <span class="text-red">anyMatch</span>()</code></pre>
+        </td>
+        <td>Проверяет, что среди данных потока есть хоть одно, которое соответствует заданному правилу</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>boolean <span class="text-red">allMatch</span>()</code></pre>
+        </td>
+        <td>Проверяет, что все данные в потоке соответствуют заданному правилу</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>boolean <span class="text-red">noneMatch</span>()</code></pre>
+        </td>
+        <td>Проверяет, что никакие данные в потоке не соответствуют заданному правилу</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code><span class="text-user">Optional</span>&lt;T&gt; <span class="text-red">findFirst</span>()</code></pre>
+        </td>
+        <td>Возвращает первый найденный элемент, который соответствует правилу</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code><span class="text-user">Optional</span>&lt;T&gt; <span class="text-red">findAny</span>()</code></pre>
+        </td>
+        <td>Возвращает любой элемент из потока, который соответствует правилу</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code><span class="text-user">Optional</span>&lt;T&gt; <span class="text-red">min</span>()</code></pre>
+        </td>
+        <td>Ищет минимальный элемент в потоке данных</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code><span class="text-user">Optional</span>&lt;T&gt; <span class="text-red">max</span>()</code></pre>
+        </td>
+        <td>Возвращает максимальный элемент в потоке данных</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>long <span class="text-red">count</span>()</code></pre>
+        </td>
+        <td>Возвращает количество элементов в потоке данных</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>R <span class="text-red">collect</span>()</code></pre>
+        </td>
+        <td>Вычитывает все данные из потока и возвращает их в виде коллекции</td>
+    </tr>
+    </tbody>
+</table>
+<hr>
+<h2>2. Intermediate и terminal методы <code>Stream</code></h2>
+<p>Как вы заметили, не все методы, представленные в таблице выше, возвращают <code>Stream</code>. Это связано с тем, что методы класса <code>Stream</code> можно разделить на промежуточные (<span class="term">intermediate</span>, <span class="term">non&#8209;terminal</span>) и конечные (<span class="term">terminal</span>).</p>
+<h3>Промежуточные методы</h3>
+<p>Промежуточные методы возвращают объект, который имплементирует интерфейс <code>Stream</code>, и их можно выстроить в цепочку вызовов.</p>
+<h3>Конечные методы</h3>
+<p>Конечные методы возвращают значение, тип которого отличен от типа <code>Stream</code>.</p>
+<h3>Цепочка вызовов методов</h3>
+<p>Таким образом, вы можете строить цепочки вызовов из любого количества промежуточных методов и в конце вызывать один конечный. Такой подход позволяет реализовать довольно сложную логику, повышая при этом читаемость кода.</p>
+<img data-id="76f6adda-6881-4f70-a2ad-d49c402d225e" src="https://cdn.javarush.com/images/article/76f6adda-6881-4f70-a2ad-d49c402d225e/1024.jpeg" alt="">
+<p>Внутри потока данных, данные вообще не меняются. Цепочка промежуточных методов – это хитрый (декларативный) способ указания некой последовательности обработки данных, которая начнет выполняться после вызова терминального (конечного) метода.</p>
+<p>То есть, без вызова конечного метода, данные в потоке данных никак не обрабатываются. И только после вызова терминального метода, данные начинают обрабатываться по правилам, заданным цепочкой вызовов методов. </p>
+<div class="lesson-example lesson-example--center">
+        <pre class="lecture-code lecture-code--present-sm"><code><span class="text-viola">stream</span>()
+  .<span class="text-yellow">intemediateOperation1</span>()
+  .<span class="text-yellow">intemediateOperation2</span>()
+  <span class="text-invisible">...</span>
+  .<span class="text-yellow">intemediateOperationN</span>()
+  .<span class="text-red">terminalOperation</span>();</code></pre>
+    <div class="lesson-example-caption">Общий вид цепочки вызовов</div>
+</div>
+<p>Сравнение промежуточных и конечных методов:</p>
+<table>
+    <tr>
+        <th></th>
+        <th class="text-center">промежуточные</th>
+        <th class="text-center">конечные</th>
+    </tr>
+    <tr>
+        <td>Тип возвращаемого значения</td>
+        <td class="text-center"><code>Stream</code></td>
+        <td class="text-center">не <code>Stream</code></td>
+    </tr>
+    <tr>
+        <td>Возможность объединения нескольких методов данного типа в цепочку вызовов</td>
+        <td class="text-center">да</td>
+        <td class="text-center">нет</td>
+    </tr>
+    <tr>
+        <td>Количество методов в одной цепочке вызовов</td>
+        <td class="text-center">любое</td>
+        <td class="text-center">не более одного</td>
+    </tr>
+    <tr>
+        <td>Производит конечный результат</td>
+        <td class="text-center">нет</td>
+        <td class="text-center">да</td>
+    </tr>
+    <tr>
+        <td>Запускает обработку данных в потоке</td>
+        <td class="text-center">нет</td>
+        <td class="text-center">да</td>
+    </tr>
+</table>
+<h3>Давайте рассмотрим пример.</h3>
+<p>Есть клуб любителей животных. Завтра у них день «рыжего кота». В клубе есть владельцы животных, у каждого из которых есть список питомцев. Это могут быть не только коты.</p>
+<p><i>Задача:</i> нужно выбрать имена всех рыжих котов, чтобы на завтра распечатать для них именные поздравительные открытки с «Профессиональным праздником». Открытки должны быть отсортированы по возрасту кота: от более старого до более молодого.</p>
+<p>Вначале приведем вспомогательные классы для решения этой задачи:</p>
+<div class="lesson-example">
+        <pre class="language-java"><code>public enum Color {
+   WHITE,
+   BLACK,
+   DARK_GREY,
+   LIGHT_GREY,
+   FOXY,
+   GREEN,
+   YELLOW,
+   BLUE,
+   MAGENTA
+}</code></pre>
+</div>
+<div class="lesson-example">
+        <pre class="language-java"><code>public abstract class Animal {
+   private String name;
+   private Color color;
+   private int age;
+
+   public Animal(String name, Color color, int age) {
+      this.name = name;
+      this.color = color;
+      this.age = age;
+   }
+
+   public String getName() {
+      return name;
+   }
+
+   public Color getColor() {
+      return color;
+   }
+
+   public int getAge() {
+      return age;
+   }
+}</code></pre>
+</div>
+<div class="lesson-example">
+        <pre class="language-java"><code>public class Cat extends Animal{
+   public Cat(String name, Color color, int age) {
+      super(name, color, age);
+   }
+}</code></pre>
+</div>
+<div class="lesson-example">
+        <pre class="language-java"><code>public class Dog extends Animal {
+   public Dog(String name, Color color, int age) {
+      super(name, color, age);
+   }
+}</code></pre>
+</div>
+<div class="lesson-example">
+        <pre class="language-java"><code>public class Parrot extends Animal {
+   public Parrot(String name, Color color, int age) {
+      super(name, color, age);
+   }
+}</code></pre>
+</div>
+<div class="lesson-example">
+        <pre class="language-java"><code>public class Pig extends Animal {
+   public Pig(String name, Color color, int age) {
+      super(name, color, age);
+   }
+}</code></pre>
+</div>
+<div class="lesson-example">
+        <pre class="language-java"><code>public class Snake extends Animal {
+   public Snake(String name, Color color, int age) {
+      super(name, color, age);
+   }
+}</code></pre>
+</div>
+<div class="lesson-example">
+        <pre class="language-java"><code>public class Owner {
+   private String name;
+   private List&lt;Animal&gt; pets = new ArrayList&lt;&gt;();
+
+   public Owner(String name) {
+      this.name = name;
+   }
+
+   public List&lt;Animal&gt; getPets() {
+      return pets;
+   }
+}</code></pre>
+</div>
+<p>Теперь рассмотрим класс <code>Selector</code>, в котором будет производиться выбор по приведенным критериям:</p>
+<div class="lesson-example">
+        <pre class="language-java"><code>import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
+public class Selector {
+   private static List&lt;Owner&gt; owners;
+
+   private static void initData() {
+      final Owner owner1 = new Owner("Олег Малашков");
+      owner1.getPets().addAll(List.of(
+            new Cat("Барон", Color.BLACK, 3),
+            new Cat("Султан", Color.DARK_GREY, 4),
+            new Dog("Эльза", Color.WHITE, 0)
+      ));
+
+      final Owner owner2 = new Owner("Дмитрий Васильков");
+      owner2.getPets().addAll(List.of(
+            new Cat("Рыжик", Color.FOXY, 7),
+            new Cat("Барсик", Color.FOXY, 5),
+            new Parrot("Адмирал", Color.BLUE, 3)
+      ));
+
+      final Owner owner3 = new Owner("Наталия Криж");
+      owner3.getPets().addAll(List.of(
+            new Dog("Арнольд", Color.FOXY, 3),
+            new Pig("Пылесос", Color.LIGHT_GREY, 8)
+      ));
+
+      final Owner owner4 = new Owner("Павел Мурахов");
+      owner4.getPets().addAll(List.of(
+            new Snake("Удав", Color.DARK_GREY, 2)
+      ));
+
+      final Owner owner5 = new Owner("Антон Федоренко");
+      owner5.getPets().addAll(List.of(
+            new Cat("Фишер", Color.BLACK, 16),
+            new Cat("Зорро", Color.FOXY, 14),
+            new Cat("Марго", Color.WHITE, 3),
+            new Cat("Забияка", Color.DARK_GREY, 1)
+      ));
+
+      owners = List.of(owner1, owner2, owner3, owner4, owner5);
+   }
+}</code></pre>
+</div>
+<p>Осталось дописать код метода <code>main</code>, в котором вначале вызовем метод <code>initData()</code>, который заполнит данными список владельцев животных в клубе, а потом выберет имена рыжих котов, отсортированных по возрасту в убывающем порядке.</p>
+<p>Вначале рассмотрим код, не использующий стримы для решения этой задачи:</p>
+<div class="lesson-example">
+        <pre class="language-java"><code>public static void main(String[] args) {
+   initData();
+
+   List&lt;String&gt; findNames = new ArrayList<>();
+   List&lt;Cat&gt; findCats = new ArrayList<>();
+   for (Owner owner : owners) {
+      for (Animal pet : owner.getPets()) {
+         if (Cat.class.equals(pet.getClass()) && Color.FOXY == pet.getColor()) {
+            findCats.add((Cat) pet);
+         }
+      }
+   }
+
+   Collections.sort(findCats, new Comparator&lt;Cat&gt;() {
+      public int compare(Cat o1, Cat o2) {
+         return o2.getAge() - o1.getAge();
+      }
+   });
+
+   for (Cat cat : findCats) {
+      findNames.add(cat.getName());
+   }
+
+   findNames.forEach(System.out::println);
+}</code></pre>
+</div>
+<p>А теперь давайте посмотрим на альтернативный вариант:</p>
+<div class="lesson-example">
+        <pre class="language-java"><code>public static void main(String[] args) {
+   initData();
+
+   final List&lt;String&gt; findNames = owners.stream()
+           .flatMap(owner -> owner.getPets().stream())
+           .filter(pet -> Cat.class.equals(pet.getClass()))
+           .filter(cat -> Color.FOXY == cat.getColor())
+           .sorted((o1, o2) -> o2.getAge() - o1.getAge())
+           .map(Animal::getName)
+           .collect(Collectors.toList());
+
+   findNames.forEach(System.out::println);
+}</code></pre>
+</div>
+<p>Как видите, код значительно компактнее. Кроме этого, каждая строчка стрима – это какое-то одно действие, поэтому их можно читать, как предложения на английском языке:</p>
+<table>
+    <tr>
+        <td>
+            <pre class="language-java"><code>.flatMap(owner -> owner.getPets().stream())</code></pre>
+        </td>
+        <td>переход от <code>Stream&lt;Owner&gt;</code> к <code>Stream&lt;Pet&gt;</code></td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>.filter(pet -> Cat.class.equals(pet.getClass()))</code></pre>
+        </td>
+        <td>в потоке данных оставляем только котов</td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>.filter(cat -> Color.FOXY == cat.getColor())</code></pre>
+        </td>
+        <td>в потоке данных оставляем только рыжих</td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>.sorted((o1, o2) -> o2.getAge() - o1.getAge())</code></pre>
+        </td>
+        <td>сортируем по возрасту в убывающем порядке</td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>.map(Animal::getName)</code></pre>
+        </td>
+        <td>берем имена</td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>.collect(Collectors.toList())</code></pre>
+        </td>
+        <td>результат складываем в список</td>
+    </tr>
+</table>
+<hr>
+<h2>3. Создание потоков</h2>
+<p>Среди методов класса <code>Stream</code> есть три метода, которые мы еще не рассмотрели. Задача этих трех методов — создавать новые потоки.</p>
+<p><b>Метод <code>Stream&lt;T&gt;.of(T obj)</code></b></p>
+<p>Метод <code><span class="text-red">of</span>()</code> создает <span class="term text-viola">поток</span>, состоящий из одного элемента. Обычно это нужно, если, допустим, функция принимает в качестве параметра объект типа <code><span class="text-viola">Stream</span>&lt;T&gt;</code>, а у вас есть только объект типа <code>T</code>. Тогда вы можете легко и просто с помощью метода <code><span class="text-red">of</span>()</code> получить <span class="term text-viola">поток</span>, состоящий из <span class="term text-user">одного элемента</span>.</p>
+<p>Пример:</p>
+<div class="lesson-example">
+    <pre class="language-java"><code><span class="text-viola">Stream</span>&lt;Integer&gt; <span class="code text-viola">stream</span> = <span class="text-viola">Stream</span>.<span class="text-red">of</span>(<span class="code text-user">1</span>);</code></pre>
+</div>
+<p><strong>Метод <code>Stream&lt;T&gt; Stream.of(T obj1, T obj2, T obj3, ...)</code></strong></p>
+<p>Метод <code><span class="text-red">of</span>()</code> создает <span class="term text-viola">поток,</span> состоящий из <span class="term text-user">переданных элементов</span>. Количество элементов может быть любым. Пример:</p>
+<div class="lesson-example">
+    <pre class="language-java"><code><span class="text-viola">Stream</span>&lt;Integer&gt; <span class="code text-viola">stream</span> = <span class="text-viola">Stream</span>.<span class="text-red">of</span>(<span class="code text-user">1</span>, <span class="code text-user">2</span>, <span class="code text-user">3</span>, <span class="code text-user">4</span>, <span class="code text-user">5</span>);</code></pre>
+</div>
+<p><strong>Метод <code>Stream&lt;T&gt; Stream.generate(Supplier&lt;T&gt; obj)</code></strong></p>
+<p>Метод <code><span class="text-red">generate</span>()</code> позволяет задать правило, по которому будет генерироваться очередной элемент потока при его запросе. Например, можно каждый раз отдавать <span class="term text-neon">случайное число</span>.</p>
+<p>Пример:</p>
+<div class="lesson-example">
+    <pre class="language-java"><code><span class="text-viola">Stream</span>&lt;Double&gt; <span class="code text-viola">s</span> = <span class="text-viola">Stream</span>.<span class="text-red">generate</span>(<span class="code text-neon">Math::random</span>);</code></pre>
+</div>
+<p><strong>Метод <code>Stream&lt;T&gt; Stream.concat(Stream&lt;T&gt; a, Stream&lt;T&gt; b)</code></strong></p>
+<p>Метод <code><span class="text-red">concat</span>()</code> объединяет два переданных <span class="term text-viola">потока</span> в <span class="term text-yellow">один</span>. При чтении <span class="term text-user">данных</span> сначала будут прочитаны данные из первого потока, а затем из второго. Пример:</p>
+<div class="lesson-example">
+    <pre class="language-java"><code><span class="text-viola">Stream</span>&lt;Integer&gt; <span class="code text-viola">stream1</span> = <span class="text-viola">Stream</span>.of(<span class="code text-user">1</span>, <span class="code text-user">2</span>, <span class="code text-user">3</span>, <span class="code text-user">4</span>, <span class="code text-user">5</span>);
+<span class="text-viola">Stream</span>&lt;Integer&gt; <span class="code text-viola">stream2</span> = <span class="text-viola">Stream</span>.of(<span class="code text-user">10</span>, <span class="code text-user">11</span>, <span class="code text-user">12</span>, <span class="code text-user">13</span>, <span class="code text-user">14</span>);
+<span class="text-viola">Stream</span>&lt;Integer&gt; <span class="code text-yellow">result</span> = <span class="text-viola">Stream</span>.<span class="text-red">concat</span>(<span class="code text-viola">stream1</span>, <span class="code text-viola">stream2</span>);</code></pre>
+</div>
+<hr>
+<h2>4. Фильтрация данных</h2>
+<p>Еще 6 методов создают новые потоки данных, позволяющие объединять потоки в цепочки разной сложности.</p>
+<p><strong>Метод <code>Stream&lt;T&gt; filter(Predicate&lt;T&gt;)</code></strong></p>
+<p>Этот метод возвращает <span class="term text-yellow">новый поток</span> данных, который фильтрует данные из <span class="term text-viola">потока-источника</span> согласно <span class="term text-neon">переданному правилу</span>. Метод нужно вызывать у <span class="term text-viola">объекта</span> типа <code><span class="text-viola">Stream</span>&lt;T&gt;</code>.</p>
+<p>Для задания правила фильтрации можно использовать <span class="term text-neon">лямбда-функцию</span>, которая затем будет преобразована компилятором в объект типа <code>Predicate&lt;T&gt;</code>.</p>
+<p>Примеры:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Цепочки потоков</th>
+        <th>Пояснение</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code><span class="text-viola">Stream</span>&lt;Integer&gt; <span class="code text-viola">stream</span> = <span class="text-viola">Stream</span>.of(<span class="text-user">1</span>, <span class="text-user">2</span>, <span class="text-user">3</span>, <span class="text-user">4</span>, <span class="text-user">5</span>);
+<span class="text-viola">Stream</span>&lt;Integer&gt; <span class="code text-yellow">stream2</span> = <span class="code text-viola">stream</span>.<span class="text-red">filter</span>(<span class="code text-neon">x -&gt; (x &lt; 3)</span>);</code></pre>
+        </td>
+        <td><br>Оставляем только числа меньше трех</td>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code><span class="text-viola">Stream</span>&lt;Integer&gt; <span class="code text-viola">stream</span> = <span class="text-viola">Stream</span>.of(<span class="text-user">1</span>, <span class="text-user">-2</span>, <span class="text-user">3</span>, <span class="text-user">-4</span>, <span class="text-user">5</span>);
+<span class="text-viola">Stream</span>&lt;Integer&gt; <span class="code text-yellow">stream2</span> = <span class="code text-viola">stream</span>.<span class="text-red">filter</span>(<span class="code text-neon">x -&gt; (x &gt; 0)</span>);</code></pre>
+        </td>
+        <td><br>Оставляем только числа больше нуля</td>
+    </tr>
+    </tbody>
+</table>
+<p><strong>Метод <code>Stream&lt;T&gt; sorted(Comparator&lt;T&gt;)</code></strong></p>
+<p>Этот метод возвращает новый поток данных, который сортирует данные из <span class="term">потока-источника</span>. В качестве параметра можно передать <span class="term">компаратор</span>, который будет задавать правила сравнения двух элементов потока данных.</p>
+<p><strong>Метод <code>Stream&lt;T&gt; distinct()</code></strong></p>
+<p>Этот метод возвращает <span class="term text-yellow">новый поток</span> данных, который содержит <span class="term text-red">только уникальные</span> данные из потока данных <span class="term text-viola">источника</span>. Все дублирующиеся данные отбрасываются. Пример:</p>
+<div class="lesson-example">
+        <pre class="language-java"><code><span class="text-viola">Stream</span>&lt;Integer&gt; <span class="code text-viola">stream</span> = <span class="text-viola">Stream</span>.of(<span class="text-user">1</span>, <span class="text-user">2</span>, <span class="text-user">3</span>, <span class="text-user">4</span>, <span class="text-user">5</span>, <span class="text-user">2</span>, <span class="text-user">2</span>, <span class="text-user">2</span>, <span class="text-user">3</span>, <span class="text-user">4</span>);
+<span class="text-viola">Stream</span>&lt;Integer&gt; <span class="code text-yellow">stream2</span> = <span class="code text-viola">stream</span>.<span class="text-red">distinct</span>(); <span class="text-muted">// 1, 2, 3, 4, 5</span></code></pre>
+</div>
+<p><strong>Метод <code>Stream&lt;T&gt; peek(Consumer&lt;T&gt;)</code></strong></p>
+<p>Этот метод возвращает <span class="term text-yellow">новый поток</span> данных, хотя данные в нем те же, что и в потоке источнике. Но когда запрашивается очередной элемент из потока, для него вызывается <span class="term text-neon">функция</span>, которую вы передали в метод <code><span class="text-red">peek</span>()</code>.</p>
+<p>Если в метод <code><span class="text-red">peek</span>()</code> передать функцию <code class="text-neon">System.out::println</code>, тогда все объекты будут выводиться на экран в момент, когда они будут проходить через поток.</p>
+<p><strong>Метод <code>Stream&lt;T&gt; limit(int n)</code></strong></p>
+<p>Этот метод возвращает <span class="term text-yellow">новый поток</span> данных, который содержит <span class="term text-red">только первые</span> <code class="text-user">n</code> данных из потока данных <span class="term text-viola">источника</span>. Все остальные данные отбрасываются. Пример:</p>
+<div class="lesson-example">
+        <pre class="language-java"><code><span class="text-viola">Stream</span>&lt;Integer&gt; <span class="code text-viola">stream</span> = <span class="text-viola">Stream</span>.of(<span class="text-user">1</span>, <span class="text-user">2</span>, <span class="text-user">3</span>, <span class="text-user">4</span>, <span class="text-user">5</span>, <span class="text-user">2</span>, <span class="text-user">2</span>, <span class="text-user">2</span>, <span class="text-user">3</span>, <span class="text-user">4</span>);
+<span class="text-viola">Stream</span>&lt;Integer&gt; <span class="code text-yellow">stream2</span> = <span class="code text-viola">stream</span>.<span class="text-red">limit</span>(<span class="code text-user">3</span>); // 1, 2, 3</code></pre>
+</div>
+<p><strong>Метод <code>Stream&lt;T&gt; skip(int n)</code></strong></p>
+<p>Этот метод возвращает <span class="term text-yellow">новый поток</span> данных, который содержит все те же данные, что и <span class="term text-viola">поток-источник</span>, но <span class="term text-red">пропускает</span> (игнорирует) первые <code class="text-user">n</code> данных. Пример:</p>
+<div class="lesson-example">
+        <pre class="language-java"><code><span class="text-viola">Stream</span>&lt;Integer&gt; <span class="code text-viola">stream</span> = <span class="text-viola">Stream</span>.of(<span class="text-user">1</span>, <span class="text-user">2</span>, <span class="text-user">3</span>, <span class="text-user">4</span>, <span class="text-user">5</span>, <span class="text-user">2</span>, <span class="text-user">2</span>, <span class="text-user">2</span>, <span class="text-user">3</span>, <span class="text-user">4</span>);
+<span class="text-viola">Stream</span>&lt;Integer&gt; <span class="code text-yellow">stream2</span> = <span class="code text-viola">stream</span>.<span class="text-red">skip</span>(<span class="code text-user">3</span>); // 4, 5, 2, 2, 2, 3, 4</code></pre>
+</div>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1812"></div>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1813"></div>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1814"></div>

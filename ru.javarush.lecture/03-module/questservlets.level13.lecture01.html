@@ -1,0 +1,146 @@
+Структура JSP-файла
+<p>----------------------------------------</p>
+JSP-директивы
+Импорты
+<p>----------------------------------------</p>
+<h2>2.1 JSP-директивы</h2>
+<p>Раз уж мы выяснили, что JSP-файл преобразовывается в обычный сервлет, то в нем можно писать обычный Java-код. И в этом Java-коде можно использовать различные классы (Math из примера). Это еще лучше! Но мы видим, что весь код был перенесен в метод <code>doGet()</code> сервлета. А отсюда сразу возникает несколько вопросов:</p>
+
+<ul>
+<li>Как сделать так, чтобы код был перенесен в метод <code>doPost()</code>?</li>
+<li>Как добавить свой код в метод <code>init()</code>?</li>
+<li>Как в конце концов прописать импорты классов?</li>
+</ul>
+
+<p>Отличные вопросы, и, конечно же, на них есть ответ — JSP-директивы.  Весь не-HTML-код внутри JSP должен быть обрамлен в специальные скобки <code>&lt;%</code> и <code>%&gt;</code>. Все JSP-директивы задаются шаблоном:</p>
+
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+        <span class="text-red">&lt;%@</span> <span class="text-green">directive</span> <span class="text-red">%&gt;</span>
+        </code></pre>
+</div>
+<p>Вот список самых популярных атрибутов директивы страницы:</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th></th>
+        <th>Пример</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td><strong>import</strong></td>
+        <td><code>&lt;%@ page import="java.util.Date" %&gt; </code></td>
+        <td>Импортирует класс</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td><strong>contentType</strong></td>
+        <td><code>&lt;%@ page contentType=text/html %&gt;</code></td>
+        <td>Задает contentType</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td><strong>extends</strong></td>
+        <td><code>&lt;%@ page extends="Object" %&gt;</code></td>
+        <td>Можно задать базовый класс</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td><strong>info</strong></td>
+        <td><code>&lt;%@ page info="Автор: Пётр Иванович; версия:1.0" %&gt;</code></td>
+        <td>Задает данные для getServletInfo()</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td><strong>buffer</strong></td>
+        <td><code>&lt;%@ page buffer="16kb" %&gt;</code></td>
+        <td>Задает размер буфера ответа</td>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td><strong>language</strong></td>
+        <td><code>&lt;%@ page language="java" %&gt;</code></td>
+        <td>Задает язык, по умолчанию Java</td>
+    </tr>
+    <tr>
+        <td>7</td>
+        <td><strong>isELIgnored</strong></td>
+        <td><code>&lt;%@ page isELIgnored="true" %&gt;</code></td>
+        <td>Позволяет отключить EL скрипты</td>
+    </tr>
+    <tr>
+        <td>8</td>
+        <td><strong> isThreadSafe</strong></td>
+        <td><code>&lt;%@ page isThreadSafe="false" %&gt;</code></td>
+        <td>Указывает на threadsafe</td>
+    </tr>
+    <tr>
+        <td>9</td>
+        <td><strong>autoFlush</strong></td>
+        <td><code>&lt;%@ page autoFlush="false" %&gt;</code></td>
+        <td>Управляет записью в буфер</td>
+    </tr>
+    <tr>
+        <td>10</td>
+        <td><strong>session</strong></td>
+        <td><code>&lt;%@ page session="false" %&gt;</code></td>
+        <td>Можно отключить сессию для страницы</td>
+    </tr>
+    <tr>
+        <td>11</td>
+        <td><strong>pageEncoding</strong></td>
+        <td><code>&lt;%@ page pageEncoding="UTF-8"%&gt;</code></td>
+        <td>Можно задать кодировку страницу</td>
+    </tr>
+    <tr>
+        <td>12</td>
+        <td><strong>errorPage</strong></td>
+        <td><code>&lt;%@ page errorPage="errorpage.jsp" %&gt;</code></td>
+        <td>Можно задать страницу для ошибок</td>
+    </tr>
+    </tbody>
+</table>
+<h2>2.2 Импорты</h2>
+<p>Давай ради интереса добавим в наш JSP-файл несколько импортов и зададим базовый класс.</p>
+<p>Пример JSP-файла:</p>
+<pre class='line-numbers'><code>
+<span class="text-red">    &lt;%@ page import="java.util.Date" %&gt; 
+    &lt;%@ page import="java.lang.Math" %&gt; 
+    &lt;%@ page extends="com.javarush.MyHttpServlet" %&gt; </span>
+ 
+    &lt;html&gt; 
+    &lt;body&gt; 
+<span class="text-red">    &lt;%</span>
+<span class="text-user">        double num = Math.random();
+        if (num &gt; 0.95) {</span>
+<span class="text-red">     %&gt;</span>
+         &lt;h2&gt;Ты счастливчик, user!&lt;/h2&gt;&lt;p&gt;(<span class="text-red">&lt;%=</span> num <span class="text-red">%&gt;</span>)&lt;/p&gt;
+<span class="text-red">    &lt;%</span>
+<span class="text-user">    }</span>
+<span class="text-red">    %&gt; </span>
+  &lt;/body&gt; 
+   &lt;/html&gt; 
+</code></pre>
+<p>И вот что из него получится:</p>
+<pre class='language-java line-numbers'><code>
+import java.util.Date;
+import java.lang.Math;
+ 
+public class HelloServlet extends com.javarush.MyHttpServlet {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)  throws Exception {
+    PrintWriter out = response.getWriter(); 
+    out.print("&lt;html&gt;  "); 
+    out.print("&lt;body&gt; "); 
+        double num = Math.random();
+        if (num &gt;  0.95) {
+             out.print("&lt;h2&gt; Ты счастливчик, user! &lt;/h2&gt; &lt;p&gt; (" + num + ")&lt;/p&gt; ");
+        }
+    out.print("&lt;/body&gt; "); 
+    out.print("&lt;/html&gt; "); 
+    }
+}
+
+</code></pre>
+<p>Работает. Отлично!</p>

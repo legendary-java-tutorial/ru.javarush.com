@@ -1,0 +1,131 @@
+Учимся писать запросы на HQL
+<p>----------------------------------------</p>
+Знакомство с HQL
+Пример работы с HQL
+Использование select
+<p>----------------------------------------</p>
+<h2>1.1 Знакомство с HQL</h2>
+<p>Ранее ты познакомился с Hibernate, а теперь я познакомлю тебя с <strong>HQL</strong>, он же <strong>Hibernate Query Language</strong>. Фактически, – это SQL переделанный под написание запросов в Hibernate. У него есть несколько ключевых отличий.</p>
+<ol>
+	<li>Использование <strong>имени класса</strong> вместо имени таблицы.</li>
+	<li>Использование <strong>имени поля класса</strong> вместо имени колонки таблицы.</li>
+	<li><strong>Необязательное</strong> использование select.</li>
+</ol>
+<p>Давай попросим Hibernate вернуть нам всех пользователей, которые есть у него в базе. Вот как будет выглядеть этот запрос:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">from</span> User
+        </code></pre>
+</div>
+<p>Это все, для сравнения приведем аналогичный запрос на SQL:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">select</span> * <span class="text-brown">from</span> user
+        </code></pre>
+</div>
+<p>Тут <code>User</code> – это имя класса, а <code>user</code> – это имя таблицы.</p>
+<p>Полностью Java код будет выглядеть вот так:</p>
+<pre class='line-numbers'><code>
+<span class="text-brown">public List&lt;User&gt; getAllUsers()</span> {
+    try (Session <span class="text-user">session</span> = <span class="text-yellow">sessionFactory</span>.openSession()) {
+            return <span class="text-user">session</span>.createQuery(<span class="text-green">"from User"</span>, User.class).list();
+    }
+}
+</code></pre>
+<p>В остальном HQL очень похож на SQL – в нем тоже есть операторы:</p>
+<ul>
+	<li><code>WHERE</code></li>
+	<li><code>ORDER BY</code></li>
+	<li><code>GROUP BY</code></li>
+	<li><code>HAVING</code></li>
+</ul>
+<h2>1.2 Пример работы с HQL</h2>
+<p>Возможно, предыдущий пример немного сбивает с толку из-за одинаковых названий таблиц и полей. Давай придумаем специальный пример, где с этим было бы полегче.</p>
+<p>Пусть у нас есть таблица <strong>user_data</strong>, которая содержит такие поля:</p>
+<ul>
+	<li><strong>id</strong> INT</li>
+	<li><strong>user_name</strong> VARCHAR(100)</li>
+	<li><strong>user_level</strong> INT</li>
+	<li><strong>user_created</strong> DATE</li>
+</ul>
+<p>Мы создадим Java-класс, который замапим на эту таблицу:</p>
+<pre class='line-numbers'><code>
+<span class="text-brown">@Entity</span>
+<span class="text-brown">@Table(name</span>=<span class="text-green">"user_data"</span><span class="text-brown">)</span>
+class User {
+   <span class="text-brown">@Id</span>
+   <span class="text-red">@GeneratedValue</span>
+   public Integer id;
+ 
+   <span class="text-brown">@Column(name</span>=<span class="text-green">"user_name"</span><span class="text-brown">)</span>
+   public String name;
+ 
+   <span class="text-brown">@Column(name</span>=<span class="text-green">"user_level"</span><span class="text-brown">)</span>
+   public Integer level;
+ 
+   <span class="text-brown">@Column(name</span>=<span class="text-green">"user_created"</span><span class="text-brown">)</span>
+   public Date created;
+}
+</code></pre>
+<p>Теперь напишем несколько примеров:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>HQL</th>
+        <th>SQL</th>
+    </tr>
+    <tr>
+        <td>from User</td>
+        <td>select * from user_data</td>
+    </tr>
+    <tr>
+        <td>from User where id=3</td>
+        <td>select * from user_data where id=3</td>
+    </tr>
+    <tr>
+        <td>from User where level in (10,20,30)</td>
+        <td>select * from user_data where user_level IN (10, 20, 30)</td>
+    </tr>
+    <tr>
+        <td>from User order by created asc</td>
+        <td>select * from user_data order by user_created asc</td>
+    </tr>
+    <tr>
+        <td>from User where name like 'тест'</td>
+        <td>select * from user_data where user_name like 'тест'</td>
+    </tr>
+    </tbody>
+</table>
+<p>Запросы очень похожи, и читать HQL-запросы, когда ты знаком с именами классов и их полей так же легко, как читать SQL-запросы. Писать, возможно, немного сложнее, но опять-таки, на HQL редко пишут очень сложные запросы.</p>
+<h2>1.3 Использование select</h2>
+<p>В HQL можно использовать <code>select</code>, когда тип данных результата не совпадает с типом указанным в <code>from</code>.</p>
+<p>Например, мы хотим получить имена всех пользователей, которые есть в нашей таблице <strong>user_data</strong>, тогда нужно написать такой запрос:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">select</span> name <span class="text-brown">from</span> User
+        </code></pre>
+</div>
+<p>Также если среди имен есть дубликаты, то можно воспользоваться оператором <code>DISTINCT</code>:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">select distinct</span> name <span class="text-brown">from</span> User
+        </code></pre>
+</div>
+<p>Алиасы работают так же, как и в SQL:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">select distinct</span> u.name <span class="text-brown">from</span> User u <span class="text-brown">where</span> u.created > '2020-01-01'
+
+        </code></pre>
+</div>
+<p>Ну и полностью в виде Java-кода этот запрос будет выглядеть вот так:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-brown">public List&lt;String&gt; getUserNames()</span> {
+    try (Session <span class="text-user">session</span> = sessionFactory.openSession()) {
+            String hql = "select distinct u.name from User u where u.created > '2020-01-01'";
+            Query&lt;String&gt; <span class="text-viola">query</span> = <span class="text-user">session</span>.createQuery(hql , String.class);
+            return <span class="text-viola">query</span>.list();
+    }
+}
+</code></pre>
+<p>Обрати внимание, запрос должен вернуть список имен. Имена имеют тип String, поэтому и тип функции, и тип-параметр класса Query имеют тип String.</p>

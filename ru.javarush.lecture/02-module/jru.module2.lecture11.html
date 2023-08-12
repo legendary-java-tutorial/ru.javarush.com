@@ -1,0 +1,151 @@
+switch expression
+<p>----------------------------------------</p>
+Повторение — мать учения. Хотя ранее мы уже говорили о switch-е в Java, сегодня вспомним основное и разберем немного новой информации. У Java есть 2 варианта switch — это switch statement и switch expression. Switch expression официально был в Java в версии 14, имея до этого 2 модификации в 12 и 13 версиях...
+<p>----------------------------------------</p>
+<p>Повторение — мать учения. Хотя ранее мы уже говорили о <span class="text-viola">switch</span>-е в Java, сегодня вспомним основное и разберем немного новой информации.</p>
+
+<p>У Java есть 2 варианта <span class="text-viola">switch</span> — это switch statement и switch expression. Switch expression официально был в Java в версии 14, имея до этого 2 модификации в 12 и 13 версиях.</p>
+
+<p>Но начнем сначала, вспомним как выглядит старый добрый свитч до версии 12:</p>
+
+<pre class='language-java line-numbers'><code>
+public String getProductTypeByName(String product) {
+    String productType = "";
+
+    switch (product) {
+        case "Apple":
+            productType = "Fruit";
+            break;
+
+        case "Peach":
+            productType = "Fruit";
+            break;
+
+        case "Raspberry":
+            productType = "Berry";
+            break;
+
+        case "Cherry":
+            productType = "Berry";
+            break;
+
+        case "Tomato":
+            productType = "Vegetables";
+            break;
+
+        default:
+            productType = "other";
+            break;
+    }
+        
+    return productType;
+}
+</code></pre>
+
+<p>switch statement — это набор конструкций, которые будут выполняться друг за другом, не позволяя вернуть результат выполнения. Главная проблема использования switch statement заключается в том, что он позволяет добавлять бесконечное количество <span class="text-viola">case</span> выраженный, и этим часто злоупотребляют программисты. </p>
+
+<p>В Java 12 его добавили как experimental feature, и уже не как switch statement, a как switch expression — новую версию свитча, которая дает возможность сохранять результат исполнения, использовать функциональный подход внутри и группировать значение в case выражениях, тем самым позволяя сделать его компактным.</p>
+
+<p>Переписать метод <span class="code text-orange">getProductTypeByName()</span> с использованием Java 12 можно так:</p>
+
+<pre class='language-java line-numbers'><code>
+public String getProductTypeByName(String product) {
+    return switch (product) {
+        case "Apple", "Peach" -&gt; "Fruit";
+        case "Raspberry", "Cherry" -&gt; "Berry";
+        case "Tomato" -&gt; "Vegetables";
+        default -&gt; "other";
+
+    };
+}
+</code></pre>
+
+<p>Теперь код выглядит более аккуратно. Использование arrow syntax из функционального программирования дает возможность возвращать значения без ключевого слова <span class="text-user"><span class="text-bold">break</span></span>, и вообще результат исполнения <span class="text-viola">switch</span> теперь можно сохранить в переменную или вернуть через <span class="text-viola">return</span>.</p>
+
+<p>В случаях, когда нужно не только вернуть результат, но и иметь несколько строк кода, <span class="text-viola">switch</span> будет следующим:</p>
+
+<pre class='language-java line-numbers'><code>
+public String getProductTypeByName(String product) {
+    var result = switch (product) {
+        case "Apple", "Peach" -&gt; {
+            System.out.println("This is fruit");
+            break "Fruit";
+        }
+        case "Raspberry", "Cherry" -&gt; {
+            System.out.println("This is a Berry");
+            break "Berry";
+        }
+        case "Tomato" -&gt; {
+            System.out.println("This is a Vegetables");
+            break "Vegetables";
+        }
+        default -&gt; {
+            break "other";
+        }
+
+    };
+     return result;
+}
+</code></pre>
+
+<p>В Java 13 switch expression все еще находится в статусе experimental feature, и чтобы он был доступен для запуска, как и в Java 12, нужно использовать команду <em>--enable-preview</em> для компиляции и для запуска. Главная и в принципе единственная “обновка” <span class="text-viola">switch</span> в Java 13 — это ключевое слово <span class="text-user"><span class="text-bold">yield</span></span>, которое заменило <span class="text-viola">break</span>.</p>
+
+<pre class='language-java line-numbers'><code>
+public String getProductTypeByName(String product) {
+    var result = switch (product) {
+        case "Apple", "Peach" -&gt; {
+            System.out.println("This is fruit");
+            yield "Fruit";
+        }
+        case "Raspberry", "Cherry" -&gt; {
+            System.out.println("This is a Berry");
+            yield "Berry";
+        }
+        case "Tomato" -&gt; {
+            System.out.println("This is a Vegetables");
+            yield "Vegetables";
+        }
+        default -&gt; {
+            System.out.println("Other");
+            yield "other";
+        }
+
+    };
+    return result;
+}
+</code></pre>
+
+<p>Главным отличием <span class="text-user"><span class="text-bold">yield</span></span> от <span class="text-viola">break</span> является то, что <span class="text-viola">break</span> возвращал управление из <span class="text-viola">case</span> — команды, когда <span class="text-user"><span class="text-bold">yield</span></span> возвращает результат из целого <span class="text-viola">switch</span>, играя роль внутреннего <span class="text-viola">return</span>-a.</p>
+
+<p>В Java 14 изменился оператор <span class="text-viola">instanceOf</span>, и теперь его можно использовать так:</p>
+
+<pre class='language-java line-numbers'><code>
+if(o instanceof String s) {
+s.toLowerCase();
+}
+</code></pre>
+
+<p>Вместо старого и не очень красивого варианта, где кроме проверки на <span class="text-viola">instanceOf</span> нужно еще обязательно приводить переменную к определенному типу.</p>
+
+<pre class='language-java line-numbers'><code>
+if(s instanceof String) {
+((String) s).toLowerCase();
+}
+</code></pre>
+
+<p>Эти изменения являются частью проекта Amber, цель которого — добавить в Java поддержку pattern matching.</p>
+
+<p>Благодаря изменению оператора <span class="text-viola">instanceOf</span> в 14 версии и расширению в 16, Pattern Matching все-таки добавили в 17 версии. Правда пока только как preview, и протестировать его можно с помощью <em>--enable-preview</em>:</p>
+
+<pre class='language-java line-numbers'><code>
+public String getObjectType(Object object) {
+    return switch (object) {
+        case Integer i -&gt; "Integer";
+        case Long l -&gt; "Long";
+        case String s -&gt; "String";
+        default -&gt; object.toString();
+    };
+}
+</code></pre>
+
+<p>Вообще с каждой новой версией в языке появляется все больше и больше интересных фичей для разработки, что делает Java еще круче. </p>

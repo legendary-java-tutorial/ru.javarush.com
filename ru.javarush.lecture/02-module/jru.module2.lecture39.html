@@ -1,0 +1,146 @@
+Параметры аннотаций
+<p>----------------------------------------</p>
+Главная польза от аннотаций состоит не в использовании уже готовых в JDK. При этом нужда в создании собственной аннотации появляется нечасто. Например, если мы разрабатываем большую систему или выделяем отдельную библиотеку...
+<p>----------------------------------------</p>
+    <p>Главная польза от механизма аннотаций — не в использовании уже готовых стандартных аннотаций в JDK. Но и нужда в создании собственной аннотации появляется нечасто. Например, если мы разрабатываем большую систему или выделяем отдельную библиотеку, то на архитектурном уровне реализация собственной аннотации точно принесет плоды.</p>
+
+    <p>Давай попробуем создать аннотацию. </p>
+
+    <p>Для этого создаем файл, и вместо <span class="code">class</span> или <span class="code">interface</span> пишем <span class="code">@interface</span>. Это и будет файл нашей аннотации. По внутренней структуре аннотация схожа с интерфейсом. </p>
+
+    <pre class='language-java line-numbers'><code>
+public @interface Sum {
+   int sum() default 0;
+}
+</code></pre>
+
+    <p><span class="code">@interface</span> указывает на то, что это аннотация,<br />
+<span class="code">default</span> сообщает, что параметр по умолчанию будет возвращать определённое значение.</p>
+
+    <p>Мы создали аннотацию и теоретически уже можем ее использовать, но сначала лучше заняться ее конфигурированием. </p>
+
+    <p>Дело в том, что без конфигурирования наша аннотация может быть применена к чему угодно (к классам, методам, атрибутам и т. д.), а поэтому использовать ее особо смысла нет. Как бы это странно не выглядело, нашу аннотацию нужно зааннотировать другими аннотациями!</p>
+
+    <p>Начнем с <span class="text-yellow"><span class="text-bold">@Target</span></span>.</p>
+
+    <p>Аннотация <span class="text-yellow"><span class="text-bold">@Target</span></span> (актуальна с Java 1.5) ограничивает возможность применения конфигурируемой аннотации. Для ограничения до определенного уровня в аннотацию <span class="text-yellow"><span class="text-bold">@Target</span></span> мы должны передать параметр, указывающий, для каких видов она может быть применена. Вот некоторые из часто используемых видов:</p>
+
+    <table>
+        <tbody>
+            <tr>
+                <td><span class="text-yellow"><span class="text-bold">@Target(ElementType.PACKAGE)</span></span></td>
+                <td>для пакетов</td>
+            </tr>
+            <tr>
+                <td><span class="text-yellow"><span class="text-bold">@Target(ElementType.TYPE)</span></span></td>
+                <td>для классов</td>
+            </tr>
+            <tr>
+                <td><span class="text-yellow"><span class="text-bold">@Target(ElementType.CONSTRUCTOR)</span></span></td>
+                <td>для конструкторов</td>
+            </tr>
+            <tr>
+                <td><span class="text-yellow"><span class="text-bold">@Target(ElementType.METHOD)</span></span></td>
+                <td>для методов</td>
+            </tr>
+            <tr>
+                <td><span class="text-yellow"><span class="text-bold">@Target(ElementType.FIELD)</span></span></td>
+                <td>для атрибутов (переменных) класса</td>
+            </tr>
+            <tr>
+                <td><span class="text-yellow"><span class="text-bold">@Target(ElementType.PARAMATER)</span></span></td>
+                <td>для параметров метода</td>
+            </tr>
+            <tr>
+                <td><span class="text-yellow"><span class="text-bold">@Target(ElementType.LOCAL_VARIABLE)</span></span></td>
+                <td>для локальных переменных</td>
+            </tr>
+        </tbody>
+    </table>
+ 
+    <p>Если нужна аннотация с несколькими типами, то можно передать несколько параметров в виде массива:</p>
+
+    <pre class='language-java line-numbers'><code>
+@Target({ ElementType.PARAMETER, ElementType.LOCAL_VARIABLE })
+</code></pre>
+ 
+    <p>Следующий важный элемент конфигурации — аннотация <span class="text-yellow"><span class="text-bold">@Retention</span></span>.</p>
+
+    <p>Эта аннотация укажет, в каком жизненном цикле кода наша аннотация будет доступна: </p>
+
+    <table>
+        <tbody>
+            <tr>
+                <td><span class="code">RetentionPolicy.SOURCE</span></td>
+                <td>Аннотации, аннотированные с помощью политики хранения <span class="text-bold">SOURCE</span>, отбрасываются во время выполнения.</td>
+            </tr>
+            <tr>
+                <td><span class="code">RetentionPolicy.CLASS</span></td>
+                <td>Аннотации, аннотированные с помощью политики хранения <span class="text-bold">CLASS</span>, записываются в файл <span class="code">.class</span>, но удаляются во время выполнения.</td>
+            </tr>
+            <tr>
+                <td><span class="code">RetentionPolicy.RUNTIME</span></td>
+                <td>Аннотации, аннотированные с помощью политики хранения <span class="text-bold">RUNTIME</span>, сохраняются во время выполнения и могут быть доступны в нашей программе во время выполнения.</td>
+            </tr>
+        </tbody>
+    </table>
+ 
+    <p>Также для конфигурации можно использовать еще несколько аннотаций: </p>
+
+    <table>
+        <tbody>
+            <tr>
+                <th>Аннотация</th>
+                <th>Значение</th>
+            </tr>
+            <tr>
+                <td><span class="text-yellow"><span class="text-bold">@Inherited</span></span></td>
+                <td>Позволяет классу-наследнику реализовать наследование аннотаций родительского класса.</td>
+            </tr>
+            <tr>
+                <td><span class="text-yellow"><span class="text-bold">@Documented</span></span></td>
+                <td>Аннотация будет помещена в сгенерированную документацию javadoc.</td>
+            </tr>
+        </tbody>
+    </table>
+ 
+    <p>Вот теперь давай попробуем создать собственную аннотацию.</p>
+
+    <p>Создадим аннотацию, которая будет аннотировать классы и методы и содержать информацию об авторе и версии написанного кода:</p>
+
+<pre class='language-java line-numbers'><code>
+    @Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Info {
+   String author() default "Author";
+   String version() default "0.0";
+}
+</code></pre>
+
+    <p>Нашу аннотацию мы можем применять к методам и классам. Метаданные нашей аннотации будут доступны на этапе выполнения программы. Обрати внимание на параметры нашей аннотации. Мы можем вложить два параметра: имя и версию, но можем не класть, и тогда по умолчанию будут значения, которые мы указали (<span class="code">default "Author"</span> и <span class="code">default "0.0"</span>).</p>
+ 
+    <p>Стоит отметить, что мы можем и не указывать дефолтное значение для параметров. В таком случае указание этого параметра становится обязательным. </p>
+
+    <p>При передаче параметров также обязательно указать параметр, который мы передаем через <span class="code">value = "value"</span>. Явное указание обязательно всегда, даже если параметр у аннотации единственный.</p>
+
+    <p>Применяем нашу аннотацию к нескольким классам: </p>
+
+    <pre class='language-java line-numbers'><code>
+@Info
+public class MyClass1 {
+   @Info
+   public void myClassMethod() {}
+}
+ 
+@Info(version = "2.0")
+public class MyClass2 {
+   @Info(author = "Anonymous")
+   public void myClassMethod() {}
+}
+ 
+@Info(author = "Anonymous", version = "2.0")
+public class MyClass3 {
+   @Info(author = "Anonymous", version = "4.0")
+   public void myClassMethod() {}
+}
+</code></pre>

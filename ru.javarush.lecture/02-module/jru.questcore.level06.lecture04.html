@@ -1,0 +1,57 @@
+join — ожидание завершения нити
+<p>----------------------------------------</p>
+Допустим, главная нить создала дочернюю нить для выполнения какого-то задания. И вот, в какой-то момент главной нити понадобились результаты работы дочерней нити. А дочерняя нить еще не закончила свою работу. Что делать главной нити? Проблему решит специальный метод join. А как — узнаете из лекции.
+<p>----------------------------------------</p>
+<p>&#8212; Привет, Амиго! Я смотрю, ты делаешь большие успехи в изучении нитей.</p>
+<p class="amigo"><span class="text-user">&#8212; Это оказалось несложно.</span></p>
+<p>&#8212; Это же отлично! Сегодня легкий урок, и тема этого урока – метод <b>join</b>.</p>
+<p>Представь себе ситуацию: главная нить создала дочернюю нить для выполнения какого-то задания. Проходит время, и вот главной нити понадобились результаты работы той дочерней нити. А дочерняя нить еще не закончила свою работу. Что делать главной нити?</p>
+<p class="amigo"><span class="text-user">&#8212; Да, что делать главной нити?</span></p>
+<p>&#8212; Для этого есть метод <b>join</b>. Смысл его в следующем. Одна нить ждет, пока полностью завершится работа второй нити:</p>
+<table class="table_example wide-table">
+<tbody>
+<tr>
+<th>Код</th>
+<th>Описание</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Printer <span class="text-user">implements Runnable</span>
+{
+private String name;
+public Printer(String name)
+{
+this.name = name;
+}
+public void <span class="text-user">run()</span>
+{
+System.out.println("I’m " + this.name);
+}
+}</code></pre>
+</td>
+<td>Класс, который реализует интерфейс Runnable.</td>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public static void main(String[] args)
+{
+Printer <span class="text-user">printer1</span> = new Printer("Коля");
+Thread <span class="text-green">thread1</span> = new Thread(<span class="text-user">printer1</span>);
+<span class="text-green">thread1</span>.start();
+
+<strong><span class="text-green">thread1</span></strong>.<span class="text-red">join();</span>
+}</code></pre>
+</td>
+<td>Главная нить создает дочернюю нить – объект <span class="text-green"><strong>thread1</strong></span>.</p>
+<p>Затем запускает ее – вызов <strong><span class="text-green">thread1</span>.start();</strong></p>
+<p>И ждет ее завершения – <strong><span class="text-red">thread1.join();</span></strong></td>
+</tr>
+</tbody>
+</table>
+<p><span class="red_text text-red">Одна нить может вызвать метод <b>join</b> у объекта второй нити.</span> В результате первая нить (которая вызвала метод) приостанавливает свою работу до окончания работы второй нити (у объекта которой был вызван метод).</p>
+<p><b>Тут стоит различать две вещи: есть, собственно, нить – отдельный процесс выполнения команд, а есть объект этой нити (объект Thread).</b></p>
+<p class="amigo"><span class="text-user">&#8212; И это все?</span></p>
+<p>&#8212; Да.</p>
+<p class="amigo"><span class="text-user">&#8212; А зачем нужно создавать нить и сразу же ждать ее завершения?</span></p>
+<p>&#8212; Сразу же может и не нужно. А вот спустя какое-то время это может и понадобится. Главная нить после запуска первой дочерней нити может <i>раздать еще много заданий</i> другим нитям (создав их и вызвав метод <b>start</b>), а потом все – работы ей больше не осталось, нужно обрабатывать результаты работы первой дочерней нити. В таких случаях, когда нужно обязательно дождаться завершения работы другой нити и нужно вызывать метод <b>join</b>.</p>
+<p class="amigo"><span class="text-user">&#8212; Понятно.</span></p>

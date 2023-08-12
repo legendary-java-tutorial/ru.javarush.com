@@ -1,0 +1,199 @@
+Первичный ключ
+<p>----------------------------------------</p>
+Аннотация @Id. 
+Размещение аннотаций. 
+Аннотация @GeneratedValue. 
+Различные стратегии @GeneratedValue.
+<p>----------------------------------------</p>
+<h2>Аннотация @Id</h2>
+
+<p>Каждая Entity-сущность в Hibernate должна иметь поле, которое будет первичным ключом: содержать уникальное значение для всех объектов данного класса. Обычно это поле помечается аннотацией <span class="text-yellow"><span class="text-bold">@Id</span></span>.</p>
+
+<p>Общий вид:</p>
+
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+   <span class="text-red">@Id</span>
+   <span class="text-user">Класс</span> <span class="text-green">имя</span>;</code></pre>
+    </div> 
+
+<p>Пример:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+class User
+{
+   @Id
+   @Column(name="id")
+   public Integer id;
+ 
+   @Embedded
+   public UserAddress address;
+ 
+   @Column(name="created_date")
+   public Date createdDate;
+}
+</code></pre>
+
+<h2>Размещение аннотаций</h2>
+
+<p>Кстати, ты можешь писать аннотации <span class="text-yellow"><span class="text-bold">@Column</span></span> не только у полей, но и методов: у геттеров или сеттеров. Пример:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+class User
+{
+    public Integer id;
+    public Date createdDate;
+ 
+   @Id
+   @Column(name="id")
+   public Integer getId() {
+   	return this.id;
+   }
+   public void setId(Integer id)    {
+  	this.id = id;
+   }
+ 
+   @Column(name="created_date")
+   public Date getDate() {
+  	return this.createdDate;
+   }
+   public void setCreatedDate(Date date) {
+      this. createdDate = date;
+   }
+}
+</code></pre>
+
+<p>Такой подход появился, когда аннотации начали добавлять не только у классов, но и у интерфейсов. Полей класса у интерфейса нет, зато есть методы: геттеры и сеттеры. Hibernate поддерживает оба этих стандарта.</p>
+
+<p><strong>Важно!</strong> Если у класса есть аннотация <span class="text-yellow"><span class="text-bold">@Entity</span></span>, то все его поля рассматриваются Hibernate как сохраняемые поля (если у них не указана аннотация <span class="text-yellow"><span class="text-bold">@Transient</span></span>). Даже если у полей нет вообще никаких аннотаций: при этом имя колонки считается равным имени поля класса.</p>
+
+<p>И тут аннотация <span class="text-yellow"><span class="text-bold">@Id</span></span> играет важную роль. Если аннотация размещена у поля класса, то Hibernate будет смотреть на имена и типы полей. Если аннотация <span class="text-yellow"><span class="text-bold">@Id</span></span> размещена у метода, тогда Hibernate будет смотреть на имена и типы методов.</p>
+
+<p>Пример 1:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+class User
+{
+   @Id
+    public Integer id;
+    public Date createdDate;  //это поле будет обработано как будто тут есть @Column(name=” createdDate ”)
+ 
+}
+</code></pre>
+
+<p>Пример 2:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+class User
+{
+    public Integer id;
+    public Date createdDate;  
+ 
+   @Id
+   public Integer getId() {
+   	return this.id;
+   }
+   public void setId(Integer id)    {
+  	this.id = id;
+   }
+ 
+   public Date getDate() { //это поле будет обработано как будто тут есть @Column(name=”date ”)
+  	return this.createdDate;
+   }
+   public void setCreatedDate(Date date) {
+  	this. createdDate = date;
+   }
+ 
+}
+</code></pre>
+
+<h2>Аннотация @GeneratedValue</h2>
+
+<p>Ты можешь присваивать id твоим новым объектам самостоятельно, или отдать это на откуп Hibernate. Для того чтобы Hibernate лучше понимал, как присваивать ID твоим объектам, у него есть специальная аннотация:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red"><span class="text-red">@GeneratedValue</span></code></pre>
+    </div>
+
+<p>Этой аннотацией обычно помечается то же поле, что и аннотацией <span class="text-yellow"><span class="text-bold">@Id</span></span>. У нее есть 4 возможных стратегии присвоения ID:</p>
+
+<ul>
+<li>AUTO</li>
+<li>IDENTITY</li>
+<li>SEQUENCE</li>
+<li>TABLE</li>
+</ul>
+
+<p>Пример аннотации с указанной стратегией:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+class User
+{
+    @Id
+	@GeneratedValue(strategy = GenerationType.AUTO)
+    public Integer id;
+ 
+    public Date createdDate;
+}
+</code></pre>
+
+<p>Если значение стратегии не указано, то выберется стратегия AUTO. Стратегия AUTO означает, что Hibernate будет сам назначать ID, основываясь в первую очередь на типе данных у поля ID.</p>
+
+<p>Почему именно на типе? Да потому, что типы у ID могут быть очень разные, например, String или GUID. Пример:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+class User
+{
+    @Id
+	@GeneratedValue
+    public UUID id;
+ 
+    public Date createdDate;
+}
+</code></pre>
+
+<p>Примечание: GUID в Java называется UUID, так исторически пошло. И Hibernate умеет генерировать уникальные UUID для твоих объектов, если ты его об этом попросишь. </p>
+
+<h2>Различные стратегии @GeneratedValue</h2>
+
+<p>Если ты укажешь тип <strong>GeneratedValue(strategy = GenerationType.IDENTITY)</strong>, то Hibernate делегирует установку ID на уровень базы данных. Обычно при этом используется колонка, помеченная как PRIMARY KEY, AUTOINCREMENT.</p>
+
+<p>А вот если ты хочешь, чтобы твои ID были уникальными и генерировались по специально заданному алгоритму, то можешь воспользоваться аннотацией <strong>GeneratedValue(strategy = GenerationType.SEQUENCE)</strong>, пример:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+public class User {
+	@Id
+	@GeneratedValue(generator = "sequence-generator")
+	@GenericGenerator(
+  	name = "sequence-generator",
+  	strategy = "org.hibernate.id.enhanced.SequenceStyleGenerator",
+  	parameters = {
+    	@Parameter(name = "sequence_name", value = "user_sequence"),
+    	@Parameter(name = "initial_value", value = "4"),
+    	@Parameter(name = "increment_size", value = "1")
+    	}
+	)
+	private long userId;
+	
+	// ...
+}
+</code></pre>
+
+<p>Есть еще много разных способов генерации ID. Например, у тебя может быть составной уникальный ключ, состоящий из нескольких колонок. И при записи объекта в базу, нужно все эти колонки заполнить.</p>
+
+<p>Я не буду их подробно приводить. Все-таки задача наших лекций – это знакомство с Hibernate, а не пересказ официальной документации.</p>

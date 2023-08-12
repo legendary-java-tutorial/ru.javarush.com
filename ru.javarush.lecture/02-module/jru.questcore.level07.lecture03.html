@@ -1,0 +1,196 @@
+Нет независимости нитей! Даешь synchronized!
+<p>----------------------------------------</p>
+Неконтролируемое переключение нитей –  та ещё проблема. Возникает резонный вопрос: почему бы нитям не предоставить свободу воли и разрешить самим управлять своим переключением? На самом деле такой подход создает ещё больше проблем. О том, какие это проблемы и что же всё-таки делать, узнаете из этой лекции.
+<p>----------------------------------------</p>
+<p>&#8212; Привет, Амиго! У нас есть панацея – лекарство от всех болезней. Как мы уже успели убедиться – неконтролируемое переключение нитей – это проблема.</p>
+<p><span class="text-user">&#8212; А почему бы нитям самим не решать, когда переключиться на следующую? Сделала все важные дела и «маякует», я – все!</span></p>
+<p>&#8212; Разрешать нитям самим управлять своим переключением – еще большая проблема. Вдруг какой-то код не очень красиво написан, и нить никогда сама не отдаст свое «процессорное время». Давным-давно так и было – и это был тихий ужас.</p>
+<p><span class="text-user">&#8212; Ладно. И какое же решение есть?</span></p>
+<p>&#8212;<span class="text-red"><strong> Блокировка нитей.</strong></span> И вот как это работает.</p>
+<p>Было выяснено, что <span class="text-red">нити мешают друг другу, когда пытаются сообща работать с общими объектами и/или ресурсами</span>. Как в примере с выводом на консоль: консоль одна, а выводят на нее все нити. Непорядок.</p>
+<p>Поэтому был придуман специальный объект – <span class="text-red">мютекс</span>. Это как табличка на двери туалета <span class="text-green">«свободно»</span> <span class="text-red">«занято»</span>. Он имеет два состояния – <span class="text-green">объект свободен</span> и <span class="text-red">объект занят</span>, или их еще называют заблокирован и разблокирован.</p>
+<p>Когда какой-то нити нужен общий для всех нитей объект, она проверяет мютекс, связанный с этим объектом. Если мютекс свободен, то нить блокирует его (помечает как занятый) и начинает использование общего ресурса. После того, как она сделала свои дела, мютекс разблокируется (помечается как свободен).</p>
+<p>Если же нить хочет использовать объект, а мютекс заблокирован, то нить засыпает в ожидании. Когда мютекс, наконец, освободится занятой нитью, наша нить тут же заблокирует его и приступит к работе. Аналогия с табличками для туалета один в один.</p>
+<p><span class="text-user">&#8212; А как работать с этим мютексом. Надо создавать специальные объекты?</span></p>
+<p>&#8212; Все намного проще. <span class="text-red">Разработчики Java встроили этот мютекс в класс Object. Тебе даже создавать его не придется. Он есть у каждого объекта.</span> Вот как это все работает:</p>
+<table>
+<tbody>
+<tr>
+<th>Код</th>
+<th>Описание</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class MyClass
+{
+private String name1 = "Оля";
+private String name2 = "Лена";
+
+public void swap()
+{
+<span class="text-red">synchronized (this)</span>
+{
+String s = name1;
+name1 = name2;
+name2 = s;
+}
+}
+}</code></pre>
+</td>
+<td>Метод swap меняет местами значения переменных name1 &amp; name2.</p>
+<p>Что же будет если его вызывать из двух нитей одновременно?</td>
+</tr>
+</tbody>
+</table>
+<table>
+<tbody>
+<tr>
+<th>Итоговый порядок</th>
+<th>Код первой нити</th>
+<th>Код второй нити</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-green">String s1 = name1;</span> //Оля
+<span class="text-green">name1 = name2;</span> //Лена
+<span class="text-green">name2 = s1;</span> //Оля
+
+<span class="text-user">String s2 = name1;</span> //Лена
+<span class="text-user">name1 = name2;</span> //Оля
+<span class="text-user">name2 = s2;</span> //Лена</code></pre>
+</td>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-green">String s1 = name1;
+name1 = name2;</span>
+<span class="text-green">name2 = s1;</span>
+//исполняется другая нить
+//исполняется другая нить
+//исполняется другая нить</code></pre>
+</td>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>//нить ждет, пока освободится мютекс
+//нить ждет, пока освободится мютекс
+//нить ждет, пока освободится мютекс
+<span class="text-user">String s2 = name1;
+name1 = name2;</span>
+<span class="text-user">name2 = s2;</span></code></pre>
+</td>
+</tr>
+</tbody>
+</table>
+<table>
+<tbody>
+<tr>
+<th>Итог</th>
+</tr>
+<tr>
+<td>Значения переменных были дважды обменяны местами и вернулись на первоначальное место.</td>
+</tr>
+</tbody>
+</table>
+<p>Обрати внимание на ключевое слово <span class="text-red"><strong>synchronized</strong></span>.</p>
+<p><span class="text-user">&#8212; Да, а что оно значит?</span></p>
+<p><strong>&#8212; Когда одна нить заходит внутрь блока кода, помеченного словом synchronized, то Java-машина тут же блокирует мютекс у объекта, который указан в круглых скобках после слова synchronized. <span class="text-red">Больше ни одна нить не сможет зайти в этот блок, пока наша нить его не покинет.</span> Как только наша нить выйдет из блока, помеченного synchronized, то мютекс тут же автоматически разблокируется и будет свободен для захвата другой нитью.</strong></p>
+<p>Если же мютекс был занят, то наша нить будет стоять на месте и ждать когда он освободится.</p>
+<p><span class="text-user">&#8212; Так просто и так элегантно. Красивое решение.</span></p>
+<p>&#8212; Ага. А как ты думаешь, что будет в этом случае?</p>
+<table>
+<tbody>
+<tr>
+<th>Код</th>
+<th>Описание</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class MyClass
+{
+private String name1 = "Оля";
+private String name2 = "Лена";
+
+public void swap()
+{
+<span class="text-red">synchronized (this)</span>
+{
+String s = name1;
+name1 = name2;
+name2 = s;
+}
+}
+
+public void swap2()
+{
+<span class="text-red">synchronized (this)</span>
+{
+String s = name1;
+name1 = name2;
+name2 = s;
+}
+}
+}</code></pre>
+</td>
+<td><span class="text-red">Методы swap и swap2 имеют один и тот же <strong>мютекс</strong> – объект <strong>this</strong>.</span></td>
+</tr>
+</tbody>
+</table>
+<p>Что будет, если одна нить вызовет метод swap, а другая – метод swap2?</p>
+<p><span class="text-user">&#8212; Т.к. мютекс у них один, то второй нити придется ждать, пока первая нить выйдет из блока synchronized, поэтому проблем с одновременным доступом тут не будет.</span></p>
+<p>&#8212; Молодец, Амиго! Верное решение!</p>
+<p>Хотелось бы обратить твое внимание на то, что словом <span class="text-red">synchronized</span> может быть помечен как кусок кода, так и метод. Вот что это значит:</p>
+<table>
+<tbody>
+<tr>
+<th>Код</th>
+<th>Что происходит на самом деле</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class MyClass
+{
+private <span class="text-user">static</span> String name1 = "Оля";
+private <span class="text-user">static</span> String name2 = "Лена";
+
+public <span class="text-red">synchronized</span> void swap()
+{
+String s = name1;
+name1 = name2;
+name2 = s;
+}
+
+public <span class="text-user">static</span> <span class="text-red">synchronized</span> void swap2()
+{
+String s = name1;
+name1 = name2;
+name2 = s;
+}
+}</code></pre>
+</td>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class MyClass
+{
+private <span class="text-user">static</span> String name1 = "Оля";
+private <span class="text-user">static</span> String name2 = "Лена";
+
+public void swap()
+{
+<span class="text-red">synchronized</span> (this)
+{
+String s = name1;
+name1 = name2;
+name2 = s;
+}
+}
+
+public <span class="text-user">static</span> void swap2()
+{
+<span class="text-red">synchronized</span> (<span class="text-user">MyClass.class</span>)
+{
+String s = name1;
+name1 = name2;
+name2 = s;
+}
+}
+}</code></pre>
+</td>
+</tr>
+</tbody>
+</table>

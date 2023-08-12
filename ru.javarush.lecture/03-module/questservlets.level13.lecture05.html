@@ -1,0 +1,65 @@
+Работа с JavaBeans
+<p>----------------------------------------</p>
+Что такое JavaBeans
+JSP и JavaBeans
+<p>----------------------------------------</p>
+<h2>6.1 Что такое JavaBeans</h2>
+<p>Уже в конце 90-х язык Java начал активно использоваться для больших серверных приложений, где количество классов измеряется десятками и сотнями тысяч. Тогда и появилась идея стандартизировать вид Java-объектов.</p>
+<p>Весь язык Java трогать не стали, чтобы не лишать его гибкости. Ну, обратная совместимость и все такое. Тогда разработали ряд критериев для Java-объектов нового поколения и назвали такие объекты Java Beans. Java названа в честь популярной марки кофе, так что Java Beans дословно переводится, как «кофе бобы».</p>
+<p>Самые важные критерии были такие:</p>
+<ul>
+    <li>Доступ к внутренним полям класса идет через метод <code>getProperty()</code>.</li>
+    <li>Запись данных в поля класса идет через метод <code>setProperty(value)</code>.</li>
+    <li>У класса должен быть <strong>публичный конструктор без параметров</strong>.</li>
+    <li>Класс должен быть сериализуемым.</li>
+    <li>Класс должен иметь переопределенные методы <code>equals()</code>, <code>hashCode()</code> и <code>toString()</code>.</li>
+</ul>
+<p>Такой подход позволил сделать приложения менее связными. Всегда понятно:</p>
+<ul>
+    <li>как создать объект – есть публичный конструктор по умолчанию;</li>
+    <li>как получить/установить значение свойства;</li>
+    <li>как передать/сохранить объект (используем сериализацию);</li>
+    <li>как сравнивать объекты (используем equals() и hashCode());</li>
+    <li>как вывести информацию об объекте в лог (используем toString).</li>
+</ul>
+<p>Сейчас это фактически стандарт отрасли, а когда-то был новым веянием. Кажется, что уже все так пишут, хотя если вспомнить HttpClient и его Builders, то видно, что новый стандарт кому-то сильно жмет.</p>
+<p>Такие объекты получили широкое распространение там, где их основная смысловая нагрузка, — это хранение данных. Например, в графических интерфейсах, базах данных и JSP-страницах.</p>
+<h2>6.2 JSP и JavaBeans</h2>
+<p>Одной из причин появления JSP было то, что работу над ним можно было отдать фронтендщикам. А что? У тебя есть человек, который разбирается в HTML, пусть он JSP и пишет. Java-программисты пишут свою часть, фронтендщики свою – все отлично.</p>
+<p>И все было неплохо до тех пор, пока фронтендщикам не пришлось разбираться в написанном Java-коде, встроенном в JSP. Или, что еще хуже, писать такой код самим.  </p>
+<p>Java-программисты тоже от такого были не в восторге. Ну скажите на милость, какие из верстальщиков бэкенд-разработчики? Да они же кроме скриптов ничего писать не могут. Да и вся парадигма программирования утверждает, что смешивать разные языки в одном файле – дурной тон.</p>
+<p>Тогда и появилась идея, что мол дать фронтендщикам возможность работать с Java-объектами, как с HTML-кодом. Каждый HTML-тег – это тоже некий объект со своими полями, почему бы по похожему принципу не построить работу с Java-объектами?</p>
+<p>Сказано-сделано. Добавили специальные теги и понеслось.</p>
+<p>Создание объекта:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+        &lt;jsp:<span class="text-red">useBean</span> id="имя" class="<span class="text-user">тип-объекта</span>" scope="<span class="text-viola">session</span>"/&gt;
+        </code></pre>
+</div>
+<p>Эта команда создавала объект с типом <code class="text-user">тип-объекта</code> и клала его в <code class="text-viola">сессию</code> под именем <code class="text-green">имя</code>.</p>
+<p>Объекты можно было хранить в одном из четырех хранилищ: application (глобальное), session, request и page. Также можно было установить свойство таких объектов:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+        &lt;jsp:<span class="text-red">setProperty</span> name="имя" property="<span class="text-red">propName</span>" value="<span class="text-user">string constant</span>"/&gt;
+        </code></pre>
+</div>
+<p>Получить свойство таких объектов можно было так:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+        &lt;jsp:<span class="text-red">getProperty</span> name="имя" property="<span class="text-red">propName</span>"/&gt;
+        </code></pre>
+</div>
+<p>Пример использования тегов:</p>
+<pre class='language-java line-numbers'><code>
+
+   &lt;body&gt;
+    &lt;center&gt;
+        &lt;h2&gt;Using JavaBeans in JSP&lt;/h2&gt;
+<span class="text-red">        &lt;jsp:useBean id =</span> "test" <span class="text-red">class</span> = "<span class="text-user">com.example.TestBean</span>"<span class="text-red"> /&gt;
+        &lt;jsp:setProperty name</span> = "test" <span class="text-red">property</span> = "<span class="text-viola">message</span>" <span class="text-red">value</span> = "<span class="text-user">Hello JSP...</span>"<span class="text-red"> /&gt;</span>
+        &lt;p&gt; Что-то делаем важное&lt;/p&gt;
+<span class="text-red">        &lt;jsp:getProperty name</span> = "test" <span class="text-red">property</span> = "<span class="text-viola">message</span>" <span class="text-red">/&gt;</span>
+    &lt;/center&gt;
+   &lt;/body&gt;
+
+</code></pre>

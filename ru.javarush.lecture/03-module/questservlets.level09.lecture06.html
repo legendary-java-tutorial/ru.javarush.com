@@ -1,0 +1,68 @@
+HTTP-заголовки, часть 2
+<p>----------------------------------------</p>
+Заголовок Keep-Alive
+Заголовок Cache-Control
+Cookie
+Session
+<p>----------------------------------------</p>
+<h2>7.1 Заголовок Keep-Alive</h2>
+<p>И еще несколько полезных заголовков. Заголовок <strong>Keep-Alive</strong> указывает серверу, что соединение нужно оставить открытым: сервер не будет закрывать соединение сразу после отправки ответа. Это приведет к тому, что следующий запрос от этого же клиента к серверу будет выполнен быстрее.</p>
+<p>Пример такого заголовка:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+           Connection: Keep-Alive
+        </code></pre>
+</div>
+<p>Но если все клиенты будут требовать постоянного соединения, тогда проблемы начнутся уже у сервера. Сервер будет или недоступен, или начнет закрывать соединения по своему выбору. </p>
+<h2>7.2 Заголовок Cache-Control</h2>
+<p>С помощью заголовка <strong>Cache-Control</strong> можно управлять кэшированием контента. Грамотно настроенное кэширование ускоряет работу с контентом, криво настроенное создает проблемы на ровном месте.</p>
+<p>Чтобы <strong>отключить кэширование</strong> нужно написать такой заголовок:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+           Cache-Control: no-cache, no-store, must-revalidate
+        </code></pre>
+</div>
+<p>В кэше не должно сохраняться ничего — ни по запросам клиента, ни по ответам сервера. Запрос всегда отправляется на сервер, ответ всегда загружается полностью.</p>
+<p>Также можно включить <strong>самый примитивный и надежный тип кэширования</strong>: </p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+           Cache-Control: no-cache
+        </code></pre>
+</div>
+<p>Перед тем, как выдать копию, кэш запрашивает исходный сервер на предмет актуальности ресурса.</p>
+<p>Можно указать <strong>время кэширования ресурса в секундах</strong>. Выглядеть такой заголовок будет так: </p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+           Cache-Control: max-age=31536000
+        </code></pre>
+</div>
+<p>Этот заголовок задает максимальное время хранения контента в кэше.</p>
+<p>Более детально про кеширование ты можешь <a href="https://developer.mozilla.org/ru/docs/Web/HTTP/Caching" target="_blank">почитать тут</a></p>
+<h2>7.3 Cookie</h2>
+<p><span class="text-green">Сервер может хранить данные на стороне клиента</span>. Такие данные называются <strong>cookie</strong>. Впрочем, cookie может сохранить и клиент. Они бывают очень полезны обеим сторонам.</p>
+<p>Например, ты заходишь на сайт, а ты на нем уже авторизирован. То есть, когда ты залогинился в него в прошлый раз, сервер приказал браузеру сохранить у себя информацию об успешном логине определенного пользователя.</p>
+<p>Вот как выглядит Cookie в запросе:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+          <span class="text-red">Cookie:</span> <span class="text-green">name=value;name2=value2;nameN=valueN00</span>
+        </code></pre>
+</div>
+<p>Cookie обычно хранит браузер и <span class="text-viola">они привязаны к определенному домену</span>. Когда ты снова заходишь на тот же домен, cookie автоматически добавляются к http-запросу и http-ответу. Сервер/домен не может получить cookie, которые хранит в браузере другой сервер/домен.</p>
+<p>У каждого cookie есть 4 основных параметра:</p>
+<ul>
+    <li><strong>имя;</strong></li>
+    <li><strong>значение;</strong></li>
+    <li><strong>время действия (сколько времени их хранить);</strong></li>
+    <li><strong>домен, к которому привязаны cookie.</strong></li>
+</ul>
+<p>Cookie хранятся и передаются в текстовом виде, так что и имя, и значение – это строки. Если время действия cookie не указано, то они уничтожаются после закрытия браузера. </p>
+<h2>7.4 Session</h2>
+<p>После того, как пользователь залогинился на сайте, говорят, что между сайтом и сервером установилась сессия.</p>
+<p>Сервер у себя создает специальный объект – <code>HttpSession,</code> где хранит всю нужную информацию для работы с авторизованным клиентом. А уникальный номер этого объекта хранит в браузере в виде Cookie.</p>
+<p>Веб-сервера на Java обычно используют имя <code>JSESSIONID</code> для хранения идентификатора сессии. Выглядит это примерно так:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+          <span class="text-red">Cookie: JSESSIONID</span> <span class="text-green">=ABAD1D</span>
+        </code></pre>
+</div>
+<p>На стороне сервера можно задать время существования сессии, а также то, будет ли она автоматически закрываться при закрытии браузера.</p>

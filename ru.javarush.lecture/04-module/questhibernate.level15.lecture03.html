@@ -1,0 +1,189 @@
+Joined Table
+<p>----------------------------------------</p>
+Описание. 
+@PrimaryKeyJoinColumn.
+<p>----------------------------------------</p>
+<h2>Описание</h2>
+
+<p>Еще одна стратегия хранения иерархии классов в базе данных называется Joined Table. Для нее есть специальная аннотация:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">@Inheritance(strategy = InheritanceType.JOINED)</span></code></pre>
+    </div>
+
+<p>Пример наших классов:</p>
+
+<pre class='language-java line-numbers'><code>
+@Inheritance(strategy = InheritanceType.JOINED)
+@Entity
+class User {
+  int id;
+  String name;
+  LocalDate birthday;
+}
+</code></pre>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+class Employee extends User {
+ 	String occupation;
+ 	int salary;
+ 	LocalDate join;
+}
+</code></pre>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+class Client extends User {
+   String address;
+}
+</code></pre>
+
+<p>При использовании этой аннотации Hibernate будет ожидать в базе отдельную таблицу для каждого класса и его подклассов. При выборке данных из них придется использовать SQL-оператор JOIN.</p>
+
+<p>Пример схемы базы данных:</p>
+
+<pre class='language-java line-numbers'><code>
+CREATE TABLE user {
+  id INT,
+  name VARCHAR,
+  birthday DATE
+}
+</code></pre>
+
+<pre class='language-java line-numbers'><code>
+CREATE TABLE employee {
+  id INT,
+  occupation VARCHAR,
+  salary INT,
+  join DATE
+}
+</code></pre>
+
+<pre class='language-java line-numbers'><code>
+CREATE TABLE client {
+  id INT,
+  address VARCHAR
+}
+</code></pre>
+
+<p>Если ты решишь получить из таблицы данные какого-нибудь клиента, то Hibernate придется использовать JOIN для объединения таблиц:</p>
+ 
+<pre><code><strong><span class="text-red">SELECT</span> u.id, u.name, u.birthday, c.address <span class="text-red">FROM</span> user u <span class="text-red">JOIN</span> client c <span class="text-red">ON</span> u.id = c.id;</strong></code></pre>
+ 
+<h2>@PrimaryKeyJoinColumn</h2>
+
+<p>Дочерние Entity-классы имеют колонку в таблице, которая ссылается на id объекта родительского Entity-класса. Имя этой колонки по умолчанию равно имени колонки родительского класса.</p>
+
+<p>Пример:</p>
+
+<pre class='language-java line-numbers'><code>
+@Inheritance(strategy = InheritanceType.JOINED)
+@Entity
+class User {
+  @Id
+  int user_identifier;
+  String name;
+  LocalDate birthday;
+}
+</code></pre>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+class Employee extends User {
+ 	String occupation;
+ 	int salary;
+ 	LocalDate join;
+}
+</code></pre>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+class Client extends User {
+   String address;
+}
+</code></pre>
+
+<p>Тогда в базе таблицы будут выглядеть так:</p>
+
+<pre class='language-java line-numbers'><code>
+CREATE TABLE user {
+  user_identifier INT,
+  name VARCHAR,
+  birthday DATE
+}
+</code></pre>
+
+<pre class='language-java line-numbers'><code>
+CREATE TABLE employee {
+  user_identifier INT,
+  occupation VARCHAR,
+  salary INT,
+  join DATE
+}
+</code></pre>
+
+<pre class='language-java line-numbers'><code>
+CREATE TABLE client {
+  user_identifier INT,
+  address VARCHAR
+}
+</code></pre>
+
+<p>Если ты хочешь переопределить имя колонки в зависимых таблицах, то тебе нужно <strong>использовать аннотацию</strong> <span class="text-yellow"><span class="text-bold">@PrimaryKeyJoinColumn</span></span>. Пример:</p>
+
+<pre class='language-java line-numbers'><code>
+@Inheritance(strategy = InheritanceType.JOINED)
+@Entity
+class User {
+  @Id
+  int user_identifier;
+  String name;
+  LocalDate birthday;
+}
+</code></pre>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@PrimaryKeyJoinColumn(name=”user_id”)
+class Employee extends User {
+ 	String occupation;
+ 	int salary;
+ 	LocalDate join;
+}
+</code></pre>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@PrimaryKeyJoinColumn(name=”user_id2”)
+class Client extends User {
+   String address;
+}
+</code></pre>
+
+<p>Тогда в базе таблицы будут выглядеть так:</p>
+
+<pre class='language-java line-numbers'><code>
+CREATE TABLE user {
+  user_identifier INT,
+  name VARCHAR,
+  birthday DATE
+}
+</code></pre>
+
+<pre class='language-java line-numbers'><code>
+CREATE TABLE employee {
+  user_id INT,
+  occupation VARCHAR,
+  salary INT,
+  join DATE
+}
+</code></pre>
+
+<pre class='language-java line-numbers'><code>
+CREATE TABLE client {
+  user_id2 INT,
+  address VARCHAR
+}
+</code></pre>

@@ -1,0 +1,82 @@
+Потоки данных
+<p>----------------------------------------</p>
+Нововведения в Java 8: Функциональное программирование Вместе с выходом Java 8 в ней появилась мощная поддержка функционального программирования. Я бы даже сказал, долгожданная поддержка функционального программирования. Код стал писаться быстрее, хотя читать его стало сложнее ? Перед изучением
+<p>----------------------------------------</p>
+<h2>1. Нововведения в Java 8: Функциональное программирование</h2>
+<p>Вместе с выходом Java 8 в ней появилась мощная поддержка <span class="term text-viola">функционального программирования</span>. Можно даже сказать, долгожданная поддержка функционального программирования. Код стал писаться быстрее, хотя читать его стало сложнее 🙂</p>
+<p>Перед изучением <span class="term text-viola">функционального программирования</span> в Java, рекомендуем хорошо разобраться в трех вещах:</p>
+<ol>
+    <li>ООП, наследование и интерфейсы (<a href="https://javarush.com/quests/QUEST_JAVA_CORE">1-2 уровни квеста Java Core</a>).</li>
+    <li><a href="https://javarush.com/groups/posts/1984-defoltnihe-metodih-v-interfeysakh">Дефолтная реализация методов в интерфейсе</a>.</li>
+    <li><a href="https://javarush.com/groups/posts/2181-vlozhennihe-vnutrennie-klassih">Внутренние</a> и <a href="https://javarush.com/groups/posts/2193-anonimnihe-klassih">анонимные классы</a>.</li>
+</ol>
+<p><span class="text-green">Хорошая новость</span> заключается в том, что без знания всего этого можно пользоваться многими возможностями функционального программирования в Java. <span class="text-red">Плохая новость</span> — понять, как именно все устроено и как все работает, без тех же внутренних анонимных классов уже сложно.</p>
+<p>В ближайших лекциях мы сосредоточимся на том, как легко и просто пользоваться возможностями функционального программирования в Java, без глубокого понимания, как оно устроено.</p>
+<p>Чтобы разобраться во всех нюансах функционального программирования в Java, нужны месяцы. Читать же такой код можно научиться за несколько часов. Поэтому предлагаем начать с малого. Да хоть с тех же потоков ввода-вывода.</p>
+<hr>
+<h2>2. Потоки ввода-вывода: цепочки потоков</h2>
+<p>Помните, когда-то вы изучали потоки ввода-вывода: <code>InputStream</code>, <code>OutputStream</code>, <code>Reader</code>, <code>Writer</code> и т.п.?</p>
+<p>Были классы-потоки, которые читали данные из <span class="code text-yellow">источников данных</span>, такие как <code class="text-green">FileInputSteam</code>, а были и промежуточные потоки данных, которые читали данные из других потоков, такие как <code class="text-user">InputStreamReader</code> и <code class="text-viola">BufferedReader</code>.</p>
+<p>Эти потоки можно было организовывать в цепочки обработки данных. Например, так:</p>
+<pre class="language-java"><code>FileInputStream <span class="code text-green">input</span> = new FileInputStream("<span class="code text-yellow">c:\\readme.txt</span>");
+InputStreamReader <span class="code text-user">reader</span> = new InputStreamReader(<span class="code text-green">input</span>);
+BufferedReader <span class="code text-viola">buff</span> = new BufferedReader(<span class="code text-user">reader</span>);
+
+String text = <span class="code text-viola">buff</span>.readLine();</code></pre>
+<p>Важно отметить, что в первых нескольких строках кода мы просто конструируем цепочку из <code>Stream</code>-объектов, но реальные данные по этой цепочке потоков еще не передаются.</p>
+<p>И только когда мы вызовем метод <code>buff.readLine()</code>, произойдет следующее:</p>
+<ol>
+    <li>Объект <code class="text-viola">BufferedReader</code> вызовет метод <code>read()</code> у объекта <code>InputStreamReader</code></li>
+    <li>Объект <code class="text-user">InputStreamReader</code> вызовет метод <code>read()</code> у объекта <code>FileInputStream</code></li>
+    <li>Объект <code class="text-green">FileInputStream</code> начнет читать данные <span class="code text-yellow">из файла</span></li>
+</ol>
+<p>Т.е. никакого движения данных по цепочке потоков нет, пока мы не начали вызывать методы типа <code>read()</code> или <code>readLine()</code>. Само конструирование цепочки потоков данные по ним не гоняет. Потоки сами данные не хранят, а только читают из других.</p>
+<p>Коллекции и потоки</p>
+<p>Начиная с Java 8, появилась возможность получить поток для чтения данных у коллекций (и не только у них). Но и это еще не самое интересное. На самом деле появилась возможность легко и просто конструировать сложные цепочки потоков данных, при этом тот код, который раньше требовал 5-10 строк, теперь можно было записать в 1-2 строки.</p>
+<p>Пример — находим строку максимальной длины в списке строк:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Поиск строки максимальной длины</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code><span class="text-neon">ArrayList</span>&lt;String&gt; <span class="text-green">list</span> = new <span class="text-neon">ArrayList</span>&lt;String&gt;();
+<span class="text-neon">Collections</span>.addAll(<span class="text-green">list</span>, "Привет", "как", "дела?");
+<span class="text-neon">String</span> max = <span class="text-green">list</span>.stream().max(<span class="text-viola">(s1, s2)-&gt; s1.length()-s2.length()</span>).<span class="text-red">get</span>();</code></pre>
+        </td>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code><span class="text-neon">ArrayList</span>&lt;String&gt; <span class="text-green">list</span> = new <span class="text-neon">ArrayList</span>&lt;String&gt;();
+<span class="text-neon">Collections</span>.addAll(<span class="text-green">list</span>, "Привет", "как", "дела?");
+<span class="text-neon">Stream</span>&lt;String&gt; <span class="text-green">stream</span> = <span class="text-green">list</span>.stream();
+<span class="text-neon">Optional</span>&lt;String&gt; <span class="text-green">optional</span> = <span class="text-green">stream</span>.max(<span class="text-viola">(s1, s2)-&gt; s1.length()-s2.length()</span>);
+<span class="text-neon">String</span> max = <span class="text-green">optional</span>.<span class="text-red">get</span>();</code></pre>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<hr>
+<h2>3. Интерфейс <code>Stream</code></h2>
+<p>Расширенная поддержка потоков в Java 8 реализована с помощью интерфейса <code class="code-raw"><span class="code text-viola">Stream</span>&lt;T&gt;</code>. Где <code>T</code> — это тип-параметр, обозначающий тип данных, которые передаются в потоке. Другими словами, поток полностью независим от типа данных, которые он передает.</p>
+<p>Чтобы получить объект-поток у <span class="term text-green">коллекции</span>, достаточно вызвать у нее метод <code class="text-red">stream()</code>. Выглядит этот код примерно так:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java text-center"><code><span class="code text-viola">Stream</span>&lt;Тип&gt; <span class="code text-user">имя</span> = <span class="code text-green">коллекция</span>.<span class="code text-red">stream()</span>;</code></pre>
+    <div class="lesson-example-caption">Получение потока из коллекции</div>
+</div>
+<p>При этом коллекция будет считаться источником данных потока, а объект типа <code class="code-raw"><span class="code text-viola">Stream</span>&lt;Тип&gt;</code> &#8211; инструментом по получению данных из коллекции именно в виде потока данных.</p>
+<pre class="language-java"><code><span class="text-neon">ArrayList</span>&lt;String&gt; <span class="code text-green">list</span> = new <span class="text-neon">ArrayList</span>&lt;String&gt;();
+<span class="text-neon">Collections</span>.addAll(<span class="code text-green">list</span>, "Привет", "как", "дела?");
+<span class="code text-viola">Stream</span>&lt;String&gt; <span class="code text-user">stream</span> = <span class="code text-green">list</span>.<span class="code text-red">stream()</span>;</code></pre>
+<p>Кстати, можно получить поток не только у коллекции, но и у <span class="term text-brown">массива</span>. Для этого нужно воспользоваться методом <code class="code-raw"><span class="code text-neon">Arrays</span>.<span class="code text-red">stream</span>();</code> Пример:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code><span class="code text-viola">Stream</span>&lt;Тип&gt; <span class="code text-user">имя</span> = <span class="code text-neon">Arrays</span>.<span class="code text-red">stream</span>(<span class="code text-brown">массив</span>);</code></pre>
+    <div class="lesson-example-caption">Получение потока из массива</div>
+</div>
+<p>При этом <span class="term text-brown">массив</span> будет считаться источником данных для <span class="term text-red">потока</span> <code class="text-user">имя</code>.</p>
+<pre class="language-java"><code>Integer[] <span class="code text-brown">array</span> = {1, 2, 3};
+<span class="code text-viola">Stream</span>&lt;Integer&gt; <span class="code text-user">stream</span> = <span class="code text-neon">Arrays</span>.<span class="code text-red">stream</span>(<span class="code text-brown">array</span>);</code></pre>
+<p>После создания объекта <code class="code-raw"><span class="code text-viola">Stream</span>&lt;Тип&gt;</code> никакого движения данных не происходит. Мы просто получили объект-поток для того, чтобы начать строить цепочку из потоков-данных.</p>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1811"></div>

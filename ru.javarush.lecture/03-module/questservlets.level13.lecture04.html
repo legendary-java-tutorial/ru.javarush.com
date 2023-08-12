@@ -1,0 +1,83 @@
+Директивы JSP
+<p>----------------------------------------</p>
+include
+forward
+Редирект
+<p>----------------------------------------</p>
+<h2>5.1 include</h2>
+<p>Есть еще несколько волшебных директив, о которых хотелось бы рассказать. Первая такая директива – это директива <strong>include</strong>. Она позволяет вставить другой файл в то место страницы, где она указана. Общий формат такой директивы имеет вид:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+        <span class="text-red">&lt;%@</span> <span class="text-green">include file=</span>"<span class="text-user">url</span>"<span class="text-red">%&gt;</span>
+        </code></pre>
+</div>
+<p>Можно задать не просто файл, а, например, другой jsp-сервлет, или даже url.</p>
+<p>Пример:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-red">    &lt;%@ include file="header.jsp"%&gt;</span>
+ 
+    &lt;%
+        double num = Math.random();
+        if (num &gt; 0.95) {
+            out.print(num);
+        }
+    %&gt; 
+ 
+<span class="text-red">    &lt;%@ include file="footer.jsp"%&gt;</span>
+
+</code></pre>
+<p>Можно, например, вынести верхнюю часть всех страниц сайта в header.jsp, а нижнюю – в footer.jsp и собирать все страницы как конструктор.</p>
+<h2>5.2 forward</h2>
+<p>Помнишь, что в классических сервлетах есть возможность выполнить <strong>redirect</strong> или <strong>forward</strong> на другой url? В JSP это тоже возможно и для этого есть специальное действие. Его вид немного отличается от того, что ты видел раньше:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+        <span class="text-red"> &lt;jsp:forward</span> <span class="text-green">page</span>="<span class="text-user">url</span>"<span class="text-red">/&gt;</span>
+        </code></pre>
+</div>
+<p>Также есть более продвинутый вариант – с параметрами:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-red">&lt;jsp:forward</span> <span class="text-green">page</span>="<span class="text-user">url</span>" <span class="text-red">&gt;</span>
+<span class="text-red">    &lt;jsp:param</span> <span class="text-green">name</span>="<span class="text-user">имя</span>" <span class="text-green">value</span>="<span class="text-user">значение</span>"<span class="text-red">/&gt;</span>
+<span class="text-red">    &lt;jsp:param</span> <span class="text-green">name</span>="<span class="text-user">имя</span>" <span class="text-green">value</span>="<span class="text-user">значение</span>"<span class="text-red">/&gt;</span>
+<span class="text-red">    &lt;jsp:param</span> <span class="text-green">name</span>="<span class="text-user">имя</span>" <span class="text-green">value</span>="<span class="text-user">значение</span>"<span class="text-red">/&gt;</span>
+<span class="text-red">&lt;/jsp:forward&gt;</span>
+</code></pre>
+<p>Пример:</p>
+<pre class='line-numbers'><code>
+&lt;html&gt;
+   &lt;head&gt;
+    &lt;title&gt;The Forward Example&lt;/title&gt;
+   &lt;/head&gt;
+   &lt;body&gt;
+    &lt;center&gt;
+        &lt;h2&gt; Forward example &lt;/h2&gt;
+<span class="text-red">        &lt;jsp:forward</span> <span class="text-green">page</span>="<span class="text-user">login.jsp</span>"<span class="text-red">/&gt;</span>
+    &lt;/center&gt;
+   &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<h2>5.3 Редирект</h2>
+<p>Для редиректа специальной директивы нет, но можно его выполнить с помощью вызова Java-кода.</p>
+<p>Пример:</p>
+<pre class='line-numbers'><code>
+
+&lt;body&gt;
+<span class="text-red">    &lt;%</span>
+<span class="text-user">        String</span> <span class="text-orange">redirectURL</span> = <span class="text-green">"https://javarush.com/"</span>;
+<span class="text-yellow">        response</span>.<span class="text-user">sendRedirect</span>(<span class="text-orange">redirectURL</span>);
+<span class="text-red">    %&gt;</span>
+&lt;/body&gt;
+
+</code></pre>
+<p>Этот пример отправит <code>302</code> редирект. Если тебе нужен <code>301</code> редирект, то надо написать на пару строк кода больше:</p>
+<pre class='line-numbers'><code>
+
+&lt;body&gt;
+<span class="text-red">    &lt;%</span>
+<span class="text-yellow">        response</span>.<span class="text-user">setStatus</span>(<span class="text-green">301</span>);
+<span class="text-yellow">        response</span>.<span class="text-user">setHeader</span>(<span class="text-green">"Location", "https://javarush.com/"</span>);
+<span class="text-yellow">        response</span>.<span class="text-user">setHeader</span>(<span class="text-green">"Connection", "close"</span>);
+<span class="text-red">    %&gt;</span>
+&lt;/body&gt;
+
+</code></pre>

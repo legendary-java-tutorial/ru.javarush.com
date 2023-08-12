@@ -1,0 +1,169 @@
+Конфигурирование Hibernate
+<p>----------------------------------------</p>
+Автоматическое создание схемы данных
+Логирование запросов
+Диалекты SQL
+Популярные настройки
+<p>----------------------------------------</p>
+<h2>5.1 Автоматическое создание схемы данных</h2>
+<p>При стартовом конфигурировании Hibernate можно включить очень много интересных настроек. Я не стал их приводить раньше, чтоб не распыляться. А вот в конце уровня думаю про некоторые из них все же рассказать.</p>
+<p>Первая такая настройка — это параметр <code>hbm2ddl.auto</code>. У нее может быть 5 различных значений:</p>
+<table>
+    <tbody>
+    <tr>
+        <td><strong>validate</strong></td>
+        <td>Валидация: Hibernate проверит, совпадают ли имена и типа колонок и полей в базе и в аннотациях. Это самый частый режим.</td>
+    </tr>
+    <tr>
+        <td><strong>update</strong></td>
+        <td>Апдейт: Hibernate обновит таблицы в базе, если они или их колонки отличаются от ожидаемых.</td>
+    </tr>
+    <tr>
+        <td><strong>create</strong></td>
+        <td>Пересоздание: Hibernate удалит все таблицы в базе и создаст их заново на основе данных из аннотаций.</td>
+    </tr>
+    <tr>
+        <td><strong>create-drop</strong></td>
+        <td>Создание-удаление. В начале работы Hibernate создаст все таблицы, в конце работы – удалит их за собой.</td>
+    </tr>
+    <tr>
+        <td><strong>none</strong></td>
+        <td>Hibernate вообще ничего не будет делать. Если где-то база не совпадает с ожиданием, то будут сыпаться ошибки во время выполнения запросов.</td>
+    </tr>
+
+    </tbody>
+</table>
+<h2>5.2 Логирование запросов</h2>
+<p>Вторая очень полезная настройка Hibernate — это логирование всех его запросов в базу: все запросы к базе дублируются в консоль. Это очень полезная функция, если ты вносишь изменения в код, связанный с Hibernate.</p>
+<p>Во-первых, ты лучше поймешь, как твои запросы преобразуются в SQL. Во-вторых, легче и раньше сможешь находить ошибки. А они точно будут. Не всегда Hibernate работает так, как мы ожидаем. Особенно часто это связано с аннотациями: ты понимаешь из по-своему, а Hibernate — по-своему.</p>
+<p>Настройка, включающая логирование, называется <code>hibernate.show_sql</code>. Если выставить ее значение в true, то в консоль будут писаться запросы к базе. Так же в паре с ним используется параметр <code>hibernate.format_sql</code>, который позволяет задать удобный формат SQL-запроса в логе.</p>
+<p>Еще один способ логировать запросы к базе — это <strong>использовать стандартный логгер</strong>. Все дало в том, что Hibernate и так пишет свои запросы в стандартный  логер, но только с областью видимости — DEBUG. Тебе нужно поменять два свойства в своем стандартном логере:</p>
+<pre class='language-java line-numbers'><code>
+logging.level.org.hibernate.SQL=debug
+logging.level.org.hibernate.type.descriptor.sql.BasicBinder=trace
+</code></pre>
+<p>Изменение же уровня <strong>BasicBinder</strong> на <code>trace</code> добавит нам параметры запросы, правда, в слегка непривычной форме — поочередное перечислением после самого запроса.</p>
+<p>Третий подход: <strong>использование специального proxy-драйвера к базе данных</strong>.</p>
+<p>Например, <code>log4jdbc</code> или <code>p6spy</code>. Оба прокси рабочие и на них есть стартеры, хотя на <code>log4jdbc</code> давно не было коммитов на момент написания статьи.</p>
+<pre class='line-numbers'><code>
+&lt;dependency&gt;
+    &lt;groupId&gt;com.integralblue&lt;/groupId&gt;
+    &lt;artifactId&gt;log4jdbc-spring-boot-starter&lt;/artifactId&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;com.github.gavlyukovskiy&lt;/groupId&gt;
+    &lt;artifactId&gt;p6spy-spring-boot-starter&lt;/artifactId&gt;
+&lt;/dependency&gt;
+</code></pre>
+<p>В детали вдаваться не буду, просто хочу, чтобы ты знал, что так можно.</p>
+<h2>5.3 Диалекты SQL</h2>
+<p>И еще немного справочной информации.</p>
+<p>Hibernate поддерживает работу с очень большим количеством СУБД. Каждая их них реализует стандартный набор функций SQL и еще какие-то свои. Или разные версии SQL. Поэтому для работы с этими СУБД нужно сказать Hibernate, какой диалект языка SQL ему использовать.</p>
+<p>Вот список наиболее популярных диалектов:</p>
+<table>
+    <tbody>
+    <tr>
+        <td><strong>PostgreSQL</strong></td>
+        <td>org.hibernate.dialect.PostgreSQLDialect</td>
+    </tr>
+    <tr>
+        <td><strong>SAP DB</strong></td>
+        <td>org.hibernate.dialect.SAPDBDialect</td>
+    </tr>
+    <tr>
+        <td><strong>Sybase</strong></td>
+        <td>org.hibernate.dialect.SybaseDialect</td>
+    </tr>
+    <tr>
+        <td><strong>Informix</strong></td>
+        <td>org.hibernate.dialect.InformixDialect</td>
+    </tr>
+    <tr>
+        <td><strong>Microsoft SQL Server 2008</strong></td>
+        <td>org.hibernate.dialect.SQLServer2008Dialect</td>
+    </tr>
+    <tr>
+        <td><strong>MySQL</strong></td>
+        <td>org.hibernate.dialect.MySQLDialect</td>
+    </tr>
+    <tr>
+        <td><strong>Oracle (any version)</strong></td>
+        <td>org.hibernate.dialect.OracleDialect</td>
+    </tr>
+    <tr>
+        <td><strong>Oracle 11g</strong></td>
+        <td>org.hibernate.dialect.Oracle10gDialect</td>
+    </tr>
+
+    </tbody>
+</table>
+<p>Конечно, таких диалектов может быть сколько угодно. Ты можешь написать свою СУБД и свой собственный диалект к ней.</p>
+<p>Почему важно указывать правильный диалект?</p>
+<p>У каждой базы данных типы данных могут немного отличаться. Поэтому чтобы Hibernate прямо идеально работал именно так, как ты от него ожидаешь, нужно указать ему, какой диалект SQL-языка ему нужно использовать.</p>
+<p>Вот интересная картинка, которая показывает, как все связано на самом деле:</p>
+<img data-max-width="1024" data-id="805f68c6-5663-418f-bd17-74caf9f8c128" src="https://cdn.javarush.com/images/article/805f68c6-5663-418f-bd17-74caf9f8c128/1024.jpeg" alt="">
+<h2>5.4 Популярные настройки</h2>
+<p>Чтобы упростить тебе жизнь, приведу полный список нескольких настроек:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>MySQL 8.0</th>
+    </tr>
+    <tr>
+        <td>
+<pre><code>hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+hibernate.connection.driver_class=com.mysql.cj.jdbc.Driver
+hibernate.connection.url=jdbc:mysql://<span class="text-user">localhost:3306</span>/<span class="text-brown">test</span>
+hibernate.connection.username=root
+hibernate.connection.password=secret
+hibernate.show_sql=true
+hibernate.hbm2ddl=validate
+</code></pre>
+        </td>
+    </tr>
+
+    </tbody>
+</table>
+<table>
+    <tbody>
+    <tr>
+        <th>MySQL 5.0</th>
+    </tr>
+    <tr>
+        <td>
+<pre><code>hibernate.dialect=org.hibernate.dialect.MySQL5Dialect
+hibernate.connection.driver_class=com.mysql.jdbc.Driver
+hibernate.connection.url=jdbc:mysql://<span class="text-user">localhost:3306</span>/<span class="text-brown">test</span>
+hibernate.connection.username=root
+hibernate.connection.password=secret
+hibernate.show_sql=true
+hibernate.hbm2ddl=validate
+</code></pre>
+        </td>
+    </tr>
+
+    </tbody>
+</table>
+<table>
+    <tbody>
+    <tr>
+        <th>PostgreSQL</th>
+    </tr>
+    <tr>
+        <td>
+<pre><code>hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+hibernate.connection.driver_class= org.postgresql.Driver
+hibernate.connection.url= jdbc:postgresql://<span class="text-user">localhost</span>/<span class="text-brown">test</span>
+hibernate.connection.username=root
+hibernate.connection.password=secret
+hibernate.show_sql=true
+hibernate.hbm2ddl=validate
+</code></pre>
+        </td>
+    </tr>
+
+    </tbody>
+</table>
+<p>MySQL 8.0 поддерживает больше возможностей, чем MySQL 5.0, так что если ты хочешь, чтобы Hibernate использовал их все по максимуму, то указывай правильный диалект.</p>
+<p>База данных H2 обычно хранится в памяти, поэтому <code>mem:test</code> — это и имя SQL-сервера, и имя схемы, с которой ты будешь работать.</p>
+

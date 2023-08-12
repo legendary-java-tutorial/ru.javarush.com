@@ -1,0 +1,165 @@
+Транзакции при работе с базой данных
+<p>----------------------------------------</p>
+Зачем нужны транзакции. 
+Транзакции в JDBC. 
+Точки сохранения.
+<p>----------------------------------------</p>
+<h2>Зачем нужны транзакции</h2>
+
+<p>Очень часто при работе с базой данных возникает ситуация, когда нужно выполнить много разных действий, но смысл они имеют только вместе.</p>
+
+<p>Например, мы пишем банковское ПО, которое должно сделать три вещи:</p>
+
+<ul>
+<li>Списать деньги со счета клиента</li>
+<li>Добавить деньги на счет получателя</li>
+<li>Записать данные о проводке в “журнал проводок”</li>
+</ul>
+
+<p>Если во время выполнения любого из этих действий возникнет ошибка, то остальные два нужно тоже отменять. Нельзя же списать деньги у клиента и не добавить их получателю? Ну или добавить получателю, но не списать у клиента?</p>
+
+<p>Так вот, такая логическая группировка разных действий в одно называется <strong>транзакцией</strong>. Другими словами, транзакция — это <span class="text-green">группа действий, которые должны быть выполнены только все вместе</span>. Если какое-либо действие не выполнилось или выполнилось с ошибкой, то все остальные действия должны быть отменены.</p>
+
+<p>У транзакции обычно есть три состояния:</p>
+
+<ul>
+<li>initial state — состояние системы перед выполнением группы действий</li>
+<li>success state — состояние после выполнения группы действий</li>
+<li>failed state — что-то пошло не так</li>
+</ul>
+
+<img data-max-width="512" data-id="62f3d27f-6517-4f3f-8734-7da74fb223d7" src="https://cdn.javarush.com/images/article/62f3d27f-6517-4f3f-8734-7da74fb223d7/original.png" alt="">
+
+<p>При этом обычно есть три команды:</p>
+
+<ul>
+<li><strong>begin/start</strong> — выполняется перед началом логической группы действий</li>
+<li><strong>commit</strong> — выполняется после группы действий транзакции</li>
+<li><strong>rollback</strong> — запускает процесс возврата системы из failed state в initial state</li>
+</ul>
+
+<p>Работает это так.</p>
+
+<p>Сначала нужно открыть транзакцию — вызвать метод <span class="code text-orange">begin()</span> или <span class="code text-orange">start()</span>. Вызов этого метода обозначает состояние системы, к которому мы попробуем вернуться, если что-то пойдет не так.</p>
+
+<p>Затем выполняются все действия, которые объединены в логическую группу — транзакцию.</p>
+
+<p>Затем вызывается метод <span class="code text-orange">commit()</span>. Его вызов обозначает конец логической группы действий, а также обычно запускает процесс реализации этих действий на практике.</p>
+
+<p>Вспомни, как мы писали что-то в FileWriter: сначала все, что мы написали, сохраняется в памяти, а затем при вызове метода <span class="code text-orange">flush()</span> все данные из буфера в памяти пишутся на диск. Вот этот <span class="code text-orange">flush()</span> — это и есть коммит транзакции.</p>
+
+<p>Ну а если во время работы транзакции произошла ошибка, то нужно инициировать процесс возврата к стартовому состоянию. Этот процесс называется <span class="code text-orange">rollback()</span>, и за него обычно отвечает одноименный метод.</p>
+
+<p>Грубо говоря, есть 2 способа завершить транзакцию:</p>
+
+<ul>
+<li><strong>COMMIT</strong> — подтверждаем все внесенные изменения</li>
+<li><strong>ROLLBACK</strong> — откатываем все внесенные изменения</li>
+</ul>
+ 
+<h2>Транзакции в JDBC</h2>
+
+<p>Практически каждая СУБД умеет работать с транзакциями. Так что и у JDBC поддержка этого дела тоже есть. Реализовано все очень просто.</p>
+
+<p>Во-первых, каждый вызов метода <span class="code text-orange">execute()</span> объекта Statement выполняется в отдельной транзакции. Для этого у Connection есть параметр <span class="code text-orange">AutoCommit</span>. Если он выставлен в <em>true</em>, то <span class="code text-orange">commit()</span> будет вызываться после каждого вызова метода <span class="code text-orange">execute()</span>.</p>
+
+<p>Во-вторых, если ты хочешь выполнить несколько команд в одной транзакции, то сделать это можно так:</p>
+
+<ul>
+<li>отключаем <span class="text-green">AutoCommit</span></li>
+<li>вызываем наши команды</li>
+<li>вызываем метод <span class="code text-orange">commit()</span> явно</li>
+</ul>
+
+<p>Выглядит это очень просто:</p>
+
+<pre class='language-java line-numbers'><code>
+  connection.setAutoCommit(false);
+ 
+  Statement statement = connection.createStatement();
+  int rowsCount1 = statement.executeUpdate("UPDATE  employee SET salary = salary+1000");
+  int rowsCount2 = statement.executeUpdate("UPDATE  employee SET salary = salary+1000");
+  int rowsCount3 = statement.executeUpdate("UPDATE  employee SET salary = salary+1000");
+ 
+  connection.commit();
+</code></pre>
+
+<p>Если во время работы метод <span class="code text-orange">commit()</span> на сервере произойдет ошибка, то SQL-сервер отменит все три действия.</p>
+
+<p>Но бывают ситуации, когда ошибка возникает еще на стороне клиента, и мы так и не дошли до вызова метода <span class="code text-orange">commit()</span>:</p>
+
+<pre class='language-java line-numbers'><code>
+  connection.setAutoCommit(false);
+ 
+  Statement statement = connection.createStatement();
+  int rowsCount1 = statement.executeUpdate("UPDATE  employee SET salary = salary+1000");
+  int rowsCount2 = statement.executeUpdate("UPDATE  employee SET salary = salary+1000");
+  int rowsCount3 = statement.executeUpdate("UPDATE  несколько опечаток приведут к исключению");
+ 
+  connection.commit();
+</code></pre>
+
+<p>Если во время работы одного <span class="code text-orange">executeUpdate()</span> произойдет ошибка, то метод <span class="code text-orange">commit()</span> вызван так и не будет. Чтобы откатить все сделанные действия, нужно вызвать метод <span class="code text-orange">rollback()</span>. Обычно это выглядит так:</p>
+
+<pre class='language-java line-numbers'><code>
+  try{
+  	connection.setAutoCommit(false);
+ 
+  	Statement statement = connection.createStatement();
+  	int rowsCount1 = statement.executeUpdate("UPDATE  employee SET salary = salary+1000");
+  	int rowsCount2 = statement.executeUpdate("UPDATE  employee SET salary = salary+1000");
+  	int rowsCount3 = statement.executeUpdate("UPDATE  несколько опечаток приведут к исключению");
+ 
+	  connection.commit();
+ }
+ catch (Exception e) {
+   connection.rollback();
+}
+</code></pre>
+
+<h2>Точки сохранения</h2>
+
+<p>С появлением JDBC 3.0 появилась возможность более эффективно работать с откатом транзакции. Теперь можно устанавливать точки сохранения — save points, а при вызове операции <span class="code text-orange">rollback()</span> откатываться к конкретной точке сохранения.</p>
+
+<p>Для того, чтобы сохраниться, нужно создать точку сохранения, делается это командой:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+   <span class="text-user">Savepoint</span> <span class="text-green">save</span> = <span class="text-red">connection</span>.<span class="text-red">setSavepoint</span>();</code></pre>
+    </div>
+
+<p>Возврат к точке сохранения делается командой:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+   <span class="text-red">connection</span>.<span class="text-red">rollback</span>(<span class="text-green">save</span>);</code></pre>
+    </div>
+
+<p>Давай попробуем добавить точку сохранения перед нашей проблемной командой:</p>
+
+<pre class='language-java line-numbers'><code>
+  try{
+  	connection.setAutoCommit(false);
+ 
+  	Statement statement = connection.createStatement();
+  	int rowsCount1 = statement.executeUpdate("UPDATE  employee SET salary = salary+1000");
+  	int rowsCount2 = statement.executeUpdate("UPDATE  employee SET salary = salary+1000");
+ 
+  	Savepoint save = connection.setSavepoint();
+ 	 try{
+      	int rowsCount3 = statement.executeUpdate("UPDATE  несколько опечаток приведут к исключению");
+ 	 }
+ 	 catch (Exception e) {
+    	   connection.rollback(save);
+ 	 }
+ 
+	  connection.commit();
+ }
+ catch (Exception e) {
+   connection.rollback();
+}
+</code></pre>
+
+<p>Мы организовали как бы вложенные транзакции, добавив <strong>save-point</strong> перед вызовом проблемного метода, и возврат к сохраненному состоянию с помощью вызова метода <span class="code text-orange">rollback(save)</span>.</p>
+
+<p>Да, это очень похоже на save/load в играх.</p>

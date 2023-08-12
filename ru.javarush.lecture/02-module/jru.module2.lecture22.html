@@ -1,0 +1,145 @@
+Метод newFixedThreadPool
+<p>----------------------------------------</p>
+Метод newFixedThreadPool у класса Executors создаст нам executorService с фиксированным количеством потоков. По сравнению с методом newSingleThreadExecutor, мы указываем, какое количество потоков мы хотим видеть в пуле. Под капотом вызывается...
+<p>----------------------------------------</p>
+    <p>Метод <span class="code text-orange">newFixedThreadPool</span> у класса <span class="code"><span class="text-green">Executors</span></span> создаст нам <span class="text-green"><span class="text-bold"><em>executorService</em></span></span> с фиксированным количеством потоков. По сравнению с методом <span class="code text-orange">newSingleThreadExecutor</span>, мы указываем, какое количество потоков мы хотим видеть в пуле. Под капотом вызывается</p>
+
+    <pre class='language-java line-numbers'><code>
+new ThreadPoolExecutor( nThreads, nThreads,
+                                      	0L, TimeUnit.MILLISECONDS,
+                                      	new LinkedBlockingQueue<Runnable>());</code></pre>
+
+    <p>В качестве параметров <span class="text-green">corePoolSize</span> (какое количество потоков будет готово (запущено) при старте <span class="text-green"><span class="text-bold"><em>executor</em></span></span> сервиса) и <span class="text-green">maximumPoolSize</span> (максимальное количество потоков, которое может создать <span class="text-green"><span class="text-bold"><em>executor</em></span></span> сервис) передается одно и то же число — количество потоков передаваемое в <span class="code text-orange">newFixedThreadPool(nThreads)</span>. Точно так же мы можем передать в параметры и собственную реализацию <span class="text-neon"><span class="text-bold"><em>ThreadFactory</em></span></span>.</p>
+
+    <p>Итак, давай разберемся, зачем нам нужен такой <span class="text-green"><span class="text-bold"><em>ExecutorService</em></span></span>.</p>
+ 
+    <p><span class="text-green"><span class="text-bold"><em>ExecutorService</em></span></span> с фиксированным количеством (n) потоков обладает следующей логикой:</p>
+
+    <ul>
+        <li>Максимум n потоков будут активны для обработки задач.</li>
+        <li>Если передано более n задач, они будут удерживаться в очереди до момента, пока потоки не освободятся.</li>
+        <li>Если в работе одного из потоков произойдет сбой и он завершит свою работу, будет создан новый поток на место сломанного.</li>
+        <li>Любой поток из пула активен до тех пор, пока пул не закрыт.</li>
+    </ul>
+
+    <p>Как пример представь очередь в аэропорту, где все стоят в одной очереди, а непосредственно перед контролем расходятся на работающее количество пунктов. Если в одном из пунктов будет задержка, очередь будет идти только через второй, пока первый не освободится, а если один из пунктов вовсе сломается, то откроют другой пункт на замену этому и контроль продолжится через два пункта. </p>
+
+    <p>Сразу стоит отметить, что условия хоть и идеальные, где обещанные n потоков стабильно работают и всегда будет подмена для завершившихся с ошибкой потоков (чего уже добиться в реальной работе аэропорта невозможно из-за ограниченных ресурсов), все равно система имеет несколько неприятных особенностей, так как потоков больше не станет ни при каких условиях, даже в случае, когда очередь будет увеличиваться быстрее, чем потоки будут обрабатывать задачи.</p>
+ 
+    <p>Предлагаю разобраться на практике, как работает <span class="text-green"><span class="text-bold"><em>ExecutorService</em></span></span> с фиксированным количеством потоков. Давай создадим класс, реализующий <span class="text-neon"><span class="text-bold"><em>Runnable</em></span></span>. Объекты этого класса и будут нашими задачами для <span class="text-green"><span class="text-bold"><em>ExecutorService</em></span></span>.</p>
+ 
+    <pre class='language-java line-numbers'><code>
+public class Task implements Runnable {
+    int taskNumber;
+ 
+    public Task(int taskNumber) {
+        this.taskNumber = taskNumber;
+    }
+ 
+    @Override
+    public void run() {
+try {
+            TimeUnit.SECONDS.sleep(2);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("Обработан запрос пользователя №" + taskNumber + " на потоке " + Thread.currentThread().getName());
+    }
+}
+    </code></pre>
+ 
+    <p>В методе <span class="code text-orange">run()</span> мы блокируем поток на 2  секунды, имитируя нагрузку, и выводим номер текущей задачи и имя потока, на котором выполняем данную задачу.</p>
+ 
+    <pre class='language-java line-numbers'><code>
+ExecutorService executorService = Executors.newFixedThreadPool(3);
+ 
+        for (int i = 0; i < 30; i++) {
+            executorService.execute(new Task(i));
+        }
+        
+        executorService.shutdown();
+    </code></pre>
+ 
+    <p>Для начала в <span class="code text-orange">main</span> создадим <span class="text-green"><span class="text-bold"><em>ExecutorService</em></span></span> и отправим 30 задач на выполнение. </p>
+ 
+    <div class="terminal">Обработан запрос пользователя №1 на потоке pool-1-thread-2<br />
+Обработан запрос пользователя №0 на потоке pool-1-thread-1<br />
+Обработан запрос пользователя №2 на потоке pool-1-thread-3<br />
+Обработан запрос пользователя №5 на потоке pool-1-thread-3<br />
+Обработан запрос пользователя №3 на потоке pool-1-thread-2<br />
+Обработан запрос пользователя №4 на потоке pool-1-thread-1<br />
+Обработан запрос пользователя №8 на потоке pool-1-thread-1<br />
+Обработан запрос пользователя №6 на потоке pool-1-thread-3<br />
+Обработан запрос пользователя №7 на потоке pool-1-thread-2<br />
+Обработан запрос пользователя №10 на потоке pool-1-thread-3<br />
+Обработан запрос пользователя №9 на потоке pool-1-thread-1<br />
+Обработан запрос пользователя №11 на потоке pool-1-thread-2<br />
+Обработан запрос пользователя №12 на потоке pool-1-thread-3<br />
+Обработан запрос пользователя №14 на потоке pool-1-thread-2<br />
+Обработан запрос пользователя №13 на потоке pool-1-thread-1<br />
+Обработан запрос пользователя №15 на потоке pool-1-thread-3<br />
+Обработан запрос пользователя №16 на потоке pool-1-thread-2<br />
+Обработан запрос пользователя №17 на потоке pool-1-thread-1<br />
+Обработан запрос пользователя №18 на потоке pool-1-thread-3<br />
+Обработан запрос пользователя №19 на потоке pool-1-thread-2<br />
+Обработан запрос пользователя №20 на потоке pool-1-thread-1<br />
+Обработан запрос пользователя №21 на потоке pool-1-thread-3<br />
+Обработан запрос пользователя №22 на потоке pool-1-thread-2<br />
+Обработан запрос пользователя №23 на потоке pool-1-thread-1<br />
+Обработан запрос пользователя №25 на потоке pool-1-thread-2<br />
+Обработан запрос пользователя №24 на потоке pool-1-thread-3<br />
+Обработан запрос пользователя №26 на потоке pool-1-thread-1<br />
+Обработан запрос пользователя №27 на потоке pool-1-thread-2<br />
+Обработан запрос пользователя №28 на потоке pool-1-thread-3<br />
+Обработан запрос пользователя №29 на потоке pool-1-thread-1</div>
+ 
+    <p>В консоли мы видим, как задачи выполняются на разных потоках по мере их освобождения от предыдущей задачи. </p>
+ 
+    <p>Теперь мы увеличим количество задач до 100, а после отправки на выполнение 100 задач вызовем метод <span class="code text-orange">awaitTermination(11, SECONDS)</span>. В параметры передаем количество и временную единицу. Этот метод заблокирует основной поток на 11 секунд, после чего мы вызовем <span class="code text-orange">shutdownNow()</span> и принудим завершить работу <span class="text-green"><span class="text-bold"><em>ExecutorService</em></span></span>, не дожидаясь выполнения всех задач. </p>
+ 
+    <pre class='language-java line-numbers'><code>
+ExecutorService executorService = Executors.newFixedThreadPool(3);
+ 
+        for (int i = 0; i < 100; i++) {
+            executorService.execute(new Task(i));
+        }
+ 
+        executorService.awaitTermination(11, SECONDS);
+ 
+        executorService.shutdownNow();
+        System.out.println(executorService);
+    </code></pre>
+ 
+    <p>В конце выведем данные о состоянии <span class="text-green"><span class="text-bold"><em>executorService</em></span></span>. </p>
+ 
+    <p>В консоли мы видим следующее:</p>
+ 
+    <div class="terminal">Обработан запрос пользователя №0 на потоке pool-1-thread-1<br />
+Обработан запрос пользователя №2 на потоке pool-1-thread-3<br />
+Обработан запрос пользователя №1 на потоке pool-1-thread-2<br />
+Обработан запрос пользователя №4 на потоке pool-1-thread-3<br />
+Обработан запрос пользователя №5 на потоке pool-1-thread-2<br />
+Обработан запрос пользователя №3 на потоке pool-1-thread-1<br />
+Обработан запрос пользователя №6 на потоке pool-1-thread-3<br />
+Обработан запрос пользователя №7 на потоке pool-1-thread-2<br />
+Обработан запрос пользователя №8 на потоке pool-1-thread-1<br />
+Обработан запрос пользователя №9 на потоке pool-1-thread-3<br />
+Обработан запрос пользователя №11 на потоке pool-1-thread-1<br />
+Обработан запрос пользователя №10 на потоке pool-1-thread-2<br />
+Обработан запрос пользователя №13 на потоке pool-1-thread-1<br />
+Обработан запрос пользователя №14 на потоке pool-1-thread-2<br />
+Обработан запрос пользователя №12 на потоке pool-1-thread-3<br />
+java.util.concurrent.ThreadPoolExecutor@452b3a41[Shutting down, pool size = 3, active threads = 3, queued tasks = 0, completed tasks = 15]<br />
+Обработан запрос пользователя №17 на потоке pool-1-thread-3<br />
+Обработан запрос пользователя №15 на потоке pool-1-thread-1<br />
+Обработан запрос пользователя №16 на потоке pool-1-thread-2</div>
+ 
+    <p>Далее следуют 3 <span class="text-red"><span class="text-bold">InterruptedException</span></span>, которые выкидывают методы <span class="code text-orange">sleep</span> из 3 активных задач.</p>
+ 
+    <p>Мы видим, что на момент завершения у нас выполнилось 15 задач, но еще остается 3 активных потока в пуле, которые не закончили выполнение своей задачи. У этих 3-х потоков вызывается <span class="code text-orange">interrupt()</span>, а это значит, что выполнение задачи завершится, но в нашем случае метод <span class="code text-orange">sleep</span> выкидывает нам <span class="text-red"><span class="text-bold">InterruptedException</span></span>. Также мы видим, что после вызова метода <span class="code text-orange">shutdownNow()</span> очистилась очередь из задач. </p>
+ 
+    <p>Таким образом, стоит отметить, что принцип работы нужно учитывать при использовании <span class="text-green"><span class="text-bold"><em>ExecutorService</em></span></span> с фиксированным количеством потоков в пуле. Использовать этот вид стоит для задач с заранее известной постоянной нагрузкой.</p>
+
+    <p>Есть еще один интересный вопрос: если нужно использовать экзекутор на 1 поток, какой метод вызвать — <span class="code text-orange">newSingleThreadExecutor()</span> или <span class="code text-orange">newFixedThreadPool(1)</span>?</p>
+
+    <p>В поведении оба экзекутора будут эквивалентными. Разница будет лишь в том, что метод <span class="code text-orange">newSingleThreadExecutor()</span> вернет такой экзекутор, который в дальнейшем никак нельзя перенастроить на использование дополнительных потоков.</p>

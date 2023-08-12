@@ -1,0 +1,98 @@
+NativeQuery
+<p>----------------------------------------</p>
+Знакомство
+Entity маппинг
+DTO-маппинг
+<p>----------------------------------------</p>
+<h2>3.1 Знакомство</h2>
+<p>Еще одна полезная вещь, про которую хотелось бы рассказать – это <strong>NativeQuery</strong>. Как ты уже знаешь, с помощью NativeQuery можно писать запросы на родном SQL. Однако еще интереснее то, что ты можешь не использовать маппинг классов при получении результата запроса.</p>
+<p>Я лучше покажу тебе пример:</p>
+<pre><code>List&lt;Object[]&gt; <span class="text-user">persons</span> = <span class="text-brown">session.createNativeQuery</span>(<span class="text-green">"SELECT * FROM Person"</span>).list();
+</code></pre>
+<p>В этом примере мы не передаем класс, который соответствует строкам результата запроса, вместо этого используется просто массив объектов Object.</p>
+<p>Это может быть полезно, если ты хочешь сделать выборку всего пары колонок таблицы. Пример:</p>
+<pre class='line-numbers'><code>
+List&lt;Object[]&gt; <span class="text-user">persons</span> = session.<span class="text-brown">createNativeQuery</span>(<span class="text-green">"SELECT id, name FROM Person"</span>).list();
+ 
+for(Object[] person : <span class="text-user">persons</span>) {
+    Number <span class="token keyword">id</span> = (Number) <span class="text-user">person</span>[0];
+    String <span class="token keyword">name</span> = (String) <span class="text-user">person</span>[1];
+}
+</code></pre>
+<p>Это чем-то похоже на подход JDBC, когда ты получаешь объект ResultSet и читаешь данные из его строк.</p>
+<p>Однако Hibernate предлагает разные способы сделать это дело более надежным. Например, ты можешь указать тип колонок, которые хочешь вычитать. Пример:</p>
+<pre class='line-numbers'><code>
+Query&lt;Object[]&gt; <span class="text-yellow">query</span> = session.createNativeQuery(<span class="text-green">"SELECT id, name FROM Person"</span>);
+<span class="text-yellow">query</span>.addScalar(<span class="text-green">"id"</span>, StandardBasicTypes.<span class="text-viola">LONG</span>);
+<span class="text-yellow">query</span>.addScalar(<span class="text-green">"name"</span>, StandardBasicTypes.<span class="text-viola">STRING</span>);
+List&lt;Object[]&gt; <span class="text-user">persons</span> = <span class="text-yellow">query</span>.list();
+ 
+for(Object[] person : <span class="text-user">persons</span>) {
+    Long <span class="token keyword">id</span> = (Long) <span class="text-user">person</span>[0];
+    String <span class="token keyword">name</span> = (String) <span class="text-user">person</span>[1];
+}
+</code></pre>
+<h2>3.2 Entity маппинг</h2>
+<p>Также ты можешь явно указать класс, который Hibernate должен использовать при парсинге результата <strong>NativeQuery</strong>. Сделать это можно разными способами.</p>
+<pre class='line-numbers'><code>
+Query&lt;Person&gt; <span class="text-yellow">query</span> = session.<span class="text-brown">createNativeQuery</span>(<span class="text-green">"SELECT * FROM Person"</span>)
+    .addEntity(Person.class);
+    .list();
+</code></pre>
+<p>И конечно, старый-добрый известный тебе формат:</p>
+<pre class='line-numbers'><code>
+Query&lt;Person&gt; <span class="text-yellow">query</span> = session.<span class="text-brown">createNativeQuery</span>(<span class="text-green">"SELECT * FROM Person"</span>, Person.class).list();
+</code></pre>
+<p>Первый подход – это родной подход Hibernate, а второй – это подход JPA. Подход JPA удобнее и лаконичнее, так как этот стандарт был придуман уже после того, как Hibernate просуществовал много лет. А Hibernate развивался и был вынужден поддерживать старые подходы для сохранения совместимости со своими старыми версиями.</p>
+<p>Кстати, благодаря своему подходу Hibernate позволяет подключать не один класс к маппингу результата запроса, а несколько классов. Пример:</p>
+<pre class='line-numbers'><code>
+List&lt;Phone&gt; <span class="text-yellow">results</span> = <span class="text-brown">session.createNativeQuery</span>(
+    <span class="text-green">"SELECT {ph.*}, {pr.*}"</span> +
+    <span class="text-green">"FROM Phone ph"</span> +
+    <span class="text-green">"JOIN Person pr ON ph.person_id = pr.id"</span>)
+.addEntity(<span class="text-green">"ph"</span>, <span class="text-user">Phone</span>.class)
+.addJoin(<span class="text-green">"pr"</span>, <span class="text-green">"ph.person"</span>)
+.list();
+ 
+for (<span class="text-user">Phone</span>. phone : <span class="text-yellow">results</span>) {
+           	assertNotNull( phone.getPerson().getName() );
+}
+</code></pre>
+<p>Такой подход с использованием <strong>NativeQuery</strong> можно использовать для ускорения выборки данных из базы. Если ты знаешь, что какие-то колонки тебе не нужны, ты можешь их не указывать в запросе.</p>
+<p>Также ты можешь сразу загрузить все дочерние сущности, даже если Hibernate хочет использовать <strong>Cache</strong> или механизм <strong>LazyLoading</strong>. Кроме того, у твоих дочерних сущностей может быть много колонок в базе, и ты можешь отобрать только некоторые из них.</p>
+<h2>3.3 DTO-маппинг</h2>
+<p>Также Hibernate позволяет использовать для маппинга результата не Entity-классов. Классы, у которых нет никаких аннотаций, и которые не замаплены на любые таблицы.</p>
+<p>Пример:</p>
+<pre class='language-java line-numbers'><code>
+public class <span class="text-brown">PersonSummaryDTO</span> {
+    private Number id;
+    private String name;
+ 
+    public Number getId() {
+    	return id;
+    }
+ 
+    public void setId(Number id) {
+    	this.id = id;
+    }
+ 
+    public String getName() {
+    	return name;
+    }
+ 
+    public void setName(String name) {
+    	this.name = name;
+	}
+}
+
+List&lt;<span class="text-brown">PersonSummaryDTO</span>&gt; dtos = session.createNativeQuery(
+    <span class="text-green">"SELECT p.id as \"id\", p.name as \"name\" FROM Person p"</span>)
+.<span class="text-red">setResultTransformer</span>(<span class="text-user">Transformers</span>.<span class="text-neon">aliasToBean</span>(<span class="text-brown">PersonSummaryDTO</span>.class) )
+.list();
+</code></pre>
+<p>Так как аннотаций у класса PersonSummaryDTO нет, то имена колонок в SQL-запросе должны точно совпадать с именами полей класса PersonSummaryDTO.</p>
+<p>Такое бывает очень полезно, если ты читаешь данные из внешней базы данных, к которой твое приложение подключено только в режиме read-only. То есть тебе дали доступ к таблицам у которых по 50+ колонок, они хранят данные в денормализованном виде для ускорение выборки.</p>
+<p>Или же допустим, что кто-то решил хранить иерархию классов в одной таблице, а за пять лет эта таблица так разрослась, что черт ногу сломит. Тебе нужно выбрать из этой таблицы пару колонок (Id и имя пользователя) и отдать их клиенту.</p>
+<p>Думаю, ты понял, но если хочешь погрузиться в эту тему глубже, то подробнее можно почитать по ссылке:</p>
+<p><a href="https://docs.jboss.org/hibernate/orm/6.0/userguide/html_single/Hibernate_User_Guide.html#sql" target="_blank">Native SQL Queries</p>
+

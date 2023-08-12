@@ -1,0 +1,119 @@
+Проблема многопоточности — локальный кэш. Volatile
+<p>----------------------------------------</p>
+Хьюстон, у нас проблема с многопоточностью! Да, снова. На этот раз она связана с механизмом использования кэш-памяти. Той самой кэш-памяти, в которую процессор заносит свои самые часто используемые переменные. Делает он это чтобы ускорить свою работу, но вот тут и сокрыт корень зла. В чём загвоздка, и как решить проблему вы узнаете совсем скоро.
+<p>----------------------------------------</p>
+<p>&#8212; Привет, Амиго! Помнишь, Элли тебе рассказывала про проблемы при одновременном доступе нескольких нитей к общему (разделяемому) ресурсу?</p>
+<p><span class="text-user">&#8212; Да.</span></p>
+<p>&#8212; Так вот – это еще не все. Есть еще небольшая проблема.</p>
+<p>Как ты знаешь, в компьютере есть память, где хранятся данные и команды (код), а также процессор, который исполняет эти команды и работает с данными. Процессор считывает данные из памяти, изменяет и записывает их обратно в память. Чтобы ускорить работу процессора в него встроили свою «быструю» память – кэш.</p>
+<p>Чтобы ускорить свою работу, процессор копирует самые часто используемые переменные из области памяти в свой кэш и все изменения с ними производит в этой быстрой памяти. А после – копирует обратно в «медленную» память. Медленная память все это время содержит старые(!) (неизмененные) значения переменных.</p>
+<p>И тогда может возникнуть проблема. <span class="text-red">Одна нить меняет переменную</span>, такую как isCancel или isInterrupted из примера ниже, а <span class="text-red">вторая нить «не видит» этого изменения</span>, т.к. оно было совершено в быстрой памяти. Это следствие того, что нити не имеют доступа к кэшу друг друга. (Процессор часто содержит несколько независимых ядер и нити физически могут исполняться на разных ядрах.)</p>
+<p>Вспомним вчерашний пример:</p>
+<table>
+<tbody>
+<tr>
+<th>Код</th>
+<th>Описание</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Clock implements Runnable
+{
+private boolean isCancel = false;
+
+public void cancel()
+{
+this.isCancel = true;
+}
+
+public void run()
+{
+while (<span class="text-red">!this.isCancel</span>)
+{
+Thread.sleep(1000);
+System.out.println("Tik");
+}
+}
+}</code></pre>
+</td>
+<td>Нить «не знает» о существовании других нитей.</p>
+<p>В методе run переменная isCancel при первом использовании будет помещена в кэш дочерней нити. Эта операция эквивалентна коду:</p>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public void run()
+{
+<span class="text-red">boolean isCancelCached = this.isCancel;</span>
+while (!isCancelCached)
+{
+Thread.sleep(1000);
+System.out.println("Tik");
+}
+}</code></pre>
+<p>Вызов метода cancel из другой нити поменяет значение переменной isCancel в обычной (медленной) памяти, но не в кэше остальных нитей.</td>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public static void main(String[] args)
+{
+Clock clock = new Clock();
+Thread clockThread = new Thread(clock);
+clockThread.start();
+
+Thread.sleep(10000);
+clock.cancel();
+}</code></pre>
+</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><span class="text-user">&#8212; Ничего себе! А для этой проблемы тоже придумали красивое решение, как в случае с <strong>synchronized</strong>?</span></p>
+<p>&#8212; Ты не поверишь!</p>
+<p>Сначала думали отключить работу с кэшем, но потом оказалось, что из-за этого программы работают в разы медленнее. Тогда придумали другое решение.</p>
+<p>Было придумано специальное ключевое слово <span class="text-red"><strong>volatile</strong></span>. Помещение его перед определением переменной запрещало помещать ее значение в кэш. Вернее не запрещало помещать в кэш, а просто принудительно всегда читало и писало ее только в обычную (медленную) память.</p>
+<p>Вот как нужно исправить наше решение, чтобы все стало отлично работать:</p>
+<table>
+<tbody>
+<tr>
+<th>Код</th>
+<th>Описание</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Clock implements Runnable
+{
+private <span class="text-red">volatile</span> boolean isCancel = false;
+
+public void cancel()
+{
+this.isCancel = true;
+}
+
+public void run()
+{
+while (<span class="text-red">!this.isCancel</span>)
+{
+Thread.sleep(1000);
+System.out.println("Tik");
+}
+}
+}</code></pre>
+</td>
+<td>Из-за модификатора volatile чтение и запись значения переменной всегда будут происходить в обычной, общей для всех нитей, памяти.</td>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public static void main(String[] args)
+{
+Clock clock = new Clock();
+Thread clockThread = new Thread(clock);
+clockThread.start();
+
+Thread.sleep(10000);
+clock.cancel();
+}</code></pre>
+</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><span class="text-user">&#8212; И все?</span></p>
+<p>&#8212; Да. Просто и красиво.</p>

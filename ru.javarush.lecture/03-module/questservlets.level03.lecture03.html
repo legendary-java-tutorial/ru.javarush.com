@@ -1,0 +1,120 @@
+Полезные аннотации в JUnit
+<p>----------------------------------------</p>
+@Disabled
+@Nested
+@TestInstance
+@ExtendWith
+@Timeout
+<p>----------------------------------------</p>
+<h2>4.1 @Disabled</h2>
+<p>Теперь разберем несколько очень полезных и популярных аннотаций фреймворка JUnit. Первая аннотация позволяет выключить определенный тест, чтобы JUnit его не вызывал. Она нужна в случаях, если ты заметишь, что тест работает неверно, или поменяешь код и тест случайно поломается.</p>
+<p>Как я писал раньше, 99% тестов никто не поддерживает, поэтому все они рано или поздно оказываются отключены. Поэтому эта аннотация первая в списке полезных. </p>
+<p>Рассмотрим ее пример:</p>
+<pre class='language-java line-numbers'><code>
+public class AppTest {
+ 
+    <span class="text-green">@Disabled("Тест временно отключен. Правда, правда")
+    @Test</span>
+    void testOnDev(){
+        System.setProperty("ENV", "DEV");
+        Assumptions.assumeFalse("DEV".equals(System.getProperty("ENV")));
+    }
+ 
+    <span class="text-green">@Test</span>
+    void testOnProd(){
+     System.setProperty("ENV", "PROD");
+        Assumptions.assumeFalse("DEV".equals(System.getProperty("ENV")));
+    }
+}
+</code></pre>
+<p>В примере выше метод <code>testOnDev()</code> вызываться не будет.
+Кстати, аннотацию <code>@Disabled</code> можно написать сразу перед объявлением класса, тогда все его методы будут проигнорированы.</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-green">@Disabled("Временно отключили тест, починим к маю 2001 года")</span>
+public class AppTest {
+    <span class="text-green">@Test</span>
+    void testOnDev(){
+        System.setProperty("ENV", "DEV");
+        Assumptions.assumeFalse("DEV".equals(System.getProperty("ENV")));
+    }
+ 
+    <span class="text-green">@Test</span>
+    void testOnProd(){
+     System.setProperty("ENV", "PROD");
+        Assumptions.assumeFalse("DEV".equals(System.getProperty("ENV")));
+    }
+}
+</code></pre>
+
+<h2>4.2 @Nested</h2>
+<p>JUnit позволяет вызывать тестовые методы у вложенных классов. Имеется в виду вложенные тестовые классы. Не факт ,что ты будешь часто сталкиваться с ними, но вероятность такая есть, поэтому нужно понимать, что это такое.</p>
+<p>Чтобы вызвать методы вложенного класса перед его объявлением, нужно написать аннотацию <code>@Nested</code>. Пример:</p>
+<pre class='language-java line-numbers'><code>
+public class AppTest {
+    <span class="text-green">@Nested</span>
+    public class DevStagingEnvironment {
+    <span class="text-green">@Test</span>
+        void testOnDev(){
+            System.setProperty("ENV", "DEV");
+            Assumptions.assumeFalse("DEV".equals(System.getProperty("ENV")));
+        }
+   }
+ 
+    <span class="text-green">@Nested</span>
+    public class ProductionEnvironment {
+        <span class="text-green">@Test</span>
+        void testOnProd(){
+           System.setProperty("ENV", "PROD");
+           Assumptions.assumeFalse("DEV".equals(System.getProperty("ENV")));
+        }
+   }
+}
+</code></pre>
+<p>Более подробно можно почитать в официальной <a href="https://junit.org/junit5/docs/current/user-guide/#writing-tests-nested" target="_blank">документации</a>.</p>
+
+
+<h2>4.3 @ExtendWith</h2>
+<p>Другая полезная аннотация — <code>@ExtendWith</code>. Скорее всего ты будешь встречать ее очень часто, так что рассмотрим ее подробнее.</p>
+<p>JUnit — это мощный фреймворк, который позволяет писать различные плагины (расширения) для гибкой настройки своей работы. Некоторые расширения могут собирать статистику о тестах, другие — эмулировать файловую систему в памяти, третьи — эмулировать работу внутри веб-сервера, и так далее.</p>
+<p>Если твой код работает внутри какого-нибудь фреймворка (например Spring), <span class="text-user">то почти всегда этот фреймворк управляет созданием и настройкой объектов твоего кода</span>. Поэтому без специального тестового плагина не обойтись. Примеры:</p>
+<p><strong>Пример 1.</strong> Расширение <code>WebServerExtension</code> передает в вызываемый тестовый метод <code>URL</code> для корректной работы.</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-green">@Test
+@ExtendWith(WebServerExtension.class)</span>
+void getProductList(<span class="text-green">@WebServerUrl</span> String serverUrl) {
+    WebClient webClient = new WebClient();
+    // Use WebClient to connect to web server using serverUrl and verify response
+    assertEquals(200, webClient.get(serverUrl + "/products").getResponseStatus());
+}
+</code></pre>
+<p>Вот так обычно начинаются тесты для тестирования кода, который работает с фреймворком Spring:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-red">@ExtendWith(SpringExtension.class)</span>
+<span class="text-red">@ExtendWith(MockitoExtension.class)</span>
+class TestServiceTest {
+ 
+    @MockBean
+    TestService service;
+ 
+    @Test
+    void test() {
+        assertNotNull(service); // Test succeeds
+    }
+}
+</code></pre>
+<p><code class="text-red">SpringExtension</code> создает тестовый вариант фреймворка Spring, а <code class="text-red">MockitoExtention</code> позволяет создавать фейковые объекты. Фейковые объекты — тема очень интересная, мы обязательно ее затронем, но немного позже.</p>
+
+<h2>4.4 @Timeout</h2>
+<p>Закончим эту лекцию небольшой и интересной аннотацией <code>@Timeout</code>. Она позволяет задать время на выполнение теста. Если выполнение теста заняло больше времени, чем указанно в аннотации, то он считается проваленным.</p>
+<pre class='language-java line-numbers'><code>
+class TimeoutDemo {
+    <span class="text-green">@Test
+    @Timeout(value = 100, unit = TimeUnit.MILLISECONDS)</span>
+    void failsIfExecutionTimeExceeds100Milliseconds() {
+        // тест упадет, если займет более 100 миллисекунд
+    }
+}
+</code></pre>
+<p> 
+На этом закончим нашу лекцию.
+</p>

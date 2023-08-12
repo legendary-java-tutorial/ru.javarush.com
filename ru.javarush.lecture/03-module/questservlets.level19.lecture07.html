@@ -1,0 +1,43 @@
+Locks: блокировка доступа к ресурсам
+<p>----------------------------------------</p>
+ReentrantLock. 
+Synchronizer.
+<p>----------------------------------------</p>
+<h2>ReentrantLock</h2>
+
+<img data-max-width="1024" data-id="ee2cd199-b06a-4310-93c0-67f113b8ba93" src="https://cdn.javarush.com/images/article/ee2cd199-b06a-4310-93c0-67f113b8ba93/1024.jpeg" alt="">
+<p><span class="text-neon"><span class="text-bold"><em>Condition</em></span></span> — применение условий в блокировках позволяет добиться контроля над управлением доступа к потокам. Условие блокировки представлет собой объект интерфейса <span class="text-neon"><span class="text-bold"><em>Condition</em></span></span> из пакета <strong>java.util.concurrent.locks</strong>. Применение объектов <span class="text-neon"><span class="text-bold"><em>Condition</em></span></span> во многом аналогично использованию методов <span class="code text-orange">wait</span>/<span class="code text-orange">notify</span>/<span class="code text-orange">notifyAll</span> класса <span class="code"><span class="text-green">Object</span></span>, которые были рассмотрены в одной из прошлых тем.</p>
+
+<p><span class="text-neon"><span class="text-bold"><em>Lock</em></span></span> — интерфейс из <strong>lock framework</strong>, предоставляющий гибкий подход по ограничению доступа к ресурсам/блокам по сравнению с synchronized. При использовании нескольких локов порядок их освобождения может быть произвольный, плюс его также можно настроить. Еще имеется возможность обработать ситуацию, когда лок уже захвачен.</p>
+
+<p><span class="code"><span class="text-green">ReentrantLock</span></span> — одна из реализаций интерфейса <span class="text-neon"><span class="text-bold"><em>Lock</em></span></span> — класс <span class="code"><span class="text-green">ReenterantLock</span></span>. Он позволяет одному и тому же потоку вызывать метод lock, даже если он его вызывал ранее, без освобождения блокировки.</p>
+
+<p>У класса <span class="code"><span class="text-green">ReentrantLock</span></span>, кроме методов интерфейса <span class="text-neon"><span class="text-bold"><em>Lock</em></span></span>, есть фабричный метод <span class="code text-orange">newCondition()</span>. Этот метод возвращает объект <mark class="green">Condition</mark>, который позволяет добавить текущий поток в wait set данного объекта <mark class="green">Condition</mark>.</p>
+
+<pre class='language-java line-numbers'><code>
+private final Lock R_LOCK = ReentrantLock();
+R_LOCK.lock();
+try {
+   //тут происходят какие-то действия
+} finally {
+   R_LOCK.unlock();
+}
+</code></pre>
+
+<p><span class="text-neon"><span class="text-bold"><em>ReadWriteLock</em></span></span> — интерфейс для создания read/write локов. Локи необычайно полезны, когда в системе много операций чтения и мало операций записи.</p>
+
+<p><span class="code"><span class="text-green">ReentrantReadWriteLock</span></span> — используется в многопоточных сервисах и кешах, имеют хороший прирост производительности по сравнению с блоками synchronized. По сути, класс работает в 2-х взаимоисключающих режимах: много читателей читают данные в параллель и когда только 1 райтер пишет данные.</p>
+
+<p>ReentrantReadWriteLock.ReadLock — read lock для reader'ов, получаемый через readWriteLock.readLock().</p>
+
+<p>ReentrantReadWriteLock.WriteLock — write lock для writer'ов, получаемый через readWriteLock.writeLock().</p>
+
+<h2>Synchronizer</h2>
+
+<img data-max-width="512" data-id="cb9ae844-7dce-459b-b8af-55a1830c5fb1" src="https://cdn.javarush.com/images/article/cb9ae844-7dce-459b-b8af-55a1830c5fb1/512.jpeg" alt="">
+
+<p><span class="code"><span class="text-green">AbstractOwnableSynchronizer</span></span> — базовый класс, который отвечает за построение механизмов синхронизации. Содержит геттер/сеттер для запоминания и чтения эксклюзивного потока, который может работать с вашими данными.</p>
+
+<p><span class="code"><span class="text-green">AbstractQueuedSynchronizer</span></span> — базовый класс для механизма синхронизации в FutureTask, CountDownLatch, Semaphore, ReentrantLock, ReentrantReadWriteLock. Также он применяется при создании новых механизмов синхронизации, полагающихся на одиночное и атомарное значение int.</p>
+
+<p><span class="code"><span class="text-green">AbstractQueuedLongSynchronizer</span></span> — разновидность <span class="code"><span class="text-green">AbstractQueuedSynchronizer</span></span>, поддерживающая атомарное значение long.</p>

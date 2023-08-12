@@ -1,0 +1,305 @@
+Получаем данные из ResultSet
+<p>----------------------------------------</p>
+Управление текущей строкой. 
+Получение данных из текущей строки. 
+Получение разных данных о ResultSet.
+<p>----------------------------------------</p>
+<h2>Управление текущей строкой</h2>
+
+<p>Первую программу мы написали и она отлично отработала. Мы написали запрос, выполнили его, и в результате метод <span class="code text-orange">executeQuery()</span> вернул нам объект <mark class="green">ResultSet</mark>, который содержит все результаты запроса. И теперь мы попробуем разобраться, как эти результаты из него получить.</p>
+
+<p>Результат запроса может содержать тысячи строк и сотни колонок различных типов, так что эта не такая тривиальная задача, как тебе кажется. Например, в базе могут храниться картинки, тогда ты можешь получить картинку в виде набора байт или же <span class="text-green"><span class="text-bold">InputStream</span></span> для ее загрузки.</p>
+
+<p>Но начнем мы с самого простого — с понятия “<strong>текущей строки результата</strong>”. Так как строк у результата обычно очень много, то объект <mark class="green">ResultSet</mark> имеет у себя внутри указатель на текущую строку. И последовательно переключает строки для их чтения с помощью метода <span class="code text-orange">next()</span>.</p>
+
+<p>Такой подход в первую очередь сделан для оптимизации. JDBC Driver может не загружать строки из базы, пока ты последовательно не дойдешь до их чтения. <span class="text-green"><span class="text-bold">FileInputStream</span></span> ты тоже читаешь последовательно с начала и до конца. Так что такой подход должен быть тебе знаком и понятен.</p>
+
+<p>Однако же, если тебе очень нужно, то файлы можно читать в любом месте с помощью класса <span class="code"><span class="text-green">RandomAccessFile</span></span>. </p>
+
+<p>Класс <span class="code"><span class="text-green">ResultSet</span></span> тоже позволяет что-то подобное и позволяет двигать текущую строку по результату куда угодно. Для этого у него есть такие методы:</p>
+ 
+<table>
+<tbody>
+<tr>
+<th></th>
+<th>Метод</th>
+<th>Описание</th>
+</tr>
+<tr>
+<td>1</td>
+<td><span class="code text-orange">next()</span></td>
+<td>Переключиться на следующую строку</td>
+</tr>
+<tr>
+<td>2</td>
+<td><span class="code text-orange">previous()</span></td>
+<td>Переключиться на предыдущую строку</td>
+</tr>
+<tr>
+<td colspan=3></td>
+</tr>
+<tr>
+<td>3</td>
+<td><span class="code text-orange">isFirst()</span></td>
+<td>Текущая строка первая?</td>
+</tr>
+<tr>
+<td>4</td>
+<td><span class="code text-orange">isBeforeFirst()</span></td>
+<td>Мы перед первой строкой?</td>
+</tr>
+<tr>
+<td>5</td>
+<td><span class="code text-orange">isLast()</span></td>
+<td>Текущая строка последняя?</td>
+</tr>
+<tr>
+<td>6</td>
+<td><span class="code text-orange">isAfterLast()</span></td>
+<td>Мы после последней сроки?</td>
+</tr>
+<tr>
+<td colspan=3></td>
+</tr>
+<tr>
+<td>7</td>
+<td><span class="code text-orange">absolute(int n)</span></td>
+<td>Делает N-ю строку текущей</td>
+</tr>
+<tr>
+<td>8</td>
+<td><span class="code text-orange">relative(int n)</span></td>
+<td>Двигает текущую строку на N позиций вперед. N может быть <0</td>
+</tr>
+<tr>
+<td colspan=3></td>
+</tr>
+<tr>
+<td>9</td>
+<td><span class="code text-orange">getRow()</span></td>
+<td>Возвращает номер строки</td>
+</tr>
+</tbody>
+</table>
+ 
+<p>Методы достаточно простые, однако нужно сделать два пояснения. Результаты как бы обрамлены пустыми строками с обоих сторон. Поэтому изначально текущая строка находится <strong>перед первой</strong> строкой результата. И чтобы получить первую строку, нужно хотя бы раз вызвать метод <span class="code text-orange">next()</span>.</p>
+
+<p>Если ты <strong>на последней</strong> стоке вызвал метод <span class="code text-orange">next()</span>, то ты перешел на строку <strong>после последней</strong>. Данных из нее прочитать ты не можешь, но никакой ошибки не произойдет. Тут метод <span class="code text-orange">isAfterLast()</span> будет возвещать true в качестве результата.</p>
+
+<p>Пример:</p>
+ 
+<pre class='language-java line-numbers'><code>
+    	Statement statement = connection.createStatement();
+    	ResultSet results = statement.executeQuery("SELECT * FROM user");
+ 
+    	System.out.println( results.getRow() );        	// 0
+    	System.out.println( results.isBeforeFirst() );  // true
+    	System.out.println( results.isFirst() );          	// false
+    	
+    	results.next();
+ 
+    	System.out.println( results.getRow() );        	// 1
+    	System.out.println( results.isBeforeFirst() );  // false
+    	System.out.println( results.isFirst() );          	// true
+ 
+    	results.next();
+ 
+    	System.out.println( results.getRow() );        	// 2
+    	System.out.println( results.isBeforeFirst() );  // false
+    	System.out.println( results.isFirst() );          	// false
+</code></pre>
+ 
+<h2>Получение данных из текущей строки</h2>
+
+<p>Ты научился виртуозно управлять текущей строкой. Теперь давай разберем, как из нее получать данные. Для этого у объекта <mark class="green">ResultSet</mark> есть специальные методы, которые все можно описать одним шаблоном:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">get</span>Type(<span class="text-user">номерКолонки</span>)</code></pre>
+    </div>
+
+<p>Впрочем, если у колонки есть имя, то можно получать и по имени колонки:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">get</span>Type(<span class="text-green">имяКолонки</span>)</code></pre>
+    </div>
+
+<p>Пример:</p>
+
+<pre class='language-java line-numbers'><code>
+    	while (results.next()) {
+        	Integer id = results.getInt(“id”);
+        	String name = results.getString(“name”);
+        	System.out.println(results.getRow() + ". " + id + "\t"+ name);
+    	}
+</code></pre>
+
+<p>Ниже я приведу таблицу, которая тебе поможет связать типы данных SQL и методы ResultSet:</p>
+
+<table>
+<tbody>
+<tr>
+<th>SQL Datatype</th>
+<th>getXXX() Methods</th>
+</tr>
+<tr>
+<td>CHAR</td>
+<td><span class="code text-orange">getString()</span></td>
+</tr>
+<tr>
+<td>VARCHAR</td>
+<td><span class="code text-orange">getString()</span></td>
+</tr>
+<tr>
+<td>INT</td>
+<td><span class="code text-orange">getInt()</span></td>
+</tr>
+<tr>
+<td>FLOAT</td>
+<td><span class="code text-orange">getDouble()</span></td>
+</tr>
+<tr>
+<td>CLOB</td>
+<td><span class="code text-orange">getClob()</span></td>
+</tr>
+<tr>
+<td>BLOB</td>
+<td><span class="code text-orange">getBlob()</span></td>
+</tr>
+<tr>
+<td>DATE</td>
+<td><span class="code text-orange">getDate()</span></td>
+</tr>
+<tr>
+<td>TIME</td>
+<td><span class="code text-orange">getTime()</span></td>
+</tr>
+<tr>
+<td>TIMESTAMP</td>
+<td><span class="code text-orange">getTimestamp()</span></td>
+</tr>
+</tbody>
+</table>
+
+<p>Суть, думаю, ты понял.</p>
+
+<h2>Получение разных данных о ResultSet</h2>
+
+<p>Как читать данные из текущей строки мы разобрались: и по номеру колонки, и по ее имени. Кстати, а как узнать имя колонки по ее номеру? Или количество колонок в результате?</p>
+
+<p>С одной стороны, если ты пишешь запрос, то ты вроде бы должен все это знать. С другой стороны, мы можем писать программу, которая отображает результат запроса на экран: запрос нам передают и мы хотим просто отобразить на экране (в консоли, веб-странице) все, что нам вернул SQL-сервер.</p>
+
+<p>Для этого у JDBC есть специальный объект – интерфейс <span class="text-neon"><span class="text-bold"><em>ResultSetMetaData</em></span></span>. Получить объект этого типа достаточно просто:</p>
+ 
+<pre class='language-java line-numbers'><code>
+        Statement statement = connection.createStatement();
+    	ResultSet results = statement.executeQuery("SELECT * FROM user");
+    	ResultSetMetaData resultSetMetaData = results.getMetaData();
+</code></pre>
+ 
+<p>У интерфейса <span class="text-neon"><span class="text-bold"><em>ResultSetMetaData</em></span></span> есть очень интересные методы. Ниже приведу самые популярные из них:</p>
+ 
+<table>
+<tbody>
+<tr>
+<td>1</td>
+<td>getColumnCount()</td>
+<td>Возвращает количество колонок результата</td>
+</tr>
+<tr>
+<td>2</td>
+<td>getColumnName(int column)</td>
+<td>Возвращает имя колонки</td>
+</tr>
+<tr>
+<td>3</td>
+<td>getColumnLabel(int column)</td>
+<td>Возвращает description колонки</td>
+</tr>
+<tr>
+<td>4</td>
+<td>getColumnType()</td>
+<td>Возвращает тип колонки: число (специальный код)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>getColumnTypeName()</td>
+<td>Возвращает тип колонки: строка</td>
+</tr>
+<tr>
+<td>6</td>
+<td>getColumnClassName()</td>
+<td>Возвращает имя java-класса для типа колонки</td>
+</tr>
+<tr> 
+<td>7</td>
+<td>getTableName()</td>
+<td>Возвращает имя таблицы</td>
+</tr>
+<tr>
+<td>8</td>
+<td>getCatalogName()</td>
+<td>Возвращает имя каталога колонки</td>
+</tr>
+<tr>
+<td>9</td>
+<td>getSchemaName()</td>
+<td>Возвращает имя схемы базы данных</td>
+</tr>
+<tr>
+<td>10</td>
+<td>isAutoIncrement(int column)</td>
+<td>Колонка поддерживает AUTO INCREMENT?</td>
+</tr>
+<tr>
+<td>11</td>
+<td>isNullable()</td>
+<td>Колонка может содержать NULL?</td>
+</tr>
+</tbody>
+</table>
+ 
+<p>Давай с его помощью немного узнаем о нашей таблице:</p>
+
+<pre class='language-java line-numbers'><code>
+        ResultSetMetaData metaData = results.getMetaData();
+    	int columnCount = metaData.getColumnCount();
+    	for (int column = 1; column <= columnCount; column++)
+    	{
+        	String name = metaData.getColumnName(column);
+        	String className = metaData.getColumnClassName(column);
+        	String typeName = metaData.getColumnTypeName(column);
+        	int type = metaData.getColumnType(column);
+ 
+        	System.out.println(name + "\t" + className + "\t" + typeName + "\t" + type);
+    	}
+</code></pre>
+
+ 
+<p><strong>Важно!</strong> Обрати внимание, что колонки нумеруются с 1. Строки, кстати, тоже. Как это необычно, да?</p>
+
+<p>И вот какой результат я получил после запуска программы:</p>
+
+<table>
+<tbody>
+<tr>
+<td colspan=4><span class="text-gray">"C:\Program Files\Java\jdk-17.0.3.1\bin\java.exe…</span></td>
+<tr>
+<tr>
+<td>id</td><td>java.lang.Integer</td><td>INT</td><td>4</td>
+</tr>
+<tr>
+<td>name</td><td>java.lang.String</td><td>VARCHAR</td><td>12</td>
+</tr>
+<tr>
+<td>level</td><td>java.lang.Integer</td><td>INT</td><td>4</td>
+</tr>
+<tr>
+<td>created_date</td><td>java.sql.Date</td><td>DATE</td><td>91</td>
+</tr>
+<tr>
+<td colspan=4><span class="text-user">Process finished with exit code 0</span></td>
+</tr>
+</tbody>
+</table>

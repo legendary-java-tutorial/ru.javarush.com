@@ -1,0 +1,171 @@
+LazyCollectionOption.EXTRA
+<p>----------------------------------------</p>
+Знакомимся с LazyCollectionOption.EXTRA. 
+Самое сильное преимущество LazyCollectionOption.EXTRA. 
+N+1 Problem.
+<p>----------------------------------------</p>
+<h2>Знакомимся с LazyCollectionOption.EXTRA</h2>
+
+<p>Но самый большой интерес представляет значение LazyCollectionOption.EXTRA. Если ты указываешь его как значение аннотации <span class="text-yellow"><span class="text-bold">@LazyCollection</span></span>, то Hibernate будет оттягивать загрузку элементов коллекции как можно дольше.</p>
+
+<p>Если ты попробуешь получить количество элементов коллекции:</p>
+ 
+<pre class='language-java line-numbers'><code>
+User user = session.load(User.class, 1);             	
+List&lt;Comment> comments = user.getComments();
+int count = commetns.size();
+</code></pre>
+<p>То для всего этого кода Hibernate выполнит только один запрос:</p>
+ 
+<pre><code><strong><span class="text-red">SELECT</span> COUNT(<span class="text-green">id</span>) <span class="text-red">FROM</span> <span class="text-orange">comment</span> <span class="text-red">WHERE</span> <span class="text-green">user_id</span> = 1;</strong>
+</code></pre>
+ 
+<p>Однако если ты хочешь получить один комментарий из коллекции, например, номер 3:</p>
+ 
+<pre class='language-java line-numbers'><code>
+User user = session.load(User.class, 1);             	
+List&lt;Comment> comments = user.getComments();
+Comment comment = commetns.get(3);
+</code></pre>
+ 
+<p>То возникнет вопрос: а как Hibernate должен узнать, что элемент именно третий, не загружая в память все элементы?</p>
+
+<p>Для решения этой проблемы предлагается сделать в таблице comment дополнительную колонку, которая будет хранить порядковый номер комментария в коллекции комментариев. А также для этого нужна специальная аннотация — <span class="text-yellow"><span class="text-bold">@OrderColumn</span></span>.</p>
+
+<p>Вот как будет выглядеть это решение:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name=”user”)
+class User {
+   @Column(name=”id”)
+   public Integer id;
+ 
+   @OneToMany(cascade = CascadeType.ALL)
+   @LazyCollection(LazyCollectionOption.EXTRA)
+   @OrderColumn(name = "order_id")
+   public List&lt;Comment> comments;
+}
+</code></pre>
+
+<h2>Главное преимущество LazyCollectionOption.EXTRA</h2>
+
+<p>Самое сильное преимущество LazyCollectionOption.EXTRA мы наблюдаем, когда указываем его у аннотации <span class="text-yellow"><span class="text-bold">@ManyToMany</span></span>. Возьмем наш старый случай, когда у нас есть Employee, Task, и можно назначать много задач на одного пользователя.</p>
+
+<p>Наши Java-классы при этом выглядят так:</p>
+
+<p><strong>Класс Employee</strong>:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name=”employee”)
+class Employee {
+   @Column(name=”id”)
+   public Integer id;
+ 
+   @ManyToMany(cascade = CascadeType.ALL)
+   @JoinTable(name="employee_task",
+       	joinColumns=  @JoinColumn(name="employee_id", referencedColumnName="id"),
+       	inverseJoinColumns= @JoinColumn(name="task_id", referencedColumnName="id") )  
+   @LazyCollection(LazyCollectionOption.EXTRA)
+   private Set&lt;EmployeeTask> tasks = new HashSet&lt;EmployeeTask>();
+ 
+}
+</code></pre>
+
+<p>И <strong>класс EmployeeTask</strong>:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name=”task”)
+class EmployeeTask {
+   @Column(name=”id”)
+   public Integer id;
+ 
+   @ManyToMany(cascade = CascadeType.ALL)
+   @JoinTable(name="employee_task",
+       	joinColumns=  @JoinColumn(name="task_id", referencedColumnName="id"),
+       	inverseJoinColumns= @JoinColumn(name=" employee_id", referencedColumnName="id") )  
+   @LazyCollection(LazyCollectionOption.EXTRA)
+   private Set&lt;Employee> employees = new HashSet&lt;Employee>();
+ 
+}
+</code></pre>
+
+<p>А чтобы добавить задачу директору, нужно написать примерно такой код:</p>
+
+<pre class='language-java line-numbers'><code>
+Employee director = session.find(Employee.class, 4);
+EmployeeTask task = session.find(EmployeeTask.class, 101);
+task.employees.add(director);
+ 
+session.update(task);
+session.flush();
+</code></pre>
+ 
+<p>Так вот, если поле employees в классе Task имеет аннотацию LazyCollectionOption.EXTRA, то коллекции employees (у класса Task) и коллекции task (у класса Employee) вообще <strong>не будут загружены из базы ни разу</strong>.</p>
+
+<p>При выполнении этого кода будет вставлена только одна запись в служебную таблицу employee_task, которая, как ты помнишь, выглядит примерно так:</p>
+
+<strong>Таблица employee_task</strong>:
+
+<table>
+<tbody>
+<tr>
+<th>employee_id</th>
+<th>task_id</th>
+</tr>
+<tr>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>2</td>
+</tr>
+<tr>
+<td>5</td>
+<td>3</td>
+</tr>
+<tr>
+<td>5</td>
+<td>4</td>
+</tr>
+<tr>
+<td>5</td>
+<td>5</td>
+</tr>
+<tr>
+<td>4</td>
+<td>7</td>
+</tr>
+<tr>
+<td>6</td>
+<td>8</td>
+</tr>
+<tr>
+<td><span class="text-green">4</span></td>
+<td><span class="text-green">101</span></td>
+</tr>
+</tbody>
+</table>
+ 
+<p>Зеленым цветом выделена добавленная строка. Чтобы добавить эту строку, не нужно загружать коллекции из базы, — Hibernate обойдется без этого. Это именно тот случай, когда LazyCollectionOption.EXTRA очень сильно ускоряет работу с базой.</p>
+
+<h2>N+1 Problem</h2>
+
+<p>Но, конечно, есть у этого режима и обратная сторона. Так, аннотация LazyCollectionOption.EXTRA порождает проблему <strong>N+1 Problem</strong>.</p>
+
+<p>Если ты решишь пройтись по все комментариям своего пользователя:</p>
+ 
+<pre class='language-java line-numbers'><code>
+User user = session.load(User.class, 1);             	
+List&lt;Comment> comments = user.getComments();
+for (Comment comment : comments) {
+    System.out.println(comment);
+}
+</code></pre>
+ 
+<p>То Hibernate будет выполнять по отдельному запросу для каждого объекта Comment. А также еще один дополнительный запрос, чтобы получить количество всех комментариев. Это может существенно замедлить работу кода.</p>
+
+<p>Если у твоего пользователя 1000 комментариев, то для выполнения этого кода Hibernate сделает 1001 запрос в базу, хотя мог бы обойтись и одним. Если бы заранее знал, что тебе понадобятся все объекты данного класса.</p>

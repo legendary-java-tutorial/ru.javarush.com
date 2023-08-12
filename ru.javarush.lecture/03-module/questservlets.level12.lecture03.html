@@ -1,0 +1,141 @@
+Работа сервлета с сессиями
+<p>----------------------------------------</p>
+Знакомство с HttpSession
+Подробнее об HttpSession
+<p>----------------------------------------</p>
+<h2>4.1 Знакомство с HttpSession</h2>
+<p>Если несколько запросов идут от одного клиента, то говорят, что между клиентом и сервером установилась сессия. Для контроля этого процесса у контейнера есть специальный объект HttpSession.</p>
+<p>Когда клиент обращается к сервлету, то контейнер сервлетов проверяет, есть ли в запросе параметр ID сессии. Если такой параметр отсутствует (например, клиент первый раз обращается к серверу), тогда контейнер сервлетов создает новый объект HttpSession, а также присваивает ему уникальный ID.</p>
+<p>Объект сессии сохраняется на сервере, а ID отправляется в ответе клиенту и по умолчанию сохраняется на клиенте в куках. Затем, когда приходит новый запрос от того же клиента, то контейнер сервлетов достает из него ID, и по этому ID находит правильный объект HttpSession на сервере.</p>
+<p>Получить объект сессии можно из запроса (объект HttpServletRequest), у которого нужно вызвать метод getSession(). Он возвращает объект HttpSession.</p>
+<p>Зачем нужна сессия? В ней можно хранить информацию о клиенте между вызовами. У нее внутри есть что-то вроде HashMap, в котором можно хранить объекты по ключам. И несколько методов для этого:</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th>Методы</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td><code>setAttribute(String name, Object o)</code></td>
+        <td>Добавляет объект внутрь сессии</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td><code>getAttribute(String name)</code></td>
+        <td>Получает объект из сессии</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td><code>removeAttribute(String name)</code></td>
+        <td>Удаляет объект из сессии</td>
+    </tr>
+
+    </tbody>
+</table>
+<p>Давай напишем сервлет, который будет суммировать все передаваемые ему числа из разных запросов:</p>
+<pre class='language-java line-numbers'><code>
+
+public class CalculatorServlet extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+         // Получаем атрибут “sum” из сессии 
+        HttpSession session = request.getSession();
+        Integer sum = (Integer) session.getAttribute("sum");
+        //Обрабатываем ситуацию, когда такого атрибута у сессии еще нет
+        if (sum == null)
+            sum = 0; 
+ 
+         // Получаем параметр “n” из запроса
+        String n = request.getParameter("n");
+        sum += Integer.parseInt(n);
+ 
+         // Записываем атрибут “sum” в сессию
+        session.setAttribute("sum", sum);
+ 
+        // Печатаем HTML в качестве ответа для браузера
+        PrintWriter out = response.getWriter();
+        out.println("&lt;html&gt;");
+        out.println("&lt;head&gt; &lt;title&gt; CalculatorServlet &lt;/title&gt; &lt;/head&gt;");
+        out.println("&lt;body&gt;");
+        out.println("&lt;h1&gt; Sum == " + sum + "&lt;/h1&gt;");
+        out.println("&lt;/body&gt;");
+        out.println("&lt;/html&gt;");
+    }
+}
+</code></pre>
+<h2>4.2 Подробнее об HttpSession</h2>
+<p>Что еще важного мы не сказали об объекте HttpSession?</p>
+<p>Во-первых, это имя J<span class="text-red">SESSION</span>ID. Именно под ним в куках хранится ID сессии. Как видите, запомнить его довольно легко: <code>J+SESSION+ID</code>.</p>
+<p>Во-вторых, у сессии есть еще несколько полезных методов:</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th>Методы</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td><code>getAttributeNames()</code></td>
+        <td>Возвращает список всех ключей, которые храниться в сессии</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td><code>getId()</code></td>
+        <td>Возвращает ID-сессии (строка)</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td><code>isNew()</code></td>
+        <td>Возвращает true, если объект сессии был создан в текущем запросе</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td><code>setMaxInactiveInterval(int seconds)</code></td>
+        <td>Устанавливает интервал неактивности сессии в секундах</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td><code>invalidate()</code></td>
+        <td>Удаляет из сессии все объекты</td>
+    </tr>
+    </tbody>
+</table>
+<p>Тут все методы очевидны, а про <code>setMaxInactiveInterval()</code> мы поговорим немного подробнее.</p>
+<p>Если сервер будет хранить десятки тысяч сессий, включая данные клиентов, которые заходили к нему в прошлом месяце, то у него банально закончиться память. Поэтому есть способ установить “время жизни сессии”.</p>
+<p>Если в течение interval времени сессией никто не пользовался, то она самоочищается — из нее удаляются все объекты, которые она хранила. Это сделано для экономии памяти.</p>
+<p>По умолчанию этот интервал равен 1800 секундам == 30 минутам. Если установить значение -1, то сессия будет “вечной” и удалится только когда пользователь закроет вкладку браузера (ну или клиент разорвет соединение).</p>
+<p>Примеры:</p>
+<table>
+    <tbody>
+    <tr>
+     <td><pre class='language-java line-numbers'><code>
+// получение всех ключей
+Enumeration keys = session.getAttributeNames();
+while( keys.hasMoreElements() ){
+    System.out.println( (String) keys.nextElement() );
+}
+
+        </code></pre>
+    </td>
+        </tr>
+    <tr>
+     <td><pre class='language-java line-numbers'><code>
+// установка интервала неактивности
+session.setMaxInactiveInterval(60*60*24);   // 1 день
+session.setMaxInactiveInterval(-1); // до закрытия браузера
+        </code></pre>
+    </td>
+    </tr>
+        <tr>
+     <td><pre class='language-java line-numbers'><code>
+// удаление всех данных из сессии
+session.invalidate();
+        </code></pre>
+    </td>
+    </tr>
+
+    </tbody>
+</table>

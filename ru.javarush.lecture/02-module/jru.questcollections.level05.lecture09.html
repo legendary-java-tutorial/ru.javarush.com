@@ -1,0 +1,54 @@
+Generics: ? wildcard
+<p>----------------------------------------</p>
+&#8212; Ну, и напоследок еще одна маленькая лекция по Generic. Сейчас я тебе расскажу, как обходить «стирание типов» (Type erasure). &#8212; Ага. Мне тоже хочется это знать. &#8212; Как ты уже наверное знаешь, в Java есть тип Class, который используется, чтобы хранить ссылку на объект класса. Примеры: Примеры Class clazz = Integer.class; Class clazz = ...
+<p>----------------------------------------</p>
+<p>&#8212; Ну, и напоследок еще одна маленькая лекция по Generic.</p>
+<p>Сейчас я тебе расскажу, как обходить «стирание типов» (Type erasure).</p>
+<p><span class="text-user">&#8212; Ага. Мне тоже хочется это знать.</span></p>
+<p>&#8212; Как ты уже наверное знаешь, в Java есть тип Class, который используется, чтобы хранить ссылку на объект класса. Примеры:</p>
+<div class="code-heading">Примеры</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>Class clazz = Integer.class;</code></pre>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>Class clazz = String.class;</code></pre>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>Class clazz = <span class="text-viola">"abc"</span>.getClass();</code></pre>
+<p><span class="text-user">&#8212; Ага.</span></p>
+<p>Но вот чего ты, наверное, не знаешь, так это того, что есть еще один класс Class, который является Generic&#8217;ом. И <span class="text-viola">переменные этого Generic Class&#8217;а могут хранить только ссылки на тип, который был типом-параметром.</span> Примеры:</p>
+<div class="code-heading">Примеры</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-user">Class&lt;Integer&gt;</span> clazz1 = Integer.class; //все отлично работает
+<span class="text-user">Class&lt;String&gt;</span> clazz2 = Integer.class; <span class="text-red">//ошибка компиляции.</span></code></pre>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-user">Class&lt;String&gt;</span> clazz1 = String.class; //все отлично работает
+<span class="text-user">Class&lt;String&gt;</span> clazz2 = int.class; <span class="text-red">//ошибка компиляции.</span></code></pre>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="dblue_text text-user">Class&lt;? extends String&gt;</span> clazz1 = <span class="violet_text text-viola">"abc"</span>.getClass(); <span class="grey_text">//все отлично работает</span>
+<span class="dblue_text text-user">Class&lt;Object&gt;</span> clazz2 = <span class="violet_text text-viola">"abc"</span>.getClass(); <span class="red_text text-red">//ошибка компиляции.</span></code></pre>
+<p><span class="text-user">&#8212; А почему оно так работает?</span></p>
+<p>&#8212; Дело в том, что значение поля class у типа Integer (т.е. у Integer.class) – это на самом деле объект типа Class&lt;Integer&gt;.</p>
+<p>Но давай пойдем дальше.</p>
+<p>Так вот, пользуясь тем фактом, что Class&lt;T&gt; &#8212; это Generic, и тем, что переменная его типа может хранить значение только типа T, можно сделать вот такую хитрую комбинацию:</p>
+<div class="code-heading">Пример</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Zoo&lt;<span class="red_text text-red"><b>T</b></span>&gt;
+{
+ <span class="text-red">Class</span>&lt;<span class="red_text text-red"><b>T</b></span>&gt; <span class="text-red">clazz</span>;
+ <span class="text-user">ArrayList</span>&lt;<span class="red_text text-red"><b>T</b></span>&gt; <span class="text-user">animals</span> = new <span class="text-user">ArrayList&lt;<span class="red_text text-red"><b>T</b></span>&gt;();</span>
+
+ Zoo(<span class="text-red">Class</span>&lt;<span class="red_text text-red"><b>T</b></span>&gt; <span class="text-corporate">clazz</span>)
+ {
+  this.<span class="text-red">clazz</span> = <span class="text-corporate">clazz</span>;
+ }
+
+ public <strong><span class="text-red">T</span></strong> createNewAnimal()
+ {
+  <span class="text-red"><strong>T</strong></span> <span class="text-green">animal</span> = <span class="text-red">clazz</span>.<strong>newInstance</strong>();
+  <span class="text-user">animals</span>.<strong>add</strong>(<span class="text-green">animal</span>);
+  <strong>return</strong> <span class="text-green">animal</span>
+ }
+}</code></pre>
+<div class="code-heading">Как это использовать</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-user">Zoo</span>&lt;<span class="green_text text-green">Tiger</span>&gt; <span class="text-user">zoo</span> = new Zoo&lt;<span class="green_text text-green">Tiger</span>&gt;(<span class="text-green">Tiger</span>.class); <span class="text-red">// вот тут передается тип!</span>
+<span class="text-green">Tiger tiger</span> = <span class="text-user">zoo</span>.<strong>createNewAnimal</strong>();</code></pre>
+<p><span class="text-corporate">Это не мегахитрая комбинация – мы просто передаем ссылку на нужный тип. Но если бы мы просто пользовались Class вместо Class&lt;T&gt;, то кто-то мог по ошибке передать туда два разных типа – один в качестве параметра T, другой – в конструктор.</span></p>
+<p><span class="text-user">&#8212; Ага. Понимаю. Ничего сверхъестественного не произошло и страшного тоже. Ссылка на тип есть, пользоваться ей можно, работает и ладно.</span></p>
+<p>&#8212; Вот, слышу слова «не мальчика, но мужа!» Работает и ладно – это часто самый оптимальный вариант.</p>
+<p>Очень много всего можно было бы теперь переделать в Java, но нужно сохранять совместимость со старым кодом.</p>
+<p>Именно десятки тысяч популярных отлаженных библиотек – это сегодня самый весомый аргумент в пользу Java. Так что, сохраняя обратную совместимость, Java остается самым популярным языком, и поэтому не может внедрять радикальные новшества.</p>
+<p><span class="text-user">&#8212; А я сделаю свою Java с блекджеком и …</span></p>
+<p>&#8212; Ладно, я уже подустал за день. Давай до свидания.</p>
+<p><span class="text-user">&#8212; До свидания, Риша, и спасибо за такой интересный урок.</span></p>

@@ -1,0 +1,80 @@
+Функциональный метод
+<p>----------------------------------------</p>
+Функциональны методы Если интерфейс имеет только один метод, то переменной этого типа-интерфейса можно присвоить значение, заданное лямбда-выражением (лямбда-функцией). Такие интерфейсы стали называть функциональными интерфейсами (после добавления в Java поддержки лямбда-функций). Например, в Ja
+<p>----------------------------------------</p>
+<h2>1. Функциональные методы</h2>
+<p>Если <strong>у интерфейса есть только один метод</strong>, переменной этого типа-интерфейса можно присвоить значение, заданное <span class="term">лямбда-выражением</span> (лямбда-функцией). Такие интерфейсы стали называть <span class="term">функциональными интерфейсами</span> (после добавления в Java поддержки лямбда-функций).</p>
+<p>Например, в Java есть интерфейс <code>Consumer&lt;Тип&gt;</code> (Consumer == Потребитель), который содержит метод <code>accept(Тип&nbsp;obj)</code>. Зачем же нужен этот интерфейс?</p>
+<p>В Java 8 у коллекций появился метод <code class="text-viola">forEach()</code>, который позволяет <span class="term text-viola">для каждого</span> <span class="term text-red">элемента</span> <span class="term text-user">коллекции</span> <span class="term text-yellow">выполнить какое-нибудь действие</span>. И вот для передачи действия в метод <code class="text-viola">forEach()</code> как раз и используется функциональный интерфейс <code>Consumer&lt;T&gt;</code>.</p>
+<p>Вот как можно <span class="term text-yellow">вывести</span> все <span class="term text-red">элементы</span> <span class="term text-user">коллекции</span> на экран:</p>
+<div class="lesson-example">
+        <pre class="language-java"><code>ArrayList&lt;String&gt; <span class="text-user">list</span> = new ArrayList&lt;&gt;();
+Collections.addAll(<span class="text-user">list</span>, "Привет", "как", "дела?");
+
+<span class="code text-user">list</span>.<span class="code text-viola">forEach</span>( (<span class="code text-red">s</span>) -&gt; <span class="code text-yellow">System.out.println(s)</span> );</code></pre>
+    <div class="lesson-example-caption">Вывод всех элементов коллекции (с использованием лямбда-выражения)</div>
+</div>
+<p>Компилятор преобразует этот код в код:</p>
+<div class="lesson-example">
+    <pre class="language-java"><code>ArrayList&lt;String&gt; <span class="text-user">list</span> = new ArrayList&lt;&gt;();
+Collections.addAll(<span class="text-user">list</span>, "Привет", "как", "дела?");
+
+<span class="code text-user">list</span>.<span class="code text-viola">forEach</span>(new Consumer&lt;String&gt;()
+{
+   public void accept(String <span class="code text-red">s</span>)
+   {
+      <span class="code text-yellow">System.out.println(s)</span>;
+   }
+});</code></pre>
+    <div class="lesson-example-caption">Вывод всех элементов коллекции (запись с использованием анонимного класса)</div>
+</div>
+<p>Первая запись однозначно короче, чем вторая. И хотя читать код с лямбда-выражениями непросто, читать код с анонимными внутренними классами порой еще сложнее.</p>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1806"></div>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1807"></div>
+<hr>
+<h2>2. Ссылка на метод</h2>
+<p>Однако наш код с <span class="term">лямбда-выражением</span> можно записать еще короче.</p>
+<p>Во-первых, можно опустить <span class="text-green">скобки</span> вокруг параметра&nbsp;<code class="text-red">s</code>:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>list.forEach( <span class="text-green">(</span><span class="code text-red">s</span><span class="text-green">)</span> -&gt; System.out.println(s) );</code></pre>
+    <div class="lesson-example-caption">Было</div>
+</div>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>list.forEach( <span class="code text-red">s</span> -&gt; System.out.println(s) );</code></pre>
+    <div class="lesson-example-caption">Стало</div>
+</div>
+<p>Так можно делать только если <span class="term text-red">параметр</span> один. Если параметров <span class="text-green">несколько</span>, нужно использовать <span class="text-green">скобки</span>.</p>
+<p>Ну а во-вторых, можно записать так:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>list.forEach( System.out::<span class="text-viola">println</span> );</code></pre>
+    <div class="lesson-example-caption">Самая компактная запись</div>
+</div>
+<p>Это все одна и та же запись. Обратите внимание, что после <code><span class="text-viola">println</span></code> нет скобок.</p>
+<p>Тут записан один и тот же код — вызов метода:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code><span class="text-green">объект</span><span class="text-red">::</span><span class="text-viola">метод</span></code></pre>
+</div>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>x -&gt; <span class="text-green">объект</span>.<span class="text-viola">метод</span>(x)</code></pre>
+</div>
+<p>Подумайте сами: мы хотели для каждого элемента коллекции <code>list</code> выполнять какое-то действие. Если это действие — вызов одной функции (такой как <code>println()</code>), было бы разумно просто передать функцию в метод в качестве параметра.</p>
+<p>А как объяснить компилятору, что функцию нужно именно передать, а не вызвать? Для этого перед именем метода ставим не точку, а <span class="text-red">два двоеточия</span>: одно двоеточие уже занято в тернарном операторе.</p>
+<p>Это и есть самая простая и компактная запись.</p>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1808"></div>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1809"></div>
+<hr>
+<h2>3. Конструктор</h2>
+<p>Ссылки на методы с помощью двойного двоеточия очень удобно использовать, когда мы будем работать с потоками ввода-вывода. Вы в этом убедитесь чуть позже</p>
+<p>А пока давайте поговорим о 3 популярных способах передачи ссылки на метод:</p>
+<p><strong>Ссылка на метод объекта</strong></p>
+<p>Чтобы передать ссылку на метод объекта, нужно записать код вида <code><span class="text-green">объект</span>::<span class="text-viola">метод</span></code>.<br>Этот код эквивалентен коду <code>x -&gt; <span class="text-green">объект</span>.<span class="text-viola">метод</span>(x)</code>.</p>
+<p>В качестве объекта могут фигурировать такие специальные переменные как <code>this</code> и <code>super</code>.</p>
+<p><strong>Ссылка на метод класса</strong></p>
+<p>Чтобы передать ссылку на статический метод, нужно записать код вида <code><span class="text-green">класс</span>::<span class="text-viola">метод</span></code>. Этот код будет преобразован к коду вида <code>x -&gt; <span class="text-green">класс</span>.<span class="text-viola">метод</span>(x);</code></p>
+<p><strong>Ссылка на конструктор</strong></p>
+<p>Конструктор по своему поведению чем-то похож на статический метод класса, поэтому на него тоже можно передать ссылку. Выглядит это так: <code><span class="text-green">класс</span>::<span class="text-viola">new</span></code>.</p>
+<p>Например, можно обойти стирание типов у коллекций и передать в метод <code>toArray()</code> ссылку на конструктор, который создаст нужный массив: <code>toArray( <span class="text-green">int</span>[]::<span class="text-viola">new</span> );</code></p>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1810"></div>

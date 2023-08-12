@@ -1,0 +1,107 @@
+Продвинутая группировка
+<p>----------------------------------------</p>
+Оператор HAVING
+Пример использования HAVING
+Порядок выполнения операторов
+<p>----------------------------------------</p>
+<h2>5.1 Оператор HAVING</h2>
+<p>В SQL есть еще один полезный оператор, который применяется вместе с <code>GROUP BY</code>,  называется он <code>HAVING</code>.</p>
+<p>По своему смыслу он полностью аналогичен оператору <code>WHERE</code>. Только <code>WHERE</code> позволяет задать фильтр строк до группировки, а с помощью <code>HAVING</code> можно задать фильтр, который применяется к записям уже после группировки.</p>
+<p>Общий вид запроса при использовании группировки и фильтрации результатов группировки имеет вид:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">SELECT</span> <span class="text-green">колонки</span>
+<span class="text-brown">FROM</span> <span class="text-yellow">таблица</span>
+<span class="text-brown">WHERE</span> <span class="text-user">условие</span>
+<span class="text-brown">GROUP BY</span> <span class="text-green">колонки</span>
+<span class="text-red">HAVING</span> <span class="text-user">условие</span>
+        </code></pre>
+</div>
+<p><code>HAVING</code> можно использовать только если в запросе есть <code>GROUP BY</code>.</p>
+<p>Давай напишем запрос, где отобразим количество нанятых сотрудников по годам.</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">SELECT</span> 
+<span class="text-user">YEAR</span>(<span class="text-green">join_date</span>) <span class="text-red">AS</span> <span class="text-viola">hire_year</span>,
+<span class="text-user">COUNT</span>(*) <span class="text-red">AS</span> <span class="text-viola">total</span>
+<span class="text-brown">FROM</span> <span class="text-yellow">employee</span>
+<span class="text-brown">GROUP BY</span> <span class="text-viola">hire_year</span>
+
+        </code></pre>
+</div>
+<p>И результат такого запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>hire_year</th>
+        <th>total</th>
+    </tr>
+    <tr>
+        <td>2012</td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td>2013</td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td>2014</td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td>2015</td>
+        <td>2</td>
+    </tr>
+    <tr>
+        <td>2018</td>
+        <td>1</td>
+    </tr>
+    </tbody>
+</table>
+<p>А теперь исключим из него годы, когда наняли одного или меньше сотрудников. Пример:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">SELECT</span> 
+<span class="text-user">YEAR</span>(<span class="text-green">join_date</span>) <span class="text-red">AS</span> <span class="text-viola">hire_year</span>,
+<span class="text-user">COUNT</span>(*) <span class="text-red">AS</span> <span class="text-viola">total</span>
+<span class="text-brown">FROM</span> <span class="text-yellow">employee</span>
+<span class="text-brown">GROUP BY</span> <span class="text-viola">hire_year</span>
+<span class="text-red">HAVING</span> <span class="text-viola">total</span> &gt; 1
+        </code></pre>
+</div>
+<p>И результат такого запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>hire_year</th>
+        <th>total</th>
+    </tr>
+    <tr>
+        <td>2015</td>
+        <td>2</td>
+    </tr>
+    </tbody>
+</table>
+<h2>5.3 Порядок выполнения операторов</h2>
+<p>Чтобы писать правильные и эффективные SQL-запросы, нужно понимать, как они выполняются SQL-сервером.</p>
+<p>Порядок выполнения действий строго регламентирован и не зависит от твоего желания. Ты не можешь переставить операторы местами и получить другой порядок.</p>
+<p>SQL-запрос выполняется в несколько этапов в таком порядке.</p>
+<ol>
+	<li> Этап 1 – выборка строк</li>
+		<ul>
+			<li>Сначала выбираются все строки из указанной таблицы.</li>
+			<li>Затем к ним добавляются вычисляемые поля.</li>
+			<li>А затем из всех строк остаются только те, которые удовлетворяют условию <code>WHERE</code></li>
+		</ul>
+	<li>Этап 2 – группировка</li>
+		<ul>
+			<li>После этого к полученным результатам применяется группировка.</li>
+			<li>Во время группировки вычисляются такие поля как <code>COUNT(*)</code>.</li>
+			<li>И наконец к результату группировки применяется фильтр <code>HAVING</code>.</li>
+		</ul>
+	<li>Этап 3 – сортировка</li>
+		<ul>
+			<li>Строки, полученные на предыдущих этапах, сортируются с помощью <code>ORDER BY</code>.</li>
+		</ul>
+</ol>
+<p>И наконец результат можно обрезать с помощью <code>LIMIT</code> и <code>OFFSET</code>.</p>

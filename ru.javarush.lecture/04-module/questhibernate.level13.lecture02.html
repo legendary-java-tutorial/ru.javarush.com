@@ -1,0 +1,269 @@
+@OneToMany
+<p>----------------------------------------</p>
+Связь на уровне таблиц. 
+Связь на уровень Java-классов. 
+Аннотация @OneToMany. 
+Примеры запросов.
+<p>----------------------------------------</p>
+<h2>Связь на уровне таблиц</h2>
+
+<p>Давай опять рассмотрим две наши таблицы:</p>
+
+<table>
+<tbody>
+<tr>
+<th>id</th>
+<th>name</th>
+<th>occupation</th>
+<th>salary</th>
+<th>age</th>
+<th>join_date</th>
+</tr>
+<tr>
+<td>1</td>
+<td>Иванов Иван</td>
+<td>Программист</td>
+<td>100000</td>
+<td>25</td>
+<td>2012-06-30</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Петров Петр</td>
+<td>Программист</td>
+<td>80000</td>
+<td>23</td>
+<td>2013-08-12</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Иванов Сергей</td>
+<td>Тестировщик</td>
+<td>40000</td>
+<td>30</td>
+<td>2014-01-01</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Рабинович Мойша</td>
+<td>Директор</td>
+<td>200000</td>
+<td>35</td>
+<td>2015-05-12</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Кириенко Анастасия</td>
+<td>Офис-менеджер</td>
+<td>40000</td>
+<td>25</td>
+<td>2015-10-10</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Васька</td>
+<td>Кот</td>
+<td>1000</td>
+<td>3</td>
+<td>2018-11-11</td>
+</tr>
+</tbody>
+</table>
+
+<p><strong>Таблица employee:</strong></p>
+
+<p>В этой таблице есть такие колонки:</p>
+
+<ul>
+<li><span class="text-bold">id</span> INT</li>
+<li><span class="text-bold">name</span> VARCHAR</li>
+<li><span class="text-bold">occupation</span> VARCHA</li>
+<li><span class="text-bold">salary</span> INT</li>
+<li><span class="text-bold">age</span> INT</li>
+<li><span class="text-bold">join_date</span> DATE</li>
+</ul>
+
+<p>А так выглядит <strong>таблица task</strong>, которая содержит задачи для сотрудников:</p>
+
+<table>
+<tbody>
+<tr>
+<th>id</th>
+<th>emploee_id</th>
+<th>name</th>
+<th>deadline</th>
+</tr>
+<tr>
+<td>1</td>
+<td>1</td>
+<td>Исправить багу на фронтенде</td>
+<td>2022-06-01</td>
+</tr>
+<tr>
+<td>2</td>
+<td>2</td>
+<td>Исправить багу на бэкенде</td>
+<td>2022-06-15</td>
+</tr>
+<tr>
+<td>3</td>
+<td>5</td>
+<td>Купить кофе</td>
+<td>2022-07-01</td>
+</tr>
+<tr>
+<td>4</td>
+<td>5</td>
+<td>Купить кофе</td>
+<td>2022-08-01</td>
+</tr>
+<tr>
+<td>5</td>
+<td>5</td>
+<td>Купить кофе</td>
+<td>2022-09-01</td>
+</tr>
+<tr>
+<td>6</td>
+<td>(NULL)</td>
+<td>Убрать офис</td>
+<td>(NULL)</td>
+</tr>
+<tr>
+<td>7</td>
+<td>4</td>
+<td>Наслаждаться жизнью</td>
+<td>(NULL)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>6</td>
+<td>Наслаждаться жизнью</td>
+<td>(NULL)</td>
+</tr>
+</tbody>
+</table>
+
+<p>В этой таблице есть всего 4 колонки:</p>
+
+<ul>
+<li><strong>id</strong> – уникальный номер задания (и строки в таблице).</li>
+<li><strong><span class="text-red">employee_id</span></strong> – ID сотрудника из таблицы employee, на которого назначена задача.</li>
+<li><strong>name</strong> – название и описание задачи.</li>
+<li><strong>deadline</strong> – время до которого нужно выполнить задачу.</li>
+</ul>
+
+<p>На одну запись таблицы employee могут ссылаться много строк таблицы task. Такая связь на уровне таблиц называется <strong>один-ко-многим</strong> (one-to-many).</p>
+
+<h2>Связь на уровень Java-классов</h2>
+
+<p>И наши классы, класс <span class="code"><span class="text-green">Employee</span></span>:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+class Employee {
+   @Column(name="id")
+   public Integer id;
+ 
+   @Column(name="name")
+   public String name;
+ 
+   @Column(name="occupation")
+   public String occupation;
+ 
+   @Column(name="salary")
+   public Integer salary;
+ 
+   @Column(name="join_date")
+   public Date join;
+}
+</code></pre>
+
+<p>И класс <span class="code"><span class="text-green">EmployeeTask</span></span> в его изначальном виде:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="task")
+class EmployeeTask {
+   @Column(name="id")
+   public Integer id;
+ 
+   @Column(name="name")
+   public String description;
+ 
+   @Column(name="employee_id")
+   public Integer employeeId;
+ 
+   @Column(name="deadline")
+   public Date deadline;
+}
+</code></pre>
+
+<h2>Аннотация @OneToMany</h2>
+
+<p>Мы можем организовать связь Entity-классов по-другому.</p>
+
+<p>Помнишь аннотацию <span class="text-yellow"><span class="text-bold">@ElementCollection</span></span>, с помощью которой мы в родительском классе создавали коллекцию дочерних объектов? Что-то похожее можно сделать с помощью аннотации <span class="text-yellow"><span class="text-bold">@OneToMany</span></span>. Только в этот раз изменениям подвергнется класс <span class="code"><span class="text-green">Employee</span></span>:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+class Employee {
+   @Column(name="id")
+   public Integer id;
+ 
+   @OneToMany(cascade = CascadeType.ALL)
+   @JoinColumn(name = "employee_id")
+   private Set&lt;EmployeeTask> tasks = new HashSet&lt;EmployeeTask>();
+}
+</code></pre>
+
+<p>С помощью аннотации <span class="text-yellow"><span class="text-bold">@OneToMany</span></span> мы указали, что объект <mark class="green">Employee</mark> может хранить у себя много объектов <span class="code"><span class="text-green">EmployeeTask</span></span>. Также с помощью аннотации <span class="text-yellow"><span class="text-bold">@JoinColumn</span></span> мы указали, в какой колонке таблицы task хранится id объекта <mark class="green">Employee</mark>.</p>
+
+<p>При этом класс <span class="code"><span class="text-green">EmployeeTask</span></span> обычно не содержит поля, которое ссылается на колонку employee_id. Пример:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="task")
+class EmployeeTask {
+   @Column(name="id")
+   public Integer id;
+ 
+   @Column(name="name")
+   public String description;
+ 
+   @Column(name="deadline")
+   public Date deadline;
+}
+</code></pre>
+
+<p>Поле employee_id считается служебным и его значением управляет Hibernate.</p>
+
+<h2>Примеры запросов</h2>
+
+<p>Если ты хочешь добавить какому-то работнику некоторый task, то тебе нужно написать код типа такого:</p>
+
+<pre class='language-java line-numbers'><code>
+EmployeeTask task1 = new EmployeeTask();
+task1.description = "Сделать что-то важное";
+session.persist(task1);
+ 
+EmployeeTask task2 = new EmployeeTask();
+task2.description = "Ничего не делать";
+session.persist(task2);
+session.flush();
+ 
+Employee director = session.find(Employee.class, 4);
+director.tasks.add(task1);
+director.tasks.add(task2);
+ 
+session.update(director);
+session.flush();
+</code></pre>
+ 
+<p>Сначала мы создаем два объекта <span class="code"><span class="text-green">EmployeeTask</span></span>, сохраняем их в базу и вызываем метод <span class="code text-orange">flush()</span>, чтобы выполнилась операция INSERT и у объектов появились ID.</p>
+
+<p>Затем находим в базе директора, берем у него поле tasks и добавляем ему две задачи. Затем сохраняем директора в базу. После этого в базе у новых task в колонке employee_id появится значение 4 – id директора в таблице employee.</p>
+
+<p><strong>Важно!</strong> Таблицы в базе одни и те же для аннотаций <span class="text-yellow"><span class="text-bold">@ManyToOne</span></span> и <span class="text-yellow"><span class="text-bold">@OneToMany</span></span>. А вот Java-классы для этих таблиц – разные. </p>

@@ -1,0 +1,294 @@
+Сохранение объектов в базу
+<p>----------------------------------------</p>
+Полный список типов данных JDBC. 
+Тип данных BLOB. 
+Сохраняем Java-объект в базу. 
+Читаем Java-объект из базы.
+<p>----------------------------------------</p>
+<h2>Полный список типов данных JDBC</h2>
+
+<p>Кроме известных тебе типов данных JDBC позволяет работать со многими родными типами данных для СУБД. Ниже я приведу список типов и функции для получения их:</p>
+ 
+<table>
+<tbody>
+<tr>
+<th>Тип</th>
+<th>Метод</th>
+</tr>
+<tr>
+<td><strong>Array</strong></td>
+<td><span class="code text-orange">getArray()</span></td>
+</tr>
+<tr>
+<td><strong>AsciiStream</strong></td>
+<td><span class="code text-orange">getAsciiStream()</span></td>
+</tr>
+<tr>
+<td><strong>BigDecimal</strong></td>
+<td><span class="code text-orange">getBigDecimal()</span></td>
+</tr>
+<tr>
+<td><strong>BinaryStream</strong></td>
+<td><span class="code text-orange">getBinaryStream()</span></td>
+</tr>
+<tr>
+<td><strong>Blob</strong></td>
+<td><span class="code text-orange">getBlob()</span></td>
+</tr>
+<tr>
+<td><strong>Boolean</strong></td>
+<td><span class="code text-orange">getBoolean()</span></td>
+</tr>
+<tr>
+<td><strong>Blob</strong></td>
+<td><span class="code text-orange">getBlob()</span></td>
+</tr>
+<tr>
+<td><strong>Boolean</strong></td>
+<td><span class="code text-orange">getBoolean()</span></td>
+</tr>
+<tr>
+<td><strong>Byte</strong></td>
+<td><span class="code text-orange">getByte()</span></td>
+</tr>
+<tr>
+<td><strong>Bytes</strong></td>
+<td><span class="code text-orange">getBytes()</span></td>
+</tr>
+<tr>
+<td><strong>CharacterStream</strong></td>
+<td><span class="code text-orange">getCharacterStream()</span></td>
+</tr>
+<tr>
+<td><strong>Clob</strong></td>
+<td><span class="code text-orange">getClob()</span></td>
+</tr>
+<tr>
+<td><strong>Date</strong></td>
+<td><span class="code text-orange">getDate()</span></td>
+</tr>
+<tr>
+<td><strong>Double</strong></td>
+<td><span class="code text-orange">getDouble()</span></td>
+</tr>
+<tr>
+<td><strong>Float</strong></td>
+<td><span class="code text-orange">getFloat()</span></td>
+</tr>
+<tr>
+<td><strong>Int</strong></td>
+<td><span class="code text-orange">getInt()</span></td>
+</tr>
+<tr>
+<td><strong>Long</strong></td>
+<td><span class="code text-orange">getLong()</span></td>
+</tr>
+<tr>
+<td><strong>NCharacterStream</strong></td>
+<td><span class="code text-orange">getNCharacterStream()</span></td>
+</tr>
+<tr>
+<td><strong>Object</strong></td>
+<td><span class="code text-orange">getObject()</span></td>
+</tr>
+<tr>
+<td><strong>Ref</strong></td>
+<td><span class="code text-orange">getRef()</span></td>
+</tr>
+<tr>
+<td><strong>RowId</strong></td>
+<td><span class="code text-orange">getRowId()</span></td>
+</tr>
+<tr>
+<td><strong>Short</strong></td>
+<td><span class="code text-orange">getShort()</span></td>
+</tr>
+<tr>
+<td><strong>SQLXML</strong></td>
+<td><span class="code text-orange">getSQLXML()</span></td>
+</tr>
+<tr>
+<td><strong>String</strong></td>
+<td><span class="code text-orange">getString()</span></td>
+</tr>
+<tr>
+<td><strong>Time</strong></td>
+<td><span class="code text-orange">getTime()</span></td>
+</tr>
+<tr>
+<td><strong>Timestamp</strong></td>
+<td><span class="code text-orange">getTimestamp()</span></td>
+</tr>
+<tr>
+<td><strong>UnicodeStream</strong></td>
+<td><span class="code text-orange">getUnicodeStream()</span></td>
+</tr>
+<tr>
+<td><strong>URL</strong></td>
+<td><span class="code text-orange">getURL()</span></td>
+</tr>
+</tbody>
+</table>
+ 
+<p>Примитивные типы мы с тобой уже рассматривали. Давай теперь попробуем поработать с объектами.</p>
+
+<h2>Тип данных BLOB</h2>
+
+<p>Если ты хочешь сохранить какой-то объект в базу данных, то самый простой способ сделать это — воспользовавшись SQL-типом BLOB. У JDBC есть его аналог, который  называется Blob.</p>
+
+<p>BLOB расшифровывается как <strong><span class="text-red">B</span>inary <span class="text-red">L</span>arge <span class="text-red">Ob</span>ject</strong>. Он используется для хранения массива байт. Тип Blob в JDBC является интерфейсом и в него можно класть (и получать) данные двумя способами:</p>
+
+<ul>
+<li>С помощью <span class="text-green"><span class="text-bold">InputStream</span></span></li>
+<li>С помощью массива байт</li>
+</ul>
+
+<p>Пример: колонка номер 3 содержит тип BLOB:</p>
+
+<pre class='language-java line-numbers'><code>
+	Statement statement = connection.createStatement();
+    ResultSet results = statement.executeQuery("SELECT * FROM user");
+    results.first();
+ 
+    Blob blob = results.getBlob(3);
+    InputStream is = blob.getBinaryStream();
+</code></pre>
+ 
+<p>Чобы создать свой объект Blob, нужно воспользоваться функцией <span class="code text-orange">createBlob()</span>. Пример:</p>
+
+<pre class='language-java line-numbers'><code>
+  String insertQuery = “INSERT INTO images(name, image) VALUES (?, ?)”;
+  PreparedStatement statement = connection.prepareStatement(insertQuery);
+ 
+  // Создаем объект Blob и получаем у него OtputStream для записи в него данных
+  Blob blob = connection.createBlob();
+ 
+  // Заполняем Blob данными  …
+  OutputStream os = blob.setBinaryStream(1);
+ 
+  // Передаем Вlob как параметр запроса
+  statement.setBlob(2, blob);
+  statement.execute();
+</code></pre>
+
+<p>Заполнить Blob данными можно двумя способами. Первый — через <span class="text-green"><span class="text-bold">OutputSteam</span></span>:</p>
+
+<pre class='language-java line-numbers'><code>
+  Path avatar = Paths.get("E:\\images\\cat.jpg");
+  OutputStream os = blob.setBinaryStream(1);
+  Files.copy(avatar, os);
+</code></pre>
+ 
+<p>И второй — через заполнение байтами:</p>
+
+<pre class='language-java line-numbers'><code>
+  Path avatar = Paths.get("E:\\images\\cat.jpg");
+  byte[] content = Files.readAllBytes(avatar);
+  blob.setBytes(1, content);
+</code></pre>
+ 
+<h2>Сохраняем Java-объект в базу</h2>
+
+<p>Мы научились сохранять в базу бинарные объекты: массивы байт, байтовые потоки и так далее. А что насчет Java-объектов? Как нам сохранить Java-объект в базу данных?</p>
+
+<p>Допустим, у нас есть Java-класс <span class="code"><span class="text-green">Employee</span></span>, описывающий сотрудника компании:</p>
+
+<pre class='language-java line-numbers'><code>
+public class Employee {
+    public Integer id;
+    public String name;
+    public String occupation;
+    public Integer salary;
+    public Date joinDate;  
+}
+</code></pre>
+
+<p>Как нам сохранить объект этого класса в базу с помощью JDBC?</p>
+
+<p>На самом деле ты уже знаешь все, что для этого нужно. Сначала необходимо создать таблицу в базе, которая соответствует этому классу. Например, такую:</p>
+ 
+<pre class='language-java line-numbers'><code>
+CREATE TABLE employee {
+    id INT PRIMARY KEY NOT NULL,
+    name VARCHAR(100),
+    occupation VARCHAR(100),
+    salary INT,
+    join_date DATE
+}
+</code></pre>
+ 
+<p>А теперь напишем код, который добавит объект нашего класса <span class="code"><span class="text-green">Employee</span></span> в базу:</p>
+
+<pre class='language-java line-numbers'><code>
+	public static boolean addEmployee(Connection connection, Employee employee) throws Exception {
+    	// Создаем и подготавливаем запрос на вставку данных в таблицу
+    	String insertQuery = "INSERT INTO employee(name, occupation, salary, join_date ) VALUES (?, ?, ?, ?)";
+    	PreparedStatement statement = connection.prepareStatement(insertQuery);
+ 
+    	// Заполняем запрос данными из объекта Employee
+    	statement.setString(1, employee.name);
+    	statement.setString(2, employee.occupation);
+    	statement.setInt(3, employee.salary);
+    	statement.setDate(4, employee.joinDate);
+ 
+    	// Выполняем наш запрос, и он возвращает true, если новая строка добавилась
+    	int count = statement.executeUpdate();
+    	return count > 0;
+    }
+</code></pre>
+
+<p>Просто и понятно. Метод будет отлично работать.</p>
+
+<h2>Читаем Java-объект из базы</h2>
+
+<p>Записывать объект в базу мы научились, теперь давай напишем код, чтобы читать объект из базы. Начнем с кода, который читает объект из базы по его ID:</p>
+
+<pre class='language-java line-numbers'><code>
+	public static Employee getEployeeById(Connection connection, int id) throws Exception {
+    	// Создаем и подготавливаем запрос для получения сотрудника из таблицы
+    	PreparedStatement statement = connection.prepareStatement("SELECT * FROM employee WHERE id = ?");
+    	statement.setInt(1, id);
+    	
+    	// Выполняем наш запрос, и он возвращает null, если строк в результате запроса нет
+    	ResultSet results = statement.executeQuery();
+    	if (!results.first())
+        	return null;
+ 
+    	// Заполняем объект Employee данными из ResultSet
+    	Employee employee = new Employee();
+    	employee.id = results.getInt(1);
+    	employee.name = results.getString(2);
+    	employee.occupation = results.getString(3);
+    	employee.salary = results.getInt(4);
+    	employee.joinDate = results.getDate(5);
+    	return employee;
+	}
+</code></pre>
+
+<p>А если нам нужен не один объект, а несколько? Такой запрос тоже написать просто. Давай получим всех сотрудников нашей компании:</p>
+
+<pre class='language-java line-numbers'><code>
+    public static List&lt;Employee> getAllEployees(Connection connection) throws Exception {
+    	// Создаем и выполняем запрос для получения сотрудников из таблицы
+    	Statement statement = connection.createStatement();
+    	ResultSet results = statement.executeQuery("SELECT * FROM employee");
+ 
+    	ArrayList&lt;Employee> list = new ArrayList&lt;Employee>();
+    	while (results.next()) {
+            // Заполняем объект Employee данными из текущей строки ResultSet
+	        Employee employee = new Employee();
+	        employee.id = results.getInt(1);
+	        employee.name = results.getString(2);
+	        employee.occupation = results.getString(3);
+	        employee.salary = results.getInt(4);
+	        employee.joinDate = results.getDate(5);
+ 
+	        list.add(employee);
+    	}
+    	return list;
+    }
+</code></pre>
+
+<p>Кстати, если таких методов будет много, то в каждом из них придется писать одинаковый код по преобразованию строки <span class="code">ResultSet</span> в объект <mark class="green">Employee</mark>. Так что этот код можно вынести в отдельный метод.</p>
+
+<p>Особенно это может быть полезно, если класс <span class="code"><span class="text-green">Employee</span></span> содержит сложные поля типа Enum, InputStream, или ссылки на другие объекты, которые мы тоже хотим хранить в базе.</p>

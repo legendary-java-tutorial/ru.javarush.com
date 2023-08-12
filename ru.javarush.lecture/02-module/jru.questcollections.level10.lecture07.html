@@ -1,0 +1,85 @@
+Socket
+<p>----------------------------------------</p>
+&#8212; Привет, Амиго! &#8212; Здорово, Риша! &#8212; Тема сегодняшней лекции – Сокеты. Socket в переводе с английского – Розетка Ты уже знаешь, что у каждого компьютера в сети есть его уникальный IP-адрес. &#8212; Ага. &#8212; И вот представь, что у тебя есть несколько компьютеров и на каждом компьютере запущено с десяток программ, которые работают с ...
+<p>----------------------------------------</p>
+<p>&#8212; Привет, Амиго!</p>
+<p><span class="text-user">&#8212; Здорово, Риша!</span></p>
+<p>&#8212; Тема сегодняшней лекции – Сокеты. Socket в переводе с английского – Розетка.</p>
+<p>Ты уже знаешь, что у каждого компьютера в сети есть его уникальный IP-адрес.</p>
+<p><span class="text-user">&#8212; Ага.</span></p>
+<p>&#8212; И вот представь, что у тебя есть несколько компьютеров и на каждом компьютере запущено с десяток программ, которые работают с интернетом: Skype, ICQ, и т.д.</p>
+<p>И эти программы хотят общаться между собой.</p>
+<p>Надо сделать так, чтобы они друг другу «не мешали». Чтобы Skype связывался со Skype’ом, ICQ с ICQ и т.д.</p>
+<p>Помнишь, как это проблему решили с URL и веб-серверами?</p>
+<p><span class="text-user">&#8212; Ага, добавили порты.</span></p>
+<p>&#8212; Именно.</p>
+<p>Это все равно, что в доме сделать много маленьких комнат и объявить его многоквартирным. <strong><span class="text-green">Каждый порт – это как отдельная квартира.</span></strong></p>
+<p>Так вот IP-адрес – это уникальный номер компьютера, а <span class="text-corporate">IP-адрес+порт – это уникальный номер некой «квартиры» (ячейки) в компьютере, которую может занять программа.</span></p>
+<p><span class="text-corporate">Вот такая уникальная ячейка и называется <strong>сокет</strong>.</span></p>
+<p>У сокета есть его уникальный номер, и с<strong><span class="text-corporate">остоит он из IP-адреса и номера порта.</span></strong></p>
+<p><span class="text-user">&#8212; Ага. Т.е. сокет – это номер некой виртуальной ячейки в компьютере, которую может занимать программа? А другая программа будет слать ей в эту ячейку сообщения, и таким образом они будут общаться?</span></p>
+<p>&#8212; Не знаю, как ты это понял, но именно так и есть.</p>
+<p><span class="text-user">&#8212; Это моя робоинтуиция подсказала.</span></p>
+<p>&#8212; Отлично. Тогда давай немного подробностей.</p>
+<p>Сокеты – это фактически самый базовый и самый примитивный способ межсетевого взаимодействия программ.</p>
+<p>В Java для работы с сокетами есть два класса. Это классы <strong>Socket</strong> и <strong>ServerSocket</strong>.</p>
+<p><strong>ServerSocket</strong> – это специальный класс, объекты которого выполняют роль сервера – т.е. могу обслуживать запросы, пришедшие на определенный сокет.</p>
+<p>Класс <strong>Socket</strong> – это фактически Socket-клиент, с помощью него мы можем послать сообщение некоторому сокету и получить ответ.</p>
+<p>Как послать сообщение какому-то сокету:</p>
+<div class="code-heading">Пример</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>//создаем сокет
+<span class="text-red">Socket <strong>clientSocket</strong></span> = new <span class="text-red">Socket</span>("<span class="text-green">localhost</span>", 4444);
+
+//получаем OutputStream
+<span class="text-green">OutputStream outputStream</span> = <span class="text-red">clientSocket</span>.<strong>getOutputStream</strong>();
+PrintWriter <span class="text-user">out</span> = new PrintWriter(<span class="text-user">outputStream</span>, <strong>true</strong>);
+<span class="text-user">out</span>.<strong>println</strong>("Kiss my shiny metal ass!");
+<span class="text-user">out</span>.<strong>flush</strong>();
+
+//читаем ответ
+<span class="text-green">InputStream inputStream</span> = <span class="text-red">clientSocket</span>.getInputStream();
+BufferedReader <span class="text-green">in</span> = new BufferedReader(new InputStreamReader(<span class="text-green">inputStream</span>));
+String <span class="text-viola">answer</span> = <span class="text-green">in</span>.readLine();</code></pre>
+<p><span class="text-user">&#8212; Все очень напоминает скачивание файла из интернета.</span></p>
+<p>&#8212; Это потому, детка, что там тоже используются сокеты.</p>
+<p><span class="text-red">Сокеты используются в основе всего связанного с сетью, ну или почти всего.</span></p>
+<p>Вот <a href="http://www.tutorialspoint.com/java/java_networking.htm" target="_blank">тут</a> можешь почитать дополнительную информацию.</p>
+<p><span class="text-user">&#8212; Спасибо за лекцию, Риша.</span></p>
+<p>&#8212; Это еще не все. Размечтался.</p>
+<p>Теперь мы разберемся, как работает серверный сокет.</p>
+<p>Он работает чуток посложнее.</p>
+<div class="code-heading">Пример</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>//создаем объект сервер-сокет
+<span class="text-red">ServerSocket serverSocket</span> = new <span class="text-red">ServerSocket</span>(4444); //порт
+
+//в цикле обрабатываем входящие соединения.
+while (true)
+{
+ //метод accept ждет, пока кто-то не подключится.
+ <span class="text-red">Socket socket</span> = <span class="text-red">serverSocket</span>.accept();
+
+ //читаем сообщение
+<span class="text-green"> InputStream inputStream</span> = <span class="text-red">socket</span>.getInputStream();
+ BufferedReader <span class="text-green">in</span> = new BufferedReader(new InputStreamReader(inputStream));
+ String <span class="text-viola">message</span> = <span class="text-green">in</span>.readLine();
+
+ //придумываем ответ – просто разворачиваем строку задом наперед
+ String <span class="text-corporate">reverseMessage</span> = new StringBuilder(<span class="text-viola">message</span>).reverse().toString();
+
+ //отправляем ответ
+<span class="text-user"> OutputStream outputStream</span> = <span class="text-red">socket</span>.getOutputStream();
+ PrintWriter <span class="text-user">out</span> = new PrintWriter(<span class="text-user">outputStream</span>, true);
+<span class="text-user"> out</span>.println(<span class="text-corporate">reverseMessage</span>);
+ <span class="text-user">out</span>.flush();
+}</code></pre>
+<p>Хочу обратить твое внимание на несколько моментов.</p>
+<p><span class="text-viola">Момент 1: Для создания сокета нужно указывать IP-адрес (или домен) и порт. Для создания серверного сокета – только порт. Серверный сокет появляется только на том компьютере, где его создали.</span></p>
+<p><span class="text-green">Момент 2: У класса ServerSocket есть метод accept(), который, если его вызвать, будет ждать входящее соединение. Т.е. метод будет выполняться бесконечно долго, пока какой-то клиентский сокет не попробует обратиться к нему. Тогда метод accept() примет соединение, создаст объект сокет для коммуникации и после этого вернет этот объект.</span></p>
+<p>С точки зрения Java-программиста, сокет – это два потока – InputStream из которого можно читать сообщения/данные и OutputStream, куда можно писать сообщения/данные.</p>
+<p>Когда ты создаешь серверный сокет, фактически появляется порт, к которому могут подключаться сокеты с других компьютеров. Но для этого им надо правильно указать номер порта нашего сокета и IP-адрес нашего компьютера. Ну, или его доменное имя.</p>
+<p>Вот тебе интересный пример, можешь попробовать разобрать его и выполнить:</p>
+<p><a href="http://habrahabr.ru/post/69136/" target="_blank">http://habrahabr.ru/post/69136/</a></p>
+<p>Там весь смысл в том, что с помощью серверного сокета пишется примитивнейший веб-сервер, к которому можно просто обращаться из браузера.</p>
+<p><span class="text-user">&#8212; Ого! Веб-сервер? Круто! Я изучу его очень внимательно.</span></p>
+<p><span class="text-user">Спасибо, Риша.</span></p>
+<p>&#8212; Все, Амиго, иди отдыхать!</p>

@@ -1,0 +1,45 @@
+Популярные сценарии работы с Mockito
+<p>----------------------------------------</p>
+Мокирование статического метода mockStatic()
+final class и final method
+<p>----------------------------------------</p>
+<h2>6.1 Мокирование статического метода mockStatic()</h2>
+<p>И еще один важный момент – мокирование и верификация статических методов. “А что в этом такого?”, – спросишь ты. Да, статические, но ведь методы же. И будете неправы.</p>
+<p>Помни, с чего мы начали изучение мок-объектов? С того, что эти объекты искусственно создаются через класс <code>DynamicProxy</code>. <span class="text-red">А статические методы ни к каким объектам не привязаны  и перехватить вызовы к ним через <code>DynamicProxy</code> нельзя</span>. Вот и все.</p>
+<p>Но создатели Mockito и тут смогли извернуться – написали свой загрузчик классов и с его помощью смогли подменять классы на лету. Большая и сложная работа, но они все-таки смогли это сделать.</p>
+<p>Понадобится добавить дополнительную библиотеку в <code>pom.xml</code>:</p>
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.mockito&lt;/groupId&gt;
+    &lt;artifactId&gt;mockito-inline&lt;/artifactId&gt;
+    &lt;version&gt;4.2.0&lt;/version&gt;
+    &lt;scope&gt;test&lt;/scope&gt;
+&lt;/dependency&gt;
+</code></pre>
+<p>Вот как нужно работать, если вам нужно мокировать статический метод.</p>
+<p><strong>1 Создаем специальный мок-объект класса:</strong></p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present"><code>MockedStatic&lt;<span class="text-user">ИмяКласса</span>&gt;<span class="text-green">управляющийОбъект</span> = Mockito.<span class="text-red">mockStatic</span>(<span class="text-user">ИмяКласса.class</span>);</code></pre>
+</div>
+<p><strong>2 Добавляем к этому объекту правила работы:</strong></p>
+<p>К этому объекту правила нужно цеплять другими способами.</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present"><code><span class="text-green">управляющийОбъект</span>.when(<span class="text-user">ИмяКласса</span>::<span class="text-orange">имяМетода</span>).thenReturn(<span class="text-violet">результат</span>);</code></pre>
+</div>
+<p><strong>3</strong> Обязательно <strong>заворачиваем использование этого объекта в <code>try-with-resources</code></strong>, чтобы объект сразу удалился и Mockito могло очистить связанные с ним правила.</p>
+<p>Пример:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-green">@Test</span>
+void givenStaticMethodWithNoArgs () {
+    try (<span class="text-red">MockedStatic</span>&lt; <span class="text-user">StaticUtils</span>&gt; utilities =  <span class="text-red">Mockito.mockStatic</span>( <span class="text-user">StaticUtils.class</span>)) {
+        //добавляем правило
+ <span class="text-yellow">        utilities</span>.when(<span class="text-user">StaticUtils</span>::<span class="text-orange">name</span>).thenReturn("Привет");  
+
+        //проверяем, что правило работает
+        assertEquals("Привет", <span class="text-red">StaticUtils</span>.<span class="text-orange">name</span>());
+    }
+}
+
+</code></pre>
+<p>Не так красиво, как с аннотациями <code>@Mock</code> и <code>@Spy</code>, зато очень практично. Было очень тяжело писать тесты, когда нельзя было замокать простой статический метод, который использовался внутри тестируемых методов.</p>
+<p></p>
+<p></p>

@@ -1,0 +1,72 @@
+Generics: Class&lt;T&gt;
+<p>----------------------------------------</p>
+&#8212; Привет! Я продолжу лекцию Элли про Generic&#8217;м. Готов слушать? &#8212; Ага. &#8212; Тогда начинаем. Факт первый. У методов класса тоже могут быть свои типы-параметры. &#8212; Да, я знаю. &#8212; Нет, я имею ввиду именно свои типы-параметры: Пример class Calculator { T add(T a, T b); //сложить T sub(T a, T b); //отнять T mul(T a, T ...
+<p>----------------------------------------</p>
+<p>&#8212; Привет! Я продолжу лекцию Элли про Generic&#8217;и. Готов слушать?</p>
+<p><span class="text-user">&#8212; Ага.</span></p>
+<p>&#8212; Тогда начинаем.</p>
+<p>Факт первый. У методов класса тоже могут быть свои типы-параметры.</p>
+<p><span class="text-user">&#8212; Да, я знаю.</span></p>
+<p>&#8212; Нет, я имею ввиду именно <strong><span class="text-red">свои типы-параметры:</span></strong></p>
+<div class="code-heading">Пример</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><strong>class</strong> Calculator
+{
+  T <strong>add</strong>(T a, T b); //сложить
+  T <strong>sub</strong>(T a, T b); //отнять
+  T <strong>mul</strong>(T a, T b); //умножить
+  T <strong>div</strong>(T a, T b); //делить
+}</code></pre>
+<p>Это типы-параметры именно метода(ов). У класса параметров нет. Можно даже объявить методы статическими и вызывать их без использования объекта.</p>
+<p><span class="text-user">&#8212; Ясно. Смысл типов-параметров в методах такой же, как и в классах?</span></p>
+<p>&#8212; Ага. Но есть и кое-что новое.</p>
+<p>Как ты уже знаешь, в описании типа можно использовать wildcard. Тогда представь себе ситуацию:</p>
+<div class="code-heading">Пример 1</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public void doSomething(<span class="text-user">List&lt;? extends MyClass&gt;</span> list) 
+{
+ for(<span class="text-user">MyClass object</span> : list)
+ { 
+  System.out.println(<span class="text-user">object</span>.<strong>getState</strong>()); //тут все работает отлично.
+ }
+}</code></pre>
+<p>А вот, что случится, если мы захотим добавить в коллекцию новый элемент:</p>
+<div class="code-heading">Пример 2</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public void doSomething(<span class="text-user">List&lt;? extends MyClass&gt;</span> list) 
+{
+ list.add(new <span class="text-user">MyClass</span>()); <span class="text-red">//ошибка!</span>
+}</code></pre>
+<p><span class="text-red">Дело в том, что в общем случае в метод doSomething можно передать List с типом элементов не MyClass, а любой из наследников MyClass. А в такой список заносить объекты MyClass уже нельзя!</span></p>
+<p><span class="text-user">&#8212; Ага. И что же делать?</span></p>
+<p>&#8212; Ничего. Прямо в этой ситуации – ничего не сделаешь. Но это дало разработчикам Java повод для размышлений. И они придумали новое ключевое слово – <strong>super</strong>.</p>
+<p>Выглядит его использование практически так же:</p>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>List&lt;? <span class="text-red">super</span> MyClass&gt; list</code></pre>
+<p>Но между extends и super есть существенное различие.</p>
+<p>«? extends T» обозначает, что класс должен быть наследником T.</p>
+<p>«? super T» обозначает, что класс должен быть предком T.</p>
+<p><span class="text-user">&#8212; Ух ты. А где это используется?</span></p>
+<p>&#8212; «? super T» используется, когда метод собирается добавлять в коллекцию объект типа T. Тогда это может быть коллекция типа T или любого типа-предка T.</p>
+<p><span class="text-user">&#8212; Ага. Ссылку на объект типа T можно же присвоить любому родительскому типу для T.</span></p>
+<p>&#8212; Честно говоря – этот подход используется не очень часто. Тем более, что у него есть и обратная сторона. Пример:</p>
+<div class="code-heading">Примеры</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public void doSomething(<span class="text-user">List&lt;? <span class="text-red">super</span> MyClass&gt;</span> list)
+{
+ for(<span class="text-user">MyClass object</span> : list) <span class="text-red">//ошибка!</span>
+ { 
+  System.out.println(<span class="text-user">object</span>.<strong>getState</strong>()); 
+ }
+}</code></pre>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public void doSomething(<span class="text-user">List&lt;? <span class="text-red">super</span> MyClass&gt;</span> list)
+{
+ list.add(new <span class="text-user">MyClass</span>()); //тут все работает отлично.
+}</code></pre>
+<p>Теперь не работает первый пример.</p>
+<p>Т.к. коллекция list может быть даже List&lt;Object&gt; (Object самый верхний родитель MyClass), то фактически мы пишем такой код, а так писать нельзя:</p>
+<div class="code-heading">Пример 1</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="dblue_text text-user">List&lt;Object&gt;</span> list; 
+
+for(<span class="blue_text text-user">MyClass object</span> : list) <span class="red_text text-red">//ошибка!</span>
+{ 
+ <span class="grey_text">System.out.println</span>(<span class="blue_text text-user">object</span>.<b>getState</b>()); 
+}
+</code></pre>
+<p><span class="text-user">&#8212; Ясно. Спасибо за интересную лекцию.</span></p>
+<p>&#8212; Пожалуйста.</p>

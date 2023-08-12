@@ -1,0 +1,124 @@
+Фильтры веб-сервера
+<p>----------------------------------------</p>
+Знакомство с фильтрами
+Классы Filter, FilterChain, FilterConfig
+Класс RequestDispatcher
+Сравнение редирект и форвард
+<p>----------------------------------------</p>
+<h2>Знакомство с фильтрами</h2>
+<p>Но и это еще не все. Правда, ты же не думаешь, что сервлеты устроены так просто?</p>
+<p>Кроме сервлетов, которые мы уже разобрали, есть еще так называемые “служебные сервлеты” — <strong>фильтры</strong>. Они очень похожи на сервлеты, но их основная задача — помогать сервлетам обрабатывать запросы.</p>
+<p>Фильтр — это как секретарь, а сервлет – директор. Прежде чем документ попадет на стол директору, он пройдет через руки секретаря. И после того, как директор его подпишет, он снова попадет секретарю, уже как исходящая корреспонденция, например.</p>
+<p>Такой секретарь может отбраковывать часть запросов к директору (например, спам). Или давать стандартные ответы на известные ему вопросы (“директора нет на месте”). И так далее. Более того, таких секретарей может быть несколько: один может фильтровать спам сразу для всех директоров, другой перекидывать запросы между разными директорами и тому подобное.</p>
+<p>Так же работают и фильтры:</p>
+<img data-max-width="512" data-id="84aec919-de31-458b-9b17-987c943f92a3" src="https://cdn.javarush.com/images/article/84aec919-de31-458b-9b17-987c943f92a3/512.jpeg" alt="служебные сервлеты”">
+<h2>Классы Filter, FilterChain, FilterConfig</h2>
+<p>Фильтры очень похожи на сервлеты, но с парой небольших отличий. Чтобы написать свой фильтр, нужно наследоваться от интерфейса <code>javax.servlet.Filter</code>.</p>
+<p>У фильтра так же есть методы <code>init()</code> и <code>destroy()</code>. Вместо метода <code>service()</code> у фильтра есть метод <code>doFilter()</code>. И даже есть свой класс FilterConfig. Фильтр также добавляется в сервлет в файле web.xml или же с помощью аннотации @WebFilter.</p>
+<p>Список методов:</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th>Методы</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td><code>init(FilterConfig config)</code></td>
+        <td>инициализация фильтра</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td><code>destroy()</code></td>
+        <td>выгрузка фильтра</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td><code>doFilter(ServletRequest , ServletResponse, FilterChain)</code></td>
+        <td>обработка (фильтрация) запроса</td>
+    </tr>
+
+    </tbody>
+</table>
+<p>В чем же отличие сервлета и фильтра?</p>
+<p>Фильтров может быть несколько, и они последовательно обрабатывают запрос (и ответ). Они объединены в так называемую цепочку — и для них даже есть специальный класс <code>FilterChain</code>.</p>
+<p>После обработка запроса в методе <code>doFilter()</code> нужно вызвать метод <code>doFilter()</code> следующего фильтра в цепочке. Пример:</p>
+<pre class='language-java line-numbers'><code>
+public class MyFilter implements Filter { 
+ 
+  public void init(FilterConfig arg0) throws ServletException {
+  } 
+    
+  public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws Exception { 
+        
+      PrintWriter out = resp.getWriter(); 
+      out.print("Дописываем что-то перед телом ответа"); 
+        
+      chain.doFilter(req, resp); //вызываем следующий фильтр в цепочке 
+        
+      out.print("Дописываем что-то после тела ответа"); 
+    } 
+ 
+  public void destroy() {
+  } 
+} 
+
+</code></pre>
+<p>Вообще-то так дописывать тело ответа <span class="text-red">нельзя</span>. Формально фильтры и сервлеты независимы друг от друга и могут изменяться независимо. Их могут писать разные разработчики в разное время. Функция фильтров именно служебная, например:</p>
+<ul>
+    <li>Логирование всех входящих запросов (и ответов)</li>
+    <li>Сжатие данных</li>
+    <li>Шифрование (и расшифровка) данных</li>
+    <li>Валидация данных запроса</li>
+    <li>Добавление/удаление нужных заголовков</li>
+    <li>Перенаправление запросов</li>
+    <li> Контроль доступа (проверка, залогинен ли пользователь)</li>
+</ul>
+<h2>Класс RequestDispatcher</h2>
+<p>Иногда в процессе работы фильтра внутри метода <code>doFilter()</code> <span class="text-red">может возникнуть необходимость вызвать другой сервлет</span>. Для этого у контейнера есть специальный объект <code>RequestDispatcher</code>.</p>
+<p>Получить его можно двумя способами:</p>
+<ul>
+    <li>У объекта <code>HttpServletRequest</code></li>
+    <li>У объекта <code>ServletContext</code></li>
+</ul>
+<p>Этот объект можно использовать для того, чтобы <span class="text-green">перенаправить существующий запрос на другой сервлет</span>. Например, выяснилось, что пользователь не авторизован и мы хотим показать ему страницу с авторизацией. Ну или произошла ошибка на сервере и мы хотим отобразить пользователю error-страницу :)</p>
+<pre class='language-java line-numbers'><code>
+public class HelloServlet extends HttpServlet {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)  throws Exception {
+           String path = "/error.html";
+           ServletContext servletContext = this.getServletContext();
+           RequestDispatcher requestDispatcher = servletContext.getRequestDispatcher(path);
+           requestDispatcher.forward(request, response);
+    }
+}
+</code></pre>
+<p>Также ты можешь вызвать <code>RequestDispatcher</code> из фильтра.</p>
+<pre class='language-java line-numbers'><code>
+public class MyFilter implements Filter { 
+ 
+  public void init(FilterConfig arg0) throws ServletException {
+  } 
+    
+  public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws Exception { 
+           String path = "/error.html";
+           ServletContext servletContext = req.getServletContext();
+           RequestDispatcher requestDispatcher = servletContext.getRequestDispatcher(path);
+           <s></s>requestDispatcher.forward(req, resp);
+    } 
+ 
+  public void destroy() {
+  } 
+} 
+
+</code></pre>
+<p>Обрати внимание, что запрос будет обработан в методе <code>forward()</code>, и вызывать <code>doFilter()</code>после использования <code>RequestDispatcher</code> не нужно.</p>
+<h2>Сравнение редиректа и форварда</h2>
+<p>И еще один важный момент. Если ты хочешь в своем сервлете перенаправить пользователя на другой URI, то сделать это можно двумя способами:</p>
+<ul>
+    <li><code>redirect</code></li>
+    <li><code>forward</code></li>
+</ul>
+<p>Мы их уже разбирали, но для удобства проговорю это еще раз.</p>
+<p>Когда ты выполняешь <strong>redirect</strong> через вызов <code>response.sendRedirect("ссылка")</code>, то сервер отсылает браузеру (клиенту) ответ <code>302</code> и указанную тобой ссылку. А браузер, проанализировав ответ сервера, загружает переданную тобой ссылку. То есть ссылка в браузере меняется на новую.</p>
+<p>Если ты выполняешь <strong>forward</strong> через вызов <code>requestDispatcher.forward()</code>, то новый запрос выполняется внутри контейнера, и его ответ твой сервлет отсылает браузеру (клиенту) как ответ твоего сервлета. При этом браузер получает ответ от нового сервлета, но ссылка в браузере не меняется.</p>

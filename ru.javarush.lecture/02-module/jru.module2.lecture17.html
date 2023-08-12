@@ -1,0 +1,344 @@
+Callable и Future
+<p>----------------------------------------</p>
+Ты уже знаком с интерфейсом Runnable и реализующим его классом Thread. Давай вспомним, как выглядит этот интерфейс...
+<p>----------------------------------------</p>
+    <h2>Проблема Runnable</h2>
+
+    <p>Ты уже знаком с интерфейсом <span class="text-neon"><span class="text-bold"><em>Runnable</em></span></span> и реализующим его классом <span class="code"><span class="text-green">Thread</span></span>. Давай вспомним, как выглядит этот интерфейс:</p>
+
+    <pre class='language-java line-numbers'><code>
+public interface Runnable {
+	public abstract void run();
+}
+</code></pre>
+
+    <p>Обратим внимание, что у метода <span class="code text-orange">run</span> возвращаемое значение — <span class="text-orange">void</span>. Но что, если нам нужно получить какой-то результат работы нити в виде числа, строки или любого другого объекта? Тогда придется как-то выкручиваться, например, так:</p>
+
+    <pre class='language-java line-numbers'><code>
+public class Fibonacci implements Runnable {
+ 
+ 
+ 
+	private final int index;
+ 
+	private int result;
+ 
+ 
+ 
+	public Fibonacci(int index) {
+ 
+    		this.index = index;
+ 
+	}
+ 
+ 
+ 
+	@Override
+ 
+	public void run() {
+ 
+    		int first = 0;
+ 
+    		int second = 1;
+ 
+    		if (index == 1) {
+ 
+        			result = first;
+ 
+    		} else if (index == 2) {
+ 
+        			result = second;
+ 
+    		} else {
+ 
+        			for (int i = 0; i &lt; index - 2; i++) {
+ 
+            				int temp = second;
+ 
+            				second += first;
+ 
+            				first = temp;
+ 
+        			}
+ 
+ 
+ 
+            			result = second;
+ 
+    		}
+ 
+	}
+ 
+ 
+ 
+	public static void printByIndex(int index) throws InterruptedException {
+ 
+    		Fibonacci fibonacci = new Fibonacci(index);
+ 
+    		Thread thread = new Thread(fibonacci);
+ 
+    		thread.start();
+ 
+    		thread.join();
+ 
+    		System.out.println(index + "-е число Фибоначчи: " + fibonacci.result);
+ 
+	}
+ 
+}
+</code></pre>
+ 
+    <p>Запустим такой метод <span class="code text-orange">main</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+	public static void main(String[] args) throws Exception {
+    		Fibonacci.printByIndex(10);
+	}
+</code></pre>
+
+    <p>В консоль будет выведено:</p>
+
+    <div class="terminal">10-е число Фибоначчи: 34</div>
+
+    <p>У этого кода есть ряд недостатков. Например, главная нить будет заблокирована на время вызова метода <span class="code text-orange">printByIndex</span>, так как он содержит вызов метода <span class="code text-orange">join</span>.</p>
+ 
+    <h2>Интерфейс Callable</h2>
+
+    <p>Теперь давай рассмотрим интерфейс, который Java предоставляет нам “из коробки” и который может выступать альтернативой <span class="text-neon"><span class="text-bold"><em>Runnable</em></span></span>. Это интерфейс <span class="text-neon"><span class="text-bold"><em>Callable</em></span></span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+public interface Callable&lt;V> {
+ 
+	V call() throws Exception;
+ 
+}
+</code></pre>
+ 
+    <p>Как видишь, у него так же, как и у <span class="text-neon"><span class="text-bold"><em>Runnable</em></span></span>, всего один метод. Назначение метода такое же, как и у метода <span class="code text-orange">run</span>, — он будет содержать код, который будет выполнятся в параллельной нити. Из отличий можешь заметить возвращаемое значение. Теперь это может быть любой тип, который ты укажешь при реализации интерфейса:</p>
+
+    <pre class='language-java line-numbers'><code>
+public class CurrentDate implements Callable&lt;Long> {
+ 
+	@Override
+ 
+	public Long call() {
+ 
+    		return new Date().getTime();
+ 
+	}
+ 
+}
+</code></pre>
+
+<p>Еще пример:</p>
+
+    <pre class='language-java line-numbers'><code>
+Callable&lt;String> task = () -> {
+ 
+	Thread.sleep(100);
+ 
+	return "Done";
+ 
+};
+</code></pre>
+ 
+    <p>Еще из полезностей: метод <span class="code text-orange">call</span> может пробрасывать <span class="text-red"><span class="text-bold">Exception</span></span>, так что в отличии от метода <span class="code text-orange">run</span>, тут можно не следить за проверяемыми исключениями, которые возникают внутри метода:</p>
+
+    <table>
+        <tbody>
+            <tr>
+                <td>
+                    <pre class='language-java line-numbers'><code>
+public class Sleep implements Runnable {
+
+	@Override
+
+	public void run() {
+
+    	    try {
+
+        	        Thread.sleep(1000);
+
+    	    } catch (InterruptedException ignored) {
+
+    	    }
+
+	}
+
+}
+</code></pre>
+                </td>
+                <td>
+                    <pre class='language-java line-numbers'><code>
+public class Sleep implements Callable {
+
+	@Override
+
+	public Object call() throws InterruptedException {
+
+    	    Thread.sleep(1000);
+
+    	    return null;
+
+	}
+
+}
+</code></pre>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Интерфейс Future</h2>
+
+    <p>Еще один интерфейс, который будет работать в тесной связке с <span class="text-neon"><span class="text-bold"><em>Callable</em></span></span>, — это <span class="text-neon"><span class="text-bold"><em>Future</em></span></span>. <span class="text-neon"><span class="text-bold"><em>Future</em></span></span> представляет результат асинхронных (параллельных) вычислений (то самое значение, которое возвращает метод <span class="code text-orange">call</span>). Oн позволяет проверить, завершились ли вычисления, подождать завершения вычислений, получить результат вычислений, и другое.</p>
+
+    <h2>Методы Future</h2>
+
+    <ul>
+        <li><p><span class="code text-orange">boolean isDone()</span> — метод возвращает <span class="text-green"><em>true</em></span>, если это задание (вычисления) завершено. Завершенными считаются задания, которые завершились штатным способом, завершились исключением или были отменены.</p></li>
+        <li><p><span class="code text-orange">V get()</span> — метод при необходимости блокирует нить, которая его вызвала, и по окончанию вычислений возвращает их результат.</p></li>
+        <li><p><span class="code text-orange">V get(long timeout, TimeUnit unit)</span> — как и предыдущий метод, блокирует вызвавшую его нить в ожидании результата, но только на время, заданное параметрами метода.</p></li>
+        <li><p><span class="code text-orange">boolean cancel(boolean mayInterruptIfRunning)</span> — метод пробует остановить выполнение задания. Если задача еще не начала выполняться, она уже никогда не запустится. Если задание было в процессе выполнения, то параметр <span class="text-green">mayInterruptIfRunning</span> определяет, будет ли попытка прервать нить, выполняющую задание. После вызова метода <span class="code text-orange">cancel</span> метод <span class="code text-orange">isDone</span> всегда будет возвращать <span class="text-green"><em>true</em></span>.</p></li>
+        <li><p><span class="code text-orange">boolean isCancelled()</span> — метод возвращает <span class="text-green"><em>true</em></span>, если задание было отменено, не успев завершится штатным способом. Метод всегда будет возвращать <span class="text-green"><em>true</em></span>, если перед этим был вызван метод <span class="code text-orange">cancel</span>, который вернул <span class="text-green"><em>true</em></span>.</p></li>
+    </ul>
+
+    <h2>Пример кода на Callable и Future</h2>
+
+    <pre class='language-java line-numbers'><code>
+import java.util.HashMap;
+ 
+import java.util.Map;
+ 
+import java.util.concurrent.*;
+ 
+ 
+ 
+public class Fibonacci implements Callable&lt;Integer> {
+ 
+ 
+ 
+	private final int index;
+ 
+ 
+ 
+	public Fibonacci(int index) {
+ 
+    		this.index = index;
+ 
+	}
+ 
+ 
+ 
+	@Override
+ 
+	public Integer call() {
+ 
+    		int first = 0;
+ 
+    		int second = 1;
+ 
+    		if (index == 1) {
+ 
+        			return first;
+ 
+    		} else if (index == 2) {
+ 
+        			return second;
+ 
+    		} else {
+ 
+        		for (int i = 0; i &lt; index - 2; i++) {
+ 
+            			int temp = second;
+ 
+            			second += first;
+ 
+            			first = temp;
+ 
+        		}
+ 
+ 
+ 
+        			return second;
+ 
+    		}
+ 
+	}
+ 
+ 
+ 
+	public static Future&lt;Integer> calculateAsync(int index) throws Exception {
+ 
+    		Fibonacci fibonacci = new Fibonacci(index);
+ 
+ 
+ 
+    		// объект future будет представлять результат вычислений задачи fibonacci
+ 
+    		FutureTask&lt;Integer> future = new FutureTask&lt;>(fibonacci);
+ 
+ 
+ 
+    		// т.к. класс FutureTask реализует и интерфейс Future и интерфейс Runnable,
+ 
+	 	// можно передавать его экземпляры в конструктор Thread
+ 
+    		Thread thread = new Thread(future);
+ 
+    		thread.start();
+ 
+ 
+ 
+    		return future;
+ 
+	}
+ 
+}
+</code></pre>
+ 
+    <p>Запустим такой метод <span class="code text-orange">main</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+	public static void main(String[] args) throws Exception {
+    		Map&lt;Integer, Future&lt;Integer>> tasks = new HashMap&lt;>();
+    		for (int i = 10; i &lt; 20; i++) {
+        			tasks.put(i, Fibonacci.calculateAsync(i));
+    		}
+ 
+    		for (Map.Entry&lt;Integer, Future&lt;Integer>> entry : tasks.entrySet()) {
+        			Future&lt;Integer> task = entry.getValue();
+        			int index = entry.getKey();
+        			int result;
+        			// проверяем завершено ли задание
+        			if (task.isDone()) {
+            				// получаем результат вычислений
+            				result = task.get();
+        			} else {
+            				try {
+                				// ожидаем результат вычислений еще 100 миллисекунд
+                				result = task.get(100, TimeUnit.MILLISECONDS);
+            				} catch (TimeoutException e) {
+                				// прерываем выполнение задания
+                				task.cancel(true);
+                				System.out.println("Вычисление " + index + "-го числа Фибоначчи не уложилось в отведенное время.");
+                				return;
+            				}
+        			}
+        			System.out.println(index + "-е число Фибоначчи: " + result);
+    		}
+	}
+</code></pre>
+ 
+    <p>В консоль будет выведено:</p>
+
+    <div class="terminal">16-е число Фибоначчи: 610<br />
+17-е число Фибоначчи: 987<br />
+18-е число Фибоначчи: 1597<br />
+19-е число Фибоначчи: 2584<br />
+10-е число Фибоначчи: 34<br />
+11-е число Фибоначчи: 55<br />
+12-е число Фибоначчи: 89<br />
+13-е число Фибоначчи: 144<br />
+14-е число Фибоначчи: 233<br />
+15-е число Фибоначчи: 377</div>

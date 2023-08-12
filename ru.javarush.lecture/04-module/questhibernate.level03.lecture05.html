@@ -1,0 +1,261 @@
+Подзапросы с таблицами
+<p>----------------------------------------</p>
+Подзапрос возвращает таблицу. 
+Использование оператора WITH.
+<p>----------------------------------------</p>
+<h2>Подзапрос возвращает таблицу</h2>
+ 
+<p>И наконец третий вариант – когда подзапрос возвращает целую таблицу. Это самый распространенный вариант. </p>
+ 
+<p>Очень часто возникают ситуации, когда мы хотим немного подправить определенную таблицу. И только потом объединить (посредством оператора JOIN ON) исправленную таблицу с другой.</p>
+ 
+<p>Давай для начала возьмет самый простой случай, где мы объединяли две таблицы посредством JOIN:</p>
+ 
+<pre><code><strong><span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-orange">employee e</span> <span class="text-red">JOIN</span> <span class="text-orange">task t</span> <span class="text-red">ON</span> <span class="text-orange">e</span>.<span class="text-green">id</span> = <span class="text-orange">t</span>.<span class="text-green">emploee_id</span></strong>
+</code></pre>  
+
+<p>И как ты, наверное, помнишь, в таблице <strong>task</strong> есть задачи, которые ни на кого не назначены: <strong>employee_id</strong> равно <strong>NULL</strong>. </p>
+ 
+<p>Давай сгенерируем <span class="text-red">исправленную таблицу</span>, где все повисшие задачи назначим на директора (его ID = 4). </p>
+ 
+<p>Для этого воспользуемся функцией <strong>IFNULL()</strong>:</p>
+ 
+<pre><code><strong><span class="text-red">SELECT</span> <span class="text-green">id</span>, <span class="text-neon">IFNULL</span>(<span class="text-green">employee_id</span>, <span class="text-user">4</span>) AS <span class="text-green">employee_id</span>, <span class="text-green">name</span>, <span class="text-green">deadline</span> <span class="text-red">FROM</span> <span class="text-orange">task</span></strong> 
+</code></pre>
+ 
+<p>И результат такого запроса:  </p>
+ 
+<table>
+<tbody>
+<tr>
+<th>id </th>
+<th>employee_id </th>
+<th>name </th>
+<th>deadline </th>
+</tr>
+<tr>
+<td>1 </td>
+<td>1 </td>
+<td>Исправить багу на фронтенде </td>
+<td>2022-06-01 </td>
+</tr>
+<tr>
+<td>2 </td>
+<td>2 </td>
+<td>Исправить багу на бэкенде </td>
+<td>2022-06-15 </td>
+</tr>
+<tr>
+<td>3 </td>
+<td>5 </td>
+<td>Купить кофе </td>
+<td>2022-07-01 </td>
+</tr>
+<tr>
+<td>4 </td>
+<td>5 </td>
+<td>Купить кофе </td>
+<td>2022-08-01 </td>
+</tr>
+<tr>
+<td>5 </td>
+<td>5 </td>
+<td>Купить кофе </td>
+<td>2022-09-01 </td>
+</tr>
+<tr>
+<td>6 </td>
+<td><span class="text-red">4</span></td>
+<td>Убрать офис </td>
+<td>(NULL) </td>
+</tr>
+<tr>
+<td>7 </td>
+<td>4 </td>
+<td>Наслаждаться жизнью </td>
+<td>(NULL) </td>
+</tr>
+<tr>
+<td>8 </td>
+<td>6 </td>
+<td>Наслаждаться жизнью </td>
+<td>(NULL) </td>
+</tr>
+</tbody>
+</table>
+ 
+<p>Красным цветом отмечена исправленная ячейка. </p>
+
+<p>Теперь давай подставим нашу исправленную таблицу в запрос: </p>
+ 
+<pre><code><strong><span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-orange">employee e</span> <span class="text-red">JOIN</span> <span class="text-orange">task t</span> <span class="text-red">ON</span> <span class="text-orange">e</span>.<span class="text-green">id</span> = <span class="text-orange">t</span>.<span class="text-green">emploee_id</span></strong>
+</code></pre>  
+
+<p>Вместо таблицы <strong>task</strong>.</p>
+
+<p>Выглядеть такой запрос будет примерно так: </p>
+ 
+<pre><code><strong><span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-orange">employee e</span> <span class="text-red">JOIN</span> <span class="text-orange">( </span>
+ 	<span class="term"><span class="text-red">SELECT</span> <span class="text-green">id</span>, <span class="text-neon">IFNULL</span>(<span class="text-green">employee_id</span>, <span class="text-user">4</span>) AS <span class="text-green">employee_id</span>, <span class="text-green">name</span>, <span class="text-green">deadline</span></span>
+ 	<span class="text-red">FROM</span> <span class="text-orange">task 
+) t</span> <span class="text-red">ON</span> <span class="text-orange">e</span>.<span class="text-green">id</span> = <span class="text-orange">t</span>.<span class="text-green">emploee_id</span></strong>
+</code></pre>  
+
+<p>Мы вместо слова <strong>task </strong>написали круглые скобочки и в них поместили тело запроса.</p>
+  
+<p>Кстати, <strong>псевдоним t</strong> (алиас) для вложенного запроса очень пригодился. У вложенного запроса в отличии от таблицы имени своего нет, поэтому псевдоним очень даже к месту. </p>
+ 
+<p>И вот результат такого запроса:  </p>
+
+<table>
+<tbody>
+<tr>
+<th>id </th>
+<th>name </th>
+<th>occupation </th>
+<th>salary </th>
+<th>age </th>
+<th>join_date </th>
+<th>id </th>
+<th>employee_id </th>
+<th>name </th>
+</tr>
+<tr>
+<td>1 </td>
+<td>Иванов Иван </td>
+<td>Программист </td>
+<td>100000 </td>
+<td>25 </td>
+<td>2012-06-30 </td>
+<td>1 </td>
+<td>1 </td>
+<td>Исправить багу на фронтенде </td>
+</tr>
+<tr>
+<td>2 
+<td>Петров Петр </td>
+<td>Программист </td>
+<td>80000 </td>
+<td>23 </td>
+<td>2013-08-12 </td>
+<td>2 </td>
+<td>2 </td>
+<td>Исправить багу на бэкенде </td>
+</tr>
+<tr>
+<td><span class="text-red">4 </span></td>
+<td><span class="text-red">Рабинович Мойша </span></td>
+<td><span class="text-red">Директор </span></td>
+<td><span class="text-red">200000 </span></td>
+<td><span class="text-red">35 </span></td>
+<td><span class="text-red">2015-05-12 </span></td>
+<td><span class="text-red">6 </span></td>
+<td><span class="text-red">4 </span></td>
+<td><span class="text-red">Убрать офис </span></td>
+</tr>
+<tr>
+<td>4 </td>
+<td>Рабинович Мойша </td>
+<td>Директор </td>
+<td>200000 </td>
+<td>35 </td>
+<td>2015-05-12 </td>
+<td>7 </td>
+<td>4 </td>
+<td>Наслаждаться жизнью </td>
+</tr>
+<tr>
+<td>5 </td>
+<td>Кириенко Анастасия </td>
+<td>Офис-менеджер </td>
+<td>40000 </td>
+<td>25 </td>
+<td>2015-10-10 </td>
+<td>4 </td>
+<td>5 </td>
+<td>Купить кофе </td>
+</tr>
+<tr>
+<td>5 </td>
+<td>Кириенко Анастасия </td>
+<td>Офис-менеджер </td>
+<td>40000 </td>
+<td>25 </td>
+<td>2015-10-10 </td>
+<td>5 </td>
+<td>5 </td>
+<td>Купить кофе </td>
+</tr>
+<tr>
+<td>5 </td>
+<td>Кириенко Анастасия </td>
+<td>Офис-менеджер </td>
+<td>40000 </td>
+<td>25 </td>
+<td>2015-10-10 </td>
+<td>3 </td>
+<td>5 </td>
+<td>Купить кофе </td>
+</tr>
+<tr>
+<td>6 </td>
+<td>Васька </td>
+<td>кот </td>
+<td>1000 </td>
+<td>3 </td>
+<td>2018-11-11 </td>
+<td>8 </td>
+<td>6 </td>
+<td>Наслаждаться жизнью</td>
+</tr>
+</tbody>
+</table>
+
+<p>На нашем директоре висит задача “убрать офис”, думаю, он быстро найдет, кому ее делегировать :)</p.
+ 
+<h2>Использование оператора WITH </h2>
+ 
+<p>Кстати, начиная с 8-й версии MySQL ты больше не обязан засовывать все свои подзапросы прямо внутрь финального запроса. Их можно выполнять отдельно. Для этого используется <strong>оператор WITH</strong>. </p>
+ 
+<p>Он позволяет создать виртуальную таблицу (поименованный запрос) и его вид задается шаблоном: </p>
+ 
+<pre><code><strong><span class="text-red">WITH</span> <span class="text-orange">имя</span> <span class="text-red">AS</span> (<span class="text-user">запрос</span>) </strong>
+</code></pre>
+
+<p>Часто бывают ситуации, когда в вашем подзапросе есть колонки без имени, например такие как COUNT(*), которым ты не назначил уникальное имя. На этот случай у оператора WITH существует возможность указать новые имена колонок для подзапроса.</p>
+  
+<p>Второй его вид задается шаблоном:  </p>
+ 
+<pre><code><strong><span class="text-red">WITH</span> <span class="text-orange">имя</span>(<span class="text-green">колонка1</span>, <span class="text-green">колонка2</span>, …) <span class="text-red">AS</span> (<span class="text-user">запрос</span>) </strong>
+</code></pre>
+
+<p>Ты можешь использовать сколько угодно виртуальных таблиц (поименованных запросов) и ссылаться в них друг на друга. Общий вид твоего запроса будет иметь примерно такой формат: </p>
+ 
+<pre><code><strong><span class="text-red">WITH</span> <span class="text-orange">имя1</span> <span class="text-red">AS</span> (<span class="text-user">запрос1</span>),  
+       	<span class="text-orange">имя2</span> <span class="text-red">AS</span> (<span class="text-user">запрос2</span>), 
+       	<span class="text-orange">имя3</span> <span class="text-red">AS</span> (<span class="text-user">запрос3</span>) 
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-orange">имя1</span> <span class="text-red">JOIN</span> <span class="text-orange">имя2</span> <span class="text-red">ON</span> … </strong>
+</code></pre>
+
+<p>Теперь давай возьмем наш страшный запрос: </p>
+ 
+<pre><code><strong><span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-orange">employee e</span> <span class="text-red">JOIN</span> <span class="text-orange">(</span> 
+ 	<span class="text-red">SELECT</span> <span class="text-green">id</span>, <span class="text-neon">IFNULL</span>(<span class="text-green">employee_id</span>, <span class="text-user">4</span>) AS <span class="text-green">employee_id</span>, <span class="text-green">name</span>, <span class="text-green">deadline </span>
+ 	<span class="text-red">FROM</span> <span class="text-orange">task</span> 
+<span class="text-orange">) t</span> <span class="text-red">ON</span> <span class="text-orange">e</span>.<span class="text-green">id</span> = <span class="text-orange">t</span>.<span class="text-green">emploee_id</span> </strong> 
+</code></pre>
+
+<p>И перепишем его с использованием оператора WITH:</p>
+ 
+<pre><code><strong><span class="text-red">WITH</span> <span class="text-orange">task2</span>(<span class="text-green">id</span>, <span class="text-green">employee_id</span>, <span class="text-green">name</span>, <span class="text-green">deadline</span>) 
+   <span class="text-red">AS</span> (<span class="text-red">SELECT</span> <span class="text-green">id</span>, <span class="text-neon">IFNULL</span>(<span class="text-green">employee_id</span>, <span class="text-user">4</span>), <span class="text-green">name</span>, <span class="text-green">deadline</span> <span class="text-red">FROM</span> <span class="text-orange">task</span>) 
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-orange">employee e</span> <span class="text-red">JOIN</span> <span class="text-orange">task2 t</span> <span class="text-red">ON</span> <span class="text-orange">e</span>.<span class="text-green">id</span> = <span class="text-orange">t</span>.<span class="text-green">emploee_id</span></strong>
+</code></pre>  
+
+<p>Или можно без имен колонок, но тогда придется обязательно указывать алиас для функции IFNULL(): </p>
+ 
+<pre><code><strong><span class="text-red">WITH</span> <span class="text-orange">task2</span> <span class="text-red">AS</span> ( 
+ 	<span class="text-red">SELECT</span> <span class="text-green">id</span>, <span class="text-neon">IFNULL</span>(<span class="text-green">employee_id</span>, <span class="text-user">4</span>) AS <span class="text-green">employee_id</span>, n<span class="text-green">ame</span>, <span class="text-green">deadline</span> <span class="text-red">FROM</span> <span class="text-orange">task</span> 
+) 
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-orange">employee e</span> <span class="text-red">JOIN</span> <span class="text-orange">task2 t</span> <span class="text-red">ON</span> <span class="text-orange">e</span>.<span class="text-green">id</span> = <span class="text-orange">t</span>.<span class="text-green">emploee_id</span> </strong>
+</code></pre>

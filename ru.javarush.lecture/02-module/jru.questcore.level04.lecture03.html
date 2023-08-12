@@ -1,0 +1,146 @@
+Приведение типов. Расширение и сужение
+<p>----------------------------------------</p>
+Когда-то, во время прохождения первого квеста вы столкнулись с расширением и сужением примитивных типов. Теперь вы куда лучше разбираетесь в ссылочных типах. Так что — самое время посмотреть, как работает расширение и сужение типов в их случае.
+<p>----------------------------------------</p>
+<p>&#8212; Привет, Амиго! Тема сегодняшней лекции – расширение и сужение типов. С расширением и сужением примитивных типов ты познакомился уже давно. На 10 уровне. Сегодня мы расскажем, как это работает для ссылочных типов, т.е. для объектов классов.</p>
+<p>Тут все довольно просто на самом деле. Представь себе цепочку наследования класса: класс, его родитель, родитель родителя и т.д. до самого класса Object. Т.к. <strong><span class="text-red">класс содержит все методы класса, от которого он был унаследован</span></strong>, то объект этого класса <span class="text-red">можно сохранить в переменную <strong>любого из его типов родителей.</strong></span></p>
+<p>Пример:</p>
+<table>
+<tbody>
+<tr>
+<th width="50%">Код</th>
+<th>Описание</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Animal
+{
+  public void doAnimalActions(){}
+}
+class Cat extends Animal
+{
+  public void doCatActions(){}
+}
+class Tiger extends Cat
+{
+  public void doTigerActions(){}
+}</code></pre>
+</td>
+<td>Тут мы видим три объявленных класса: животное, кот и тигр. Кот наследуется от Животного. А Тигр от Кота.</td>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public static void main(String[] args)
+{
+  Tiger tiger = new Tiger();
+  <span class="text-red">Cat cat = new Tiger();
+  Animal animal = new Tiger();
+  Object obj = new Tiger();</span>
+}</code></pre>
+</td>
+<td>Объект класса Tiger всегда можно спокойно присвоить переменной с типом класса-родителя. Для класса Tiger – это Cat, Animal и Object.</td>
+</tr>
+</tbody>
+</table>
+<p>Теперь рассмотрим, что же такое расширение и сужение типов.</p>
+<p>Если в результате присваивания мы двигаемся по цепочке наследования вверх (к типу Object), то это — расширение типа (оно же — восходящее преобразование или upcasting), а если вниз, к типу объекта, то это — сужение типа (оно же — нисходящее преобразование или downcasting).</p>
+<p><strong>Движение вверх по цепочке наследования называется расширением, поскольку оно приводит к более общему типу. Но при этом теряется возможность вызвать методы, которые были добавлены в класс при наследовании.</strong></p>
+<table>
+<tbody>
+<tr>
+<th width="50%">Код</th>
+<th>Описание</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public static void main(String[] args)
+{
+  Object obj = new Tiger();
+  <span class="text-red">Animal animal = (Animal) obj;
+  Cat cat = (Cat) obj;
+  Tiger tiger = (Tiger) animal;
+  Tiger tiger2 = (Tiger) cat;</span>
+}</code></pre>
+</td>
+<td>При сужении типа, нужно использовать оператор преобразования типа, то есть мы выполняем явное преобразование.</p>
+<p>При этом Java-машина выполняет проверку, а действительно ли данный объект унаследован от Типа, к которому мы хотим его преобразовать.</p>
+<p>Такое небольшое нововведение уменьшило количество ошибок в преобразовании типов в разы, и существенно повысило стабильность работы Java-программ.</td>
+</tr>
+</tbody>
+</table>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.task14.task1422"></div>
+<table>
+<tbody>
+<tr>
+<th width="50%">Код</th>
+<th>Описание</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public static void main(String[] args)
+{
+  Object obj = new Tiger();
+  if (obj <span class="text-red">instanceof</span> Cat)
+  {
+    Cat cat = <span class="text-red">(Cat)</span> obj;
+    cat.doCatActions();
+  }
+}</code></pre>
+</td>
+<td>Еще лучше – использовать проверку <strong>instanceof</strong></td>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public static void main(String[] args)
+{
+  Animal animal = <span class="text-red">new Tiger();</span>
+  <span class="text-user">doAllAction</span>(animal);
+
+  Animal animal2 = <span class="text-red">new Cat();</span>
+  <span class="text-user">doAllAction</span>(animal2);
+
+  Animal animal3 = <span class="text-red">new Animal();</span>
+  <span class="text-user">doAllAction</span>(animal3);
+}
+
+public static void <span class="text-user">doAllAction</span>(<span class="text-red">Animal</span> <span class="text-user">animal</span>)
+{
+  if (<span class="text-user">animal</span> <span class="text-red">instanceof</span> Tiger)
+  {
+    Tiger tiger = (Tiger) animal;
+    tiger.doTigerActions();
+  }
+
+  if (<span class="text-user">animal</span> <span class="text-red">instanceof</span> Cat)
+  {
+    Cat cat = (Cat) animal;
+    cat.doCatActions();
+  }
+
+  <span class="text-user">animal</span>.doAnimalActions();
+}</code></pre>
+</td>
+<td>И вот почему. Смотрим на пример слева.</p>
+<p>Мы (наш код) не всегда знаем, с объектом какого типа мы работаем. Это может быть как объект того же типа, что и переменная (Animal), так и любой тип-наследник (Cat, Tiger).</p>
+<p>Рассмотрим метод doAllAction. Он корректно работает в независимости от того, объект какого типа в него передали.</p>
+<p>Т.е. он корректно работает для всех трех типов Animal, Cat, Tiger.</td>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public static void main(String[] args)
+{
+  <span class="text-red">Cat cat = new Tiger();
+  Animal animal = cat;
+  Object obj = cat;</span>
+}</code></pre>
+</td>
+<td>Тут мы видим три присваивания. Все они являются примерами расширения типа.</p>
+<p>Оператор преобразования типа тут не нужен, так как не нужна проверка. <strong><span class="text-red">Ссылку на объект всегда можно сохранить в переменную любого его базового типа.</span></strong></td>
+</tr>
+</tbody>
+</table>
+<p><span class="text-user">&#8212; О, на предпоследнем примере все стало понятно. И для чего нужна проверка, и для чего нужно преобразование типов.</span></p>
+<p>&#8212; Надеюсь, что так. Хочу обратить твое внимание на следующую вещь:</p>
+<p><strong><span class="text-red">С объектом при таком присваивании ничего не происходит! Меняется только количество методов</span></strong>, которое можно вызвать с помощью <strong><span class="text-red">конкретной переменной-ссылки.</span></strong></p>
+<p>Например, переменная класса Cat позволяет вызывать методы doAnimalActions &amp; doCatActions, и ничего не знает о методе doTigerActions, даже если ссылается на объект класса Tiger.</p>
+<p><span class="text-user">&#8212; Ну, это-то уже ясно. Оказалось легче, чем я думал.</span></p>

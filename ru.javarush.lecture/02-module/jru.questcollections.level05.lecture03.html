@@ -1,0 +1,153 @@
+Generics
+<p>----------------------------------------</p>
+&#8212; Привет, Амиго! &#8212; Привет, Элли! &#8212; Сегодня мы с Ришей собираемся рассказать тебе все о generic&#8217;ах. &#8212; Так я уже вроде бы почти все знаю. &#8212; Почти все, да не все. &#8212; Да? Ладно, я готов слушать. &#8212; Тогда начнем. Generic&#8217;ами в Java, называют классы, которые содержат типы-параметры. Причины появления generic&#8217;ов – см. комментарий ...
+<p>----------------------------------------</p>
+<p>&#8212; Привет, Амиго!</p>
+<p><span class="text-user">&#8212; Привет, Элли!</span></p>
+<p>&#8212; Сегодня мы с Ришей собираемся рассказать тебе все о generic&#8217;ах.</p>
+<p><span class="text-user">&#8212; Так я уже вроде бы почти все знаю.</span></p>
+<p>&#8212; Почти все, да не все.</p>
+<p><span class="text-user">&#8212; Да? Ладно, я готов слушать.</span></p>
+<p>&#8212; Тогда начнем.</p>
+<p>Generic&#8217;ами в Java, называют классы, которые содержат типы-параметры.</p>
+<p>Причины появления generic&#8217;ов – см. комментарий в коде:</p>
+<div class="code-heading">Пример</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-green">ArrayList stringList</span> = new <span class="text-green">ArrayList</span>();
+<span class="text-green">stringList</span>.add("abc"); //добавляем строку в список
+<span class="text-green">stringList</span>.add("abc"); //добавляем строку в список
+<span class="text-green">stringList</span>.add( 1 ); //добавляем число в список
+
+<strong>for</strong>(Object o: <span class="text-green">stringList</span>)
+{
+ String s = (String) o; <span class="text-red">//тут будет исключение, когда дойдем до элемента-числа</span>
+}</code></pre>
+<p>Как решают проблему Generic&#8217;и:</p>
+<div class="code-heading">Пример</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-green">ArrayList</span><span class="text-red">&lt;</span><span class="text-user">String</span><span class="text-red">&gt;</span> stringList = new <span class="text-green">ArrayList</span><span class="text-red">&lt;</span><span class="text-user">String</span><span class="text-red">&gt;</span>();
+<span class="text-green">stringList</span>.add("abc"); //добавляем строку в список
+<span class="text-green">stringList</span>.add("abc"); //добавляем строку в список
+<span class="text-green">stringList</span>.add( 1 ); <span class="text-red"><strong>//тут будет ошибка компиляции</strong></span>
+
+<strong>for</strong>(Object o: <span class="text-green">stringList</span>)
+{
+ <span class="text-user">String</span> s = (<span class="text-user">String</span>) o; 
+}</code></pre>
+<p>Такой код просто не скомпилируется, и ошибка с добавлением данных не того типа будет замечена еще на этапе компиляции.</p>
+<p><span class="text-user">&#8212; Я это уже знаю.</span></p>
+<p>&#8212; Вот и отлично. Повторение &#8212; мать учения.</p>
+<p>Но разработчики Java немного схалявили при создании Generic и вместо того, чтобы делать полноценные типы с параметрами прикрутили хитрую оптимизацию. На самом деле в типы не добавили никакой информации о их типах-параметрах, а вся магия происходила на этапе компиляции.</p>
+<div class="row compare">
+<div class="col-xs-12 col-sm-6 col-md-6">
+<div class="code-heading">Код с generic&#8217;ами</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-green">List<span class="text-red">&lt;<span class="text-user">String</span>&gt;</span> strings</span> = new <span class="text-green">ArrayList</span><span class="text-red">&lt;<span class="text-user">String</span>&gt;</span>();
+<span class="text-green">strings</span>.add("abc"); 
+<span class="text-green">strings</span>.add("abc");
+<span class="text-green">strings</span>.add( 1); <span class="text-red">// тут ошибка компиляции</span>
+
+for(String s: <span class="text-green">strings</span>)
+{
+ System.out.println(s);
+}</code></pre>
+</div>
+<div class="col-xs-12 col-sm-6 col-md-6">
+<div class="code-heading">Что происходит на самом деле</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-green">List <strong>strings</strong></span> = new <span class="text-green">ArrayList</span>();
+
+<span class="text-green">strings</span>.add((String)"abc"); 
+<span class="text-green">strings</span>.add((String)"abc");
+<span class="text-green">strings</span>.add((String) 1); <span class="text-red">//ошибка компиляции</span>
+
+for(String s: <span class="text-green">strings</span>)
+{
+ System.out.println(s);
+}</code></pre>
+</div>
+</div>
+<p><span class="text-user">&#8212; Хитро, да.</span></p>
+<p>&#8212; Да, но у этого подхода есть побочный эффект. <span class="text-red">Внутри класса-generic&#8217;а не хранится никакой информации о его типе-параметре.</span> Такой подход позже назвали<strong> стиранием типов.</strong></p>
+<p>Т.е. если у тебя есть свой класс с типами-параметрами, то ты не можешь использовать информацию о них внутри класса.</p>
+<div class="row compare">
+<div class="col-xs-12 col-sm-6 col-md-6">
+<div class="code-heading">Код с generic&#8217;ами</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Zoo&lt;<span class="text-green">T</span>&gt;
+{
+ <span class="text-green">ArrayList&lt;T&gt; pets</span> = new<span class="text-green"> ArrayList&lt;T&gt;</span>();
+
+ <strong>public</strong> <span class="text-green">T</span> createAnimal()
+ {
+  <span class="text-green">T</span> animal = new <span class="text-green">T</span>();
+  <span class="text-green">pets</span>.add(animal)
+  <strong>return</strong> animal;
+ }
+}</code></pre>
+</div>
+<div class="col-xs-12 col-sm-6 col-md-6">
+<div class="code-heading">Что происходит на самом деле</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Zoo
+{
+ <span class="text-green">ArrayList <strong>pets</strong></span> = new <span class="text-green">ArrayList</span>();
+
+ public Object createAnimal()
+ {
+  <span class="text-green">Object</span> animal = <span class="text-red">new ???();</span>
+<strong><span class="text-green">  pets</span></strong>.add(animal)
+  <strong>return</strong> animal;
+ }
+}</code></pre>
+</div>
+</div>
+<p>При компиляции все типы параметров заменяются на Object. И информации о типе, который в него передавали, в классе нет.</p>
+<p><span class="text-user">&#8212; Да, согласен, это не очень хорошо.</span></p>
+<p>&#8212; Ладно, все не так страшно, я тебе позже расскажу, как эту проблему научились обходить.</p>
+<p>Но и это еще не все. Java позволяет задать тип-родитель для типов-параметров. Для этого используется ключевое слово extends. Пример:</p>
+<div class="row compare">
+<div class="col-xs-12 col-sm-6 col-md-6">
+<div class="code-heading">Код с generic&#8217;ами</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Zoo&lt;<span class="text-red">T extends Cat</span>&gt;
+{
+<span class="text-red"> T</span> cat;
+
+<span class="text-red"> T</span> getCat()
+ {
+  return cat;
+ }
+
+ <strong>void</strong> setCat (<span class="text-red">T</span> cat)
+ {
+  this.cat = cat;
+ }
+
+ <span class="text-user">String getCatName()
+ {
+  return this.cat.getName();
+ }</span>
+}</code></pre>
+</div>
+<div class="col-xs-12 col-sm-6 col-md-6">
+<div class="code-heading">Что происходит на самом деле</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Zoo
+{
+ <span class="text-red">Cat</span> cat;
+
+ <span class="text-red">Cat</span> getCat()
+ {
+  return cat;
+ }
+
+ <strong>void</strong> setCat(<span class="text-red">Cat</span> cat)
+ {
+  this.cat = cat;
+ }
+
+ <span class="text-user">String getCatName()
+ {
+  return this.cat.getName();
+ }</span>
+}</code></pre>
+</div>
+</div>
+<p>Обрати внимание на два факта.</p>
+<p><span class="text-viola">Во-первых, в качестве типа параметра теперь можно передать не любой тип, а тип Cat или один из его наследников.</span></p>
+<p><span class="text-green">Во-вторых, в классе Zoo у переменных типа T теперь можно вызвать методы класса Cat.</span> Почему – объяснено в столбце справа (потому что вместо типа T везде подставится тип Cat)</p>
+<p><span class="text-user">&#8212; Ага. Если мы сказали, что в качестве типа-параметра у нас передают тип Cat или его наследников, значит, мы уверены, что методы класса Cat у типа T обязательно есть.</span></p>
+<p><span class="text-user">Что ж. Умно.</span></p>

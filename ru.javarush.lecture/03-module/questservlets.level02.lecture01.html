@@ -1,0 +1,198 @@
+Управление файлами во время сборки Maven-проекта
+<p>----------------------------------------</p>
+Плагин копирования ресурсов maven-resources-plugin
+Фильтрация ресурсов с помощью maven-resources-plugin
+Плагин включения исходных кодов maven-source-plugin
+Плагин копирования зависимостей maven-dependency-plugin
+<p>----------------------------------------</p>
+<h2>2.1 Плагин копирования ресурсов maven-resources-plugin</h2>
+<p>Если ты собираешь web-приложение, то у тебя будет просто куча различных ресурсов в нем. Это jar-библиотеки, jsp-сервлеты, файлы настроек. Ну и конечно же это куча статических файлов типа <code>html</code>, <code>css</code>, <code>js</code>, а также различных картинок.</p>
+<p>По умолчанию Maven при сборке проекта просто скопирует все ваши файлы из папки <code>src/main/resources</code> в директорию target. Если же ты хочешь внести изменения в это поведение, то тебе поможет плагин <code>maven-resources-plugin</code>.</p>
+<p>Пример кода такого плагина:</p>
+<pre><code>&lt;plugin&gt;
+    &lt;artifactId&gt;maven-resources-plugin&lt;/artifactId&gt;
+    &lt;version&gt;2.6&lt;/version&gt;
+    &lt;executions&gt;
+        &lt;execution&gt;
+            <span class="text-user">&lt;id&gt;copy-resources&lt;/id&gt;
+            &lt;phase&gt;validate&lt;/phase&gt;
+            &lt;goals&gt;
+                &lt;goal&gt;copy-resources&lt;/goal&gt;
+            &lt;/goals&gt;</span>
+            <span class="text-green">&lt;configuration&gt;
+                &lt;outputDirectory&gt;
+                   ${basedir}/target/resources
+                &lt;/outputDirectory&gt;
+                &lt;resources&gt;</span>
+                    <span class="text-red">&lt;resource&gt;  инструкции по копированию ресурса 1 &lt;/resource&gt;
+                    &lt;resource&gt;  инструкции по копированию ресурса 2 &lt;/resource&gt;
+                    &lt;resource&gt;  инструкции по копированию ресурса N &lt;/resource&gt;</span>
+                <span class="text-green">&lt;/resources&gt;
+            &lt;/configuration&gt;</span>
+        &lt;/execution&gt;
+    &lt;/executions&gt;
+&lt;/plugin&gt;
+</code></pre>
+<p>Данный плагин вызовется во время фазы validate. С помощью тега <code><span class="text-green">&lt;outputDirectory&gt;</span></code> можно задать директорию, в которую плагин должен будет скопировать ресурсы, заданные в секции <code>&lt;resources&gt;</code>. И вот тут-то плагин может развернуться во всю свою мощь.</p>
+<h2>2.2 Фильтрация ресурсов с помощью maven-resources-plugin</h2>
+<p>Ресурсы плагина можно задавать не только в виде файлов, а сразу в виде директорий. Более того, к директории можно добавить маску, которая задает какие именно файлы из нее будет включены в данный ресурс.</p>
+<p>Пример:</p>
+<pre><code>
+            &lt;resource&gt;
+                &lt;directory&gt;src/main/resources/images&lt;/directory&gt;
+                &lt;includes&gt;
+                     &lt;include&gt;**/*.png&lt;/include&gt;
+                &lt;/includes&gt;
+            &lt;/resource&gt;
+</code></pre>
+<p>Две звездочки в качестве маски обозначают <strong>любое количество директорий</strong>. В примере выше в качестве данных ресурса будут взяты все png-файлы, которые содержаться в директории <code>src/main/resources/images</code> (и ее поддиректориях).</p>
+<p>Если ты хочешь исключить какие-нибудь файлы, можешь воспользоваться тегом <code>exclude</code>. Пример:</p>
+<pre><code>&lt;resource&gt;
+    &lt;directory&gt;src/main/resources/images&lt;/directory&gt;
+    <span class="text-green">&lt;includes&gt;
+        &lt;include&gt;**/*.png&lt;/include&gt;
+    &lt;/includes&gt;</span>
+    <span class="text-red">&lt;excludes&gt;
+         &lt;exclude&gt;old/*.png&lt;/exclude&gt;
+    &lt;/excludes&gt;</span>
+&lt;/resource&gt;
+</code></pre>
+<p>Теги применяются последовательно: сначала к ресурсу будут добавлены указанные в include-файлы, а затем из этого списка исключат exclude-файлы.</p>
+<p>Но и это еще не все. Плагин умеет заглядывать внутрь файлов (если они текстовые, конечно). И, например, добавить в файл <code>application.properties</code> нужную версию сборки. Чтобы плагин обрабатывал содержимое файла, нужно указать ему параметр <code><span class="text-red">&lt;filtering&gt;true&lt;/filtering&gt;</span></code>.</p>
+<p>Пример:</p>
+<pre><code>&lt;resource&gt;
+    &lt;directory&gt;src/main/resources/properties&lt;/directory&gt;
+    <span class="text-red">&lt;filtering&gt;true&lt;/filtering&gt;</span>
+    <span class="text-green">&lt;includes&gt;
+        &lt;include&gt;**/*. properties &lt;/include&gt;
+    &lt;/includes&gt;</span>
+&lt;/resource&gt;
+</code></pre>
+<p>Более подробно с данным плагином можно ознакомиться по ссылке: <a href="https://maven.apache.org/plugins/maven-resources-plugin/examples/filter.html" target="_blank">https://maven.apache.org/plugins/maven-resources-plugin/examples/filter.html</a></p>
+
+<h2>2.3 Плагин включения исходных кодов maven-source-plugin</h2>
+<p>Еще один полезный плагин – <code>maven-source-plugin</code> позволяет включать в сборку исходный код ваших java-файлов. Зачем?</p>
+<p>Все дело в том, что кроме web-приложений, с помощью Maven собирается очень большое количество библиотек. Очень много Java-проектов следуют концепции open-source и распространяются среди Java-сообщества со своими исходниками.</p>
+<p>Зачем нужен отдельный плагин? Почему нельзя просто скопировать исходники и все?</p>
+<p>Во-первых, в любом сложном проекте исходники могут храниться в нескольких местах.</p>
+<p>Во-вторых, часто используется генерация исходников на основе xml-спецификаций, такие исходники тоже нужно включать в сборку.</p>
+<p>Ну и в-третьих, ты можешь решить не включать какие-нибудь особо секретные файлы в вашу сборку.</p>
+<p>Пример использования плагина maven-source-plugin:</p>
+<pre><code>&lt;plugin&gt;
+    &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+    &lt;artifactId&gt;maven-source-plugin&lt;/artifactId&gt;
+    &lt;version&gt;2.2.1&lt;/version&gt;
+    &lt;executions&gt;
+        &lt;execution&gt;
+            &lt;id&gt;attach-sources&lt;/id&gt;
+            &lt;phase&gt;verify&lt;/phase&gt;
+            &lt;goals&gt;
+                &lt;goal&gt;jar&lt;/goal&gt;
+            &lt;/goals&gt;
+        &lt;/execution&gt;
+    &lt;/executions&gt;
+&lt;/plugin&gt;
+</code></pre>
+
+<h2>2.4 Плагин копирования зависимостей maven-dependency-plugin</h2>
+<p>Также тебе может понадобиться умное копирование зависимостей (библиотек) при сборке проекта. Для этого используется плагин <code>maven-dependency-plugin</code>.</p>
+<p>Пример:</p>
+<pre><code>&lt;plugin&gt;
+    &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+    &lt;artifactId&gt;maven-dependency-plugin&lt;/artifactId&gt;
+    &lt;version&gt;2.5.1&lt;/version&gt;
+    &lt;configuration&gt;
+        <span class="text-red">&lt;outputDirectory&gt;
+            ${project.build.directory}/lib/
+        &lt;/outputDirectory&gt;</span>
+    &lt;/configuration&gt;
+    &lt;executions&gt;
+        <span class="text-green">&lt;execution&gt;
+            &lt;id&gt;copy-dependencies&lt;/id&gt;
+            &lt;phase&gt;package&lt;/phase&gt;
+            &lt;goals&gt;
+                &lt;goal&gt;copy-dependencies&lt;/goal&gt;
+            &lt;/goals&gt;
+        &lt;/execution&gt;</span>
+    &lt;/executions&gt;
+&lt;/plugin&gt;
+</code></pre>
+<p>В этом примере прописано дефолтное поведение плагина – копирование библиотек в директорию <code>${project.build.directory}/lib</code>.</p>
+<p><span class="text-green">В секции execution прописано, что плагин будет вызван во время фазы сборки – package, goal – copy-dependences.</span></p>
+<p>В целом, у этого плагина довольно большой набор целей, вот самые популярные из них:</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th width="300"></th>
+        <th></th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>dependency:analyze</td>
+        <td>анализ зависимостей (используемые, неиспользуемые, указанные, неуказанные)</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>dependency:analyze-duplicate</td>
+        <td>определение дублирующихся зависимостей</td>
+    </tr>
+        <tr>
+        <td>3</td>
+        <td>dependency:resolve</td>
+        <td>разрешение (определение) всех зависимостей</td>
+    </tr>
+        <tr>
+        <td>4</td>
+        <td>dependency:resolve-plugin</td>
+        <td>разрешение (определение) всех плагинов</td>
+    </tr>
+        <tr>
+        <td>5</td>
+        <td>dependency:tree</td>
+        <td>вывод на экран дерева зависимостей</td>
+    </tr>
+    </tbody>
+</table>
+<p>Также в разделе configuration можно задать дополнительные параметры:</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th width="300"></th>
+        <th></th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>outputDirectory</td>
+        <td>Директория, в которую будут копироваться зависимости</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>overWriteReleases</td>
+        <td>Флаг необходимости перезаписывания зависимостей при создании релиза</td>
+    </tr>
+        <tr>
+        <td>3</td>
+        <td>overWriteSnapshots</td>
+        <td>Флаг необходимости перезаписывания неокончательных зависимостей, в которых присутствует SNAPSHOT</td>
+    </tr>
+        <tr>
+        <td>4</td>
+        <td>overWriteIfNewer</td>
+        <td>Флаг необходимости перезаписывания библиотек с наличием более новых версий</td>
+    </tr>
+    </tbody>
+</table>
+<p>Пример:</p>
+<pre><code>
+&lt;configuration&gt;
+    &lt;outputDirectory&gt;
+         ${project.build.directory}/lib/
+    &lt;/outputDirectory&gt;
+   <span class="text-red"> &lt;overWriteReleases&gt;false&lt;/overWriteReleases&gt;
+    &lt;overWriteSnapshots&gt;false&lt;/overWriteSnapshots&gt;
+    &lt;overWriteIfNewer&gt;true&lt;/overWriteIfNewer&gt;</span>
+ &lt;/configuration&gt;
+</code></pre>
+<p>По умолчанию <code>&lt;overWriteReleases&gt;</code> и <code>&lt;overWriteSnapshots&gt;</code> – false, для <code>&lt;overWriteIfNewer&gt;</code> – true.</p>

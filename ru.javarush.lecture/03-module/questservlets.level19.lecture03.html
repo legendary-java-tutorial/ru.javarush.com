@@ -1,0 +1,110 @@
+Concurrent Queues
+<p>----------------------------------------</p>
+Non-Blocking Queues
+Blocking Queues
+Реализации BlockingQueue&lt;E&gt;
+<p>----------------------------------------</p>
+<h2>Non-Blocking Queues</h2>
+
+<img data-max-width="512" data-id="128e424c-63bb-47db-9d23-7ce3ae97fa4a" src="https://cdn.javarush.com/images/article/128e424c-63bb-47db-9d23-7ce3ae97fa4a/512.jpeg" alt="">
+
+<p>Потокобезопасные и самое важное неблокирующие имплементации <span class="text-neon"><span class="text-bold"><em>Queue</em></span></span> на связанных нодах (linked nodes).</p>
+
+<p><span class="code"><span class="text-green">ConcurrentLinkedQueue&lt;E></span></span> — тут используется wait-free алгоритм, адаптированный для работы с garbage collector'ом. Этот алгоритм довольно эффективен и очень быстр, так как построен на CAS. Метод <span class="code text-orange">size()</span> может работать долго, так что лучше постоянно его не дергать.</p>
+
+<p><span class="code"><span class="text-green">ConcurrentLinkedDeque&lt;E></span></span> — Deque расшифровывается как Double ended queue. Это означает, что данные можно добавлять и вытаскивать с обеих сторон. Соответственно, класс поддерживает оба режима работы: FIFO (First In First Out) и LIFO (Last In First Out). </p>
+
+<p>На практике <span class="code"><span class="text-green">ConcurrentLinkedDeque</span></span> стоит использовать в том случае, если обязательно нужно именно LIFO, так как за счет двунаправленности нод данный класс проигрывает по производительности наполовину по сравнению с <span class="code"><span class="text-green">ConcurrentLinkedQueue</span></span>.</p>
+
+<pre class='language-java line-numbers'><code>
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+public class  ConcurrentLinkedQueueExample {
+   public static void main(String[] args) {
+       ConcurrentLinkedQueue&lt;String> queue = new ConcurrentLinkedQueue&lt;>();
+
+       Thread producer = new Thread(new Producer(queue));
+       Thread consumer = new Thread(new Consumer(queue));
+      
+       producer.start();
+       consumer.start();
+   }
+}
+
+class Producer implements Runnable {
+
+   ConcurrentLinkedQueue&lt;String> queue;
+   Producer(ConcurrentLinkedQueue&lt;String> queue){
+       this.queue = queue;
+   }
+   public void run() {
+       System.out.println("Класс для добавление элементов в очередь");
+       try {
+           for (int i = 1; i &lt; 5; i++) {
+               queue.add("Элемент #" + i);
+               System.out.println("Добавили: Элемент #" + i);
+               Thread.sleep(300);
+           }
+       } catch (InterruptedException ex) {
+           ex.printStackTrace();
+           Thread.currentThread().interrupt();
+       }
+   }
+}
+
+class Consumer implements Runnable {
+
+   ConcurrentLinkedQueue&lt;String> queue;
+   Consumer(ConcurrentLinkedQueue&lt;String> queue){
+       this.queue = queue;
+   }
+  
+   public void run() {
+       String str;
+       System.out.println("Класс для получения элементов из очереди");
+       for (int x = 0; x &lt; 5; x++) {
+           while ((str = queue.poll()) != null) {
+               System.out.println("Вытянули: " + str);
+           }
+           try {
+               Thread.sleep(600);
+           } catch (InterruptedException ex) {
+               ex.printStackTrace();
+               Thread.currentThread().interrupt();
+           }
+       }
+   }
+}
+</code></pre>
+
+<h2>Blocking Queues</h2>
+
+<img data-max-width="1080" data-id="de605ce4-5661-4edc-b4d9-8c4fc358ce35" src="https://cdn.javarush.com/images/article/de605ce4-5661-4edc-b4d9-8c4fc358ce35/1080.jpeg" alt="">
+
+<p>Интерфейс <span class="text-neon"><span class="text-bold"><em>BlockingQueue&lt;E></em></span></span> — при большом количестве данных <span class="code"><span class="text-green">ConcurrentLinkedQueue</span></span> не хватает. </p>
+
+<p>Когда потоки не справляются с поставленной задачей, ты легко можешь получить <span class="text-red"><span class="text-bold">OutOfMemmoryException</span></span>. И чтобы такие случаи не возникали, у нас для работы есть <span class="text-neon"><span class="text-bold"><em>BlockingQueue</em></span></span> c наличием разных методов для заполнения и работы с очередью и блокировками по условиям.</p>
+
+<p><span class="text-neon"><span class="text-bold"><em>BlockingQueue</em></span></span> не признает нулевых элементов (null) и вызывает <span class="text-red"><span class="text-bold">NullPointerException</span></span> при попытке добавить или получить такой элемент. Нулевой элемент возвращает метод poll, если в течение таймаута не был размещен в очереди очередной элемент.</p>
+
+<h2>Реализации BlockingQueue&lt;E></h2>
+
+<p>Давай разберем подробно каждую из реализаций нашей <span class="text-neon"><span class="text-bold"><em>BlockingQueue</em></span></span>:</p>
+
+<p><span class="code"><span class="text-green">ArrayBlockingQueue&lt;E></span></span> — класс блокирующей очереди, построенный на классическом кольцевом буфере. Здесь нам доступна возможность управлять “честностью” блокировок. Если fair=false (по умолчанию), то очередность работы потоков не гарантируется. </p>
+
+<p><span class="code"><span class="text-green">DelayQueue&lt;E extends Delayed></span></span> — класс, который позволяет вытаскивать элементы из очереди только по прошествии некоторой задержки, определенной в каждом элементе через метод <span class="code text-orange">getDelay</span> интерфейса <span class="text-neon"><span class="text-bold"><em>Delayed</em></span></span>.</p>
+
+<p><span class="code"><span class="text-green">LinkedBlockingQueue&lt;E></span></span> — блокирующая очередь на связанных нодах, реализованная на “two lock queue” алгоритме: первый лок — на добавление, второй — на вытаскивание элемента из очереди. За счет локов, по сравнению с <span class="code"><span class="text-green">ArrayBlockingQueue</span></span>, данный класс имеет высокую производительность, но для него необходимо большее количество памяти. Размер очереди задается через конструктор и по умолчанию равен Integer.MAX_VALUE.</p>
+
+<p><span class="code"><span class="text-green">PriorityBlockingQueue&lt;E></span></span> — многопоточная обертка над <span class="code"><span class="text-green">PriorityQueue</span></span>. <span class="text-neon"><span class="text-bold"><em>Comparator</em></span></span> отвечает за то, по какой логике будет добавлен элемент. Первым же из очереди выходит самый наименьший элемент.</p>
+
+<p><span class="code"><span class="text-green">SynchronousQueue&lt;E></span></span> — очередь работает по принципу FIFO(first-in-first-out). Каждая операция вставки блокирует поток “Producer”до тех пор, пока поток “Consumer” не вытащит элемент из очереди и наоборот, “Consumer” будет ждать пока “Producer” не вставит элемент. </p>
+
+<p><span class="text-neon"><span class="text-bold"><em>BlockingDeque&lt;E></em></span></span> — интерфейс, который описывает дополнительные методы для двунаправленной блокирующей очереди. Данные можно вставлять и вытаскивать с обеих сторон очереди.</p>
+
+<p><span class="code"><span class="text-green">LinkedBlockingDeque&lt;E></span></span> — двунаправленная блокирующая очередь на связанных нодах, реализованная как простой двунаправленный список с одним локом. Размер очереди задается через конструктор и по умолчанию равен Integer.MAX_VALUE.</p>
+
+<p><span class="text-neon"><span class="text-bold"><em>TransferQueue&lt;E></em></span></span> — интерфейс интересен тем, что при добавлении элемента в очередь существует возможность заблокировать вставляющий поток <span class="text-green"><span class="text-bold">Producer</span></span> до тех пор, пока другой поток <span class="text-green"><span class="text-bold">Consumer</span></span> не вытащит элемент из очереди. Также можно добавить проверку на определенный тайм-аут или выставить проверку на наличие ожидающих <span class="text-green"><span class="text-bold">Consumer</span></span>. Как итог, мы получаем механизм передачи данных с поддержкой асинхронных и синхронных сообщений.</p>
+
+<p><span class="code"><span class="text-green">LinkedTransferQueue&lt;E></span></span> — реализация <span class="text-neon"><span class="text-bold"><em>TransferQueue</em></span></span> на основе алгоритма Dual Queues with Slack. Активно использует CAS (смотрите выше) и парковку потоков, когда они находятся в режиме ожидания.</p>

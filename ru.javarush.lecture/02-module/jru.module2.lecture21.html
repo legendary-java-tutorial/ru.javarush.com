@@ -1,0 +1,149 @@
+Метод newSingleThreadExecutor
+<p>----------------------------------------</p>
+С помощью метода Executors.newSingleThreadExecutor можно создать ExecutorService с пулом, включающим в себя единственный поток. Логика работы такого пула, следующая: Сервис выполняет за раз только одну задачу. Если мы отправляем N задач...
+<p>----------------------------------------</p>
+    <h2>Для чего может понадобиться ExecutorService на 1 поток?</h2>
+
+    <p>С помощью метода <span class="code text-orange">Executors.newSingleThreadExecutor</span> можно создать <span class="text-green"><span class="text-bold"><em>ExecutorService</em></span></span> с пулом, включающим в себя единственный поток. Логика работы такого пула следующая:</p>
+
+    <ul>
+        <li>Сервис выполняет за раз только одну задачу. </li>
+        <li>Если мы отправляем N задач на исполнение, все N задач одна за другой будет выполняться одним потоком.</li>
+        <li>Если поток будет прерван, то создастся новый поток для выполнения остальных задач.</li>
+    </ul>
+
+    <p>Давайте представим ситуацию, в которой наша программа требует следующий функционал: </p>
+
+    <p>Нам необходимо в течении 30 секунд обрабатывать запросы от пользователей, но не более одного запроса в единицу времени. </p>
+
+    <p>Создаем класс задачи обработки запроса от пользователей: </p>
+
+    <pre class='language-java line-numbers'><code>
+class Task implements Runnable {
+   private final int taskNumber;
+
+   public Task(int taskNumber) {
+       this.taskNumber = taskNumber;
+   }
+
+   @Override
+   public void run() {
+       try {
+           Thread.sleep(1000);
+       } catch (InterruptedException ignored) {
+       }
+       System.out.printf("Обработан запрос #%d в потоке id=%d\n", taskNumber, Thread.currentThread().getId());
+   }
+}
+    </code></pre>
+
+    <p>Класс моделирует поведение обработки пришедшего запроса и выводит его номер. </p>
+ 
+    <p>Далее в методе <span class="code text-orange">main</span> мы создаем <span class="text-green"><span class="text-bold"><em>ExecutorService</em></span></span> на 1 поток, в котором последовательно обрабатываем пришедшие запросы. Так как в условии было указано “в течение 30 секунд”, то добавляем ожидание завершения 30 секунд, после чего принудительно останавливаем <span class="text-green"><span class="text-bold"><em>ExecutorService</em></span></span>.</p>
+ 
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws InterruptedException {
+   ExecutorService executorService = Executors.newSingleThreadExecutor();
+
+   for (int i = 0; i &lt; 1_000; i++) {
+       executorService.execute(new Task(i));
+   }
+   executorService.awaitTermination(30, TimeUnit.SECONDS);
+   executorService.shutdownNow();
+}
+    </code></pre>
+ 
+    <p>При запуске мы видим в консоли выводимые сообщения об обработке:</p> 
+ 
+    <div class="terminal">Обработан запрос #0 в потоке id=16<br />
+Обработан запрос #1 в потоке id=16<br />
+Обработан запрос #2 в потоке id=16<br />
+….<br />
+Обработан запрос #29 в потоке id=16</div>
+ 
+    <p>После обработки запросов в течении 30 секунд у <span class="text-green"><span class="text-bold"><em>executorService</em></span></span> будет вызван метод <span class="code text-orange">shutdownNow()</span>, который останавливает текущую задачу (которая выполняется) и отменяет все ожидающие выполнения задачи. После этого программа успешно завершает свое выполнение.</p>
+ 
+    <p>Но не все всегда так идеально, ведь в работе программы запросто может возникнуть ситуация, где одна из задач, приходящая в наш единственный поток в пуле, некорректно отработает и даже завершит наш поток. Мы можем смоделировать такую ситуацию для того, чтоб разобраться, как же отработает <span class="text-green"><span class="text-bold"><em>executorService</em></span></span> с единственным потоком в таком случае. </p>
+ 
+    <p>Для этого на этапе выполнения одной из задач завершаем наш поток с помощью небезопасного и устаревшего метода <span class="code text-orange">Thread.currentThread().stop()</span>. Мы это делаем специально, чтоб смоделировать ситуацию завершения работы потока на одной из задач. <p>
+ 
+    <p>Меняем наш метод <span class="code text-orange">run</span> в классе <span class="code"><span class="text-green">Task</span></span>: </p>
+ 
+    <pre class='language-java line-numbers'><code>
+@Override
+public void run() {
+   try {
+       Thread.sleep(1000);
+   } catch (InterruptedException ignored) {
+   }
+
+   if (taskNumber == 5) {
+       Thread.currentThread().stop();
+   }
+
+   System.out.printf("Обработан запрос #%d в потоке id=%d\n", taskNumber, Thread.currentThread().getId());
+}
+    </code></pre>
+ 
+    <p>Прерывать мы будем на задаче #5.</p>
+
+    <p>Посмотрим, как выглядит вывод с прерыванием потока в конце выполнения задачи #5:</p> 
+ 
+    <div class="terminal">Обработан запрос #0 в потоке id=16<br />
+Обработан запрос #1 в потоке id=16<br />
+Обработан запрос #2 в потоке id=16<br />
+Обработан запрос #3 в потоке id=16<br />
+Обработан запрос #4 в потоке id=16<br />
+Обработан запрос #6 в потоке id=17<br />
+Обработан запрос #7 в потоке id=17<br />
+…<br />
+Обработан запрос #29 в потоке id=17</div>
+ 
+    <p>Мы видим, что после прерывания потока в конце 5 задачи задачи начинают выполняться в потоке с id = 17, хотя до этой задачи выполнялись в потоке с id = 16. И поскольку в нашем пуле всего один поток, это может означать лишь одно — <span class="text-green"><span class="text-bold"><em>executorService</em></span></span> заменил остановленный поток новым и задачи продолжили выполняться. </p>
+ 
+    <p>Таким образом использование <span class="code text-orange">newSingleThreadExecutor</span> для работы с пулом с единственным обрабатывающим задачи потоком необходим для последовательных задач, которые подразумевают одновременное выполнение только одной задачи, но при этом требуют продолжения обработки задач из очереди, несмотря на исход завершения задачи (случай, где в одной из задач поток может быть убит).</p>
+ 
+    <h2>ThreadFactory</h2>
+ 
+    <p>Говоря о создании и пересоздании потоков, мы не можем не упомянуть о <mark class="green">ThreadFactory</mark>. </p>
+ 
+    <p><mark class="green">ThreadFactory</mark> — это объект, который создает новые потоки по требованию.</p>
+ 
+    <p>Мы можем создать свою фабрику создания потоков и передать ее экземпляр в метод <span class="code text-orange">Executors.newSingleThreadExecutor(ThreadFactory threadFactory)</span>.</p>
+ 
+    <table>
+        <tbody>
+            <tr>
+                <td>
+                    <pre class='language-java line-numbers'><code>
+ExecutorService executorService = Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                return new Thread(r, "MyThread");
+            }
+        });
+                    </code></pre>
+                </td>
+                <td>Переопределили метод создания нового потока, передав в конструктор имя.</td>
+            </tr>
+            <tr>
+                <td>
+                    <pre class='language-java line-numbers'><code>
+ExecutorService executorService = Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread thread = new Thread(r, "MyThread");
+                thread.setPriority(Thread.MAX_PRIORITY);
+                return thread;
+            }
+        });
+                    </code></pre>
+                </td>
+                <td>Поменяли имя и приоритет для создаваемого потока.</td>
+            </tr>
+        </tbody>
+    </table>
+ 
+    <p>Таким образом выяснили, что есть 2 перегруженных метода <span class="code text-orange">Executors.newSingleThreadExecutor</span>. Один — без параметров, второй — с параметром типа <span class="text-orange">ThreadFactory</span>. </p>
+
+    <p>С помощью фабрики создания потоков <span class="text-orange">ThreadFactory</span> можно делать разные настройки создаваемым потокам, например, – выставить приоритеты, использовать подклассы потоков, добавить поток <span class="text-green"><span class="text-bold">UncaughtExceptionHandler</span></span> и так далее.</p>

@@ -1,0 +1,535 @@
+Reflection API
+<p>----------------------------------------</p>
+Рефлексия в Java — это механизм, который позволяет разработчику вносить изменения и получать информацию о классах, интерфейсах, полях и методах во время выполнения, не зная их имен при этом...
+<p>----------------------------------------</p>
+    <h2>Для чего нужен Reflection API?</h2>
+
+    <p>Рефлексия в Java — это механизм, который позволяет разработчику вносить изменения и получать информацию о классах, интерфейсах, полях и методах во время выполнения, не зная их имен при этом. </p>
+
+    <p>Reflection API также помогает создавать новые экземпляры классов, вызывать методы и получать или устанавливать значения полей. </p>
+
+    <p>Давай соберем все возможности использования рефлексии в один список:</p>
+
+    <ul>
+        <li>Узнать/определить класс объекта</li>
+        <li>Получить информацию о модификаторах класса, полях, методах, константах, конструкторах и суперклассах</li>
+        <li>Выяснить, какие методы принадлежат реализуемому интерфейсу / интерфейсам</li>
+        <li>Создать экземпляр класса, когда имя класса неизвестно до момента выполнения программы</li>
+        <li>Получить и установить значение поля объекта по имени</li>
+        <li>Вызвать метод объекта по имени</li>
+    </ul>
+
+    <p>Рефлексия используется практически во всех современных технологиях Java и лежит в основе большинства современных Java/Java EE фреймворков и библиотек, например, в:</p>
+
+    <ul>
+        <li><span class="text-bold">Spring</span> — фреймворков для создания веб-приложений</li>
+        <li><span class="text-bold">JUnit</span> — фреймворк для тестирования</li>
+    </ul>
+
+    <p>Если разрабтчик никогда не сталкивался с такого рода механизмами, то у него скорее всего  возникнет закономерный вопрос — а зачем все это надо? Ответ в этом случае достаточно простой, но в то же время очень неопределенный: благодаря рефлексии мы кардинально повышаем гибкость и возможность настраивать приложение под себя и под свой код. </p>
+
+<p>Но всегда есть свои плюсы и минусы. Поэтому немного о минусах:</p>
+
+    <ul>
+        <li><span class="text-bold">Нарушения безопасности приложения.</span> С помощью рефлексии мы можем получить доступ к части кода, к которой не должны были (нарушение инкапсуляции).</li>
+        <li><span class="text-bold">Ограничения системы безопасности.</span> Рефлексия требует разрешения времени выполнения, недоступные для систем под управлением менеджера безопасности.</li>
+        <li><span class="text-bold">Низкая производительность.</span> Рефлексия в Java определяет типы динамически, сканируя <span class="text-green">classpath</span>, чтобы найти класс для загрузки. Это снижает производительность программы.</li>
+        <li><span class="text-bold">Сложность в поддержке.</span> Код, написанный с помощью рефлексии, трудно читать и отлаживать. Он становится менее гибким и его сложнее поддерживать.</li>
+    </ul>
+
+    <h2>Работа с классами с помощью Reflection API</h2>
+
+    <p>Все операции рефлексии начинаются с объекта <span class="code"><span class="text-green">java.lang.Class</span></span>. Для каждого типа объекта создается неизменяемый экземпляр <span class="code"><span class="text-green">java.lang.Class</span></span>, который предоставляет методы для получения свойств объекта, создания новых объектов, вызова методов. </p>
+
+    <p>Давай посмотрим на список основных методов для работы с <span class="code"><span class="text-green">java.lang.Class</span></span>:</p>
+
+    <table>
+        <tbody>
+            <tr>
+                <th>Метод</th>
+                <th>Дейстиве</th>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">String getName();</span></td>
+                <td>Возвращает название класса</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">int getModifiers();</span></td>
+                <td>Возвращает модификаторы доступа</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">Package getPackage();</span></td>
+                <td>Возвращает информацию о пакете</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">Class getSuperclass();</span></td>
+                <td>Возвращает информацию о классе-родителе</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">Class[] getInterfaces();</span></td>
+                <td>Возвращает массив интерфейсов</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">Constructor[] getConstructors();</span></td>
+                <td>Возвращает информацию о конструкторах класса</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">Fields[] getFields();</span></td>
+                <td>Возвращает поля класса</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">Files getFiled(String fieldName);</span></td>
+                <td>Возвращает определенное поле класса по имени</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">Method[] getMethods();</span></td>
+                <td>Возвращает массив методов</td>
+            </tr>
+            <tr>
+        </tbody>
+    </table>
+
+    <p>Это основные методы для получения данных о классе и интерфейсах, полях и методах. Также есть методы, которые позволяют получать или устанавливать значения полей, дают доступ к <span class="code">private</span> полям класса. Рассмотрим их чуть позже.</p>
+
+    <p>Сейчас мы поговорим о получении самого <span class="code"><span class="text-green">java.lang.Class</span>. Для это у нас есть три способа.</p>
+
+    <h4>1. С помощью Class.forName</h4>
+
+    <p>В работающем приложении для получения класса необходимо использовать метод <span class="code text-orange">forName (String className)</span>. </p>
+
+    <p>Этот код демонстрирует возможность создавать классы с использованием Reflection. Создадим класс <span class="code"><span class="text-green">Person</span></span>, с которым будем работать:</p>
+
+    <pre class='language-java line-numbers'><code>
+package com.company;
+
+public class Person {
+    private int age;
+    private String name;
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+}</code></pre>
+
+    <p>И вторая часть нашего примера — это код с рефлексией:
+
+    <pre class='language-java line-numbers'><code>
+public class TestReflection {
+    public static void main(String[] args) {
+        try {
+            Class&lt;?&gt; aClass = Class.forName("com.company.Person");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+}
+</code></pre>
+
+    <p>Такой подход возможен в случае, если известно полное имя класса. Тогда можно получить соответствующий класс с помощью статического метода <span class="code text-orange">Class.forName()</span>. Этот способ нельзя использовать для примитивных типов. </p>
+
+    <h4>2. С помощью .class</h4>
+
+    <p>Если тип доступен, но нет экземпляра, то можно получить класс, добавив <span class="code">.class</span> к имени типа. Это самый простой способ получить класс для примитивного типа.</p>
+
+    <pre class='language-java line-numbers'><code>
+Class aClass = Person.class;
+</code></pre>
+
+    <h4>3. C помощью .getClass()</h4>
+
+    <p>Если экземпляр объекта доступен, то самый простой способ получить его класс — вызвать <span class="code text-orange">object.getClass()</span>. </p>
+
+    <pre class='language-java line-numbers'><code>
+Person person = new Person();
+Class aClass = person.getClass();
+</code></pre>
+
+    <p>В чем же отличие между двумя последними подходами?</p>
+
+    <p>Используй <span class="code">A.class</span>, если заранее, при написании кода знаешь, какой объект класса тебя интересует. Если экземпляра нет, тогда нужно использовать <span class="code">.class</span>.</p>
+
+    <h2>Получение методов класса</h2>
+
+    <p>Рассмотрим методы, которые возвращают методы нашего класса: <span class="code text-orange">getDeclaredMethods()</span> и <span class="code text-orange">getMethods()</span>. </p>
+
+    <p><span class="code text-orange">getDeclaredMethods()</span> возвращает массив, который содержит объекты типа <span class="text-orange">Method</span>, отражающие все объявленные методы класса или интерфейса, представленного этим объектом класса, включая публичные, приватные, по умолчанию и protected методы, но исключая унаследованные методы. </p>
+
+    <p><span class="code text-orange">getMethods()</span> возвращает массив, содержащий объекты типа <span class="text-orange">Method</span>, отражающие все публичные методы класса или интерфейса, представленного этим объектом класса, включая те, которые объявлены классом или интерфейсом, и те, которые унаследованы от суперклассов и суперинтерфейсов.</p>
+
+    <p>Давай рассмотрим работу каждого из них. </p>
+
+    <p>Начнем с <span class="code text-orange">getDeclaredMethods()</span>. Ниже мы будем работать с абстрактным классом <span class="code"><span class="text-green">Numbers</span></span>, который поможет нам еще раз понять разницу между двумя методами. Напишем статический метод, который будет преобразовывать наш массив <span class="text-neon">Method</span> в <span class="text-neon">List&lt;String&gt;</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class TestReflection {
+    public static void main(String[] args) {
+        final Method[] declaredMethods = Number.class.getDeclaredMethods();
+        List&lt;String&gt; actualMethodNames = getMethodNames(declaredMethods);
+        actualMethodNames.forEach(System.out::println);
+    }
+
+    private static List&lt;String&gt; getMethodNames(Method[] methods) {
+        return Arrays.stream(methods)
+                .map(Method::getName)
+                .collect(Collectors.toList());
+    }
+}
+</code></pre>
+
+    <p>Результат работы кода выглядит вот так:</p>
+
+    <div class="terminal">byteValue<br />
+shortValue<br />
+intValue<br />
+longValue<br />
+floatValue<br />
+doubleValue</div>
+
+    <p>Это и есть методы, которые объявлены внутри класса <span class="code"><span class="text-green">Number</span></span>. А что вернет нам <span class="code text-orange">getMethods()</span>? Изменим две строки в примере:</p>
+
+    <pre class='language-java line-numbers'><code>
+final Method[] methods = Number.class.getMethods();
+List&lt;String&gt; actualMethodNames = getMethodNames(methods);
+</code></pre>
+
+    <p>И в результате мы увидим вот такой набор методов:</p>
+
+    <div class="terminal">byteValue<br />
+shortValue<br />
+intValue<br />
+longValue<br />
+floatValue<br />
+doubleValue<br />
+wait<br />
+wait<br />
+wait<br />
+equals<br />
+toString<br />
+hashCode<br />
+getClass<br />
+notify<br />
+notifyAll</div>
+
+    <p>Так как все классы наследуются от <span class="code"><span class="text-green">Object</span></span>, наш метод вернул нам еще и публичные методы класса <span class="code"><span class="text-green">Object</span>.</p>
+
+    <h2>Получение полей класса</h2>
+
+    <p>Методы <span class="code text-orange">getFields</span> и <span class="code text-orange">getDeclaredFields</span> используются для получения полей класса. Посмотрим на примере класса <span class="code"><span class="text-green">LocalDateTime</span></span>. Перепишем наш код:</p>
+
+    <pre class='language-java line-numbers'><code>
+import java.lang.reflect.Field;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class TestReflection {
+    public static void main(String[] args) {
+        final Field[] declaredFields = LocalDateTime.class.getDeclaredFields();
+        List&lt;String&gt; actualFieldNames = getFieldNames(declaredFields);
+        actualFieldNames.forEach(System.out::println);
+    }
+
+    private static List&lt;String&gt; getFieldNames(Field[] fields) {
+        return Arrays.stream(fields)
+                .map(Field::getName)
+                .collect(Collectors.toList());
+    }
+}
+</code></pre>
+
+    <p>В результате выполнения этого кода мы получим набор полей, которые содержит класс LocalDateTime. </p>
+
+    <div class="terminal">MIN<br />
+MAX<br />
+serialVersionUID<br />
+date<br />
+time</div>
+
+    <p>По аналогии с методами посмотрим, что будет, если немного изменить код:</p>
+
+    <pre class='language-java line-numbers'><code>
+final Field[] fields = LocalDateTime.class.getFields();
+List&lt;String&gt; actualFieldNames = getFieldNames(fields);
+</code></pre>
+
+    <p>Вывод программы:</p>
+
+    <div class="terminal">MIN<br />
+MAX</div>
+
+    <p>Теперь давай разберем, в чем разница между нашими методами.</p>
+
+    <p>Метод <span class="code text-orange">getDeclaredFields</span> возвращает массив объектов <span class="text-neon">Field</span>, отражающих все поля, объявленные классом или интерфейсом, представленным этим объектом <mark class="green">Class</mark>.</p>
+
+    <p>Метод <span class="code text-orange">getFields</span> возвращает массив  объектов <span class="text-neon">Field</span> отражающие все общедоступные (<span class="code">public</span>) поля класса или интерфейса, представленного этим объектом <mark class="green">Class</mark>.</p>
+
+    <p>А теперь заглянем внутрь нашего <span class="code"><span class="text-green">LocalDateTime</span>.</p>
+
+    <img data-max-width="800" data-id="340526ab-a2e1-4693-a5ef-fb698d3b2032" src="https://cdn.javarush.com/images/article/340526ab-a2e1-4693-a5ef-fb698d3b2032/original.png" alt="">
+
+    <p>Поля класса <mark>MIN</mark> и <mark>MAX</mark> являются общедоступными, значит, они будут видны через метод <span class="code text-orange">getFields</span>. В свою очередь поля <mark>date</mark>, <mark>time</mark>, <mark>serialVersionUID</mark> имеют модификатор <span class="code">private</span>, а значит не будут видны через метод <span class="code text-orange">getFields</span>, и получить их мы можем с помощью <span class="code text-orange">getDeclaredFields</span>. Таким образом мы можем получить доступ к полям (Field) для <span class="code">private</span> полей.</p>
+
+    <h2>Другие методы и их описание</h2>
+
+    <p>Настало время поговорить о некоторых методы нашего класса <span class="code"><span class="text-green">Class</span>, а именно:</p>
+
+    <table>
+        <tbody>
+            <tr>
+                <th>Метод</th>
+                <th>Действие</th>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getModifiers</span></td>
+                <td>Получение модификаторов нашего класса</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getPackage</span></td>
+                <td>Получение пакета, в котором лежит наш класс</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getSuperclass</span></td>
+                <td>Получение суперкласса</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getInterfaces</span></td>
+                <td>Получение массива интерфейсов, которые имплементируют класс</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getName</span></td>
+                <td>Получение полного имени класса</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getSimpleName</span></td>
+                <td>Получение названия класса</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>getModifiers()</h4>
+
+    <p>Доступ к модификаторам можно получить с помощью <mark class="green">Class</mark> объекта. </p>
+
+    <p>Модификаторы представляют собой ключевые слова <span class="text-user"><span class="text-bold">public</span></span>, <span class="text-user"><span class="text-bold">static</span></span>, <span class="text-user"><span class="text-bold">interface</span></span> и т. д. Получаем модификаторы с помощью метода <span class="code text-orange">getModifiers()</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+Class&lt;Person&gt; personClass = Person.class;
+int classModifiers = personClass.getModifiers();
+</code></pre>
+
+    <p>Результат выполнения находится в переменной <mark class="user">int</mark>, где каждый модификатор — это битовый флаг, который может быть установлен или сброшен. Мы можем проверить модификаторы, используя методы в классе <span class="code"><span class="text-green">java.lang.reflect.Modifier</span></span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+import com.company.Person;
+import java.lang.reflect.Modifier;
+
+public class TestReflection {
+    public static void main(String[] args) {
+        Class&lt;Person&gt; personClass = Person.class;
+        int classModifiers = personClass.getModifiers();
+
+        boolean isPublic = Modifier.isPublic(classModifiers);
+        boolean isStatic = Modifier.isStatic(classModifiers);
+        boolean isFinal = Modifier.isFinal(classModifiers);
+        boolean isAbstract = Modifier.isAbstract(classModifiers);
+        boolean isInterface = Modifier.isInterface(classModifiers);
+
+        System.out.printf("Class modifiers: %d%n", classModifiers);
+        System.out.printf("Is public: %b%n", isPublic);
+        System.out.printf("Is static: %b%n", isStatic);
+        System.out.printf("Is final: %b%n", isFinal);
+        System.out.printf("Is abstract: %b%n", isAbstract);
+        System.out.printf("Is interface: %b%n", isInterface);
+    }
+}
+</code></pre>
+ 
+    <p>Вспомни, как выглядит объявление нашего класса <span class="code"><span class="text-green">Person</span></span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+public class Person {
+   …
+}
+</code></pre>
+
+    <p>В результате получаем вот такой вывод на экран:</p>
+
+    <div class="terminal">Class modifiers: 1<br />
+Is public: true<br />
+Is static: false<br />
+Is final: false<br />
+Is abstract: false<br />
+Is interface: false</div>
+
+    <p>Если мы сделаем наш класс абстрактным, то получим такой результат:</p>
+
+    <pre class='language-java line-numbers'><code>
+public abstract class Person { … }
+</code></pre>
+
+    <p>и такой вывод:</p>
+
+    <div class="terminal">Class modifiers: 1025<br />
+Is public: true<br />
+Is static: false<br />
+Is final: false<br />
+Is abstract: true<br />
+Is interface: false</div>
+
+    <p>У нас изменился модификатор доступа, а значит и данные, которые будут возвращаться через наши статические методы класса <span class="code"><span class="text-green">Modifier</span>.</p>
+
+    <h4>getPackage()</h4>
+
+    <p>Зная только класс, мы можем получить информацию о пакете:</p>
+
+    <pre class='language-java line-numbers'><code>
+Class&lt;Person&gt; personClass = Person.class;
+final Package aPackage = personClass.getPackage();
+System.out.println(aPackage.getName());
+</code></pre>
+
+    <h4>getSuperclass()</h4>
+
+    <p>Имея доступ к объекту класса, можем получить доступ к его суперклассу:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) {
+    Class&lt;Person&gt; personClass = Person.class;
+    final Class&lt;? super Person&gt; superclass = personClass.getSuperclass();
+    System.out.println(superclass);
+}
+</code></pre>
+
+    <p>В результате получим всем известный класс <span class="code"><span class="text-green">Object</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+class java.lang.Object
+</code></pre>
+
+    <p>А вот если у нашего класса будет класс-родитель, то мы увидим именно его:</p>
+
+    <pre class='language-java line-numbers'><code>
+package com.company;
+
+class Human {
+    // some info
+}
+
+public class Person extends Human {
+    private int age;
+    private String name;
+
+    // some info
+}
+</code></pre>
+
+    <p>И тогда в результате мы получим уже наш суперкласс:</p>
+
+    <pre class='language-java line-numbers'><code>
+class com.company.Human
+</code></pre>
+
+    <h4>getInterfaces()</h4>
+
+    <p>Список интерфейсов, реализуемых данным классом, можно получить так:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) {
+    Class&lt;Person&gt; personClass = Person.class;
+    final Class&lt;?&gt;[] interfaces = personClass.getInterfaces();
+    System.out.println(Arrays.toString(interfaces));
+}
+</code></pre>
+
+    <p>И не забудем модифицировать наш класс <span class="code"><span class="text-green">Person</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+public class Person implements Serializable { … }
+</code></pre>
+
+    <p>Вывод:</p>
+
+    <div class="terminal">[interface java.io.Serializable]</div>
+
+    <p>Класс может реализовать много интерфейсов. Поэтому возвращается массив объектов <mark class="green">Class</mark>. В Java Reflection API интерфейсы также представлены объектами типа <mark class="green">Class</mark>.</p>
+
+    <p><span class="text-bold">Внимание:</span> Метод вернул только интерфейсы, которые реализует указанный класс, а не его суперкласс. Для того, чтобы получить полный список интерфейсов, реализованных в этом классе, нужно обратиться как к текущему классу, так и ко всем его суперкласссам по цепочке наследования.</p>
+
+    <h4>getName() & getSimpleName() & getCanonicalName() </h4>
+
+    <p>Напишем пример для примитива, вложенного класса, аннонимного класса и класса <span class="code"><span class="text-green">String</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+public class TestReflection {
+    public static void main(String[] args) {
+        printNamesForClass(int.class, "int class (primitive)");
+        printNamesForClass(String.class, "String.class (ordinary class)");
+        printNamesForClass(java.util.HashMap.SimpleEntry.class,
+                "java.util.HashMap.SimpleEntry.class (nested class)");
+        printNamesForClass(new java.io.Serializable() {
+                }.getClass(),
+                "new java.io.Serializable(){}.getClass() (anonymous inner class)");
+    }
+
+    private static void printNamesForClass(final Class&lt;?&gt; clazz, final String label) {
+        System.out.printf("%s:%n", label);
+        System.out.printf("\tgetName()):\t%s%n", clazz.getName());
+        System.out.printf("\tgetCanonicalName()):\t%s%n", clazz.getCanonicalName());
+        System.out.printf("\tgetSimpleName()):\t%s%n", clazz.getSimpleName());
+        System.out.printf("\tgetTypeName():\t%s%n%n", clazz.getTypeName());
+    }
+}
+</code></pre>
+
+    <p>Результат нашей программы:</p>
+
+    <div class="terminal">int class (primitive):<br />
+	getName()):	int<br />
+	getCanonicalName()):	int<br />
+	getSimpleName()):	int<br />
+	getTypeName():	int<br />
+ <br />
+String.class (ordinary class):<br />
+	getName()):	java.lang.String<br />
+	getCanonicalName()):	java.lang.String<br />
+	getSimpleName()):	String<br />
+	getTypeName():	java.lang.String<br />
+ <br />
+java.util.HashMap.SimpleEntry.class (nested class):<br />
+	getName()):	java.util.AbstractMap$SimpleEntry<br />
+	getCanonicalName()):	java.util.AbstractMap.SimpleEntry<br />
+	getSimpleName()):	SimpleEntry<br />
+	getTypeName():	java.util.AbstractMap$SimpleEntry<br />
+ <br />
+new java.io.Serializable(){}.getClass() (anonymous inner class):<br />
+	getName()):	TestReflection$1<br />
+	getCanonicalName()):	null<br />
+	getSimpleName()):	<br />
+	getTypeName():	TestReflection$1</div>
+
+    <p>Теперь давай разберем результаты нашей программы:</p>
+
+    <ul>
+        <li><p><span class="code text-orange">getName()</span> возвращает имя сущности.</p></li>
+        <li><p><span class="code text-orange">getCanonicalName()</span> возвращает каноническое имя базового класса, как определено спецификацией языка Java. Возвращает null, если базовый класс не имеет канонического имени (то есть если это локальный или анонимный класс или массив, тип компонента которого не имеет канонического имени).</p></li>
+        <li><p><span class="code text-orange">getSimpleName()</span> возвращает простое имя базового класса, как указано в исходном коде. Возвращает пустую строку, если базовый класс является анонимным. </p></li>
+        <li><p><span class="code text-orange">getTypeName()</span> возвращает информативную строку для имени этого типа.</p></li>
+    </ul>

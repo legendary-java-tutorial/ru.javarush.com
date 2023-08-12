@@ -1,0 +1,246 @@
+Создание объекта. Порядок вызова конструкторов
+<p>----------------------------------------</p>
+Если вы создали объект класса — что при этом происходит в памяти? В какой момент переменным присваиваются значения, когда вызывается конструктор? Такие вещи знать очень полезно. И не только потому, что вас спросят на собеседовании: просто когда вы знакомы с процессом, вам гораздо проще представить, что и как будет работать.
+<p>----------------------------------------</p>
+<p>&#8212; Привет, Амиго! Сейчас я расскажу тебе о процессе создания объекта.</p>
+<p><span class="text-user">&#8212; А что там сложного, дядя Риша? Написал new имя класса, указал правильный конструктор и готово!</span></p>
+<p>&#8212; Это так. Но что при этом происходит внутри объекта?</p>
+<p><span class="text-user">&#8212; А что там происходит?</span></p>
+<p>&#8212; А вот что! Объект создается в несколько этапов.</p>
+<p><b><i>1)</i></b><i> Сначала выделяется память под все переменные – поля класса.</i></p>
+<p><b><i>2)</i></b><i> Затем идет инициализация базового класса.</i></p>
+<p><b><i>3)</i></b><i> Потом всем переменным присваиваются значения, если они указаны.</i></p>
+<p><b><i>4)</i></b><i> И наконец, вызывается конструктор.</i></p>
+<p><span class="text-user">&#8212; Выглядит не очень сложно: сначала переменные, затем конструктор.</span></p>
+<p>&#8212; Давай посмотрим, как это будет работать на примере двух классов:</p>
+<table>
+<tbody>
+<tr>
+<th width="54%">Код</th>
+<th width="45%">Описание</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="3,4,8,9,14,18,19" data-start=""><code>class Pet
+{
+ int x = 5, y = 5; <span class="text-red">←-</span>
+ int weight = 10; <span class="text-red">←-</span>
+
+ Pet(int x, int y)
+ {
+  this.x = x; <span class="text-user">←-</span>
+  this.y = y; <span class="text-user">←-</span>
+ }
+}
+class Cat extends Pet
+{
+ int tailLength = 8; <span class="text-green">←-</span>
+ int age;
+ Cat(int x, int y, int age)
+ {
+  super(x, y); <span class="text-viola">←-</span>
+  this.age = age; <span class="text-yellow">←-</span>
+ }
+}</code></pre>
+</td>
+<td>Мы создали два класса: Pet(животное) и Cat(кот).</p>
+<p>В классе Cat мы видим явный вызов конструктора базового класса.<br />
+<strong><span class="text-red">Он всегда должен быть в первой строке конструктора.</span></strong></p>
+<p>Вот что произойдет после выделения памяти:<br />
+<span class="text-viola">18</span> – вызов конструктора базового класса<br />
+<span class="text-red">3, 4</span> – инициализация переменных в Pet<br />
+<span class="text-user">8, 9</span> – отработает код конструктора Pet</p>
+<p>далее начнется процесс инициализации класса Cat<br />
+<span class="text-green">14</span> – инициализация переменных в Cat<br />
+<span class="text-yellow">19</span> – отработает код конструктора Cat</td>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public static void main(String[] args)
+{
+ Cat cat = new Cat (50, 50, 5);
+}</code></pre>
+</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><span class="text-user">&#8212; Что-то немного запутанно. Почему так сложно?</span></p>
+<p>&#8212; На самом деле не сложно, если знать что на самом деле происходит:<br />
+<strong>Если у класса нет ни одного конструктора, он будет создан автоматически.</strong></p>
+<table>
+<tbody>
+<tr>
+<th>Конструктор по умолчанию</th>
+<th></th>
+</tr>
+<tr>
+<td style="vertical-align: top;">
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Cat
+{
+ int x = 5;
+ int y = 5;
+}</code></pre>
+</td>
+<td style="vertical-align: top;">
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Cat
+{
+ int x = 5;
+ int y = 5;
+ <span class="text-red">public Cat() </span>
+<span class="text-red"> {</span>
+<span class="text-red"> }</span>
+}</code></pre>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Если не вызываешь конструктор базового класса, его вызов будет добавлен автоматически.</strong></p>
+<table>
+<tbody>
+<tr>
+<th>Вызов конструктора базового класса</th>
+<th></th>
+</tr>
+<tr>
+<td style="vertical-align: top;">
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Pet
+{
+ public String name;
+}</code></pre>
+</td>
+<td style="vertical-align: top;">
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Pet <span class="text-red">extends Object</span>
+{
+ public String name;
+ public Pet()
+ {
+  <span class="text-red">super();</span>
+ }
+}</code></pre>
+</td>
+</tr>
+<tr>
+<td style="vertical-align: top;">
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Cat extends Pet
+{
+ int x = 5;
+ int y = 5;
+}</code></pre>
+</td>
+<td style="vertical-align: top;">
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Cat extends Pet
+{
+ int x = 5;
+ int y = 5;
+ <span class="text-red">public Cat()
+ {
+  super();
+ }</span>
+}</code></pre>
+</td>
+</tr>
+</tbody>
+</table>
+<p style="text-align: center;"><span class="text-red">Инициализация переменных класса происходит в конструкторе.</span></p>
+<table>
+<tbody>
+<tr>
+<th>Инициализация переменных класса</th>
+<th></th>
+</tr>
+<tr>
+<td style="vertical-align: top;">
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Cat
+{
+ <span class="text-green">int x = 5;
+ int y = 5;</span>
+}</code></pre>
+</td>
+<td style="vertical-align: top;">
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Cat
+{
+ int x;
+ int y;
+ <span class="text-red">public Cat()
+ {
+  super();
+  this.x = 5;
+  this.y = 5;
+ }</span>
+}</code></pre>
+</td>
+</tr>
+</tbody>
+</table>
+<table>
+<tbody>
+<tr>
+<th>Как все это происходит на самом деле</th>
+<th></th>
+</tr>
+<tr>
+<td style="vertical-align: top;">
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Pet
+{
+ int x <span class="text-red">= 5</span>, y <span class="text-red">= 5</span>;
+ int weight <span class="text-red">= 10</span>;
+ Pet(int x, int y)
+ {
+  <span class="text-green">this.x = x;
+  this.y = y;</span>
+ }
+}
+
+class Cat extends Pet
+{
+ int tailLength = 8;
+ int age;
+ Cat(int x, int y, int age)
+ {
+  <span class="text-user">super(x, y);</span>
+  <span class="text-green">this.age = age;</span>
+ }
+}</code></pre>
+</td>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Pet <span class="text-red">extends Object</span>
+{
+ int x;
+ int y;
+ int weight;
+
+ Pet(int x, int y)
+ {
+  //вызов конструктора базового класса
+  super();
+  //инициализация переменных
+  <span class="text-red">this.x = 5;
+  this.y = 5;  
+  this.weight = 10;</span>
+  //вызов кода конструктора
+  <span class="text-green">this.x = x;
+  this.y = y;</span> 
+ }
+}
+class Cat extends Pet
+{
+ int tailLength;
+ int age;
+ Cat(int x, int y, int age)
+ {
+  //вызов конструктора базового класса
+  super(x, y);
+  //инициализация переменных
+  <span class="text-red">this.tailLength = 8;</span>
+  //вызов кода конструктора
+  <span class="text-green">this.age = age;</span>
+ }
+}</code></pre>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.task15.task1532"></div>
+<p><span class="text-user">&#8212; Теперь намного понятнее: сначала базовый класс, затем переменные вне конструктора, затем вызов кода конструктора.</span></p>
+<p>&#8212; Молодец, Амиго, именно так!</p>

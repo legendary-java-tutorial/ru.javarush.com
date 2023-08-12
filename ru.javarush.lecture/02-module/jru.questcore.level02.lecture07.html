@@ -1,0 +1,148 @@
+Интерфейсы
+<p>----------------------------------------</p>
+Интерфейс – это законное дитя Абстракции и Полиморфизма. Интерфейс очень напоминает абстрактный класс, у которого все методы абстрактные. Он объявляется так же, как и класс, только используется ключевое слово interface. А зачем они нужны, как и когда их используют, вы узнаете из этой лекции.
+<p>----------------------------------------</p>
+<p>&#8212; Привет, Амиго! Сегодня у тебя день открытий. <span class="text-green">Новая и интересная тема – это интерфейсы.</span></p>
+<p><span class="text-user">&#8212; Ага. День настолько чудесный, что я приду домой и приму ванну полную воды.</span></p>
+<p>&#8212; <strong><span class="text-red">Интерфейс</span></strong> – это дитя Абстракции и Полиморфизма. Интерфейс очень напоминает абстрактный класс, у которого все методы абстрактные. Он объявляется так же, как и класс, только используется ключевое слово <code><strong><span class="text-red">interface</span></strong></code>. Примеры:</p>
+<table>
+<tbody>
+<tr>
+<th>Код</th>
+<th>Описание и Факты</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-red">interface</span> Drawable
+{
+void draw();
+}
+<span class="text-red">interface</span> HasValue
+{
+int getValue();
+}</code></pre>
+</td>
+<td>1) Вместо слова <code>class</code> пишем <code>interface</code>.</p>
+<p><span class="text-corporate">2) Содержит только абстрактные методы (слово abstract писать не нужно).</span></p>
+<p><span class="text-green">3) На самом деле у интерфейсов все методы &#8212; public.</span></td>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>interface Element <span class="text-red">extends Drawable, HasValue</span>
+{
+int getX();
+int getY();
+}</code></pre>
+</td>
+<td><span class="text-red">Интерфейс может наследоваться только от интерфейсов.</span></p>
+<p><span class="text-red">Интерфейсов-родителей может быть много.</span></td>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>abstract class ChessItem <span class="text-red">implements Drawable, HasValue</span>
+{
+private int x, y, value;
+
+public int getValue()
+{
+return value;
+}
+
+public int getX()
+{
+return x;
+}
+
+public int getY()
+{
+return y;
+}
+
+}</code></pre>
+</td>
+<td>Класс может наследоваться от нескольких интерфейсов (и только от одного класса). При этом используется ключевое слово <code><span class="text-red">implements</span></code>.</p>
+<p><span class="text-green">Класс</span> <code><span class="text-green">ChessItem </span></code><span class="text-green">объявлен абстрактным: он реализовал все унаследованные методы, кроме draw.</span></p>
+<p>Т.е. класс <code>ChessItem</code> содержит один абстрактный метод: <code>draw()</code>.</td>
+</tr>
+</tbody>
+</table>
+<p><span class="text-user">&#8212; Интересно. А зачем нужны интерфейсы? Когда их используют?</span></p>
+<p>&#8212; У интерфейсов есть два сильных преимущества по сравнению с классами:</p>
+<h3>1) Отделение «описания методов» от их реализации.</h3>
+<p>Раньше я тебе рассказывал, что <span class="text-green">если ты хочешь разрешить вызывать методы своего класса из других классов, то их нужно пометить ключевым словом</span> <code><span class="text-green">public</span></code>. Если же хочешь, чтобы какие-то методы можно было вызывать только из твоего же класса, их нужно помечать ключевым словом <code>private</code>. Другими словами мы делим методы класса на две категории: «для всех» и «только для своих».</p>
+<p>С помощью интерфейсов, это деление можно усилить еще больше. Мы сделаем специальный «класс для всех», и второй «класс для своих», который унаследуем от первого. Вот как это примерно будет:</p>
+<div class="row compare">
+<div class="col-xs-12 col-sm-6 col-md-6">
+<div class="code-heading">Было</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class <span class="text-green">Student</span>
+{
+ private String name;
+
+ public Student(String name)
+ {
+  this.name = name;
+ }
+
+ public String getName() 
+ {
+  return this.name;
+ }
+
+ private void setName(String name)
+ {
+  this.name = name;
+ }</code></pre>
+</div>
+<div class="col-xs-12 col-sm-6 col-md-6">
+<div class="code-heading">Стало</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>interface <span class="text-red">Student</span>
+{
+ public String getName();
+}
+
+class <span class="text-user">StudentImpl</span> implements <span class="text-red">Student</span>
+{
+ private String name;
+ public StudentImpl(String name) 
+ {
+  this.name = name;
+ }
+ public String getName()
+ {
+  return this.name;
+ }
+ private void setName(String name)
+ {
+  this.name = name;
+ }
+}</code></pre>
+</div>
+</div>
+<div class="row compare">
+<div class="col-xs-12 col-sm-6 col-md-6">
+<div class="code-heading">Было</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public static void main(String[] args)
+{
+ <span class="text-green">Student</span> student = 
+               new <span class="text-green">Student</span>("Alibaba");
+ System.out.println(student.getName());
+}</code></pre>
+</div>
+<div class="col-xs-12 col-sm-6 col-md-6">
+<div class="code-heading">Стало</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public static void main(String[] args)
+{
+ <span class="text-red">Student</span> student = 
+               new <span class="text-user">StudentImpl</span>("Ali");
+ System.out.println(student.getName());
+}</code></pre>
+</div>
+</div>
+<p>Мы разбили наш класс на два: <span class="text-red">интерфейс</span> и <span class="text-user">класс, унаследованный от интерфейса.</span></p>
+<p><span class="text-user">&#8212; И в чем тут преимущество?</span></p>
+<p>&#8212; Один и тот же интерфейс могут реализовывать (наследовать) различные классы. И у каждого может быть свое собственное поведение. Так же как <span class="text-corporate"><strong>ArrayList</strong> и <strong>LinkedList</strong> – это две различные реализации интерфейса List.</span></p>
+<p>Таким образом, <span class="text-green">мы скрываем не только различные реализации, но и даже сам класс, который ее содержит (везде в коде может фигурировать только интерфейс).</span> Это позволяет очень гибко, прямо в процессе исполнения программы, подменять одни объекты на другие, меняя поведение объекта скрытно от всех классов, которые его используют.</p>
+<p>Это очень мощная технология в сочетании с полиморфизмом. Сейчас далеко не очевидно, зачем так нужно делать. Ты должен сначала столкнуться с программами, состоящими из десятков или сотен классов, чтобы понять, что интерфейсы способны существенно упростить тебе жизнь.</p>
+<h3>2) Множественное наследование.</h3>
+<p>В Java все классы могут иметь только одного класса-родителя. В других языках программирования, классы часто могут иметь несколько классов-родителей. Это очень удобно, но приносит так же много проблем.</p>
+<p>В Java пришли к компромиссу – <span class="text-viola">запретили множественное наследование классов, но разрешили множественное наследование интерфейсов.</span> <span class="text-green">Интерфейс может иметь несколько интерфейсов-родителей.</span> <span class="text-corporate">Класс может иметь несколько интерфейсов-родителей и только один класс-родитель.</span></p>

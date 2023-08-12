@@ -1,0 +1,140 @@
+Настройка сервлета
+<p>----------------------------------------</p>
+Метод init(). 
+Как правильно загрузить properties-файл. 
+Метод getConfig().
+<p>----------------------------------------</p>
+    <h2>Метод init()</h2>
+
+    <p>И еще пара полезных мелочей. Конечно, я про инициализацию сервлета.
+Как ты уже знаешь, после того, как веб-сервер создал объект сервлета и поместил его в контейнер, он вызывает у сервлета метод <span class="code text-orange">init()</span>. Ты можешь переопределить этот метод и инициализировать в нем все, что тебе нужно.</p>
+
+    <p>А почему бы не использовать конструктор?</p>
+
+    <p>Потому что процесс создания сервлета происходит примерно так:</p>
+
+    <ul>
+        <li>Создаем объект, унаследованный от <mark class="green">HttpServlet</mark></li>
+        <li>Создаем объект <mark class="green">ServletContext</mark>, добавляем его переменную сервлета</li>
+        <li>Создаем объект <mark class="green">ServletConfig</mark>, добавляем его переменную сервлета</li>
+        <li>…</li>
+        <li>Веб-сервер присоединяет сервлет к контейнеру</li>
+        <li>Вызываем метод <span class="code text-orange">init()</span></li>
+    </ul>
+
+    <p><span class="text-red">В конструкторе твоего сервлета еще очень много его внутренних переменных не инициализировано.</span> Контейнер ничего не знает о твоем сервлете, твой сервлет ничего не знает о его контексте. Думаю, тут и так все понятно.</p>
+
+    <p>Давай напишем сервлет, который при инициализации находит properties-файл с настройками:</p>
+ 
+    <pre class='language-java line-numbers'><code>
+public class PropertiesServlet extends HttpServlet {
+    public init() {
+         try (InputStream input = new FileInputStream("c:/path/to/config.properties")) {
+ 
+             Properties prop = new Properties();
+             prop.load(input);
+ 
+             String databaseURL = prop.getProperty("db.url");
+             String databaseUser = prop.getProperty("db.user ");
+             String databasePassword = prop.getProperty("db.password");
+	 }
+  }
+}
+</code></pre>
+ 
+    <p>Тут мы создаем объект <mark class="green">Properties</mark> и загружаем в него данные из файла <span class="text-bold">config.properties</span>. Ну и в дальнейшем можно доставать из объекта <mark class="green">Properties</mark> различные параметры, такие как данные для доступа к базе данных, например. </li>
+ 
+    <h2>Как правильно загрузить properties-файл</h2>
+
+    <p>Кстати, а что делать, если твой сервлет выполняется не на твоем компьютере?</p>
+
+    <p>Скажем, написали его тут, а он выполняется на сервере где-то в другой части света. Или на нескольких серверах. Как правильно загрузить properties-файл в этом случае?</p>
+
+    <p>Хороший вопрос. Обычно в процессе работы <span class="text-bold">сервлет знает только относительный путь</span> своих properties-файлов, но не знает их абсолютного пути, так как war-файлы с сервлетами могут храниться где угодно.</p>
+
+    <p>Значит, нам нужно узнать путь, где храниться наш сервлет (сервлет-то уже проинициализирован) и добавить к нему относительный путь :)</p>
+
+    <p>Выглядит это примерно так:</p>
+ 
+    <pre class='language-java line-numbers'><code>
+String path = absoluteServletParh + "относительный путь";
+</code></pre>
+ 
+    <p>И, как всегда, у такой элементарной задачи часто есть свое маленькое “но”. Твой сервлет и его properties-файл хранятся внутри архива :) Не обязательно, конечно, но и такое бывает. properties-файл частенько хранится внутри jar- или war-файлов.</p>
+
+    <p>То есть физического пути на диске у твоего файла может не быть. Но так как контейнер сумел загрузить твой сервлет, он скорее всего сможет загрузить и твой properties-файл.</p>
+
+    <p>Для этого тебе нужно получить объект загрузчика класса (<mark class="green">ClassLoader</mark>) и попросить его загрузить твой файл. Вот как это будет выглядеть:</p>
+ 
+    <pre class='language-java line-numbers'><code>
+ClassLoader loader = Thread.currentThread().getContextClassLoader();       	
+InputStream stream = loader.getResourceAsStream("/config.properties");
+ 
+Properties prop = new Properties();
+prop.load(stream);
+</code></pre>
+ 
+    <h2>Метод getConfig()</h2>
+
+    <p>Кстати, не все параметры можно передавать в сервлет в properties-файлах. Например, твой сервлет взаимодействует с другими сервлетами в распределенном веб-приложении.  </p>
+
+    <p>Тогда нужно сделать так, чтобы контейнер передал твоему сервлету всю необходимую информацию, когда он будет вызвать его метод <span class="code text-orange">init()</span>. Более того, он так и делает.</p>
+
+    <p>У твоего сервлета (ты ведь помнишь, что он унаследован от класса <span class="text-green">HttpServlet</span>) есть метод <span class="code text-orange">getServletConfig()</span>. Который возвращает объект <mark class="green">ServletConfig</mark>, созданный и инициализированный контейнером. У этого объекта есть такие методы:</p>
+
+    <table>
+        <tbody>
+            <tr>
+                <td><span class="code text-orange">getInitParameterNames()</span></td>
+                <td>Возвращает список имен параметров сервлета</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getInitParameter(String name)</span></td>
+                <td>Возвращает параметр сервлета по его имени</td>
+            </tr>
+            </tr>
+                <td><span class="code text-orange">getServletName()</span></td>
+                <td>Возвращает собственное имя сервлета</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getServletContext()</span></td>
+                <td>Возвращает объект <mark class="green">ServletContext</mark></td>
+            </tr>
+        </tbody>
+    </table>
+ 
+    <p>Давай напишем сервлет, который возвращает список своих параметров из <mark class="green">ServletConfig</mark>’а. Класть их туда будет через файл web.xml:</p>
+ 
+    <pre><code>	&lt;web-app> 
+ 	
+        &lt;servlet> 
+            &lt;servlet-name>Print-Servlet&lt;/servlet-name> 
+            &lt;servlet-class>PrintServlet&lt;/servlet-class> 
+            &lt;init-param> 
+                &lt;param-name>jdbc-driver&lt;/param-name> 
+    	        &lt;param-value>sun.jdbc.odbc.JdbcOdbcDriver&lt;/param-value> 
+	        &lt;/init-param> 
+        &lt;/servlet> 
+  	
+        &lt;servlet-mapping> 
+            &lt;servlet-name>Print-Servlet&lt;/servlet-name> 
+            &lt;url-pattern>/print&lt;/url-pattern> 
+        &lt;/servlet-mapping> 
+  	
+    &lt;/web-app></code></pre>
+  
+    <p>Получить свои параметры сервлет может с помощью кода:</p>
+ 
+    <pre class='language-java line-numbers'><code>
+public class PrintServlet extends HttpServlet {
+    public void init() {
+        ServletConfig config = this.getServletConfig(); 
+        Enumeration&lt;String> initParameterNames = config.getInitParameterNames();
+ 
+        while (initParameterNames.hasMoreElements()){
+       	     String key = initParameterNames.nextElement();
+             System.out.println("%s: %s\n", key, config.getInitParameter(key));
+    	}
+  }
+}
+</code></pre>

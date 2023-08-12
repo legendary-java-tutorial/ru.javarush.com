@@ -1,0 +1,446 @@
+Параметризированные типы в Java – Generics
+<p>----------------------------------------</p>
+Все классы унаследованы от Object Все классы в Java неявно (скрытно) унаследованы от класса Object. Что такое наследование и как оно работает в Java мы разберем в квеста Java Core. Сейчас же мы рассмотрим один простой факт, который из этого следует: Переменённой типа Object можно присвоить объек
+<p>----------------------------------------</p>
+<div class="lesson-carousel lesson-carousel--comics lesson-carousel--desktop">
+    <div class="lesson-carousel__list">
+        <div class="lesson-carousel__item">
+            <img data-id="88ddb174-6db6-48f6-8294-1e687b054270" src="https://cdn.javarush.com/images/article/88ddb174-6db6-48f6-8294-1e687b054270/original.png" alt="">
+        </div>
+        <div class="lesson-carousel__item">
+            <img data-id="4ad9d616-5822-4cdf-8c1c-e82259be53e8" src="https://cdn.javarush.com/images/article/4ad9d616-5822-4cdf-8c1c-e82259be53e8/original.png" alt="">
+        </div>
+    </div>
+</div>
+<div class="lesson-carousel lesson-carousel--comics lesson-carousel--mobile">
+    <div class="lesson-carousel__list">
+        <div class="lesson-carousel__item">
+            <img data-id="e0564fdb-9b2a-48a6-ab48-184d3fca8684" src="https://cdn.javarush.com/images/article/e0564fdb-9b2a-48a6-ab48-184d3fca8684/original.png" alt="">
+        </div>
+        <div class="lesson-carousel__item">
+            <img data-id="eb3f32e9-af66-4d37-8314-59db3d1b99a5" src="https://cdn.javarush.com/images/article/eb3f32e9-af66-4d37-8314-59db3d1b99a5/original.png" alt="">
+        </div>
+        <div class="lesson-carousel__item">
+            <img data-id="8e6d72d8-5021-484d-9915-587f6057d788" src="https://cdn.javarush.com/images/article/8e6d72d8-5021-484d-9915-587f6057d788/original.png" alt="">
+        </div>
+        <div class="lesson-carousel__item">
+            <img data-id="8c738d94-6bb9-4e51-8c20-39b7f88fe5d6" src="https://cdn.javarush.com/images/article/8c738d94-6bb9-4e51-8c20-39b7f88fe5d6/original.png" alt="">
+        </div>
+    </div>
+</div>
+<hr>
+<h2>1. Все классы унаследованы от <code>Object</code></h2>
+<p>Все классы в Java неявно (скрытно) унаследованы от класса <code>Object</code>.</p>
+<p>Что такое наследование и как оно работает в Java, мы разберем в квесте Java Core. Сейчас же мы рассмотрим один простой факт, который из этого следует:</p>
+<p>Переменной типа <code>Object</code> можно присвоить объект любого класса. Пример:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Примечание</th>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>Object <span class="code text-red">o</span> = new Scanner(System.in);</code></pre>
+        </td>
+        <td>В переменную <code class=" text-red">o</code> сохранена ссылка на объект типа <code>Scanner</code></td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>Object <span class="code text-red">o</span> = new String();</code></pre>
+        </td>
+        <td>В переменную <code class="text-red">o</code> сохранена ссылка на объект типа <code>String</code></td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>Object <span class="code text-red">o</span> = new Integer(15);</code></pre>
+        </td>
+        <td>В переменную <code class="text-red">o</code> сохранена ссылка на объект типа <code>Integer</code></td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>Object <span class="code text-red">o</span> = "Привет";</code></pre>
+        </td>
+        <td>В переменную <code class="text-red">o</code> сохранена ссылка на объект типа <code>String</code></td>
+    </tr>
+    </tbody>
+</table>
+<p>На этом хорошие новости заканчиваются. <strong>Компилятор не следит за тем</strong>, объект какого именно типа был сохранен в переменную типа <code>Object</code>, поэтому <strong>вызвать методы, которые были у</strong> сохраненного объекта, но которых нет у переменной типа <code>Object</code> <span class="text-red">нельзя</span>.</p>
+<p>Если нужно вызвать методы такого объекта, то сначала ссылку на него нужно сохранить в переменную правильного типа, а только потом вызвать методы у этой переменной:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Примечание</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>Object <span class="code text-red">o</span> = new <span class="text-viola">Scanner</span>(System.in);
+int x = <span class="code text-red">o</span>.<span class="text-green">nextInt</span>();</code></pre>
+        </td>
+        <td><span class="text-red">Программа не скомпилируется. У класса <code><span class="text-red">Object</span></code> нет метода <code><span class="text-red">nextInt()</span></code>.</span></td>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>Object <span class="code text-red">o</span> = new <span class="text-viola">Scanner</span>(System.in);
+
+<span class="text-viola">Scanner</span> <span class="code text-user">console</span> = (<span class="text-viola">Scanner</span>) <span class="code text-red">o</span>;
+
+int x = <span class="code text-user">console</span>.<span class="text-green">nextInt</span>();</code></pre>
+        </td>
+        <td>Так будет работать.<br><br>
+            Тут мы сохраняем ссылку на объект типа <code><span class="text-viola">Scanner</span></code> в переменную типа <code><span class="text-viola">Scanner</span></code> с помощью <span class="term">оператора приведения типа</span>.
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p><span class="text-red">Просто так переменную типа <code><span class="text-red">Object</span></code> нельзя присвоить переменной типа Scanner, даже если переменная типа <code><span class="text-red">Object</span></code> хранит ссылку на объект типа <code><span class="text-red">Scanner</span></code>.</span> Зато это можно сделать, если использовать уже известный вам <span class="term">оператор&nbsp;приведения типа</span>. В общем виде выглядит это так:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code><span class="text-viola">Тип</span> <span class="code text-user">имя1</span> = (<span class="text-viola">Тип</span>) <span class="code text-green">имя2</span>;</code></pre>
+</div>
+<p>Где <code class="text-user">имя1</code> – это имя переменной типа <code><span class="text-viola">Тип</span></code>, а <code class="text-green">имя2</code> – это имя переменной типа <code>Object</code>, которая хранит ссылку на объект типа <code><span class="text-viola">Тип</span></code>.</p>
+<p><strong>Приведение типа</strong></p>
+<p>Если типы переменной и объекта не совпадают, возникнет ошибка <code><span class="text-red">ClassCastException</span></code>. Пример:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Примечание</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>Object <span class="code text-user">o</span> = new Integer(5);
+<span class="text-viola">String</span> <span class="code text-green">s</span> = (<span class="text-viola">String</span>) <span class="code text-user">o</span>;</code></pre>
+        </td>
+        <td><span class="text-red">Во время выполнения возникнет ошибка:<br>
+тут кинется исключение <code>ClassCastException</code></span></td>
+    </tr>
+    </tbody>
+</table>
+<p>В Java есть способ обойти эту ошибку: существует способ проверить, <span class="code"><span class="text-green">какой на самом деле тип находится внутри переменной</span></span>:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code><span class="code text-user">имя</span> instanceof <span class="code"><span class="text-viola">Тип</span></span></code></pre>
+</div>
+<p>Оператор <code>instanceof</code> проверяет, является ли переменная <code><span class="text-green">имя</span></code> объектом типа <code><span class="text-viola">Тип</span></code>.</p>
+<p>Пример — нахождение строки среди массива данных:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Примечание</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>Object[] <span class="code text-user">objects</span> = {10, "Привет", 3.14};
+
+for (int i = 0; i &lt; <span class="code text-user">objects</span>.length; i++)
+{
+   if (<span class="code text-user">objects</span>[i] <strong>instanceof</strong> <span class="text-viola">String</span>)
+   {
+      <span class="text-viola">String</span> s = (<span class="text-viola">String</span>) <span class="code text-user">objects</span>[i];
+      System.out.println(s);
+   }
+}</code></pre>
+        </td>
+        <td>Autoboxing превратит эти значения в <code>Integer</code>, <code>String</code> и <code>Double</code>.<br><br>
+            Цикл по массиву объектов<br><br>
+            Если объект имеет тип <code>String</code><br><br>
+            Сохраняем его в переменную типа <code>String</code><br>
+            Выводим переменную на экран.
+        </td>
+    </tr>
+    </tbody>
+</table>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task12.task1220"></div>
+<hr>
+<h2>2. Причина возникновения шаблонов (коллекции)</h2>
+<p>Возвращаемся к коллекциям.</p>
+<p>Когда Java-разработчики только создавали класс <code>ArrayList</code>, они хотели сделать его универсальным, чтобы в нем можно было хранить объекты любого типа. Поэтому для хранения элементов они воспользовались массивом типа <code>Object</code>.</p>
+<p>Сильная сторона такого подхода в том, что в коллекцию можно добавить объект любого типа.</p>
+<p>Ну а слабых сразу несколько.</p>
+<p><strong>Недостаток 1.</strong></p>
+<p>Всегда приходилось писать оператор преобразования типа, когда доставали элементы из коллекции:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Примечание</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>ArrayList <span class="code text-user">numbers</span> = new ArrayList();
+
+
+for (int i = 0; i &lt; 10; i++)
+   <span class="code text-user">numbers</span>.add(i * 10);
+
+
+int <span class="code text-green">sum</span> = 0;
+for (int i = 0; i &lt; 10; i++)
+{
+   <span class="code text-green">sum</span> = <span class="code text-green">sum</span> + (<span class="text-viola">Integer</span>) <span class="code text-user">numbers</span>.get(i);
+}</code></pre>
+        </td>
+        <td>Создаем объект-коллекцию для хранения ссылок на объекты типа <code>Object</code><br><br>
+            Заполняем коллекцию цифрами <code>10</code>, <code>20</code>, ... <code>100</code>;<br><br><br><br>
+            Суммируем элементы коллекции<br><br><br>
+            <span class="text-green">Нужно использовать приведение типа</span></td>
+    </tr>
+    </tbody>
+</table>
+<p><strong>Недостаток 2.</strong></p>
+<p>Не было гарантии, что в коллекции хранятся элементы определенного типа</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Примечание</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>ArrayList <span class="text-user">numbers</span> = new ArrayList();
+
+
+for (int i = 0; i &lt; 10; i++)
+   <span class="code text-user">numbers</span>.add(i * 2.5);
+
+
+int <span class="code text-green">sum</span> = 0;
+for (int i = 0; i &lt; 10; i++)
+{
+   <span class="code text-green">sum</span> = <span class="code text-green">sum</span> + (Integer) <span class="code text-user">numbers</span>.get(i);
+}</code></pre>
+        </td>
+        <td>Создаем объект-коллекцию для хранения ссылок на объекты типа <code>Object</code><br><br>
+            Заполняем коллекцию числами типа <code>Double</code>:<br>
+            <code>0.0</code>, <code>2.5</code>, <code>5.0</code>, ...<br><br><br>
+            Суммируем элементы коллекции<br><br><br>
+            <span class="text-red">Будет ошибка: тип <code><span class="text-red">Double</span></code> нельзя привести к типу <code><span class="text-red">Integer</span></code></span></td>
+    </tr>
+    </tbody>
+</table>
+<p>Данные в коллекцию могут заполняться где угодно:</p>
+<ul>
+    <li>в другом методе</li>
+    <li>в другой программе</li>
+    <li>загружаться из файла</li>
+    <li>получаться по сети</li>
+</ul>
+<p><strong>Недостаток 3.</strong></p>
+<p>Данные коллекции можно случайно поменять по незнанию.</p>
+<p>Вы можете передать коллекцию, заполненную вашими данными в какой-то метод, а этот метод, написанный совсем другим программистом, добавит в вашу коллекцию свои данные.</p>
+<p>По названию коллекции непонятно, какие именно типы данных можно в ней хранить. А даже если и дать переменной такое название, ссылку на нее можно передать в десяток методов, и уж там-то точно об изначальном имени переменной ничего не будет известно.</p>
+<hr>
+<h2>3. Дженерики</h2>
+<p><img data-id="072652bf-ef87-4e4b-8107-fe589bc960ec" src="https://cdn.javarush.com/images/article/072652bf-ef87-4e4b-8107-fe589bc960ec/original.png" alt="Дженерики в Java"></p>
+<p>Все эти проблемы устраняет такая классная вещь в Java как дженерики (Generics).</p>
+<p>Под дженериками в Java подразумевают возможность добавлять к типам типы-параметры. Таким образом получаются сложные составные типы. Такой составной тип в общем случае выглядит так:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code><span class="text-neon">ОсновнойТип</span>&lt;<span class="text-viola">ТипПараметр</span>&gt;</code></pre>
+</div>
+<p>Все вместе — это именно тип. И он может использоваться там, где обычно можно использовать типы.</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code><span class="text-neon">ArrayList</span>&lt;<span class="text-viola">Integer</span>&gt; <span class="code text-user">list</span>;</code></pre>
+        </td>
+        <td>Создание переменных</td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code><span class="code text-user">list</span> = new <span class="text-neon">ArrayList</span>&lt;<span class="text-viola">Integer</span>&gt; ();</code></pre>
+        </td>
+        <td>Создание объектов</td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code><span class="text-neon">ArrayList</span>&lt;<span class="text-viola">Integer</span>&gt;[] <span class="code text-user">array</span>;</code></pre>
+        </td>
+        <td>Создание массивов</td>
+    </tr>
+    </tbody>
+</table>
+<p>В такую коллекцию можно сохранить только переменные типа <code>Integer</code>:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code><span class="text-neon">ArrayList</span>&lt;<span class="text-viola">Integer</span>&gt; <span class="code text-user">list</span> = new <span class="text-neon">ArrayList</span>&lt;<span class="text-viola">Integer</span>&gt;();
+<span class="code text-user">list</span>.add(new <span class="text-viola">Integer</span>(1));
+<span class="code text-user">list</span>.add(2);
+<span class="code text-user">list</span>.add("Привет");</code></pre>
+        </td>
+        <td>Коллекция типа <code>ArrayList</code> с элементами типа <code>Integer</code><br>
+            Так можно<br>
+            И так можно: сработает
+            <div class="term">autoboxing</div>
+            <br>
+            А так нельзя: <span class="text-red">ошибка компиляции</span></td>
+    </tr>
+    </tbody>
+</table>
+<p>Как создавать свои классы с типами-параметрами, вы изучите в квесте Java Collections. Сейчас же мы разберем, как этим пользоваться и как это работает.</p>
+<hr>
+<h2>4. Как работают Generics</h2>
+<p>На самом деле Generics работают до ужаса примитивно.</p>
+<p>Компилятор просто заменяет тип с параметром на него же, только без параметра. А при взаимодействии с его методами добавляет операцию приведения типа к типу-параметру:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Что сделает компилятор</th>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code><span class="text-neon">ArrayList</span>&lt;<span class="text-viola">Integer</span>&gt; <span class="code text-green">list</span> = new <span class="text-neon">ArrayList</span>&lt;<span class="text-viola">Integer</span>&gt;();</code></pre>
+        </td>
+        <td>
+            <pre class="language-java"><code><span class="text-neon">ArrayList</span> <span class="code text-green">list</span> = new <span class="text-neon">ArrayList</span>();</code></pre>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code><span class="code text-green">list</span>.add(1);</code></pre>
+        </td>
+        <td>
+            <pre class="language-java"><code><span class="code text-green">list</span>.add( (<span class="text-viola">Integer</span>) 1 );</code></pre>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>int x = <span class="code text-green">list</span>.get(<span class="text-orange">0</span>);</code></pre>
+        </td>
+        <td>
+            <pre class="language-java"><code>int x = (<span class="text-viola">Integer</span>) <span class="code text-green">list</span>.get(<span class="text-orange">0</span>);</code></pre>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code><span class="code text-green">list</span>.set(<span class="text-orange">0</span>, 10);</code></pre>
+        </td>
+        <td>
+            <pre class="language-java"><code><span class="code text-green">list</span>.set(<span class="text-orange">0</span>, (<span class="text-viola">Integer</span>) 10);</code></pre>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p>Допустим, у нас был код метода, который суммирует числа в коллекции целых чисел:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Что сделает компилятор</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>public int sum(<span class="text-neon">ArrayList</span>&lt;<span class="text-viola">Integer</span>&gt; <span class="code text-green">numbers</span>)
+{
+   int <span class="code text-user">result</span> = 0;
+
+   for (int i = 0; i &lt; <span class="code text-green">numbers</span>.size(); i++)
+      <span class="code text-user">result</span> = <span class="code text-user">result</span> + <span class="code text-green">numbers</span>.get(i);
+
+   return <span class="code text-user">result</span>;
+}</code></pre>
+        </td>
+        <td>
+<pre class="language-java"><code>public int sum(<span class="text-neon">ArrayList</span> <span class="code text-green">numbers</span>)
+{
+   int <span class="code text-user">result</span> = 0;
+
+   for (int i = 0; i &lt; <span class="code text-green">numbers</span>.size(); i++)
+      <span class="code text-user">result</span> = <span class="code text-user">result</span> + (<span class="text-viola">Integer</span>) <span class="code text-green">numbers</span>.get(i);
+
+   return <span class="code text-user">result</span>;
+}</code></pre>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p>Т.е. по сути дженерики — это такая разновидность синтаксического сахара, как и autoboxing, только побольше. При autoboxing компилятор за нас добавляет методы для преобразования типа <code>int</code> к <code>Integer</code> и обратно, а для generics добавляет операторы приведения типа.</p>
+<p>После того, как компилятор скомпилировал ваш код с дженериками, в нем все классы с параметрами были преобразованы просто в классы и операторы приведения типа. Информация о том, какие изначально были типы-параметры у переменных сложных типов, потерялась. Этот эффект еще называют <span class="term">стиранием типов</span>.</p>
+<p>Иногда программистам, которые пишут свои классы с типами-параметрами, очень не хватает информации о типах, которые туда передаются в качестве параметров. Как с этим борются и что из этого выходит, вы узнаете в квесте Java Collections.</p>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task12.task1221"></div>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task12.task1222"></div>
+<hr>
+<h2>5. Несколько фактов о дженериках</h2>
+<p>Еще несколько интересных фактов о дженериках.</p>
+<p>У классов <strong>может быть не один тип параметр, а несколько.</strong> Выглядит это примерно так:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present-sm language-java"><code><span class="text-neon">ОсновнойТип</span>&lt;<span class="text-viola">ТипПараметр1</span>, <span class="text-viola">ТипПараметр2</span>, <span class="text-viola">ТипПараметр3</span>&gt;</code></pre>
+</div>
+<p>Собственно говоря, в этом нет ничего удивительного. Там, где компилятор может добавить оператор приведения к одному типу, он может добавить и несколько таких.</p>
+<p>Примеры:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Примечание</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code><span class="text-viola">HashMap</span>&lt;<span class="text-user">Integer</span>, <span class="text-orange">String</span>&gt; map = new <span class="text-viola">HashMap</span>&lt;<span class="text-user">Integer</span>, <span class="text-orange">String</span>&gt;();
+<span class="text-orange">map</span>.put(7, <span class="text-green">"Привет"</span>);
+<span class="text-orange">map</span>.put(-15, <span class="text-green">"Привет"</span>);</code></pre>
+        </td>
+        <td>первый параметр метода <code>put</code> имеет тип <code><span class="text-user">Integer</span></code>, второй — тип <code><span class="text-orange">String</span></code></td>
+    </tr>
+    </tbody>
+</table>
+<p>Также сложные типы тоже можно <strong>использовать в качестве параметров</strong>. Выглядит это примерно так:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present-sm language-java"><code><span class="text-neon">ОсновнойТип</span>&lt;<span class="text-viola">ТипПараметр&lt;</span><span class="text-user">ТипПараметрПараметра</span><span class="text-viola">&gt;</span>&gt;</code></pre>
+</div>
+<p>Допустим, мы хотим создать список, который будет хранить списки строк. В таком случае мы получим примерно такой код:</p>
+<pre class="language-java"><code>// список приветствий
+<span class="text-viola">ArrayList&lt;String&gt;</span> <span class="code text-green">listHello</span> = new <span class="text-viola">ArrayList&lt;String&gt;</span>();
+<span class="code text-green">listHello</span>.add("Привет");
+<span class="code text-green">listHello</span>.add("Hi");
+
+// список прощаний
+<span class="text-viola">ArrayList&lt;String&gt;</span> <span class="code text-user">listBye</span> = new <span class="text-viola">ArrayList&lt;String&gt;</span>();
+<span class="code text-user">listBye</span>.add("Пока");
+<span class="code text-user">listBye</span>.add("Good Bye");
+
+// список списков
+ArrayList&lt;<span class="text-viola">ArrayList&lt;String&gt;</span>&gt; <span class="code text-orange">lists</span> = new ArrayList&lt;<span class="text-viola">ArrayList&lt;String&gt;</span>&gt;();
+<span class="code text-orange">lists</span>.add(<span class="code text-green">listHello</span>);
+<span class="code text-orange">lists</span>.add(<span class="code text-user">listBye</span>);</code></pre>
+<hr>
+<div class="lesson-carousel lesson-carousel--comics lesson-carousel--desktop">
+    <div class="lesson-carousel__list">
+        <div class="lesson-carousel__item">
+            <img data-id="23fe3cb3-f557-46cd-9a2f-38631bfea9b1" src="https://cdn.javarush.com/images/article/23fe3cb3-f557-46cd-9a2f-38631bfea9b1/original.png" alt="">
+        </div>
+        <div class="lesson-carousel__item">
+            <img data-id="21a0e1da-e511-4d99-b2c9-155b39682d2f" src="https://cdn.javarush.com/images/article/21a0e1da-e511-4d99-b2c9-155b39682d2f/original.png" alt="">
+        </div>
+    </div>
+</div>
+<div class="lesson-carousel lesson-carousel--comics lesson-carousel--mobile">
+    <div class="lesson-carousel__list">
+        <div class="lesson-carousel__item">
+            <img data-id="74270b73-7374-4a45-bc57-10209c659a29" src="https://cdn.javarush.com/images/article/74270b73-7374-4a45-bc57-10209c659a29/original.png" alt="">
+        </div>
+        <div class="lesson-carousel__item">
+            <img data-id="15e44ff4-2e5a-48ca-a403-4bf4e7eb3ddb" src="https://cdn.javarush.com/images/article/15e44ff4-2e5a-48ca-a403-4bf4e7eb3ddb/original.png" alt="">
+        </div>
+        <div class="lesson-carousel__item">
+            <img data-id="6f13236e-580c-4345-ae64-61b769ee23c5" src="https://cdn.javarush.com/images/article/6f13236e-580c-4345-ae64-61b769ee23c5/original.png" alt="">
+        </div>
+        <div class="lesson-carousel__item">
+            <img data-id="2c8bc1fe-2bb6-4209-9de0-5bd528f115da" src="https://cdn.javarush.com/images/article/2c8bc1fe-2bb6-4209-9de0-5bd528f115da/original.png" alt="">
+        </div>
+    </div>
+</div>

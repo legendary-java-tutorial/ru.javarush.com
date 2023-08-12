@@ -1,0 +1,242 @@
+Группировка по нескольким колонкам
+<p>----------------------------------------</p>
+Колонки при группировке
+Группировка по вычисляемым колонкам
+Группировка по нескольким колонкам
+<p>----------------------------------------</p>
+<h2>4.1 Колонки при группировке</h2>
+<p>Что еще очень важно, так это то, что если ты группируешь записи, то в разделе <code>SELECT</code> можно указывать только колонки, по которым группируются данные.</p>
+<p>Ты <mark class="red">не можешь</mark> написать запрос типа и указать в разделе <code>SELECT</code> колонку <strong>name</strong>:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">SELECT</span> <span class="text-green">brand</span>, <span class="text-user">name</span>
+<span class="text-brown">FROM</span> <span class="text-yellow">product</span>  	
+<span class="text-red">GROUP BY</span> <span class="text-green">brand</span>
+        </code></pre>
+</div>
+<p>У тебя в таблице <strong>product</strong> есть куча строк с полем <strong>name</strong>, и не ясно значение какой строки нужно сюда подставить. Подумай еще раз: ты хочешь узнать количество продуктов каждого бренда и как в результирующую таблицу может попасть имя продукта?</p>
+<p>Если ты используешь оператор <code>GROUP BY</code>, то в твой результат не могут попасть обычные строки, а только колонки по которым группируются данные и “вычисляемые колонки”, такие как <code>COUNT(*)</code></p>
+<h2>4.2 Группировка по вычисляемым колонкам</h2>
+<p>Зато ты можешь выполнять группировку по нескольким колонкам и даже по вычисляемым колонкам. Пример:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">SELECT</span> 
+<span class="text-user">YEAR</span>(<span class="text-green">join_date</span>) <span class="text-red">AS</span> <span class="text-viola">hire_year</span>,
+<span class="text-user">COUNT</span>(*) <span class="text-red">AS</span> <span class="text-viola">total</span>
+<span class="text-brown">FROM</span> <span class="text-yellow">employee</span>  	
+<span class="text-red">GROUP BY</span> <span class="text-viola">hire_year</span>
+        </code></pre>
+</div>
+<p>И результат такого запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>hire_year</th>
+        <th>total</th>
+    </tr>
+    <tr>
+        <td>2012</td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td>2013</td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td>2014</td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td>2015</td>
+        <td>2</td>
+    </tr>
+    <tr>
+        <td>2018</td>
+        <td>1</td>
+    </tr>
+    </tbody>
+</table>
+<p>Давай разберем наш запрос.</p>
+<p>В таблице <strong>employee</strong> у каждого сотрудника уникальная дата найма, поэтому сгруппировать данные по ней не получится – для каждой даты будет одна запись и группировка не будет иметь особого смысла. Но вот если мы перейдем от даты найма к году найма, то вполне может быть ситуация, когда в один и тот же год компания наняла нескольких сотрудников.</p>
+<p>Давай еще раз посмотрим, как будет выглядеть эта таблица до группировки:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">SELECT</span>
+ 	<span class="text-green">id</span>,
+ 	<span class="text-green">name</span>,
+ 	<span class="text-user">YEAR</span>(<span class="text-green">join_date</span>) <span class="text-brown">AS</span> <span class="text-viola">hire_year</span>,
+ 	<span class="text-green">join_date</span>
+<span class="text-brown">FROM</span> <span class="text-yellow">employee</span>
+        </code></pre>
+</div>
+<p>И результат такого запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>hire_year</th>
+        <th>join_date</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>Иванов Иван</td>
+        <td>2012</td>
+        <td>2012-06-30</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>Петров Петр</td>
+        <td>2013</td>
+        <td>2013-08-12</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Иванов Сергей</td>
+        <td>2014</td>
+        <td>2014-01-01</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>Рабинович Мойша</td>
+        <td>2015</td>
+        <td>2015-05-12</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td>Кириенко Анастасия</td>
+        <td>2015</td>
+        <td>2015-10-10</td>
+    </tr><tr>
+        <td>6</td>
+        <td>Васька</td>
+        <td>2018</td>
+        <td>2018-11-11</td>
+    </tr>
+
+    </tbody>
+</table>
+<p>А вот уже эту результирующую таблицу вполне можно сгруппировать по <strong>hire_year</strong> и узнать сколько людей было нанято в конкретный год.</p>
+<h2>4.3 Группировка по нескольким колонкам</h2>
+<p>Теперь давай попробуем узнать сколько сотрудников мы наняли в каждый месяц каждого года. Для этого нам нужно добавить в запрос не одно, а сразу два вычисляемых поля – год найма (hire_year) и месяц найма (hire_month).</p>
+<p>Давай напишем такой запрос:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">SELECT</span>
+ 	<span class="text-green">id</span>,
+ 	<span class="text-green">name</span>,
+ 	<span class="text-user">YEAR</span>(<span class="text-green">join_date</span>) <span class="text-brown">AS</span> <span class="text-viola">hire_year</span>,
+ 	<span class="text-user">MONTH</span>(<span class="text-green">join_date</span>) <span class="text-brown">AS</span> <span class="text-viola">hire_month</span>,
+ 	<span class="text-green">join_date</span>
+<span class="text-brown">FROM</span> <span class="text-yellow">employee</span>
+        </code></pre>
+</div>
+<p>И результат такого запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>hire_year</th>
+        <th>hire_month</th>
+        <th>join_date</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>Иванов Иван</td>
+        <td>2012</td>
+        <td>6</td>
+        <td>2012-06-30</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>Петров Петр</td>
+        <td>2013</td>
+        <td>8</td>
+        <td>2013-08-12</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Иванов Сергей</td>
+        <td>2014</td>
+        <td>1</td>
+        <td>2014-01-01</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>Рабинович Мойша</td>
+        <td>2015</td>
+        <td>5</td>
+        <td>2015-05-12</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td>Кириенко Анастасия</td>
+        <td>2015</td>
+        <td>10</td>
+        <td>2015-10-10</td>
+    </tr><tr>
+        <td>6</td>
+        <td>Васька</td>
+        <td>2018</td>
+        <td>11</td>
+        <td>2018-11-11</td>
+    </tr>
+
+    </tbody>
+</table>
+
+<p>Если мы сгруппируем данные этой результирующей таблицы по месяцам, то просто объединим людей в группы, не обращая внимания на год их найма. А нам нужно чтобы в результирующей таблице было три колонки: год, месяц и количество нанятых сотрудников.</p>
+<p>Для этого после оператора <code>GROUP BY</code> нужно использовать название не одной колонки, а двух. Пример:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">SELECT</span>
+ 	<span class="text-user">YEAR</span>(<span class="text-green">join_date</span>) <span class="text-brown">AS</span> <span class="text-viola">hire_year</span>,
+ 	<span class="text-user">MONTH</span>(<span class="text-green">join_date</span>) <span class="text-brown">AS</span> <span class="text-viola">hire_month</span>,
+ 	<span class="text-user">COUNT</span>(*) <span class="text-brown">AS</span> <span class="text-viola">total</span>
+<span class="text-brown">FROM</span> <span class="text-yellow">employee</span>
+<span class="text-red">GROUP BY</span> <span class="text-viola">hire_year, hire_month</span>
+        </code></pre>
+</div>
+<p>И результат такого запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>hire_year</th>
+        <th>hire_month</th>
+        <th>total</th>
+    </tr>
+    <tr>
+        <td>2012</td>
+        <td>6</td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td>2013</td>
+        <td>8</td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td>2014</td>
+        <td>1</td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td>2015</td>
+        <td>5</td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td>2015</td>
+        <td>10</td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td>2018</td>
+        <td>11</td>
+        <td>1</td>
+    </tr>
+
+    </tbody>
+</table>
+<p>Записей в таблице у нас мало, так что в колонке total везде стоят единицы. И кстати, обратите внимание, что чем по большему количеству колонок мы группируем, тем больше у нас строк в результате. </p>

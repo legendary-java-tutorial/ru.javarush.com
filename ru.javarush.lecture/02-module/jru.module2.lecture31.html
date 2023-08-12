@@ -1,0 +1,383 @@
+Jackson ObjectMapper
+<p>----------------------------------------</p>
+Jackson — это популярная библиотека для сериализации/десериализации Java-объектов в различные текстовые форматы. Основной функционал для работы с форматом JSON — класс ObjectMapper. А работать с другими форматами помогут его...
+<p>----------------------------------------</p>
+    <p>Jackson — это популярная библиотека для сериализации/десериализации Java-объектов в различные текстовые форматы. Основной функционал для работы с форматом JSON — класс <span class="code"><span class="text-green">ObjectMapper</span></span>. А работать с другими форматами помогут его наследники (<span class="code"><span class="text-green">XmlMapper</span></span>, <span class="code"><span class="text-green">YAMLMapper</span></span>). Благодаря наследованию работа со всеми форматами будет происходить единообразно, через единый интерфейс.</p>
+ 
+    <h2>Качаем jar-ники</h2>
+
+    <p>Перед тем, как изучить примеры, нужно скачать jar-файлы Jackson-а и подключить их к проекту в IntellijIDEA. Рассмотрим, как искать нужные файлы на примере <span class="code">jackson-databind</span>:</p>
+
+    <ol>
+        <li><p>Перейди на сайт <a href="https://mvnrepository.com/" target="_blank">Maven Repository</a>.</p></li>
+        <li><p>В поисковую строку введи “<span class="text-bold"><em>jackson-databind</em></span>”, получишь результат:</p>
+            <img data-max-width="800" data-id="6d2f19a0-4a17-4e38-ab63-dee36d87fd21" src="https://cdn.javarush.com/images/article/6d2f19a0-4a17-4e38-ab63-dee36d87fd21/original.png" alt="">
+        <li><p>Нас интересует первый результат поиска, переходим по ссылке.</p</li>
+        <li><p>Иногда может потребоваться конкретная версия библиотеки, чтобы обеспечить совместимость с другими компонентами проекта. Тебе подойдет последняя версия (на момент написания лекции это 2.13.2.2), переходи по ссылке.</p></li>
+        <li><p>На открывшейся странице тебе нужна ссылка “bundle”:</p>
+            <img data-max-width="800" data-id="086431cc-2be3-4049-a082-ac6a05737449" src="https://cdn.javarush.com/images/article/086431cc-2be3-4049-a082-ac6a05737449/original.png" alt=""></p></li>
+        <li><p>Скачиваем jar-файл <a href="https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.13.2.2/jackson-databind-2.13.2.2.jar" target="_blank">по ссылке</a>.</p></li>
+    </ol>
+
+    <p>Аналогично можно найти и скачать остальные необходимые jar-ники:</p>
+
+    <ul>
+        <li><p><a href="https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.13.2/jackson-annotations-2.13.2.jar" target="_blank">jackson-annotations</a></p></li>
+        <li><p><a href="https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.13.2/jackson-core-2.13.2.jar" target="_blank">jackson-core</a></p></li>
+        <li><p><a href="https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-xml/2.13.2/jackson-dataformat-xml-2.13.2.jar" target="_blank">jackson-dataformat-xml</a></p></li>
+        <li><p><a href="https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.13.2/jackson-dataformat-yaml-2.13.2.jar" target="_blank">jackson-dataformat-yaml</a></p></li>
+        <li><p><a href="https://repo1.maven.org/maven2/org/yaml/snakeyaml/1.30/snakeyaml-1.30.jar" target="_blank">snakeyaml</a></p></li>
+        <li><p><a href="https://repo1.maven.org/maven2/com/fasterxml/woodstox/woodstox-core/6.2.8/woodstox-core-6.2.8.jar" target="_blank">woodstox-core</a></p></li>
+        <li><p><a href="https://repo1.maven.org/maven2/org/codehaus/woodstox/stax2-api/4.2.1/stax2-api-4.2.1.jar" target="_blank">stax2-api</a></p></li>
+    </ul>
+  
+    <p>Скачав все необходимые файлы, подключи их к проекту в IntellijIDEA:</p>
+
+    <ol>
+        <li><p>Открой настройки проекта (это можно сделать комбинацией <span class="text-bold">Ctrl+Alt+Shift+S</span>).</p></li>
+        <li><p>Перейди в <span class="text-bold">Libraries</span>.</p></li>
+        <li><p>Жми <span class="text-bold">+</span>, затем Java, выбери все скачанные файлы. Должно получиться так:</p>
+            <img data-max-width="800" data-id="6cfea82b-eaad-4585-be1e-5bdd63a43bef" src="https://cdn.javarush.com/images/article/6cfea82b-eaad-4585-be1e-5bdd63a43bef/original.png" alt=""></li>
+        <li><p>На этом подготовка закончена, будем пробовать <span class="code"><span class="text-green">ObjectMapper</span></span> в деле.</p></li>
+    </ol>
+
+    <h2>Сериализация в JSON </h2>
+
+    <p>Сначала сериализуем какой-нибудь объект в JSON:</p>
+
+    <pre class='language-java line-numbers'><code>
+import com.fasterxml.jackson.databind.ObjectMapper;
+ 
+class Book {
+	public String title;
+	public String author;
+	public int pages;
+}
+ 
+public class Solution {
+	public static void main(String[] args) throws Exception {
+    	Book book = new Book();
+    	book.title = "Обитаемый остров";
+    	book.author = "Стругацкий А., Стругацкий Б.";
+    	book.pages = 413;
+ 
+    	ObjectMapper mapper = new ObjectMapper();
+    	String jsonBook = mapper.writeValueAsString(book);
+    	System.out.println(jsonBook);
+	}
+}
+</code></pre>
+ 
+    <p>Запустив <span class="code text-orange">main</span>, получишь такой вывод:</p>
+
+    <div class="terminal">{"title":"Обитаемый остров","author":"Стругацкий А., Стругацкий Б.","pages":413}</div>
+ 
+    <p>У <span class="code"><span class="text-green">ObjectMapper</span></span>-а есть много дополнительных настроек. Воспользуемся одной из них, чтобы JSON-строка была удобочитаемо отформатирована. После создания объекта <mark class="green">ObjectMapper</mark> выполним команду:</p>
+
+    <div class="terminal">mapper.enable(SerializationFeature.INDENT_OUTPUT);</div>
+ 
+    <p>Информация в выводе осталась та же, но добавились отступы и переносы строк:</p>
+
+    <div class="terminal">{<br />
+&nbsp;&nbsp;"title" : "Обитаемый остров",<br />
+&nbsp;&nbsp;"author" : "Стругацкий А., Стругацкий Б.",<br />
+&nbsp;"pages" : 413<br />
+}</div>
+ 
+    <h2>Десериализация из JSON</h2>
+
+    <p>Теперь выполним обратное действие: десериализуем строку в объект. Чтобы можно было оценить работу программы, в класс <span class="code"><span class="text-green">Book</span></span> добавим метод <span class="code text-orange">toString</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+@Override
+public String toString() {
+	return "Book{" +
+        	"title='" + title + '\'' +
+        	", author='" + author + '\'' +
+        	", pages=" + pages +
+        	'}';
+}
+</code></pre>
+ 
+    <p>И выполним такой <span class="code text-orange">main</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws Exception {
+	String jsonString = "{\"title\":\"Обитаемый остров\",\"author\":\"Стругацкий А., Стругацкий Б.\",\"pages\":413}";
+	Book book = new ObjectMapper().readValue(jsonString, Book.class);
+	System.out.println(book);
+}
+</code></pre>
+ 
+    <p>Вывод:</p>
+
+    <div class="terminal">Book{title='Обитаемый остров', author='Стругацкий А., Стругацкий Б.', pages=413}</div>
+ 
+    <p>Метод <span class="code text-orange">readValue</span> перегружен, у него есть много вариаций, принимающих файл, ссылку, различные потоки чтения и т. д. Для упрощения в нашем примере использован вариант, принимающий JSON в виде строки.</p>
+ 
+    <p>Как уже говорилось выше, <span class="code"><span class="text-green">ObjectMapper</span></span> имеет много настроек, рассмотрим некоторые из них.</p>
+ 
+    <h3>Игнорируем неизвестные свойства</h3>
+
+    <p>Рассмотрим ситуацию, когда у JSON-строки есть свойство, которого нет в классе <span class="code"><span class="text-green">Book</span></span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws Exception {
+	String jsonString = """
+        	{
+          	"title" : "Обитаемый остров",
+          	"author" : "Стругацкий А., Стругацкий Б.",
+          	"pages" : 413,
+          	"unknown property" : 42
+        	}""";
+	ObjectMapper mapper = new ObjectMapper();
+	Book book = mapper.readValue(jsonString, Book.class);
+	System.out.println(book);
+}
+</code></pre>
+ 
+    <p>Попытавшись выполнить этот код, получим <span class="text-red"><span class="text-bold">UnrecognizedPropertyException</span></span>. Такое поведение установлено по умолчанию, но мы можем его изменить:</p>
+
+    <pre class='language-java line-numbers'><code>
+ObjectMapper mapper =
+new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+</code></pre>
+ 
+    <p>При создании объекта <mark class="green">ObjectMapper</mark> используем метод <span class="code text-orange">configure</span>, чтобы установить нужную настройку в <span class="text-red"><em>false</em></span>. Метод <span class="code text-orange">configure</span> изменяет объект, у которого его вызвали, и возвращает этот же объект, поэтому его можно вызывать и по-другому:</p>
+
+    <pre class='language-java line-numbers'><code>
+ObjectMapper mapper = new ObjectMapper();
+mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+</code></pre>
+ 
+    <p>По функциональности такая запись аналогична предыдущей.</p>
+ 
+    <p>Если теперь запустить <span class="code text-orange">main</span>, десериализация пройдет успешно, а <span class="code">unknown property</span> будет проигнорировано.</p>
+ 
+    <h3>Удобные аннотации</h3>
+
+    <p>Jackson предоставляет нам ряд аннотаций для всесторонней кастомизации сериализации. Рассмотрим несколько самых полезных:</p>
+ 
+    <p><span class="text-bold">@JsonIgnore</span> — ставится над элементом, который нужно игнорировать при сериализации/десериализации:</p>
+
+    <pre class='language-java line-numbers'><code>
+class Book {
+	public String title;
+	@JsonIgnore
+	public String author;
+	public int pages;
+}
+</code></pre>
+
+    <p>В результате при сериализации поле <mark>author</mark> не попадет в результирующий JSON. При десериализации поле <mark>author</mark> получит значение по умолчанию (null), даже если в JSON-е было другое значение.</p>
+ 
+    <p><span class="text-bold">@JsonFormat</span> — позволяет задать формат сериализованных данных. Добавим в класс <span class="code"><span class="text-green">Book</span></span> еще одно поле типа <span class="text-orange">Date</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+class Book {
+	public String title;
+	public String author;
+	public int pages;
+	public Date createdDate = new Date();
+}
+</code></pre>
+
+    <p>После сериализации получим такой JSON:</p>
+
+    <div class="terminal">&nbsp;{<br />
+&nbsp;&nbsp;"title" : "Обитаемый остров",<br />
+&nbsp;&nbsp;"author" : "Стругацкий А., Стругацкий Б.",<br />
+&nbsp;&nbsp;"pages" : 413,<br />
+&nbsp;&nbsp;"createdDate" : 1649330880788<br />
+}</div>
+ 
+    <p>Как видишь, дата сериализировалась в виде числа. Добавим аннотацию и зададим формат:</p>
+
+    <pre class='language-java line-numbers'><code>
+class Book {
+	public String title;
+	public String author;
+	public int pages;
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+	public Date createdDate = new Date();
+}
+</code></pre>
+
+    <p>Теперь результат сериализации:</p>
+
+    <div class="terminal">{<br />
+&nbsp;&nbsp;"title" : "Обитаемый остров",<br />
+&nbsp;&nbsp;"author" : "Стругацкий А., Стругацкий Б.",<br />
+&nbsp;&nbsp;"pages" : 413,<br />
+&nbsp;&nbsp;"createdDate" : "2022-04-07"<br />
+}</div>
+ 
+    <p><span class="text-bold">@JsonProperty</span> — позволяет изменить имя свойства, в которое будет сериализировано поле. Еще этой аннотацией можно помечать методы, и их возвращаемое значение будет преобразовано в JSON-свойство при сериализации:</p>
+
+    <pre class='language-java line-numbers'><code>
+class Book {
+	@JsonProperty("name")
+	public String title;
+	public String author;
+	public int pages;
+ 
+	@JsonProperty("quotedTitle")
+	public String getQuotedTitle() {
+    	    return "«" + title + "»";
+	}
+}
+</code></pre>
+ 
+    <p>Результат сериализации:</p>
+
+    <div class="terminal">{<br />
+&nbsp;&nbsp;"author" : "Стругацкий А., Стругацкий Б.",<br />
+&nbsp;&nbsp;"pages" : 413,<br />
+&nbsp;&nbsp;"name" : "Обитаемый остров",<br />
+&nbsp;&nbsp;"quotedTitle" : "«Обитаемый остров»"<br />
+}</div>
+ 
+    <p><span class="text-bold">@JsonInclude</span> — с помощью этой аннотации можно указать, в каком случае поле должно сериализироваться. Можно добавлять как отдельным полям, так и всему классу. Сначала попробуем сериализовать объект с неинициализированными полями:</p>
+
+    <pre class='language-java line-numbers'><code>
+public class Solution {
+	public static void main(String[] args) throws Exception {
+    		Book book = new Book();
+
+    		ObjectMapper mapper = new ObjectMapper();
+    		mapper.enable(SerializationFeature.INDENT_OUTPUT);
+    		String jsonBook = mapper.writeValueAsString(book);
+    		System.out.println(jsonBook);
+	}
+}
+</code></pre>
+
+    <p>Результат сериализации:</p>
+
+    <div class="terminal">{<br />
+&nbsp;&nbsp;"title" : null,<br />
+&nbsp;&nbsp;"author" : null,<br />
+&nbsp;&nbsp;"pages" : 0<br />
+}</div>
+ 
+    <p>А если добавить аннотацию:</p>
+
+    <pre class='language-java line-numbers'><code>
+@JsonInclude(JsonInclude.Include.NON_NULL)
+class Book {
+	public String title;
+	public String author;
+	public int pages;
+}
+</code></pre>
+ 
+    <p>То получим результат:</p>
+
+    <div class="terminal">{<br />
+&nbsp;&nbsp;"pages" : 0<br />
+}</div>
+
+    <p>Теперь поля, имеющие значение <span class="text-bold">null</span>, не сериализовались.</p>
+ 
+    <p><span class="text-bold">@JsonPropertyOrder</span> — позволяет задать порядок сериализации полей:</p>
+
+    <pre class='language-java line-numbers'><code>
+@JsonPropertyOrder({"author", "title", "pages"})
+class Book {
+	public String title;
+	public String author;
+	public int pages;
+}
+</code></pre>
+ 
+    <p>Результат сериализации:</p>
+
+    <div class="terminal">{<br />
+&nbsp;&nbsp;"author" : "Стругацкий А., Стругацкий Б.",<br />
+&nbsp;&nbsp;"title" : "Обитаемый остров",<br />
+&nbsp;&nbsp;"pages" : 413<br />
+}</div>
+ 
+    <p>Сейчас можешь просто запомнить, как использовать аннотации, а в конце этого модуля будем более детально с ними знакомиться и создавать собственные аннотации.</p>
+ 
+    <h2>Сериализация и десериализация в XML</h2>
+
+    <p>Если нужно сериализовать в XML-формат, можем использовать все те же настройки и аннотации. Единственным отличием будет реализация объекта <mark class="green">mapper</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws Exception {
+	Book book = new Book();
+	book.title = "Обитаемый остров";
+	book.author = "Стругацкий А., Стругацкий Б.";
+	book.pages = 413;
+ 
+	ObjectMapper mapper = new XmlMapper();
+	mapper.enable(SerializationFeature.INDENT_OUTPUT);
+	String xmlBook = mapper.writeValueAsString(book);
+	System.out.println(xmlBook);
+}
+</code></pre>
+ 
+    <p>Вывод:</p>
+
+    <div class="terminal">&nbsp;&lt;Book&gt;<br />
+&nbsp;&nbsp;&lt;title&gt;Обитаемый остров&lt;/title&gt;<br />
+&nbsp;&nbsp;&lt;author&gt;Стругацкий А., Стругацкий Б.&lt;/author&gt;<br />
+&nbsp;&nbsp;&lt;pages&gt;413&lt;/pages&gt;<br />
+&lt;/Book&gt;</div>
+
+    <p>Десериализация XML:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws Exception {
+   String xmlString = """
+            &lt;Book&gt;
+             &lt;title&gt;Обитаемый остров&lt;/title&gt;
+             &lt;author&gt;Стругацкий А., Стругацкий Б.&lt;/author&gt;
+             &lt;pages&gt;413&lt;/pages&gt;
+           &lt;/Book&gt;""";
+   ObjectMapper mapper = new XmlMapper();
+   Book book = mapper.readValue(xmlString, Book.class);
+   System.out.println(book);
+}
+</code></pre>
+ 
+    <h2>Сериализация и десериализация в YAML</h2>
+
+    <p>Аналогично XML действуем и с YAML:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws Exception {
+	Book book = new Book();
+	book.title = "Обитаемый остров";
+	book.author = "Стругацкий А., Стругацкий Б.";
+	book.pages = 413;
+ 
+	ObjectMapper mapper = new YAMLMapper();
+	mapper.enable(SerializationFeature.INDENT_OUTPUT);
+	String yamlBook = mapper.writeValueAsString(book);
+	System.out.println(yamlBook);
+}
+</code></pre>
+ 
+    <p>Вывод:</p>
+
+    <div class="terminal">---<br />
+title: "Обитаемый остров"<br />
+author: "Стругацкий А., Стругацкий Б."<br />
+pages: 413</div>
+
+    <p>Десериализация YAML:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws Exception {
+   String yamlString = """
+           ---
+           title: "Обитаемый остров"
+           author: "Стругацкий А., Стругацкий Б."
+           pages: 413""";
+   ObjectMapper mapper = new YAMLMapper();
+   Book book = mapper.readValue(yamlString, Book.class);
+   System.out.println(book);
+}
+</code></pre>

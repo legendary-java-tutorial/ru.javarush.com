@@ -1,0 +1,275 @@
+Нюансы работы с массивами
+<p>----------------------------------------</p>
+Массивы в памяти Картинки в предыдущих примерах немного неточны. При создании массивов (как и при создании строк) в памяти выделяются два блока памяти: один для хранения самого массива (контейнера), а второй под переменную, которая хранит его адрес. Уточненная ситуация изображена на картинке ниж
+<p>----------------------------------------</p>
+<div class="lesson-carousel lesson-carousel--comics lesson-carousel--desktop">
+    <div class="lesson-carousel__list">
+        <div class="lesson-carousel__item">
+            <img data-id="21f4ada2-5241-4ba6-a71b-c67f81522c23" data-max-width="1024" src="https://cdn.javarush.com/images/article/21f4ada2-5241-4ba6-a71b-c67f81522c23/original.png" alt="">
+        </div>
+    </div>
+</div>
+<div class="lesson-carousel lesson-carousel--comics lesson-carousel--mobile">
+    <div class="lesson-carousel__list">
+        <div class="lesson-carousel__item">
+            <img data-id="acefb55a-5a64-44af-b9eb-5c50e0bebfe6" data-max-width="512" src="https://cdn.javarush.com/images/article/acefb55a-5a64-44af-b9eb-5c50e0bebfe6/original.png" alt="">
+        </div>
+        <div class="lesson-carousel__item">
+            <img data-id="b406899e-b825-4900-998f-18681791a990" data-max-width="512" src="https://cdn.javarush.com/images/article/b406899e-b825-4900-998f-18681791a990/original.png" alt="">
+        </div>
+    </div>
+</div>
+
+<hr>
+
+<h2>1. Массивы в памяти</h2>
+<p>Картинки в предыдущих примерах немного неточны.</p>
+<p>При создании массивов (как и при создании строк) в памяти выделяются два блока памяти: один для хранения самого <span class="term"><span class="text-green">массива</span></span> (контейнера), а второй — под переменную, которая хранит его <span class="term"><span class="text-red">адрес</span></span>. Уточненная ситуация изображена на картинке ниже:</p>
+<p><img data-id="6fd3e6ef-ce5d-4298-8d0b-b107cb96e510" src="https://cdn.javarush.com/images/article/6fd3e6ef-ce5d-4298-8d0b-b107cb96e510/original.png" alt="Массивы в памяти"></p>
+<p>Зеленым цветом изображен массив на <code>10</code> элементов типа <code>int</code> и переменная типа <code>int[]</code>, которая хранит
+    <span class="term"><span class="text-red">адрес</span></span> (ссылку) массива типа <code>int</code> в памяти.</p>
+<p>Для сравнения синим цветом обозначена обычная переменная типа <code>int</code>, которая хранит значение <code class="text-user">199</code>.</p>
+<p>Чем-то напоминает хранение строк в памяти, не находите?</p>
+<p>Верно, строки. И как при работе со строками, «переменные типа массив» можно присваивать друг другу:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Пояснение</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>int[] <span class="text-red">a</span> = new int[10];
+<span class="text-red">a</span>[2] = 4;
+<span class="text-red">a</span>[7] = 9;
+int[] <span class="text-green">b</span> = <span class="text-red">a</span>;
+
+<span class="text-red">a</span>[9] = <span class="text-green">b</span>[2] + <span class="text-red">a</span>[7];</code></pre>
+        </td>
+        <td>Создаем массив на <code>10</code> элементов типа <code>int</code>.<br>
+            В ячейку с индексом <code>2</code> записываем значение <code>4</code>.<br>
+            В ячейку с индексом <code>7</code> записываем значение <code>9</code>.<br>
+            В переменную <code><span class="text-green">b</span></code> сохраняем адрес, который есть в переменной <code><span class="text-red">a</span></code>.<br>
+            Теперь <code><span class="text-red">a</span></code> и <code><span class="text-green">b</span></code> указывают на один и тот же объект-массив в памяти.<br>
+            В ячейку с индексом <code>9</code> объекта-массива записываем сумму значений, которые хранятся в ячейках <code>2</code> (хранится <code>4</code>) и <code>7</code> (хранится <code>9</code>).
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p>При этом объект-массив будет оставаться там, где и был, а переменные <code><span class="text-red">a</span></code> и <code><span class="text-green">b</span></code> будут хранить одинаковые адреса (ссылки) на один и тот же объект. Смотрите картинку:</p>
+<img data-max-width="1024" data-id="ab08cb0c-a325-4b56-bb91-42d92d41e109" src="https://cdn.javarush.com/images/article/ab08cb0c-a325-4b56-bb91-42d92d41e109/1024.jpeg" alt="Массивы в памяти 2">
+<hr>
+<h2>2. Работа с массивом более детально</h2>
+<p>Массив можно создать из абсолютно любого типа. Для этого нужно лишь после имени типа написать квадратные скобки. Общий вид создания массива будет такой:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code><span class="text-orange">тип</span>[] <span class="text-red">имя</span> = new <span class="text-orange">тип</span>[<span class="text-user">количество</span>];</code></pre>
+</div>
+<p>Где <span class="text-orange">тип</span> — это тип элементов (ячеек) массива, которые мы будем хранить в массиве. <span class="text-red">Имя</span> — это имя переменной, по которой мы будем к массиву обращаться, а <span class="text-user">количество</span> — это количество ячеек в массиве.</p>
+<p>В примере выше приведена каноническая форма: создание переменной-массива и создание объекта-массива. На самом деле это две независимые конструкции.</p>
+<p>Можно создать переменную-массив и объект-массив отдельно:</p>
+<div class="lesson-example lesson-example--center">
+<pre class="lecture-code lecture-code--present language-java"><code><span class="text-orange">тип</span>[] <span class="text-red">имя</span>;
+<span class="text-red">имя</span> = new <span class="text-orange">тип</span>[<span class="text-user">количество</span>];</code></pre>
+</div>
+<p>И еще один немаловажный момент:</p>
+<div class="lesson-note lesson-note--important">
+    <div class="lesson-note__container">
+        <div class="lesson-note__content">
+            В качестве <span class="term">индекса массива</span> и в качестве <span class="term">количества элементов массива</span> могут выступать переменные и даже целые выражения.
+        </div>
+    </div>
+</div>
+<p>Примеры:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Пояснение</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>int <span class="text-green">n</span> = <span class="text-user">100</span>;
+int[] <span class="text-red">a</span> = new int[<span class="text-green">n</span>];</code></pre>
+        </td>
+        <td>Создание массива из <code><span class="text-green">n</span></code> элементов</td>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>int <span class="text-green">n</span> = <span class="text-user">100</span>;
+int[] a = new int[<span class="text-green">n</span> * <span class="text-user">2</span> + <span class="text-user">3</span>];</code></pre>
+        </td>
+        <td>Создание массива на <code>203</code> элемента</td>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>int <span class="text-green">n</span> = <span class="text-user">100</span>;
+int[] <span class="text-red">a</span> = new int[<span class="text-green">n</span>];
+<span class="text-red">a</span>[<span class="text-green">n</span>-<span class="text-user">1</span>] = <span class="text-user">2</span>;
+<span class="text-red">a</span>[<span class="text-green">n</span>-<span class="text-user">2</span>] = <span class="text-user">3</span>;
+<span class="text-red">a</span>[<span class="text-green">n</span>/5] = a[<span class="text-green">n</span>-<span class="text-user">1</span>] + a[<span class="text-green">n</span>-2]</code></pre>
+        </td>
+        <td><pre><code>
+
+<span class="token comment">// a[99] = 2;</span>
+<span class="token comment">// a[98] = 3;</span>
+<span class="token comment">// a[20] = a[99] + a[98];</span></code></pre>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<div class="lesson-note lesson-note--important">
+    <div class="lesson-note__container">
+        <div class="lesson-note__head">Важно:</div>
+        <div class="lesson-note__content">
+            Кстати, обращаем ваше внимание, что если попробовать обратиться к ячейке массива по индексу, которого в массиве нет (в нашем случае это все целые числа, кроме чисел <code>0..99</code>), программа аварийно завершится с ошибкой <code><span class="text-red">ArrayIndexOfBoundException</span></code> — индекс за границами массива.
+        </div>
+    </div>
+</div>
+<hr>
+<h2>3. Длина массива</h2>
+<p>Как вы увидели в предыдущем примере, можно отдельно создать переменную типа массив и потом где-то в коде присвоить ей значение (ссылку на объект-массив). Можно сделать даже так:</p>
+<table>
+    <tbody>
+    <tr>
+        <th> Код</th>
+        <th> Пояснение</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>int[] <span class="text-red">array</span>;
+if (<span class="text-viola">a</span> &lt; 10)
+   <span class="text-red">array</span> = new int[10];
+else
+   <span class="text-red">array</span> = new int[20];</code></pre>
+        </td>
+        <td>Создаем переменную-массив типа <code>int[]</code><br>
+            Если переменная <code><span class="text-viola">a</span></code> меньше <code>10</code>,<br>
+            то создать массив из <code>10</code> элементов.<br>
+            Иначе<br>
+            создать массив из <code>20</code> элементов
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p>И как работать дальше с таким массивом? Как узнать, сколько в нем элементов?</p>
+<p>Для этого у массива есть специальное свойство (переменная) — <code>length</code>. И узнать длину массива можно с помощью такого выражения:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code><span class="text-red">array</span>.<span class="text-user">length</span>;</code></pre>
+</div>
+<p>Где <code><span class="text-red">array</span></code> — это имя переменной-массива, а <code><span class="text-user">length</span></code> — это имя свойства у объекта-массива. Значение в свойстве <code>length</code> поменять нельзя: само свойство <code>length</code> можно присваивать другим переменным, но ему ничего присваивать нельзя (программа просто не скомпилируется).</p>
+<p>Вот как можно продолжить предыдущий пример:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Пояснение</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>int[] <span class="text-red">array</span>;
+if (<span class="text-viola">a</span> &lt; 10)
+   <span class="text-red">array</span> = new int[10];
+else
+   <span class="text-red">array</span> = new int[20];
+for (int <span class="text-green">i</span> = 0; <span class="text-green">i</span> &lt; <span class="text-red">array</span>.<span class="text-user">length</span>; <span class="text-green">i</span>++)
+{
+   System.out.println(<span class="text-red">array</span>[<span class="text-green">i</span>]);
+} </code></pre>
+        </td>
+        <td>Создаем переменную-массив типа <code>int[]</code><br>
+            Если переменная <code><span class="text-viola">a</span></code> меньше <code>10</code>,<br>
+            то создать массив из <code>10</code> элементов.<br>
+            Иначе<br>
+            создать массив из <code>20</code> элементов<br>
+            Цикл по всем элементам массива: от <code>0</code> и до длины <code>array.length — 1</code></td>
+    </tr>
+    </tbody>
+</table>
+<hr>
+<h2>4. Резюмируем факты о массивах в Java</h2>
+<p>Давайте резюмируем известные факты о массивах:</p>
+<p><span class="text-bold">Факт 1.</span> Массив состоит из множества ячеек.</p>
+<p><span class="text-bold">Факт 2.</span> Доступ к конкретной ячейке идёт через указание её номера.</p>
+<p><span class="text-bold">Факт 3.</span> Все ячейки одного типа.</p>
+<p><span class="text-bold">Факт 4.</span> Начальное значение для всех ячеек — 0 и <code>null</code> (если в ячейке хранится адрес), <code>false</code> (для типа <code>boolean</code>). <a href="https://javarush.com/groups/posts/massivy-java">Подробнее о значениях по умолчанию вы узнаете в этой лекции</a>.</p>
+<p><span class="text-bold">Факт 5.</span> <code>String[] list</code> &#8211; это просто объявление переменной: сам контейнер(объект-массив) еще не создан. Чтобы с ним можно было работать, нужно создать массив (контейнер) и положить его в эту переменную, а потом уже им пользоваться. См. пример ниже.</p>
+<p><span class="text-bold">Факт 6.</span> Когда мы создаём объект-массив (контейнер), нужно указать, какой он длины — сколько в нем ячеек. Это делается командой вида: <code><span class="text-red">new TypeName[n]</span></code>;</p>
+<p><span class="text-bold">Факт 7.</span> Длину массива можно узнать через свойство <code>.length</code>.</p>
+<p><span class="text-bold">Факт 8.</span> После создания массива нельзя поменять ни тип его элементов, ни их количество.</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Пояснение</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>String <span class="text-red">s</span>;
+String[] <span class="text-green">list</span>;</code></pre>
+        </td>
+        <td>
+            <code><span class="text-red">s</span></code> равно <code>null</code><br>
+            <code><span class="text-green">list</span></code> равно <code>null</code>
+        </td>
+    </tr>
+    <tr>
+        <td>
+                <pre class="language-java"><code><span class="text-green">list</span> = new String[<span class="text-red">10</span>];
+int <span class="text-viola">n</span> = <span class="text-green">list</span>.length;</code></pre>
+        </td>
+        <td>
+            Переменная <code><span class="text-green">list</span></code> хранит ссылку на объект &#8211; массив строк из <code><span class="text-red">10</span></code> элементов.<br>
+            <code><span class="text-viola">n</span></code> равно <code><span class="text-red">10</span></code>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code><span class="text-user">list</span> = new String[<span class="text-viola">0</span>];</code></pre>
+        </td>
+        <td>
+            <p>Теперь <code><span class="text-user">list</span></code> содержит массив из <code><span class="text-viola">0</span></code> элементов. Массив есть, но хранить элементы он не может.</p>
+        </td>
+    </tr>
+    <tr>
+        <td>
+                <pre class="language-java"><code><span class="text-green">list</span> = null;
+System.out.println(<span class="text-green">list</span>[1]);</code></pre>
+        </td>
+        <td>
+            Будет сгенерировано исключение (ошибка программы) — программа аварийно завершится. <code><span class="text-green">list</span></code> содержит пустую ссылку — <code>null</code>
+        </td>
+    </tr>
+    <tr>
+        <td>
+                <pre class="language-java"><code><span class="text-user">list</span> = new String[10];
+System.out.println(<span class="text-user">list</span>[10]);</code></pre>
+        </td>
+        <td>
+            Будет сгенерировано исключение (ошибка программы) — выход за границы массива.<br>
+            Если <code><span class="text-user">list</span></code> содержит <code>10</code> элементов/ячеек, то их разрешённые индексы: <code>0</code> <code>1</code> <code>2</code> <code>3</code> <code>4</code> <code>5</code> <code>6</code> <code>7</code> <code>8</code> <code>9</code> — всего <code>10</code> штук.
+        </td>
+    </tr>
+    </tbody>
+</table>
+
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task05.task0504"></div>
+<hr>
+
+<div class="lesson-carousel lesson-carousel--comics lesson-carousel--desktop">
+    <div class="lesson-carousel__list">
+        <div class="lesson-carousel__item">
+            <img data-id="54a209f8-62ce-411b-a54c-5abc94a6d7cd" data-max-width="1024" src="https://cdn.javarush.com/images/article/54a209f8-62ce-411b-a54c-5abc94a6d7cd/original.png" alt="">
+        </div>
+    </div>
+</div>
+<div class="lesson-carousel lesson-carousel--comics lesson-carousel--mobile">
+    <div class="lesson-carousel__list">
+        <div class="lesson-carousel__item">
+            <img data-id="8f6451a9-9100-4032-b7ce-39b484ab6fa9" data-max-width="512" src="https://cdn.javarush.com/images/article/8f6451a9-9100-4032-b7ce-39b484ab6fa9/original.png" alt="">
+        </div>
+        <div class="lesson-carousel__item">
+            <img data-id="38d35734-42d6-4c15-b34d-fe52cdeb1604" data-max-width="512" src="https://cdn.javarush.com/images/article/38d35734-42d6-4c15-b34d-fe52cdeb1604/original.png" alt="">
+        </div>
+    </div>
+</div>

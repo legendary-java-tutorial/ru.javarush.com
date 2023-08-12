@@ -1,0 +1,110 @@
+Параметризованные тесты в Junit
+<p>----------------------------------------</p>
+Аннотация @ParameterizedTest. 
+Аннотация @ValueSource. 
+Аннотация @EnumSource. 
+Аннотация @MethodSource. 
+Параметризованные тесты с несколькими аргументами.
+<p>----------------------------------------</p>
+    <h2>5.1 Аннотация @ParameterizedTest</h2>
+
+    <p>Иногда просто хочется вызвать тест несколько раз с различными параметрами: разные значения, разные входные параметры, разные имена пользователей. JUnit стремится упростить тебе жизнь, поэтому на этот случай у него есть такая вещь как параметризированные тесты.</p>
+<p>Для использования параметризованных тестов надо добавить еще одну зависимость в ваш <code>pom.xml</code>:</p>
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.junit.jupiter&lt;/groupId&gt;
+    &lt;artifactId&gt;junit-jupiter-params&lt;/artifactId&gt;
+    &lt;version&gt;5.8.2&lt;/version&gt;
+    &lt;scope&gt;test&lt;/scope&gt;
+&lt;/dependency&gt;
+</code></pre>
+    <p>После чего можем рассмотреть пример:</p>
+ 
+    <pre class='language-java line-numbers'><code>
+@ParameterizedTest
+@ValueSource(ints = { 1, 2, 3 })
+void testMethod(int argument) {
+    //test code
+}
+ 
+@ParameterizedTest
+@ValueSource(ints = { 1, 2, 3 })
+void testMethodWithAutoboxing(Integer argument) {
+    //test code
+}
+</code></pre>
+  
+    <p>Каждый тестовый метод вызовется по 3 раза и при каждом вызове в него будет передан очередной параметр. Значения задаются с помощью другой аннотации — <span class="text-yellow"><span class="text-bold">@ValueSource</span></span>. Но о ней нужно рассказать подробнее.</p>
+
+    <h2>5.2 Аннотация @ValueSource</h2>
+
+    <p>Аннотация <span class="text-yellow"><span class="text-bold">@ValueSource</span></span> отлично подходит для работы с примитивами и литералами. Просто перечисли значения параметра через запятую и тест будет вызван по одному разу для каждого значения.</p>
+ 
+    <pre class='language-java line-numbers'><code>
+@ParameterizedTest
+@ValueSource(ints = { 1, 2, 3 })
+void testMethodWithAutoboxing(Integer argument) {
+    //test code
+}
+</code></pre>
+ 
+    <p>Но есть и минус — эта аннотация не поддерживает null, так что для него нужно будет использовать специальный костыль — <span class="text-yellow"><span class="text-bold">@NullSource</span></span>. Выглядит это так:</p>
+ 
+    <pre class='language-java line-numbers'><code>
+@ParameterizedTest
+@NullSource
+void testMethodNullSource(Integer argument) {
+    assertTrue(argument == null);
+}
+</code></pre>
+ 
+    <h2>5.3 Аннотация @EnumSource</h2>
+
+    <p>Также есть специальная аннотация <span class="text-yellow"><span class="text-bold">@EnumSource</span></span>, которая передает в метод все значения определенного Enum’а. Ее применение выглядит так:</p>
+ 
+    <pre class='language-java line-numbers'><code>
+enum Direction {
+    EAST, WEST, NORTH, SOUTH
+}
+ 
+@ParameterizedTest
+@EnumSource(Direction.class)
+void testWithEnumSource(Direction d) {
+    assertNotNull(d);
+}
+</code></pre>
+ 
+    <h2>5.4 Аннотация @MethodSource</h2>
+
+    <p>А как же передавать в качестве параметров объекты? Особенно, если они имеют сложный алгоритм построения.  Для этого можно просто указать специальный вспомогательный метод, который будет возвращать список (Stream) из таких значений.</p>
+
+    <p>Пример:</p>
+ 
+    <pre class='language-java line-numbers'><code>
+@ParameterizedTest
+@MethodSource("argsProviderFactory")
+void testWithMethodSource(String argument) {
+    assertNotNull(argument);
+}
+ 
+static Stream&lt;String&gt; argsProviderFactory() {
+    return Stream.of("один", "два",  "три");
+}
+</code></pre>
+ 
+    <h2>Параметризованные тесты с несколькими аргументами</h2>
+
+    <p>Конечно вы уже задались вопросом, а что делать, если в метод хочется передать несколько параметров. Для этого есть очень классная аннотация <span class="text-yellow"><span class="text-bold">@CSVSource</span></span>. Она позволяет перечислить значения параметров метода просто через запятую.</p>
+
+    <p>Пример:</p>
+
+    <pre class='language-java line-numbers'><code>
+@ParameterizedTest
+@CsvSource({
+    "alex, 30, Программист, Работает",
+    "brian, 35, Тестировщик, Работает",
+	"charles, 40, Менеджер, Пинает"
+})
+void testWithCsvSource(String name, int age, String occupation, String status) {
+	//код метода
+}
+</code></pre>

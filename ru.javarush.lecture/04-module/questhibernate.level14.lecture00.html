@@ -1,0 +1,76 @@
+Lazy Loading
+<p>----------------------------------------</p>
+Предыстория проблемы
+Усугубляем ситуацию с коллекциями
+Свет в конце тоннеля
+<p>----------------------------------------</p>
+<h2>1.1 Предыстория проблемы</h2>
+<p>Когда ты начнешь работать с реальными базами данных, то тут же вспомнишь фразу “Преждевременная оптимизация – корень всех зол”. Только вот вспомнишь ты ее в негативном ключе. При работе с базой данных без оптимизации не обойтись. И работать с ней нужно уже на этапе проектирования.</p>
+<p>Hibernate делает работу с базой данных очень удобной. Ты легко можешь получить любые дочерние объекты, просто правильно расставив аннотации <code>@OneToMany</code> и <code>@ManyToMany</code>. Пример:</p>
+<pre class='line-numbers'><code>
+<span class="text-brown">@Entity
+@Table(name</span>=<span class="text-green">"user"</span><span class="text-brown">)</span>
+class User {
+   <span class="text-brown">@Column(name="id")</span>
+   public Integer id;
+ 
+   <span class="text-brown">@OneToMany(cascade = CascadeType.ALL)
+   @JoinColumn(name = "user_id")</span>
+   public List&lt;<span class="token keyword">Comment</span>&gt; <span class="text-user">comments</span>;
+}
+</code></pre>
+
+<p>И как просто получить комментарии пользователя:</p>
+<pre class='line-numbers'><code>
+User user = session.get(User.class, 1);
+List&lt;Comment&gt; comments = user.getComments();
+</code></pre>
+<p>И тебя тут будет ждать большой сюрприз. У пользователя несколько тысяч комментариев. Если ты напишешь такой код, то Hibernate, конечно, загрузит все комментарии пользователя. Но это будет очень медленно, комментарии займут много памяти и тому подобное.</p>
+<p>Поэтому так писать нельзя! В теории – можно, а на практике – нет.</p>
+<h2>1.2 Усугубляем ситуацию с коллекциями</h2>
+<p>Проблема еще интереснее. Ведь обычно тебе никогда не нужны все комментарии пользователя. Даже если ты их отображаешь где-то на клиенте, то предпочитаешь делать это частями – страницами.</p>
+<p>Поэтому тебе нужны методы типа таких:</p>
+<pre class='line-numbers'><code>
+public class CommentsManager {
+    private static final <span class="text-viola">PAGE_SIZE</span> = 50;
+ 
+    public List&lt;Comment&gt; getCommentsPage(int <span class="text-green">userId</span>, int <span class="text-yellow">pageIndex</span>){
+     	User <span class="text-green">user</span> = session.get(User.class, <span class="text-green">userId</span>);
+     	List&lt;Comment&gt; <span class="text-user">comments</span> = user.getComments();
+     	return <span class="text-user">comments</span>.subList(<span class="text-yellow">pageIndex</span> * <span class="text-viola">PAGE_SIZE</span>, <span class="text-viola">PAGE_SIZE</span>);
+    }
+ 
+   public int <span class="text-brown">getCommentsPageCount</span>(int <span class="text-green">userId</span>)   {
+     	User <span class="text-green">user</span> = session.get(User.class, <span class="text-green">userId</span>);
+     	List&lt;Comment&gt; <span class="text-user">comments</span> = <span class="text-green">user</span>.getComments();
+     	return Math.ceil(  <span class="text-user">comments</span>.size()/<span class="text-viola">PAGE_SIZE</span>);
+   }
+ 
+}
+</code></pre>
+<p>Первый метод возвращает только одну страницу комментариев – 50 штук. Второй метод возвращает количество страниц комментариев. И это самое ужасное. Для того, чтобы просто узнать количество комментариев тебе пришлось загрузить из базы все комментарии!</p>
+<h2> 1.3 Свет в конце тоннеля</h2>
+<p>Поэтому нашими замечательными дочерними коллекциями никто не пользуется. Нет, их конечно используют, но только как часть HQL-запросов. Например так:</p>
+<pre class='line-numbers'><code>
+public class CommentsManager {
+      private static final <span class="text-viola">PAGE_SIZE</span> = 50;
+ 
+       public List&lt;<span class="token keyword">Comment</span>&gt; <span class="text-brown">getCommentsPage</span>(int <span class="text-green">userId</span>, int <span class="text-yellow">pageIndex</span>){
+           	String hql = <span class="text-green">"select comments from User where id = :id"</span>;
+           	Query&lt;<span class="token keyword">Comment</span>&gt; <span class="text-viola">query</span> = session.createQuery( hql, <span class="token keyword">Comment</span>.class);
+           	<span class="text-viola">query</span>.setParametr(<span class="text-green">"id"</span>, <span class="text-green">userId</span>);
+           	<span class="text-viola">query</span>.setOffset(<span class="text-yellow">pageIndex</span> * <span class="text-viola">PAGE_SIZE</span>);
+           	<span class="text-viola">query</span>.setLimit(<span class="text-viola">PAGE_SIZE</span>);
+           	return <span class="text-viola">query</span>.<span class="text-red">list</span>();
+      }
+ 
+      public int getCommentsPageCount(int <span class="text-green">userId</span>)   {
+           	String hql = <span class="text-green">"select count(comments) from User where id = :id"</span>;
+           	Query&lt;<span class="token keyword">Integer</span>&gt; <span class="text-viola">query</span> = session.createQuery( hql, <span class="token keyword">Integer</span>.class);
+           	<span class="text-viola">query</span>.setParametr(<span class="text-green">"id"</span>, <span class="text-green">userId</span>);
+           	return Math.ceil(<span class="text-viola">query</span>.<span class="text-red">singleResult</span>()/<span class="text-viola">PAGE_SIZE</span>);
+     }
+ 
+}
+</code></pre>
+<p>Хорошая новость – мы можем реализовать наши методы так, чтобы не нужно было загружать лишние данные из базы. Плохая новость – так просто работать с нашими коллекциями нельзя.</p>

@@ -1,0 +1,259 @@
+Работа с потоками, часть 3
+<p>----------------------------------------</p>
+Проверка Думаю, вам уже скучно изучать как конструировать цепочки потоков данных, хочется наконец-то с этими данными что-то делать. У класса Stream есть три стандартных метода, которые не конструируют потоки, а проверяют, что за данные находятся в этих потоках. Это методы: anyMatch(), allMatch(
+<p>----------------------------------------</p>
+<h2>1. Проверка</h2>
+<p>Думаю, вам уже скучно изучать, как конструировать цепочки потоков данных. Хочется наконец-то с этими данными что-то делать.</p>
+<p>У класса <code>Stream</code> есть три стандартных метода, которые не конструируют потоки, а проверяют, что за данные находятся в этих потоках. Это методы: <code>anyMatch()</code>, <code>allMatch()</code> и <code>noneMatch()</code>.</p>
+<p><strong>Метод <code>boolean anyMatch(правило)</code></strong></p>
+<p>Этот метод проверяет, что в потоке есть хотя бы один элемент, который удовлетворяет правилу, которое передается в метод. Если такой элемент есть, метод возвращает <code>true</code>, иначе — <code>false</code>.</p>
+<p>Примеры</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Примечание</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>Stream&lt;Integer&gt; <span class="text-user">stream</span> = Stream.of(1, 2, 3, 4, 5);
+boolean <span class="text-green">result</span> = <span class="text-user">stream</span>.<span class="text-red">anyMatch</span>(<span class="text-orange">x -&gt; x &gt; 0</span>);</code></pre>
+        </td>
+        <td><pre><code>
+true</code></pre>
+        </td>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>Stream&lt;Integer&gt; <span class="text-user">stream</span> = Stream.of(1, -2, 3, -4, 5);
+boolean <span class="text-green">result</span> = <span class="text-user">stream</span>.<span class="text-red">anyMatch</span>(<span class="text-orange">x -&gt; x &gt; 0</span>);</code></pre>
+        </td>
+        <td><pre><code>
+true</code></pre>
+        </td>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>Stream&lt;Integer&gt; <span class="text-user">stream</span> = Stream.of(1, -2, 3, -4, 5);
+boolean <span class="text-green">result</span> = <span class="text-user">stream</span>.filter(<span class="text-orange">x -&gt; x &lt; 0</span>).<span class="text-red">anyMatch</span>(<span class="text-orange">x -&gt; x &gt; 0</span>);</code></pre>
+        </td>
+        <td><pre><code>
+false</code></pre>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p>В последнем примере мы сначала отфильтровываем (пропускаем через фильтр) все элементы меньше нуля, а затем уже среди них проводим проверку, есть ли хотя бы один элемент больше нуля. Ясное дело, таких элементов там уже нет.</p>
+<p><strong>Метод boolean allMatch(правило)</strong></p>
+<p>Этот метод проверяет, что все элементы в потоке соответствуют правилу. Правило передается в метод в качестве параметра:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Примечание</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>Stream&lt;Integer&gt; <span class="text-user">stream</span> = Stream.of(1, 2, 3, 4, 5);
+boolean <span class="text-green">result</span> = <span class="text-user">stream</span>.<span class="text-red">allMatch</span>(<span class="text-orange">x -&gt; x &gt; 0</span>);</code></pre>
+        </td>
+        <td>
+            <pre><code>true</code></pre>
+            (все элементы больше нуля)
+        </td>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>Stream&lt;Integer&gt; <span class="text-user">stream</span> = Stream.of(1, -2, 3, -4, 5);
+boolean <span class="text-green">result</span> = <span class="text-user">stream</span>.<span class="text-red">allMatch</span>(<span class="text-orange">x -&gt; x &gt; 0</span>);</code></pre>
+        </td>
+        <td>
+            <pre><code>false</code></pre>
+            (есть элементы меньше или равны нулю)
+        </td>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>Stream&lt;Integer&gt; <span class="text-user">stream</span> = Stream.of(1, -2, 3, -4, 5);
+boolean <span class="text-green">result</span> = <span class="text-user">stream</span>.filter(<span class="text-orange">x -&gt; x &lt; 0</span>).<span class="text-red">allMatch</span>(<span class="text-orange">x -&gt; x &lt; 0</span>);</code></pre>
+        </td>
+        <td>
+            <pre><code>true</code></pre>
+            (отфильтровали элементы меньше нуля)
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p>В последнем примере мы сначала пропускаем через фильтр только элементы меньше нуля, а потом уже среди них выполняем проверку, что все элементы меньше нуля. Проверка проходит успешно.</p>
+<p><strong>Метод boolean noneMatch(правило)</strong></p>
+<p>Метод <code><span class="text-red">noneMatch</span>()</code> проверяет, что в потоке нет ни одного элемента, который соответствует переданному правилу. Противоположный по смыслу метод к методу <code>anyMatch()</code>.</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Примечание</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>Stream&lt;Integer&gt; <span class="text-user">stream</span> = Stream.of(1, 2, 3, 4, 5);
+boolean <span class="text-green">result</span> = <span class="text-user">stream</span>.<span class="text-red">noneMatch</span>(<span class="text-orange">x -&gt; x &gt; 0</span>);</code></pre>
+        </td>
+        <td><pre><code>
+false</code></pre>
+        </td>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>Stream&lt;Integer&gt; <span class="text-user">stream</span> = Stream.of(1, -2, 3, -4, 5);
+boolean <span class="text-green">result</span> = <span class="text-user">stream</span>.<span class="text-red">noneMatch</span>(<span class="text-orange">x -&gt; x &gt; 0</span>);</code></pre>
+        </td>
+        <td><pre><code>
+false</code></pre>
+        </td>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>Stream&lt;Integer&gt; <span class="text-user">stream</span> = Stream.of(1, -2, 3, -4, 5);
+boolean <span class="text-green">result</span> = <span class="text-user">stream</span>.filter(<span class="text-orange">x -&gt; x &lt; 0</span>).<span class="text-red">noneMatch</span>(<span class="text-orange">x -&gt; x &gt; 0</span>);</code></pre>
+        </td>
+        <td><pre><code>
+true</code></pre>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1817"></div>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1818"></div>
+<hr>
+<h2>2. Служебные классы: класс <code>Optional</code></h2>
+<p>Иногда программистам очень неудобно работать с ссылками на <code>null</code>. Например, вы сравниваете две строки. Если обе переменные не <code>null</code>, тогда можно просто вызвать <code>s1.equals(s2)</code>, и все будет работать. А вот если <code>s1</code> может быть <code>null</code>, придется писать код, который учитывает эту ситуацию, чтобы не возникло <code>NullPointerException</code>.</p>
+<p>Поэтому программисты придумали служебный класс <code>Optional&lt;T&gt;</code>. Выглядит его код примерно так:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Примечание</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>class <span class="text-neon">Optional</span>&lt;<span class="text-orange">Tип</span>&gt;
+{
+   private final <span class="text-orange">Tип</span> <span class="code text-user">value</span>;
+   private <span class="text-neon">Optional</span>() { this.<span class="code text-user">value</span> = null;}
+   private <span class="text-neon">Optional</span>(value) { this.<span class="code text-user">value</span> = <span class="text-green">value</span>;}
+   public static &lt;<span class="text-orange">Tип</span>&gt; <span class="text-neon">Optional</span>&lt;<span class="text-orange">Tип</span>&gt; of(<span class="text-orange">Tип</span> <span class="text-green">value</span>)
+   {
+      return new <span class="text-neon">Optional</span>&lt;<span class="text-orange">Tип</span>&gt;(<span class="text-green">value</span>);
+   }
+
+   public boolean <span class="text-red">isPresent</span>()
+   {
+      return <span class="code text-user">value</span> != null;
+   }
+
+   public boolean <span class="text-red">isEmpty</span>()
+   {
+      return <span class="code text-user">value</span> == null;
+   }
+
+   public <span class="text-orange">Tип</span> <span class="text-red">get</span>()
+   {
+      if (<span class="code text-user">value</span> == null)
+      {
+         throw new NoSuchElementException();
+      }
+      return <span class="code text-user">value</span>;
+   }
+
+   public <span class="text-orange">Tип</span> <span class="text-red">orElse</span>(<span class="text-orange">Tип</span> <span class="text-green">other</span>)
+   {
+      return <span class="code text-user">value</span> != null ? <span class="code text-user">value</span> : <span class="text-green">other</span>;
+   }
+
+   public <span class="text-orange">Tип</span> <span class="text-red">orElseThrow</span>()
+   {
+      if (<span class="code text-user">value</span> == null)
+      {
+         throw new NoSuchElementException();
+      }
+      return <span class="code text-user">value</span>;
+   }
+}</code></pre>
+        </td>
+        <td><br><br><br><br><br><br><br><br><br><br>Проверяет, что внутри находится значение (ссылка не <code>null</code>)
+            <br><br><br><br>Проверяет, что объект хранит ссылку на <code>null</code>
+            <br><br><br><br><br>Возвращает значение, которое хранит. Кидает исключение, если значения нет.
+            <br><br><br><br><br><br><br><br>Возвращает значение, или если внутри хранится <code>null</code>, то переданное в метод второе значение
+            <br><br><br><br>Возвращает значение или кидает исключение, если значения нет.
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p>Цель этого класса &#8211; просто хранить в себе объект T (ссылку на объект типа T). Ссылка на объект внутри класса <code>Optional&lt;T&gt;</code> может быть <code>null</code>.</p>
+<p>Этот класс позволяет писать программистам код немного красивее. Сравните:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>С использованием Optional</th>
+        <th>Без использования Optional</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>public void printString(<span class="text-viola">String</span> s)
+{
+   <span class="text-neon">Optional</span>&lt;<span class="text-viola">String</span>&gt; <span class="text-green">str</span> = <span class="text-neon">Optional</span>.<span class="text-red">ofNullable</span>(s);
+   System.out.println(<span class="text-green">str</span>.<span class="text-user">orElse</span>(""));
+}</code></pre>
+        </td>
+        <td>
+<pre class="language-java"><code>public void printString(<span class="text-viola">String</span> s)
+{
+   <span class="text-viola">String</span> <span class="text-green">str</span> = <span class="text-user">s</span> != null ? <span class="text-user">s</span> : "";
+   System.out.println(<span class="text-green">str</span>)
+}</code></pre>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p>Один объект <code>Optional</code> всегда можно сравнить с другим объектом <code>Optional</code> через метод <code>equals</code>, даже если они хранят в себе ссылки на <code>null</code>.</p>
+<p>Грубо говоря, класс Optional позволяет «более красиво» записывать проверки на <code>null</code> и действия в случае, если внутри объект <code>Optional</code> хранится <code>null</code>.</p>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1819"></div>
+<hr>
+<h2>3. Поиск элементов</h2>
+<p>Вернемся к классу <code>Stream</code>. У класса <code>Stream</code> есть еще 4 метода, которые позволяют искать элементы в потоке. Это методы <code>findFirst()</code>, <code>findAny()</code>, <code>min()</code> и <code>max()</code>.</p>
+<p><strong>Метод <code>Optional&lt;T&gt; findFirst()</code></strong></p>
+<p>Метод <code>findFirst()</code> просто возвращает первый элемент из потока и все — на этом его работа завершается.</p>
+<p>Более интересно, что метод возвращает не объект типа <code>T</code>, а обертку над ним — объект типа <code>Optional&lt;T&gt;</code>. Это сделано для того, чтобы никогда не сталкиваться с ситуацией, когда метод не находит объект и возвращает <code>null</code>.</p>
+<p>Пример:</p>
+<pre class="language-java"><code><span class="text-neon">ArrayList</span>&lt;String&gt; <span class="text-green">list</span> = new <span class="text-neon">ArrayList</span>&lt;<span class="text-orange">String</span>&gt;();
+<span class="text-neon">Collections</span>.addAll(<span class="text-green">list</span>, "Привет", "как", "дела?");
+<span class="text-orange">String</span> str = <span class="text-green">list</span>.<span class="text-red">stream</span>().<span class="text-red">findFirst</span>().<span class="text-red">get</span>(); // Привет</code></pre>
+<p>Давайте для большей ясности распишем последнюю строку в несколько строк:</p>
+<pre class="language-java"><code><span class="text-neon">ArrayList</span>&lt;<span class="text-orange">String</span>&gt; <span class="text-green">list</span> = new <span class="text-neon">ArrayList</span>&lt;<span class="text-orange">String</span>&gt;();
+<span class="text-neon">Collections</span>.addAll(<span class="text-green">list</span>, "Привет", "как", "дела?");
+
+Stream&lt;<span class="text-orange">String</span>&gt; <span class="text-user">stream</span> = <span class="text-green">list</span>.<span class="text-red">stream</span>();
+Optional&lt;<span class="text-orange">String</span>&gt; <span class="text-viola">result</span> = <span class="text-user">stream</span>.<span class="text-red">findFirst</span>();
+<span class="text-orange">String</span> str = <span class="text-viola">result</span>.<span class="text-red">get</span>(); // Привет</code></pre>
+<p>Последний метод <code>get()</code> — это просто вытаскивание значения, которое хранится внутри объекта <code>Optional</code>.</p>
+<p><strong>Метод <code>Optional&lt;T&gt; findAny()</code></strong></p>
+<p>Метод <code><span class="text-red">findAny()</span></code> возвращает любой элемент из потока и на этом завершается. Этот метод — это аналог метода <code><span class="text-red">findFirst()</span></code>, только для потоков, которые обрабатываются параллельно.</p>
+<p>При параллельной обработке потоков может случиться такая ситуация, что в какой-то части потока элемент уже найден, но пока еще не понятно, будет он первым или нет.</p>
+<p>Если элементов, которые прошли все фильтры, много и для программиста принципиально получить именно первый из них, следует вызывать метод <code><span class="text-red">findFirst()</span></code>. Если программист знает, что реально через все фильтры пройдет 0 или 1 элемент, тогда достаточно просто вызвать <code><span class="text-red">findAny()</span></code> — так будет быстрее.</p>
+<p><strong>Метод <code>Optional&lt;T&gt; min(Comparator&lt;T&gt;)</code></strong></p>
+<p>Метод <code>min()</code> сравнивает все элементы потока с помощью объекта <code>comparator</code> и возвращает минимальный элемент. Удобнее всего задать объект-компаратор с помощью лямбда-функции.</p>
+<p>Пример — поиск строки с минимальной длиной:</p>
+<pre class="language-java"><code><span class="text-neon">ArrayList</span>&lt;<span class="text-orange">String</span>&gt; <span class="text-green">list</span> = new <span class="text-neon">ArrayList</span>&lt;<span class="text-orange">String</span>&gt;();
+<span class="text-neon">Collections</span>.addAll(<span class="text-green">list</span>, "Привет", "как", "дела?");
+<span class="text-orange">String</span> min = <span class="text-green">list</span>.<span class="text-red">stream</span>().<span class="text-red">min</span>(<span class="text-viola"> (s1, s2)-&gt; s1.length()-s2.length() </span>).<span class="text-red">get</span>();</code></pre>
+<p><strong>Метод <code>Optional&lt;T&gt; max(Comparator&lt;T&gt;)</code></strong></p>
+<p>Метод <code>max()</code> сравнивает все элементы потока с помощью объекта <code>comparator</code> и возвращает максимальный элемент. Удобнее всего задать объект-компаратор с помощью лямбда-функции.</p>
+<p>Пример — поиск строки с максимальной длиной:</p>
+<pre class="language-java"><code><span class="text-neon">ArrayList</span>&lt;<span class="text-orange">String</span>&gt; <span class="text-green">list</span> = new <span class="text-neon">ArrayList</span>&lt;<span class="text-orange">String</span>&gt;();
+<span class="text-neon">Collections</span>.addAll(<span class="text-green">list</span>, "Привет", "как", "дела?");
+<span class="text-orange">String</span> max = <span class="text-green">list</span>.<span class="text-red">stream</span>().<span class="text-red">max</span>(<span class="text-viola"> (s1, s2)-&gt; s1.length()-s2.length() </span>).<span class="text-red">get</span>();
+</code></pre>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1820"></div>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1821"></div>

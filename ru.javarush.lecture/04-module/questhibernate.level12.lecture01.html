@@ -1,0 +1,218 @@
+Полезные сценарии маппинга данных
+<p>----------------------------------------</p>
+Мапим enum. 
+Мапим Boolean. 
+Вычисляемые поля. 
+@Embedded. 
+<p>----------------------------------------</p>
+<h2>Мапим enum</h2>
+
+<p>Как мапить примитивные типы данных мы уже разобрались: используем аннотации <span class="text-yellow"><span class="text-bold">@Column</span></span> и аннотацию <span class="text-yellow"><span class="text-bold">@Type</span></span>. Но не все случаи можно покрыть этими аннотациями. И самый частый случай – это <strong>enum</strong>.</p>
+
+<p>Java-объекты типа enum могут храниться в базе в двух вариантах:</p>
+
+<ul>
+<li>в виде числа</li>
+<li>в виде строки</li>
+</ul>
+
+<p>Давай напишем небольшой пример, где у пользователя будет любимый цвет, который задается с помощью enum.</p>
+
+<pre class='language-java line-numbers'><code>
+enum Color {
+   RED,
+   ORANGE,
+   YELLOW,
+   GREEN,
+   BLUE,
+   VIOLET
+}
+</code></pre>
+
+<p>И добавим поле с цветом в класс <span class="code"><span class="text-green">User</span></span>:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+class User
+{
+   @Column(name="id")
+   public Integer id;
+ 
+   @Column(name="favorite_color")
+   public Color favoriteColor;
+ 
+   @Column(name="created_date")
+   public Date createdDate;
+}
+</code></pre>
+
+<p>Если мы хотим, чтобы Hibernate сохранял тип Color в базу <strong>как числа</strong>, то нужно полю <mark>favoriteColor</mark> добавить аннотацию:</p>
+ 
+<pre class='language-java line-numbers'><code>
+@Enumerated(EnumType.ORDINAL)
+</code></pre>
+ 
+<p>Если мы хотим, чтобы значения хранились <strong>как строки</strong>, то нужно добавить аннотацию:</p>
+ 
+<pre class='language-java line-numbers'><code>
+@Enumerated(EnumType.STRING)
+</code></pre>
+ 
+<p>Пример:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+class User
+{
+   @Column(name="id")
+   public Integer id;
+ 
+   @Enumerated(EnumType.ORDINAL) //значение будет сохранено в базу как число
+   @Column(name="favorite_color")
+   public Color favoriteColor;
+ 
+   @Column(name="created_date")
+   public Date createdDate;
+}
+</code></pre>
+
+<h2>Мапим Boolean</h2>
+
+<p>Второй полезный сценарий – это маппинг типа Boolean. Так уж исторически сложилось, что в SQL нет своего типа данных для Boolean и вместо него там используют все что угодно.</p>
+
+<p>Три самых распространенных варианта:</p>
+
+<ul>
+<li>1 или 0</li>
+<li>‘F’ или ‘T’</li>
+<li>‘Y’ или ‘N’</li>
+</ul>
+
+<p>В общем, если ты будешь проектировать свою базу, то лучше сразу пиши тип BIT. Ну а полный маппинг для него будет выглядеть так:</p>
+ 
+<pre class='language-java line-numbers'><code>
+	@Column(name = "is_correct", columnDefinition = "BIT")
+	@Type(type = "org.hibernate.type.NumericBooleanType")
+    private Boolean isCorrect;
+</code></pre>
+ 
+<p>Ну, а если базу данных проектируешь не ты, то смотри таблицу выше и думай, как правильно замапить нужные тебе типы.</p>
+
+<h2>Вычисляемые поля</h2>
+
+<p>Иногда количество полей в Entity-классе и количество колонок в таблице не совпадают. У этого может быть несколько причин.</p>
+
+<p>Самая распространенная – это когда в нашем Entity-классе есть какое-то поле, которое мы <span class="text-red">не хотим сохранять</span> в базу данных. С этим все понятно – просто добавь такому полю аннотацию <span class="text-yellow"><span class="text-bold">@Transient</span></span> и Hibernate проигнорирует его при работе с базой данных.</p>
+
+<p>Пример:</p>
+ 
+<pre class='language-java line-numbers'><code>
+@Entity(name = "Square")
+public class Square {
+           	@Id
+           	public Long id;
+ 
+           	public Integer width;
+ 
+           	public Integer height;
+ 
+           	@Transient
+           	public Integer total;
+}
+</code></pre>
+ 
+<p>Это хороший вариант, но при чтении объекта из базы поле total будет null. А нам бы хотелось, чтобы оно содержало произведение width*height. Такое тоже можно сделать в Hibernate. Для этого есть специальная аннотация <span class="text-yellow"><span class="text-bold">@Formula</span></span>.</p>
+ 
+<pre class='language-java line-numbers'><code>
+@Entity(name = "Square")
+public class Square {
+           	@Id
+           	public Long id;
+ 
+           	public Integer width;
+ 
+           	public Integer height;
+ 
+           	@Formula(value = " width * height ")
+          	public Integer total;
+}
+</code></pre>
+ 
+<p>Такое поле не будет сохраняться в базу данных, а при чтении объекта из базы в него будет записываться значение вычисленное по формуле.</p>
+
+<p>SQL-запрос будет выглядеть примерно так:</p>
+ 
+<pre><code> <span class="text-red">SELECT</span> <span class="text-green">id</span>, <span class="text-green">width</span>, <span class="text-green">height</span>, (<span class="text-green">width</span>* <span class="text-green">height</span>) <span class="text-red">AS</span> <span class="text-viola">total</span> <span class="text-red">FROM</span> <span class="text-orange">Square</span>;</code></pre>
+ 
+<h2>@Embedded</h2>
+
+<p>Еще одна полезная аннотация – это <span class="text-yellow"><span class="text-bold">@Embedded</span></span>. Она позволяет рассматривать поля дочернего объекта как поля самого Entity-класса.</p>
+
+<p>Допустим, у тебя есть класс <span class="code"><span class="text-green">User</span></span> и ты решил добавить в него адрес:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+class User
+{
+   @Column(name="id")
+    public Integer id;
+ 
+   @Column(name="user_address_country")
+   public String country;
+   @Column(name="user_address_city")
+   public String city;
+   @Column(name="user_address_street")
+   public String street;
+   @Column(name="user_address_home")
+   public String home;
+ 
+   @Column(name="created_date")
+    public Date createdDate;
+}
+</code></pre>
+
+<p>Все вроде бы хорошо, но с точки зрения Java было бы логично вынести адрес в отдельный класс. Адрес все-таки отдельная сущность. Но как это сделать, если в базе вся эта информация хранится именно в таблице user?</p>
+
+<p>Нам поможет аннотация <span class="text-yellow"><span class="text-bold">@Embedded</span></span>. Сначала мы создадим класс <span class="code"><span class="text-green">UserAddress</span></span> и вынесем в него всю информацию по адресу пользователя:</p>
+
+<pre class='language-java line-numbers'><code>
+@Embeddable
+class UserAddress
+{
+   @Column(name="user_address_country")
+   public String country;
+   @Column(name="user_address_city")
+   public String city;
+   @Column(name="user_address_street")
+   public String street;
+   @Column(name="user_address_home")
+   public String home;
+}
+</code></pre>
+
+<p>А затем используем поле этого класса в нашем классе <span class="code"><span class="text-green">User</span></span>:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+class User
+{
+   @Column(name="id")
+   public Integer id;
+ 
+   @Embedded
+   public UserAddress address;
+ 
+   @Column(name="created_date")
+   public Date createdDate;
+}
+</code></pre>
+
+<p>Благодаря аннотации <span class="text-yellow"><span class="text-bold">@Embedded</span></span> во время сохранения объекта Hibernate поймет, что поля класса <span class="code"><span class="text-green">UserAddress</span></span> нужно обрабатывать как поля самого класса <span class="code"><span class="text-green">User</span></span>.</p>
+
+<p><strong>Важно!</strong> Если ты решишь добавить в свой класс <span class="code"><span class="text-green">User</span></span> два поля <span class="code"><span class="text-green">UserAddress</span></span>, то использовать <span class="text-yellow"><span class="text-bold">@Embedded</span></span> уже не получится: у тебя будет дубликат полей и тебе нужно будет как-то их разделить. Делается это с помощью переопределения аннотаций: с помощью аннотации <span class="text-yellow"><span class="text-bold">@AttributeOverrides</span></span>.</p>
+
+<p>Я хочу, чтоб ты это знал, но детально тут мы это все разбирать не будем. Думаю, тебе и этого хватит, чтобы голову поломать. Для любопытных могу оставить ссылку на <a href="https://docs.jboss.org/hibernate/orm/6.0/userguide/html_single/Hibernate_User_Guide.html#naming" target="_blank">официальную документацию</a>.</p>

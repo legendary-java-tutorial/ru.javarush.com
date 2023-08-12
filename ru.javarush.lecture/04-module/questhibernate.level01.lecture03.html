@@ -1,0 +1,523 @@
+Управление отображением данных
+<p>----------------------------------------</p>
+LIMIT
+OFFSET
+SELECT DISTINCT
+ORDER BY
+ORDER BY по нескольким колонкам
+<p>----------------------------------------</p>
+<h2>4.1 LIMIT</h2>
+<p>Если ты ожидаешь, что твой SQL-запрос вернет слишком много данных, то можешь заранее ограничить их максимальное число.  Ведь таблицы могут содержать тысячи или даже миллионы строк.</p>
+<p>SQL позволяет очень легко ограничить количество строк в результате запроса с помощью ключевого слова <code>LIMIT</code>. Это ключевое слово используется в самом конце SQL-запроса и имеет вид:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">LIMIT</span> <span class="text-user">количество</span>
+        </code></pre>
+</div>
+<p>Давай напишем запрос к таблице product, которая содержит список продуктов нашего магазина. Но так как у нас очень успешный магазин и продуктов мы продаем очень много, то хотим получить только первые 10 строк ответа. Вот как этот запрос будет выглядеть:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-yellow">product</span> 
+<span class="text-red">LIMIT</span> 10
+        </code></pre>
+</div>
+<p>И получим такой результат запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>brand</th>
+        <th>price</th>
+        <th>count</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>Стол</td>
+        <td>IKEA</td>
+        <td>20.00</td>
+        <td>15</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>Стул</td>
+        <td>IKEA</td>
+        <td>5.00</td>
+        <td>45</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Диван</td>
+        <td>IKEA</td>
+        <td>80.00</td>
+        <td>10</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>Кровать</td>
+        <td>IKEA</td>
+        <td>75.00</td>
+        <td>10</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td>Шкаф</td>
+        <td>Bosh</td>
+        <td>125.00</td>
+        <td>15</td>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td>Полка</td>
+        <td>Полка</td>
+        <td>25.00</td>
+        <td>114</td>
+    </tr>
+    <tr>
+        <td>7</td>
+        <td>Телевизор</td>
+        <td>LG</td>
+        <td>350.00</td>
+        <td>4</td>
+    </tr>
+    <tr>
+        <td>8</td>
+        <td>Лампа</td>
+        <td>LG</td>
+        <td>15.00</td>
+        <td>100</td>
+    </tr>
+    <tr>
+        <td>9</td>
+        <td>Комод</td>
+        <td>IKEA</td>
+        <td>99.00</td>
+        <td>10</td>
+    </tr>
+    <tr>
+        <td>10</td>
+        <td>Плита</td>
+        <td>Bosh</td>
+        <td>199.00</td>
+        <td>10</td>
+    </tr>
+    </tbody>
+</table>
+<p>Теперь запросим только первые 5 строк. Вот как этот запрос будет выглядеть:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-yellow">product</span> 
+<span class="text-red">LIMIT</span> 5
+        </code></pre>
+</div>
+<p>Получим такой результат запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>brand</th>
+        <th>price</th>
+        <th>count</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>Стол</td>
+        <td>IKEA</td>
+        <td>20.00</td>
+        <td>15</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>Стул</td>
+        <td>IKEA</td>
+        <td>5.00</td>
+        <td>45</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Диван</td>
+        <td>IKEA</td>
+        <td>80.00</td>
+        <td>10</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>Кровать</td>
+        <td>IKEA</td>
+        <td>75.00</td>
+        <td>10</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td>Шкаф</td>
+        <td>Bosh</td>
+        <td>125.00</td>
+        <td>15</td>
+    </tr>
+    </tbody>
+</table>
+<h2>4.2 OFFSET</h2>
+<p>В предыдущий раз мы научились ограничивать количество строк в ответе сервера. И теперь вместо тысяч строк из таблицы product можем получить 10 первых строк и отобразить их пользователю. Это отлично. Но как нам отобразить вторые 10 строк? А третьи?</p>
+<p>Если мы будем писать <code>LIMIT 20</code>, или <code>LIMIT 30</code>, разве сервер не вернет 20 и 30 строк соответственно?</p>
+<p>Именно на этот случай у SQL есть специальное ключевое слово <code>OFFSET</code> с помощью которого можно попросить сервер пропустить N строк в его ответе. Это ключевое слово используется в самом конце SQL-запроса (после <code>LIMIT</code>) и имеет вид:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">OFFSET</span> <span class="text-user">количество</span>
+        </code></pre>
+</div>
+<p>Давай напишем запрос к <strong>таблице product</strong> и попробуем получить записи с 11 по 15. Другими словами мы просим сервер вернуть нам 5 строк, но сначала пропустить первые 10 строк ответа. Вот как этот запрос будет выглядеть:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-yellow">product</span> 
+<span class="text-red">LIMIT</span> 5
+<span class="text-red">OFFSET</span> 10
+        </code></pre>
+</div>
+<p>Получим такой результат запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>brand</th>
+        <th>price</th>
+        <th>count</th>
+    </tr>
+    <tr>
+        <td>11</td>
+        <td>Кресло</td>
+        <td>Bosh</td>
+        <td>44.00</td>
+        <td>8</td>
+    </tr>
+    <tr>
+        <td>12</td>
+        <td>Вазон</td>
+        <td>SmartFlower</td>
+        <td>99.00</td>
+        <td>9</td>
+    </tr>
+    <tr>
+        <td>13</td>
+        <td>Подставка</td>
+        <td>IKEA</td>
+        <td>100.00</td>
+        <td>10</td>
+    </tr>
+
+    </tbody>
+</table>
+<p><span class="text-green">Сервер вернул всего 3 строки, а значит в нашей таблице всего было 13 строк. Сервер пропустил первые 10 и вернул следующие 5.</span></p>
+<h2>4.3 SELECT DISTINCT</h2>
+<p>Есть еще одно полезное ключевое слов – это <code>DISTINCT</code>. Оно используется, когда в таблице есть дублирующиеся записи и мы хотим удалить дубликаты. </p>
+<p>Откуда же взяться в нашей таблице дубликатам? В таблице дубликатов может и не быть, а вот в результате запроса – легко. Давай напишем запрос, который вернет бренды всех товаров, которые мы продаем.  Вот как этот запрос будет выглядеть:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">SELECT</span> <span class="text-green">brand</span> <span class="text-red">FROM</span> <span class="text-yellow">product</span> 
+        </code></pre>
+</div>
+<p>Получим такой результат запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th width="200">brand</th>
+    </tr>
+    <tr>
+        <td>IKEA</td>
+    </tr>
+    <tr>
+        <td>IKEA</td>
+    </tr>
+    <tr>
+        <td>IKEA</td>
+    </tr>
+    <tr>
+        <td>IKEA</td>
+    </tr>
+    <tr>
+        <td>Bosh</td>
+    </tr>
+    <tr>
+        <td>Bosh</td>
+    </tr>
+    <tr>
+        <td>LG</td>
+    </tr>
+    <tr>
+        <td>LG</td>
+    </tr>
+    <tr>
+        <td>IKEA</td>
+    </tr>
+    <tr>
+        <td>Bosh</td>
+    </tr>
+    <tr>
+        <td>Bosh</td>
+    </tr>
+    <tr>
+        <td>SmartFlower</td>
+    </tr>
+    <tr>
+        <td>IKEA</td>
+    </tr>
+
+    </tbody>
+</table>
+<p>Несложно увидеть, что в этой таблице есть строки-дубликаты. Именно чтобы дубликатов не было и нужно использовать ключевое слово <code>DISTINCT</code>. Вот как будет выглядеть исправленные запрос:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">SELECT DISTINCT</span> <span class="text-green">brand</span> 
+<span class="text-red">FROM</span> <span class="text-yellow">product</span> 
+        </code></pre>
+</div>
+<p>Получим такой результат запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th width="200">brand</th>
+    </tr>
+    <tr>
+        <td>IKEA</td>
+    </tr>
+    <tr>
+        <td>Bosh</td>
+    </tr>
+    <tr>
+        <td>LG</td>
+    </tr>
+    <tr>
+        <td>SmartFlower</td>
+    </tr>
+    </tbody>
+</table>
+<p>Так гораздо лучше. Неправда ли? ;)</p>
+<h2>4.4 ORDER BY</h2>
+<p>И наконец мы добрались до <strong>сортировки</strong>. Для того чтобы отсортировать результаты запроса нужно использовать ключевое слово <code>ORDER BY</code>. Технически – это два слова, но не суть важно. Слова два, а оператор один.</p>
+<p>Писать его нужно после ключевого слова <code>WHERE</code>, но перед <code>LIMIT</code> и <code>OFFSET</code>. Если ты напишешь <code>ORDER BY</code> после <code>LIMIT</code>, то SQL-сервер просто вернет тебе ошибку.</p>
+<p>В общем виде выглядит этот оператор так:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">ORDER BY</span> <span class="text-user">колонка</span> <span class="text-green">порядок</span>
+</code></pre>
+</div>
+<p>Где колонка – это имя колонки в таблице / результате сортировки. А порядок – это порядок сортировки.</p>
+<p>Порядок сортировки может быть трех вариантов:</p>
+<ul>
+	<li><code>ASC</code> (от Ascending) – по возрастанию;</li>
+	<li><code>DESC</code> (от Descending) – по убыванию;</li>
+	<li>Не указан – будет использован <code>ASC</code></li>
+</ul>
+<p>Давай напишем запрос, который вернет нам список продуктов, отсортированных по возрастанию цены. Вот как этот запрос будет выглядеть:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-yellow">product</span> 
+<span class="text-orange">ORDER BY</span> <span class="text-green">price</span> <span class="text-orange">ASC</span>
+<span class="text-red">LIMIT</span> 10
+        </code></pre>
+</div>
+<p>Получим такой результат запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>brand</th>
+        <th>price</th>
+        <th>count</th>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>Стул</td>
+        <td>IKEA</td>
+        <td>5.00</td>
+        <td>45</td>
+    </tr>
+    <tr>
+        <td>8</td>
+        <td>Лампа</td>
+        <td>LG</td>
+        <td>15.00</td>
+        <td>100</td>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>Стол</td>
+        <td>IKEA</td>
+        <td>20.00</td>
+        <td>15</td>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td>Полка</td>
+        <td>Bosh</td>
+        <td>25.00</td>
+        <td>114</td>
+    </tr>
+    <tr>
+        <td>11</td>
+        <td>Кресло</td>
+        <td>Bosh</td>
+        <td>44.00</td>
+        <td>8</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>Кровать</td>
+        <td>IKEA</td>
+        <td>75.00</td>
+        <td>10</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Диван</td>
+        <td>IKEA</td>
+        <td>80.00</td>
+        <td>10</td>
+    </tr>
+    <tr>
+        <td>12</td>
+        <td>Вазон</td>
+        <td>SmartFlower</td>
+        <td>99.00</td>
+        <td>9</td>
+    </tr>
+    <tr>
+        <td>9</td>
+        <td>Комод</td>
+        <td>IKEA</td>
+        <td>99.00</td>
+        <td>10</td>
+    </tr>
+    <tr>
+        <td>13</td>
+        <td>Подставка</td>
+        <td>IKEA</td>
+        <td>100.00</td>
+        <td>10</td>
+    </tr>
+    </tbody>
+</table>
+<p>Тот же результат мы получим, если не укажем порядок сортировки – пропустим слово <code>ASC</code>.</p>
+<h2>4.5 ORDER BY по нескольким колонкам</h2>
+<p>Оператор <code>ORDER BY</code> позволяет отсортировать результат по нескольким колонкам. Это бывает очень полезно, когда в первой колонке очень много повторяющихся элементов. Общий вид этого оператора такой:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">ORDER BY</span> <span class="text-user">колонка1</span> <span class="text-green">порядок1</span>, <span class="text-user">колонка2</span> <span class="text-green">порядок2</span>, <span class="text-user">колонка3</span> <span class="text-green">порядок3</span>
+
+        </code></pre>
+</div>
+<p>Другими словами, если после сортировки по первой колонке у тебя рядом оказалось несколько одинаковых значений, то их сортируют по второй колонке и так далее.</p>
+<p>Давай напишем запрос, с помощью которого отсортируем наши продукты по бренду, а для продуктов с одинаковым брендом – по убыванию их количества. Вот как этот запрос будет выглядеть:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-yellow">product</span> 
+<span class="text-orange">ORDER BY</span> <span class="text-user">brand</span> <span class="text-orange">ASC</span>, <span class="text-user">count</span>
+<span class="text-orange">DESC</span>
+        </code></pre>
+</div>
+<p>Получим такой результат запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>brand</th>
+        <th>price</th>
+        <th>count</th>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td>Полка</td>
+        <td><span class="text-user">Bosh</span></td>
+        <td>25.00</td>
+        <td><span class="text-user">114</span></td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td>Шкаф</td>
+        <td><span class="text-user">Bosh</span></td>
+        <td>125.00</td>
+        <td><span class="text-user">15</span></td>
+    </tr>
+    <tr>
+        <td>10</td>
+        <td>Плита</td>
+        <td><span class="text-user">Bosh</span></td>
+        <td>199.00</td>
+        <td><span class="text-user">10</span></td>
+    </tr>
+    <tr>
+        <td>11</td>
+        <td>Кресло</td>
+        <td><span class="text-user">Bosh</span></td>
+        <td>44.00</td>
+        <td><span class="text-user">8</span></td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>Стул</td>
+        <td><span class="text-green">IKEA</span></td>
+        <td>5.00</td>
+        <td><span class="text-green">45</span></td>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>Стол</td>
+        <td><span class="text-green">IKEA</span></td>
+        <td>20.00</td>
+        <td><span class="text-green">15</span></td>
+    </tr>
+    <tr>
+        <td>9</td>
+        <td>Комод</td>
+        <td><span class="text-green">IKEA</span></td>
+        <td>99.00</td>
+        <td><span class="text-green">10</span></td>
+    </tr>
+    <tr>
+        <td>13</td>
+        <td>Подставка</td>
+        <td><span class="text-green">IKEA</span></td>
+        <td>100.00</td>
+        <td><span class="text-green">10</span></td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>Кровать</td>
+        <td><span class="text-green">IKEA</span></td>
+        <td>75.00</td>
+        <td><span class="text-green">10</span></td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Диван</td>
+        <td><span class="text-green">IKEA</span></td>
+        <td>80.00</td>
+        <td><span class="text-green">10</span></td>
+    </tr>
+    <tr>
+        <td>8</td>
+        <td>Лампа</td>
+        <td><span class="text-red">LG</span></td>
+        <td>15.00</td>
+        <td><span class="text-red">100</span></td>
+    </tr>
+    <tr>
+        <td>7</td>
+        <td>Телевизор</td>
+        <td><span class="text-red">LG</span></td>
+        <td>350.00</td>
+        <td><span class="text-red">4</span></td>
+    </tr>
+    <tr>
+        <td>12</td>
+        <td>Вазон</td>
+        <td>SmartFlower</td>
+        <td>99.00</td>
+        <td>9</td>
+    </tr>
+    </tbody>
+</table>
+<p>Посмотри внимательно на таблицу – ее строки отсортированы по названию бренда (алфавитный порядок), а строки с одинаковым названием бренда отсортированы по убыванию количества продуктов (последняя колонка).</p>

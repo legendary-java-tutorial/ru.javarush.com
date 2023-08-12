@@ -1,0 +1,135 @@
+Выявление определенного поведения у объектов
+<p>----------------------------------------</p>
+Метод verify()
+Метод verify() с проверкой количества вызовов
+Порядок вызова методов
+Проверка исключений в Mockito
+<p>----------------------------------------</p>
+<h2>5.1 Метод verify()</h2>
+<p>Кроме создания виртуальных объектов, часто возникает еще одна интересная задача – убедиться, что тестируемый класс вызвал нужные методы нужных объектов. Более того, вызвал нужное число раз, с правильными параметрами и тому подобное.</p>
+<p>Для этого в Mockito тоже есть немного магии – семейство методов <code>Mockito.verify(…)</code>. <span class="text-red">Общее правило, которым задается проверка вызова метода</span>, имеет вид:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present"><code><span class="text-red">Mockito</span>.verify(<span class="text-green">объект</span>).<span class="text-yellow">имяМетода</span>(<span class="text-violet">параметр</span>);</code></pre>
+</div>
+<p>Пример:</p>
+<pre class='language-java line-numbers'><code>
+@ExtendWith(MockitoExtension.class)
+class VerifyTest {
+<span class="text-green">    @Mock</span>
+<span class="text-red">    List&lt;String&gt; mockList;</span>
+ 
+<span class="text-green">    @Test</span>
+    public void whenMockAnnotation() {
+        //вызов метода
+        String name = <span class="text-red">mockList</span>.<span class="text-yellow">get</span>(10);
+
+        //проверяем вызывался ли метод
+        Mockito.verify(<span class="text-red">mockList</span>).<span class="text-yellow">get</span>(10); 
+    }  
+}
+</code></pre>
+<p>Во время вызова метода <code>verify()</code> мы задали правило, что у объекта <code>mockitoList</code> должен вызваться метод <code>get()</code> с параметром 10.</p>
+<h2>5.2 Метод verify() с проверкой количества вызовов</h2>
+<p>Иногда бывают более сложные сценарии проверки. Например, тебе нужно проверить не просто факт, что метод вызывался, а например, что он вызывался 3 раза. Или он у тебя вызывался в цикле и значит должен был вызваться N раз.</p>
+<p>Мы не будем спрашивать, можно ли это сделать, мы сразу спросим: как записать такое правило? И опять Mockito нас не подводит. Правило можно задать в виде:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present"><code><span class="text-red">Mockito</span>.verify(<span class="text-green">объект</span>,<span class="text-user">количество</span>).<span class="text-yellow">имяМетода</span>(<span class="text-violet">параметр</span>);</code></pre>
+</div>
+<p><strong>Важно!</strong> Количество – это не тип <code>int</code>, а специальный объект, которые может задавать различные шаблоны. Помнишь разные варианты метода <code>any()</code> ? Тут тоже самое – есть специальные методы, с помощью которых можно задавать различные сценарии:</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th width="200">Метод</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>never()</td>
+        <td>Метод никогда не должен вызываться</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>times(n)</td>
+        <td>n раз</td>
+    </tr>
+        <tr>
+        <td>3</td>
+        <td>atLeast(n)</td>
+        <td>n или больше раз</td>
+    </tr>
+        <tr>
+        <td>4</td>
+        <td>atLeastOnce()</td>
+        <td>1 или больше раз</td>
+    </tr>    
+    </tr>
+        <tr>
+        <td>5</td>
+        <td>atMost(n)</td>
+        <td>n или меньше раз</td>
+    </tr>    
+    </tr>
+        <tr>
+        <td>6</td>
+        <td>only()</td>
+        <td>Должен быть только один вызов и только к этому методу</td>
+    </tr>
+    </tbody>
+</table> 
+<p>Пример:</p>
+<pre class='language-java line-numbers'><code>
+String name1 = <span class="text-red">mockList</span>.<span class="text-yellow">get</span>(1);  //вызов метода
+String name2 = <span class="text-red">mockList</span>.<span class="text-yellow">get</span>(2);  //вызов метода
+String name3 = <span class="text-red">mockList</span>.<span class="text-yellow">get</span>(3);  //вызов метода
+
+//проверяем, что метод get() вызывался 3 раза 
+<span class="text-red">Mockito</span>.verify(<span class="text-red">mockList</span>, <span class="text-user">times(3)</span>).get(<span class="text-violet">anyInt()</span>); 
+</code></pre>
+<p>Ты также можешь потребовать, чтобы кроме указанных вызовов метода, <strong>никаких других обращений к объекту не было</strong>. Для этого есть правило:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present"><code><span class="text-red">Mockito</span>.verifyNoMoreInteractions(<span class="text-green">объект</span>);</code></pre>
+</div>
+<h2>5.3 Порядок вызова методов</h2>
+<p>Предыдущие правила никак не регламентировали порядок вызова методов. Правило просто должно выполниться и все. Но бывают ситуации, когда порядок вызовов методов важен и для этого у Mockito тоже есть решение.</p>
+<p>Жесткий порядок вызова методов можно задать с помощью специального объекта <code>InOrder</code>. Сначала его нужно создать:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present"><code>InOrder <span class="text-user">inOrder</span> = <span class="text-red">Mockito</span>.<span class="text-orange">inOrder</span>(<span class="text-green">объект</span>);</code></pre>
+</div>
+<p>А затем уже ему добавлять правила посредством вызова методов <code>verify()</code>.</p>
+<p>Пример:</p>
+<pre class='line-numbers'><code>
+    List&lt;String&gt; <span class="text-green">mockedList</span> = mock(MyList.class);
+    <span class="text-green">mockedList</span>.size();
+    <span class="text-green">mockedList</span>.add("a parameter");
+    <span class="text-green">mockedList</span>.clear();
+ 
+    InOrder <span class="text-user">inOrder</span> = <span class="text-red">Mockito</span>.<span class="text-orange">inOrder</span>(mockedList);
+    <span class="text-user">inOrder</span>.verify(mockedList).size();
+    <span class="text-user">inOrder</span>.verify(mockedList).add("a parameter");
+    <span class="text-user">inOrder</span>.verify(mockedList).clear();
+</code></pre>
+<h2>5.4 Проверка исключений в Mockito</h2>
+<p>Факт того, что исключения возникли, проверяется немного по другому. Для этого нужно использовать метод <code>assertThrows()</code>. Общий формат такой проверки имеет вид:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present"><code><span class="text-red">Assertions</span>.assertThrows(<span class="text-user">исключение.class</span>, () -> <span class="text-green">объект</span>.<span class="text-yellow">имяМетода()</span>);</code></pre>
+</div>
+<p>Ничего сложного.</p>
+<p>Пример:</p>
+<pre class='language-java line-numbers'><code>
+@ExtendWith(MockitoExtension.class)
+class ThenThrowTest {
+<span class="text-green">    @Mock</span>
+<span class="text-red">    List mockList;</span>
+ 
+<span class="text-green">    @Test</span>
+    public void whenMockAnnotation() {
+        //задаем поведение метода (нужно только для демонстрации)
+        Mockito.when(<span class="text-red">mockList</span>.<span class="text-yellow">size</span>()).thenThrow(<span class="text-user">IllegalStateException.class</span>);  
+
+        //проверяем бросится ли IllegalStateException при вызове метода size
+        assertThrows(<span class="text-user">IllegalStateException.class</span>, () -> <span class="text-red">mockList</span>.<span class="text-yellow">size</span>());  
+    }
+}
+</code></pre>
+

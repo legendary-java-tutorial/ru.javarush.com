@@ -1,0 +1,103 @@
+Работа с PreparedStatement
+<p>----------------------------------------</p>
+Виды statements. 
+PreparedStatement. 
+Пример использования PreparedStatement.
+<p>----------------------------------------</p>
+<h2>Виды statements</h2>
+
+<p>Самый простой интерфейс <span class="text-neon"><span class="text-bold"><em>Statement</em></span></span> мы уже видели. И хотя он вполне пригоден для работы, для сложных запросов он подходит не так хорошо. В некоторых источниках высказывается мнение, что использовать <span class="text-neon"><span class="text-bold"><em>Statement</em></span></span> вообще не надо — вместо него подходят более сложные и более функционально насыщенные интерфейсы.</p>
+
+<ul>
+<li><span class="text-neon"><span class="text-bold"><em>PreparedStatement</em></span></span></li>
+<li><span class="text-neon"><span class="text-bold"><em>CallableStatement</em></span></span></li>
+</ul>
+
+<p>Возникает вполне резонный вопрос — а зачем эти интерфейсы нужны? Давай разбираться.</p>
+
+<p>Для начала мы рассмотрим интерфейс <span class="text-neon"><span class="text-bold"><em>PreparedStatement</em></span></span> и другие возможности JDBC. К интерфейсу <span class="text-neon"><span class="text-bold"><em>CallableStatement</em></span></span> обратимся позже — его использование, во-первых, не так часто встречается, а во-вторых — после всего рассмотренного про него разговор уже можно делать достаточно коротким.</p>
+
+<img data-max-width="512" data-id="e8812bce-d724-4019-a6c0-3901cfca155c" src="https://cdn.javarush.com/images/article/e8812bce-d724-4019-a6c0-3901cfca155c/original.png" alt="">
+
+<p>Кроме того, <span class="text-neon"><span class="text-bold"><em>PreparedStatement</em></span></span> отлично помогает от популярного подхода к взлому базы данных, который называется SQL Injection.</p>
+
+<p>Но подробнее об этом немного позднее.</p>
+
+<h2>PreparedStatement</h2>
+
+<p>Если попытаться перевести название <span class="text-neon"><span class="text-bold"><em>PreparedStatement</em></span></span>, то можно получить что-то вроде “подготовленный оператор”. Самым важным здесь является слово “подготовленный”. В чем заключается “подготовленность”?</p>
+
+<p>Прежде чем мы рассмотрим этот вопрос, предлагаю увидеть достаточно важный с точки зрения удобства момент, который возникает очень часто. Итак, в каком-либо приложении нам надо вставить данные о контакте в таблицу CONTACT. Для этого нам надо подготовить запрос наподобие такого:</p>
+
+<pre><code><strong>INSERT INTO JC_CONTACT (FIRST_NAME, LAST_NAME, PHONE, EMAIL) VALUES (‘Harry’,'Potter','+79112345678','harry@example.com);</strong>
+</code></pre>
+
+<p>На первый взгляд кажется, что все не так уж сложно и страшно. Надо написать код, который будет собирать нужную нам строку из параметров: имя, фамилия, адрес и телефон. Надо только не забыть, что все строковые данные надо окружить символом ординарная кавычка.</p>
+
+<p>Если мы это делаем в отдельной функции, то получается что-то такое:</p>
+
+<pre class='language-java line-numbers'><code>
+public String buildInsert(String firstName,, String lastName, String phone, String email) {
+    String sql = "INSERT INTO JC_CONTACT (FIRST_NAME, LAST_NAME, PHONE, EMAIL) “+
+             	”VALUES ('" + firstName + "','" + lastName + "','" + phone + "','" + email + ")";
+    return sql;
+}
+</code></pre>
+
+<p>Мы передаем в функцию параметров имя, фамилию, телефон и адрес в виде, и из них составляем строку SQL-запроса. Кавычки немного портят картину, но пока не страшно.</p>
+
+<p>Ок, а что делать с числами? Их не надо окружать кавычками. Опаньки, в одном случае надо кавычки, в другом — не надо. Ситуация усложняется.</p>
+
+<p>Теперь добавим еще одну проблему — а если внутри строки есть ординарная кавычка (и даже не одна)? Надо предварительно искать такие кавычки и обрабатывать их. Мдааа. Как-то неуютно начинаем себя ощущать.</p>
+
+<p>Если теперь прибавить обработку дат, то задача становится совсем скучной — надо делать огромное количество работы. С датами вообще неприятно — разные SQL-сервера принимают для дат разные форматы.</p>
+
+<p>Итак, что мы видим? Если нам надо использовать параметры внутри запроса, то в ручном режиме построение запроса становится очень неприятным делом. Причем не просто неприятным — я бы даже сказал занудным. Надо учитывать огромное количество случаев, и это ужасно скучная работа. В основном именно для таких случаев и был предложен интерфейс <span class="text-neon"><span class="text-bold"><em>PreparedStatement</em></span></span>.</p>
+
+<p>Этот запрос позволяет вам сделать две вещи:</p>
+
+<ul>
+<li>Заранее подготовить запрос с указанием мест, где будут подставляться параметры</li>
+<li>Установить параметры определенного типа и выполнить после этого запрос с уже установленными параметрами</li>
+</ul>
+
+<h2>Пример использования PreparedStatement</h2>
+
+<p>Конструкция для <span class="text-neon"><span class="text-bold"><em>PreparedStatement</em></span></span> для нашего варианта установки параметров будет выглядеть вот так:</p>
+
+<pre class='language-java line-numbers'><code>
+// Переменные для примера
+String firstName = "Harry";
+String lastName = "Potter";
+String phone = "+12871112233";
+String email = "harry@example.com";
+ 
+// Запрос с указанием мест для параметров в виде знака "?"
+String sql = "INSERT INTO JC_CONTACT (FIRST_NAME, LAST_NAME, PHONE, EMAIL) VALUES (?, ?, ?, ?)";
+ 
+// Создание запроса. Переменная con — это объект типа Connection
+PreparedStatement stmt = con.prepareStatement(sql);
+ 
+// Установка параметров
+stmt.setString(1, firstName);
+stmt.setString(2, lastName);
+stmt.setString(3, phone);
+stmt.setString(4, email);
+ 
+// Выполнение запроса
+stmt.executeUpdate();
+</code></pre>
+
+<p>Как видишь, все достаточно несложно.</p>
+
+<p>Во-первых, при написании SQL-запроса на места, куда надо будет подставлять параметры, записываются знаки вопроса — “?”.</p>
+
+<p>Во-вторых — запрос создается через вызов <span class="code text-orange">con.prepareStatement()</span>.</p>
+
+<p>В-третьих — установка параметров идет через указание номера и значения. Обрати внимание, что номер параметров начинаются с 1, а не с 0, как мы привыкли при работе с массивами и коллекциями.</p>
+
+<p>Интерфейс <span class="text-neon"><span class="text-bold"><em>PreparedStatement</em></span></span> содержит методы для установки строк — <span class="code text-orange">setString()</span>, для установки чисел — <span class="code text-orange">setInt()</span>, <span class="code text-orange">setLong()</span>, <span class="code text-orange">setDouble()</span>, для установки дат — <span class="code text-orange">setDate()</span>. И более сложных типов — это можно увидеть в документации.</p>
+
+<p>В-четвертых — вызов <span class="code text-orange">stmt.executeUpdate()</span> выполняется уже без указания строки запроса.</p>
+
+<p>Крайне настоятельно рекомендую подружиться с <span class="text-neon"><span class="text-bold"><em>PreparedStatement</em></span></span> — это очень эффективный инструмент.</p>

@@ -1,0 +1,202 @@
+Маппинг коллекций
+<p>----------------------------------------</p>
+Список коллекций. 
+Вспомогательная таблица. 
+Коллекция Set. 
+Коллекция List. 
+Коллекция Map.
+<p>----------------------------------------</p>
+<h2>Список коллекций</h2>
+
+<p>Что ж, ты познакомился с тем, как мапить простые типы. Теперь пора перейти к вопросам поинтереснее – как мапить коллекции объектов.</p>
+
+<p>А объекты у нас могут быть в 5 группах:</p>
+
+<ul>
+<li><strong>Array</strong> – массив объектов</li>
+<li><strong>List</strong> – список объектов</li>
+<li><strong>Set</strong> – множество объектов</li>
+<li><strong>Map</strong> – словарь объектов</li>
+<li><strong>Collection</strong> – коллекция объектов</li>
+
+</ul><p>И пример класса с полем-коллекцией:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+class User {
+   @Id
+   @Column(name="id")
+   public Integer id;
+ 
+   @Волшебная-аннотация  
+   public List<String> messages;
+}
+</code></pre>
+
+<p>Так что же это за волшебная аннотация такая, которая позволит нам хранить не одно поле, а много значений?</p>
+
+<p>Эта аннотация называется <span class="text-yellow"><span class="text-bold">@ElementCollection</span></span>. Пример:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+class User  {
+   @Id
+   @Column(name="id")
+   public Integer id;
+ 
+   @ElementCollection
+   public List&lt;String> messages;
+}
+</code></pre>
+
+<p>Пишется она очень просто, а вот работает нетривиально.</p>
+
+<h2>Вспомогательная таблица</h2>
+
+<p>Все поля Entity-класса, которые содержат много элементов и помечаются с помощью аннотации <span class="text-yellow"><span class="text-bold">@ElementCollection</span></span> содержатся в базе данных в специальной вспомогательной таблице. Что, собственно говоря, логично.</p>
+
+<p>Эта таблица может содержать данные в двух видах:</p>
+
+<ul>
+<li><strong>Упорядоченные</strong> (List, Map) содержат три колонки:
+<ul>
+<li><strong>Key Column</strong> (Foreign Key) – ссылка на ID объекта-родителя.</li>
+<li><strong>Index Column</strong> – позиция/индекс в коллекции.</li>
+<li><strong>Element Column</strong> – значение.</li>
+</ul></li>
+<li><strong>Неупорядоченные</strong> (Set) содержат две колонки:
+<ul>
+<li><strong>Key Column</strong> (Foreign Key) – ссылка на ID объекта-родителя.</li>
+<li><strong>Element Column</strong> – значение.</li>
+</ul></li>
+</ul>
+
+<p>Также ты можешь задать имя этой таблицы явно с помощью аннотации:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+   <span class="text-red">@CollectionTable(name="имя_таблицы")</span></code></pre>
+    </div>
+
+<p>Пример:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+class User {
+   @Id
+   @Column(name="id")
+   public Integer id;
+ 
+   @ElementCollection
+   @CollectionTable(name="user_message")
+   public List&lt;String> messages;
+}
+</code></pre>
+
+<p><strong>Важно!</strong> Если аннотация <span class="text-yellow"><span class="text-bold">@CollectionTable</span></span> не указана, то Hibernate сам построит имя таблицы на основе имени класса и имени поля: класс <span class="code"><span class="text-green">User</span></span> и поле <mark>messages</mark> дадут имя таблице "User_messages".</p>
+ 
+<h2>Коллекция Set</h2>
+
+<p>Но давай не будем отдавать на откуп Hibernate создание вспомогательной таблицы и создадим ее сами. Сначала нам нужно создать таблицу с двумя колонками:</p>
+
+<pre class='language-java line-numbers'><code>
+CREATE TABLE user_message {
+    user_id INT,
+    message VARCHAR(255)
+};
+</code></pre>
+
+<p>Обрати внимание, что у этой таблицы нет своей id-колонки. Это и есть основной признак вспомогательных таблиц. С другими видами вспомогательных таблиц ты познакомишься немного позже.</p>
+
+<p>Теперь нужно замапить эту таблицу на наше поле <mark>messages</mark> в классе <span class="code"><span class="text-green">User</span></span>. Выглядеть это дело будет так:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+class User {
+   @Id
+   @Column(name="id")
+   public Integer id;
+ 
+   @ElementCollection
+   @CollectionTable(name="user_message", joinColumns = @JoinColumn(name = "user_id"))
+   @Column(name = "message")
+   public Set&lt;String> messages;
+}
+</code></pre>
+
+<p>Тут стоит обратить внимание на две вещи.</p>
+
+<p>Во-первых, колонка message, указанная с помощью аннотации <span class="text-yellow"><span class="text-bold">@Column(name = "message")</span></span>, находится во вспомогательной таблице user_message, а не в таблице user.</p>
+
+<p>Во-вторых, в аннотации <span class="text-yellow"><span class="text-bold">@JoinColumn(name = "user_id")</span></span> мы указали имя колонки user_id, которая ссылается на id таблицы user. Это чтобы Hibernate знал, как их правильно объединять.</p>
+
+<h2>Коллекция List</h2>
+
+<p>Если ты хочешь хранить во вспомогательной таблице упорядоченные элементы списка или массива, то тебе понадобится таблица с тремя колонками:</p>
+
+<pre class='language-java line-numbers'><code>
+CREATE TABLE user_message {
+    user_id INT,
+    index INT,
+    message VARCHAR(255)
+};
+</code></pre>
+
+<p>Если не нравится имя колонки "index", или ты не можешь его поменять, то можно указать другое имя во время маппинга. Для этого нужно использовать аннотацию <span class="text-yellow"><span class="text-bold">@Index</span></span>.</p>
+
+<p>Пример:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+class User {
+   @Id
+   @Column(name="id")
+   public Integer id;
+ 
+   @ElementCollection
+   @CollectionTable(name="user_message",
+       	indexes = { @Index(columnList = "list_index") }
+       	joinColumns = @JoinColumn(name = "user_id"))
+   @Column(name = "message")
+   public List&lt;String> messages;
+}
+</code></pre>
+
+<h2>Коллекция Map</h2>
+
+<p>И наконец, ты хочешь сохранять не просто коллекцию, а HashMap, и тебе для него нужны две колонки во вспомогательной таблице:</p>
+
+<pre class='language-java line-numbers'><code>
+CREATE TABLE user_message {
+    user_id INT,
+    key VARCHAR(255),
+    message VARCHAR(255)
+};
+</code></pre>
+
+<p>Для того, чтобы указать ключ для Map тебе понадобится аннотация <span class="text-yellow"><span class="text-bold">@MapKeyColumn</span></span>.</p>
+
+<p>Пример:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+class User {
+   @Id
+   @Column(name="id")
+   public Integer id;
+ 
+   @ElementCollection
+   @CollectionTable(name="user_message", joinColumns = @JoinColumn(name = "user_id"))
+   @MapKeyColumn(name = "key")
+   @Column(name = "message")
+   public Map&lt;String, String> messages;
+}
+</code></pre>
+
+<p>Более подробную информацию ты сможешь найти <a href="https://docs.jboss.org/hibernate/orm/6.0/userguide/html_single/Hibernate_User_Guide.html#collections-array" target="_blank">в официальной документации</a>.</p>

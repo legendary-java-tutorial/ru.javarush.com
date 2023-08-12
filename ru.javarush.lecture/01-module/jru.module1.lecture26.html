@@ -1,0 +1,224 @@
+Singleton
+<p>----------------------------------------</p>
+Многие наверняка слышали, что Singleton – это хорошее виски, но так как алкоголь вредит нашему здоровью, сегодня расскажем тебе о синглтоне как о паттерне проектирования в Java...
+<p>----------------------------------------</p>
+    <p>Многие наверняка слышали, что Singleton – это хорошее виски, но так как алкоголь вредит нашему здоровью, сегодня расскажем тебе о синглтоне как о паттерне проектирования в Java. </p>
+ 
+    <p>Ранее мы уже познакомились с созданием объектов и знаем, что для создания Java объекта необходимо написать следующее: </p>
+ 
+    <pre class='language-java line-numbers'><code>
+Robot robot = new Robot(); 
+    </code></pre>
+ 
+    <p>Но что, если мне нужно, чтобы у меня создавался только один экземпляр класса?</p>
+ 
+    <p>Используя <span class="code text-orange">new Robot()</span>, можно создать множество объектов, и никто нам это не запретит. Вот в таких случаях на помощь как раз приходит Singleton.</p>
+ 
+    <p>Например: нужно написать приложение, которое будет соединяться с принтером – только ОДНИМ принтером – и давать ему задание печатать: </p>
+ 
+    <pre class='language-java line-numbers'><code>
+public class Printer { 
+ 
+	public Printer() { 
+	} 
+     
+	public void print() { 
+    	… 
+	} 
+}
+    </code></pre> 
+ 
+    <p>Вроде обычный класс, но! Есть в нем одно но: я могу создать несколько экземпляров моего принтера и вызвать их из разных мест. Есть вероятность, что это плохо повлияет или даже сломает мой принтер. Поэтому нужно сделать так, чтобы наш принтер был в одном экземпляре, и поможет нам именно Синглтон! </p>
+
+    <h2>Способы создания Singleton</h2>
+ 
+    <p>Есть два способа создать Singleton:  </p>
+
+    <ul>
+        <li>использовать закрытый конструктор;  </li>
+        <li>экспортировать открытый статический метод для предоставления доступа к единственному экземпляру. </li>
+     </ul>
+
+    <p>Рассмотрим сначала способ с применением закрытого конструктора. Для этого нам нужно объявить поле в классе как <span class="code">final</span> и инициализировать его. Так как он у нас <span class="code">final</span>, он у нас будет <a href="https://javarush.com/groups/posts/1946-neizmennoe-v-java-final-konstantih-i-immutable" target="_blank">Immutable</a>, и изменить его мы уже не сможем.  </p>
+ 
+    <p>Также нужно объявить конструктор как <span class="code">private</span>, чтобы запретить <a href="https://javarush.com/groups/posts/1969-principih-inkapsuljacii" target="_blank">создание объекта вне класса</a>. Это даст нам гарантию, что экземпляров нашего принтера больше не будет в системе. Конструктор вызовется только один раз при инициализации и создаст нам наш <span class="code"><span class="text-green">Printer</span></span>: </p>
+ 
+    <pre class='language-java line-numbers'><code>
+public class Printer { 
+     
+	public static final Printer PRINTER = new Printer(); 
+     
+	private Printer() { 
+	} 
+ 
+	public void print() { 
+        //Printing.... 
+ 
+	} 
+}
+    </code></pre> 
+ 
+    <p>Мы создали PRINTER синглтон, который будет у нас только в одном экземпляре, используя закрытый конструктор. Переменная <mark class="user">PRINTER</mark> имеет <a href="https://javarush.com/groups/posts/modifikator-static-java" target="_blank">модификатор static</a>, так как она будет принадлежать не объекту, а классу <span class="code"><span class="text-green">Printer</span></span>. </p>
+ 
+    <p>Теперь рассмотрим создание синглтона с помощью статического метода для предоставления доступа к единственному экземпляру (обрати внимание, что поле стало <span class="code">private</span>):</p>
+ 
+    <pre class='language-java line-numbers'><code>
+public class Printer { 
+ 
+	private static final Printer PRINTER = new Printer(); 
+ 
+	private Printer() { 
+	} 
+ 
+	public static Printer getInstance() { 
+    	return PRINTER; 
+	} 
+     
+	public void print() { 
+        //Printing.... 
+	} 
+} 
+    </code></pre>
+ 
+    <p>Сколько раз мы бы здесь ни вызвали метод <span class="code text-orange">getInstance()</span>, мы всегда получим один и тот же экземпляр нашего объекта <mark class="green">PRINTER</mark>. </p>
+ 
+    <p>Создание синглтона с помощью <span class="code">private</span> конструктора – это, во-первых, более простой и короткий вариант, а во-вторых, API будет очевидным, так как поле <span class="code">public</span> объявлено как <span class="code">final</span>, и это гарантирует нам, что оно всегда будет содержать ссылку на один и тот же объект. </p>
+ 
+    <p>Вариант с использованием статического метода позволяет нам гибко изменить синглтон на класс, не являющийся таковым, без изменения его API. Метод <span class="code text-orange">getInstance()</span> дает нам единственный экземпляр нашего объекта, но мы можем его сделать таким образом, чтобы возвращать отдельный экземпляр для каждого вызывающего его пользователя.  </p>
+ 
+    <p>Также, используя вариант со статическим способом, можно написать обобщенную фабрику синглтонов.</p>
+ 
+    <p>Последним преимуществом статического метода является возможность <a href="https://javarush.com/groups/posts/2029-java-8-vse-chto-vam-budet-nuzhno" target="_blank">использовать его с помощью метода rеference.</a></p>
+ 
+    <p>Если тебе не нужно ни одно из вышеперечисленных преимуществ, тогда рекомендуем использовать вариант с <span class="code">public</span> полем. </p>
+ 
+    <p>Если нам нужна сериализация, то мало будет просто реализовать интерфейс <span class="text-neon"><span class="text-bold"><em>Serializable</em></span></span>: нужно еще добавить метод <span class="code text-orange">readResolve</span>, иначе при десериализации мы получаем новый экземпляр синглтона. </p>
+ 
+    <table>
+        <tbody>
+            <tr>
+                <td><span class="text-bold">Сериализация</span> нужна, чтобы сохранить состояние объекта в последовательности байт, а <span class="text-bold">десериализация</span> – восстановить объект из байт. Больше о сериализации и десериализации можно почитать в <a href="https://javarush.com/groups/posts/2022-serializacija-i-deserializacija-v-java" target="_blank">этой статье</a>.</td>
+            </tr>
+        </tbody>
+    </table>
+
+ 
+    <p>Теперь перепишем наш синглтон:  </p>
+ 
+    <pre class='language-java line-numbers'><code>
+public class Printer implements Serializable { 
+ 
+	private static final Printer PRINTER = new Printer(); 
+ 
+	private Printer() { 
+	} 
+ 
+	public static Printer getInstance() { 
+    	return PRINTER; 
+	} 
+} 
+    </code></pre>
+ 
+    <p>Здесь сделаем его сериализацию и десериализацию. </p>
+ 
+    <table>
+        <tbody>
+            <tr>
+                <td>Обрати внимание, что пример ниже — это стандартный механизм сериализации и десериализации в Java. Полное понимание того, что происходит в коде, прийдет после изучения тем “Потоки ввода-вывода” (модуль Java Syntax) и “Сериализация” (модуль Java Core).  </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <pre class='language-java line-numbers'><code>
+var printer = Printer.getInstance(); 
+var fileOutputStream = new FileOutputStream("printer.txt"); 
+var objectOutputStream = new ObjectOutputStream(fileOutputStream); 
+objectOutputStream.writeObject(printer); 
+objectOutputStream.close(); 
+ 
+var fileInputStream = new FileInputStream("printer.txt"); 
+var objectInputStream = new ObjectInputStream(fileInputStream); 
+var deserializedPrinter =(Printer) objectInputStream.readObject(); 
+objectInputStream.close(); 
+ 
+System.out.println("Singleton 1 is: " + printer); 
+System.out.println("Singleton 2 is: " + deserializedPrinter);
+    </code></pre> 
+ 
+    <p>И получим результат:  </p>
+ 
+    <div class="terminal">Singleton 1 is: Printer@6be46e8f <br />
+Singleton 2 is: Printer@3c756e4d</div>
+ 
+    <p>Здесь мы видим, что при десериализации мы получили другой класс нашего синглтона. Чтобы исправить это, добавим к нашему классу метод <span class="code text-orange">readResolve</span>: </p>
+ 
+    <pre class='language-java line-numbers'><code>
+public class Printer implements Serializable { 
+ 
+	private static final Printer PRINTER = new Printer(); 
+ 
+	private Printer() { 
+	} 
+ 
+	public static Printer getInstance() { 
+    	return PRINTER; 
+	} 
+ 
+	public Object readResolve() { 
+    	return PRINTER; 
+	} 
+}
+    </code></pre> 
+ 
+    <p>Тепер еще раз сереализируем и десереализуем наш синглтон: </p>
+ 
+    <pre class='language-java line-numbers'><code>
+var printer = Printer.getInstance(); 
+var fileOutputStream = new FileOutputStream("printer.txt"); 
+var objectOutputStream = new ObjectOutputStream(fileOutputStream); 
+objectOutputStream.writeObject(printer); 
+objectOutputStream.close(); 
+ 
+var fileInputStream = new FileInputStream("printer.txt"); 
+var objectInputStream = new ObjectInputStream(fileInputStream); 
+var deserializedPrinter=(Printer) objectInputStream.readObject(); 
+objectInputStream.close(); 
+ 
+System.out.println("Singleton 1 is: " + printer); 
+System.out.println("Singleton 2 is: " + deserializedPrinter); 
+    </code></pre>
+ 
+    <p>И получаем: </p>
+ 
+    <div class="terminal">Singleton 1 is: com.company.Printer@6be46e8f <br />
+Singleton 2 is: com.company.Printer@6be46e8f </div>
+ 
+    <p>Метод <span class="code text-orange">readResolve()</span> позволяет получить тот же объект, который мы и десериализовали, тем самым предотвратить создание ложных синглтонов. </p>
+  
+    <h2>Итоги</h2>
+ 
+    <p>Итак, сегодня мы узнали о синглтоне: как его создавать и когда использовать, для чего он нужен, и какие варианты создания есть на Java. Ниже – особенности обоих вариантов: </p>
+ 
+    <table>
+        <tbody>
+            <tr>
+                <th>Private constructor</th>
+                <th>Static method</th>
+            </tr>
+            <tr>
+                <td>
+                    <ul>
+                        <li>Проще и короче вариант</li>
+                        <li>Очевидное API, так как поле <span class="code">public final</span></li>
+                    </ul>
+                </td>
+                <td>
+                    <ul>
+                        <li>Использование с method reference</li>
+                        <li>Возможность написать обобщенную фабрику синглтонов</li>
+                        <li>Возможность возвращать отдельный экземпляр для каждого вызывающего его пользователя</li>
+                    </ul>
+                </td>
+            </tr>
+        </tbody>
+     </table>

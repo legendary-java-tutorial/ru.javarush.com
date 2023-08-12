@@ -1,0 +1,114 @@
+Остановить бушующий поток: неофициальная версия
+<p>----------------------------------------</p>
+Допустим, пользователь сказал программе загрузить файл из интернета. Главная нить создала для этого задания отдельную дочернюю нить, и передала ей объект, метод run которого содержит все необходимые действия для скачивания файла. А тут пользователь – раз — и передумал качать этот файл! Как отменить задание и остановить нить?
+<p>----------------------------------------</p>
+<p>&#8212; Привет, Амиго! Вот интересный вопрос, с которым ты уже столкнулся или столкнёшься в ближайшее время. А <strong><span class="text-red">как остановить запущенную нить</span></strong>?</p>
+<p>Допустим, пользователь отдал программе команду «загрузить файл из интернета». Главная нить создала для этого задания отдельную дочернюю нить, и передала ей объект, метод run которого содержит все необходимые действия для скачивания файла.</p>
+<p>А тут пользователь – раз и передумал. Не хочет он качать этот файл. <span class="text-red">Как отменить задание и остановить нить?</span></p>
+<p><span class="text-user">&#8212; Да, как?</span></p>
+<p>&#8212; <strong><span class="text-red">Никак</span></strong>. Это и есть самый общий и самый правильный ответ. <span class="text-red">Нить остановить нельзя, она может остановиться только сама.</span></p>
+<p>Но можно дать нити сигнал, сообщить ей каким-нибудь образом, что работу больше выполнять не нужно, и ей нужно завершиться. Так же, как главная нить завершается вместе с выходом из метода main, чтобы завершить дочернюю нить, она должна закончить выполнение метода run.</p>
+<p><span class="text-user">&#8212; И как это лучше всего сделать?</span></p>
+<p>&#8212; Можно завести какую-нибудь переменную, например типа <strong>boolean</strong>. Если она <strong>true</strong> – нить работает. Если же она стала <strong>false</strong> – нить должна завершиться. Например, так:</p>
+<table>
+<tbody>
+<tr>
+<th>Код</th>
+<th>Описание</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Clock <span class="text-user">implements Runnable</span>
+{
+public void run()
+{
+<span class="text-user">while (true)</span>
+{
+Thread.sleep(1000);
+System.out.println("Tik");
+
+<span class="text-red">if (!ClockManager.isClockRun)
+return;</span>
+}
+}
+}</code></pre>
+</td>
+<td>Класс Clock (часы) будет вечно писать в консоль раз в секунду слово «Tik»</p>
+<p><span class="text-red">Если переменная ClockManager.isClockRun равна false – метод run завершится.</span></td>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class ClockManager
+{
+public static boolean isClockRun = true;
+public static void main(String[] args)
+{
+<span class="text-user">Clock clock = new Clock();
+Thread clockThread = new Thread(clock);
+clockThread.start();</span>
+
+<span class="text-green">Thread.sleep(10000);</span>
+<span class="text-red">isClockRun = false;</span>
+}
+
+}</code></pre>
+</td>
+<td><span class="text-user">Главная нить, запускает дочернюю нить – часы, которая должна работать вечно.</span></p>
+<p><span class="text-green">Ждет 10 секунд</span> <span class="text-red">и подает часам сигнал на завершение.</span></p>
+<p>Главная нить завершает свою работу.</p>
+<p>Нить часов завершает свою работу.</td>
+</tr>
+</tbody>
+</table>
+<p><span class="text-user">&#8212; А если у нас несколько нитей, что тогда?</span></p>
+<p>&#8212; Тогда лучше завести такую переменную для каждой нити. Удобнее всего будет добавить ее прямо в класс. Можно добавить туда переменную <strong>boolean</strong> <strong>isRun</strong>. Хотя лучше добавить переменную boolean <strong>isCancel</strong>, которая будет принимать значение <strong>true</strong>, если задание отменено.</p>
+<table>
+<tbody>
+<tr>
+<th>Код</th>
+<th>Описание</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Clock implements Runnable
+{
+<span class="text-red">private boolean isCancel = false;</span>
+
+public void <span class="text-red">cancel</span>()
+{
+<span class="text-red">this.isCancel = true;</span>
+}
+
+public void run()
+{
+while (<span class="text-red">!isCancel</span>)
+{
+Thread.sleep(1000);
+System.out.println("Tik");
+}
+}
+}</code></pre>
+</td>
+<td>Класс Clock (часы) будет писать в консоль раз в секунду слово «Тик», пока переменная <span class="text-red">isCancel</span> равна false.</p>
+<p>Когда переменная <span class="text-red">isCancel</span> станет равной true, метод run завершится.</td>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public static void main(String[] args)
+{
+<span class="text-user">Clock clock = new Clock();
+Thread clockThread = new Thread(clock);
+clockThread.start();</span>
+
+<span class="text-green">Thread.sleep(10000);</span>
+<span class="text-red">clock.cancel();</span>
+}</code></pre>
+</td>
+<td><span class="text-user">Главная нить, запускает дочернюю нить – часы, которая должна работать вечно.</span></p>
+<p><span class="text-green">Ждет 10 секунд и</span> <span class="text-red">отменяет задание, вызовом метода cancel.</span></p>
+<p>Главная нить завершает свою работу.</p>
+<p>Нить часов завершает свою работу.</td>
+</tr>
+</tbody>
+</table>
+<p><span class="text-user">&#8212; Буду знать, спасибо, Элли.</span></p>

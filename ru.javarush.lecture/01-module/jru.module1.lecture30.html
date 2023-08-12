@@ -1,0 +1,351 @@
+Создание своих исключений
+<p>----------------------------------------</p>
+Думаю, тебе уже доводилось сталкиваться с ситуацией, когда запускаешь код, а в результате получаешь что-то вроде NullPointerException, ClassCastException или что похуже...
+<p>----------------------------------------</p>
+    <p>Думаю, тебе уже доводилось сталкиваться с ситуацией, когда запускаешь код, а в результате получаешь что-то вроде <span class="text-red"><span class="text-bold">NullPointerException</span></span>, <span class="text-red"><span class="text-bold">ClassCastException</span></span> или что похуже. Потом долгая отладка, разбор, гугление и так далее. Сами по себе исключения — отличная штука: они указывают, где возникла проблема и какого рода. Если хочешь освежить память, да и просто узнать подробнее, загляни в статью <a href="https://javarush.com/groups/posts/1944-iskljuchenija-checked-unchecked-i-svoi-sobstvennihe" target="_blank">Исключения: checked, unchecked и свои собственные (javarush.ru)</a></p>
+
+    <p>Но могут возникнуть ситуации, когда надо создать свое исключение. Например, твой код должен запросить информацию с удаленного сервиса, а он недоступен по каким-то причинам. Или человек заполняет заявку на банковскую карточку и вводит свой номер телефона, и, случайно или нет, вписывает номер, который уже есть в системе и принадлежит другому пользователю. </p>
+
+    <p>Тут, конечно, еще зависит от требований заказчика и архитектуры системы, но давай предположим, что поступило задание сделать проверку номера телефона, и если он уже используется — выбрасывать исключение.</p>
+
+    <p>Создаем исключение:</p>
+
+    <pre class='language-java line-numbers'><code>
+public class PhoneNumberIsExistException extends Exception {
+
+   public PhoneNumberIsExistException(String message) {
+       super(message);
+   }
+}
+    </code></pre>
+
+    <p>Следом используем его для проверки:</p>
+
+    <pre class='language-java line-numbers'><code>
+public class PhoneNumberRegisterService {
+   List&lt;String&gt; registeredPhoneNumbers = Arrays.asList("+1-111-111-11-11", "+1-111-111-11-12", "+1-111-111-11-13", "+1-111-111-11-14");
+
+   public void validatePhone(String phoneNumber) throws PhoneNumberIsExistException {
+       if (registeredPhoneNumbers.contains(phoneNumber)) {
+           throw new PhoneNumberIsExistException("Указанный номер телефона уже используется другим клиентом!");
+       }
+   }
+}
+    </code></pre>
+
+    <p>Для упрощения задачи мы “захардкодим” несколько номеров телефонов — пусть это будет наша база данных. Ну и, наконец, попробуем применить наше исключение:</p>
+
+    <pre class='language-java line-numbers'><code>
+public class CreditCardIssue {
+   public static void main(String[] args) {
+       PhoneNumberRegisterService service = new PhoneNumberRegisterService();
+       try {
+           service.validatePhone("+1-111-111-11-14");
+       } catch (PhoneNumberIsExistException e) {
+           // здесь можно сделать запись в логи или вывод стека вызовов
+		e.printStackTrace();
+       }
+   }
+}
+    </code></pre>
+
+    <p>Ну что, пора нажать <span class="text-bold">Shift+F10</span> (если используешь IDEA), то есть, запустить проект. И вот что ты увидишь в консоли:</p>
+
+    <div class="terminal">exception.CreditCardIssue<br />
+exception.PhoneNumberIsExistException: Указанный номер телефона уже используется другим клиентом!<br />
+	at exception.PhoneNumberRegisterService.validatePhone(PhoneNumberRegisterService.java:11)</div>
+
+    <p>Ну вот, ты создал свое исключение и даже немного его протестировал. Поздравляю тебя с этим достижением! Рекомендую немного поэкспериментировать с ним, чтобы лучше разобраться, как это работает.</p>
+
+    <p>Добавь еще одно: например, для проверки наличия букв. Как ты наверняка знаешь, в США часто используют буквы для упрощения запоминания номера, вроде 1-800-MY-APPLE. То есть, тебе надо проверить, чтобы в номере были только цифры.</p>
+
+    <p>Итак, мы создали проверяемое, то есть, </div>checked</div>, исключение. И все бы хорошо, но…</p>
+
+    <img data-max-width="512" data-id="1b3e5814-e0e5-4431-a5d7-52171615439c" src="https://cdn.javarush.com/images/article/1b3e5814-e0e5-4431-a5d7-52171615439c/original.jpeg" alt="">
+
+    <p>Сообщество программистов разделилось на два лагеря — те, кто за проверяемые исключения и те, кто против. Обе стороны приводят веские аргументы. Среди тех и других есть разработчики экстра-класса: Брюс Эккель критикует концепцию проверяемых исключений, Джеймс Гослинг защищает. Похоже, этот вопрос никогда не будет окончательно закрыт. Тем не менее, давайте рассмотрим основные минусы использования проверяемых исключений.</p>
+
+    <p><span class="text-bold">Главный минус проверяемых исключений</span> — их надо обрабатывать. И тут у нас два варианта: либо обрабатывать на месте, используя <span class="text-viola">try-catch</span>, либо, если у нас одно и то же исключение используется во многих местах, пробрасывать с помощью <span class="text-viola">throws</span> выше, и в классах верхнего уровня их обрабатывать.</p>
+
+    <p>Также у нас может возникнуть “простыня” кода, или как иногда можно услышать — boilerplate, то есть много кода, который места занимает много, но смысловой нагрузки несет мало. </p>
+
+    <p>Проблемы начинаются в достаточно больших приложениях: обрабатываемых исключений становится много, и метод верхнего слоя легко может обрасти списком <span class="text-viola">throws</span> с десятком исключений.</p>
+
+    <div class="terminal">public OurCoolClass() throws FirstException, SecondException, ThirdException, ApplicationNameException...</div>
+
+    <p>Часто разработчикам это не нравится, и они идут на хитрость: наследуют все свои проверяемые исключения от одного предка — <span class="text-red"><span class="text-bold">ApplicationNameException</span></span>. Теперь они обязаны ловить в обработчике еще и его (<span class="code">checked</span> же!):</p>
+
+    <pre class='language-java line-numbers'><code>
+catch(FirstException e){
+    // todo
+}
+catch(SecondException e){
+    // todo
+}
+catch(ThirdException e){
+    // todo
+}
+catch(ApplicationNameException e){
+    // todo
+}
+    </code></pre>
+
+    <p>Тут нас ждет еще одна проблема: а что делать в последнем <span class="text-viola">catch</span>? Выше мы уже обработали все штатные ситуации, которые предусмотрели, но здесь <span class="text-red"><span class="text-bold">ApplicationNameException</span></span> для нас значит не больше, чем <span class="text-red"><span class="text-bold">Exception</span></span>: “какая-то непонятная ошибка”. Так и обрабатываем:</p>
+
+    <pre class='language-java line-numbers'><code>
+catch(ApplicationNameException e){
+    LOGGER.error("Unknown error", e.getMessage());
+}
+    </code></pre>
+
+    <p>И в итоге мы не знаем, что произошло.</p>
+
+    <p>Но, казалось бы, можно же все прокинуть одним движением руки:</p>
+
+    <pre class='language-java line-numbers'><code>
+public void ourCoolMethod() throws Exception{
+// do some
+}
+    </code></pre>
+
+    <p>Да, можно. Но какую информацию несет “throws Exception”? Что-то сломалось. Придется проверять все от и до, и ты надолго подружишься с дебагером, чтобы понять причину.</p>
+
+    <p>Еще ты можешь встретить конструкцию, которую иногда называют “поймал — молчи”:</p>
+
+    <pre class='language-java line-numbers'><code>
+try{
+// some code
+} catch(Exception e){
+   throw new ApplicationNameException("Error");
+}
+    </code></pre>
+
+    <p>Тут не нужно лишних слов — по коду все понятно, а точнее — ничего не понятно.</p>
+
+    <p>Конечно, ты можешь возразить, что такое не встретишь в реальном коде. Хорошо, давай посмотрим такую штуку, как класс <span class="code"><span class="text-green">URL</span></span> из пакета <span class="text-bold">java.net</span> и заглянем в ее недра, в ее код. Follow me if you want to know!</p>
+
+    <p>Вот один из конструкторов <span class="code"><span class="text-green">URL</span></span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+public URL(String spec) throws MalformedURLException {
+   this(null, spec);
+}
+    </code></pre>
+
+    <p>Как видишь, тут есть интересное проверяемое исключение <span class="text-red"><span class="text-bold">MalformedURLException</span></span>. И оно может быть выброшено в случае, цитирую:<br />
+<em>if no protocol is specified, or an unknown protocol is found, or spec is null, or the parsed URL fails to comply with the specific syntax of the associated protocol.</em></p>
+
+    <p>То есть:</p>
+
+    <ol>
+        <li>Если протокол не указан.</li>
+        <li>Найден неизвестный протокол.</li>
+        <li>Спецификация имеет значение <span class="text-bold">null</span>.</li>
+        <li>URL-адрес не соответствует конкретному синтаксису связанного протокола.</li>
+    </ol>
+
+    <p>Давай создадим метод, который будет создавать объект класса <span class="code"><span class="text-green">URL</span></span>:</p>
+
+
+    <pre class='language-java line-numbers'><code>
+public URL createURL() {
+   URL url = new URL("https://javarush.com");
+   return url;
+}
+    </code></pre>
+
+    <p>Как только ты напишешь эти строки в IDE (я пишу в IDEA, но даже в Eclipse и NetBeans это сработает), увидишь вот это:</p>
+
+    <img data-max-width="512" data-id="0cf7709b-cc19-4b54-93db-15f5ae7b508e" src="https://cdn.javarush.com/images/article/0cf7709b-cc19-4b54-93db-15f5ae7b508e/original.png" alt="">
+
+    <p>Это говорит о том, что нам надо либо пробросить исключение, либо “обернуть” в <span class="text-viola">try-catch</span>. Предлагаю пока выбрать второй вариант, чтобы наглядно увидеть, что получится:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static URL createURL() {
+   URL url = null;
+   try {
+       url = new URL("https://javarush.com");
+   } catch(MalformedURLException e){
+  e.printStackTrace();
+   }
+   return url;
+}
+    </code></pre>
+
+    <p>Как видишь, получилось уже довольно многословно. Собственно, об этом уже сказано выше. Это одна из самых явных причин использовать непроверяемые исключения.</p>
+
+    <p>Мы можем создать такое исключение, расширив <span class="text-red"><span class="text-bold">RuntimeException</span></span> в Java.</p>
+
+    <p>Непроверяемые исключения наследуются от класса <span class="code"><span class="text-green">Error</span></span> или класса <span class="code"><span class="text-green">RuntimeException</span></span>. Многие программисты считают, что мы не можем обрабатывать эти исключения в наших программах, потому что они представляют собой тип ошибок, от которых нельзя ожидать восстановления выполнения кода во время работы программы. </p>
+
+    <p>Когда возникает непроверяемое исключение, это обычно вызвано неправильным использованием кода, передачей нулевого или иного неправильного аргумента. </p>
+
+    <p>Итак, давай писать код:</p>
+
+    <pre class='language-java line-numbers'><code>
+public class OurCoolUncheckedException extends RuntimeException {
+   public OurCoolUncheckedException(String message) {
+       super(message);
+   }
+
+   public OurCoolUncheckedException(Throwable cause) {
+       super(cause);
+   }
+  
+   public OurCoolUncheckedException(String message, Throwable throwable) {
+       super(message, throwable);
+   }
+}
+    </code></pre>
+
+    <p>Обрати внимание: мы сделали несколько конструкторов для разных целей. Это позволяет нам расширить возможности нашего исключения. Вот, к примеру, мы можем сделать так, чтобы исключение могло выдать нам код ошибки. Для начала сформируем <span class="code"><span class="text-green">enum</span></span>, в котором, собственно, наши коды ошибок и будут лежать:</p>
+
+    <pre class='language-java line-numbers'><code>
+public enum ErrorCodes {
+   FIRST_ERROR(1),
+   SECOND_ERROR(2),
+   THIRD_ERROR(3);
+
+   private int code;
+
+   ErrorCodes(int code) {
+       this.code = code;
+   }
+
+   public int getCode() {
+       return code;
+   }
+}
+    </code></pre>
+
+    <p>А теперь добавим еще один конструктор в класс нашего исключения:</p>
+
+    <pre class='language-java line-numbers'><code>
+public OurCoolUncheckedException(String message, Throwable cause, ErrorCodes errorCode) {
+   super(message, cause);
+   this.errorCode = errorCode.getCode();
+}
+    </code></pre>
+
+    <p>И да, не забудем добавить поле, чуть было не забыли:</p>
+
+    <pre class='language-java line-numbers'><code>
+private Integer errorCode;
+    </code></pre>
+
+    <p>Ну и конечно, метод для получения этого кода:</p>
+
+    <pre class='language-java line-numbers'><code>
+public Integer getErrorCode() {
+   return errorCode;
+}
+    </code></pre>
+
+    <p>Посмотрим на весь класс целиком, чтобы можно было проверить и сравнить:</p>
+
+    <pre class='language-java line-numbers'><code>public class OurCoolUncheckedException extends RuntimeException {
+   private Integer errorCode;
+
+   public OurCoolUncheckedException(String message) {
+       super(message);
+   }
+
+   public OurCoolUncheckedException(Throwable cause) {
+       super(cause);
+   }
+
+   public OurCoolUncheckedException(String message, Throwable throwable) {
+
+       super(message, throwable);
+   }
+
+   public OurCoolUncheckedException(String message, Throwable cause, ErrorCodes errorCode) {
+       super(message, cause);
+       this.errorCode = errorCode.getCode();
+   }
+   public Integer getErrorCode() {
+       return errorCode;
+   }
+}
+    </code></pre>
+
+    <p>Вот наше исключение и готово! Как видишь, ничего особо сложного нет. Проверим его в работе:</p>
+
+    <pre class='language-java line-numbers'><code>
+   public static void main(String[] args) {
+       getException();
+   }
+   public static void getException(){
+       throw new OurCoolUncheckedException("Наше крутое исключение!");
+   }
+    </code></pre>
+
+    <p>Запустим наше небольшое приложение и увидим в консоли примерно следующее:</p>
+
+    <img data-max-width="800" data-id="c717a6f3-85d1-4671-9915-77280eeef1e0" src="https://cdn.javarush.com/images/article/c717a6f3-85d1-4671-9915-77280eeef1e0/original.png" alt="">
+
+    <p>А теперь давай воспользуемся дополнительной функциональностью, которую мы добавили. Немного допишем предыдущий код:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws Exception {
+
+   OurCoolUncheckedException exception = getException(3);
+   System.out.println("getException().getErrorCode() = " + exception.getErrorCode());
+   throw exception;
+
+}
+
+public static OurCoolUncheckedException getException(int errorCode){
+   return switch (errorCode) {
+   case 1:
+       return new OurCoolUncheckedException("Наше крутое исключение! Мы получили ошибку: " + ErrorCodes.FIRST_ERROR.getCode(), new Throwable(), ErrorCodes.FIRST_ERROR);
+   case 2:
+       return new OurCoolUncheckedException("Наше крутое исключение! Мы получили ошибку: " + ErrorCodes.SECOND_ERROR.getCode(), new Throwable(), ErrorCodes.SECOND_ERROR);
+   default: // здесь мы подхватим тройку и все остальные коды, которые мы еще не добавили, то есть, это действие по умолчанию. Подробнее можешь узнать здесь <a href="https://javarush.com/groups/posts/operator-switch-v-java" target="_blank">Switch case Java (оператор switch в Java) (javarush.ru)</a>
+       return new OurCoolUncheckedException("Наше крутое исключение! Мы получили ошибку: " + ErrorCodes.THIRD_ERROR.getCode(), new Throwable(), ErrorCodes.THIRD_ERROR);
+}
+
+}
+    </code></pre>
+
+    <p>С исключениями можно работать как с объектами, хотя, уверен, ты и так знаешь, что в Java все есть объект.</p>
+
+    <p>И смотри, что мы сделали. Сначала мы изменили метод, который теперь не бросает, а просто создает исключение в зависимости от того, какой нам прилетел параметр. Далее при помощи <span class="text-viola">switch-case</span> генерируем исключение с нужным нам кодом ошибки и сообщением. А в основном методе мы созданное исключение получили, достали код ошибки и бросили его.</p>
+
+    <p>Давай запустим и посмотрим, что попадет в консоль:</p>
+
+    <img data-max-width="800" data-id="f78f7a56-d324-4611-bb55-2a5b7da95794" src="https://cdn.javarush.com/images/article/f78f7a56-d324-4611-bb55-2a5b7da95794/original.png" alt="">
+
+    <p>И смотри, получается, что мы вывели код ошибки, который получили из исключения, затем выбросили само исключение. При этом мы даже можем отследить, а где именно было выброшено исключение. При необходимости ты можешь добавить всю необходимую информацию в сообщение, создать необходимые коды ошибок, дополнить свои исключения новыми возможностями.</p>
+
+    <p>Ну как? Надеюсь, у тебя все получилось!</p>
+
+    <p>Вообще, тема исключений довольно обширна и не так однозначна. Тут будет еще много споров и будет сломано немало копий. К примеру, только в Java есть проверяемые исключения. Из наиболее распространенных языков я не видел ни один, который бы их использовал. </p>
+
+    <p>Очень хорошо про исключения в целом написал Брюс Эккель в своей книге “Философия Java”, в главе 12, рекомендую ознакомиться! Также загляни в первый том “Java. Библиотека профессионала” Хорстманна, в главу 7 — там тоже много интересного.</p>
+
+    <h2>Небольшие итоги</h2>
+
+    <ol>
+        <li><p>Пиши все в лог! Логируй сообщения, которые может выдать исключение. В большинстве случаев это очень поможет в отладке и позволит понять, что произошло. Не оставляй пустым блок <span class="text-viola">catch</span>, иначе он будет просто “съедать” исключение, и у тебя не будет данных для поиска проблем.</li></p>
+
+        <li><p>Плохая практика в отношении исключения — поймать их все одним разом (как сказал один мой коллега, это не покемон — это Java), Поэтому избегай <span class="text-viola">catch(Exception e)</span> или, того хуже, <span class="text-viola">catch(Throwable t)</span>.</li></p>
+
+        <li><p>Бросай исключение как можно раньше. Это хорошая практика программирования на Java. Когда ты будешь изучать фреймворки, типа Spring, увидишь, что он работает по принципу Failed First. То есть, “упасть” как можно раньше, чтобы быстрее найти ошибку. Это, конечно, несет определенные неудобства. Тем не менее, такой подход помогает создавать более надежный код.</li></p>
+
+        <li><p>При вызове других частей кода лучше всего ловить определенные исключения. Если вызываемый код генерирует несколько исключений, плохая практика программирования — перехватывать только родительский класс этих исключений. Например, если вызываемый код выдает <span class="text-red"><span class="text-bold">FileNotFoundException</span></span> с участием <span class="text-red"><span class="text-bold">IOException</span></span>. И в твой код, который вызывает этот модуль, лучше написать два блока catch для захвата каждого из исключений, вместо одного <span class="text-viola">catch</span> для перехвата <span class="text-red"><span class="text-bold">Exception</span></span>.</li></p>
+
+        <li><p>Лови исключения только тогда, когда сможешь эффективно для пользователя и отладки их обработать.</p></li>
+
+        <li><p>Не стесняйся писать свои исключения. Конечно, в Java очень много готовых, на любой вкус и цвет, но иногда придется все же создавать свой “велосипед”. Но ты должен четко понимать, зачем ты это делаешь и быть уверенным, что среди штатных нет нужного тебе.</li></p>
+
+        <li><p>Когда ты создаешь свои классы исключений, следи за именованием! Ты, скорее всего, уже знаешь, что правильное именование классов, переменных, методов и пакетов — это крайне важно. Исключения — не исключения (прости за тавтологию)! В конце всегда ставь слово <span class="text-red"><span class="text-bold">Exception</span></span>, а название исключения должно четко говорить об ошибке, которую оно ловит. Пример — <span class="text-red"><span class="text-bold">FileNotFoundException</span></span>.</li></p>
+
+        <li><p>Документируй исключения. Желательно писать javadoc @throws для исключений. Это будет особенно полезно в тех случаях, когда твои разработки предоставляют какие-либо интерфейсы. Да и самому будет потом проще разобраться в своем же коде. Вот как ты думаешь, откуда можно узнать, что делает <span class="text-red"><span class="text-bold">MalformedURLException</span></span>? Из javadoc! Да, перспектива писать документацию не сильно радует, но, поверь, ты себе скажешь спасибо, когда спустя полгода вернешься к своему же коду.</li></p>
+
+        <li><p>Освобождай ресурсы и не пренебрегай конструкцией <span class="text-viola">try-with-resources</span>. Если ты еще не знаешь, что это такое, то ознакомься с ними здесь — <a href="https://javarush.com/groups/posts/703-java-7-try-with-resources" target="_blank">Java 7 try-with-resources</a>.</li></p>
+
+        <li><p>Это, скорее, общий итог: используй исключения с умом. Бросить исключение — это достаточно “дорогая” по ресурсам операция. Не исключено, что во многих случаях будем проще не бросать исключений, а вернуть, скажем, логическую переменную, которая укажет, как прошла операция, используя простой и более “дешевый” <span class="text-viola">if-else</span>. </p>
+
+        <p>Также может возникнуть соблазн завязать на исключения логику приложения, чего делать явно не стоит. Исключения, как мы уже говорили в начале статьи, это исключительная ситуация, а не штатная, и для их “профилактики” есть различные инструменты. В частности, есть <span class="code"><span class="text-green">Optional</span></span>, чтобы предотвратить <span class="text-red"><span class="text-bold">NullPointerException</span></span>, или <span class="code"><span class="text-green">Scanner.hasNext</span></span> и ему подобные для недопущения исключения <span class="text-red"><span class="text-bold">IOException</span></span>, которое может бросить метод <span class="code text-orange">read()</span>.</p></li>
+    </ol>

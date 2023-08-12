@@ -1,0 +1,55 @@
+JSP: декларативный способ задания сервлета
+<p>----------------------------------------</p>
+Знакомство с JSP
+Компиляция JSP
+<p>----------------------------------------</p>
+<h2>1.1 Знакомство с JSP</h2>
+<p>Есть два популярных способа написания сервлета: <strong>императивный</strong> и <strong>декларативный</strong>. С первым мы уже разобрались — это, собственно, Servlet. Второй называется JSP (Java Server Pages), с ним мы сейчас и познакомимся.</p>
+<p>Пример JSP сервлета:</p>
+<pre class='line-numbers'><code>
+&lt;html&gt; 
+    &lt;body&gt; 
+        <span class="text-red">&lt;%</span><span class="text-green"> out.print(2*5);</span> <span class="text-red">%&gt; </span>
+    &lt;/body&gt; 
+ &lt;/html&gt; 
+</code></pre>
+<p>Не очень-то похоже на привычный нам классический Servlet, не правда ли? Так и есть. <span class="text-viola">JSP – это HTML-страница со вставками Java-кода (выделено зеленым)</span>.</p>
+<p>Видишь ли, <span class="text-green">если в сервлете у тебя много Java-кода и мало HTML-кода, тогда тебе удобнее применять классический сервлет</span>. А что делать, если тебе нужна большая HTML-страница, в которой всего пара строк меняется сервером?  </p>
+<p>В этом случаем проще всего было бы создать эту HTML-страницу и каким-то образом выполнить Java-код на сервере прямо в ней.</p>
+<h2>1.2 Компиляция JSP</h2>
+<p>Давай рассмотрим еще один пример:</p>
+<pre class='line-numbers'><code>
+&lt;html&gt; 
+  &lt;body&gt; 
+<span class="text-red">    &lt;%</span>
+<span class="text-user">        double num = Math.random();
+        if (num &gt; 0.95) {</span>
+<span class="text-red">     %&gt;</span>
+         &lt;h2&gt;Ты счастливчик, user!&lt;/h2&gt;&lt;p&gt;(<span class="text-red">&lt;%=</span><span class="text-user"> num</span> <span class="text-red">%&gt;</span>)&lt;/p&gt;
+<span class="text-red">    &lt;%</span>
+<span class="text-user">        }</span>
+<span class="text-red">    %&gt; </span>
+  &lt;/body&gt; 
+&lt;/html&gt; 
+</code></pre>
+<p>Мы получаем случайное число, и если оно больше 0.95, то выводим текст "Ты счастливчик, user!"</p>
+<p><span class="text-user">Синим цветом тут выделен Java-код</span>. Обычным (не выделен) – HTML-код, <span class="text-red">а красным — служебные теги</span>, которые помогают понять, где Java-код, а где HTML.</p>
+<p>Замечаешь некую странность? Закрывающая фигурная скобка <code>"}"</code> находится в другом <code>"блоке кода"</code>. Как правильно писать такой код? Как это вообще работает?</p>
+<p>Ответ будет супер простым :)</p>
+<p>Веб-сервер после того, как найдет у себя JSP-файл, скомпилирует его в классический сервлет. На основе приведенной выше JSP-страницы будет сгенерирован такой Servlet:</p>
+<pre class='language-java line-numbers'><code>
+public class HelloServlet extends HttpServlet {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)  throws Exception {
+    PrintWriter out = response.getWriter(); 
+    out.print("&lt;html&gt; "); 
+    out.print("&lt;body&gt;"); 
+        double num = Math.random();
+        if (num &gt; 0.95) {
+            out.print("&lt;h2&gt;Ты счастливчик, user! &lt;/h2&gt;&lt;p&gt;(" + num + ")&lt;/p&gt;");
+        }
+    out.print("&lt;/body&gt;"); 
+    out.print("&lt;/html&gt;"); 
+    }
+}
+</code></pre>
+<p>Веб-контейнер просто сгенерировал код сервлета, где HTML превратился в текст, а вставки Java-кода стали обычным Java-кодом!</p>

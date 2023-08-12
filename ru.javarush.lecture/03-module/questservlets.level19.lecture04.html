@@ -1,0 +1,86 @@
+Synchronizers: синхронизация доступа к ресурсам в Java
+<p>----------------------------------------</p>
+Semaphore
+CountDownLatch и другие
+<p>----------------------------------------</p>
+<h2>Semaphore</h2>
+
+<img data-max-width="1024" data-id="5b56b330-d15d-450e-9d26-15f951f2a98a" src="https://cdn.javarush.com/images/article/5b56b330-d15d-450e-9d26-15f951f2a98a/1024.jpeg" alt="">
+
+<p>Семафоры, как правило, используются, когда надо ограничить количество потоков при работе с файловой системой. Доступ к файлу или другому общему ресурсу управляется через счетчик. Если его значение больше нуля, доступ разрешен, но в тот же момент времени показания счетчика будут уменьшаться.</p>
+
+<p>В тот момент, когда счетчик вернет ноль, текущий поток будет заблокирован до момента освобождения ресурса другим потоком. Параметр количества разрешений необходимо задавать через конструктор.</p>
+
+<p>Подбирать этот параметр нужно индивидуально, в зависимости от мощности твоего компьютера или ноутбука.</p>
+
+<pre class='language-java line-numbers'><code>
+public class Main {
+
+   public static void main(String[] args) {
+       Semaphore sem = new Semaphore(1);
+       CommonResource res = new CommonResource();
+       new Thread(new MyThread(res, sem, "MyThread_1")).start();
+       new Thread(new MyThread(res, sem, "MyThread_2")).start();
+       new Thread(new MyThread(res, sem, "MyThread_3")).start();
+   }
+}
+
+class CommonResource {
+   int value = 0;
+}
+
+class MyThread implements Runnable {
+   CommonResource commonResource;
+   Semaphore semaphore;
+   String name;
+   MyThread(CommonResource commonResource, Semaphore sem, String name) {
+       this.commonResource = commonResource;
+       this.semaphore = sem;
+       this.name = name;
+   }
+
+   public void run() {
+
+       try {
+           System.out.println(name + " ожидает разрешение");
+           semaphore.acquire();
+           commonResource.value = 1;
+           for (int i = 1; i &lt; 7; i++) {
+               System.out.println(this.name + ": " + commonResource.value);
+               commonResource.value++;
+               Thread.sleep(150);
+           }
+       } catch (InterruptedException e) {
+           System.out.println(e.getMessage() + " " + name);
+           Thread.currentThread().interrupt();
+       }
+       System.out.println(name + " освобождает разрешение");
+       semaphore.release();
+   }
+}
+</code></pre>
+
+<h2>CountDownLatch и другие</h2>
+
+<p><span class="code"><span class="text-green">CountDownLatch</span></span> — позволяет нескольким потокам ожидать, пока не завершится определенное количество операций, выполняемых в других потоках. В качестве примера можно представить установку приложения: она не начнется, пока ты не примешь правила пользования, пока не выберешь папку, куда устанавливать новую программу и так далее. Для этого есть специальный метод <span class="code text-orange">countDown()</span> — этот метод уменьшает счетчик count down на единицу. </p>
+
+<p>Как только счетчик становится равным нулю, все ожидающие потоки в await продолжат свою работу, а все последующие вызовы await будут проходить без ожиданий. Счетчик count down одноразовый и не может быть сброшен в первоначальное состояние.</p>
+
+<p><span class="code"><span class="text-green">CyclicBarrier</span></span> — используется для синхронизации заданного количества потоков в одной точке. Барьер достигается в тот момент времени, когда N-потоков вызовут метод await(...) и блокируются. После чего счетчик сбрасывается в исходное значение, а ожидающие потоки будут освобождены. Дополнительно, если нужно, существует возможность запуска специального кода до разблокировки потоков и сброса счетчика. Для этого через конструктор передается объект с реализацией интерфейса <span class="text-neon"><span class="text-bold"><em>Runnable</em></span></span>.</p>
+
+<p><span class="code"><span class="text-green">Exchanger&lt;V></span></span> — класс <span class="code"><span class="text-green">Exchanger</span></span> предназначен для обмена данными между потоками. Он является типизированным и типизирует тип данных, которыми потоки должны обмениваться.</p>
+
+<p>Обмен данными производится с помощью единственного метода этого класса <span class="code text-orange">exchange()</span>:</p>
+
+<pre class='language-java line-numbers'><code>
+V exchange(V x) throws InterruptedException 
+V exchange(V x, long timeout, TimeUnit unit) throws InterruptedException, TimeoutException
+</code></pre>
+
+<p>Параметр x представляет буфер данных для обмена. Вторая форма метода также определяет параметр <span class="text-green">timeout</span> — время ожидания и <span class="text-green">unit</span> — тип временных единиц, применяемых для параметра <span class="text-green">timeout</span>.</p>
+
+<p>Класс <span class="code"><span class="text-green">Phaser</span></span> позволяет синхронизировать потоки, представляющие отдельную фазу или стадию выполнения общего действия. <span class="code"><span class="text-green">Phaser</span></span> определяет объект синхронизации, который ждет, пока не завершится определенная фаза. Затем <span class="code"><span class="text-green">Phaser</span></span> переходит к следующей стадии или фазе и снова ожидает ее завершения.</p>
+
+<p>При работе с классом <span class="code"><span class="text-green">Phaser</span></span> обычно сначала создается его объект. Далее нам надо зарегистрировать всех участников. Для регистрации для каждого участника вызывается метод <span class="code text-orange">register()</span>, либо можно обойтись и без этого метода, передав нужное количество участников в конструктор <span class="code"><span class="text-green">Phaser</span></span>.</p>
+
+<p>Затем каждый участник выполняет некоторый набор действий, составляющих фазу. А синхронизатор <span class="code"><span class="text-green">Phaser</span></span> ждет, пока все участники не завершат выполнение фазы. Чтобы сообщить синхронизатору, что фаза завершена, участник должен вызвать метод <span class="code text-orange">arrive()</span> или <span class="code text-orange">arriveAndAwaitAdvance()</span>. После этого синхронизатор переходит к следующей фазе.</p>

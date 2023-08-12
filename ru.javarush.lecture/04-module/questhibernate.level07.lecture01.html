@@ -1,0 +1,158 @@
+Первая JDBC-программа
+<p>----------------------------------------</p>
+Maven. 
+Первый запрос к базе данных. 
+Полный листинг программы.
+<p>----------------------------------------</p>
+<h2>Maven</h2>
+
+<p>Самая важная деталь – сама библиотека JDBC Driver для MySQL сервера. Она просто так не появится на твоем компьютере, поэтому тебе нужно ее туда добавить.</p>
+
+<p>Если ты используешь Maven, то тебе нужно помочь ему – указать нужную библиотеку.</p>
+
+<p>JDBC-драйвер <strong>для MySQL</strong>:</p>
+
+<pre><code><strong>   	&lt;dependency>
+        	&lt;groupId><span class="text-red">mysql</span>&lt;/groupId>
+        	&lt;artifactId><span class="text-red">mysql-connector-java</span>&lt;/artifactId>
+        	&lt;version><span class="text-user">8.0.29</span>&lt;/version>
+    	&lt;/dependency></strong>
+</code></pre>
+
+<p>Просто добавь этот код в твой <strong>pom.xml</strong>.</p>
+
+<p>Также приведу еще несколько популярных драйверов.</p>
+
+<p>JDBC-драйвер для <strong>PostgeSQL</strong>:</p>
+
+<pre><code><strong>&lt;dependency>
+    &lt;groupId>org.postgresql&lt;/groupId>
+    &lt;artifactId>postgresql&lt;/artifactId>
+    &lt;version>42.4.0&lt;/version>
+&lt;/dependency></strong>
+</code></pre>
+
+<p>JDBC-драйвер для <strong>Oracle</strong>:</p>
+
+<pre><code><strong>&lt;dependency>
+    &lt;groupId>com.oracle.database.jdbc&lt;/groupId>
+    &lt;artifactId>ojdbc8&lt;/artifactId>
+    &lt;version>21.5.0.0&lt;/version>
+&lt;/dependency></strong>
+</code></pre>
+
+<p>JDBC-драйвер для <strong>H2</strong>:</p>
+
+<pre><code><strong>&lt;dependency>
+    &lt;groupId>com.h2database&lt;/groupId>
+    &lt;artifactId>h2&lt;/artifactId>
+    &lt;version>2.1.214&lt;/version>
+&lt;/dependency></strong>
+</code></pre>
+
+<h2>Первый запрос к базе данных</h2>
+
+<p>Все нужные библиотеки подключены, теперь настало время запустить твою первую программу с доступом к базе данных. Писать весь код будем в методе <span class="code text-orange">main()</span>.</p>
+
+<p><strong>Этап 1</strong>. Добавь перед методом <span class="code text-orange">main()</span> несколько импортов – это существенно облегчит тебе жизнь:</p>
+
+<pre class='language-java line-numbers'><code>
+import java.sql.DriverManager;
+import java.sql.Connection;
+import java.sql.Statement;
+import java.sql.ResultSet;
+</code></pre>
+
+<p><strong>Этап 2</strong>. Сначала нам нужно создать подключение к базе данных. Для этого в методе <span class="code text-orange">main()</span> напиши такой код:</p>
+
+<pre class='language-java line-numbers'><code>
+   Connection connection  = DriverManager.getConnection(
+              "jdbc:mysql://localhost:3306/test",  
+              "login", "password");
+</code></pre>
+
+<p>Можно и в одну строчку – как тебе будет удобнее. Логин и пароль, ясное дело, нужно подставить реальные от твоего локального MySQL-сервера.</p>
+
+<p><strong>Этап 3</strong>. Создаем запрос к базе данных. Давай достанем всех пользователей из таблицы user. Тогда тебе нужно будет добавить такую строчку кода:</p>
+ 
+<pre class='language-java line-numbers'><code>
+        Statement statement = connection.createStatement();
+    	ResultSet results = statement.executeQuery("SELECT * FROM user");
+</code></pre>
+ 
+<p>Это аж две строчки. В первой мы создаем объект <mark class="green">Statement</mark>, а во второй с его помощью выполняем запрос к базе данных. Метод <span class="code text-orange">executeQuery()</span> выполняет запрос к базе данных и возвращает объект типа <mark class="green">ResultSet</mark>.</p>
+
+<p><strong>Этап 4</strong>. Выведем на экран данные, которые содержатся в объекте <mark class="green">ResultSet</mark>.</p>
+
+<p><mark class="green">ResultSet</mark> – это не множество, он просто так называется. В нем хранится результат выполнения запроса. Этот объект чем-то похож на итератор: он позволяет устанавливать/менять текущую строку результата, а затем из этой текущей строки можно получить данные.  Добавь в ваш пример такой код:</p>
+
+<pre class='language-java line-numbers'><code>
+    	while (results.next()) {
+        	Integer id = results.getInt(1);
+        	String name = results.getString(2);
+        	System.out.println(results.getRow() + ". " + id + "\t"+ name);
+    	}
+</code></pre>
+
+<p>Метод <span class="code text-orange">next()</span> меняет текущую строку результата на следующую. Он возвращает true, если такая строка есть, и false, если строки закончились.</p>
+
+<p>Затем из текущей строки объекта <mark class="green">ResultSet</mark> можно получить данные из его колонок:</p>
+
+<ul>
+<li><span class="code text-orange">getRow()</span> – возвращает номер текущей строки в объекте <mark class="green">ResultSet</mark></li>
+<li><span class="code text-orange">getInt(N)</span> – вернет данные N-й колонки текущей строки как тип int</li>
+<li><span class="code text-orange">getString(N)</span> – вернет данные N-й колонки текущей строки как тип String</li>
+</ul>
+ 
+<h2>Полный листинг программы</h2>
+
+<p>Чтобы минимизировать ошибки, приведу ниже полный листинг программы:</p>
+
+<pre class='language-java line-numbers'><code>
+package org.example;
+ 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
+ 
+public class JdbcApplicatin {
+    public static void main(String[] args) throws  Exception{
+ 	   Connection connection  = DriverManager.getConnection(
+          	"jdbc:mysql://localhost:3306/test", 
+          	"root", "secret");
+ 
+        Statement statement = connection.createStatement();
+    	ResultSet results = statement.executeQuery("SELECT * FROM user");
+ 
+    	while (results.next()) {
+        	Integer id = results.getInt(1);
+        	String name = results.getString(2);
+        	System.out.println(results.getRow() + ". " + id + "\t"+ name);
+    	}
+    	connection.close();
+    }
+}
+</code></pre>
+
+<p>И мой вывод на экран после запуска программы:</p>
+
+<table>
+<tbody>
+<tr>
+<td colspan=2><span class="text-gray">"C:\Program Files\Java\jdk-17.0.3.1\bin\java.exe…</span></td>
+</tr>
+<tr>
+<td>1. 1</td><td>Иванов Иван</tr>
+</tr>
+<tr>
+<td>2. 2</td><td>Петров Николай</tr>
+</tr>
+<tr>
+<td>3. 3</td><td>Сидоров Виталий</td>
+</tr>
+<tr>
+<td colspan=4><span class="text-user">Process finished with exit code 0</span></td>
+</tr>
+</tbody>
+</table>

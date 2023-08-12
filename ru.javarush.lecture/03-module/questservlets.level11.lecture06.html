@@ -1,0 +1,159 @@
+Структура web.xml
+<p>----------------------------------------</p>
+Общая схема web.xml
+servlet, servlet-mapping
+Параметры сервлета
+filter, filer-mapping
+<p>----------------------------------------</p>
+<h2>7.1 Общая схема web.xml</h2>
+<p><strong>Файл web.xml</strong> хранит информацию о конфигурации приложения. Он не является обязательной его частью, однако очень широко используется для настройки конфигурации веб-приложения.</p>
+<p>Этот файл должен располагаться в папке <strong>WEB-INF</strong>. При запуске Tomcat считывает его содержимое и использует записанную в нем конфигурацию. Если же файл содержит ошибки, то и Tomcat отображает ошибку.</p>
+<p>Пример web.xml:</p>
+<pre class='line-numbers'><code>
+
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+<span class="text-viola">&lt;web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+  http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd" version="4.0"&gt;</span>
+  
+ <span class="text-green"> &lt;servlet&gt;
+       &lt;servlet-name&gt;HelloWorld&lt;/servlet-name&gt;
+       &lt;servlet-class&gt;HelloServlet&lt;/servlet-class&gt;
+   &lt;/servlet&gt;</span>
+    
+<span class="text-user">  &lt;servlet-mapping&gt;
+      &lt;servlet-name&gt;HelloWorld&lt;/servlet-name&gt;
+      &lt;url-pattern&gt;/welcome&lt;/url-pattern&gt;
+  &lt;/servlet-mapping&gt;</span>
+ 
+<span class="text-red">  &lt;welcome-file-list&gt;
+      &lt;welcome-file&gt;index.html&lt;/welcome-file&gt;
+  &lt;/welcome-file-list&gt;</span>
+  
+<span class="text-viola">&lt;/web-app></span>
+
+</code></pre>
+<p><span class="text-green">Зеленым цветом тут записан маппинг имя сервлета <code>"HelloWorld"</code> и класса сервлета <code>"HelloServlet"</code></span>. <span class="text-user">Синим цветом записан маппинг имя сервлета <code>"HelloWorld"</code> и куска URL <code>"http://localhost/welcome"</code></span>. Таким образом тут написано, что при обращении к пути /welcome нужно вызвать сервлет <code>HelloServlet.class</code>.</p>
+<p><span class="text-red">Красным цветом указан файл, который нужно отдать по запросу <code>http://localhost/</code> — это так называемая welcome page</span>. Если пользователь просто вобьет в браузере имя, соответствующее корню нашего веб-приложения, то ему отдается содержимое файла <code>index.html</code>.</p>
+<h2>7.2 servlet, servlet-mapping</h2>
+<p>Один сервлет может обслуживать запросы по разным урлам, поэтому в web-xml сервлет и его маппинг на урлы записываются отдельно. Сначала описываем сервлеты, давая каждому уникальное строковое имя, а затем уже указываем, как каждый сервлет мапится на какой url.</p>
+<p>Пример web.xml:</p>
+<pre class='line-numbers'><code>
+
+<span class="text-viola">&lt;web-app&gt;</span>
+  
+  <span class="text-green">&lt;servlet&gt;
+    &lt;servlet-name&gt;remoting&lt;/servlet-name&gt;
+    &lt;servlet-class&gt;com.javarush.RemotingServlet&lt;/servlet-class&gt;
+    &lt;load-on-startup&gt;1&lt;/load-on-startup&gt;
+  &lt;/servlet&gt;
+ 
+  &lt;servlet-mapping&gt;
+    &lt;servlet-name&gt;remoting&lt;/servlet-name&gt;
+    &lt;url-pattern&gt;/remoting/*&lt;/url-pattern&gt;
+  &lt;/servlet-mapping&gt;</span>
+ 
+<span class="text-user">  &lt;servlet&gt;
+    &lt;servlet-name&gt;restapi&lt;/servlet-name&gt;
+    &lt;servlet-class&gt;com.javarush.RestApiServlet&lt;/servlet-class&gt;
+    &lt;load-on-startup&gt;2&lt;/load-on-startup&gt;
+  &lt;/servlet&gt;
+ 
+  &lt;servlet-mapping&gt;
+    &lt;servlet-name&gt;restapi&lt;/servlet-name&gt;
+    &lt;url-pattern&gt;/api/*&lt;/url-pattern&gt;
+  &lt;/servlet-mapping&gt;</span>  
+ 
+<span class="text-viola">&lt;/web-app&gt;</span>
+
+</code></pre>
+<p>В этом примере объявлено два сервлета, и каждый замаплен на свой шаблон url. <span class="text-green">Сервлет <code>RemotingServlet</code> обслуживает все запросы, которые идут на <code>/remoting/*</code></span>. <span class="text-user">Сервлет <code>RestApiServlet</code> обслуживает все запросы, которые идут на <code>/api/*</code></span>. Так же у сервлетов прописан порядок из загрузки — параметр load-on-startup.</p>
+<h2>7.3 Параметры сервлета</h2>
+<p>С помощью web.xml сервлету при его инициализации можно передать параметры, они будут доступны через интерфейс <code>ServletConfig</code>. Также можно задать параметры всему веб-приложению, они будут доступны через интерфейс <code>ServletContext</code>.</p>
+<p>Пример web.xml:</p>
+<pre class='line-numbers'><code>
+
+<span class="text-viola">&lt;web-app&gt;</span>
+<span class="text-green">  &lt;context-param&gt;
+     &lt;description&gt;Server production mode&lt;/description&gt;
+     &lt;param-name&gt;productionMode&lt;/param-name&gt;
+     &lt;param-value&gt;false&lt;/param-value&gt;
+  &lt;/context-param&gt;
+ 
+  &lt;context-param&gt;
+     &lt;param-name&gt;appPropertiesConfig&lt;/param-name&gt;
+     &lt;param-value&gt;
+        classpath:local-app.properties
+        classpath:web-app.properties
+     &lt;/param-value&gt;
+  &lt;/context-param&gt;</span>
+ 
+<span class="text-user">  &lt;servlet&gt;
+     &lt;servlet-name&gt;mainservlet&lt;/servlet-name&gt;
+     &lt;servlet-class&gt;com.javarush.ApplicationServlet&lt;/servlet-class&gt;
+     &lt;init-param&gt;
+        &lt;param-name&gt;application&lt;/param-name&gt;
+        &lt;param-value&gt;com.javarush.App&lt;/param-value&gt;
+     &lt;/init-param&gt;
+     &lt;init-param&gt;
+        &lt;param-name&gt;widgetset&lt;/param-name&gt;
+        &lt;param-value&gt;com.javarush.WidgetSet&lt;/param-value&gt;
+     &lt;/init-param&gt;
+     &lt;init-param&gt;
+        &lt;param-name&gt;ui&lt;/param-name&gt;
+        &lt;param-value&gt;com.javarush.AppUI&lt;/param-value&gt;
+     &lt;/init-param&gt;
+  &lt;/servlet&gt;</span>
+<span class="text-viola">&lt;/web-app&gt;</span>
+
+</code></pre>
+<p><span class="text-green">Зеленым цветом выделен код, где мы задаем параметры для <code>ServletContext</code></span>. Их там два:
+    <ul>
+        <li><code>productionMode</code> со значением false</li>
+        <li><code>appPropertiesConfig</code> с массивом из двух строк:</li>
+        <ul>
+            <li><code>classpath:local-app.properties</code></li>
+            <li><code>classpath:web-app.properties</code></li>
+        </ul>
+    </ul>
+</p>
+<p><span class="text-user">Синим цветом указаны параметры для сервлета <code>ApplicationServlet</code></span>, они будут доступны ему через <code>ServletConfig</code>:</p>
+<ul>
+    <li><code>application</code> со значением com.javarush.App</li>
+    <li><code>widgetset</code> со значением com.javarush.WidgetSet</li>
+    <li><code>ui</code> со значением com.javarush.AppUI</li>
+</ul>
+<h2>7.4 filter, filter-mapping</h2>
+<p>Веб-приложение может также содержать специальные <code>служебные сервлеты — фильтры</code>. Они выполняют различные служебные задачи: перенаправляют вызовы, проверяют авторизацию и т. д.</p>
+<p>Пример web.xml:</p>
+<pre class='line-numbers'><code>
+
+<span class="text-viola">&lt;web-app&gt;</span>
+ 
+<span class="text-green">  &lt;servlet&gt;
+      &lt;servlet-name&gt;remoting&lt;/servlet-name&gt;
+      &lt;servlet-class&gt;RemotingServlet&lt;/servlet-class&gt;
+      &lt;load-on-startup&gt;1&lt;/load-on-startup&gt;
+  &lt;/servlet&gt;
+ 
+  &lt;servlet-mapping&gt;
+      &lt;servlet-name&gt;remoting &lt;/servlet-name&gt;
+      &lt;url-pattern&gt;/remoting/*&lt;/url-pattern&gt;
+  &lt;/servlet-mapping&gt;</span>
+ 
+<span class="text-red">  &lt;filter&gt;
+      &lt;filter-name&gt;total_filter&lt;/filter-name&gt;
+      &lt;filter-class&gt;com.javrush.TotalFilter&lt;/filter-class&gt;
+  &lt;/filter&gt;
+ 
+  &lt;filter-mapping&gt;
+      &lt;filter-name&gt;total_filter&lt;/filter-name&gt;
+      &lt;url-pattern&gt;/*&lt;/url-pattern&gt;
+  &lt;/filter-mapping&gt;</span>
+ 
+<span class="text-viola">&lt;/web-app&gt;</span>
+
+</code></pre>
+<p>Прежде чем запрос попадет в сервлет <code>RemotingServlet</code>, он будет обработан фильтром <code>TotalFiler</code>. Этот фильтр настроен так, чтобы <span class="text-red">перехватывать все запросы</span>, которые идут к нашему веб-приложению. Об это однозначно намекает шаблон урлов, на которые он замаплен: <code>/*</code>.</p>
+<p>Больше про сервлеты и фильтры ты прочитаешь в следующих лекциях.</p>
+

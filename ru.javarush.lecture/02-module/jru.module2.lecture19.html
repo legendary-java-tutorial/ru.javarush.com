@@ -1,0 +1,177 @@
+Остановка ExecutorService
+<p>----------------------------------------</p>
+Рассмотрим простейшую программу...
+<p>----------------------------------------</p>
+    <p>Рассмотрим простейшую программу:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws Exception {
+	// создаем ExecutorService с фиксированным числом нитей – три
+	ExecutorService service = Executors.newFixedThreadPool(3);
+ 
+	// передаем в ExecutorService простое задание типа Runnable
+	service.submit(() -&gt; System.out.println("done"));
+}
+</code></pre>
+
+    <p>Запустив программу, получаем в консоли ожидаемый вывод:</p>
+
+    <div class="terminal">done</div>
+
+    <p>Но далее не видим привычного для IntellijIDEA вывода:</p>
+
+    <div class="terminal">Process finished with exit code 0</div>
+
+    <p>Его обычно можно увидеть в конце выполнения программы.</p>
+
+    <p>Почему так происходит?</p>
+
+    <p>Из описания метода <span class="code text-orange">newFixedThreadPool()</span> можем узнать, что нити, созданные с помощью этого <span class="text-green"><span class="text-bold"><em>ExecutorService</em></span></span>, продолжат существовать до их явной остановки. Следовательно, раз мы передали в <span class="text-green"><span class="text-bold"><em>ExecutorService</em></span></span> одно задание, то для его выполнения была создана нить, которая осталась существовать и после выполнения задания.</p>
+
+    <h2>Остановка ExecutorService</h2>
+
+    <p>Итак, <span class="text-green"><span class="text-bold"><em>ExecutorService</em></span></span> нужно за собой “закрывать” (останавливать). Сделать это можно двумя способами:</p>
+
+    <ol>
+        <li><p><span class="code text-orange">void shutdown()</span> — после вызова этого метода <span class="text-green"><span class="text-bold"><em>ExecutorService</em></span></span> больше не принимает новые задания. Все задания, которые раннее были переданы в <span class="text-green"><span class="text-bold"><em>ExecutorService</em></span></span>, продолжат свое выполнение.</p>
+
+            <pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws Exception {
+ExecutorService service = Executors.newFixedThreadPool(3);
+    	service.submit(() -&gt; System.out.println("task 1"));
+    	service.submit(() -&gt; System.out.println("task 2"));
+    	service.shutdown();
+    	// здесь произойдет RejectedExecutionException
+    	service.submit(() -&gt; System.out.println("task 3"));
+}
+</code></pre>
+        </li>
+ 
+        <li><p><span class="code text-orange">List&lt;Runnable&gt; shutdownNow()</span> — метод пытается остановить текущие активные задания. Задачи, которые ждали своей очереди, отбрасываются и возвращаются в виде списка <span class="text-red">Runnable</span>.</p>
+
+            <pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws Exception {
+    ExecutorService service = Executors.newFixedThreadPool(5);
+    List.of(1, 2, 3, 4, 5, 6, 7, 8).forEach(i -&gt; service.submit(() -&gt; System.out.println(i)));
+    List&lt;Runnable&gt; runnables = service.shutdownNow();
+    runnables.forEach(System.out::println);
+}
+</code></pre>
+        </li>
+    </ol>
+ 
+    <p>Вывод программы:</p>
+
+    <div class="terminal">1<br />
+2<br />
+4<br />
+3<br />
+java.util.concurrent.FutureTask@1e80bfe8[Not completed, task = java.util.concurrent.Executors$RunnableAdapter@4edde6e5[Wrapped task = Test$$Lambda$16/0x0000000800b95040@70177ecd]]<br />
+java.util.concurrent.FutureTask@cc34f4d[Not completed, task = java.util.concurrent.Executors$RunnableAdapter@66a29884[Wrapped task = Test$$Lambda$16/0x0000000800b95040@4769b07b]]<br />
+java.util.concurrent.FutureTask@6f539caf[Not completed, task = java.util.concurrent.Executors$RunnableAdapter@17a7cec2[Wrapped task = Test$$Lambda$16/0x0000000800b95040@65b3120a]]<br />
+5<br />
+ <br />
+Process finished with exit code 0</div>
+ 
+    <p>Вывод будет отличаться от запуска к запуску. В выводе есть 2 вида строк:</p>
+
+    <ul>
+        <li><p>число — это значит, что эта задача успела обработаться <span class="text-green"><span class="text-bold"><em>ExecutorService</em></span></span>, и вывелось число из списка, из которого мы создавали задачи.</p></li>
+        <li><p>объект типа <span class="text-orange">FutureTask</span>, после вызова у него метода <span class="code text-orange">toString()</span>. Это задачи, которые были переданы <span class="text-green"><span class="text-bold"><em>ExecutorService</em></span></span> на выполнение, но не были обработаны.</p></li>
+    </ul>
+
+    <p>В этом выводе есть еще один интересный нюанс. Если бы мы жили в идеальном мире, то сначала вывелись бы все числа, а потом объекты типа <span class="text-orange">FutureTask</span>. Но из-за проблем синхронизации строки в выводе перемешаны.</p>
+
+    <h2>Другие методы</h2>
+
+    <p>Кроме этого у <span class="text-neon"><span class="text-bold"><em>ExecutorService</em></span></span> есть еще несколько методов, связанных с его остановкой:</p>
+
+    <ol>
+        <li><p><span class="code text-orange">boolean awaitTermination(long timeout, TimeUnit unit)</span> — метод блокирует нить, которая его вызвала. Блокировка прерывается, как только наступает любое из трех событий:</p>
+
+            <ul>
+                <li>после вызова метода <span class="code text-orange">shutdown()</span> все активные задания и все задания из очереди были выполнены;</li>
+                <li>закончился таймаут, длительность которого определяется параметрами метода;</li>
+                <li>нить, вызвавшая метод <span class="code text-orange">awaitTermination()</span>, была прервана.</li>
+            </ul>
+
+            <p>Метод возвращает <span class="text-green"><em>true</em></span>, если <span class="text-green"><span class="text-bold"><em>ExecutorService</em></span></span> был остановлен до истечения таймаута, и <span class="text-red"><em>false</em></span>, если таймаут истек раньше.</p>
+
+            <pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws Exception {
+	ExecutorService service = Executors.newFixedThreadPool(2);
+	service.submit(() -&gt; System.out.println("task 1"));
+	service.submit(() -&gt; System.out.println("task 2"));
+	service.submit(() -&gt; System.out.println("task 3"));
+	service.shutdown();
+	System.out.println(service.awaitTermination(1, TimeUnit.MICROSECONDS));
+}
+</code></pre>
+        </li>
+
+        <li><p><span class="code text-orange">boolean isShutdown()</span> — возвращает <span class="text-green"><em>true</em></span>, если у <span class="text-green"><span class="text-bold"><em>ExecutorService</em></span></span> был вызван метод <span class="code text-orange">shutdown()</span> или <span class="code text-orange">shutdownNow()</span>.</p>
+
+            <pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws Exception {
+	ExecutorService service = Executors.newFixedThreadPool(2);
+	service.submit(() -&gt; System.out.println("task 1"));
+	service.submit(() -&gt; System.out.println("task 2"));
+	service.submit(() -&gt; System.out.println("task 3"));
+	System.out.println(service.isShutdown());
+	service.shutdown();
+	System.out.println(service.isShutdown());
+}
+</code></pre>
+        </li>
+
+        <li><p><span class="code text-orange">boolean isTerminated()</span> — возвращает <span class="text-green"><em>true</em></span>, если у <span class="text-green"><span class="text-bold"><em>ExecutorService</em></span></span> был вызван метод <span class="code text-orange">shutdown()</span> или <span class="code text-orange">shutdownNow()</span> и завершено выполнение всех заданий.</p>
+
+            <pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws Exception {
+    ExecutorService service = Executors.newFixedThreadPool(5);
+    List.of(1, 2, 3, 4, 5, 6, 7, 8).forEach(i -&gt; service.submit(() -&gt; System.out.println(i)));
+    service.shutdownNow();
+    System.out.println(service.isTerminated());
+}
+</code></pre>
+        </li>
+    </ol>    
+
+    <h3>Пример кода с использованием рассмотренных методов:</h3>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws Exception {
+   ExecutorService service = Executors.newFixedThreadPool(16);
+   Callable&lt;String&gt; task = () -&gt; {
+       Thread.sleep(1);
+       return "Done";
+   };
+ 
+   // добавляем в очередь на выполнение 10 тыс. заданий
+   List&lt;Future&lt;String&gt;&gt; futures = IntStream.range(0, 10_000)
+           .mapToObj(i -&gt; service.submit(task))
+           .collect(Collectors.toList());
+   System.out.printf("На выполнение отправлено %d заданий.%n", futures.size());
+ 
+   // пробуем закрыть
+   service.shutdown();
+   // ждем окончания работы 100 миллисекунд
+   if (service.awaitTermination(100, TimeUnit.MILLISECONDS)) {
+       System.out.println("Все задания выполнены!");
+   } else {
+       // принудительно останавливаем
+       List&lt;Runnable&gt; notExecuted = service.shutdownNow();
+       System.out.printf("Так и не запустилось %d заданий.%n", notExecuted.size());
+   }
+ 
+   System.out.printf("Всего выполнено %d заданий.%n", futures.stream().filter(Future::isDone).count());
+}
+</code></pre>
+ 
+    <p>Вывод программы (отличается от запуска к запуску):</p>
+
+    <div class="terminal">На выполнение отправлено 10000 заданий.<br />
+Так и не запустилось 9170 заданий.<br />
+Всего выполнено 830 заданий.<br />
+ <br />
+Process finished with exit code 0</div>

@@ -1,0 +1,695 @@
+Получение данных с помощью рефлексии
+<p>----------------------------------------</p>
+Класс Field предоставляет информацию и динамический доступ к одному полю класса или интерфейса. Field также разрешает расширение преобразований во время операции get или set access...
+<p>----------------------------------------</p>
+    <h2>Класс java.lang.reflect.Field</h2>
+
+    <p>Класс <span class="code"><span class="text-green">Field</span></span> предоставляет информацию и динамический доступ к одному полю класса или интерфейса. <span class="code"><span class="text-green">Field</span></span> также разрешает расширение преобразований во время операции get или set access, но выдает исключение <span class="text-red"><span class="text-bold">IllegalArgumentException</span></span>, если происходит сужение преобразования.</p>
+
+    <p>Чтобы получить класс <span class="code"><span class="text-green">Filed</span></span>, мы напишем класс, с которым будем работать, а так же обработчик для этого:</p>
+
+    <pre class='language-java line-numbers'><code>
+public class Person {
+    private String name;
+    private int age;
+    
+    public boolean isMale;
+    
+    protected String address;
+    
+    public static final int MAX_AGE = 120;
+    public static final int MIN_AGE = 0;
+}
+</code></pre>
+
+    <p>И сам обработчик:</p>
+
+    <pre class='language-java line-numbers'><code>
+public class Main {
+    public static void main(String[] args) {
+        Field[] fields = Person.class.getDeclaredFields();
+        List&lt;Field&gt; actualFields = getFieldNames(fields);
+        System.out.println(actualFields);
+    }
+
+    static List&lt;Field&gt; getFieldNames(Field[] fields) {
+        return List.of(fields);
+    }
+}
+</code></pre>
+
+    <p>Таким образом мы получаем список полей нашего класса, с которыми будем дальше работать. Результат выполнения выглядит так:</p>
+
+    <div class="terminal">[private java.lang.String com.company.Person.name, private int com.company.Person.age, public boolean com.company.Person.isMale, protected java.lang.String com.company.Person.address, public static final int com.company.Person.MAX_AGE, public static final int com.company.Person.MIN_AGE]</div>
+
+    <p>Теперь давай разбираться, что мы можем сделать с эти набором данных. Поговорим о методах класса <span class="code"><span class="text-green">Field</span></span>:</p>
+
+    <table>
+        <tbody>
+            <tr>
+                <th>Метод</th>
+                <th>Описание</th>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getType()</span></td>
+                <td>Возвращает объект класса, который определяет объявленный тип поля, представленного этим объектом <mark class="green">Field</mark>.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getAnnotatedType()</span></td>
+                <td>Возвращает объект <mark class="green">AnnotatedType</mark>, который представляет использование типа для указания объявленного типа поля, представленного этим полем.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getGenericType()</span></td>
+                <td>Возвращает объект <mark class="green">Type</mark>, который представляет объявленный тип поля, представленного этим объектом <mark class="green">Field</mark>.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getName()</span></td>
+                <td>Возвращает имя поля, представленного этим объектом <mark class="green">Field</mark>.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getModifiers()</span></td>
+                <td>Возвращает модификаторы языка Java для поля, представленного этим объектом <mark class="green">Field</mark>, в виде целого числа.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getAnnotations()</span></td>
+                <td>Возвращает аннотации этого поля. Если аннотаций нет — пустой массив.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Методы getType(), getName(), getModifiers()</h2>
+
+    <p>С помощью метода <span class="code text-orange">getType()</span> мы можем получить тип нашего поля. Напишем метод:</p>
+
+    <pre class='language-java line-numbers'><code>
+static void printTypes(List&lt;Field&gt; fields){
+      fields.forEach(e -&gt; System.out.println(e.getType()));
+  }
+</code></pre>
+
+    <p>И получим такой результат:</p>
+
+    <div class="terminal">class java.lang.String<br />
+int<br />
+boolean<br />
+class java.lang.String<br />
+int<br />
+int</div>
+
+    <p>И давай сразу добавим в наш класс метод для получения имени поля. Так будет проще ориентироваться по полям нашего класса.</p>
+
+    <pre class='language-java line-numbers'><code>
+static void printTypesAndNames(List&lt;Field&gt; fields){
+   fields.forEach(e -&gt; System.out.printf("Field type - %s\nField name - %s\n\n", e.getType(), e.getName()));
+}
+</code></pre>
+
+    <p>Получим результат, уже более понятный для пользователя:</p>
+
+    <div class="terminal">Field type - class java.lang.String<br />
+Field name - name<br />
+ <br />
+Field type - int<br />
+Field name - age<br />
+ <br />
+Field type - boolean<br />
+Field name - isMale<br /> 
+ <br />
+Field type - class java.lang.String<br />
+Field name - address<br />
+ <br />
+Field type - int<br />
+Field name - MAX_AGE<br />
+ <br />
+Field type - int<br />
+Field name - MIN_AGE</div>
+
+    <p>Отлично, давай еще модифицировать наш метод! Добавим сюда модификаторы доступа:</p>
+
+    <pre class='language-java line-numbers'><code>
+static void printFieldInfo(List&lt;Field&gt; fields){
+   fields.forEach(e -&gt; System.out.printf("Field type - %s\nField name - %s\nModifiers - %s\n\n", e.getType(), e.getName(), Modifier.toString(e.getModifiers())));
+}
+</code></pre>
+
+    <p>И давай разберем, что возвращает <span class="code text-orange">e.getModifiers()</span>. Этот метод возвращает число <span class="text-orange">int</span>, внутри которого мы можем определить модификаторы доступа нашего поля. Внутри класса <span class="code"><span class="text-green">Modifier</span></span> лежат статические переменные, которые отвечают за определенный модификатор поля.</p>
+
+    <img data-max-width="800" data-id="3f20ce0b-dbef-450b-b6d1-31324ee45efa" src="https://cdn.javarush.com/images/article/3f20ce0b-dbef-450b-b6d1-31324ee45efa/original.png" alt="">
+
+    <p>Обернем наше возвращаемое значение в <span class="code text-orange">Мodifier.toString()</span> — и сразу получим значение в текстовом виде:</p>
+
+    <div class="terminal">Field type - class java.lang.String<br />
+Field name - name<br />
+Modifiers - private<br />
+ <br />
+Field type - int<br />
+Field name - age<br />
+Modifiers - private<br />
+ <br />
+Field type - boolean<br />
+Field name - isMale<br />
+Modifiers - public<br /> 
+ <br />
+Field type - class java.lang.String<br />
+Field name - address<br />
+Modifiers - protected<br />
+ <br />
+Field type - int<br />
+Field name - MAX_AGE<br />
+Modifiers - public static final<br />
+ <br />
+Field type - int<br />
+Field name - MIN_AGE<br />
+Modifiers - public static final</div>
+
+    <p>И вот так это выглядит без <span class="code text-orange">Мodifier.toString()</span>:</p>
+
+    <div class="terminal">Field type - class java.lang.String<br />
+Field name - name<br />
+Modifiers - 2<br /> 
+ <br />
+Field type - int<br />
+Field name - age<br />
+Modifiers - 2<br />
+ <br />
+Field type - boolean<br />
+Field name - isMale<br />
+Modifiers - 1<br />
+ <br />
+Field type - class java.lang.String<br />
+Field name - address<br />
+Modifiers - 4<br />
+ <br />
+Field type - int<br />
+Field name - MAX_AGE<br />
+Modifiers - 25<br />
+ <br />
+Field type - int<br />
+Field name - MIN_AGE<br />
+Modifiers - 25</div>
+
+    <h2>Методы getAnnotations(), getAnnotatedType(), getGenericType()</h2>
+
+    <p>Давай модифицируем класс <span class="code"><span class="text-green">Person</span></span> для работы с текущими методами. Мы напишем свою аннотацию, которую добавим к нашим полям, и добавим еще немного полей.</p>
+
+    <p>Создадим две аннотации. В одну будем передавать имя переменной на русском, а вторую будем использовать для элементов:</p>
+
+    <pre class='language-java line-numbers'><code>
+@Target(value=ElementType.FIELD)
+@Retention(value= RetentionPolicy.RUNTIME)
+public @interface Name {
+    String name();
+}
+</code></pre>
+
+    <pre class='language-java line-numbers'><code>
+@Target({ ElementType.TYPE_USE })
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Number {
+}
+</code></pre>
+
+    <p>И изменим наш основной класс и класс <span class="code"><span class="text-green">Person</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+public class Person {
+    @Name(name = "Имя")
+    private String name;
+
+    @Name(name = "Никнэймы пользователя")
+    List&lt;String&gt; nicknames;
+
+    private final Class&lt;Object&gt; type;
+
+    private int @Number[] number;
+
+    public Person(Class&lt;Object&gt; type) {
+        this.type = type;
+    }
+}
+</code></pre>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) {
+    Field[] fields = Person.class.getDeclaredFields();
+    List&lt;Field&gt; actualFields = getFieldNames(fields);
+    
+    printAdditionalInfo(actualFields);
+}
+
+static void printAdditionalInfo(List&lt;Field&gt; fields) {
+   System.out.println("\ngetAnnotatedType:");
+   fields.forEach(e -&gt; System.out.println(e.getAnnotatedType()));
+
+   System.out.println("\ngetGenericType:");
+   fields.forEach(e -&gt; System.out.println(e.getGenericType()));
+
+   System.out.println("\ngetAnnotations:");
+   fields.forEach(e -&gt; System.out.println(Arrays.toString(e.getAnnotations())));
+}
+</code></pre>
+
+    <p>Самое время посмотреть на результат наших методов и разобрать еще раз их назначение:</p>
+
+    <div class="terminal">getAnnotatedType:<br />
+java.lang.Class&lt;java.lang.Object&gt;<br />
+java.util.List&lt;java.lang.String&gt;<br />
+java.lang.String<br />
+int @Number()[]<br />
+ <br />
+getGenericType:<br />
+java.lang.Class&lt;java.lang.Object&gt;<br />
+java.util.List&lt;java.lang.String&gt;<br />
+class java.lang.String<br />
+class [I<br />
+ <br />
+getAnnotations:<br />
+[]<br />
+[@Name(name="\u041d\u0438\u043a\u0438 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f")]<br />
+[@Name(name="\u0418\u043c\u044f")]<br />
+[]</div>
+
+    <ul>
+        <li><p><span class="code text-orange">getAnnotatedType</span> возвращает аннотацию для данного поля, если такая есть. У нас есть аннотация для поля и мы отлично ее видим.</p></li>
+        <li><p><span class="code text-orange">getGenericType</span> позволяет корректно отображать дженерализованные параметры.</p></li>
+        <li><p><span class="code text-orange">getAnnotations</span> возвращает аннотации, которые стоят над нашим объектом.</p></li>
+    </ul>
+
+    <p>Таким образом мы можем легко получить все данные о каждом поле в нашем классе, о его модификаторах доступа, аннотациях и типах данных.</p>
+
+    <h2>Класс java.lang.reflect.Method</h2>
+
+    <p>Супер, мы поговорили о полях нашего класса, пора поговорить о методах.</p>
+
+    <p>Чтобы получить объект класса <span class="code"><span class="text-green">Method</span></span>, мы вызовем <span class="code text-orange">getMethod</span> и передадим туда имя нашего метода. Это базовый способ для получения класса <span class="code"><span class="text-green">Method</span></span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+Method getNameMethod =  Person.class.getMethod("getName");
+</code></pre>
+
+    <p>Будем продолжать работать с нашим классом. Добавим геттеры и сеттеры, хэш-код, <span class="code text-orange">equals</span> и <span class="code text-orange">toString</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+public class Person {
+    private String name;
+    private int age;
+
+    public boolean isMale;
+
+    protected String address;
+
+    public static final int MAX_AGE = 120;
+    public static final int MIN_AGE = 0;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public boolean isMale() {
+        return isMale;
+    }
+
+    public void setMale(boolean male) {
+        isMale = male;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    @Override
+    public String toString() {
+        return "Person{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                ", isMale=" + isMale +
+                ", address='" + address + '\'' +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Person person = (Person) o;
+        return age == person.age && isMale == person.isMale && Objects.equals(name, person.name) && Objects.equals(address, person.address);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, age, isMale, address);
+    }
+}
+</code></pre>
+
+    <p>И давай подготовим набор методов, которые будем смотреть у класса <span class="code"><span class="text-green">Method</span></span>. Вот список основных методов:</p>
+
+    <table>
+        <tbody>
+            <tr>
+                <th>Метод</th>
+                <th>Описание</th>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getName()</span></td>
+                <td>Возвращает имя метода.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getModifiers()</span></td>
+                <td>Возвращает модификатор доступа этого метода.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getReturnType()</span></td>
+                <td>Возвращает возвращаемый тип метода.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getGenericReturnType()</span></td>
+                <td>Возвращает возвращаемый тип метода с учетом дженерализированных методов.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getParameterTypes()</span></td>
+                <td>Возвращает массив параметров метода.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getGenericParameterTypes()</span></td>
+                <td>Возвращает массив параметров метода с учетом дженерализированных методов.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getExceptionTypes()</span></td>
+                <td>Возвращает исключения, которые может выбросить метод.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getGenericExceptionTypes()</span></td>
+                <td>Возвращает исключения, которые может выбросить метод, с учетом дженерализированных параметров.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getAnnotations()</span></td>
+                <td>Возвращает аннотации для метода, включая родительские аннотации.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">getDeclaredAnnotations()</span></td>
+                <td>Возвращает аннотации для метода, игнорируя родительские аннотации.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>Чтобы получить массив методов, которые вернет нам наш класс, мы можем вызвать такой метод:</p>
+
+    <pre class='language-java line-numbers'><code>
+Method[] methods = Person.class.getDeclaredMethods();
+</code></pre>
+
+    <p>C его помощью мы получим все методы в нашем классе. </p>
+
+    <h2>Методы getName() и getModifiers() </h2>
+
+    <p>Чтобы получить название всех методов, мы можем воспользоваться <span class="code text-orange">getName</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+static List&lt;String&gt; getMethodsName(Method[] methods) {
+    return Arrays.asList(methods)
+            .stream()
+            .map(Method::getName)
+            .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
+}
+</code></pre>
+
+    <p>И чтобы получить модификаторы, напишем метод с использованием <span class="code text-orange">getModifiers</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+static List&lt;String&gt; getModifiers(Method[] methods) {
+    return Arrays
+            .stream(methods)
+            .map(Method::getModifiers)
+            .map(String::valueOf)
+            .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
+}
+</code></pre>
+
+    <p>Наш метод <span class="code text-orange">main</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) {
+    Method[] methods = Person.class.getDeclaredMethods();
+
+    System.out.println(getMethodsName(methods));
+    System.out.println(getModifiers(methods));
+}
+</code></pre>
+
+    <p>Наш результат:</p>
+
+    <div class="terminal">[getName, equals, toString, hashCode, setName, getAddress, isMale, getAge, setAge, setMale, setAddress]<br />
+[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]</div>
+
+    <p>Все наши модификаторы имеют доступ <span class="code">public</span>, поэтому последний метод возвращает нам единицы. Если мы модифицируем наш код, то увидим наши модификаторы:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) {
+    Method[] methods = Person.class.getDeclaredMethods();
+
+    System.out.println(getMethodsName(methods));
+    System.out.println(modifyModifiers(getModifiers(methods)));
+}
+</code></pre>
+
+    <div class="terminal">[getName, equals, toString, hashCode, setName, getAddress, isMale, getAge, setAge, setMale, setAddress]<br />
+[public, public, public, public, public, public, public, public, public, public, public]</div>
+
+    <h2>getReturnedType()</h2>
+
+    <p>C помощью этого метода мы можем получить возвращаемый тип метода:</p>
+
+    <pre class='language-java line-numbers'><code>
+static void getReturnedType(Method[] methods) {
+    Arrays.stream(methods)
+            .map(Method::getReturnType)
+            .forEach(System.out::println);
+}
+</code></pre>
+
+    <div class="terminal">class java.lang.String<br />
+boolean<br />
+class java.lang.String<br />
+int<br />
+void<br />
+class java.lang.String<br />
+boolean<br />
+int<br />
+void<br />
+void<br />
+void</div>
+
+    <h2>getGenericReturnType()</h2>
+
+    <p>Добавим в наш класс <span class="code"><span class="text-green">Person</span></span> метод, который возвращает обернутый в дженерик тип, и попробуем получить его возвращаемое значение:</p>
+
+    <pre class='language-java line-numbers'><code>
+public List&lt;String&gt; someMethod() {
+    //очень полезный и важный метод
+    return null;
+}
+</code></pre>
+
+    <p>И модифицируем наш основной метод:</p>
+
+    <pre class='language-java line-numbers'><code>
+static void getGenericReturnType(Method[] methods) {
+    Arrays.stream(methods)
+            .map(Method::getGenericReturnType)
+            .forEach(System.out::println);
+}
+</code></pre>
+
+    <p>Результат нашего метода:</p>
+
+    <div class="terminal">class java.lang.String<br />
+boolean<br />
+class java.lang.String<br />
+int<br />
+void<br />
+class java.lang.String<br />
+boolean<br />
+int<br />
+void<br />
+void<br />
+void<br />
+java.util.List&lt;java.lang.String&gt;</div>
+
+    <h2>Методы getParameterTypes() и getGenericParameterTypes()</h2>
+
+    <p>Продолжаем модифицировать наш метод класса <span class="code"><span class="text-green">Person</span></span> и добавим еще два метода:</p>
+
+    <pre class='language-java line-numbers'><code>
+public List&lt;String&gt; someMethod(List&lt;String&gt; list, String s) {
+    //очень полезный и важный метод
+    return null;
+}
+</code></pre>
+
+    <p>Первый позволит нам получить параметры наших методов, а второй выдаст еще и дженерализированые параметры.</p>
+
+    <pre class='language-java line-numbers'><code>
+static void getParameterTypes(Method[] methods) {
+    Class&lt;?&gt;[] types = method.getParameterTypes();
+        for (Class&lt;?&gt; type : types) {
+            System.out.println(type);
+        }
+}
+
+static void getGenericParameterTypes(Method[] methods) {
+   Type[] types = method.getGenericParameterTypes();
+        for (Type type : types) {
+            System.out.println(type);
+        }
+}
+</code></pre>
+
+    <p>Будем обращаться только к одному нашему методу. Чтобы обратится к методу по определенному названию, вызовем <span class="code text-orange">getMethod</span> и передадим туда название и параметры нужного нам метода:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws NoSuchMethodException {
+    Method currentMethod = Person.class.getMethod("someMethod", List.class, String.class);
+
+    getParameterTypes(currentMethod);
+    System.out.println();
+    getGenericParameterTypes(currentMethod);
+}
+</code></pre>
+
+    <p>И по результатам нашего кода увидим, чем отличаются методы и что они возвращают:</p>
+
+    <div class="terminal">interface java.util.List<br />
+class java.lang.String<br />
+ <br />
+java.util.List&lt;java.lang.String&gt;<br />
+class java.lang.String</div>
+
+    <h2>Методы getExceptionTypes() и getGenericExceptionTypes() </h2>
+
+    <p>C помощью этих методов можно получить массив исключений, которые может выбросить наш метод, а еще исключения, обернутые в дженерики (если они есть).
+Возьмем новый пример со скрытым статическим классом:</p>
+
+    <pre class='language-java line-numbers'><code>
+private static class Processor {
+    private void init() {}
+
+    private void process() throws IOException {}
+}
+</code></pre>
+
+    <p>И будем вызывать методы у нашего класса <span class="code"><span class="text-green">Process</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String... args) throws NoSuchMethodException {
+    Method method = Processor.class.getDeclaredMethod("process");
+    Type[] type = method.getExceptionTypes();
+    System.out.println(Arrays.toString(type));
+}
+</code></pre>
+
+    <p>В результате отлично видно наше исключение:</p>
+
+    <div class="terminal">[class java.io.IOException]</div>
+
+    <p>Теперь обернем это все в дженерик. Модифицируем наш основной класс:</p>
+
+    <pre class='language-java line-numbers'><code>
+private static class Processor&lt;E extends IOException&gt; {
+
+    private void process() throws E {
+    }
+}
+</code></pre>
+
+    <p>И код класса <span class="code"><span class="text-green">Main</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String... args) throws NoSuchMethodException {
+    Method m = Processor.class.getDeclaredMethod("process");
+    Type[] t = m.getGenericExceptionTypes();
+    System.out.println(Arrays.toString(t));
+
+    for (Type type : t) {
+        if (type instanceof TypeVariable) {
+            for (Type type1 : ((TypeVariable) type).getBounds()) {
+                System.out.println(type1);
+            }
+        }
+    }
+}
+</code></pre>
+
+    <p>Внутри этого метода мы получили <span class="text-neon"><span class="text-bold"><em>TypeVariables</em></span></span> — это общий супер-интерфейс для переменных типа. А внутри его уже мы можем получить внутренний параметр, а именно наше вложенной исключение:</p>
+
+    <div class="terminal">[E]<br />
+class java.io.IOException</div>
+
+    <h2>Методы getAnnotations() и getDeclaredAnnotations()</h2>
+
+    <p>Продолжим работать с нашим новым классом и добавим в него парочку аннотаций. Создаем собственную аннотацию <span class="text-yellow">Annotation</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+@Retention(RetentionPolicy.RUNTIME)
+@interface Annotation {
+
+    public String key();
+    public String value();
+}
+</code></pre>
+
+    <p>И добавляем ее к нашему методу:</p>
+
+    <pre class='language-java line-numbers'><code>
+@Annotation(key = "key", value = "value")
+private void process() throws E{
+
+}
+</code></pre>
+
+    <p>И, конечно, метод, чтобы отобразить все наши аннотации:</p>
+
+    <pre class='language-java line-numbers'><code>
+static void getMethodAnnotations(Class&lt;?&gt; clazz) {
+    Method[] methods = clazz.getDeclaredMethods();
+    for (Method method : methods) {
+        System.out.println(method.getName());
+        System.out.println(Arrays.toString(method.getAnnotations()));
+        System.out.println();
+    }
+}
+</code></pre>
+
+    <p>Реализация нашего <span class="code"><span class="text-green">Main</span></span> класса:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String... args) {
+    Class clazz = Processor.class;
+    getMethodAnnotations(clazz);
+}
+</code></pre>
+
+    <p>Получим такой результат на экране:</p>
+
+    <div class="terminal">process<br />
+[@com.company.Main&Annotation(key=”key”, value=”value”)]</div>
+
+    <p>Таким образом мы можем получить аннотации, которые принадлежат нашим методам, а с помощью метода <span class="code text-orange">getAnnotations</span> мы получаем доступ также и к родительским аннотациям класса.</p>
+
+    <p>Сегодня мы с тобой познакомились с тем, как работают методы и поля с рефлексией и какие данные мы можем получить с ее помощью!</p>

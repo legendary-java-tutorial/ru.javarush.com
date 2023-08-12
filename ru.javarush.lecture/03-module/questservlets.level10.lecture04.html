@@ -1,0 +1,38 @@
+Асинхронные запросы в HttpClient
+<p>----------------------------------------</p>
+Метод sendAsync()
+Метод executor(), ExecutorService
+<p>----------------------------------------</p>
+<h2>5.1 Метод sendAsync()</h2>
+<p>Также с помощью HttpClient’а можно посылать асинхронные запросы. Обычно это делают в трех случаях.</p>
+<p>Первый случай – это <strong>запрос будет выполняться очень долго</strong>, например, отправка/получение файла. Тогда эту операцию запускают и выполняют асинхронно.</p>
+<p>Второй случай – тебе <strong>нужно отправлять запросы очень часто</strong>, и ты не хочешь ждать ответа от предыдущего запроса перед отправкой следующего.</p>
+<p>И наконец, третий случай – тебе <strong>не важен результат твоего запроса</strong>. Например, ты раз в минуту делаешь скриншот своего экрана и отправляешь его на сервер. То есть логика твоего приложения предполагает, что запросов много и доходят не все. Тогда удобно работать по принципу – отправил и забыл.</p>
+<p>Для того, чтобы отправить асинхронный запрос, нужно вызвать метод <code>sendAsync()</code> у объекта класса HttpClient. Этот метод мгновенно завершает работу и возвращает объект <code>CompletableFuture&lt;HttpResponse&gt;</code>. С его помощью можно отследить, когда запрос реально выполнится, а также выполнить определенный код после завершения запроса. Пример:</p>
+<pre class='line-numbers'><code>
+HttpClient <span class="text-viola">client</span> = HttpClient.newBuilder().build();
+ 
+<span class="text-red">CompletableFuture</span><span class="text-user">&lt;</span><span class="text-user">HttpResponse<span class="text-user">&lt;</span></span><span class="text-green">String</span><span class="text-user">&gt;&gt;</span> response = <span class="text-viola">client</span>.<span class="text-red">sendAsync(</span>
+        request,
+        <span class="text-user">HttpResponse</span>.BodyHandlers.<span class="text-green">ofString</span>()
+<span class="text-red">)</span>;
+</code></pre>
+<p>Метод <code>sendAsync()</code> возвращает объект <code>CompletableFuture</code>, который внутри себя содержит HttpResponse, который внутри себя содержит строку, которую вернет сервер.</p>
+<h2>5.2 Метод executor(), ExecutorService</h2>
+<p>Также HttpClient позволяет передать в него <code>ExecutorService</code> (пул потоков), которые будут использоваться для выполнения асинхронных запросов. Собственно, в серверных Java-приложениях так всегда и делают.</p>
+<p>Ведь если на каждый входящий запрос к твоему API, ты будешь запускать несколько асинхронных запросов еще куда-то, вам никаких потоков не хватит. Пример:</p>
+<pre class='line-numbers'><code>
+<span class="text-red">ExecutorService executorService = Executors</span>.<span class="text-orange">newFixedThreadPool</span><span class="text-red">(2);</span>
+ 
+CompletableFuture&lt;HttpResponse&lt;String&gt;&gt; response1 = HttpClient.newBuilder()
+  .<span class="text-orange">executor</span>(<span class="text-red">executorService</span>)
+  .build()
+  .sendAsync(request, HttpResponse.BodyHandlers.ofString());
+ 
+CompletableFuture&lt;HttpResponse&lt;String&gt;&gt; response2 = HttpClient.newBuilder()
+  .<span class="text-orange">executor</span>(<span class="text-red">executorService</span>)
+  .build()
+  .sendAsync(request, HttpResponse.BodyHandlers.ofString());
+
+</code></pre>
+<p>Если пул потоков не задан, то по умолчанию используется <code>java.util.concurrent.<span class="text-red">Executors</span>.<span class="text-orange">newCachedThreadPool</span>()</code>.</p>

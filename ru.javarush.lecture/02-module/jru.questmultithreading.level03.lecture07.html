@@ -1,0 +1,284 @@
+Внутренние анонимные классы, примеры
+<p>----------------------------------------</p>
+&#8212; Привет, Амиго! &#8212; Так здоровались уже, Элли! &#8212; Так, не спорь с тетей. В 31 веке принято здороваться опять, если не видел человека более получаса. Так что не возникай! Так вот, новая интересная тема – размножение роботов! &#8212; О_О. &#8212; Шучу, новая тема – анонимные вложенные классы. Иногда в Java встречается ситуация, когда нужно ...
+<p>----------------------------------------</p>
+
+<a href='https://cdn.javarush.com/images/article/f805c497-ff06-4bbf-b454-7cc57c9b9d92/original.jpeg' target='_blank'><img data-id="f805c497-ff06-4bbf-b454-7cc57c9b9d92" data-max-width="850" alt="Внутренние анонимные классы, примеры - 1" src="https://cdn.javarush.com/images/article/f805c497-ff06-4bbf-b454-7cc57c9b9d92/original.jpeg"></a>
+
+<p>&#8212; Привет, Амиго!</p>
+<p><span class="text-user">&#8212; Так здоровались уже, Элли!</span></p>
+<p>&#8212; Так, не спорь с тетей. В 31 веке принято здороваться опять, если не видел человека более получаса. Так что не возникай!</p>
+<p>Так вот, новая интересная тема – размножение роботов!</p>
+<p><span class="text-user">&#8212; О_О.</span></p>
+<p>&#8212; Шучу, новая тема – <strong>анонимные вложенные классы.</strong></p>
+<p>Иногда в Java встречается ситуация, когда нужно унаследовать класс от нескольких классов. Т.к. множественное наследование классов в Java запрещено, эту проблему решают с помощью внутренних классов: в нужном нам классе мы объявляем внутренний класс и наследуем его от требуемого класса. Пример:</p>
+<div class="code-heading">Пример внутреннего класса, унаследованного от Thread</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class <span class="text-green">Tiger</span> extends Cat
+{
+ public void <span class="text-green">tigerRun</span>()
+ {
+  .....
+ }
+
+ public void <span class="text-green">startTiger</span>()
+ {
+  <span class="text-viola">TigerThread</span> <span class="text-user">thread</span> = new <span class="text-viola">TigerThread</span>();
+  <span class="text-user">thread</span>.start();
+ }
+
+ class <span class="text-viola">TigerThread</span> extends Thread
+ {
+  public void run()
+  {
+   <span class="text-green">tigerRun</span>();
+  } 
+ }
+}</code></pre>
+<p>Давай разберем этот пример:</p>
+<p>Нам нужен класс, унаследованный от Thread, чтобы переопределить у него метод run.</p>
+<p>Для этого внутри класса Tiger мы объявили внутренней класс <strong>TigerThread</strong>, который унаследовали от Thread и у которого переопределили метод run.</p>
+<p>Для нашего удобства в классе Tiger мы объявили два метода (аналоги методов run и start класса Thread) –методы <strong>tigerRun и startTiger</strong>.</p>
+<p>В методе startTiger мы создаем объект типа <strong>TigerThread</strong> и вызываем у него метод start().</p>
+<p>При этом Java-машина создаст новую нить, и эта нить начнет работу с вызова метода run, класса <strong>TigerThread</strong>.</p>
+<p>А этот метод в свою очередь вызовет наш метод <strong>run</strong> – метод <strong>tigerRun</strong>.</p>
+<p><span class="text-user">&#8212; С нитями я уже дело имел, так что вроде не очень сложно.</span></p>
+<p><span class="text-user">А обязательно называть методы tigerRun и startTiger?</span></p>
+<p>&#8212; Нет, можно было назвать <strong>run</strong> и <strong>start</strong>, но я хотела дополнительно показать, что мы не наследуемся от Thread, к тому же ты мог сильнее запутаться в моем пояснении.</p>
+<p><span class="text-user">&#8212; Ок. Тогда все вроде понятно. Только при вызове метода startTiger второй раз мы создадим еще один класс Thread и запустим его. Не получится ли что у нас «один тигр будет бегать в двух различных нитях»?</span></p>
+<p>&#8212; Ну ты и глазастый. Согласна, это не хорошо. Тогда давай перепишем код так:</p>
+<div class="code-heading">Код</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class <span class="text-green">Tiger</span> extends Cat
+{
+ public void <span class="text-green">tigerRun</span>()
+ {
+  .....
+ }
+
+ public void <span class="text-green">startTiger</span>()
+ {
+  thread.start();
+ }
+
+ private <span class="text-viola">TigerThread</span> <span class="text-user">thread</span> = new <span class="text-viola">TigerThread</span>();
+
+ private class <span class="text-viola">TigerThread</span> extends Thread
+ {
+  public void run()
+  {
+   <span class="text-green">tigerRun</span>();
+  } 
+ }
+}</code></pre>
+<p><span class="text-user">&#8212; Не то, чтобы отлично. Два раза все равно вызывать такой метод нельзя. Но в этот раз мы хотя бы не будем создавать вторую нить и делать вид, что все хорошо.</span></p>
+<p>&#8212; Правильно, запустил второй раз, тигра – получи Exception.</p>
+<p><span class="text-user">&#8212; Я уже лучше тебя вижу все ошибки, Элли!</span></p>
+<p>Да, ты молодец. Тогда перейдём к анонимным внутренним классам.</p>
+<p>Обрати внимание на несколько аспектов вышеописанного кода:</p>
+<p><strong>1)</strong> Мы унаследовались от класса Thread, но фактически не дописали туда никакого кода. Нам скорее пришлось унаследоваться, а не «мы унаследовались с целью расширить класс Thread»</p>
+<p><strong>2)</strong> Будет создан всего один объект класса TigerThread.</p>
+<p>Т.е. с целью переопределить один метод и создать один объект, мы написали целую кучу кода.</p>
+<p>Помнишь, как я рассказывала про появление конструкторов?</p>
+<table>
+<tbody>
+<tr>
+<th>До изобретения</th>
+<th>После изобретения</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-viola">TigerThread</span> <span class="text-user">thread</span> = new <span class="text-viola">TigerThread</span>();
+
+private class <span class="text-viola">TigerThread</span> extends Thread
+{
+ public void run()
+ {
+  <span class="text-green">tigerRun</span>();
+ } 
+}</code></pre>
+</td>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>Thread <span class="text-user">thread</span> = new Thread()
+{
+ public void run()
+ {
+  <span class="text-green">tigerRun</span>();
+ } 
+};</code></pre>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="text-user">&#8212; Вижу, что код стал компактнее, но не совсем понимаю, что произошло.</span></p>
+<p>&#8212; Мы можем объединить в одном месте четыре вещи:</p>
+<p>1) объявление класса-наследника</p>
+<p>2) переопределение метода</p>
+<p>3) объявление переменной</p>
+<p>4) создание объекта класса-наследника.</p>
+<p>Фактически мы объединяем вместе две операции – объявление класса-наследника и создание его объекта:</p>
+<table>
+<tbody>
+<tr>
+<th>Без анонимного класса</th>
+<th>С использованием анонимного класса</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java block-inline" data-line="" data-start=""><code>Cat tiger = new <del>Tiger();</del>
+
+<del>class Tiger extends</del> Cat
+{
+}</code></pre>
+</td>
+<td>
+<pre class="line-numbers language-java block-inline" data-line="" data-start=""><code>Cat tiger = new Cat()
+{
+};</code></pre>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Еще раз разбираем синтаксис:</p>
+<div class="code-heading">Объявление переменной типа Thread</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>Thread thread = new Thread();</code></pre>
+<div class="code-heading">Объявление переменной типа «анонимный класс-наследник Thread»</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>Thread thread = new Thread()
+{
+
+};</code></pre>
+<p>Обрати внимание – мы не просто объявляем новый класс – мы создаем переменную – в конце ставится точка с запятой!</p>
+<p><span class="text-user">&#8212; А если мы хотим переопределить метод run, то нужно писать так:</span></p>
+<div class="code-heading">Объявление переменной типа Thread</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>Thread thread = new Thread()
+{
+ public void run()
+  {
+   System.out.println("new run-method");
+  }
+};</code></pre>
+<p>&#8212; Быстро схватываешь – молодец!</p>
+<p><span class="text-user">&#8212; Спасибо. А если мне нужны еще методы, которых нет у класса Thread?</span></p>
+<p>&#8212; Ты можешь их дописать.</p>
+<p>Это же полноценный внутренний класс, хоть и анонимный:</p>
+<table>
+<tbody>
+<tr>
+<th>Код на Java</th>
+<th>Описание</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-red">Thread thread</span> <span class="text-green">= new Thread()</span>
+<span class="text-user">{
+  public void run()
+  {
+   printHi();
+  }
+
+  public void printHi()
+  {
+   System.out.println("Hi!");
+  }
+};	 </span></code></pre>
+</td>
+<td><span class="text-red">Красным цветом отмечен код создания переменной.</span></p>
+<p><span class="text-green">Зеленым – создания объекта.</span></p>
+<p><span class="text-user">Синим – код анонимного класса-наследника.</span></td>
+</tr>
+</tbody>
+</table>
+<p><span class="text-user">&#8212; Полноценный внутренний класс?</span></p>
+<p><span class="text-user">Т.е. я могу и переменные внешнего класса использовать?</span></p>
+<p>&#8212; Да, конечно можешь.</p>
+<p><span class="text-user">&#8212; А в конструктор я могу что-то передавать?</span></p>
+<p>&#8212; Да, но только параметры конструктора базового класса:</p>
+<table>
+<tbody>
+<tr>
+<th>Класс</th>
+<th>Объект анонимного внутреннего класса</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Cat
+{
+ int x, y;
+ Cat(int x, int y)
+ {
+  this.x = x;
+  thix.y = y;
+ }
+}</code></pre>
+</td>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>Cat cat = new Cat(3, 4)
+{
+  public void print()
+  {
+   System.out.println(x+" "+y);
+  }
+};</code></pre>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Мы не можем добавить свои параметры в чужой конструктор. Зато можем использовать переменные внешнего класса – это достаточно сильно компенсирует этот недостаток.</p>
+<p><span class="text-user">&#8212; А если мне все-таки очень нужно добавить в конструктор еще параметры?</span></p>
+<p>&#8212; Тогда объяви обычный не анонимный внутренний класс и используй его.</p>
+<p><span class="text-user">&#8212; Действительно, я чуть не забыл об этом.</span></p>
+<p><span class="text-user">А если я объявлю статическую переменную, тогда анонимный класс будет вложенным, а не внутренним &#8212; т.е. без ссылки на внешний класс?</span></p>
+<p>&#8212; Нет. Будет именно анонимный внутренний класс. Смотри примеры:</p>
+<table>
+<tbody>
+<tr>
+<th>С анонимным классом</th>
+<th>Без анонимного класса</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>Thread <span class="text-user">thread</span> = new Thread()
+{
+  public void run()
+  {
+   <span class="text-green">tigerRun</span>();
+  } 
+};</code></pre>
+</td>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-viola">TigerThread</span> <span class="text-user">thread</span> = new <span class="text-viola">TigerThread</span>();
+
+private class <span class="text-viola">TigerThread</span> extends Thread
+{
+ public void run()
+ {
+  <span class="text-green">tigerRun</span>();
+ } 
+}</code></pre>
+</td>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-red">static</span> Thread <span class="text-user">thread</span> = new Thread()
+{
+  public void run()
+  {
+   <span class="text-green">tigerRun</span>();
+  } 
+};</code></pre>
+</td>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-red">static</span> <span class="text-viola">TigerThread</span> <span class="text-user">thread</span> = new <span class="text-viola">TigerThread</span>();
+
+private class <span class="text-viola">TigerThread</span> extends Thread
+{
+ public void run()
+ {
+  <span class="text-green">tigerRun</span>();
+ } 
+}</code></pre>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="text-user">&#8212; Ясно. Статической становится только переменная, но не класс.</span></p>
+<p>&#8212; Ага.</p>
+<p>На самом деле, в процессе компиляции Компилятор создает внутренние классы для всех анонимных внутренних классов. Такие классы обычно получают имена «1», «2», «3», и т.д.</p>

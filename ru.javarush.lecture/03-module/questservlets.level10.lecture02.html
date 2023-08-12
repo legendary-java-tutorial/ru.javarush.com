@@ -1,0 +1,76 @@
+Добавление body в HttpRequest
+<p>----------------------------------------</p>
+BodyPublishers
+ofString()
+fromFile()
+ofByteArray()
+ofInputStream()
+<p>----------------------------------------</p>
+<h2>3.1 BodyPublishers</h2>
+<p>Я надеюсь, вы не забыли, что кроме <strong>GET-запросов</strong>, есть еще <strong>PUT</strong> и <strong>POST-запросы</strong>, когда к запросу нужно еще добавить <code>request body</code>, то есть тело запроса.</p>
+<p>Для этого у класса <code>HttpRequest</code> есть специальный внутренний класс <code>BodyPublisher</code>. Хотя технически это интерфейс, у которого есть несколько реализаций, о которых мы поговорим ниже</p>
+<p>И начнем мы с самой простой – отсутствие тела запроса. Да, бывает и так.</p>
+<pre class='line-numbers'><code>
+HttpRequest request = HttpRequest.newBuilder()
+   .uri(new URI(<span class="text-green">"https://javarush.com"</span>))
+   .POST(<span class="text-red">HttpRequest.BodyPublishers.</span><span class="text-orange">noBody()</span>)
+   .build();
+</code></pre>
+<p>Просто и красиво.</p>
+<h2>3.2 ofString()</h2>
+<p>Второй самый распространенный вариант – это передать некую строку в качестве request body. Делается это очень просто: </p>
+<pre class='line-numbers'><code>
+HttpRequest request = HttpRequest.newBuilder()
+   .uri(new URI(<span class="text-green">"https://javarush.com"</span>))
+   .headers("Content-Type", <span class="text-yellow">"text/plain;charset=UTF-8"</span>)
+   .POST(<span class="text-red">HttpRequest.BodyPublishers.</span><span class="text-orange">ofString(</span><span class="text-green">"Привет"</span><span class="text-orange">)</span>)
+   .build();
+</code></pre>
+<p>Кстати, можно задать и кодировку передаваемой строки. Бывает очень полезно, если http-сервер, к которому отправляется запрос, работает не на UTF8. </p>
+<pre class='line-numbers'><code>
+HttpRequest request = HttpRequest.newBuilder()
+   .uri(new URI("https://javarush.com"))
+   .POST(<span class="text-red">HttpRequest.BodyPublishers.</span><span class="text-orange">ofString(</span><span class="text-green">"Привет"</span>, <span class="text-user">Charset. US-ASCII</span>)</span><span class="text-orange">)</span>)
+   .build();
+</code></pre>
+<h2>3.3 ofFile()</h2>
+<p>Ну и наконец, ты можешь захотеть приложить к <strong>POST-запросу</strong> файл. Именно таким образом, обычно твои аватарки и заливаются на сервер. Для этого нужно вызвать метод <code>ofFile()</code>, куда передать <code>Path</code> локального файла:</p>
+<pre class='line-numbers'><code>
+Path avatar = Path.of("c://avatar.jpeg");
+ 
+<span class="text-user">HttpRequest request = HttpRequest.newBuilder()</span>
+   .uri(new URI(<span class="text-green">"https://javarush.com"</span>))
+   .headers("Content-Type", <span class="text-yellow">"image/jpeg"</span>)
+   .POST(<span class="text-red">HttpRequest.BodyPublishers.</span><span class="text-orange">ofFile(</span><span class="text-user">avatar</span><span class="text-orange">)</span>)
+   .build();
+</code></pre>
+<h2>3.4 ofByteArray()</h2>
+<p>Еще один распространенный сценарий – отправить на сервер набор байт. Например, ты сериализовал некий объект в виде набора байт, что-то зашифровал, или просто хочешь переслать некий буфер данных. Для этого понадобится метод <code>.ofByteArray()</code>.</p>
+<p>В качестве параметра этот метод принимает массив байт. Пример: </p>
+<pre class='line-numbers'><code>
+byte[] <span class="text-viola">data</span> = <span class="text-green">"Мое секретное сообщение"</span>.getBytes();
+byte[] <span class="text-user">dataEncripted</span> = SuperEncriptor.encript(<span class="text-viola">data</span>);
+ 
+HttpRequest request = HttpRequest.newBuilder()
+   .uri(new URI(<span class="text-green">"https://javarush.com"</span>))
+   .headers("Content-Type", <span class="text-yellow">"application/octet-stream"</span>)
+   .POST(<span class="text-red">HttpRequest.BodyPublishers.</span><span class="text-orange">ofByteArray(</span><span class="text-user">dataEncripted</span><span class="text-orange">)</span>)
+   .build();
+</code></pre>
+<h2>3.5 ofInputStream()</h2>
+<p>Наконец последний, но не менее интересный сценарий – это прикрепление <code>InputStream</code> к <strong>POST-запросу</strong>.</p>
+<p>Для этого есть специальная функция – <code>ofInputStream()</code>. И она очень хитрая. Она позволяет организовать пересылку данных из потока в поток, прикрепить к <strong>POS-запросу</strong> поток данных, который еще даже не открыт</p>
+<p>В функцию <code>ofInputStream()</code> нужно передать функцию, которая в качестве результата вернет поток <code>InputStream</code>.</p>
+<p>Пример:</p>
+<pre class='line-numbers'><code>
+byte[] <span class="text-viola">data</span> = <span class="text-green">"Мое секретное сообщение"</span>.getBytes();
+//заворачиваем массив байт в поток.
+InputStream <span class="text-user">is</span> = new ByteArrayInputStream(<span class="text-viola">data</span>);
+ 
+HttpRequest request = HttpRequest.newBuilder()
+   .uri(new URI(<span class="text-green">"https://javarush.com"</span>))
+   .headers("Content-Type", "<span class="text-yellow">application/octet-stream"</span>)
+   .POST(<span class="text-red">HttpRequest.BodyPublishers.</span><span class="text-orange">ofInputStream (</span><span class="text-user">() -> is;</span><span class="text-orange">)</span>)
+   .build();
+</code></pre>
+<p>Я не стал тут городить огород, но думаю, принцип ты понял. Зачем так сделали? Почти всегда ты можешь воспользоваться методом <code>ofByteArray()</code>. Но если хочешь послать данные асинхронно или нужно реализовать какой-то особо сложный сценарий, то можешь воспользоваться этим методом.</p>

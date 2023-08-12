@@ -1,0 +1,143 @@
+Создание запроса с помощью HttpRequest
+<p>----------------------------------------</p>
+Методы newBuilder(), build(). 
+Метод uri(). 
+Методы GET(), POST(), PUT(), DELETE(). 
+Метод version(). 
+Метод timeout(). 
+Метод header().
+<p>----------------------------------------</p>
+<h2>Методы newBuilder(), build()</h2>
+
+<p>Класс <span class="code"><span class="text-green">HttpRequеst</span></span> используется для описания http-request, что легко понять из его названия. Этот объект сам по себе ничего не делает, он только содержит разнообразную информацию по поводу http-запроса. Поэтому, как ты уже, наверное, догадываешься, для его создания тоже используется шаблон Builder.</p>
+
+<pre class='language-java line-numbers'><code>
+<span class="text-red">HttpRequest</sapn> request = <span class="text-red">HttpRequest</span>.<span class="text-green">newBuilder</span>()
+	<span class="text-neon">.method1()</span>
+	<span class="text-neon">.method2()</span>
+	<span class="text-neon">.methodN()</span>
+    .<span class="text-green">build</span>();
+</code></pre>
+ 
+<p>Где между вызовами методов <span class="code text-orange">newBuilder()</span> и <span class="code text-orange">build()</span> нужно вызвать все методы для конструирования объекта <mark class="green">HttpRequest</mark>.</p>
+
+<p>Пример простейшего запроса выглядит так:</p>
+ 
+<pre class='language-java line-numbers'><code>
+HttpClient <span class="text-green">client</span> = HttpClient.newHttpClient();
+HttpRequest <span class="text-red">request</span> = HttpRequest.newBuilder()
+    .uri(URI.create(<span class="text-green">“http://javarush.ru”</span>))
+    .build();
+HttpResponse <span class="text-neon">response</span> = <span class="text-green">client</span>.send(<span class="text-red">request</span>, HttpResponse.BodyHandlers.ofString());
+</code></pre>
+ 
+<p>Все методы класса <span class="code"><span class="text-green">HttpRequest</span></span> ты можешь найти по ссылке <a href="https://docs.oracle.com/en/java/javase/12/docs/api/java.net.http/java/net/http/HttpRequest.html" target="_blank">в официальной документации</a>.</p>
+
+<p>А дальше мы разберем самые популярные из них.</p>
+
+<h2>Метод uri()</h2>
+
+<p>С помощью метода <span class="code text-orange">uri()</span> можно задать URI (или URL), к которому будет отправлен http-запрос. Пример:</p>
+
+<pre class='language-java line-numbers'><code>
+HttpRequest request = HttpRequest.<span class="text-green">newBuilder()</span>
+    .<span class="text-red">uri</span>( <span class="text-neon">URI.create(“http://javarush.ru”)</span> )
+    .<span class="text-green">build</span>();
+</code></pre>
+ 
+<p>Кстати, можно записать этот код еще немного короче, передав URI прямо в метод <span class="code text-orange">newBuilder()</span>: </p>
+ 
+<pre class='language-java line-numbers'><code>
+HttpRequest request = HttpRequest.<span class="text-green">newBuilder</span>( <span class="text-neon">URI.create(“http://javarush.ru”)</span> ).<span class="text-green">build</span>();  
+</code></pre>
+ 
+<p><span class="text-red"><span class="text-bold">Важно!</span></span> URI можно создать двумя способами:</p>
+
+<ul>
+<li><span class="code text-orange">new URI(String)</span></li>
+<li><span class="code text-orange">URI.create(String)</span></li>
+</ul>
+
+<p>Второй способ предпочтительнее. Первый способ, к сожалению, не очень хорош, потому-то конструктор URI объявлен так <span class="code">public URI(String str) throws URISyntaxException</span>, а <span class="text-red"><span class="text-bold">URISyntaxException</span></span> — это checked-исключение.</p>
+
+<h2>Методы GET(), POST(), PUT(), DELETE()</h2>
+
+<p>Задать http-метод запроса можно с помощью методов:</p>
+
+<ul>
+<li><span class="code text-orange">GET()</span></li>
+<li><span class="code text-orange">POST()</span></li>
+<li><span class="code text-orange">PUT()</span></li>
+<li><span class="code text-orange">DELETE()</span></li>
+</ul>
+
+<p>Вот как будет выглядеть простой GET-запрос:</p>
+
+<pre class='language-java line-numbers'><code>
+HttpRequest request = HttpRequest.newBuilder()
+  .uri(new URI(<span class="text-green">"https://javarush.com"</span>))
+  <span class="text-red">.GET()</span>
+  .build();
+</code></pre>
+ 
+<h2>Метод version()</h2>
+
+<p>Также можно задать версию HTTP-протокола. Их всего 2 варианта:</p>
+
+<ul>
+<li>HttpClient.Version.HTTP_1_1</li>
+<li>HttpClient.Version.HTTP_2</li>
+</ul>
+
+<p>Допустим, ты хочешь создать запрос по протоколу HTTP/2, тогда тебе нужно будет написать:</p>
+ 
+<pre class='language-java line-numbers'><code>
+HttpRequest request = HttpRequest.newBuilder()
+   .uri(new URI(<span class="text-green">"https://javarush.com"</span>))
+   <span class="text-red">.version( HttpClient.Version.HTTP_2 )</span>
+   .GET()
+   .build();
+</code></pre>
+ 
+<p>Очень просто, не правда ли? :)</p>
+
+<h2>Метод timeout()</h2>
+
+<p>Также можно задать время выполнения запроса. Если оно пройдет, а запрос так и не будет выполнен, то выкинется исключение <span class="text-red"><span class="text-bold">HttpTimeoutException</span></span>.</p>
+
+<p>Само время задается с помощью объекта <mark class="green">Duration</mark> из Java DateTime API. Пример: </p>
+
+<pre class='language-java line-numbers'><code>
+HttpRequest request = HttpRequest.newBuilder()
+   .uri(new URI(<span class="text-green">"https://javarush.com"</span>))
+   <span class="text-red">.timeout( Duration.of(5, SECONDS) )</span>
+   .GET()
+   .build();
+</code></pre>
+ 
+<p>Наличие этого метода показывает, что классы <span class="code"><span class="text-green">HttpClient</span></span> и <span class="code"><span class="text-green">HttpRequest</span></span> могут решать самые разнообразные задачи. Представь, что ты выполняешь запрос, а что-то случилось с сетью и он продлился 30 секунд. Куда полезнее сразу получить исключение и правильно на него среагировать.</p>
+
+<h2>Метод header()</h2>
+
+<p>Также к любому запросу можно добавить сколько угодно заголовков. И сделать это так же просто, как и все остальное. Для этого есть специальный метод — <span class="code text-orange">header()</span>. Пример:</p>
+ 
+<pre class='language-java line-numbers'><code>
+HttpRequest request = HttpRequest.newBuilder()
+   .uri(new URI(<span class="text-green">"https://javarush.com"</span>))
+   <span class="text-red">.header("name1", "value1")</span>
+   <span class="text-red">.header("name2", "value2")</span>
+   .GET()
+   .build();
+</code></pre>
+ 
+<p>Есть еще один альтернативный способ задать сразу много заголовков. Может пригодиться, если, ты, допустим, преобразовал список заголовков в массив:</p>
+
+<pre class='language-java line-numbers'><code>
+HttpRequest request = HttpRequest.newBuilder()
+   .uri(new URI(<span class="text-green">"https://javarush.com"</span>))
+   .<span class="text-red">headers("name1", "value1", "name2", "value2")</span>
+   .GET()
+   .build();
+</code></pre>
+ 
+<p>Все элементарное просто.</p>

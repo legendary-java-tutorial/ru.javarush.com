@@ -1,0 +1,208 @@
+Виды исключений
+<p>----------------------------------------</p>
+Виды исключений
+Все исключения делятся на 4 вида, которые на самом деле являются классами, унаследованными друг от друга.
+<p>----------------------------------------</p>
+<h2>1. Виды исключений</h2>
+<p><img data-id="4ae02f99-979a-49ba-967e-148807de9218" src="https://cdn.javarush.com/images/article/4ae02f99-979a-49ba-967e-148807de9218/original.png" alt="Виды исключений в Java"></p>
+<p>Все исключения делятся на 4 вида, которые на самом деле являются классами, унаследованными друг от друга.</p>
+<p><span class="text-bold">Класс <code>Throwable</code></span></p>
+<p><span class="text-green">Самым базовым классом для всех исключений является класс <code>Throwable</code>. <span class="text-orange">В классе <code>Throwable</code> содержится код, который записывает текущий стек-трейс вызовов функций в массив.</span></span> Что такое стек-трейс вызовов, мы изучим немного позднее.</p>
+<p><span class="text-red">В <strong>оператор throw</strong> можно передать только объект класса-наследника <code>Throwable</code>.</span> И хотя теоретическим можно написать код вида <code>throw new Throwable();</code> — так обычно никто не делает. Главная цель существования класса <code>Throwable</code> — единый класс-предок для всех исключений.</p>
+<p><span class="text-bold">Класс <code>Error</code></span></p>
+<p>Следующим классом исключений является класс <code>Error</code> — прямой наследник класса <code>Throwable</code>. <span class="text-red">Объекты типа <code>Error</code> (и его классов-наследников) создает <strong>Java-машина в случае каких-то серьезных проблем</strong>.</span> Например, сбой в работе, нехватка памяти, и т.д.</p>
+<p>Обычно вы как программист <strong>ничего не можете сделать</strong> в ситуации, когда в программе возникла ошибка типа <code>Error</code>: слишком серьезна такая ошибка. Все, что вы можете сделать — уведомить пользователя, что программа аварийно завершается или записать всю известную информацию об ошибке в лог программы.</p>
+<p><span class="text-bold">Класс <code>Exception</code></span></p>
+<p>Исключения типа <code>Exception</code> (и <code>RuntimeException</code>) — это обычные ошибки, которые возникают во время работы многих методов. <span class="text-green">Цель каждого выброшенного исключения — быть захваченным тем блоком <code>catch</code>, который знает, что нужно сделать в этой ситуации.</span></p>
+<p><span class="text-red">Когда какой-то метод не может выполнить свою работу по какой-то причине, он сразу должен уведомить об этом вызывающий метод, выбрасывая исключение соответствующего типа.</span></p>
+<p>Другими словами, если какая-то переменная оказалась равна <code>null</code>, метод выкинет <code>NullPointerException</code>, если в метод передали неверные аргументы — выкинет <code>InvalidArgumentException</code>, если в методе случайно было деление на ноль — <code>ArithmeticException</code>.</p>
+<p><span class="text-bold">Класс <code>RuntimeException</code></span></p>
+<p><code>RuntimeException</code> — это разновидность (подмножество) исключений <code>Exception</code>. Можно даже сказать, что <code>RuntimeException</code> — это облегченная версия обычных исключений (<code>Exception</code>): на такие исключения налагается меньше требований и ограничений</p>
+<p>Об отличии <code>Exception</code> и <code>RuntimeException</code> вы узнаете дальше</p>
+<hr>
+<h2>2. Проверяемые исключения: <code>throws</code>, <span class="term">checked exceptions</span></h2>
+<p><img data-id="5c5a8939-dd12-4c70-aeda-00cb2909d340" src="https://cdn.javarush.com/images/article/5c5a8939-dd12-4c70-aeda-00cb2909d340/original.png" alt="Проверяемые исключения: throws, checked exceptions">
+<p>Все исключения в Java делятся на 2 категории — проверяемые (<span class="term">checked</span>) и непроверяемые (<span class="term">unchecked</span>).</p>
+<p><span class="text-green">Все исключения, унаследованные от классов <code><span class="text-green">RuntimeException</span></code> и <code><span class="text-green">Error</span></code>, считаются <span class="term"><span class="text-green">unchecked-исключениями</span></span>,</span> <span class="text-red">все остальные — <span class="term"><span class="text-red">checked-исключениями</span></span>.</span></p>
+<div class="lesson-note lesson-note--important">
+    <div class="lesson-note__container">
+        <div class="lesson-note__head">Важно!</div>
+        <div class="lesson-note__content">
+            <p>Спустя 20 лет после введения проверяемых исключений, почти все Java-программисты считают это ошибкой. 95% всех исключений в популярных современных фреймворках — непроверяемые. Тот же язык C#, который чуть ли не скопировал Java подчистую, не стал добавлять <span class="term">checked-исключения</span>.</p>
+        </div>
+    </div>
+</div>
+<p>В чем же основное отличие <span class="term">checked-исключений</span> от <span class="term">unchecked</span>?</p>
+<p>К <span class="term">checked-исключениям</span> есть дополнительные требования. Звучат они примерно так.</p>
+<p><strong>Требование 1</strong></p>
+<p>Если <span class="text-red">метод выбрасывает <span class="term">checked-исключение</span></span>, <span class="text-viola">он должен содержать тип этого исключения в своем заголовке</span> (сигнатуре метода). <span class="text-green">Чтобы все методы, которые вызывают данный метод, знали о том, что в нем может возникнуть такое «важное исключение».</span></p>
+<p>Указывать <span class="text-red"><span class="term">checked-исключения</span></span> надо после <span class="code"><span class="text-orange">параметров метода</span></span> после ключевого слова <code>throws</code> (не путать со <code>throw</code>). Выглядит это примерно так:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code><span class="text-green">тип</span> <span class="text-user">метод</span> (<span class="text-orange">параметры</span>) throws <span class="text-red">исключение</span></code></pre>
+</div>
+<p>Пример:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>checked-исключение</th>
+        <th>unchecked-исключение</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>public void calculate(int n) <strong>throws</strong> <span class="text-red">Exception</span>
+{
+   if (n == 0)
+      <strong>throw</strong> new <span class="text-red">Exception</span>("n равно нулю!");
+}</code></pre>
+        </td>
+        <td>
+<pre class="language-java"><code>public void calculate(n)
+<span>{
+</span>   if (n == 0)
+      throw new <span class="text-red">RuntimeException</span>("n равно нулю!");
+}</code></pre>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p><span class="text-green">В примере справа наш код выкидывает <span class="term"><span class="text-green">unchecked-исключение</span></span> — никаких дополнительных действий не нужно.</span> <span class="text-orange">В примере слева метод выкидывает <span class="term"><span class="text-orange">checked-исключение</span></span>, поэтому в сигнатуру метода добавили ключевое слово <code>throws</code> и указали тип исключения.</span></p>
+<p><span class="text-viola">Если метод планирует выкидывать несколько <span class="term"><span class="text-viola">checked-исключений</span></span>, все их нужно указать после ключевого слова <code>throws</code> через запятую.</span> Порядок неважен. Пример:</p>
+<pre class="language-java"><code>public void calculate(int n) throws <span class="text-red">Exception</span>, <span class="text-red">IOException</span>
+{
+   if (n == 0)
+      throw new <span class="text-red">Exception</span>("n равно нулю!");
+   if (n == 1)
+      throw new <span class="text-red">IOException</span>("n равно единице");
+}</code></pre>
+<p><strong>Требование 2</strong></p>
+<p>Если вы вызываете метод, у которого в сигнатуре прописаны <span class="term">checked-исключения</span>, то <span class="text-red">вы не можете проигнорировать этот факт.</span></p>
+<p>Вы должны либо перехватить все эти исключения, добавив блоки <code>catch</code> для каждого из них, либо <span class="text-red">добавить их в <code><span class="text-red">throws</span></code> </span>своего метода.</p>
+<p>Мы как бы говорим себе: <span class="text-orange">э</span><span class="text-orange">ти исключения настолько важные, что мы обязательно должны их перехватить. А если мы не знаем, как их перехватить, мы должны уведомить тех, кто будет вызывать наш метод, что в нем могут возникнуть такие исключения.</span></p>
+<p>Пример:</p>
+<p>Представим, что мы пишем метод, который должен создать мир, населенный людьми. Начальное количество человек передается в качестве параметра. Тогда мы должны добавить исключения, если людей слишком мало.</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Создаем Землю</th>
+        <th>Примечание</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>public void <span class="text-red">создатьМир</span>(int n) throws <span class="text-viola">ПустойМир</span>,<span class="text-viola">ОдинокийМир</span>
+{
+   if (n == 0)
+      throw new <span class="text-viola">ПустойМир</span>(<span class="text-green">"Людей вообще нет!"</span>);
+   if (n == 1)
+      throw new <span class="text-viola">ОдинокийМир</span>(<span class="text-green">"Слишком мало людей!"</span>);
+   System.out.println(<span class="text-green">"Создан прекрасный мир. Население: " </span>+ n);
+}</code></pre>
+        </td>
+        <td>Метод потенциально кидает два <span class="term">checked-исключения</span>:</p>
+            <ul>
+                <li><span class="text-red">ПустойМир</span></li>
+                <li><span class="text-red">ОдинокийМир</span></li>
+            </ul>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p>Вызов этого метода можно обработать 3 способами:</p>
+<p><strong>1. Не перехватываем возникающие исключения</strong></p>
+<p>Чаще всего это делается в случае, когда в методе не известно, как правильно обработать эту ситуацию.</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Примечание</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>public void <span class="text-user">создатьНаселенныйМир</span>(int population)
+throws <span class="text-viola">ПустойМир</span>, <span class="text-viola">ОдинокийМир</span>
+{
+   <span class="text-red">создатьМир</span>(population);
+}</code></pre>
+        </td>
+        <td>Вызывающий метод не перехватывает исключения и вынужден информировать о них других: добавить их себе в <code>throws</code></td>
+    </tr>
+    </tbody>
+</table>
+<p><strong>2. Перехватывать часть исключений</strong></p>
+<p>Обрабатываем понятные ошибки, непонятные — прокидываем в вызывающий метод. Для этого нужно добавить их название в throws:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Примечание</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>public void <span class="text-user">создатьНепустойМир</span>(int population)
+throws <span class="text-viola">ПустойМир</span>
+{
+   try
+   {
+      <span class="text-red">создатьМир</span>(population);
+   }
+   catch (<span class="text-viola">ОдинокийМир</span> e)
+   {
+      e.printStackTrace();
+   }
+}</code></pre>
+        </td>
+        <td>Вызывающий метод перехватывает только одно <span class="term">checked-исключение</span> &#8211; <code><span class="text-viola">ОдинокийМир</span></code>, второе он должен добавить в свою сигнатуру: указать после слова <code>throws</code></td>
+    </tr>
+    </tbody>
+</table>
+<p><strong>3. Перехватываем все исключения</strong></p>
+<p>Если метод не прокидывает исключения вызывающему методу, вызывающий метод всегда будет уверен, что все выполнилось хорошо. И не сможет предпринять никаких действий, чтобы исправить ситуацию.</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Примечание</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>public void <strong><span class="text-user">создатьЛюбойМир</span></strong>(int population)
+{
+   try
+   {
+      <span class="text-red">создатьМир</span>(population);
+   }
+   catch(<span class="text-viola">ОдинокийМир</span> e)
+   {
+      e.printStackTrace();
+   }
+   catch(<span class="text-viola">ПустойМир</span> e)
+   {
+      e.printStackTrace();
+   }
+}</code></pre>
+        </td>
+        <td>В этом методе перехватываются все ошибки. Вызывающий метод будет уверен, что все прошло отлично.</td>
+    </tr>
+    </tbody>
+</table>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task14.task1408"></div>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task14.task1409"></div>
+<hr>
+<h2>3. Множественный перехват исключений</h2>
+<p>Программисты очень не любят дублирование кода. Даже придумали такой принцип разработки — <span class="term">DRY</span>: Don’t Repeat Yourself. Однако <span class="text-orange">при обработке исключений часто возникают ситуации, когда после блока <code>try</code> следует несколько блоков <code>catch</code> с одинаковым кодом.</span></p>
+<p>Или может быть, например, 3 <code>catch</code>-блока с одним кодом и еще 2 <code>catch</code>-блока с другим. Стандартная в общем-то ситуация, когда у вас в проекте <span class="text-red">ответственно относятся к обработке исключений.</span></p>
+<p>Начиная с 7-й версии, в язык Java добавили возможность указать несколько типов исключений в одном блоке <code>catch</code>. Выглядит это примерно так:</p>
+<div class="lesson-example lesson-example--center">
+<pre class="lecture-code lecture-code--present-sm language-java"><code>try
+{
+   <span class="text-green">код, где может возникнуть ошибка</span>
+}
+catch(<span class="text-viola">ТипИсключения1</span> | <span class="text-viola">ТипИсключения2</span> | <span class="text-viola">ТипИсключения3</span> <span class="text-red">имя</span>)
+{
+   <span class="text-user">код обработки исключений</span>
+}</code></pre>
+</div>
+<p>Блоков <code>catch</code> может быть сколько угодно. Однако в одном блоке <code>catch</code> нельзя указать исключения, которые наследуются друг от друга. Т.е. нельзя написать catch (<code>Exception</code> | <code>RuntimeException</code> e), т.к. класс <code>RuntimeException</code> унаследован от <code>Exception</code>.</p>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task14.task1412"></div>
+<hr>

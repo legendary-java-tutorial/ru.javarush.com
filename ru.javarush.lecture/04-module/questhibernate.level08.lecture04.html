@@ -1,0 +1,113 @@
+Продвинутая работа с ResultSet
+<p>----------------------------------------</p>
+Кастомизация ResultSet. 
+Типы ResultSet. 
+Concurrency. 
+Пример изменения данных в базе.
+<p>----------------------------------------</p>
+<h2>Кастомизация ResultSet</h2>
+
+<p>Современный JDBC API позволяет очень сильно кастомизировать объекты <mark class="green">Statement</mark> и <mark class="green">ResultSet</mark>. Например, с помощью <mark class="green">ResultSet</mark> можно менять строки в базе данных.</p>
+
+<p>При создании объекта statement в него можно передать кучу наших пожеланий. Эти пожелания можно разделить на три группы:</p>
+
+<ul>
+<li>Тип связи с базой</li>
+<li>Управление одновременным доступом</li>
+<li>Сохраняемость и транзакции</li>
+</ul>
+
+<p>Эти параметры можно передавать при создании объекта <mark class="green">Statement</mark> или <mark class="green">PreparedStatement</mark>. Пример:</p>
+ 
+<pre class='language-java line-numbers'><code>
+Statement statement = connection.createStatement(
+    ResultSet.TYPE_FORWARD_ONLY,
+    ResultSet.CONCUR_READ_ONLY,
+    ResultSet.CLOSE_CURSORS_OVER_COMMIT );
+ 
+PreparedStatement statement = connection.prepareStatement(sql,
+    ResultSet.TYPE_FORWARD_ONLY,
+    ResultSet.CONCUR_READ_ONLY,
+    ResultSet.CLOSE_CURSORS_OVER_COMMIT);
+</code></pre>
+ 
+<p>Глубоко эти вещи мы изучать не будем, но я хочу, чтобы ты знал, что такое возможно, если встретишь что-то похожее в чужом коде.</p>
+
+<h2>Типы ResultSet</h2>
+
+<p>ResultSet может быть определенного типа. Тип определяет некоторые характеристики и возможности ResultSet.</p>
+
+<p>Не все типы поддерживаются всеми базами данных и драйверами JDBC. Тебе придется проверить свою базу данных и драйвер JDBC, чтобы увидеть, поддерживает ли он тип, который ты хочешь использовать. Метод <span class="code text-orange">DatabaseMetaData.supportsResultSetType(int type)</span> возвращает <em>true </em>или <em>false </em>в зависимости от того, поддерживается данный тип или нет.</p>
+
+<p>На момент написания статьи существует три типа ResultSet:</p>
+
+<ul>
+<li><strong>ResultSet.TYPE_FORWARD_ONLY</strong></li>
+<li><strong>ResultSet.TYPE_SCROLL_INSENSITIVE</strong></li>
+<li><strong>ResultSet.TYPE_SCROLL_SENSITIVE</strong></li>
+</ul>
+
+<p>Тип по умолчанию — TYPE_FORWARD_ONLY.</p>
+
+<p><strong>TYPE_FORWARD_ONLY</strong> означает, что ResultSet можно перемещать только вперед. То есть ты можешь перемещаться только из строки 1, строки 2, строки 3 и т. д. В ResultSet ты не можешь двигаться назад: нельзя считать данные из 9-й строки после чтения десятой.</p>
+
+<p><strong>TYPE_SCROLL_INSENSITIVE</strong> означает, что ResultSet можно перемещать (прокручивать) как вперед, так и назад. Ты также можешь перейти к позиции относительно текущей позиции или перейти к абсолютной позиции.</p>
+
+<p>ResultSet этого типа <span class="text-red">нечувствителен</span> к изменениям в базовом источнике данных, пока ResultSet открыт. То есть если запись в ResultSet изменяется в базе данных другим потоком или процессом, она не будет отражена в уже открытых <mark class="green">ResultSet</mark> этого типа.</p>
+
+<p><strong>TYPE_SCROLL_SENSITIVE</strong> означает, что ResultSet можно перемещать (прокручивать) как вперед, так и назад. Ты также можешь перейти к позиции относительно текущей позиции или перейти к абсолютной позиции.</p>
+
+<p>ResultSet этого типа <span class="text-green">чувствителен</span> к изменениям в базовом источнике данных, пока ResultSet открыт. То есть если запись в ResultSet изменяется в базе данных другим потоком или процессом, она будет отражена в уже открытых <mark class="green">ResultSet</mark> этого типа.</p>
+
+<h2>Concurrency</h2>
+
+<p>Параллельность ResultSet определяет, может ли ResultSet обновляться, или только считываться.</p>
+
+<p>Некоторые базы данных и драйверы JDBC поддерживают обновление ResultSet, но не все. Метод <span class="code text-orange">DatabaseMetaData.supportsResultSetConcurrency(int concurrency)</span> возвращает значение <em>true </em>или <em>false</em> в зависимости от того, поддерживается данный режим параллелизма или нет.</p>
+
+<p>ResultSet может иметь один из двух уровней параллелизма:</p>
+
+<ul>
+<li><strong>ResultSet.CONCUR_READ_ONLY</strong></li>
+<li><strong>ResultSet.CONCUR_UPDATABLE</strong></li>
+</ul>
+
+<p><strong>CONCUR_READ_ONLY</strong> означает, что ResultSet может быть только прочитан.</p>
+
+<p><strong>CONCUR_UPDATABLE</strong> означает, что ResultSet может быть прочитан и изменен.</p>
+
+<h2>Пример изменения данных в базе</h2>
+
+<p>С помощью этих параметров ты можешь управлять создаваемым Statement и его ResultSet.</p>
+
+<p>Например, можно создать обновляемый ResultSet и с его помощью менять базу данных. При создании Statement важно соблюсти следующие условия:</p>
+
+<ul>
+<li>указывается только одна таблица</li>
+<li>не содержит предложений join или group by</li>
+<li>столбцы запроса должны содержать первичный ключ</li>
+</ul>
+
+<p>При выполнении вышеуказанных условий обновляемый ResultSet может быть использован для модификации таблицы в базе данных. При создании объекта Statement нужно указать такие параметры:</p>
+ 
+<pre class='language-java line-numbers'><code>
+　Statement st = createStatement(Result.TYPE_SCROLL_INSENSITIVE, Result.CONCUR_UPDATABLE)
+</code></pre>
+ 
+<p>Результатом выполнения такого оператора является обновляемый набор результатов. Метод обновления заключается в перемещении курсора ResultSet в строку, которую ты хочешь обновить, а затем в вызове метода <span class="code text-orange">updateXXX()</span>.</p>
+
+<p>Метод <span class="code text-orange">updateXXX</span> работает аналогично методу <span class="code text-orange">getXXX()</span>. Метод <span class="code text-orange">updateXXX()</span> имеет два параметра. Первый — это номер обновляемого столбца, который может быть именем столбца или серийным номером. Второй — это данные, которые необходимо обновить, и этот тип данных должен быть тот же, что и XXX.</p>
+
+<p>Чтобы строка реально обновилась в базе, нужно вызвать метод <span class="code text-orange">updateRow()</span> до того, как курсор ResultSet покинет измененную строку, в противном случае изменения так и не попадут в базу.</p>
+
+<p>Также можно добавлять новые строки в таблицу:</p>
+
+<p>Сначала нужно переместить курсор на пустую строку. Для этого нужно вызвать метод <span class="code text-orange">moveToInsertRow()</span>.</p>
+
+<p>Затем нужно заполнить эту строку данными с помощью метода <span class="code text-orange">updateXXX()</span>.</p>
+
+<p>Затем нужно вызвать метод <span class="code text-orange">inserRow()</span>, чтобы строка добавилась в базу.</p>
+
+<p>Ну и наконец нужно вернуть курсор обратно, вызвав метод <span class="code text-orange">moveToCurrentRow()</span>.</p>
+
+<p><strong>Важно!</strong> Не все СУБД поддерживают данные параметры для расширенного оператора Statement. В случае наличия проблем смотри официальную документацию конкретной СУБД.</p>

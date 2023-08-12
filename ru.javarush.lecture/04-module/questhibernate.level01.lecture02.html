@@ -1,0 +1,447 @@
+WHERE: условия в запросах SQL
+<p>----------------------------------------</p>
+Сравнение значений: <, >, =, <>
+Логические операции AND, OR, NOT
+BETWEEN: диапазон значений
+IN: список значений
+LIKE: шаблон строк
+<p>----------------------------------------</p>
+<h2>3.1 Сравнение значений: &lt;, &gt;, =, &lt;&gt;</h2>
+<p>Одно из самых частых ключевых слов, которые используются при написании SQL-запросов – это ключевое слово <code>WHERE</code>. Именно с его помощью мы указываем MySQL какие строки таблицы мы хотим отфильтровать (отобрать).</p>
+<p>После ключевого слова <code>WHERE</code> можно писать очень сложные и заковыристые условия. Так какие же операции может содержать это условие?</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Оператор</th>
+        <th>Описание</th>
+        <th>Пример</th>
+    </tr>
+    <tr>
+        <td>&lt;</td>
+        <td>Меньше</td>
+        <td>salary &lt; 40000</td>
+    </tr>
+    <tr>
+        <td>&gt;</td>
+        <td>Больше</td>
+        <td>salary &gt; 100000</td>
+    </tr>
+    <tr>
+        <td>&lt;=</td>
+        <td>Меньше или равно</td>
+        <td>age &lt;= 25</td>
+    </tr>
+    <tr>
+        <td>&gt;=</td>
+        <td>Больше или равно</td>
+        <td>age &gt;= 18</td>
+    </tr>
+    <tr>
+        <td>=</td>
+        <td>Равно</td>
+        <td>occupation = ‘Программист’</td>
+    </tr>
+    <tr>
+        <td>&lt;&gt;, !=</td>
+        <td>Не равно</td>
+        <td>Year(join_date) != 2015</td>
+    </tr>
+
+    </tbody>
+</table>
+<p>В отличии от языка Java для строгого равенства тут используется <strong>один символ равно, а не два</strong>.</p>
+<p>Если же вы хотите проверить, что значения не равны, то это можно сделать двумя способами: <code>&lt;&gt;</code> или <code>!=</code> Первый подход используется в языках типа Паскаль, второй характерен для таких языков, как C++ и Java.</p>
+<p>Для присваивания в SQL используется <code>:=</code> как в Паскале, однако само присваивание используется очень редко.</p>
+<p>Давай напишем запрос, где отобразим всех сотрудников, которые не были наняты в 2015 году.</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present"><code>
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-yellow">employee</span> <span class="text-red">WHERE</span> <span class="text-user">YEAR(join_date)</span> != 2015
+        </code></pre>
+</div>
+<p>И получим такой результат запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>occupation</th>
+        <th>salary</th>
+        <th>age</th>
+        <th>join_date</th>
+    </tr>
+    <tr>
+    	<td>1</td>
+        <td>Иванов Иван</td>
+        <td>Программист</td>
+        <td>100,000</td>        
+        <td>25</td>
+        <td>2012-06-30</td>
+        
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>Петров Петр</td>
+        <td>Программист</td>        
+        <td>80,000</td>
+        <td>23</td>
+        <td>2013-08-12</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Иванов Сергей</td>
+        <td>Тестировщик</td>        
+        <td>40,000</td>
+        <td>30</td>
+        <td>2014-01-01</td>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td>Васька</td>
+        <td>кот</td>        
+        <td>1,000</td>
+        <td>3</td>
+        <td>2018-01-01</td>
+    </tr>
+    </tbody>
+</table>
+<h2>3.2 Логические операции AND, OR, NOT</h2>
+<p>Также в <code>WHERE</code> можно использовать логические операции <code>AND</code>, <code>OR</code> и <code>NOT</code>. И пишутся они именно так как я их тут описал. Никаких <code>&&</code>, <code>||</code> или <code>!</code></p>
+<p>Давай напишем SQL-запрос, где отберем сотрудников, которые старше 20 лет и получают зарплату меньше 50К.</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present"><code>
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-yellow">employee</span> <span class="text-red">WHERE</span> <span class="text-green">age</span> &gt; 20 <span class="text-user">AND</span> <span class="text-green">salary</span> &lt; 50000
+        </code></pre>
+</div>
+<p>И получим такой результат запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>occupation</th>
+        <th>salary</th>
+        <th>age</th>
+        <th>join_date</th>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Иванов Сергей</td>
+        <td>Тестировщик</td>        
+        <td>40,000</td>
+        <td>30</td>
+        <td>2014-01-01</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td>Кириенко Анастасия</td>
+        <td>Офис-менеджер</td>        
+        <td>40,000</td>
+        <td>25</td>
+        <td>2015-10-10</td>
+    </tr>
+    </tbody>
+</table>
+<p>Слишком просто. Давай напишем запрос, где отберем сотрудников, которые получают больше 100К и не работают директором:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present"><code>
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-yellow">employee</span> <span class="text-red">WHERE</span> <span class="text-green">salary</span> &gt;= 100000 <span class="text-user">AND NOT</span> <span class="text-green">occupation</span> = 'Директор'
+        </code></pre>
+</div>
+<p>Тут мы специально вместо символа <code>!=</code> использовали оператор <code>NOT</code>.</p>
+<p>И получим такой результат запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>occupation</th>
+        <th>salary</th>
+        <th>age</th>
+        <th>join_date</th>
+    </tr>
+    <tr>
+    	<td>1</td>
+        <td>Иванов Иван</td>
+        <td>Программист</td>
+        <td>100,000</td>        
+        <td>25</td>
+        <td>2012-06-30</td>
+    </tr>
+    </tbody>
+</table>
+<h2>3.3 BETWEEN: диапазон значений</h2>
+<p>Также в SQL есть специальный оператор <code>BETWEEN</code> с помощью которого можно проверить лежит ли переменная между двух значений. Этот оператор используется внутри логических выражений. Общий вид такого оператора имеет вид:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present"><code>
+<span class="text-green">переменная</span> <span class="text-red">BETWEEN</span> <span class="text-user">нижняя_граница</span> <span class="text-red">AND</span> <span class="text-user">верхняя_граница</span>
+        </code></pre>
+</div>
+<p>При этом в отличии от языка Java, и нижняя и верхняя границы входят в разрешенный интервал.</p>
+<p>Давай напишем пример, где отберем всех сотрудников с зарплатой от 40К до 100К. Запрос будет иметь вид:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-yellow">employee</span> <span class="text-red">WHERE</span> <span class="text-green">salary</span> BETWEEN 40000 AND 100000
+</code></pre>
+</div>
+<p>И получим такой результат запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>occupation</th>
+        <th>salary</th>
+        <th>age</th>
+        <th>join_date</th>
+    </tr>
+    <tr>
+    	<td>1</td>
+        <td>Иванов Иван</td>
+        <td>Программист</td>
+        <td>100,000</td>        
+        <td>25</td>
+        <td>2012-06-30</td>
+        
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>Петров Петр</td>
+        <td>Программист</td>        
+        <td>80,000</td>
+        <td>23</td>
+        <td>2013-08-12</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Иванов Сергей</td>
+        <td>Тестировщик</td>        
+        <td>40,000</td>
+        <td>30</td>
+        <td>2014-01-01</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td>Кириенко Анастасия</td>
+        <td>Офис-менеджер</td>        
+        <td>40,000</td>
+        <td>25</td>
+        <td>2015-10-10</td>
+    </tr>
+    </tbody>
+</table>
+<p>Оператор <code>BETWEEN</code> поддерживает не только числовые типы, но также <strong>даты</strong> и даже <strong>строковые типы</strong>. В случае работы со строками используется лексикографический порядок: ааба идет перед аабб</p>
+<h2>3.4 IN: список значений</h2>
+<p>Кроме того, в SQL есть специальный оператор <code>IN</code> с помощью которого можно проверить содержится ли переменная в указанном списке. Этот оператор используется внутри логических выражений. Общий вид такого оператора имеет вид:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-green">переменная</span> <span class="text-red">IN</span> (<span class="text-user">значение1, значение2, … значениеN</span>)
+        </code></pre>
+</div>
+<p>Давай напишем запрос, в котором отберем сотрудников, которым 20, 25 или 30 лет. Запрос будет иметь вид:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-yellow">employee</span> <span class="text-red">WHERE</span> <span class="text-green">age</span> IN (20, 25, 30)
+</code></pre>
+</div>
+<p>И получим такой результат запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>occupation</th>
+        <th>salary</th>
+        <th>age</th>
+        <th>join_date</th>
+    </tr>
+    <tr>
+    	<td>1</td>
+        <td>Иванов Иван</td>
+        <td>Программист</td>
+        <td>100,000</td>        
+        <td>25</td>
+        <td>2012-06-30</td>
+        
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Иванов Сергей</td>
+        <td>Тестировщик</td>        
+        <td>40,000</td>
+        <td>30</td>
+        <td>2014-01-01</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td>Кириенко Анастасия</td>
+        <td>Офис-менеджер</td>        
+        <td>40,000</td>
+        <td>25</td>
+        <td>2015-10-10</td>
+    </tr>
+    </tbody>
+</table>
+<p>А теперь давай напишем запрос, где наоборот отберем сотрудников, возраст которых <code class="text-red">не</code> 20, 25 или 30. Запрос будет иметь вид:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-yellow">employee</span> <span class="text-red">WHERE</span> <span class="text-green">age</span> NOT IN (20, 25, 30)
+</code></pre>
+</div>
+<p>И получим такой результат запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>occupation</th>
+        <th>salary</th>
+        <th>age</th>
+        <th>join_date</th>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>Петров Петр</td>
+        <td>Программист</td>        
+        <td>80,000</td>
+        <td>23</td>
+        <td>2013-08-12</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>Рабинович Мойша</td>
+        <td>Директор</td>        
+        <td>200,000</td>
+        <td>35</td>
+        <td>2015-05-12</td>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td>Васька</td>
+        <td>кот</td>        
+        <td>1,000</td>
+        <td>3</td>
+        <td>2018-01-01</td>
+    </tr>
+    </tbody>
+</table>
+<p>Все сработало, как и ожидалось. Красота.</p>
+<h2>3.5 LIKE: шаблон строк</h2>
+<p>И наконец еще один важный и очень часто используемый оператор – <code>LIKE</code>. Он используется при сравнении строк. С его помощью можно задать шаблон строки. Этот оператор используется внутри логических выражений. Общий вид такого оператора имеет вид:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-green">переменная</span> <span class="text-red">LIKE</span> <span class="text-user">'шаблон'</span>
+</code></pre>
+</div>
+<p>В шаблоне могут использоваться специальные символы: <code>%</code> и <code>_</code>.</p>
+<ul>
+	<li><strong>Подчеркивание</strong> означает любой символ, всегда 1 шт.</li>
+	<li><strong>Процент</strong> означает любой символ и любое количество раз (включая 0 раз).</li>
+</ul>
+<p>Давай напишем запрос, с помощью которого отберем всех людей, у которых фамилия начинается на букву "И". Запрос будет иметь вид:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-yellow">employee</span> <span class="text-red">WHERE</span> <span class="text-green">name</span> LIKE 'И%'
+</code></pre>
+</div>
+<p>И получим такой результат запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>occupation</th>
+        <th>salary</th>
+        <th>age</th>
+        <th>join_date</th>
+    </tr>
+    <tr>
+    	<td>1</td>
+        <td>Иванов Иван</td>
+        <td>Программист</td>
+        <td>100,000</td>        
+        <td>25</td>
+        <td>2012-06-30</td>
+        
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Иванов Сергей</td>
+        <td>Тестировщик</td>        
+        <td>40,000</td>
+        <td>30</td>
+        <td>2014-01-01</td>
+    </tr>
+    </tbody>
+</table>
+<p>Теперь усложним задание – в имени должно быть "о" и имя должно заканчиваться на "а". Запрос будет иметь вид:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-yellow">employee</span> <span class="text-red">WHERE</span> <span class="text-green">name</span> LIKE '%о%а'
+</code></pre>
+</div>
+<p>И получим такой результат запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>occupation</th>
+        <th>salary</th>
+        <th>age</th>
+        <th>join_date</th>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>Рабинович Мойша</td>
+        <td>Директор</td>        
+        <td>200,000</td>
+        <td>35</td>
+        <td>2015-05-12</td>
+    </tr>
+    </tbody>
+</table>
+<p>Ладно, усложним еще немного. Давай отфильтруем всех сотрудников, у которых возраст начинается с цифры "3". Запрос будет иметь вид:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-yellow">employee</span> <span class="text-red">WHERE</span> <span class="text-green">age</span> LIKE '3%'
+</code></pre>
+</div>
+<p>И получим такой результат запроса:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>occupation</th>
+        <th>salary</th>
+        <th>age</th>
+        <th>join_date</th>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Иванов Сергей</td>
+        <td>Тестировщик</td>        
+        <td>40,000</td>
+        <td>30</td>
+        <td>2014-01-01</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>Рабинович Мойша</td>
+        <td>Директор</td>        
+        <td>200,000</td>
+        <td>35</td>
+        <td>2015-05-12</td>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td>Васька</td>
+        <td>кот</td>        
+        <td>1,000</td>
+        <td>3</td>
+        <td>2018-01-01</td>
+    </tr>
+    </tbody>
+</table>
+<p>Кстати, колонка <strong>age</strong> у нас имеет тип <code>int</code>, так что <code>LIKE</code> работает не только со строками. Что не может не радовать.</p>
+

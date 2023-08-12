@@ -1,0 +1,135 @@
+Выбрасывание исключений
+<p>----------------------------------------</p>
+Оператор throw Исключение, пока оно не выброшено в систему, или когда оно уже перехвачено блоком catch – это в принципе просто объект класса унаследованного от Exception (вернее от Throwable). Никакими магическими особенностями сам объект-исключения не обладает. Вся логика работы исключений – эт
+<p>----------------------------------------</p>
+<div class="lesson-carousel lesson-carousel--comics lesson-carousel--desktop">
+    <div class="lesson-carousel__list">
+        <div class="lesson-carousel__item">
+            <img data-id="7d96cafb-1342-43d7-9d8e-29735e083b7f" src="https://cdn.javarush.com/images/article/7d96cafb-1342-43d7-9d8e-29735e083b7f/original.png" alt="">
+        </div>
+    </div>
+</div>
+<div class="lesson-carousel lesson-carousel--comics lesson-carousel--mobile">
+    <div class="lesson-carousel__list">
+        <div class="lesson-carousel__item">
+            <img data-id="55e59f8c-dd11-4700-80e1-f279218cadca" src="https://cdn.javarush.com/images/article/55e59f8c-dd11-4700-80e1-f279218cadca/original.png" alt="">
+        </div>
+        <div class="lesson-carousel__item">
+            <img data-id="96178b90-716b-4487-bc5a-5c4a5aac29fd" src="https://cdn.javarush.com/images/article/96178b90-716b-4487-bc5a-5c4a5aac29fd/original.png" alt="">
+        </div>
+    </div>
+</div>
+<hr>
+<h2>1. Оператор <code>throw</code></h2>
+<p>Исключение, пока оно не выброшено в систему, или когда оно уже перехвачено блоком <code><span class="text-green">catch</span></code> — это в принципе просто объект класса, унаследованного от <code><span class="text-green">Exception</span></code> (вернее, от <code>Throwable</code>). <span class="text-red">Никакими магическими особенностями сам объект-исключение не обладает.</span></p>
+<p>Вся логика работы исключений — это просто особый сценарий поведения Java-машины, когда в ее среду выполнения вброшено исключение.</p>
+<p>Вы <span class="text-orange">всегда можете снова вбросить Java-машине исключение, которое только что перехватили. </span>Для этого нужно использовать оператор <code>throw</code>:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>throw <span class="text-red">исключение</span>;</code></pre>
+</div>
+<p>Пример:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Вывод на экран</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>try
+{
+   int d = 2/0;
+}
+catch(<span class="text-viola">Exception</span> <span class="text-red">except</span>)
+{
+   System.out.println("Перехватили исключение");
+   throw <span class="text-red">except</span>;
+}</code></pre>
+        </td>
+        <td>
+            <pre><code>Перехватили исключение</code></pre>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p>В этом коде мы перехватили исключение, вывели на экран надпись об этом и снова выбросили его.</p>
+<p><span class="text-red">Повторно выброшенное исключение не может быть захвачено другими блоками <code><span class="text-red">catch</span></code> этого же <code><span class="text-red">try</span></code>-блока.</span></p>
+<hr>
+<h2>2. Свое исключение</h2>
+<p>Кстати, вы можете сами создать объект-исключение: <span class="text-green">это просто объект типа <code><span class="text-green">Exception</span></code> или унаследованного от него класса.</span> И выбросить его.</p>
+<p>Это проще, чем кажется. Пример:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Вывод на экран</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>try
+{
+   throw new <span class="text-viola">RuntimeException</span>();
+}
+catch(<span class="text-viola">Exception</span> <span class="text-red">except</span>)
+{
+   System.out.println("Перехватили исключение");
+   throw <span class="text-red">except</span>;
+}</code></pre>
+        </td>
+        <td>
+            <pre><code>Перехватили исключение</code></pre>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p>В примере выше мы создали новый объект-исключение типа <code><span class="text-viola">RuntimeException</span></code> и тут же выбросили его с помощью оператора <code>throw</code>.</p>
+<p>Оно будет сразу захвачено блоком <code>catch</code>, т.к. тип RuntimeException унаследован от типа <code><span class="text-viola">Exception</span></code>. Код <code>catch(Exception except)</code> захватывает объекты-исключения всех классов, унаследованных от класса <code><span class="text-viola">Exception</span></code>.</p>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task14.task1406"></div>
+<hr>
+<h2>3. Ключевое слово <code>finally</code></h2>
+<p>Еще один важный момент. Иногда программисту нужно сделать некоторые действия независимо от того, было исключение в коде или нет. Например, в коде мы открыли файл на запись, а открытый файл нужно <span class="text-viola">обязательно закрыть вызовом метода <code><span class="text-viola">close()</span></code>.</span></p>
+<pre class="language-java"><code>try
+{
+   <span class="text-green">код, где может возникнуть ошибка</span>
+}
+catch(<span class="text-viola">ТипИсключения</span> <span class="text-red">имя</span>)
+{
+   <span class="text-user">код обработки исключения</span>
+}
+finally
+{
+   <span class="text-viola">код, который нужно выполнить в любом случае</span>
+}</code></pre>
+<p>Для выполнения таких обязательных действий к оператору <code>try-catch</code> добавили еще один блок — <code>finally</code>, и получился оператор <code>try-catch-finally</code>. Выглядит это дело примерно так:</p>
+<p>Пример:</p>
+<pre class="language-java"><code>FileInputStream source = null;
+try
+{
+   source = new FileInputStream("c:\\note.txt");
+   source.read();
+}
+catch(<span class="text-viola">Exception</span> <span class="text-red">except</span>)
+{
+   System.out.println("Перехватили исключение");
+   throw <span class="text-red">except</span>;
+}
+finally
+{
+   if (source != null)
+      source.close();
+}</code></pre>
+<p><span class="text-viola">Код в блоке <code><span class="text-viola">finally</span></code></span> <span class="text-green">выполнится в любом случае независимо от того, было исключение или не было.</span> Даже если исключение возникло, и оно не было перехвачено, блок <code>finally</code> все равно выполнится.</p>
+<p>Кстати, если вы не хотите перехватывать исключение, а блок <code>finally</code> вам нужен, используйте сокращенную запись блока <code>try-catch-finally</code> &#8212; <code>try-finally</code>. Выглядит это примерно так:</p>
+<div class="lesson-example lesson-example--center">
+<pre class="lecture-code lecture-code--present-sm language-java"><code>try
+{
+   <span class="text-green">код, где может возникнуть ошибка</span>
+}
+finally
+{
+   <span class="text-viola">код, который нужно выполнить в любом случае</span>
+}</code></pre>
+</div>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task14.task1407"></div>

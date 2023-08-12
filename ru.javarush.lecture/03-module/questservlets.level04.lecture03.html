@@ -1,0 +1,119 @@
+Вызовы mock-методов с параметрами
+<p>----------------------------------------</p>
+Параметры методов
+Шаблоны параметров
+Метод doAnswer()
+<p>----------------------------------------</p>
+<h2>4.1 Параметры методов</h2>
+<p>Предыдущие правила добавленные мок-объекту касались методов без параметров. А как создавать правила для методов с параметрами? Более того, хотелось бы создавать правила, чтобы при одних значениях параметров был один результат, а при других – другой.</p>
+<p>Так тоже можно делать. Если вы хотите, чтобы при определенном параметре метод возвращал что-то определенное, то правило можно записать так:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present"><code><span class="text-red">Mockito</span>.doReturn(<span class="text-user">результат</span>).when(<span class="text-green">объект</span>).<span class="text-yellow">имяМетода</span>(<span class="text-violet">параметр</span>);</code></pre>
+</div>
+<p>И сразу рассмотрим пример, чтобы лучше все понять. Пусть наш List возвращает имя Иван при запросе 10-го элемента, и имя Марья при запросе 500-го. Сказано – сделано.</p>
+<pre class='language-java line-numbers'><code>
+@ExtendWith(MockitoExtension.class)
+class ParamsTest {
+<span class="text-green">    @Mock</span>
+<span class="text-red">    List mockList;</span>
+ 
+<span class="text-green">    @Test</span>
+    public void whenMockAnnotation() {
+        //добавление первого правила
+        Mockito.doReturn(<span class="text-user">"Иван"</span>).when(<span class="text-red">mockList</span>).<span class="text-yellow">get</span>(<span class="text-violet">10</span>);       
+        //добавление второго правила
+        Mockito.doReturn(<span class="text-user">"Марья"</span>).when(<span class="text-red">mockList</span>).<span class="text-yellow">get</span>(<span class="text-violet">500</span>);  
+ 
+        assertEquals(<span class="text-user">"Иван"</span>, <span class="text-red">mockList</span>.<span class="text-yellow">get</span>(<span class="text-violet">10</span>)); 
+        assertEquals(<span class="text-user">"Марья"</span>, <span class="text-red">mockList</span>.<span class="text-yellow">get</span>(<span class="text-violet">500</span>)); 
+ 
+    }
+}
+</code></pre>
+<h2>4.2 Шаблоны параметров</h2>
+<p>И сразу хитрые коллеги зададут мне вопрос: “А как быть, если метод требует аргументы, но при любых значениях должен возвращать один и тот же результат?”. Не будем же мы писать:</p>
+<pre class='language-java line-numbers'><code>
+Mockito.doReturn(<span class="text-user">"Иван"</span>).when(<span class="text-red">mockList</span>).<span class="text-yellow">get</span>(<span class="text-violet">1</span>);  
+Mockito.doReturn(<span class="text-user">"Иван"</span>).when(<span class="text-red">mockList</span>).<span class="text-yellow">get</span>(<span class="text-violet">2</span>); 
+Mockito.doReturn(<span class="text-user">"Иван"</span>).when(<span class="text-red">mockList</span>).<span class="text-yellow">get</span>(<span class="text-violet">99</span>);   
+</code></pre>
+<p>Нет, никто тебя так писать не заставляет. Если ты хочешь добавить правило mock-объекту, которое действует для метода с любыми аргументами, то для этого есть специальный объект:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code><span class="text-red">Mockito</span>.any()</code></pre>
+</div>
+<p>Наш пример с его помощью будет записан так:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>Mockito.doReturn(<span class="text-user">"Иван"</span>).when(<span class="text-red">mockList</span>).<span class="text-yellow">get</span>(<span class="text-green">any(int.class)</span>);</code></pre>
+</div>
+<p>Есть тут пара нюансов. Объект <code>Mockito.any()</code> имеет тип <code>Object</code>, поэтому для параметров разных типов есть его аналоги:</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th width="300">Метод</th>
+        <th>Тип параметра</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td><strong>any()</strong></td>
+        <td>Object, включая null</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td><strong>any(ClassName.class)</strong></td>
+        <td>ClassName</td>
+    </tr>
+        <tr>
+        <td>3</td>
+        <td><strong>anyInt()</strong></td>
+        <td>int</td>
+    </tr>
+        <tr>
+        <td>4</td>
+        <td><strong>anyBoolean()</strong></td>
+        <td>boolean</td>
+    </tr>        
+    <tr>
+        <td>5</td>
+        <td><strong>anyDouble()</strong></td>
+        <td>double</td>
+    </tr>    
+    <tr>
+        <td>6</td>
+        <td><strong>anyList()</strong></td>
+        <td>List</td>
+    </tr>
+    </tbody>
+</table>
+<p>Более корректно наш пример будет выглядеть так:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>Mockito.doReturn(<span class="text-user">"Иван"</span>).when(<span class="text-red">mockList</span>).<span class="text-yellow">get</span>(<span class="text-green">anyInt()</span>);</code></pre>
+</div>
+<h2>4.3 Метод doAnswer()</h2>
+<p>Мы добрались до сложного поведения виртуальных методов. Рано или поздно наступит ситуация, когда ты захочешь, чтобы этот виртуальный метод имел сложное поведение. Например, он должен возвращать значения в зависимости от параметров, преобразовывать строку в верхний регистр.</p>
+<p>Для этого есть специальный метод – <code>doAnswer()</code>, в который передается функция, которая делает то, что тебе нужно:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present"><code><span class="text-red">Mockito</span>.doAnswer(<span class="text-user">функция</span>).when(<span class="text-green">объект</span>).<span class="text-yellow">имяМетода</span>(<span class="text-violet">параметр</span>);</code></pre>
+</div>
+<p>Давай заставим метод <code>get()</code> класса <code>List</code> возвращать квадрат переданного ему аргумента. И напишем такую программу:</p>
+<pre class='language-java line-numbers'><code>
+@ExtendWith(MockitoExtension.class)
+class DoAnswerTest {
+<span class="text-green">    @Mock</span>
+<span class="text-green">    List mockList;</span>
+ 
+<span class="text-green">    @Test</span>
+    public void whenMockAnnotation() {
+        Mockito.doAnswer(invocation -> {
+            int parameter = invocation.getArgument(0);
+            return parameter * parameter;
+        }).when(<span class="text-red">mockList</span>).<span class="text-yellow">get</span>(<span class="text-violet">anyInt()</span>);   
+ 
+        assertEquals(<span class="text-user">100</span>, <span class="text-red">mockList</span>.<span class="text-yellow">get</span>(<span class="text-violet">10</span>)); 
+        assertEquals(<span class="text-user">25</span>, <span class="text-red">mockList</span>.<span class="text-yellow">get</span>(<span class="text-violet">5</span>)); 
+    }
+}
+</code></pre>
+<p>Функцию мы задали с помощью объект класса Answer.</p>
+<p></p>
+<p></p>

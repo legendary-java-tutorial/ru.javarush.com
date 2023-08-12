@@ -1,0 +1,101 @@
+Коллекторы в Java
+<p>----------------------------------------</p>
+Сбор элементов У наконец мы дошли до самого интересного метода в классе Stream – это метод collect(). Этот метод используется для того, чтобы перейти наконец от потоков к привычным коллекциям – List&lt;T&gt;, Set&lt;T&gt;, Map&lt;T, R&gt; и другим. В метод collect() нужно передать специальный об
+<p>----------------------------------------</p>
+<h2>1. Сбор элементов</h2>
+<p>И наконец-то мы дошли до самого интересного метода в классе <code>Stream</code> — метода <code>collect()</code>. Он используется для того, чтобы перейти от потоков к привычным коллекциям — <code>List&lt;T&gt;</code>, <code>Set&lt;T&gt;</code>, <code>Map&lt;T, R&gt;</code> и другим.</p>
+<p>В метод <code>collect()</code> нужно передать специальный объект — <code>collector</code>. Этот объект вычитывает все данные из потока, преобразует их к определенной коллекции и возвращает ее. А следом за ним эту же коллекцию возвращает и сам метод collect.</p>
+<p>Все это сделано довольно хитро: объект <code>collector</code> имеет тип <code>Collector&lt;T, A, R&gt;</code> &#8211; у него аж три типа-параметра. Последний тип <code>R</code> — это обычно и есть тип вроде <code>List&lt;T&gt;</code>. Поэтому компилятор может по этому типу подставить правильный тип результата самого метода <code>collect()</code>.</p>
+<p>Надеюсь, вы не сильно запутались. В любом случае, самому создавать объекты типа Collector вам не нужно. Достаточно просто воспользоваться уже готовыми объектами, которые возвращают статические методы класса <code>Collectors</code>.</p>
+<p><strong>Класс Collectors</strong></p>
+<p>У класса <code>Collectors</code> есть несколько статических методов, которые возвращают готовые объекты-коллекторы на все случаи жизни. Их несколько десятков, но мы рассмотрим самые основные:</p>
+<table>
+    <tbody>
+    <tr>
+        <td>
+            <pre class="language-java"><code>toList()</code></pre>
+        </td>
+        <td>Объект, который преобразует поток в список — <code>List&lt;T&gt;</code></td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>toSet()</code></pre>
+        </td>
+        <td>Объект, который преобразует поток во множество — <code>Set&lt;T&gt;</code></td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>toMap()</code></pre>
+        </td>
+        <td>Объект, который преобразует поток в мэп — <code>Map&lt;K, V&gt;</code></td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>joining()</code></pre>
+        </td>
+        <td>Склеивает элементы потока в одну строку</td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>mapping()</code></pre>
+        </td>
+        <td>Преобразует элементы потока в <code>Map&lt;K, V&gt;</code></td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>groupingBy()</code></pre>
+        </td>
+        <td>Группирует элементы, возвращает <code>Map &lt;K, V&gt;</code></td>
+    </tr>
+    </tbody>
+</table>
+<hr>
+<h2>2. Преобразование потока в список</h2>
+<p>Вот как выглядит типичная работа с потоком и преобразование результата работы в список</p>
+<pre class="language-java"><code><span class="text-neon">ArrayList</span>&lt;<span class="text-orange">String</span>&gt; <span class="text-green">list</span> = new <span class="text-neon">ArrayList</span>&lt;<span class="text-orange">String</span>&gt;();
+<span class="text-neon">Collections</span>.addAll(<span class="text-green">list</span>, "Привет", "как", "дела?");
+
+List&lt;<span class="text-orange">String</span>&gt; result = <span class="text-green">list</span>.<span class="text-red">stream</span>()
+   .<span class="text-red">filter</span>( <span class="text-viola">s -&gt; Character.isUpperCase(s.charAt(0)) </span>)
+   .<span class="text-red">collect</span>( <span class="text-orange">Collectors.toList()</span> );</code></pre>
+<p>Мы получили поток у коллекции, затем у него получили новый поток, отфильтровав только строки, первый символ которых — заглавный. Затем все данные из последнего потока собрали в коллекцию и вернули ее.</p>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1822"></div>
+<hr>
+<h2>3. Преобразование потока во множество</h2>
+<p>Вот как выглядит типичная работа с потоком и преобразование результата работы во множество</p>
+<pre class="language-java"><code><span class="text-neon">ArrayList</span>&lt;<span class="text-orange">String</span>&gt; <span class="text-green">list</span> = new <span class="text-neon">ArrayList</span>&lt;<span class="text-orange">String</span>&gt;();
+<span class="text-neon">Collections</span>.addAll(<span class="text-green">list</span>, "Привет", "как", "дела?");
+
+Set&lt;<span class="text-orange">String</span>&gt; result = <span class="text-green">list</span>.<span class="text-red">stream</span>()
+   .<span class="text-red">filter</span>( <span class="text-viola">s -&gt; Character.isUpperCase(s.charAt(0)) </span>)
+   .<span class="text-red">collect</span>( <span class="text-orange">Collectors.toSet()</span> );</code></pre>
+<p>Все очень похоже на код по преобразованию потока в <code>List</code>, только используется другой объект-коллектор, который возвращает метод <code><span class="text-orange">toSet();</span></code></p>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1823"></div>
+<hr>
+<h2>4. Преобразование потока в мэп</h2>
+<p>А вот преобразовать поток в мэп немного сложнее. Ведь каждый объект Map состоит из двух элементов — ключа и значения. Нам нужно придумать, как у элемента потока мы будем определять ключ, а как — значение.</p>
+<p>Пример.</p>
+<pre class="language-java"><code><span class="text-neon">ArrayList</span>&lt;<span class="text-orange">String</span>&gt; <span class="text-green">list</span> = new <span class="text-neon">ArrayList</span>&lt;<span class="text-orange">String</span>&gt;();
+<span class="text-neon">Collections</span>.addAll(<span class="text-green">list</span>, "a=2", "b=3", "c=4", "d==3");
+
+Map&lt;<span class="text-orange">String</span>, <span class="text-orange">String</span>&gt; result = <span class="text-green">list</span>.<span class="text-red">stream</span>()
+   .<span class="text-red">map</span>( <span class="text-viola">e -&gt; e.split("=")</span> )
+   .<span class="text-red">filter</span>( <span class="text-user">e -&gt; e.length == 2 </span>)
+   .<span class="text-red">collect</span>( <span class="text-green">Collectors.toMap</span>(<span class="text-user">e -&gt; e[0]</span>, <span class="text-viola">e -&gt; e[1]</span>) );</code></pre>
+<p>Давайте разберем, что тут происходит.</p>
+<p>В первой строчке <code>map(...)</code> мы преобразовываем каждую строку в массив строк. Используя метод split, мы делим каждую строку на две части по символу «равно».</p>
+<p>Во второй строке — метод <code>filter()</code> — мы пропускаем через фильтр только те элементы-массивы, которые содержат ровно два элемента. Элемент <code>d == 3</code> был разбит на массив из трех элементов, и фильтр не пройдет.</p>
+<p>И наконец, в последней строке мы превращаем поток в <code>Map&lt;String, String&gt;</code>. В метод <code>toMap()</code> передаются две функции. Для каждого элемента потока <span class="text-user">первая функция должна вернуть ключ</span>, а <span class="text-viola">вторая — значение</span>.</p>
+<p>У нас в качестве ключа будет первый элемент массива ("a", "b", "c"), а в качестве значений — второй элемент массива: "2", "3", "4".</p>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1824"></div>
+<hr>
+<h2>5. Преобразование потока в строку</h2>
+<p>Еще один интересный объект-коллектор — это <code><span class="text-viola">Collectors.joining()</span></code>. Он преобразовывает все элементы потока к типу <code>String</code> и склеивает их в одну строку. Пример</p>
+<pre class="language-java"><code><span class="text-neon">ArrayList</span>&lt;<span class="text-orange">String</span>&gt; <span class="text-green">list</span> = new <span class="text-neon">ArrayList</span>&lt;<span class="text-orange">String</span>&gt;();
+<span class="text-neon">Collections</span>.addAll(<span class="text-green">list</span>, "a=2", "b=3", "c=4", "d==3");
+String <span class="text-user">result</span> = <span class="text-green">list</span>.<span class="text-red">stream</span>().<span class="text-red">collect</span>( <span class="text-viola">Collectors.joining</span>(<span class="text-viola">", "</span>) );</code></pre>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1825"></div>

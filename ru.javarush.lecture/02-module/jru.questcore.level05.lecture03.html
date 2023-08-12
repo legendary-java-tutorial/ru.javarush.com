@@ -1,0 +1,96 @@
+Перегрузка методов | часть 2
+<p>----------------------------------------</p>
+Перегрузка методов не должна приводить к перегрузке мозгов. Вот почему учителя секретного центра JavaRush выдают вам знания по той или иной теме небольшими порциями. Вы уже слышали, что каждый метод класса должен быть уникальным, а уникален он тогда, когда в классе нет метода с таким же именем и типом параметров, где порядок параметров имеет значение. Углубляемся в тему!
+<p>----------------------------------------</p>
+<p>&#8212; Привет, Амиго! Пару дней назад я тебе рассказывал о перегрузке методов. Ты все понял?</p>
+<p><span class="text-user">&#8212; Да. Я помню. Каждый метод класса должен быть уникальным. Метод класса уникальный, если в этом классе нет метода с таким же именем и типом параметров, где порядок параметров имеет значение. </span></p>
+<p>&#8212; Отлично! Я вижу, что ты хорошо выучил тот урок. Сегодня я хочу лишь немного расширить твои познания в этом деле. Как ты думаешь, какой метод будет вызван в каждом случае?</p>
+<div class="code-heading">Код</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Cat
+{
+ public static void print(int n)
+ {
+  System.out.println(n);
+ }
+ public static void print(short n)
+ {
+  System.out.println(n);
+ }
+ public static void print(Integer n)
+ {
+  System.out.println(n);
+ }
+ public static void print(String s)
+ {
+  System.out.println(s);
+ } 
+public static void main(String[] args)
+{
+  Cat.print(1);
+  Cat.print((byte)1);
+  Cat.print("1");
+  Cat.print(null);
+ }
+}</code></pre>
+<p><span class="text-user">&#8212; Затрудняюсь ответить.</span></p>
+<p>&#8212; В первом случае 1 имеет тип int, у нас есть 100% совпадение метода, который принимает int. Будет вызван первый <strong>void print(int n).</strong></p>
+<p>Во втором случае, у нас нет метода, который принимает byte. Но есть два метода, которые принимают short и int. По стандарту расширения типов, byte сначала будет расширен до short, а уж затем расширен до int. Вердикт – будет вызван метод <strong>void print(short n).</strong></p>
+<p>В третьем случае у нас есть 100% совпадение метода, который принимает String. Будет вызван метод <strong>void print(String s).</strong></p>
+<p>В четвертом случае у нас неопределенность. <span class="text-red">null не имеет определенного типа, компилятор откажется компилировать этот код</span>. В таком случае нужно написать <strong>Cat.print((Integer)null)</strong>, чтобы вызвать третий метод и <strong>Cat.print((String)null)</strong>, чтобы вызвать четвертый.</p>
+<p><span class="text-user">&#8212; Очень познавательно, спасибо.</span></p>
+<p>&#8212; Обращаю твое внимание, что в процессе определения метода, который нужно вызвать, типы могут только расширяться, но не сужаться. Пример:</p>
+<div class="code-heading">Код</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Cat
+{
+ public static void print(<span class="text-red">short</span> n)
+ {
+  System.out.println(n);
+ }
+ public static void print(<span class="text-red">Integer</span> n)
+ {
+  System.out.println(n);
+ }
+
+ public static void main(String[] args)
+ {
+  Cat.print(<span class="text-red">(byte)1</span>);
+  Cat.print(<span class="text-red">1</span>);
+ }
+}</code></pre>
+<p>В первом случает, тип byte будет расширен до short и произойдет вызов первого метода: <strong>void print(short n).</strong></p>
+<p>Во втором случае неявно будет выполнено разрешенное преобразование от int к Integer, и произойдет вызов второго метода <strong>void print(Integer n).</strong></p>
+<p><span class="text-user">&#8212; Неожиданно.</span></p>
+<p>&#8212; Нет, неожиданно – это тут:</p>
+<table>
+<tbody>
+<tr>
+<th>Код на Java</th>
+<th>Описание</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code> class Cat
+{
+ public static void print(<span class="text-red">Object</span> o)
+ {
+  System.out.println(o);
+ }
+ public static void print(<span class="text-red">String</span> s)
+ {
+  System.out.println(s);
+ }
+
+ public static void main(String[] args)
+ {
+  Cat.print(<span class="text-red">1</span>);
+  Cat.print(<span class="text-red">null</span>);
+ }
+}</code></pre>
+</td>
+<td>В первом случае int будет расширен до Integer, а так как нет метода для Integer, то вызовется наиболее подходящий метод, т.е. метод <strong>void print(Object o)</strong></p>
+<p>Во втором случае, ошибки компиляции не будет и вызовется метод <strong>void print(String s)</strong>, что несколько не очевидно.</td>
+</tr>
+</tbody>
+</table>
+<p>&#8212; Надеюсь, Амиго ты понял, что лучше всего в таких случаях указать оператор преобразования типа, как в случае с (byte), чтобы точно знать, какой метод вызовется.</p>
+<p><span class="text-user">&#8212; Уж от чего, от чего, а от перегрузки методов я никаких проблем не ожидал. И тут – на тебе. Спасибо, Риша, буду держать ухо востро и не расслабляться.</span></p>

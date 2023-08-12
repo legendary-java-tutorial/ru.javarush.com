@@ -1,0 +1,119 @@
+Работа с иерархиями сущностей
+<p>----------------------------------------</p>
+Проблемы сохранения. 
+Виды решений. 
+@MappedSuperClass.
+<p>----------------------------------------</p>
+<h2>Проблемы сохранения</h2>
+
+<p>Сегодня у нас будет новая и суперинтересная схема — использование возможностей Hibernate для сохранения в базу иерархии классов.</p>
+
+<p><span class="text-green">Иерархия классов — это несколько классов, связанных друг с другом отношением наследования.</span></p>
+
+<p>Представь, что у тебя есть три класса, которые ты хочешь хранить в базе:</p>
+ 
+<pre class='language-java line-numbers'><code>
+class User {
+  int id;
+  String name;
+  LocalDate birthday;
+}
+</code></pre>
+ 
+<pre class='language-java line-numbers'><code>
+class Employee extends User {
+ 	String occupation;
+ 	int salary;
+ 	LocalDate join;
+}
+</code></pre>
+ 
+<pre class='language-java line-numbers'><code>
+class Client extends User {
+   String address;
+}
+</code></pre>
+ 
+<p>Классы унаследованы друг от друга. А самое интересное в том, что ты хочешь использовать Hibernate для того, чтобы хранить объекты этих классов в базе данных.</p>
+
+<h2>Виды решений</h2>
+
+<p>В Hibernate существует 4 возможных способа, которыми он может связать иерархию классов с таблицами в базе данных:</p>
+
+<ul>
+<li><strong>MappedSuperclass</strong></li>
+<li><strong>Single Table</strong></li>
+<li><strong>Joined Table</strong></li>
+<li><strong>Table per class</strong></li>
+</ul>
+
+<p>Каждая стратегия предполагает свою собственную структуру таблиц в базе данных. Иногда они довольно сложные. Зато запросы на HQL к ним очень простые. Это как раз тот случай, где ярко проявляются преимущества Hibernate.</p>
+
+<p>Никогда не слышал, чтобы эти термины переводили на русский, так что тоже рекомендую произносить их на английском.</p>
+
+<p>Ниже мы разберем, что означает каждый их них.</p>
+
+<h2>@MappedSuperClass</h2>
+
+<p>Начнем с самого простого решения — <span class="text-green">в базе данных у тебя отдельные таблицы для каждого класса</span>. Например, такие:</p>
+
+<pre class='language-java line-numbers'><code>
+CREATE TABLE user {
+  id INT,
+  name VARCHAR,
+  birthday DATE
+}
+</code></pre>
+
+<pre class='language-java line-numbers'><code>
+CREATE TABLE employee {
+  id INT,
+  name VARCHAR,
+  birthday DATE,
+  occupation VARCHAR,
+  salary INT,
+  join DATE
+}
+</code></pre>
+
+<pre class='language-java line-numbers'><code>
+CREATE TABLE client {
+  id INT,
+  name VARCHAR,
+  birthday DATE,
+  address VARCHAR
+}
+</code></pre>
+
+<p>О том, что классы для этих таблиц связаны в иерархию, <span class="text-red">знаешь только ты</span>. Если ты хочешь, чтобы еще и Hibernate об этом знал, тебе нужно добавить родительскому классу аннотацию <span class="text-yellow"><span class="text-bold">@MappedSuperclass</span>. Без нее Hibernate просто проигнорирует поля и аннотации родительского класса.</p>
+
+<p>Классы с этой аннотацией будут выглядеть так:</p>
+
+<pre class='language-java line-numbers'><code>
+@MappedSuperclass
+class User {
+  int id;
+  String name;
+  LocalDate birthday;
+}
+</code></pre>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+class Employee extends User {
+ 	String occupation;
+ 	int salary;
+ 	LocalDate join;
+}
+</code></pre>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+class Client extends User {
+   String address;
+}
+</code></pre>
+
+<p>Это самый примитивный способ связывания иерархии классов и базы данных. Такой подход фактически позволяет тебе только избежать дубликата полей в классах.</p>
+
+<p>Запросы к базе данных на HQL будут возвращать только ту сущность, тип которой указан явно. Ты не можешь написать запрос к базе на HQL и получить список всех пользователей: User, Employee, Client.</p>

@@ -1,0 +1,88 @@
+Вызов функций SQL-сервера
+<p>----------------------------------------</p>
+CallableStatement. 
+Batching запросов.
+<p>----------------------------------------</p>
+<h2>CallableStatement</h2>
+
+<p>У JDBC есть еще один интерфейс для еще более сложных сценариев. Он унаследован от <span class="text-neon"><span class="text-bold"><em>PreparedStatement</em></span></span> и называется <span class="text-neon"><span class="text-bold"><em>CallableStatement</em></span></span>.</p>
+
+<p>Он используется для вызова (Call) хранимых процедур в базе данных. Особенность такого вызова в том, что кроме результата <span class="code"><span class="text-green">ResultSet</span></span> такой хранимой процедуре можно еще и передать параметры.</p>
+
+<p>А что тут нового, спросишь ты? <span class="text-neon"><span class="text-bold"><em>PreparedStatement</em></span></span> тоже имеет результат <span class="code"><span class="text-green">ResultSet</span></span> и в него тоже можно передавать параметры. Да, все верно, но особенность хранимых процедур в том, что через параметры они могут не только получать, но и возвращать данные.</p>
+
+<p>Хранимая процедура вызывается с параметрами <strong>IN</strong>, <strong>OUT</strong> и <strong>INOUT</strong>. Она возвращает один или несколько объектов <span class="code"><span class="text-green">ResultSet</span></span>. Для создания объекта <span class="text-neon"><span class="text-bold"><em>CallableStatement</em></span></span> предназначен метод <span class="code text-orange">Connection.prepareCall()</span>.</p>
+
+<p>Вот представь, что у тебя есть хранимая процедура ADD, которая принимает параметры a, b и c. Эта процедура складывает a и b и помещает результат сложения в переменную с.</p>
+
+<p>Давай напишем код, где попробуем ее вызвать:</p>
+
+<pre class='language-java line-numbers'><code>
+ 	// Подключение к серверу
+ 	Connection connection = DriverManager.getConnection("jdbc:as400://mySystem");
+ 
+ 	// Создание объекта CallableStatement. Он выполняет предварительную обработку
+ 	// вызова хранимой процедуры. Знаки вопроса
+ 	// указывают, где должны быть подставлены входные параметры, а где выходные
+ 	// Первые два параметра являются входными,
+ 	// а третий — выходным.
+ 	CallableStatement statement = connection.prepareCall("CALL MYLIBRARY.ADD (?, ?, ?)");
+ 
+ 	// Настройка входных параметров. Передаем в процедуру 123 и 234
+ 	statement.setInt (1, 123);
+ 	statement.setInt (2, 234);
+ 
+ 	// Регистрация типа выходного параметра
+ 	statement.registerOutParameter (3, Types.INTEGER);
+ 
+ 	// Запуск хранимой процедуры
+ 	statement.execute();
+ 
+ 	// Получение значения выходного параметра
+ 	int sum = statement.getInt(3);
+ 
+ 	// Закрытие CallableStatement и Connection
+ 	statement.close();
+ 	connection.close();
+</code></pre>
+
+<p>Работа почти как с <span class="text-neon"><span class="text-bold"><em>PreparedStatement</em></span></span>, только есть нюанс. Наша функция ADD возвращает в третьем параметре результат сложения. Только вот объект <span class="text-neon"><span class="text-bold"><em>CallableStatement</em></span></span> об этом ничего не знает. Поэтому мы говорим ему об это явно, вызвав метод <span class="code text-orange">registerOutParameter()</span>:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">registerOutParameter</span>(<span class="text-green">номерПараметра</span>, <span class="text-user">типПараметра</span>)</code></pre>
+    </div>
+
+<p>После этого можно вызывать процедуру через метод <span class="code text-orange">execute()</span> и затем читать данные из третьего параметра с помощью методa <span class="code text-orange">getInt()</span>.</p>
+
+<h2>Batching запросов</h2>
+
+<p>В реальных проектах часто возникает ситуация, когда необходимо сделать очень много однотипных запросов (наиболее часто в этом случае встречается <span class="text-neon"><span class="text-bold"><em>PreparedStatement</em></span></span>), например, надо вставить несколько десятков или сотен записей.</p>
+
+<p>Если выполнять каждый запрос отдельно, то это займет кучу времени и снизит производительность приложения. Чтобы не допустить этого, можно использовать batch-режим вставки. Он заключается в том, что ты накапливаешь некоторый буфер своими запросами, а потом выполняешь их сразу.</p>
+
+<p>В качестве примера приведу кусочек кода:</p>
+
+<pre class='language-java line-numbers'><code>
+PreparedStatement stmt = con.prepareStatement(
+        	"INSERT INTO jc_contact (first_name, last_name, phone, email) VALUES (?, ?, ?, ?)");
+ 
+for (int i = 0; i < 10; i++) {
+	// Заполняем параметры запроса
+	stmt.setString(1, "FirstName_" + i);
+    stmt.setString(2, "LastNAme_" + i);
+    stmt.setString(3, "phone_" + i);
+    stmt.setString(4, "email_" + i);
+	// Запрос не выполняется, а укладывается в буфер,
+	//  который потом выполняется сразу для всех команд
+	stmt.addBatch();
+}
+// Выполняем все запросы разом
+int[] results = stmt.executeBatch();
+</code></pre>
+
+<p>Вместо того, чтобы выполнять запрос методом <span class="code text-orange">execute()</span>, мы складываем его в пакет с помощью метода <span class="code text-orange">addBatch()</span>.</p>
+
+<p>А затем, когда набралось несколько сотен запросов, можно их разом отправить на сервер, вызвав команду <span class="code text-orange">executeBatch()</span>.</p>
+
+<p><strong>Полезно.</strong> Метод <span class="code text-orange">executeBatch()</span> возвращает массив целых чисел — int[]. Каждая ячейка этого массива содержит число, которое означает количество строк, измененных соответствующим запросом. Если запрос номер 3 в batch’е изменил 5 строк, то 3-я ячейка массива будет содержать число 5.</p>

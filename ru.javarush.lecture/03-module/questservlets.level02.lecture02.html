@@ -1,0 +1,221 @@
+Сборка war-проекта
+<p>----------------------------------------</p>
+Отличия war и jar-файлов. 
+Плагин создания war-файла с помощью maven-war-plugin. 
+Сборка web-приложения на основе SpringBoot.
+<p>----------------------------------------</p>
+    <h2>Отличия war и jar-файлов</h2>
+
+    <p>Фактически jar-библиотека – это просто zip архив, что напрямую следует из его имени: <span class="text-bold"><span class="text-red">J</span>ava <span class="text-red">Ar</span>chive</span>. Чаще всего он содержит просто четыре вещи:</p>
+
+    <ul>
+        <li>скомпилированные классы;</li>
+        <li>ресурсы: properties-файлы и тому подобное;</li>
+        <li>манифест MANIFEST.MF;</li>
+        <li>другие jar-библиотеки (редко).</li>
+    </ul>
+
+    <p>Типичная структура такого архива имеет вид:</p>
+ 
+    <pre><code>  META-INF/
+  	MANIFEST.MF
+  com/
+  	javarush/
+	      MyApplication.class
+  application.properties
+</code></pre>
+ 
+    <p>Теперь давай рассмотрим типичный war-файл. Кстати, war не от слова война, а от <span class="text-bold"><span class="text-red">W</span>eb <span class="text-red">Ar</span>chive</span>. Структура war-файла обычно посложнее. Чаще всего он состоит из двух частей:</p>
+
+    <ul>
+        <li><span class="text-bold">Java-часть</span>
+            <ul>
+                <li>скомпилированные классы</li>
+                <li>ресурсы для java-классов: properties-файлы и тому подобное</li>
+                <li>другие jar-библиотеки (часто)</li>
+                <li>манифест MANIFEST.MF</li>
+            </ul>
+        </li>
+        <li><span class="text-bold">Web-часть</span>
+            <ul>
+                <li>web-xml – дескриптор развертывания веб-сервиса</li>
+                <li>jsp-сервелеты</li>
+                <li>статические веб-ресурсы: HTML, CSS, JS-файлы</li>
+            </ul>
+        </li>
+    </ul>
+
+    <p>Пример типичного war-файла:</p>
+ 
+    <pre><code>META-INF/
+    MANIFEST.MF
+WEB-INF/
+    web.xml
+    jsp/
+    	helloWorld.jsp
+    classes/
+    	static/
+    	templates/
+    	application.properties
+    lib/
+    	// *.jar files as libs
+</code></pre>
+ 
+    <p><span class="text-bold">Важно!</span> jar-файл может запустить просто java-машина, для запуска же war-файла его нужно загрузить на веб-сервер. Самостоятельно он не запускается.</p>
+ 
+    <h2>Плагин создания war-файла с помощью maven-war-plugin</h2>
+
+    <p>Давайте представим, что у нас есть простой веб-проект. Пусть проект задается такой структурой файлов, как нам его собрать?</p>
+
+    <pre><code>|-- pom.xml
+ `-- src
+ 	`-- main
+     	|-- java
+     	|   `-- com
+     	|   	`-- example
+     	|       	`-- projects
+     	|           	`-- SampleAction.java
+     	|-- resources
+     	|   `-- images
+     	|   	`-- sampleimage.jpg
+     	`-- webapp
+         	|-- WEB-INF
+         	|   `-- web.xml
+         	|-- index.jsp
+         	`-- jsp
+             	`-- websource.jsp
+</code></pre>
+
+    <p>Во-первых, нам нужно указать Maven, собрать все это в виде <span class="text-bold">war-файла</span>, для этого есть тег <span class="text-bold">&lt;package></span>, пример:</p>
+
+    <pre><code><span class="text-viola">	&lt;project>
+  	...
+      &lt;groupId>com.example.projects&lt;/groupId>
+      &lt;artifactId>simple-war&lt;/artifactId></span>
+  	<span class="text-red">&lt;packaging>war&lt;/packaging></span>
+      <span class="text-viola">&lt;version>1.0-SNAPSHOT&lt;/version>
+  	&lt;name>Simple War Project&lt;/name>
+      &lt;url>http://javarush.com&lt;/url>
+  	...
+    &lt;/project></span>
+</code></pre>
+
+    <p>Во-вторых, нам нужно подключить плагин <span class="text-bold">maven-war-plugin</span>. Пример:</p>
+
+<pre><code>  <span class="text-viola">&lt;build>
+	&lt;plugins>
+  	&lt;plugin></span>
+        <span class="text-green">&lt;groupId>org.apache.maven.plugins&lt;/groupId>
+        &lt;artifactId>maven-war-plugin&lt;/artifactId>
+    	&lt;version>3.3.2&lt;/version></span>
+    	<span class="text-neon">&lt;configuration>
+          &lt;webappDirectory>/sample/servlet/container/deploy/directory&lt;/webappDirectory>
+    	&lt;/configuration></span>
+      <span class="text-viola">&lt;/plugin>
+    &lt;/plugins>
+  &lt;/build></span>
+</code></pre>
+
+    <p>Тут мы просто задаем плагин, который в будущем можно конфигурировать. Также с помощью тега <span class="text-neon">webappDirectory</span> переопределяем директорию, в которую будет развернут проект. Сейчас расскажу подробнее, о чем идет речь.</p>
+
+    <p>Плагину можно задать два режима сборки (два вида goal):</p>
+
+    <ul>
+        <li><span class="text-bold">war:war</span></li>
+        <li><span class="text-bold">war:exploded</span></li>
+    </ul>
+
+    <p>В первом случает итоговый war-файл просто кладется в папку <span class="text-bold">target</span> и имеет имя <span class="text-bold">&lt;artifactId>-&lt;version>.war</span>.</p>
+
+    <p>Но можно “попросить” плагин, чтобы в итоговую папку содержимое war-файла было помещено в том состоянии, в котором оно будет распаковано веб-сервером у себя внутри. Для этого используется goal <span class="text-bold">war:exploded</span>.</p>
+
+    <p>Второй подход используется часто, если ты запускаешь или дебажишь проект прямо из Intellij IDEA.</p>
+
+    <p>Кстати, тег <span class="text-neon">webappDirectory</span> в примере выше позволяет переопределить директорию куда будет распакован ваш war-файл при сборке в режиме war:exploded.</p>
+
+    <p>О других настройках плагина вы можете узнать из его <a href="https://maven.apache.org/plugins/maven-war-plugin/usage.html" target="_blank">официальной странички</a>.</p>
+
+    <h2>Сборка web-приложения на основе SpringBoot</h2>
+
+    <p>Ну и хотелось бы разобрать какой-нибудь реальный пример сборки. Давай не мелочиться и рассмотрим это на примере приложения на основе SpringBoot.</p>
+
+    <p><span class="text-bold">Шаг первый.</span> Создай пустой Maven web-проект с помощью IDEA.</p>
+
+    <p><span class="text-bold">Шаг второй.</span> Добавь в его pom.xml зависимости от Spring.</p>
+
+    <pre><code>&lt;dependency>
+    &lt;groupId>org.springframework.boot&lt;/groupId>
+    &lt;artifactId>spring-boot-starter-thymeleaf&lt;/artifactId>
+&lt;/dependency>
+&lt;dependency>
+    &lt;groupId>org.springframework.boot&lt;/groupId>
+    &lt;artifactId>spring-boot-starter-web&lt;/artifactId>
+&lt;/dependency>
+&lt;dependency>
+    &lt;groupId>org.springframework.boot&lt;/groupId>
+    &lt;artifactId>spring-boot-starter-tomcat&lt;/artifactId>
+    &lt;scope>provided&lt;/scope>
+&lt;/dependency>
+</code></pre>
+
+    <p><span class="text-bold">Шаг третий.</span> Создай класс <span class="code"><span class="text-green">com.javarush.spring.MainController</span></span>. Его нужно разместить в папке <span class="text-bold">src/main/java</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+@Controller
+public class MainController {
+ 
+	@GetMapping("/")
+    public String viewIndexPage(Model model) {
+        model.addAttribute("header", "Maven Generate War");
+    	return "index";
+	}
+}
+</code></pre>
+
+    <p>Тут описаны 3 вещи. Во-первых, <span class="text-green">аннотация @Controller</span> указывает фреймворку SpringBoot, что этот класс будет использоваться для обслуживания входящих веб-запросов.</p>
+
+    <p>Во-вторых, <span class="text-green">аннотация @GetMapping</span>, указывает, что наш метод будет вызываться для обслуживания GET-запроса на корневой URI - /</p>
+
+    <p>В-третьих, метод возвращает строку <span class="text-red">"index"</span>. Это говорит фреймворку SpringBoot, что в качестве ответа нужно отдать содержимое файла <span class="text-red">index.html</span>.</p>
+
+    <p><span class="text-bold">Шаг четвертый.</span> Нужно добавить в проект файл index.html с таким содержимым:</p>
+
+    <pre><code>&lt;!DOCTYPE html>
+&lt;html lang="en" xmlns:th="http://www.thymeleaf.org">
+&lt;html lang="en">
+&lt;head>
+    &lt;meta charset="UTF-8">
+    &lt;title>Index&lt;/title>
+    &lt;!-- Bootstrap core CSS -->
+    &lt;link <span class="text-red">th:href="@{/css/bootstrap.min.css}"</span> rel="stylesheet">
+&lt;/head>
+&lt;body>
+    &lt;nav class="<span class="text-green">navbar navbar-light bg-light</span>">
+    	&lt;div class="<span class="text-green">container-fluid</span>">
+        	&lt;a class="<span class="text-green">navbar-brand</span>" href="#">
+            	JavaRush Tutorial
+        	&lt;/a>
+    	&lt;/div>
+    &lt;/nav>
+    &lt;div class="<span class="text-green">container</span>">
+    	&lt;h1><span class="text-red">[[${header}]]</span>&lt;/h1>
+    &lt;/div>
+&lt;/body>
+&lt;/html>
+</code></pre>
+
+    <p>Это не просто html. Перед тем, как его содержимое отдадут клиенту, оно будет модифицировано на сервере фреймворком <a href="https://habr.com/ru/post/435062/" target="_blank">Thymeleaf</a>. В этот файл встроены специальные теги, которые позволяют библиотеке Thymeleaf обрабатывать и модифицировать содержимое страницы.</p>
+
+    <p>Красным отображены теги, которые будут обработаны библиотекой Thymeleaf, зеленым – стили CSS-библиотеки Bootstrap.</p>
+
+    <p><span class="text-bold">Шаг пятый.</span> Задаем плагин в pom.xml:</p>
+
+    <pre><code>&lt;plugin>
+    &lt;artifactId>maven-war-plugin&lt;/artifactId>
+    &lt;version>3.3.1&lt;/version>
+&lt;/plugin>
+</code></pre>
+
+    <p>Немного переоценил свои силы. Чтобы полностью разобрать простой пример, нужно много времени. Но ты можешь скачать полный код проекта из GitHub и попробовать разобраться в нем самостоятельно. Кстати, процентов 80% своего рабочего времени ты будешь делать именно это :)</p>
+
+    <p>Полный код ты можешь скачать <a href="https://github.com/eugenp/tutorials/tree/master/maven-modules/maven-generate-war" target="_blank">по ссылке в GitHub</a>.</p>

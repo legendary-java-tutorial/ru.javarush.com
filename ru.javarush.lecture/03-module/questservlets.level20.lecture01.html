@@ -1,0 +1,143 @@
+Библиотека apache-commons-lang
+<p>----------------------------------------</p>
+Сложный метод equals()
+Сложный метод hashCode()
+Сложный метод toString()
+<p>----------------------------------------</p>
+<h2>Сложный метод equals ()</h2>
+
+<p>Чтобы легко реализовать метод <span class="code text-orange">equals</span>, можно использовать класс <span class="code"><span class="text-green">EqualsBuilder</span></span>. Вот несколько примеров, которые покажут, как это работает.</p>
+
+<p>Задавание определенных полей для сравнения:</p>
+
+<pre class='language-java line-numbers'><code>
+public class User {
+   private String name;
+   private String email;
+
+   @Override
+   public boolean equals(Object o) {
+       if (this == o) return true;
+
+       if (!(o instanceof User user)) return false;
+
+       return new EqualsBuilder().append(name, user.name).append(email, user.email).isEquals();
+   }
+}
+</code></pre>
+
+
+<p>Также этот класс умеет сравнивать объекты через reflection:</p>
+
+<pre class='language-java line-numbers'><code>
+@Override
+public boolean equals(Object obj) {
+   return EqualsBuilder.reflectionEquals(this, obj);
+}
+</code></pre>
+
+<h4>Сложный метод hashCode ()</h4>
+
+<p>Чтобы реализовать метод <span class="code text-orange">hashCode</span>, необходимо использовать класс <span class="code"><span class="text-green">HashCodeBuilder</span></span>. </p>
+
+<p>Выбор полей:</p>
+
+<pre class='language-java line-numbers'><code>
+@Override
+public int hashCode() {
+   return new HashCodeBuilder(17, 37)
+           .append(name)
+           .append(email)
+           .toHashCode();
+}
+</code></pre>
+
+<p>Использование reflection для построения hash-code:</p>
+
+<pre class='language-java line-numbers'><code>
+@Override
+public int hashCode() {
+   return HashCodeBuilder.reflectionHashCode(this);
+}
+
+Используем reflection и игнорируем определенные поля:
+@Override
+public int hashCode() {
+   return HashCodeBuilder.reflectionHashCode(this, "name");
+}
+</code></pre>
+
+<h2>Сложный метод toString ()</h2>
+
+<p>По аналогичной схеме можно даже реализовать метод <span class="code text-orange">toString()</span>. Опять-таки используем класс <span class="code"><span class="text-green">ToStringBuilder</span></span>.</p>
+
+<p>Поля задаются как и в предыдущих двух случаях:</p>
+
+<pre class='language-java line-numbers'><code>
+@Override
+public String toString() {
+   return new ToStringBuilder(this)
+           .append(name)
+           .append(email)
+           .toString();
+}
+</code></pre>
+
+<p>Пример результата:</p>
+
+<pre><code>org.example.User@4b67cf4d[name=John,email=email@email.com]
+</code></pre>
+
+<p>Также можно явно указать имена полей:</p>
+
+<pre class='language-java line-numbers'><code>
+@Override
+public String toString() {
+   return new ToStringBuilder(this)
+           .append("nameUser", name)
+           .append("emailUser", email)
+           .toString();
+}
+</code></pre>
+
+<p>Пример результата:</p>
+
+<pre><code>org.example.User@4b67cf4d[nameUser=John,emailUser=email@email.com]
+</code></pre>
+
+<p>Можно изменить стиль текста с помощью настроек:</p>
+
+<pre class='language-java line-numbers'><code>
+@Override
+public String toString() {
+   return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+           .append(name)
+           .append(email)
+           .toString();
+}
+</code></pre>
+
+<p>Пример результата:</p>
+
+<pre><code>User[John,emailUser=email@email.com]
+</code></pre>
+
+<p>Есть несколько стилей, например JSON, no Classname, short и другие.</p>
+
+<p>Использование reflection:</p>
+
+<pre class='language-java line-numbers'><code>
+@Override
+public String toString() {
+   return ToStringBuilder.reflectionToString(this);
+}
+</code></pre>
+
+<p>Использование reflection и указание определенного стиля:</p>
+
+<pre class='language-java line-numbers'><code>
+@Override
+public String toString() {
+   return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
+}
+</code></pre>

@@ -1,0 +1,247 @@
+Потоки для ввода данных
+<p>----------------------------------------</p>
+Потоки данных Любая программа редко существует сама по себе. Обычно программа как-то взаимодействует с «внешним миром». Это могут быть считывание данных с клавиатуры, отправка сообщений, загрузка страниц из интернета или, наоборот, загрузка файлов удалённый на сервер. Все эти вещи мы можем назва
+<p>----------------------------------------</p>
+<h2>1. Потоки данных</h2>
+<p>Любая программа редко существует сама по себе. Обычно она как-то взаимодействует с «внешним миром». Это может быть считывание данных с клавиатуры, отправка сообщений, загрузка страниц из интернета или, наоборот, загрузка файлов на удалённый сервер.</p>
+<p>Все эти вещи мы можем назвать одним словом — <strong>процесс обмена данными</strong> между программой и внешним миром. Хотя это уже не одно слово.</p>
+<p>Сам процесс обмена данными можно разделить на два типа: получение данных и отправка данных. Например, вы считываете данные с клавиатуры с помощью объекта <code>Scanner</code> — это получение данных. И выводите данные на экран с помощью команды <code>System.out.println()</code> — это отправка данных.</p>
+<p><span class="text-green">Для описания процесса обмена данными в программировании используется термин поток.</span> Откуда вообще взялось такое название?</p>
+<p>В реальной жизни им может быть поток воды или поток людей (людской поток). В программировании же под потоком подразумевают<strong> поток данных.</strong></p>
+<p>Потоки — это универсальный инструмент. Они позволяют программе получать данные откуда угодно (входящие потоки) и отправляют данные куда угодно (исходящие потоки). Делятся на два вида:</p>
+<ul>
+    <li>Входящий поток (Input): используется для получения данных</li>
+    <li>Исходящий поток (Output): используется для отправки данных</li>
+</ul>
+<p>Чтобы потоки можно было «потрогать руками», разработчики Java написали два класса: <code>InputStream</code> и <code>OutputStream</code>.</p>
+<p>У класса <code>InputStream</code> есть метод <code>read()</code>, который позволяет читать из него данные. А у класса <code>OutputStream</code> есть метод <code>write()</code>, который позволяет записывать в него данные. У них есть и другие методы, но об этом после.</p>
+<p><strong>Байтовые потоки</strong></p>
+<p>Что же это за данные и в каком виде их можно читать? Другими словами, какие типы данных поддерживаются этими классами?</p>
+<p>О, это универсальные классы, и поэтому они поддерживают самый распространённый тип данных — <code>byte</code>. В <code>OutputStream</code> можно записывать байты (и массивы байт), а из объекта <code>InputStream</code> можно читать байты (или массивы байт). Все — никакие другие типы данных они не поддерживают.</p>
+<p>Поэтому такие потоки еще называют <span class="term">байтовыми потоками</span>.</p>
+<p>Особенность потоков в том, что данные из них можно читать (писать) только последовательно. Вы не можете прочитать данные из середины потока, не прочитав все данные перед ними.</p>
+<p>Именно так работает чтение с клавиатуры через класс <code>Scanner</code>: вы читаете данные с клавиатуры последовательно: строка за строкой. Прочитали строку, прочитали следующую строку, прочитали следующую строку и т.д. Поэтому метод чтения строки и называется <code>nextLine()</code> (дословно — «следующая строка»).</p>
+<p>Запись данных в поток <code>OutputStream</code> тоже происходит последовательно. Хороший пример — вывод на экран. Вы выводите строку, за ней еще одну и еще одну. Это последовательный вывод. Вы не можете вывести 1-ю строку, затем 10-ю, а затем вторую. Все данные записываются в поток вывода только последовательно.</p>
+<p><strong>Символьные потоки</strong></p>
+<p>Недавно вы изучали, что строки — второй по популярности тип данных, и это действительно так. Очень много информации передается в виде символов и целых строк. Компьютер отлично бы передавал все в виде байт, но люди не настолько идеальны.</p>
+<p>Java-программисты учли этот факт и написали еще два класса: <code>Reader</code> и <code>Writer</code>. Класс <code>Reader</code> — это аналог класса <code>InputStream</code>, только его метод <code>read()</code> читает не байты, а символы — <code>char</code>. Класс <code>Writer</code> соответствует классу <code>OutputStream</code>, и так же, как и класс <code>Reader</code>, работает с символами (<code>char</code>), а не байтами.</p>
+<p>Если сравнить эти четыре класса, мы получим такую картину:</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th width="37%" class="text-center">Байты (byte)</th>
+        <th width="37%" class="text-center">Символы (char)</th>
+    </tr>
+    <tr>
+        <td class="text-center"><span class="text-bold">Чтение&nbsp;данных</span></td>
+        <td>
+            <pre class="text-center"><code>InputStream</code></pre>
+        </td>
+        <td>
+            <pre class="text-center"><code>Reader</code></pre>
+        </td>
+    </tr>
+    <tr>
+        <td class="text-center"><span class="text-bold">Запись&nbsp;данных</span></td>
+        <td>
+            <pre class="text-center"><code>OutputStream</code></pre>
+        </td>
+        <td>
+            <pre class="text-center"><code>Writer</code></pre>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p><strong>Практическое применение</strong></p>
+<p>Сами классы <code>InputStream</code>, <code>OutputStream</code>, <code>Reader</code> и <code>Writer</code> в явном виде никто не использует: они не присоединены ни к каким внешним объектам, из которых можно читать данные (или в которые можно писать данные). Однако у этих четырех классов много классов-наследников, которые умеют очень многое.</p>
+<hr>
+<h2>2. Класс <code>InputStream</code></h2>
+<p>Класс <code>InputStream</code> интересен тем, что является классом-родителем для сотен классов-наследников. В нем самом нет никаких данных, однако у него есть методы, которые есть у всех его классов-наследников.</p>
+<p>Объекты-потоки вообще редко хранят в себе данные. Поток — это инструмент чтения/записи данных, но не хранения. Хотя бывают и исключения.</p>
+<p>Методы класса <code>InputStream</code> и всех его классов-наследников:</p>
+<table>
+    <tbody>
+    <tr>
+        <th width="50%">Методы</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>int <span class="text-red">read</span>()</code></pre>
+        </td>
+        <td>Читает один байт из потока</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>int <span class="text-red">read</span>(byte[] buffer)</code></pre>
+        </td>
+        <td>Читает массив байт из потока</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>byte[] <span class="text-red">readAllBytes</span>()</code></pre>
+        </td>
+        <td>Читает все байты из потока</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>long <span class="text-red">skip</span>(long n)</code></pre>
+        </td>
+        <td>Пропускает <code>n</code> байт в потоке (читает и выкидывает)</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>int <span class="text-red">available</span>()</code></pre>
+        </td>
+        <td>Проверяет, сколько байт еще осталось в потоке</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>void <span class="text-red">close</span>()</code></pre>
+        </td>
+        <td>Закрывает поток</td>
+    </tr>
+    </tbody>
+</table>
+<p>Вкратце пройдемся по этим методам:</p>
+<p><strong>Метод <code>read()</code></strong></p>
+<p>Метод <code>read()</code> читает <span class="text-bold">один байт</span> из потока и возвращает его. Вас может сбить тип результата — <code>int</code>, однако так было сделано, потому что тип <code>int</code> — это стандарт всех целых чисел. Три первые байта типа <code>int</code> будут равны нулю.</p>
+<p><strong>Метод <code>read(byte[] buffer)</code></strong></p>
+<p>Это вторая модификация метода <code>read()</code>. Он позволяет считать из <code>InputStream</code> сразу массив байт. Массив для сохранения байт нужно передать в качестве параметра. Метод возвращает число — количество реально прочитанных байт.</p>
+<p>Допустим у вас буфер на 10 килобайт, и вы читаете данные из файла с помощью класса <code>FileInputStream</code>. Если файл содержит всего 2 килобайта, все данные будут помещены в массив-буфер, а метод вернет число 2048 (2 килобайта).</p>
+<p><strong>Метод <code>readAllBytes()</code></strong></p>
+<p>Очень хороший метод. Просто считывает все данные из <code>InputStream</code>, пока они не закончатся, и возвращает их в виде единого массива байт. Очень удобен для чтения небольших файлов. Большие файлы могут физически не поместиться в память, и метод кинет исключение.</p>
+<p><strong>Метод <code>skip(long n)</code></strong></p>
+<p>Этот метод позволяет пропустить n первых байт из объекта <code>InputStream</code>. Поскольку данные читаются строго последовательно, этот метод просто вычитывает n первых байт из потока и выбрасывает их.</p>
+<p>Возвращает число байт, которые были реально пропущены (если поток закончился раньше, чем прокрутили <code>n</code> байт).</p>
+<p><strong>Метод <code>int available()</code></strong></p>
+<p>Метод возвращает количество байт, которое еще осталось в потоке</p>
+<p><strong>Метод <code>void close()</code></strong></p>
+<p>Метод <code>close()</code> закрывает поток данных и освобождает связанные с ним внешние ресурсы. После закрытия потока данные из него читать больше нельзя.</p>
+<p>Давайте напишем пример программы, которая копирует очень большой файл. Его нельзя весь считать в память с помощью метода <code>readAllBytes()</code>. Пример:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Примечание</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>String <span class="code text-green">src</span> = "c:\\projects\\log.txt";
+String <span class="code text-user">dest</span> = "c:\\projects\\copy.txt";
+
+try(<span class="text-viola">FileInputStream</span> <span class="text-green">input</span> = new <span class="text-viola">FileInputStream</span>(<span class="code text-green">src</span>);
+<span class="text-viola">FileOutputStream</span> <span class="text-user">output</span> = new <span class="text-viola">FileOutputStream</span>(<span class="code text-user">dest</span>))
+{
+   byte[] <span class="code text-orange">buffer</span> = new byte[65536]; // 64Kb
+   while (<span class="text-green">input</span>.<span class="text-red">available</span>() &gt; 0)
+   {
+      int <span class="code text-neon">real</span> = <span class="text-green">input</span>.<span class="text-red">read</span>(<span class="code text-orange">buffer</span>);
+      <span class="text-user">output</span>.<span class="text-red">write</span>(<span class="code text-orange">buffer</span>, 0, <span class="code text-neon">real</span>);
+   }
+}</code></pre>
+        </td>
+        <td><br><br><br><code>InputStream</code> для чтения из файла<br>
+            <code>OutputStream</code> для записи в файл<br><br>
+            Буфер, в который будем считывать данные<br>
+            Пока данные есть в потоке<br><br>
+            Считываем данные в буфер<br>
+            Записываем данные из буфера во второй поток
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p>В этом примере мы использовали два класса: <code>FileInputStream</code> — наследник <code>InputStream</code> для чтения данных из файла, и класс <code>FileOutputStream</code> — наследник <code>OutputStream</code> для записи данных в файл. О втором классе расскажем немного позднее.</p>
+<p>Еще один интересный момент — это переменная <code>real</code>. Когда из файла будет читаться последний блок данных, легко может оказаться, что его длина меньше 64Кб. Поэтому в output нужно тоже записать не весь буфер, а только его часть: первые <code>real</code> байт. Именно это и делается в методе <code>write()</code>.</p>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task15.task1504"></div>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task15.task1505"></div>
+<hr>
+<h2>3. Класс <code>Reader</code></h2>
+<p>Класс <code>Reader</code> — это полный аналог класса <code>InputStream</code>, с одним только отличием: он работает с символами — <code>char</code>, а не с байтами. Класс <code>Reader</code>, так же, как и класс <code>InputStream</code> самостоятельно нигде не используется: он является классом-родителем для сотен классов-наследников и задает для них всех общие методы.</p>
+<p>Методы класса <code>Reader</code> (и всех его классов-наследников):</p>
+<table>
+    <tbody>
+    <tr>
+        <th width="50%">Методы</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>int <span class="text-red">read</span>()</code></pre>
+        </td>
+        <td>Читает один <code>char</code> из потока</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>int <span class="text-red">read</span>(char[] buffer)</code></pre>
+        </td>
+        <td>Читает массив <code>char</code>’ов из потока</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>long <span class="text-red">skip</span>(long n)</code></pre>
+        </td>
+        <td>Пропускает <code>n</code> <code>char</code>’ов в потоке (читает и выбрасывает)</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>boolean <span class="text-red">ready</span>()</code></pre>
+        </td>
+        <td>Проверяет, что в потоке еще что-то осталось</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>void <span class="text-red">close</span>()</code></pre>
+        </td>
+        <td>Закрывает поток</td>
+    </tr>
+    </tbody>
+</table>
+<p>Методы очень похожи на методы класса <code>InputStream</code>, хотя есть и небольшие отличия.</p>
+<p><strong>Метод <code>int read()</code></strong></p>
+<p>Это метод читает из потока один <code>char</code> и возвращает его. Тип <code>char</code> расширяется до типа <code>int</code>, но первые два байта результата всегда нули.</p>
+<p><strong>Метод <code>int read(char[] buffer)</code></strong></p>
+<p>Это вторая модификация метода <code>read()</code>. Он позволяет считать из <code>Reader</code> сразу массив символов. Массив для символов нужно передать в качестве параметра. Метод возвращает число — количество реально прочитанных символов.</p>
+<p><strong>Метод <code>skip(long n)</code></strong></p>
+<p>Этот метод позволяет пропустить <code>n</code> первых символов из объекта <code>Reader</code>. Работает точно так же, как аналогичный метод класса <code>InputStream</code>. Возвращает число символов, которые были реально пропущены.</p>
+<p><strong>Метод <code>boolean ready()</code></strong></p>
+<p>Возвращает <code>true</code>, если в потоке есть еще не прочитанные байты.</p>
+<p><strong>Метод <code>void close()</code></strong></p>
+<p>Метод <code>close()</code> закрывает поток данных и освобождает связанные с ним внешние ресурсы. После закрытия потока данные из него читать больше нельзя.</p>
+<p>Давайте для сравнения напишем программу, которая копирует текстовый файл:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Примечание</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>String <span class="code text-green">src</span> = "c:\\projects\\log.txt";
+String <span class="code text-user">dest</span> = "c:\\projects\\copy.txt";
+
+try(<span class="text-viola">FileReader</span> <span class="text-green">reader</span> = new <span class="text-viola">FileReader</span>(<span class="code text-green">src</span>);
+<span class="text-viola">FileWriter</span> <span class="text-user">writer</span> = new <span class="text-viola">FileWriter</span>(<span class="code text-user">dest</span>))
+{
+   char[] <span class="code text-orange">buffer</span> = new char[65536]; // 64Kb
+   while (<span class="text-green">reader</span>.<span class="text-red">ready</span>())
+   {
+      int <span class="code text-neon">real</span> = <span class="text-green">reader</span>.<span class="text-red">read</span>(<span class="code text-orange">buffer</span>);
+      <span class="text-user">writer</span>.<span class="text-red">write</span>(<span class="code text-orange">buffer</span>, 0, <span class="code text-neon">real</span>);
+   }
+}</code></pre>
+        </td>
+        <td><br><br><br><code>Reader</code> для чтения из файла<br>
+            <code>Writer</code> для записи в файл<br><br>
+            Буфер, в который будем считывать данные<br>
+            Пока данные есть в потоке<br><br>
+            Читаем данные в буфер<br>
+            Записываем данные из буфера во второй поток
+        </td>
+    </tr>
+    </tbody>
+</table>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task15.task1506"></div>

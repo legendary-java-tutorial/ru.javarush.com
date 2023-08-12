@@ -1,0 +1,67 @@
+Маппинг объектов
+<p>----------------------------------------</p>
+Храним файлы на сервере
+Храним картинки прямо в базе
+XML и JSON
+<p>----------------------------------------</p>
+<h2>6.1 Храним файлы на сервере</h2>
+<p>Иногда в базу данных нужно сохранить бинарные объекты. Например, файлы. Если файл большой, то разумнее всего хранить его в отдельной папке на диске, а в базе данных хранить его пути. Пример:</p>
+<pre><code>c:\db-files\users\12355\avatar.jpg
+</code></pre>
+<p>И в базе храним просто относительный путь к файлу:</p>
+<pre><code>\12355\avatar.jpg
+</code></pre>
+<p>В базе удобно хранить относительный путь, так как из него потом легко получить URL:</p>
+<pre><code>https://storage.javarush.ru/users/12355/avatar.jpg
+</code></pre>
+<p>Мы просто приклеиваем относительный путь к имени сервера и готово.</p>
+<h2>6.2 Храним картинки прямо в базе</h2>
+<p>Однако, если картинки маленькие, их можно хранить прямо в базе и отдавать клиенту как набор байт. Для таких случаем в SQL есть специальный тип данных <strong>BLOB</strong> – Binary Large Object. Вернее, их даже два:</p>
+<ul>
+	<li><strong>CLOB</strong> – Character Large Object,</li>
+	<li><strong>BLOB</strong> – Binary Large Object.</li>
+</ul>
+<p>CLOB используется для хранения очень больших текстов. А BLOB для хранения бинарных данных, таких как небольшие картинки, видео и тому подобное.</p>
+<p>Пример:</p>
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+public class User {
+ 
+    @Id
+    private String id;
+           	
+	<span class="text-brown">@Column(name = "name", columnDefinition="VARCHAR(128)")</span>
+    private String name;
+           	
+	<span class="text-brown">@Lob</span>
+	<span class="text-brown">@Column(name = "photo", columnDefinition="BLOB")</span>
+    private byte[] photo;
+ 
+	// ...
+}
+</code></pre>
+<p>Аннотация <code>@Lob</code> подсказывает Hibernate, что в поле хранится <strong>Large Object</strong>. А <code>columnDefinition="BLOB"</code> уже говорит о том, как это все сохранить в базе.</p>
+<p>Давай напишем пример кода, который сохраняет в базу нового пользователя и его фото:</p>
+<pre class='language-java line-numbers'><code>
+byte[] <span class="text-USER">imageBuffer</span> = Files.readAllBytes(Paths.get("C:/temp/avatar.png"))
+ 
+User <span class="text-brown">user</span> = new User();
+<span class="text-brown">user</span>.setId("1");
+<span class="text-brown">user</span>.setName("Zapp");
+<span class="text-brown">user</span>.setPhoto(<span class="text-user">imageBuffer</span>);
+ 
+session.persist(<span class="text-brown">user</span>);
+</code></pre>
+<h2>6.3 XML и JSON</h2>
+<p>Hibernate имеет интересную поддержку JSON в качестве типа данных. Он позволяет сохранить HashMap строк в виде единого JSON-объекта. Если СУБД умеет работать с JSON, то выглядит это так:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-brown">@JdbcTypeCode</span>(<span class="text-red">SqlTypes.JSON</span>)
+private Map&lt;<span class="text-user">String, String</span>&gt; properties;
+</code></pre>
+<p>Hibernate берет на себя заботу, чтобы объект типа <code>Map&lt;String, String&gt;</code> был сериализован в единый JSON-объект. Также при чтении объекта из базы превращает JSON-объект в набор <code>Map&lt;String, String&gt;</code>.</p>
+<p>Нечто похожее Hibernate может проделать и с XML:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-brown">@JdbcTypeCode</span>(<span class="text-red">SqlTypes.SQLXML</span>)
+private Map&lt;<span class="text-user">String</span>, <span class="text-viola">String</span>&gt; properties;
+</code></pre>

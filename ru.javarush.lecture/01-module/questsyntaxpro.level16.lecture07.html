@@ -1,0 +1,286 @@
+Отображение времени - форматирование
+<p>----------------------------------------</p>
+Класс DateTimeFormatter В Date Time API был добавлен специальный класс DateTimeFormatter. Его цель – по максимуму облегчить преобразование даты и времени именно в тот формат, который нужен программисту. И можно сказать, что создателям Java это удалось. Пользоваться им очень просто. Сначала нужно
+<p>----------------------------------------</p>
+<h2>1. Класс DateTimeFormatter</h2>
+<p>В Date Time API был добавлен специальный класс <code><span class="text-neon">DateTimeFormatter</span></code>. Его цель — по максимуму облегчить преобразование даты и времени именно в тот формат, который нужен программисту. И можно сказать, что создателям Java это удалось.</p>
+<p>Пользоваться им очень просто. Сначала нужно создать объект класса <code><span class="text-neon">DateTimeFormatter</span></code> и передать в него шаблон, по которому будут отображаться дата и время:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present-sm language-java"><code><span class="text-neon">DateTimeFormatter</span> <span class="text-user">dtf</span> = <span class="text-neon">DateTimeFormatter</span>.<span class="text-red">ofPattern</span>(<span class="text-green">шаблон</span>);</code></pre>
+</div>
+<p>Где <code><span class="text-user">dtf</span></code> — это переменная типа <code><span class="text-neon">DateTimeFormatter</span></code>. <code><span class="text-neon">DateTimeFormatter</span>.<span class="text-red">ofPattern</span>()</code> — это статический метод класса <code><span class="text-neon">DateTimeFormatter</span></code>. А <span class="text-green">шаблон</span> — это строка, которая задает шаблон, по которому будут отображаться дата и время.</p>
+<p>Примеры</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Вывод на экран</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code><span class="text-neon">DateTimeFormatter</span> <span class="text-user">dtf</span> = <span class="text-neon">DateTimeFormatter</span>.<span class="text-red">ofPattern</span>(<span class="text-green">"MM-dd-yy"</span>);
+String <span class="text-orange">text</span> = <span class="text-user">dtf</span>.<span class="text-red">format</span>( LocalDateTime.<span class="text-viola">now</span>() );
+System.out.println(<span class="text-orange">text</span>);</code></pre>
+        </td>
+        <td><pre><code>
+
+02-22-19</code></pre>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p>В примере выше мы с помощью метода <code><span class="text-red">ofPattern</span>()</code> создаем объект <code><span class="text-neon">DateTimeFormatter</span></code> на основе строки-шаблона. А в следующей строке с помощью метода <code><span class="text-red">format</span>()</code> преобразовываем объект типа <code>LocalDateTime</code> в строку. Результат вы видите на экране.</p>
+<p>В метод <code><span class="text-red">format</span>()</code> можно передать практически любой объект из Date Time API.</p>
+<p>Статический метод <code><span class="text-red">ofPattern</span>()</code> тоже очень простой: принимает в качестве параметра строку-шаблон, а возвращает объект типа <code><span class="text-neon">DateTimeFormatter</span></code>. Самое интересное находится внутри шаблона.</p>
+<hr>
+<h2>2. Шаблон форматирования</h2>
+<p>Строка, переданная в качестве паттерна, используется как шаблон при выводе информации. <strong>MM</strong> заменяется на номер месяца, <strong>dd</strong> — на день месяца, <strong>yy</strong> на номер года. Регистр букв имеет значение.</p>
+<p>Полная таблица преобразования времени выглядит так:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Буква</th>
+        <th>Обозначение</th>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>y</strong></td>
+        <td>Год (Year)</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>M</strong></td>
+        <td>Месяц (Month)</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>d</strong></td>
+        <td>День (day)</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>H</strong></td>
+        <td>Часы (Hours)</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>m</strong></td>
+        <td>Минуты (Minutes)</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>s</strong></td>
+        <td>Секунды (Seconds)</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>S</strong></td>
+        <td>Тысячные доли секунды</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>n</strong></td>
+        <td>Наносекунды.</td>
+    </tr>
+    </tbody>
+</table>
+<p>В принципе запомнить не сложно.</p>
+<p>А почему тогда в шаблоне из примера буквы MM, dd и yy были написаны по два раза? А вот тут уже становится интереснее.</p>
+<p><strong>Общая идея</strong></p>
+<p>Количество букв влияет на длину текста. Чем большое букв, тем длиннее будет текст.</p>
+<p>Если буква H указывается один раз, то 9 часов будут отображаться как 9, а если буква H указывается два раза подряд, то 9 часов будут отображаться как 09.</p>
+<p>Если буква y указывается 2 раза подряд, то год пишется 2 цифрами, если 4 раза подряд — 4-мя цифрами.</p>
+<p>Если буква M указывается 2 раза подряд, то пишется номер месяца, если 3 раза подряд, то название месяца (3 первых буквы), если 4 раза подряд, то полное название месяца.</p>
+<p>Пример:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Вывод на экран</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>DateTimeFormatter <span class="text-user">dtf</span> = DateTimeFormatter.<span class="text-red">ofPattern</span>(<span class="text-green">"MMMM-dd-yyyy"</span>);
+String <span class="text-orange">text</span> = <span class="text-user">dtf</span>.<span class="text-red">format</span>( LocalDateTime.now() );
+System.out.println(<span class="text-orange">text</span>);</code></pre>
+        </td>
+        <td><pre><code>
+
+February-22-2019</code></pre>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task16.task1619"></div>
+<hr>
+<h2>3. Полная таблица шаблонов</h2>
+<p>Полная таблица достаточно большая и очень интересная:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Шаблон</th>
+        <th>Вариации шаблона</th>
+        <th>Пример</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>y</strong></td>
+        <td>yy, yyyy</td>
+        <td>19; 2019</td>
+        <td>Год</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>M/L</strong></td>
+        <td>M, MM, MMM, MMMM, MMMMM</td>
+        <td>1; 01; Jan; January; J</td>
+        <td>Месяц</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>d</strong></td>
+        <td>d, dd</td>
+        <td>9; 09</td>
+        <td>День</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>H</strong></td>
+        <td>H, HH</td>
+        <td>2; 02</td>
+        <td>Часы</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>m</strong></td>
+        <td>m, mm</td>
+        <td>3; 03</td>
+        <td>Минуты</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>s</strong></td>
+        <td>s, ss</td>
+        <td>5; 05</td>
+        <td>Секунды</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>S</strong></td>
+        <td>S, SS, SSS, ...</td>
+        <td>1; 12; 123</td>
+        <td>Тысячные доли секунды</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>n</strong></td>
+        <td>n</td>
+        <td>123456789</td>
+        <td>Наносекунды</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>G</strong></td>
+        <td>G, GGGG, GGGGG</td>
+        <td>AD; Anno Domini; A;</td>
+        <td>Эра</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>Q/q</strong></td>
+        <td>q, qq, qqq, qqqq</td>
+        <td>3; 03; Q3; 3rd quarter</td>
+        <td>Квартал</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>w</strong></td>
+        <td>w</td>
+        <td>13</td>
+        <td>Неделя года</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>W</strong></td>
+        <td>W</td>
+        <td>3</td>
+        <td>Неделя месяца</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>E</strong></td>
+        <td>EEE, EEEE, EEEEE</td>
+        <td>Mon; Monday; M</td>
+        <td>День недели</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>e/c</strong></td>
+        <td>e, ee, eee, eeee, eeeee</td>
+        <td>1; 01; Mon; Monday; M</td>
+        <td>День недели</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>a</strong></td>
+        <td>a</td>
+        <td>PM</td>
+        <td>AM или PM</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>h</strong></td>
+        <td>h</td>
+        <td>12</td>
+        <td>Время 1-12 часов.</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>V</strong></td>
+        <td>VV</td>
+        <td>Europe/Helsinki</td>
+        <td>Временная зона</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>z</strong></td>
+        <td>z zzzz</td>
+        <td>EET;  Eastern European Standard Time</td>
+        <td>Временная зона</td>
+    </tr>
+    <tr>
+        <td class="text-center"><strong>O</strong></td>
+        <td>O OOOO</td>
+        <td>GMT+2;  GMT+02:00</td>
+        <td>Временная зона</td>
+    </tr>
+    </tbody>
+</table>
+<p>Это, кстати, еще не самый полный вариант. Самый полный находится по ссылке:</p>
+<p><a href="https://docs.oracle.com/en/java/javase/13/docs/api/java.base/java/time/format/DateTimeFormatter.html">https://docs.oracle.com/en/java/javase/13/docs/api/java.base/java/time/format/DateTimeFormatter.html</a></p>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task16.task1620"></div>
+<hr>
+<h2>4. Парсинг времени</h2>
+<p>Класс <code><span class="text-neon">DateTimeFormatter</span></code> интересен еще и тем, что может не только преобразовывать дату и время в строку по заданному шаблону, но и выполнять обратную операцию!</p>
+<p>Анализ и разбор строки называют парсингом от слова <span class="term">parse</span>.</p>
+<p>Вот как выглядит такой процесс:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Вывод на экран</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>DateTimeFormatter <span class="text-user">dtf</span> = DateTimeFormatter.<span class="text-red">ofPattern</span>(<span class="text-green">"MMMM-dd-yyyy"</span>, Locale.<span class="text-viola">ENGLISH</span>);
+LocalDate <span class="text-viola">date</span> = LocalDate.parse(<span class="text-green">"February-23-2019"</span>, <span class="text-user">dtf</span>);
+System.out.println(<span class="text-viola">date</span>);</code></pre>
+        </td>
+        <td><pre><code>
+
+February-23-2019</code></pre>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p>Сначала мы создаем объект <code>DateTimeFormatter</code> и задаем в нем шаблон парсинга.</p>
+<p>Затем вызываем метод <code>LocalDate.parse()</code> или <code>LocalTime.parse()</code> или <code>LocalDateTime.parse()</code> и передаем в этот метод строку, которую нужно распарсить и объект <code>DateTimeFormatter</code>, который понимает, как и по какому шаблону нужно распарсивать переданный текст.</p>
+<p>Еще один пример: на этот раз с парсингом времени.</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Вывод на экран</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>DateTimeFormatter <span class="text-user">dtf</span> = DateTimeFormatter.<span class="text-red">ofPattern</span>(<span class="text-green">"HH:mm:ss"</span>);
+LocalTime <span class="text-viola">time</span> = LocalTime.<span class="text-red">parse</span>(<span class="text-green">"23:59:59"</span>, <span class="text-user">dtf</span>);
+System.out.println(<span class="text-viola">time</span>);</code></pre>
+        </td>
+        <td><pre><code>
+
+23:59:59</code></pre>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task16.task1621"></div>

@@ -1,0 +1,259 @@
+Примеры разных типов классов из JDK
+<p>----------------------------------------</p>
+В классе AbstractList есть внутренний класс Itr. Это реализация интерфейса Iterator, который позволяет поочередно получать элементы коллекций...
+<p>----------------------------------------</p>
+    <h2>Пример внутреннего класса</h2>
+
+    <p>В классе <span class="code"><span class="text-green">AbstractList</span></span> есть внутренний класс <span class="code"><span class="text-green">Itr</span></span>. Это реализация интерфейса <span class="text-neon"><span class="text-bold"><em>Iterator</em></span></span>, который позволяет поочередно получать элементы коллекций:</p>
+
+    <pre class='language-java line-numbers'><code>
+private class Itr implements Iterator&lt;E&gt; {
+	int cursor = 0;
+	int lastRet = -1;
+	int expectedModCount = modCount;
+ 
+	public boolean hasNext() {
+    		return cursor != size();
+	}
+ 
+	public E next() {
+    	checkForComodification();
+    	try {
+        	int i = cursor;
+        	E next = get(i);
+        	lastRet = i;
+        	cursor = i + 1;
+        	return next;
+    	} catch (IndexOutOfBoundsException e) {
+        	checkForComodification();
+        	throw new NoSuchElementException(e);
+    	}
+	}
+ 
+	public void remove() {
+    	if (lastRet &lt; 0)
+        	throw new IllegalStateException();
+    	checkForComodification();
+ 
+    	try {
+        	AbstractList.this.remove(lastRet);
+        	if (lastRet &lt; cursor)
+            	cursor--;
+        	lastRet = -1;
+        	expectedModCount = modCount;
+    	} catch (IndexOutOfBoundsException e) {
+   	     throw new ConcurrentModificationException();
+    	}
+	}
+ 
+	final void checkForComodification() {
+    	if (modCount != expectedModCount)
+        	throw new ConcurrentModificationException();
+	}
+}
+</code></pre>
+
+    <p>Используется он в методе <span class="code text-orange">iterator</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+public Iterator&lt;E&gt; iterator() {
+	return new Itr();
+}
+</code></pre>
+
+    <p>Таким образом любой класс-наследник <span class="code"><span class="text-green">AbstractList</span></span> получает готовый рабочий итератор. А если нужно все-таки кастомизировать итератор, можно реализовать свой класс, унаследовав его от <span class="code"><span class="text-green">Iterator</span></span> или <span class="code"><span class="text-green">Itr</span></span>, и переопределить метод <span class="code text-orange"><span class="code text-orange">iterator</span></span>. Например, как это сделано в классе <span class="code"><span class="text-green">ArrayList</span></span>.</p>
+
+    <p>Класс <span class="code"><span class="text-green">Itr</span></span> — нестатический. Благодаря этому у экземпляра <span class="code"><span class="text-green">Itr</span></span> есть ссылка на экземпляр <span class="code"><span class="text-green">AbstractList</span></span>, и он может обращаться к его методам (<span class="code text-orange">size</span>, <span class="code text-orange">get</span>, <span class="code text-orange">remove</span>).</p>
+ 
+    <h2>Пример внутреннего статического класса</h2>
+
+    <p>В классе <span class="code"><span class="text-green">Integer</span></span> есть внутренний класс <span class="code"><span class="text-green">IntegerCache</span></span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+private static class IntegerCache {
+	static final int low = -128;
+	static final int high;
+	static final Integer[] cache;
+	static Integer[] archivedCache;
+ 
+	static {
+    	int h = 127;
+    	String integerCacheHighPropValue =
+        	VM.getSavedProperty("java.lang.Integer.IntegerCache.high");
+    	if (integerCacheHighPropValue != null) {
+        	try {
+            	h = Math.max(parseInt(integerCacheHighPropValue), 127);
+            	h = Math.min(h, Integer.MAX_VALUE - (-low) -1);
+        	} catch( NumberFormatException nfe) {
+        	}
+    	}
+    	high = h;
+ 
+    	VM.initializeFromArchive(IntegerCache.class);
+    	int size = (high - low) + 1;
+ 
+    	if (archivedCache == null || size &gt; archivedCache.length) {
+        	Integer[] c = new Integer[size];
+        	int j = low;
+        	for(int i = 0; i &lt; c.length; i++) {
+            	c[i] = new Integer(j++);
+        	}
+        	archivedCache = c;
+    	}
+    	cache = archivedCache;
+    	assert IntegerCache.high &gt;= 127;
+}
+ 
+	private IntegerCache() {}
+}
+</code></pre>
+
+    <p><span class="code"><span class="text-green">IntegerCache</span></span> инкапсулирует в себе генерацию кеша, хранит диапазона кеша и сами закешированные значения. Таким образом все, что касается кеша, вынесено в отдельный класс. Это упрощает чтение кода и внесение в него изменений. Код использования класса:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static Integer valueOf(int i) {
+	if (i &gt;= IntegerCache.low && i &lt;= IntegerCache.high)
+    		return IntegerCache.cache[i + (-IntegerCache.low)];
+	return new Integer(i);
+}
+</code></pre>
+ 
+    <p>Класс <span class="code"><span class="text-green">IntegerCache</span></span> не обращается к нестатическим полям и методам класса <span class="code"><span class="text-green">Integer</span></span>, а обращение к нему происходит только в статическом методе <span class="code text-orange">valueOf</span>. То есть можно сказать, что он привязан ко всему классу <span class="code"><span class="text-green">Integer</span></span>, а не к отдельным его экземплярам, — и поэтому <span class="code"><span class="text-green">IntegerCache</span></span> статический.</p>
+ 
+    <h2>Пример внутреннего анонимного класса</h2>
+
+    <p>В качестве примера анонимного класса возьмем класс <span class="code"><span class="text-green">InputStream</span></span> и его статический метод <span class="code text-orange">nullInputStream</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static InputStream nullInputStream() {
+    return new InputStream() {
+    	private volatile boolean closed;
+ 
+    	private void ensureOpen() throws IOException {
+        	if (closed) {
+            		throw new IOException("Stream closed");
+        	}
+    	}
+ 
+    	@Override
+    	public int available () throws IOException {
+        	ensureOpen();
+        	return 0;
+    	}
+ 
+    	@Override
+    	public int read() throws IOException {
+        	ensureOpen();
+        	return -1;
+    	}
+ 
+    	@Override
+    	public int read(byte[] b, int off, int len) throws IOException {
+        	Objects.checkFromIndexSize(off, len, b.length);
+        	if (len == 0) {
+            		return 0;
+        	}
+        	ensureOpen();
+        	return -1;
+    	}
+ 
+    	@Override
+    	public byte[] readAllBytes() throws IOException {
+        	ensureOpen();
+        	return new byte[0];
+    	}
+ 
+    	@Override
+    	public int readNBytes(byte[] b, int off, int len)throws IOException {
+        	Objects.checkFromIndexSize(off, len, b.length);
+        	ensureOpen();
+        	return 0;
+    	}
+ 
+    	@Override
+   	 public byte[] readNBytes(int len) throws IOException {
+        	if (len &lt; 0) {
+            		throw new IllegalArgumentException("len &lt; 0");
+        	}
+        	ensureOpen();
+        	return new byte[0];
+    	}
+ 
+    	@Override
+    	public long skip(long n) throws IOException {
+        	ensureOpen();
+        	return 0L;
+    	}
+ 
+    	@Override
+    	public void skipNBytes(long n) throws IOException {
+        	ensureOpen();
+        	if (n &gt; 0) {
+            		throw new EOFException();
+        	}
+    	}
+ 
+    	@Override
+    	public long transferTo(OutputStream out) throws IOException {
+        	Objects.requireNonNull(out);
+        	ensureOpen();
+        	return 0L;
+    	}
+ 
+    	@Override
+    	public void close() throws IOException {
+        	closed = true;
+    	}
+    };
+}
+</code></pre>
+
+    <p>Метод возвращает пустой <span class="code"><span class="text-green">InputStream</span></span>, а для его реализации как раз используется анонимный класс. Так как у класса не предполагались наследники, его сделали анонимным.</p>
+
+    <p>С добавлением в Java Stream API анонимные классы стали использовать повсеместно: все лямбда-выражения — это анонимные классы, реализующие тот или иной функциональный интерфейс. Рассмотрим примеры.</p>
+
+    <p>В классе <span class="code"><span class="text-green">AbstractStringBuilder</span></span> — родитель знаменитых <span class="code"><span class="text-green">StringBuilder</span></span> и <span class="code"><span class="text-green">StringBuffer</span></span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+@Override
+public IntStream chars() {
+	return StreamSupport.intStream(
+        	() -&gt; {
+            	byte[] val = this.value;
+            	int count = this.count;
+            	byte coder = this.coder;
+            	return coder == LATIN1
+                   	? new StringLatin1.CharsSpliterator(val, 0, count, 0)
+                   	: new StringUTF16.CharsSpliterator(val, 0, count, 0);
+        	},
+        	Spliterator.ORDERED | Spliterator.SIZED | Spliterator.SUBSIZED,
+        	false);
+}
+</code></pre>
+ 
+    <p>В классе <span class="code"><span class="text-green">Files</span></span> — метод для конвертации <span class="text-neon"><span class="text-bold"><em>Closeable</em></span></span> в <span class="text-neon"><span class="text-bold"><em>Runnable</em></span></span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+private static Runnable asUncheckedRunnable(Closeable c) {
+	return () -&gt; {
+    	try {
+        	c.close();
+    	} catch (IOException e) {
+        	throw new UncheckedIOException(e);
+    	}
+	};
+}
+</code></pre>
+ 
+    <p>В классе <span class="code"><span class="text-green">Class</span></span> — метод для строкового отображения метода:</p>
+ 
+    <pre class='language-java line-numbers'><code>
+private String methodToString(String name, Class&lt;?&gt;[] argTypes) {
+	return getName() + '.' + name +
+        	((argTypes == null || argTypes.length == 0) ?
+        	"()" :
+        	Arrays.stream(argTypes)
+        	        .map(c -&gt; c == null ? "null" : c.getName())
+                	.collect(Collectors.joining(",", "(", ")")));
+}
+</code></pre>

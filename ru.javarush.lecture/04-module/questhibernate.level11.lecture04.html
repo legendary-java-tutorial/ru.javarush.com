@@ -1,0 +1,184 @@
+Удаление объекта
+<p>----------------------------------------</p>
+Удаление с помощью метода remove(). 
+Каскадное удаление. 
+Удаление по Orphan. 
+Удаление через JPQL. 
+Удаление через NativeQuery. 
+Мягкое удаление.
+<p>----------------------------------------</p>
+<h2>Удаление с помощью метода remove()</h2>
+
+<p>Наконец разберем удаление объекта. В принципе удалять объекты из базы очень просто, но как говориться, есть нюансы. И таких нюансов аж шесть:</p>
+
+<ul>
+<li>Удаление с помощью метода <span class="code text-orange">remove()</span></li>
+<li>Удаление за компанию</li>
+<li>Удаление по Orphan</li>
+<li>Удаление с помощью JPQL</li>
+<li>Удаление через NativeQuery</li>
+<li><span class="code text-orange">softDeleted()</span></li>
+</ul>
+
+<p>И начнем мы с самого очевидного решения — вызова метода <span class="code text-orange">remove()</span>.</p>
+
+<pre class='language-java line-numbers'><code>
+User user = new User();
+user.setName("Колян");
+session.persist(user);  //добавляем объект в базу
+session.flush(); 
+session.clear();  //закрываем сессию
+ 
+user = (User) session.find(User.class, user.getId() ); //заново получаем объект из базы
+session.remove(user);
+session.flush(); 
+session.clear();  //закрываем сессию
+ 
+//тут объект реально удален.
+</code></pre>
+ 
+<p>Реальная операция в базе будет выполнена после вызова метода <span class="code text-orange">flush()</span> или закрытия транзакции.</p>
+
+<h2>Каскадное удаление</h2>
+
+<p>Помнишь, когда мы изучали SQL, то зависимым таблицам можно было прописывать CONSTRAINT. И одна из них записывалась так:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+CONSTRAINT ONDELETE REMOVE</code></pre>
+    </div>
+
+<p>Смысл ее был в том, что если у нас есть таблица, которая содержит дочерние сущности, то при уделении сущности-родителя нужно удалить все ее дочки.</p>
+
+<p>Допустим, мы где-то храним персональную информацию пользователя и настроили CONSTRAINT в базе так, чтобы при удалении пользователя эти данные тоже удалялись. Тогда нам нужно просто удалить родительский объект и все дочерние объекты будут удалены на уровне базы:</p>
+ 
+<pre class='language-java line-numbers'><code>
+User user = new User();
+UserPrivateInfo info = new UserPrivateInfo();
+user.setPrivateInfo(info);
+session.persist(user);  //добавляем объект в базу, также в базу сохранится и объект info
+session.flush(); 
+session.clear();  //закрываем сессию
+ 
+user = (User) session.find(User.class, user.getId() ); //заново получаем объект из базы
+session.remove(user);
+session.flush(); 
+session.clear();  //закрываем сессию
+ 
+//тут объекты user и info реально удалены из базы.
+</code></pre>
+ 
+<h2>Удаление по Orphan</h2>
+
+<p>Также есть еще один тип удаления, который называют удаление по Orphan. Он чем-то похож на предыдущий вариант. Дочерняя сущность удаляется, когда разрывается ее связь с родительской сущностью. При этом родительская сущность обычно не удаляется.</p>
+
+<p>Допустим, у нас есть пользователь, а у него есть список сообщений:</p>
+ 
+<pre class='language-java line-numbers'><code>
+User user = new User();
+UserMessage message = new UserMessage();
+user.getMessageList().add(message);
+session.persist(user);  //добавляем объект в базу, также в базу сохранится и объект message
+session.flush(); 
+session.clear();  //закрываем сессию
+ 
+user = (User) session.find(User.class, user.getId() ); //заново получаем объект из базы
+UserMessage message2 = user.getMessageList().get(0); //получаем сообщение пользователя
+user.getMessageList().remove(message2);  //удаляем сообщение из списка
+session.flush(); 
+session.clear();  //закрываем сессию
+ 
+//тут объект message2 реально удален из базы
+</code></pre>
+ 
+<p>Также есть важный нюанс, если мы хотим, чтобы Hibernate реализовывал такое поведение, его нужно явно указать при связывании двух сущностей с помощью аннотаций:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+public class User {
+ 
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    private List&lt;UserMessage> messageList = new ArrayList&lt;UserMessage>();
+ 
+}
+</code></pre>
+
+<h2>Удаление через JPQL</h2>
+
+<p>Еще один интересный способ удалить объект – это написать запрос на HQL (или JPQL). Только не забудь в конце вызвать метод <span class="code text-orange">executeUpdate()</span>, а не то Hibernate создает read-only транзакцию и никакого удаления у тебя не выйдет.</p>
+
+<p>Пример:</p>
+
+<pre class='language-java line-numbers'><code>
+User user = new User();
+session.persist(user);  //добавляем объект в базу
+session.flush(); 
+session.clear();  //закрываем сессию
+ 
+session.createQuery("delete from User where id = :id")
+   .setParameter("id", user.getId())
+   .executeUpdate();
+</code></pre>
+ 
+<p>Изменение в базе никак не изменит существующие Entity-объекты.</p>
+
+<h2>Удаление через NativeQuery</h2>
+
+<p>Аналогично можно удалить и через вызов NativeQuery.</p>
+
+<p>Пример:</p>
+
+<pre class='language-java line-numbers'><code>
+User user = new User();
+session.persist(user);  //добавляем объект в базу
+session.flush(); 
+session.clear();  //закрываем сессию
+ 
+session.createNativeQuery("DELETE FROM user WHERE id = :id")
+   .setParameter("id", user.getId())
+   .executeUpdate();
+</code></pre>
+ 
+<p>Изменение в базе никак не затронет существующие Entity-объекты.</p>
+
+<h2>Мягкое удаление</h2>
+
+<p>Иногда вместо удаления данных в базе бывает удобно просто пометить их как удаленные. Такие данные могут потом участвовать в различных сценариях. Во-первых, такое удаление легко обратимо – строки можно опять пометить как живые.</p>
+
+<p>Во-вторых, такие удаленные данные полезно “складывать в архив”, ведь бывают случаи, когда поведение сервера регулируется законодательством и тому подобное.
+Однако, если ты будешь помечать твои данные как удаленные, то только ты будешь знать, что они удалены. Hibernate же по-прежнему будет находить эти данные, а также использовать их при сортировке.</p>
+
+<p>Поэтому создатели Hibernate придумали специальную аннотацию, с помощью которой можно было бы помечать объекты как живые. Пример:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Where(clause = "DELETED = 0") //во всех WHERE будет добавляться “AND DELETED = 0”
+public class User {
+	// маппинг полей
+ 
+	@Column(name = "DELETED") // если значение в колонке DELETED == 0, то запись жива, если 1 - мертва
+	private Integer deleted = 0; 
+   
+	//геттеры и сеттеры
+ 
+    public void softDeleted() {
+    	this.deleted = 1; //помечаем запись как мертвую
+    }
+}
+</code></pre>
+
+<p>Чтобы пометить объект как удаленный нужно просто вызвать у него метод <span class="code text-orange">softDeleted()</span>:</p>
+
+<pre class='language-java line-numbers'><code>
+User user = new User();
+session.persist(user);  //добавляем объект в базу
+session.flush(); 
+session.clear();  //закрываем сессию
+ 
+user = (User) session.find(User.class, user.getId() ); //заново получаем объект из базы
+user.softDeleted(); //помечаем объект как удаленный
+session.flush(); 
+session.clear();  //закрываем сессию
+ 
+//больше этот объект не будет находиться через Hibernate
+</code></pre>

@@ -1,0 +1,134 @@
+Настройка движка кэширования
+<p>----------------------------------------</p>
+Настройка кэширования. 
+Пример настройки EHCache. 
+Анализ статистики кэширования.
+<p>----------------------------------------</p>
+<h2>Настройка кэширования</h2>
+
+<p>Давай вернемся к нашим настройкам кеширования в файле hibernate.cfg.xml:</p>
+ 
+<pre><code>&lt;property name="hibernate.cache.provider_class" value="net.sf.ehcache.hibernate.SingletEhCacheProvider"/>
+&lt;property name="hibernate.cache.use_second_level_cache" value="true"/>
+&lt;property name="hibernate.cache.use_query_cache" value="true"/></code></pre>
+ 
+<p>Обрати внимание на первую строку — в ней указано имя класса движка кэширования. На самом деле Hibernate не реализует кэширование у себя внутри, вместо этого он предоставляет набор интерфейсов, с помощью которых можно реализовать свой собственный движок кеширования.</p>
+
+<p>Из популярных реализаций можно выделить следующие:</p>
+
+<ul>
+<li>EHCache</li>
+<li>OSCache</li>
+<li>SwarmCache</li>
+<li>JBoss TreeCache</li>
+</ul>
+
+<h4>EHCache</h4>
+
+<p>Он может кэшироваться в памяти или на диске, а также в кластерном кэшировании, а также поддерживает дополнительный кэш результатов запроса Hibernate.</p>
+
+<h4>OSCache</h4>
+
+<p>Поддерживает кэширование в память и на диск в одной JVM с богатым набором политик истечения срока действия и поддержкой кэша запросов.</p>
+
+<h4>SwarmCache</h4>
+
+<p>Кластерный кэш на основе JGroups. Он использует кластеризованное аннулирование, но не поддерживает кэш запросов Hibernate.</p>
+
+<h4>JBoss Cache</h4>
+
+<p>Полностью транзакционный реплицируемый кластерный кэш, также основанный на многоадресной библиотеке JGroups. Он поддерживает репликацию или аннулирование, синхронную или асинхронную связь, а также оптимистическую и пессимистическую блокировки. Кэш запросов Hibernate поддерживается.</p>
+
+<p>Эти движки поддерживают не все стратегии параллельного доступа. Реальная ситуация описана в таблице ниже:</p>
+
+<table>
+<tbody>
+<tr>
+<th>Strategy/Provider</th>
+<th>Read-only</th>
+<th>Nonstrict read-write</th>
+<th>Read-write</th>
+<th>Transactional</th>
+</tr>
+<tr>
+<th>EHCache</th>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+<td> </td>
+</tr>
+<tr>
+<th>OSCache</th>
+<td>X</td>
+<td>X</td>
+<td>X
+<td> </td>
+</tr></td>
+<tr>
+<th>SwarmCache</th>
+<td>X</td>
+<td>X</td>
+ <td></td>
+ <td></td>
+</tr>
+<tr>
+<th>JBoss Cache</th>
+<td>X</td>
+<td> </td>
+<td> </td>
+<td>X</td>
+</tr>
+</tbody>
+</table>
+ 
+<h2>Пример настройки EHCache</h2>
+
+<p>Движок <strong>EHCache</strong> имеет свой собственный конфигурационный файл, который называется ehcache.xml. Примерное содержание такого файла:</p>
+
+<pre class='language-java line-numbers'><code>
+&lt;diskStore path="java.io.tmpdir"/>
+ 
+&lt;defaultCache
+    maxElementsInMemory = "1000"
+    eternal = "false"
+    timeToIdleSeconds = "120"
+    timeToLiveSeconds = "120"
+    overflowToDisk = "true"
+/>
+ 
+&lt;cache name = "Employee"
+    maxElementsInMemory = "500"
+    eternal = "true"
+    timeToIdleSeconds = "0"
+    timeToLiveSeconds = "0"
+    overflowToDisk = "false"
+/>
+</code></pre>
+
+<p>Тут ты можешь настроить параметры кэширования как в целом, так и для каждой сущности отдельно. Более подробно читай в <a href="https://www.ehcache.org/documentation/3.10/getting-started.html" target="_blank">официальной документации</a>.</p>
+
+<h2>Анализ статистики кэширования</h2>
+
+<p>Так же у тебя может возникнуть необходимость проверить, насколько хорошо настроен механизм кэширования. Специально для этого Hibernate предоставляет специальный объект Statistics.</p>
+
+<p>Пример:</p>
+ 
+<pre class='language-java line-numbers'><code>
+Statistics statistics = session.getSessionFactory().getStatistics();
+CacheRegionStatistics cacheStatistics = statistics.getDomainRegionStatistics(“com.javarush.employee”);
+ 
+long hitCount = cacheStatistics.getHitCount();
+long missCount = cacheStatistics.getMissCount();
+double hitRatio = (double) hitCount / (hitCount + missCount);
+</code></pre>
+ 
+<p>Детально мы это разбирать не будем, потому что пройдет еще много лет, прежде чем тебе не хватит стандартных решений кэширования и понадобится улучшить их вручную. Кстати, возможно, именно из похожего случая был извлечен этот комментарий:</p>
+ 
+<pre class='language-java line-numbers'><code>
+// Дорогой программист:
+// Когда ты закончишь “оптимизировать” эту подпрограмму
+// и поймешь, насколько большой ошибкой было делать это,
+// пожалуйста, увеличь счетчик внизу как предупреждение
+// для следующего парня:
+// количество_часов_потраченных_здесь = 42
+</code></pre>

@@ -1,0 +1,165 @@
+Изменение внутреннего состояния объекта с помощью рефлексии
+<p>----------------------------------------</p>
+Каждый из вас отлично знает про модификаторы доступа полей. И если у поля стоит модификатор private, то доступа извне у нас не будет...
+<p>----------------------------------------</p>
+<h2>Класс с приватным полем</h2>
+
+<p>Каждый из вас отлично знает про модификаторы доступа полей. И если у поля стоит модификатор <span class="code">private</span>, то доступа извне у нас не будет.</p>
+
+<pre class='language-java line-numbers'><code>
+public class Person {
+  private int age;
+  public String nickname;
+  public Person(int age, String nickname) {
+   this.age = age;
+   this.nickname = nickname;
+  }
+}
+</code></pre>
+
+<p>Проверим доступность в нашем <span class="code"><span class="text-green">Main</span></span>:</p>
+
+<pre class='language-java line-numbers'><code>
+public class Main {
+   public static void main(String[] args) {
+     Person person = new Person();  
+     System.out.println(person.nickname);
+    //System.out.println(person.age); нет доступа к полю
+  }
+}
+</code></pre>
+
+<p>Доступа к полю <mark>age</mark> у нас нет, но есть рефлексия. И с ее помощью мы можем получить доступ к приватным полям и работать с ними.</p>
+
+<h2>Получение приватного поля у объекта через рефлексию</h2>
+
+<p>Давай получим массив всех полей нашего класса с помощью метода <span class="code text-orange">getDeclaredFileds()</span>. Он возвращает класс <span class="code"><span class="text-green">Fileds</span></span>, с которым мы будем дальше работать и преобразовывать:</p>
+
+<pre class='language-java line-numbers'><code>
+public static void main(String[] args) {
+        Field[] fields = Person.class.getDeclaredFields();
+        List&lt;String&gt; actualFieldNames = getFieldNames(fields);
+        actualFieldNames.forEach(System.out::println);
+    }
+
+    static List&lt;String&gt; getFieldNames(Field[] fields) {
+        List&lt;String&gt; fieldNames = new ArrayList&lt;&gt;();
+        for (Field field : fields)
+            fieldNames.add(Modifier.toString(field.getModifiers()) + " " + field.getName());
+        return fieldNames;
+    }
+</code></pre>
+
+<div class="terminal">private age<br />
+public nickname</div>
+
+<p>В методе <span class="code text-orange">getFieldNames</span> мы получаем два поля из нашего класса. Метод getModifiers возвращает нам модификатор нашего поля, а <span class="code text-orange">getName</span> — название. Теперь давай попробуем изменить и получить доступ к этому полю. Сначала попробуем достать данные из публичного поля:</p>
+
+<pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws NoSuchFieldException, IllegalAccessException {
+    Person person = new Person(10, "javaRush");
+
+    Field field = Person.class.getDeclaredField("nickname");
+    String nickname = (String) field.get(person);
+    System.out.println(nickname);
+
+    System.out.println(person.nickname);
+}
+</code></pre>
+
+<div class="terminal">javaRush<br />
+javaRush</div>
+
+<p>Доступ к полю и с помощью рефлексии, и с помощью обращения к объекту у нас есть. Все отлично! Движемся к приватному полю.</p>
+
+<p>Меняем название поля, которое мы хотим получить, на наше приватное поле <mark>age</mark>:</p>
+
+<pre class='language-java line-numbers'><code>
+public static void main(String[]args)throws NoSuchFieldException, IllegalAccessException{
+		Person person = new Person(10, "javaRush");
+
+    Field field = Person.class.getDeclaredField("age");
+    int age =(int)field.get(person);
+    System.out.println(age);
+
+    //System.out.println(person.age);
+}
+</code></pre>
+
+<p>У нас нет доступа через созданный экземпляр класса, поэтому пробуем через рефлексию и сталкиваемся с ошибкой:</p>
+
+<img data-max-width="1080" data-id="78a4d178-949f-4656-a48b-4c4e6f3a2244" src="https://cdn.javarush.com/images/article/78a4d178-949f-4656-a48b-4c4e6f3a2244/original.png" alt="">
+
+<h2>IllegalAccessException</h2>
+
+<p>У нас возникает <span class="text-red"><span class="text-bold">IllegalAccessException</span></span>. Давай перейдем внутрь и посмотрим, что внутри:</p>
+
+<img data-max-width="800" data-id="b7c8db6e-62d6-4e30-9a87-ecc996b40d0f" src="https://cdn.javarush.com/images/article/b7c8db6e-62d6-4e30-9a87-ecc996b40d0f/original.png" alt="">
+
+<p>Пробуем разобраться. </p>
+
+<p>Исключение <span class="text-red"><span class="text-bold">IllegalAccessException</span></span> возникает, когда приложение пытается рефлективно создать экземпляр (кроме массива), задать или получить поле или вызвать метод, но выполняемый в данный момент метод не имеет доступа к определению указанного класса, поля, метода или конструктора.</p>
+
+<p>Также тут есть методы, которые выбрасывают это исключение. Чтобы избежать выбрасывания такого исключения, мы будем использовать специальный метод для получения доступа к приватному полю.</p>
+
+<h2>setAccessible(boolean flag)</h2>
+
+<p>Этот метод позволяет избежать проверки на доступ к полю или методу класса из-за его модификатора доступа. В метод мы можем передать параметр <span class="text-green"><em>true</em></span> или <span class="text-red"><em>false</em></span>, который определит, необходимы ли нам проверки на доступ к полю. Пробуем исправить наш код: </p>
+
+<pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws NoSuchFieldException, IllegalAccessException {
+    Person person = new Person(10, "javaRush");
+
+    Field field = Person.class.getDeclaredField("age");
+    field.setAccessible(true);
+
+    int age = (int) field.get(person);
+    System.out.println("Текущее значение - " + age);
+}
+</code></pre>
+
+<p>Смотрим на результат: </p>
+
+<div class="terminal">Текущее значение - 10</div>
+
+<p>Отлично, мы получили данные нашего класса. Давай заодно попробуем изменить наше поле, установив в него новое значение:</p>
+
+<pre class='language-java line-numbers'><code>
+public static void main(String[]args)throws NoSuchFieldException, IllegalAccessException{
+Person person = new Person(10, "javaRush");
+
+    Field field = Person.class.getDeclaredField("age");
+    field.setAccessible(true);
+
+    field.set(person, 19);
+
+    int age =(int)field.get(person);
+    System.out.println("Текущее значение - " + age);
+}
+</code></pre>
+
+<p>Пробуем изменить наше поле и получаем результат:</p>
+
+<div class="terminal">Текущее значение - 19</div>
+
+<p>Пробуем выставить <span class="code text-orange">setAccessible(false)</span>.
+
+<pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws NoSuchFieldException, IllegalAccessException {
+    Person person = new Person(10, "javaRush");
+
+    Field field = Person.class.getDeclaredField("age");
+    
+    field.setAccessible(true);
+    field.set(person, 19);
+    field.setAccessible(false);
+
+    System.out.println("Текущие значение - " + field.get(person));
+}
+</code></pre>
+
+<p>После возвращения доступа на <span class="text-red"><em>false</em></span> мы снова сталкиваемся с нашим исключением, когда пытаемся вызвать метод <span class="code text-orange">get</span>:</p>
+
+<img data-max-width="1080" data-id="272e221a-c92b-4ff9-82c8-4d2585c86b16" src="https://cdn.javarush.com/images/article/272e221a-c92b-4ff9-82c8-4d2585c86b16/original.png" alt="">
+
+<p>Поэтому будь осторожен, когда работаешь с <span class="code">private</span>-полями и не забывай, что рефлексия — очень мощный инструмент для работы!</p>

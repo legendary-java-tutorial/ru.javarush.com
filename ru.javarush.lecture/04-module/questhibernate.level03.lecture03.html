@@ -1,0 +1,353 @@
+Оператор OUTER JOIN
+<p>----------------------------------------</p>
+Причины появления OUTER JOIN. 
+Типы JOIN-ов. 
+Вопрос с собеседования.
+<p>----------------------------------------</p>
+<h2>Причины появления OUTER JOIN</h2>
+ 
+<p>Кстати, помнишь, мы объединяли наши таблицы и у нас пропали задачи по уборке офиса, так как самой уборщицы еще не было? </p>
+ 
+<p>Если выполнить такой запрос: </p>
+
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-orange">task</span>
+</code></pre>
+    </div>
+
+<p>То мы получим такой результат:</p>
+  
+<table>
+<tbody>
+<tr>
+<th>id </th>
+<th>emploee_id </th>
+<th>name </th>
+<th>deadline</th>
+</tr>
+<tr>
+<td>1 </td>
+<td>1 </td>
+<td>Исправить багу на фронтенде </td>
+<td>2022-06-01 </td>
+</tr>
+<tr>
+<td>2 </td>
+<td>2 </td>
+<td>Исправить багу на бэкенде </td>
+<td>2022-06-15 </td>
+</tr>
+<tr>
+<td>3 </td>
+<td>5 </td>
+<td>Купить кофе </td>
+<td>2022-07-01 </td>
+</tr>
+<tr>
+<td>4 </td>
+<td>5 </td>
+<td>Купить кофе </td>
+<td>2022-08-01 </td>
+</tr>
+<tr>
+<td>5 </td>
+<td>5 </td>
+<td>Купит кофе </td>
+<td>2022-09-01</td>
+</tr>
+<tr> 
+<td>6 </td>
+<td>(NULL) </td>
+<td>Убрать офис </td>
+<td>(NULL) </td>
+</tr>
+<tr>
+<td>7 </td>
+<td>4 </td>
+<td>Наслаждаться жизнью </td>
+<td>(NULL) </td>
+</tr>
+<tr>
+<td>8 </td>
+<td>6 </td>
+<td>Наслаждаться жизнью </td>
+<td>(NULL) </td>
+</tr>
+</tbody>
+</table>
+ 
+<p>Задача “Убрать офис” пропадает, если мы попробуем объединить таблицу task с таблицей employee по employee_id. </p>
+ 
+<p>Чтобы решить эту проблему, в оператор JOIN добавили различные модификаторы, которые позволяют сохранить такие потерянные строки без пары в другой таблице. </p>
+ 
+<p>Напомню классический вид оператора JOIN: </p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<center><strong><span class="text-orange">таблица1</span> <span class="text-red">JOIN</span> <span class="text-orange">таблица2</span> <span class="text-red">ON</span>
+<span class="text-user">условие</span></strong></center>
+</code></pre>
+    </div>
+
+<p>Мы можем сказать SQL-серверу, чтобы все данные из левой таблицы (таблица1) обязательно присутствовали в объединенной таблице. <span class="text-red">Даже если для них нет пары в правой таблице.</span> Для этого всего лишь нужно написать:  </p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-orange">таблица1</span> <span class="text-red">LEFT JOIN</span> <span class="text-orange">таблица2</span> <span class="text-red">ON <span class="text-user">условие</span></code></pre>
+    </div>
+ 
+<p>Если же ты хочешь, чтобы в объединенной таблице <span class="text-green">обязательно были все строки из правой таблицы</span>, то нужно написать:  </p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-orange">таблица1</span> <span class="text-red">RIGHT JOIN</span> <span class="text-orange">таблица2</span> <span class="text-red">ON</span>
+ <span class="text-user">условие</span> </code></pre>
+    </div>
+
+<p>Давай напишем запрос, который объединит все задачи и сотрудников, чтобы при этом задачи без исполнителя не терялись. Для этого нужно написать запрос: </p>
+
+<pre><code><strong><span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-orange">employee e</span> <span class="text-red">RIGHT JOIN</span> <span class="text-orange">task t</span> <span class="text-red">ON</span> <span class="text-orange">e</span>.<span class="text-green">id</span> = <span class="text-orange">t</span>.<span class="text-green">emploee_id</span></strong>
+</code></pre> 
+
+<p>И результат такого запроса:  </p>
+
+<table>
+<tbody>
+<tr>
+<th>id </th>
+<th>name </th>
+<th>occupation </th>
+<th>salary </th>
+<th>age </th>
+<th>join_date </th>
+<th>id </th>
+<th>emploee_id </th>
+<th>name </th>
+</tr>
+<tr>
+<td>1 </td>
+<td>Иванов Иван </td>
+<td>Программист </td>
+<td>100000 </td>
+<td>25 </td>
+<td>2012-06-30 </td>
+<td>1 </td>
+<td>1 </td>
+<td>Исправить багу на фронтенде </td>
+</tr>
+<tr>
+<td>2 </td>
+<td>Петров Петр </td>
+<td>Программист </td>
+<td>80000 </td>
+<td>23 </td>
+<td>2013-08-12 </td>
+<td>2 </td>
+<td>2 </td>
+<td>Исправить багу на бэкенде </td>
+</tr>
+<tr>
+<td>4 </td>
+<td>Рабинович Мойша </td>
+<td>Директор </td>
+<td>200000 </td>
+<td>35 </td>
+<td>2015-05-12 </td>
+<td>7 </td>
+<td>4 </td>
+<td>Наслаждаться жизнью </td>
+</tr>
+<tr>
+<td>5 </td>
+<td>Кириенко Анастасия </td>
+<td>Офис-менеджер </td>
+<td>40000 </td>
+<td>25 </td>
+<td>2015-10-10 </td>
+<td>3 </td>
+<td>5 </td>
+<td>Купить кофе </td>
+</tr>
+<tr>
+<td>5 </td>
+<td>Кириенко Анастасия </td>
+<td>Офис-менеджер </td>
+<td>40000 </td>
+<td>25 </td>
+<td>2015-10-10 </td>
+<td>4 </td>
+<td>5 </td>
+<td>Купить кофе </td>
+</tr>
+<tr>
+<td>5 </td>
+<td>Кириенко Анастасия </td>
+<td>Офис-менеджер </td>
+<td>40000 </td>
+<td>25 </td>
+<td>2015-10-10 </td>
+<td>5 </td>
+<td>5 </td>
+<td>Купить кофе </td>
+</tr>
+<tr>
+<td>6 </td>
+<td>Васька </td>
+<td>кот </td>
+<td>1000 </td>
+<td>3 </td>
+<td>2018-11-11 </td>
+<td>8 </td>
+<td>6 </td>
+<td>Наслаждаться жизнью </td>
+</tr>
+<tr>
+<td>(NULL) </td>
+<td>(NULL) </td>
+<td>(NULL) </td>
+<td>(NULL) </td>
+<td>(NULL) </td>
+<td>(NULL) </td>
+<td>6 </td>
+<td>(NULL) </td>
+<td>Убрать офис </td>
+</tr>
+<tr>
+</tbody>
+</table>
+ 
+<p>В нашу таблицу добавилась еще одна строка, и что интересно в ней очень много значений NULL. Все данные, которые брались из таблицы employee отображаются в виде NULL, так как для задачи “Убрать офис” не нашлось исполнителя из таблицы employee. </p>
+ 
+<h2>Типы JOIN-ов </h2>
+
+<p>Всего существует 4 типа JOIN-ов. Они представлены в таблице ниже: </p>
+ 
+<table>
+<tbody>
+<tr>
+<th></th>
+<th>Краткая запись </th>
+<th>Длинная запись </th>
+<th>Пояснение </th>
+</tr>
+<tr>
+<td>1 </td>
+<td>JOIN </td>
+<td>INNER JOIN </td>
+<td>Только записи, которые есть в таблицах А и Б </td>
+</tr>
+<tr>
+<td>2 </td>
+<td>LEFT JOIN </td>
+<td>LEFT OUTER JOIN </td>
+<td>Все строки без пары из таблицы А должны быть </td>
+</tr>
+<tr>
+<td>3 </td>
+<td>RIGHT JOIN </td>
+<td>RIGHT OUTER JOIN </td>
+<td>Все строки без пары из таблицы Б должны быть </td>
+</tr>
+<tr>
+<td>4 </td>
+<td>OUTER JOIN </td>
+<td>FULL OUTER JOIN </td>
+<td>Все строки баз пар из таблиц А и Б должны быть </td>
+</tr>
+</tbody>
+</table>
+ 
+<p>Для простоты, если мы представим таблицы в виде множеств, то JOIN можно будет отображать в виде картинки: </p>
+ 
+<img data-max-width="512" data-id="66aba568-a02a-45e0-9939-6beebbb190ed" src="https://cdn.javarush.com/images/article/66aba568-a02a-45e0-9939-6beebbb190ed/original.png" alt="">
+ 
+<p>Под пересечением множеств подразумевается, что для одной таблицы есть соответствующая запись из другой таблицы, на которую она ссылается. </p>
+ 
+<h2>Вопрос с собеседования </h2>
+
+<p>Иногда программистов-новичков на собеседовании валят очень простым вопросом. С учетом наших таблиц его можно сформулировать так: </p>
+
+“Напишите запрос, которые отобразит <strong>список всех сотрудников, для которых нет задач</strong>”. 
+
+Сначала попробуем немного перефразировать этот вопрос: 
+
+“Напишите запрос, которые отобразит <strong>список всех сотрудников из таблицы employee, для которых нет задач в таблице task</strong>”. 
+
+Нам нужно получить вот это множество: 
+ 
+<img data-max-width="512" data-id="d3cc4f4a-b340-4b3a-9ae0-3e38eca36bb2" src="https://cdn.javarush.com/images/article/d3cc4f4a-b340-4b3a-9ae0-3e38eca36bb2/original.png" alt="">
+ 
+<p>Можно решить эту задачу многими способами, но я начну с самых простых: 
+Во-первых, ты можешь объединить наши таблицы с помощью LEFT JOIN, а потом с помощью WHERE исключить все строки, для которых недостающие данные были дополнены NULL-ами. </p>
+ 
+<pre><code><strong><span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-orange">employee e</span> <span class="text-red">LEFT JOIN</span> <span class="text-orange">task t</span> <span class="text-red">ON</span> <span class="text-orange">e</span>.<span class="text-green">id</span> = <span class="text-orange">t</span>.<span class="text-green">emploee_id</span>  
+<span class="text-red">WHERE</span> <span class="text-orange">t</span>.<span class="text-green">id</span> <span class="text-red">IS NULL</span> </strong>
+</code></pre>
+
+<p>И результат такого запроса:  </p>
+
+<table>
+<tbody>
+<tr>
+<th>id </th>
+<th>name </th>
+<th>occupation</th> 
+<th>salary </th>
+<th>age </th>
+<th>join_date </th>
+<th>id </th>
+<th>emploee_id </th>
+<th>name </th>
+</tr>
+<tr>
+<td>3 </td>
+<td>Иванов Сергей </td>
+<td>Тестировщик </td>
+<td>40000 </td>
+<td>30 </td>
+<td>2014-01-01 </td>
+<td>(NULL) </td>
+<td>(NULL) </td>
+<td>(NULL) </td>
+</tr>
+</tbody>
+</table>
+ 
+<p>Единственный минус такого решения, что тут в таблице строки содержат NULL, а нам по условию нужно отобразить список сотрудников.</p>
+ 
+<p>Для этого нужно или перечислить в SELECT требуемые колонки таблицы employee, или если нужно отобразить их все, то можно написать такую конструкцию: </p>
+ 
+<pre><code><strong><span class="text-red">SELECT</span> <span class="text-orange">e</span>.* <span class="text-red">FROM</span> <span class="text-orange">employee e</span>, <span class="text-orange">task t</span> </strong>
+</code></pre>
+ 
+<p>Полный запрос будет выглядеть так:</p>
+ 
+<pre><code><strong><span class="text-red">SELECT</span> <span class="text-orange">e</span>.*  
+<span class="text-red">FROM</span> <span class="text-orange">employee e</span> <span class="text-red">RIGHT JOIN</span> <span class="text-orange">task t</span> <span class="text-red">ON</span> <span class="text-orange">e</span>.<span class="text-green">id</span> = <span class="text-orange">t</span>.<span class="text-green">emploee_id</span>  
+<span class="text-red">WHERE</span> <span class="text-orange">t</span>.<span class="text-green">id</span> <span class="text-red">IS NULL</span> </strong>
+</code></pre>
+
+<p> результат такого запроса:  </p>
+ 
+<table>
+<tbody>
+<tr>
+<th>id </th>
+<th>name </th>
+<th>occupation </th>
+<th>salary </th>
+<th>age </th>
+<th>join_date </th>
+</tr>
+<tr>
+<td>3 </td>
+<td>Иванов Сергей </td>
+<td>Тестировщик </td>
+<td>40000 </td>
+<td>30 </td>
+<td>2014-01-01 </td>
+</tbody>
+</table>
+ 
+<p>Остальные способы остаются вам для домашнего задания. Не хочу лишать вас удовольствия найти их самостоятельно.</p>

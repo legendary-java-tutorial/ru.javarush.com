@@ -1,0 +1,106 @@
+Работа с RowSet
+<p>----------------------------------------</p>
+Знакомство с RowSet
+Создание объекта RowSet
+Примеры работы с RowSet
+<p>----------------------------------------</p>
+<h2>6.1 Знакомство с RowSet</h2>
+<p>Как ты уже знаешь, стандарту JDBC уже почти 20 лет, и он немного устарел. В него потихоньку добавляют новые типы и новые классы, но не везде это можно сделать красиво. И одно из таких мест — это <strong>ResultSet</strong>.</p>
+<p>Работу с базой данных можно сделать более эффективной, но интерфейс <strong>ResultSet</strong> слабо для этого подходит. Кроме того, мы нигде явно не создаем его объекты, нам их возвращает метод <code>executeQuery()</code>.</p>
+<p>Создатели JDBC не стали долго думать и сделали механизм, полностью параллельный всему, что было до этого. И называться он стал <strong>RowSet</strong>.</p>
+<p>Вот его основные преимущества:</p>
+<ul>
+	<li>RowSet расширяет интерфейс ResultSet, поэтому его функции более мощные, чем у ResultSet.</li>
+	<li>RowSet более гибко перемещается по данным таблицы и может прокручивать назад и вперед.</li>
+	<li>RowSet поддерживает кэшированные данные, которые можно использовать даже после закрытия соединения.</li>
+	<li>RowSet поддерживает новый метод подключения, ты можешь подключиться к базе данных без подключения. Также он поддерживает чтение источника данных XML.</li>
+	<li>RowSet поддерживает фильтр данных.</li>
+	<li>RowSet также поддерживает операции соединения таблиц.</li>
+</ul>
+<p>Типы RowSet:</p>
+<ul>
+	<li><strong>CachedRowSet</strong></li>
+	<li><strong>FilteredRowSet</strong></li>
+	<li><strong>JdbcRowSet</strong></li>
+	<li><strong>JoinRowSet</strong></li>
+	<li><strong>WebRowSet </strong></li>
+</ul>
+<h2>6.2 Создание объекта RowSet</h2>
+<p>Есть три разных способа получить рабочий объект .</p>
+<p>Во-первых, его можно заполнить данными из <strong>ResultSet</strong>, полученного классическим способом.</p>
+<p>Например, мы можем закешировать данные <strong>ResultSet</strong> с помощью <strong>CachedRowSet</strong>:</p>
+<pre class='line-numbers'><code>
+Statement statement = connection.createStatement();
+ResultSet <span class="text-yellow">results</span> = statement.executeQuery(<span class="text-green">"SELECT * FROM user"</span>);
+ 
+<span class="text-viola">RowSetFactory</span> <span class="text-user">factory</span> = RowSetProvider.newFactory();
+<span class="text-brown">CachedRowSet crs</span> = <span class="text-user">factory</span>.<span class="text-brown">createCachedRowSet</span>();
+<span class="text-brown">crs</span>.<span class="text-red">populate</span>(<span class="text-yellow">results</span>);		<span class="token comment">// Используем ResultSet для заполнения</span>
+</code></pre>
+<p>Во-вторых, можно создать полностью автономный объект <strong>RowSet</strong>, создав для него свое собственное подключение к базе данных:</p>
+<pre class='line-numbers'><code>
+JdbcRowSet rowSet = RowSetProvider.newFactory().createJdbcRowSet();
+<span class="text-brown">rowSet</span>.setUrl(<span class="text-green">"jdbc:mysql://localhost:3306/test"</span>);
+<span class="text-brown">rowSet</span>.setUsername(<span class="text-green">"root"</span>);
+<span class="text-brown">rowSet</span>.setPassword(<span class="text-green">"secret"</span>);
+ 
+<span class="text-brown">rowSet</span>.setCommand(<span class="text-green">"SELECT * FROM user"</span>);
+<span class="text-brown">rowSet</span>.execute();
+</code></pre>
+<p>И в-третьих, можно подключить RowSet к уже существующему соединению:</p>
+<pre class='language-java line-numbers'><code>
+ Connection <span class="text-red">con</span> = DriverManager.getConnection("jdbc:mysql://localhost:3306/test", "root", "root");
+JdbcRowSet rowSet = new JdbcRowSetImpl(<span class="text-red">con</span>);
+ 
+<span class="text-brown">rowSet</span>.setCommand("SELECT * FROM user");
+<span class="text-brown">rowSet</span>.execute();
+</code></pre>
+<h2>6.3 Примеры работы с RowSet</h2>
+<p>Пример первый: <strong>кэширование</strong>.</p>
+<p>Давай напишем код, где с помощью <strong>CachedRowSet</strong> закешируем все данные и будем читать их из уже закрытого соединения:</p>
+<pre class='language-java line-numbers'><code>
+Statement statement = connection.createStatement();
+ResultSet <span class="text-yellow">results</span> = statement.executeQuery(<span class="text-green">"SELECT * FROM user"</span>);
+ 
+<span class="text-viola">RowSetFactory</span> <span class="text-user">factory</span> = RowSetProvider.newFactory();
+<span class="text-brown">CachedRowSet crs</span> = <span class="text-user">factory</span>.<span class="text-brown">createCachedRowSet</span>();
+<span class="text-brown">crs</span>.<span class="text-red">populate</span>(<span class="text-yellow">results</span>);	<span class="token comment">// Используем ResultSet для заполнения</span>
+ 
+connection.close();		<span class="token comment">// Закрываем соединение</span>
+ 
+<span class="token comment">// Данные из кэша все еще доступны</span>
+while(<span class="text-brown">crs</span>.next()) {
+  	System.out.println(<span class="text-brown">crs</span>.getString(1)+"\t"+ <span class="text-brown">crs</span>.getString(2)+"\t"+ <span class="text-brown">crs</span>.getString(3));
+}     
+
+</code></pre>
+<p>Пример второй: <strong>изменение строк через RowSet</strong>:</p>
+<pre class='language-java line-numbers'><code>
+ // Подключаемся к базе данных
+ CachedRowSet crs = rsf.createCachedRowSet();
+ crs.setUrl("jdbc:mysql://localhost/test");
+ crs.setUsername("root");
+ crs.setPassword("root");
+ crs.setCommand("SELECT * FROM user");
+ crs.execute();                                                                                                                     	
+ 
+// Этот тип операции может изменить только автономный RowSet
+// Сначала перемещаем указатель на пустую (новую) строку, текущая позиция запоминается
+ crs.moveToInsertRow();
+ crs.updateString(1, Random.nextInt());
+ crs.updateString(2, "Клон" + System.currentTimeMillis());
+ crs.updateString(3, "Женский");
+ crs.insertRow();  // Добавляем текущую (новую) строку к остальные строкам
+ crs.moveToCurrentRow(); // Возвращаем указатель на ту строку, где он был до вставки
+ 
+ crs.beforeFirst();
+ while(crs.next()) {
+ 	System.out.println(crs.getString(1) + "," + crs.getString(2) + "," + crs.getString(3));
+}
+ 
+// А теперь мы можем все наши изменения залить в базу
+Connection con = DriverManager.getConnection("jdbc:mysql://localhost/dbtest", "root", "root");
+con.setAutoCommit(false); // Нужно для синхронизации
+crs.acceptChanges(con);// Синхронизировать данные в базу данных
+</code></pre>
+<p>Если тебе интересно, как это работает, можешь ознакомиться с темой в официальной документации. Моя задача в настоящий момент — просто рассказать, что такое есть.</p>

@@ -1,0 +1,193 @@
+Функции работы с датой, практические примеры
+<p>----------------------------------------</p>
+Ищем события за последние 30 дней. 
+Как найти разницу между двумя датами.
+<p>----------------------------------------</p>
+<h2>Ищем события за последние 30 дней </h2>
+
+<p>Еще одна часто возникающая задача – это поиск строк, которые относятся к определенному диапазону дат. В принципе в этом нет ничего сложного, если начальная и конечная даты диапазона фиксированы: SQL умеет сравнивать даты так же хорошо, как и числа. </p>
+
+<p>К датам можно применять операторы сравнения: <span class="text-viola">&lt;</span>, <span class="text-viola">&gt;</span>, <span class="text-viola">&lt;=</span> и т. п. Кроме того, есть специальный оператор BETWEEN, который тоже умеет работать с датами.  
+Давай для примера напишем запрос, который отберет все задачи из таблицы task, которые нужно сделать летом 2022 года. Запрос будет выглядеть так:  </p>
+ 
+<pre><code><strong><span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-orange">task</span>  
+<span class="text-red">WHERE</span> <span class="text-orange">task</span>.<span class="text-green">deadline</span> <span class="text-red">BETWEEN</span> <span class="text-user">'2022-06-01'</span> <span class="text-red">AND</span> <span class="text-user">'2022-08-31'</span></strong>
+</code></pre> 
+ 
+<p>Результат этого запроса будет таким: </p>
+
+<table>
+<tbody>
+<tr>
+<th>id </th>
+<th>emploee_id </th>
+<th>name </th>
+<th>deadline </th>
+</tr>
+<tr>
+<td>1 </td>
+<td>1 </td>
+<td>Исправить багу на фронтенде </td>
+<td>2022-06-01 </td>
+</tr>
+<tr>
+<td>2 </td>
+<td>2 </td>
+<td>Исправить багу на бэкенде </td>
+<td>2022-06-15 </td>
+</tr>
+<tr>
+<td>3 </td>
+<td>5 </td>
+<td>Купить кофе </td>
+<td>2022-07-01 </td>
+</tr>
+<tr>
+<td>4 </td>
+<td>5 </td>
+<td>Купить кофе </td>
+<td>2022-08-01 </td>
+</tr>
+</tbody>
+</table>
+ 
+<p>Но что писать в запросе, если мы хотим получить задачи, например, за последние 30 дней. Где последний 30 дней прямо привязаны ко времени выполнения запроса. То есть если запрос выполняется 25 июля, то нужно выбрать даты с 25 июня по 24 июля. Как привязать интервал дат к текущему времени? </p>
+
+<p>Для этого нужно воспользоваться функцией сложения дат: </p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">DATE_ADD</span> (<span class="text-user">дата</span>, <span class="text-red">INTERVAL</span> <span class="text-user">выражение</span> <span class="text-green">единицы</span>) </code></pre>
+    </div>
+
+<p>Думаю, легче будет объяснить с помощью нескольких примеров: </p>
+
+<table>
+<tbody>
+<tr>
+<th>#</th> 
+<th>Запрос </th>
+<th>Результат </th>
+</tr>
+<tr>
+<td>1 </td>
+<td>DATE_ADD('2022-06-04', INTERVAL 5 DAY)</td> 
+<td>2022-06-09 </td>
+</tr>
+<tr>
+<td>2 </td>
+<td>DATE_ADD('2022-06-04', INTERVAL 4 WEEK) </td>
+<td>2022-07-02 </td>
+</tr>
+<tr>
+<td>3 </td>
+<td>DATE_ADD('2022-06-04', INTERVAL 2 MONTH) </td>
+<td>2022-08-04 </td>
+</tr>
+<tr>
+<td>4 </td>
+<td> </td>
+<td> </td>
+</tr>
+<tr>
+<td>5 </td>
+<td>DATE_SUB('2022-06-04', INTERVAL 5 DAY) </td>
+<td>2022-05-30 </td>
+</tr>
+<tr>
+<td>6 </td>
+<td>DATE_SUB('2022-06-04', INTERVAL 4 WEEK) </td>
+<td>2022-05-07 </td>
+</tr>
+<tr>
+<td>7 </td>
+<td>DATE_SUB('2022-06-04', INTERVAL 2 MONTH) </td>
+<td>2022-04-04 </td>
+</tr>
+</tbody>
+</table>
+
+<p>Кстати, из определенной даты можно так же вычитать определенное количество дней, недель, месяцев и лет.  </p>
+
+<p>И если вернуться к нашему запросу – получить данные за последние 30 дней, то нам нужны две даты этого диапазона: </p>
+
+<ul>
+<li><strong>CURDATE()</strong> – конец диапазона </li>
+<li><strong>DATE_SUB( CURDATE() , INTERVAL 30 DAY)</strong> – начало диапазона </li>
+</ul>
+
+<p>Запрос будет выглядеть так:  </p>
+ 
+<pre><code><strong><span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-orange">task</span> <span class="text-red">WHERE</span> <span class="text-orange">task</span>.<span class="text-green">deadline  </span>
+<span class="text-red">BETWEEN</span> <span class="text-user">DATE_SUB( CURDATE() , INTERVAL 30 DAY) </span><span class="text-red">AND</span> <span class="text-user">CURDATE()</span> </strong>
+</code></pre>
+ 
+<p>Результат этого запроса будет таким (у меня сегодня 4 июня 2022 года): </p>
+
+<table>
+<tbody>
+<tr>
+<th>id</th> 
+<th>emploee_id </th>
+<th>name </th>
+<th>deadline </th>
+</tr>
+<tr>
+<td>1</td> 
+<td>1</td> 
+<td>Исправить багу на фронтенде </td>
+<td>2022-06-01 </td>
+</tr>
+</tbody>
+</table>
+
+<h2>Как найти разницу между двумя датами </h2>
+
+<p>И еще одна полезная функция. Иногда может понадобиться вычислить разницу между двумя датами в днях. Для этого у SQL есть специальная функция – DATEDIFF().</p>
+ 
+<p>Работать с ней очень просто:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">DATEDIFF</span> (<span class="text-user">дата1</span>, <span class="text-green">дата2</span>) </code></pre>
+    </div>
+ 
+<p>Из первой даты просто вычитается вторая. Если дата2 идет после дата1, то результат будет отрицательным. </p>
+
+<p>Кстати, мы можем переписать наш предыдущий запрос, используя функцию DATEDIFF(). Нам нужно отобрать все задачи из таблицы task, дедлайн которых отличается от текущей даты не более чем на 30 дней. Вот как будет выглядеть этот запрос:  </p>
+ 
+<pre><code><strong><span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-orange">task</span> <span class="text-red">WHERE</span> <span class="text-user">DATEDIFF</span><span class="text-red">(</span><span class="text-orange">task</span>.<span class="text-green">deadline</span><span class="text-red">, <span class="text-viola">CURDATE()</span> <span class="text-red">) &lt;</span> <span class="text-neon">30</span></strong>
+</code></pre> 
+ 
+<p>Результат этого запроса будет таким (у меня сегодня 4 июня 2022 года): </p>
+
+<table>
+<tbody>
+<tr>
+<th>id </th>
+<th>emploee_id </th>
+<th>name </th>
+<th>deadline </th>
+</tr>
+<tr>
+<td>1 </td>
+<td>1 </td>
+<td>Исправить багу на фронтенде </td>
+<td>2022-06-01 </td>
+</tr>
+<tr>
+<td>2 </td>
+<td>2 </td>
+<td>Исправить багу на бэкенде </td>
+<td>2022-06-15 </td>
+</tr>
+<tr>
+<td>3 </td>
+<td>5 </td>
+<td>Купить кофе </td>
+<td>2022-07-01 </td>
+</tr>
+</tbody>
+</table>
+ 
+<p>В этот раз SQL нашел целых три строки. Подумай, почему в прошлый раз была одна строка, а в этот раз – три?</p>

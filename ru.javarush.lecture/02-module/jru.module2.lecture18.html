@@ -1,0 +1,214 @@
+Интерфейс ExecutorService
+<p>----------------------------------------</p>
+До Java 5 для управления потоками нужно было писать весь код самому в приложении. Кроме этого, создание объекта new Thread – это ресурсоемкая операция, и создавать для “легковесных” задач каждый раз новый поток нерационально. А так как с этой проблемой...
+<p>----------------------------------------</p>
+    <h2>Для чего нужен интерфейс Executor</h2>
+
+    <p>До Java 5 для управления потоками нужно было писать весь код самому в приложении. Кроме этого, создание объекта <mark class="green">new Thread</mark> — это ресурсоемкая операция, и создавать для “легковесных” задач каждый раз новый поток было нерационально. А так как с этой проблемой сталкивались абсолютно все разработчики многопоточных приложений, этот функционал решили вынести как фреймворк <span class="text-bold">Executor</span> в Java.</p>
+
+    <p>Какая главная идея? Все просто: вместо того, чтоб создавать новый поток под каждую новую задачу, потоки хранятся в неком “хранилище”, и когда поступает новая задача, берется уже существующий поток, а не создается новый.</p>
+
+    <p>Основные интерфейсы этого фреймворка — это <span class="text-neon"><span class="text-bold"><em>Executor</em></span></span>, <span class="text-neon"><span class="text-bold"><em>ExecutorService</em></span></span> и <span class="text-neon"><span class="text-bold"><em>ScheduledExecutorService</em></span></span>, каждый из которых расширяет функциональность предыдущего.</p>
+
+    <img data-max-width="512" data-id="86753672-7f86-472f-8aa6-7b2e9bab23fa" src="https://cdn.javarush.com/images/article/86753672-7f86-472f-8aa6-7b2e9bab23fa/original.png" alt="">
+
+    <p>Интерфейс Executor</em></span></span> — базовый интерфейс, который объявляет один метод <span class="code text-orange">void execute(Runnable command)</span> — запуск задачи, которая описана в объекте типа <span class="text-orange">Runnable</span>.</p>
+
+    <p>Интерфейс <span class="text-neon"><span class="text-bold"><em>ExecutorService</em></span></span> уже более интересный. Он содержит методы для управления завершением работы, а также методы, которые могут возвращать какой-то результат. Посмотрим подробнее на его методы:</p>
+
+    <table>
+        <tbody>
+            <tr>
+                <th>Метод</th>
+                <th>Описание</th>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">void shutdown();</span></td>
+                <td>Вызов метода инициирует остановку <span class="text-neon"><span class="text-bold"><em>ExecutorService</em></span></span>. Все задачи, которые уже были отправлены на обработку, будут завершены, новые задачи приниматься не будут.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">List&lt;Runnable&gt; shutdownNow();</span></td>
+                <td><p>Вызов метода инициирует остановку <span class="text-neon"><span class="text-bold"><em>ExecutorService</em></span></span>. Все задачи, которые уже были отправлены на обработку, получат команду <span class="text-user">Thread.interrupt</span>. Задачи, находящиеся в очереди, возвращаются в виде списка как результат вызова метода.</p>
+                    <p>Метод не ожидает завершения всех задач, которые находятся “в работе” на момент вызова метода.</p>
+                    <p><span class="text-red"><em>Внимание: вызов метода может вызывать утечку ресурсов.</em></span></p></td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">boolean isShutdown();</span></td>
+                <td>Проверяет, остановлен ли <span class="text-neon"><span class="text-bold"><em>ExecutorService</em></span></span>.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">boolean isTerminated();</span></td>
+                <td>Возвращает true, если все задачи были завершены после остановки <span class="text-neon"><span class="text-bold"><em>ExecutorService</em></span></span>. Пока не будет вызван метод <span class="code text-orange">shutdown()</span> или <span class="code text-orange">shutdownNow()</span>, всегда будет возвращен <span class="text-red"><em>false</em></span>.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">boolean awaitTermination(long timeout, TimeUnit unit)
+throws InterruptedException;</span></td>
+                <td><p>Блокирует поток, из которого запущен, после вызова метода <span class="code text-orange">shutdown()</span>, пока не случится одно из условий:</p>
+                    <ul>
+                        <li>закончится выполнение всех запланированных задач;</li>
+                        <li>пройдет временной интервал, указанный в качестве параметров метода;</li>
+                        <li>текущий поток прекратит свою работу.</li>
+                    </ul>
+                    <p>Возвращает <span class="text-green"><em>true</em></span>, если все задачи завершились, и <span class="text-red"><em>false</em></span>, если раньше наступил таймаут.</p></td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">&lt;T&gt; Future&lt;T&gt; submit(Callable&lt;T&gt; task);</span></td>
+                <td><p>Добавляет <span class="text-neon"><span class="text-bold"><em>ExecutorService</em></span></span> вызываемую (<span class="text-neon"><span class="text-bold"><em>Callable</em></span></span>) задачу и возвращает объект, имплементирующий интерфейс <span class="text-neon"><span class="text-bold"><em>Future</em></span></span>.</p>
+                    <p><span class="text-orange">&lt;T&gt;</span> — тип результата переданной задачи.</p></td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">&lt;T&gt; Future&lt;T&gt; submit(Runnable task, T result);</span></td>
+                <td><p>Добавляет <span class="text-neon"><span class="text-bold"><em>ExecutorService</em></span></span> выполняемую (<span class="text-neon"><span class="text-bold"><em>Runnable</em></span></span>) задачу и возвращает объект, имплементирующий интерфейс <span class="text-neon"><span class="text-bold"><em>Future</em></span></span>.</p>
+                    <p>Параметр <span class="text-green">T result</span> — то, что вернет вызов метода <span class="code text-orange">get()</span> у полученного объект <mark class="green">Future</span>.</p></td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">Future&lt;?&gt; submit(Runnable task);</span></td>
+                <td><p>Добавляет <span class="text-neon"><span class="text-bold"><em>ExecutorService</em></span></span> выполняемую (<span class="text-neon"><span class="text-bold"><em>Runnable</em></span></span>) задачу и возвращает объект, имплементирующий интерфейс <span class="text-neon"><span class="text-bold"><em>Future</em></span></span>.</p>
+                    <p>Если вызвать метод <span class="code text-orange">get()</span> у полученного объекта <span class="text-neon"><span class="text-bold"><em>Future</em></span></span>, то получим null.</p></td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">&lt;T&gt; List&lt;Future&lt;T&gt;&gt; invokeAll(Collection&lt;? extends Callable&lt;T&gt;&gt; tasks)
+throws InterruptedException;</span></td>
+                <td><p>Передает <span class="text-neon"><span class="text-bold"><em>ExecutorService</em></span></span> список вызываемых (<span class="text-neon"><span class="text-bold"><em>Callable</em></span></span>) задач. Возвращает список Future, из которых можно получить результат работы. Этот список возвращается после завершения выполнения всех переданных задач.</p>
+                    <p>Если во время работы метода модифицировать коллекцию <span class="text-neon"><span class="text-bold">tasks</span></span>, то результат метода неопределен.</p></td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">&lt;T&gt; List&lt;Future&lt;T&gt;&gt; invokeAll(Collection&lt;? extends Callable&lt;T&gt;&gt; tasks, long timeout, TimeUnit unit) throws InterruptedException;</span></td>
+                <td><p>Передает <span class="text-neon"><span class="text-bold"><em>ExecutorService</em></span></span> список вызываемых (<span class="text-neon"><span class="text-bold"><em>Callable</em></span></span>) задач. Возвращает список Future, из которых можно получить результат работы. Этот список возвращается после завершения выполнения всех переданных задач или после того, как пройдет время, переданное в параметрах метода (что наступит раньше).</p>
+                    <p>Если таймаут наступит раньше, невыполненные задачи отменяют свое выполнение. </p>
+                    <p><span class="text-red"><em>Примечание: отмененная задача может не остановить свою работу, а продолжить выполняться (увидим этот сайд-эффект в примере).</em></span></p>
+                    <p>Если во время работы метода модифицировать коллекцию <span class="text-neon"><span class="text-bold">tasks</span></span>, то результат метода неопределен.</p></td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">&lt;T&gt; T invokeAny(Collection&lt;? extends Callable&lt;T&gt;&gt; tasks)
+throws InterruptedException, ExecutionException;</span></td>
+                <td><p>Передает <span class="text-neon"><span class="text-bold"><em>ExecutorService</em></span></span> список вызываемых (<span class="text-neon"><span class="text-bold"><em>Callable</em></span></span>) задач. Возвращает результат работы одной из задач, которая завершила выполнение без выбрасывания исключения (если такая нашлась).</p>
+                    <p>Если во время работы метода модифицировать коллекцию <span class="text-neon"><span class="text-bold">tasks</span></span>, то результат метода неопределен.</p></td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">&lt;T&gt; T invokeAny(Collection&lt;? extends Callable&lt;T&gt;&gt; tasks,
+long timeout, TimeUnit unit)
+throws InterruptedException, ExecutionException, TimeoutException;</span></td>
+                <td><p>Передает <span class="text-neon"><span class="text-bold"><em>ExecutorService</em></span></span> список вызываемых (<span class="text-neon"><span class="text-bold"><em>Callable</em></span></span>) задач. Возвращает результат работы одной из задач, которая завершила выполнение без выбрасывания исключения (если такая нашлась) до истечения времени, заданного в параметрах метода.</p>
+                    <p>Если во время работы метода модифицировать коллекцию <span class="text-neon"><span class="text-bold">tasks</span></span>, то результат метода неопределен.</p></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>Давай рассмотрим небольшой пример работы с <span class="text-neon"><span class="text-bold"><em>ExecutorService</em></span></span>.</p>
+
+    <pre class='language-java line-numbers'><code>
+import java.util.List;
+import java.util.concurrent.*;
+
+public class ExecutorServiceTest {
+   public static void main(String[] args) throws InterruptedException, ExecutionException, TimeoutException {
+//Создаем ExecutorService на 2 потока
+       java.util.concurrent.ExecutorService executorService = new ThreadPoolExecutor(2, 2, 60, TimeUnit.SECONDS, new ArrayBlockingQueue&lt;&gt;(10));
+//Создаем 5 задач
+       MyRunnable task1 = new MyRunnable();
+       MyRunnable task2 = new MyRunnable();
+       MyRunnable task3 = new MyRunnable();
+       MyRunnable task4 = new MyRunnable();
+       MyRunnable task5 = new MyRunnable();
+
+       final List&lt;MyRunnable&gt; tasks = List.of(task1, task2, task3, task4, task5);
+//Отправляем на обработку список, который содержит 5 ранее созданных задач
+       final List&lt;Future&lt;Void&gt;&gt; futures = executorService.invokeAll(tasks, 6, TimeUnit.SECONDS);
+       System.out.println("got futures");
+
+//Останавливаем ExecutorService
+       executorService.shutdown();
+
+       try {
+           TimeUnit.SECONDS.sleep(3);
+       } catch (InterruptedException e) {
+           e.printStackTrace();
+       }
+
+       System.out.println(executorService.isShutdown());
+       System.out.println(executorService.isTerminated());
+   }
+
+   public static class MyRunnable implements Callable&lt;Void&gt; {
+
+       @Override
+       public Void call() {
+// Добавляем 2 задержки времени. При остановке ExecutorService увидим какая из них отрабатывает при попытке остановить выполнение задачи
+           try {
+               TimeUnit.SECONDS.sleep(3);
+           } catch (InterruptedException e) {
+               System.out.println("sleep 1: " + e.getMessage());
+           }
+           try {
+               TimeUnit.SECONDS.sleep(2);
+           } catch (InterruptedException e) {
+               System.out.println("sleep 2: " + e.getMessage());
+           }
+           System.out.println("done");
+           return null;
+       }
+   }
+}
+</code></pre>
+ 
+    <p>Вывод программы:</p>
+
+    <div class="terminal">done<br />
+done<br />
+got futures<br />
+sleep 1: sleep interrupted<br />
+sleep 1: sleep interrupted<br />
+done<br />
+done<br />
+true<br />
+true</div>
+
+<p>Каждая задача выполняется по 5 секунд. Так как мы создали пул на два потока, первые две строки в выводе логичны и понятны.</p>
+
+    <p>Через 6 секунд после начала работы программы срабатывает таймаут метода <span class="code text-orange">invokeAll</span> и возвращается результат в виде списка <span class="text-red">Future</span>. Это видно по строке вывода <em><strong>“got futures”</strong></em>.</p>
+
+    <p>После завершения работы первых двух задач начали работать еще две. Но так как время, заданное в методе <span class="code text-orange">invokeAll</span> вышло, эти две задачи не успели завершиться, и им была отправлена команда <em><strong>"cancel"</strong></em>. Именно поэтому в выводе видно две строки <em><strong>“sleep 1: sleep interrupted”</strong></em>.</p>
+
+    <p>А дальше можно наблюдать еще две надписи <em><strong>“done”</strong></em>. Это и есть демонстрация сайд-эффекта, о котором я писал при описании метода <span class="code text-orange">invokeAll</span>. </p>
+
+    <p>Последняя, пятая задача даже не запускалась, поэтому мы в выводе программы ничего о ней не видим.</p>
+
+    <p>Последние две строчки — это вывод результата вызова методов <span class="code text-orange">isShutdown</span> и <span class="code text-orange">isTerminated</span>.</p>
+
+    <p>Еще в этом примере интересно в дебаге посмотреть состояние задач после завершения таймаута (брейкпоинт на строке <em><strong>“executorService.shutdown();”</strong></em>):</p>
+
+    <img data-max-width="512" data-id="fb0cb6d2-6816-4270-bc75-6fcb7d157984" src="https://cdn.javarush.com/images/article/fb0cb6d2-6816-4270-bc75-6fcb7d157984/original.png" alt="">
+
+    <p>Видим, что две задачи завершились: <em><strong>“Completed normally”</strong></em>, и три задачи <em><strong>“Cancelled”</strong></em>.</p>
+
+    <h2>ScheduledExecutorService</h2>
+
+    <p>Для завершения рассказа об экзекюторах, рассмотрим еще <span class="text-neon"><span class="text-bold"><em>ScheduledExecutorService</em></span></span>.</p>
+
+    <p>У него есть 4 метода:</p>
+
+    <table>
+        <tbody>
+            <tr>
+                <th>Метод</th>
+                <th>Описание</th>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">public ScheduledFuture&lt;?&gt; schedule(Runnable command,long delay, TimeUnit unit);</span></td>
+                <td>Планирует однократное выполнение переданной выполняемой (<span class="text-neon"><span class="text-bold"><em>Runnable</em></span></span>) задачи через время, заданное в качестве параметра.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">public &lt;V&gt; ScheduledFuture&lt;V&gt; schedule(Callable&lt;V&gt; callable, long delay, TimeUnit unit);</span></td>
+                <td>Планирует однократное выполнение переданной вызываемой (<span class="text-neon"><span class="text-bold"><em>Callable</em></span></span>) задачи через время, заданное в качестве параметра.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">public ScheduledFuture&lt;?&gt; scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit);</span></td>
+                <td>Планирует периодическое выполнение переданной задачи, которая первый раз выполнится через время <span class="text-green">initialDelay</span>, и каждый следующий запуск будет начинаться через period.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">public ScheduledFuture&lt;?&gt; scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit);</span></td>
+                <td>Планирует периодическое выполнение переданной задачи, которая первый раз выполнится через время <span class="text-green">initialDelay</span>, и каждый следующий запуск будет начинаться через <span class="text-green">delay</span> (между завершением предыдущего выполнения и стартом текущего).</td>
+            </tr>
+        </tbody>
+    </table>

@@ -1,0 +1,121 @@
+Изменение структуры таблицы
+<p>----------------------------------------</p>
+Изменение структуры базы данных
+Оператор ALTER TABLE
+Добавление и удаление первичного ключа
+<p>----------------------------------------</p>
+<h2>6.1 Изменение структуры базы данных</h2>
+<p>И наконец самая вкусная часть работы с базами — изменение базы данных. Если ты думаешь, что это что-то очень простое, то вот тебе анекдот в тему:</p>
+<pre><code>
+Мастер СТО, вытирая руки, сдает клиенту машину и попутно болтает:
+- А вот вы кем работаете?
+- Кардиохирургом, операции на сердце провожу.
+- И много платят?
+- 20,000$ за операцию.
+- Нифига себе... А ведь мы, по сути, одним и тем же занимаемся, движки перебираем, а мне всего 300$ платят...
+- Хочешь так же, как я, заработать?
+- Хочу...
+Хирург заводит движок в машине и обращается к мастеру:
+- Перебирай!
+</code></pre>
+<p>С базами данных прямо такая же ситуация. Ты хочешь вынести часть данных в отдельную таблицу? Хорошо, тебе нужно:</p>
+<ul>
+	<li>создать новую таблицу</li>
+	<li>скопировать данные в эту новую таблицу</li>
+	<li>удалить колонки из старой таблицы</li>
+	<li>поменять все SQL-запросы, которые ссылались на старую таблица</li>
+	<li>добавить SQL-запросы, которые будут обращаться к новой таблице</li>
+	<li>поменять Java-код, которые работал с таблицами по-старому</li>
+	<li>поменять сценарии бэкапа и восстановления данных, так как теперь структуры таблиц не совпадают</li>
+	<li>если у тебя есть тестовые данные для разработчиков, нужно поменять и их</li>
+</ul>
+<p>Хотя в реальности бывает еще хуже:</p>
+<h4>Новая структура БД:</h4>
+<ul>
+	<li>сначала меняешь структуру таблиц на машине разработчика</li>
+	<li> потом убеждаешься, что такая структура действительно лучше</li>
+	<li>утверждаешь новую структуру БД</li>
+</ul>
+<h4>Скрипты миграции:</h4>
+<ul>
+	<li>пишешь скрипты, которые будут менять таблицые данный и т. д. на реальной базе данных</li>
+	<li>запускаешь эти скрипты на машине со старой структурой базы и смотришь, как она меняется</li>
+	<li> верифицируйшь все критические места новой базы</li>
+</ul>
+<h4>Апдейт на проде</h4>
+<ul>
+	<li>останавливаешь production-базу</li>
+	<li>делаешь полный бэкап</li>
+	<li>выполняешь скрипты</li>
+	<li>так как на проде обычно куча, данных скрипты могут работать часами</li>
+</ul>
+<h4>Запускаешь прод и надеешься, что тебе не придется все откатывать назад.</h4>
+<h2>6.2 Оператор ALTER TABLE</h2>
+<p>С другой стороны, сам скрипт, который меняет структуру таблиц, очень простой. Чем-то он похож на скрипт создания таблицы. Общий вид запроса на изменения таблицы:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">ALTER TABLE</span> <span class="text-yellow">таблица</span>
+<span class="text-user">команда 1</span>,
+<span class="text-user">команда 2</span>,
+<span class="text-user">команда N</span>
+
+        </code></pre>
+</div>
+<p>Команды бывают очень разными, но можно выделить три основные группы:</p>
+<ul>
+	<li><code>ADD</code> — добавляет что-то в таблицу</li>
+	<li><code>MODIFY</code> — меняет что-то в таблице</li>
+	<li><code>DROP</code> — удаляет что-то в таблице</li>
+</ul>
+<p>И когда я говорю что-то, то речь идет не о данных, а о структуре таблицы.</p>
+<p>Например, ты решаешь добавить в таблицу новую колонку, тогда нужно выполнить такой запрос:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">ALTER TABLE</span> <span class="text-yellow">таблица</span>
+	<span class="text-brown">ADD COLUMN</span> <span class="text-green">имя</span> <span class="text-user">тип</span>
+        </code></pre>
+</div>
+<p>Давай напишем запрос, который добавит в нашу таблицу <strong>employee</strong> колонку <strong>email</strong>:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">ALTER TABLE</span> <span class="text-yellow">employee</span>
+	<span class="text-brown">ADD COLUMN</span> <span class="text-green">email </span> <span class="text-user">VARCHAR(10)</span>
+        </code></pre>
+</div>
+<p>Теперь поменяем длину строки email с 10 на 100: для этого нам понадобится новый скрипт:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">ALTER TABLE</span> <span class="text-yellow">employee</span>
+	<span class="text-red">MODIFY</span> <span class="text-brown">COLUMN</span> <span class="text-green">email</span> <span class="text-user">VARCHAR(100)</span>
+        </code></pre>
+</div>
+<p>Если ты хочешь поменять какие-то атрибуты колонки, но не ее тип, то тебе нужна <strong>команда</strong> <code>ALTER COLUM</code>. Давай установим значение <strong>email</strong> по умолчанию:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">ALTER TABLE</span> <span class="text-yellow">employee</span>
+	<span class="text-red">ALTER</span> <span class="text-brown">COLUMN</span> <span class="text-green">email</span> <span class="text-user">VARCHAR(100)</span>  <span class="text-brown">DEFAULT</span> <span class="text-viola">'test@test.com'</span>
+        </code></pre>
+</div>
+<p>И, наконец, колонку можно удалить, если она тебе не нужна:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">ALTER TABLE</span> <span class="text-yellow">employee</span>
+	<span class="text-red">DROP</span> <span class="text-brown">COLUMN</span> <span class="text-green">email </span>
+        </code></pre>
+</div>
+<h2>6.3 Добавление и удаление первичного ключа</h2>
+<p>И еще несколько полезных примеров.</p>
+<p>Допустим, мы забыли объявить колонку <strong>id</strong> первичным ключом. Всегда можно сделать это отдельно через <code>ALTER TABLE</code>:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">ALTER TABLE</span> <span class="text-yellow">employee</span>
+	<span class="text-red">ADD PRIMARY KEY</span> (<span class="text-green">email</span>);
+        </code></pre>
+</div>
+<p>Удалить его еще проще:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-brown">ALTER TABLE</span> <span class="text-yellow">employee</span>
+	<span class="text-red">DELETE PRIMARY KEY</span>;
+        </code></pre>
+</div>

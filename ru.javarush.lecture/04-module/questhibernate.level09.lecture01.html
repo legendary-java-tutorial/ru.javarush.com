@@ -1,0 +1,167 @@
+Маппинг классов в Hibernate
+<p>----------------------------------------</p>
+Аннотация @Entity, @Table
+Аннотация @Column
+Аннотация @Id
+<p>----------------------------------------</p>
+<h2>2.1 Аннотация @Entity, @Table</h2>
+<p>Если ты хочешь замапить свой класс на таблицу в базе данных, то для этого нужно добавить в него целых 3 аннотации.</p>
+<p>Во-первых, нужно добавить к классу аннотацию <code>@Entity</code>. Эта аннотация перед классом укажет Hibernate, что это не просто класс, а специальный класс, объекты которого нужно хранить в базе данных.</p>
+<p>Пример:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-brown">@Entity</span>
+class User {
+    public int id;
+    public String name;
+    public int level;
+    public Date createdDate;
+}
+</code></pre>
+<p>Этого достаточно, чтобы Hibernate по-особому обращался с объектами этого класса.</p>
+<p>Вторая аннотация — <code>@Table</code>. С ее помощью можно задать имя таблицы в базе, с которой будет связан данный класс. Пример:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-brown">@Entity
+@Table(name=</span>"user"<span class="text-brown">)</span>
+class User {
+    public int id;
+    public String name;
+    public int level;
+    public Date createdDate;
+}
+</code></pre>
+<p>Если имя класса и имя таблицы совпадают, то аннотацию <code>@Table</code> можно не указывать.</p>
+<p>Также если твое приложение работает с таблицами из нескольких схем одновременно, то нужно указать, в какой конкретно схеме находится таблица:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-brown">@Entity
+@Table(name=</span>"user", <span class="text-brown">schema=</span>"test"<span class="text-brown">)</span>
+class User {
+    public int id;
+    public String name;
+    public int level;
+    public Date createdDate;
+}
+</code></pre>
+<p>Да, все так просто, как кажется.</p>
+<h2>2.2 Аннотация @Column</h2>
+<p>Второй важный момент, который нужно знать — это маппинг колонок таблицы на поля класса. В самом простом варианте Hibernate просто сам замапит поля твоего entity-класса на колонки нужной таблицы.</p>
+<p>Если же ты хочешь контролировать все нюансы маппинга, то можешь воспользоваться аннотацией <code>@Column</code>. Пример:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-brown">@Entity
+@Table(name=</span>"user"<span class="text-brown">)</span>
+class User {
+   <span class="text-brown">@Column(name="id")</span>
+   public Integer id;
+ 
+  <span class="text-brown"> @Column(name="name")</span>
+   public String name;
+ 
+  <span class="text-brown"> @Column(name="level")</span>
+   public Integer level;
+ 
+   <span class="text-brown">@Column(name="created_date")</span>
+   public Date createdDate;
+}
+</code></pre>
+<p>У аннотации <code>@Column</code> есть различные параметры, ниже мы рассмотрим самые популярные из них:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>#</th>
+        <th>Имя атрибута</th>
+        <th>Тип атрибута</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td><strong>name</strong></td>
+        <td>String</td>
+        <td>Задает имя колонки таблицы для поля класса</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td><strong>unique</strong></td>
+        <td>boolean</td>
+        <td>Все значения поля должны быть уникальны</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td><strong>nullable</strong></td>
+        <td>boolean</td>
+        <td>Поле может принимать значение null</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td><strong>length</strong></td>
+        <td>int</td>
+        <td>Максимальная длина (для строк)</td>
+    </tr>
+
+    </tbody>
+</table>
+<p>Давай добавим несколько ограничений на поля нашего Entity-класса User:</p>
+<ul>
+	<li>имя пользователя должно быть уникально и не длиннее 100 символов</li>
+	<li>level может быть null</li>
+	<li>createdDate не может быть null</li>
+</ul>
+<p>Тогда наши аннотации станут такими:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-brown">@Entity
+@Table(name=</span>"user"<span class="text-brown">)</span>
+class User {
+   <span class="text-brown">@Column(name="id")</span>
+    public Integer id;
+ 
+   <span class="text-brown">@Column(name="name"</span>, <span class="text-red">unique=true, length=100</span><span class="text-brown">)</span>
+   public String name;
+ 
+   <span class="text-brown">@Column(name="level"</span>, <span class="text-red">nullable=true</span><span class="text-brown">)</span>
+   public Integer level;
+ 
+   <span class="text-brown">@Column(name="created_date"</span>, <span class="text-red">nullable=false</span><span class="text-brown">)</span>
+   public Date createdDate;
+}
+</code></pre>
+<p>Ты можешь создать объект типа <strong>User</strong> и даже присвоить ему все поля <strong>null</strong>, однако при попытке сохранить его в базу данных Hibernate выполнит проверку, и если какие-то ограничения нарушены, то кинется исключение.</p>
+<h2>2.3 Аннотация @Id</h2>
+<p>И еще одна важная аннотация — это <code>@Id</code>. С ее помощью можно задать <strong>первичный ключ</strong> для таблицы.</p>
+<p>Нужно просто указать данную аннотацию у нужного поля — и Hibernate сам все сделает:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-brown">@Entity
+@Table(name=</span>"user"<span class="text-brown">)</span>
+class User {
+   <span class="text-red">@Id</span>
+   <span class="text-brown">@Column(name="id")</span>
+   public Integer id;
+ 
+   <span class="text-brown">@Column(name="name")</span>
+   public String name;
+ 
+   <span class="text-brown">@Column(name="level")</span>
+   public Integer level;
+ 
+   <span class="text-brown">@Column(name="created_date")</span>
+   public Date createdDate;
+}
+</code></pre>
+<p>Если ты хочешь, чтобы Hibernate самостоятельно генерировал <strong>ID</strong> твоих объектов при добавлении их в базу, то нужно добавить еще одну аннотацию — <code>@GeneratedValue</code>. Тогда наш пример будет выглядеть так:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-brown">@Entity
+@Table(name=</span>"user"<span class="text-brown">)</span>
+class User {
+   <span class="text-brown">@Id</span>
+   <span class="text-red">@GeneratedValue</span>
+   public Integer id;
+ 
+   <span class="text-brown">@Column(name="name")</span>
+   public String name;
+ 
+   <span class="text-brown">@Column(name="level")</span>
+   public Integer level;
+ 
+   <span class="text-brown">@Column(name="created_date")</span>
+   public Date createdDate;
+}
+
+</code></pre>
+<p>Мы тут опустили аннотацию <code>@Column</code> для поля <strong>id</strong>, так как она не несет ценной информации — имя поля и имя колонки в таблице совпадают, а благодаря остальным аннотациям Hibernate и так понимает, что речь идет о колонке таблице. </p>

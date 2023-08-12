@@ -1,0 +1,118 @@
+Изучаем класс Query
+<p>----------------------------------------</p>
+Знакомство с классами Query
+Методы класса Query
+Методы класса Scroll
+<p>----------------------------------------</p>
+<h2>2.1 Знакомство с классами Query</h2>
+<p>Кстати, еще один важный момент – это вспомогательный класс Query. Ты мог его видеть вот в этом примере:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-brown">public List&lt;Employee&gt; getAllEmployes()</span> {
+    try (Session <span class="text-user">session</span> = <span class="text-yellow">sessionFactory</span>.openSession()) {
+            Query&lt;Employee&gt; <span class="text-viola">query</span> = <span class="text-user">session</span>.createQuery("from Employee", <span class="token keyword">Employee</span>.class);
+            return <span class="text-viola">query</span>.list();
+    }
+}
+</code></pre>
+<p>На самом деле, Query – это интерфейс и у него есть несколько реализаций на разные случаи. Но для простоты я буду продолжать называть его классом. Это, скажем так, класс в широком смысле – в терминах ООП.</p>
+<p>Примечание. Раньше было два класса:</p>
+<ul>
+	<li><strong>Query</strong> для описания запроса.</li>
+	<li><strong>TypedQuery</strong> для описания запроса с заранее известным типом.</li>
+</ul>
+<p>Первый появился, когда Hibernate уже был, а дженериков еще не было. Потом, после выхода JDK 5, в Hibernate добавили еще один класс – TypedQuery, который уже поддерживал типизацию результата запроса.</p>
+<p>Но, насколько я помню, начиная с 5-й версии Hibernate оставили только один типизированный класс, и он теперь называется Query.</p>
+<p>Стандартный способ создания Query:</p>
+<pre class='line-numbers'><code>
+Query<span class="token keyword">&lt;Employee&gt;</span> <span class="text-viola">query</span> = <span class="text-user">session</span>.createQuery(<span class="text-green">"from Employee"</span>, <span class="token keyword">Employee</span>.class);
+</code></pre>
+<p>Объекты Query ты создавать научился, а как эти запросы выполнить?</p>
+<p>Тут все еще проще – мы просто вызываем метод <strong>list()</strong> у объекта Query:</p>
+<pre class='line-numbers'><code>
+Query<span class="token keyword">&lt;Employee&gt;</span> <span class="text-viola">query</span> = <span class="text-user">session</span>.createQuery(<span class="text-green">"from Employee"</span>, <span class="token keyword">Employee</span>.class);
+List<span class="token keyword">&lt;Employee&gt;</span> resultLіst = <span class="text-viola">query</span>.<span class="text-red">list</span>();
+</code></pre>
+<p>У метода <strong>list()</strong> есть JPA-синоним, метод который делает тоже самое, но называется <strong>getResultList()</strong>. Ты можешь иногда встретить его в коде, написанном другими программистами.</p>
+<p>Кстати, если запрос подразумевает, что результат будет в единственном результате, то для вызова запроса проще использовать метод <strong>uniqueResult()</strong>.</p>
+<pre class='line-numbers'><code>
+Query<span class="token keyword">&lt;Employee&gt;</span> <span class="text-viola">query</span> = <span class="text-user">session</span>.createQuery(<span class="text-green">"from Employee where id = 1"</span>, <span class="token keyword">Employee</span>.class);
+<span class="token keyword">Employee</span> result = <span class="text-viola">query</span>.<span class="text-red">uniqueResult</span>();
+</code></pre>
+<p>У метода <strong>uniqueResult()</strong> есть JPA-синоним – метод <strong>singleResult()</strong>. Он появился для совместимости Hibernate со стандартом JPA. Делает он абсолютно то же самое.</p>
+<h2>2.2 Методы класса Query</h2>
+<p>На самом деле, у класса Query есть очень много различных методов. Ниже я расскажу еще о трех из них.</p>
+<p>Во-первых, это метод <strong>stream()</strong>. И его JPA-синоним <strong>getResultStream()</strong>.</p>
+<p>Оба этих метода возвращают поток данных вместо списка. Такой подход может быть очень эффективным, когда тебе не нужны сразу все объекты, полученные в результате выполнения запроса. Или есть вероятность, что будут использованы только первые из них.</p>
+<p>Пример:</p>
+<pre class='line-numbers'><code>
+Query<span class="token keyword">&lt;Employee&gt;</span> <span class="text-viola">query</span> = <span class="text-user">session</span>.createQuery(<span class="text-green">"from Employee where id &gt; 100"</span>, <span class="token keyword">Employee</span>.class);
+Stream<span class="token keyword">&lt;Employee&gt;</span> stream = <span class="text-viola">query</span>.<span class="text-red">stream</span>();
+</code></pre>
+<p>Второй метод – это метод <strong>executeUpdate()</strong>. Ты можешь написать запрос, который что-то изменит в базе данных. На этот случай нужно, чтобы Hibernate не использовал read-only транзакцию при обращении к базе данных.</p>
+<p>Пример запроса: мы решили поднять уровень всех пользователей на 1.</p>
+<pre class='line-numbers'><code>
+Query<span class="token keyword">&lt;User&gt;</span> <span class="text-viola">query</span> = <span class="text-user">session</span>.createQuery(<span class="text-green">"update User set level=level+1"</span>, <span class="token keyword">User</span>.class);
+int count = <span class="text-viola">query</span>.<span class="text-red">executeUpdate</span>();
+</code></pre>
+<p>Метод <strong>executeUpdate()</strong> вернет количество строк, которые реально были изменены.</p>
+<p>И наконец третий метод – это <strong>scroll()</strong>. О нем мы расскажем немного подробнее.</p>
+<h2>2.3 Методы класса Scroll</h2>
+<p>Этот метод чем-то похож на метод <strong>stream()</strong>. Только он позволяет перемещаться по списку результатов, не вытаскивая результаты вообще. То есть ты можешь выполнить запрос, потом проскролить его на миллионную строку результата и начать читать оттуда данные.</p>
+<p>Такой продвинутый итератор.</p>
+<pre class='line-numbers'><code>
+Query<span class="token keyword">&lt;Employee&gt;</span> <span class="text-viola">query</span> = <span class="text-user">session</span>.createQuery(<span class="text-green">"from Employee where id &gt; 100"</span>, <span class="token keyword">Employee</span>.class);
+ScrollableResults<span class="token keyword">&lt;Employee&gt;</span> scroll = <span class="text-viola">query</span>.<span class="text-red">scroll</span>();
+</code></pre>
+<p>У объекта <strong>ScrollableResults</strong> есть такие методы:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Метод</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>R get()</td>
+        <td>Возвращает текущий элемент</td>
+    </tr>
+    <tr>
+        <td>next()</td>
+        <td>Перемещает указатель на следующий элемент</td>
+    </tr>
+    <tr>
+        <td>previous()</td>
+        <td>Перемещает указатель на <strong>предыдущий</strong> элемент</td>
+    </tr>
+    <tr>
+        <td>scroll(int size)</td>
+        <td>Скролит на size строк вперед</td>
+    </tr>
+
+    <tr>
+        <td>position(int pos)</td>
+        <td>Делает текущим элементом элемент номер pos</td>
+    </tr>
+    <tr>
+        <td>last()</td>
+        <td>Текущий элемент теперь <strong>последний</strong></td>
+    </tr>
+    <tr>
+        <td>first()</td>
+        <td>Текущий элемент теперь <strong>первый</strong></td>
+    </tr>
+    <tr>
+        <td>getRowNumber()</td>
+        <td>Возвращает номер текущей строки</td>
+    </tr>
+    <tr>
+        <td>setRowNumber()</td>
+        <td>Устанавливает номер текущей строки</td>
+    </tr>
+    </tbody>
+</table>
+<p>Допустим, ты выполнил запрос и хочешь получить последний элемент. Вот как это можно сделать:</p>
+<pre class='line-numbers'><code>
+Query<span class="token keyword">&lt;Employee&gt;</span> <span class="text-viola">query</span> = <span class="text-user">session</span>.createQuery(<span class="text-green">"from Employee where id &gt; 100"</span>, <span class="token keyword">Employee</span>.class);
+ScrollableResults<span class="token keyword">&lt;Employee&gt;</span> scroll = <span class="text-viola">query</span>.<span class="text-red">scroll</span>();
+<span class="text-green">scroll</span>.last();
+<span class="token keyword">Employee</span> lastEmployee = <span class="text-green">scroll</span>.get();
+</code></pre>

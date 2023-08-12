@@ -1,0 +1,168 @@
+Знакомство с сервлетами
+<p>----------------------------------------</p>
+interface Servlet
+Класс HttpServlet
+Метод service(HttpServletRequest, HttpServletResponse)
+<p>----------------------------------------</p>
+<h2>1.1  interface Servlet</h2>
+<p>Сегодня начинаем новую и интересную тему — <strong>cервлеты</strong>. Именно добавление сервлетов в Java привело к тому, что Java сейчас — де-факто стандарт для больших серверных приложений. 80% всего корпоративного ПО в мире пишется на Java. А в Китае так и все 100%. Так что же такое сервлеты?</p>
+<p>Сервлет — это именно то, что превращает Java-программу в веб-сервис и позволяет ей обрабатывать запросы от клиентов. А дело было так…</p>
+<p>В 90-е годы, сразу после появления всемирной паутины, появились веб-клиенты (браузеры) и веб-сервера. <strong>Веб-сервера</strong> обычно просто раздавали через интернет файл, которые у них хранились: html-страницы, скрипты, картинки и т. п.</p>
+<p>В какой-то момент все пришли к выводу, что нужно бы сделать обе стороны поумнее. В HTML-страницы добавили JavaScript, а серверам добавили плагины — <span class="text-green">специальные скрипты, которые вызывались в ответ на определенные запросы</span> и позволяли сделать поведение сервера гибче и умнее.</p>
+<p>Так вот <strong>сервлет</strong> — это такой <strong>Java-плагин</strong>, который встраивался в <code>Java веб-сервер</code> и позволял ему выполнять Java-код при запросе на определенные страницы. А уже этот Java-код, представленный классом, унаследованным от класса Servlet, делал то, что задумали его разработчики.</p>
+<p>И как ты уже знаешь, самый популярный Java веб-сервер — это <a href="https://tomcat.apache.org/" target="_blank">Tomcat</a>. Названный, кстати, в честь кота Тома из мультфильма “Том и Джери”.</p>
+<p>Как же Tomcat взаимодействует с сервлетами? На самом деле этот процесс стандартизирован и называется <span class="text-viola">жизненным циклом сервлета</span>. В нем сервлет — это загружаемый объект, а веб-сервер — это <strong>контейнер</strong> сервлетов.</p>
+<p><strong>Если сервлет еще не загружен</strong>, то:</p>
+    <ol>
+        <li>Класс сервлета загружается контейнером.</li>
+        <li>Контейнер создает экземпляр класса (объект) сервлета.</li>
+        <li>Контейнер вызывает метод <code>init()</code> у объекта сервлета. Метод вызывается только один раз.</li>
+    </ol>
+<p>Стандартный цикл работы — <strong>обслуживание клиентского запроса</strong>:</p>
+<ul>
+    <li>Каждый запрос обрабатывается в отдельном потоке.</li>
+    <li>Контейнер вызывает метод <code>service()</code> у сервлета и передает туда объекты ServletRequest и ServletResponse.</li>
+    <li>Для завершения работы сервлета вызывается метод <code>destroy()</code> у объекта сервлета. Вызывается он всего один раз.</li>
+</ul>
+<p>Причин завершения работы сервлета может быть очень много:</p>
+<ul>
+    <li>Программист перезапускает веб-сервер, нужно корректно завершить работу всех сервлетов.</li>
+    <li> Программист загружает новую версию сервлета, старую нужно правильно выгрузить.</li>
+    <li>И так далее.</li>
+</ul>
+<p>Запомни главное: веб-сервер и его сервлеты должны без сбоев и перезагрузки работать месяцами, обслуживая тысячи запросов в минуту. Поэтому код и загрузки, и работы, и выгрузки сервлета всегда нужно писать очень качественно.</p>
+<h2>1.2  Класс HttpServlet</h2>
+<p>Класс Servlet существует для стандартизации работы сервлета и контейнера. Непосредственно с этим классом программисты не работают. Ну или работают очень редко. Чаще всего используется класс <code>HttpServlet</code>, унаследованный от Servlet’а.</p>
+<p>У этого класса есть несколько методов, которые нам пригодятся. Ты будешь часто их использовать:</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th>Метод</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td><code>init()</code></td>
+        <td>Вызывается один раз при загрузке сервлета</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td><code>destroy()</code></td>
+        <td>Вызывается один раз при выгрузке сервлета</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td><code>service(HttpRequest, HttpResponse)</code></td>
+        <td>Вызывается для каждого нового запроса к сервлету</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td><code><span class="text-red">doGet</span>(HttpRequest, HttpResponse)</code></td>
+        <td>Вызывается для каждого нового GET-запроса к сервлету</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td><code><span class="text-red">doPost</span>(HttpRequest, HttpResponse)</code></td>
+        <td>Вызывается для каждого нового POST-запроса к сервлету</td>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td><code>doHead(HttpRequest, HttpResponse)</code></td>
+        <td>Вызывается для каждого нового HEAD-запроса к сервлету</td>
+    </tr>
+    <tr>
+        <td>7</td>
+        <td><code>doDelete(HttpRequest, HttpResponse)</code></td>
+        <td>Вызывается для каждого нового DELETE-запроса к сервлету</td>
+    </tr>
+    <tr>
+        <td>8</td>
+        <td><code>doPut(HttpRequest, HttpResponse)</code></td>
+        <td>Вызывается для каждого нового PUT-запроса к сервлету</td>
+    </tr>
+
+
+    </tbody>
+</table>
+<p>Методы <code>init()</code> и <code>destroy()</code> унаследованы от класса Servlet. Поэтому если ты решишь переопределить их в своем сервлете, тебе нужно будет так же вызвать их реализацию из базового класса. Для этого используется команда <code>super.имяМетода()</code>.</p>
+<p>Пример сервлета:</p>
+<pre class='line-numbers'><code>
+public class <span class="text-orange">FirstHttpServlet</span> extends <span class="text-red">HttpServlet</span> {
+  
+    @Override
+    protected void <span class="text-red">doGet</span>(<span class="text-green">HttpServletRequest request</span>, <span class="text-user">HttpServletResponse response</span>) throws ServletException, IOException {
+        
+        // Получаем параметр “secret” из запроса
+        String secret = <span class="text-green">request</span>.getParameter("secret");
+ 
+        // Кладем параметр “secret” в Http-сессию
+        HttpSession <span class="text-viola">session</span> = <span class="text-green">request</span>.getSession(true);
+        <span class="text-viola">session</span>.setAttribute("secret", secret);
+ 
+        // Печатаем HTML в качестве ответа для браузера
+        <span class="text-user">response</span>.setContentType("text/html;charset=UTF-8");
+        PrintWriter <span class="text-yellow">out</span> = <span class="text-user">response</span>.getWriter();
+        try {
+            <span class="text-yellow">out</span>.println("&lt;html&gt;");
+            <span class="text-yellow">out</span>.println("&lt;head&gt;");
+            <span class="text-yellow">out</span>.println("&lt;title&gt;Заголовок&lt;/title&gt;");
+            <span class="text-yellow">out</span>.println("&lt;/head&gt;");
+            <span class="text-yellow">out</span>.println("&lt;body&gt;");
+            <span class="text-yellow">out</span>.println("&lt;h1&gt;Пример сервлета "+ secret +"&lt;/h1&gt;");
+            <span class="text-yellow">out</span>.println("&lt;/body&gt;");
+            <span class="text-yellow">out</span>.println("&lt;/html&gt;");
+        } finally {
+            <span class="text-yellow">out</span>.close();
+        }
+    }
+}
+
+</code></pre>
+<h2>1.3 Метод service(HttpServletRequest, HttpServletResponse)</h2>
+<p>Если смотреть на обработку клиентского запроса с точки зрения сервлета, то дела обстоят примерно так.</p>
+<p>Для каждого клиентского запроса контейнер (веб-сервер) создает объекты <code>HttpServletRequest</code> и <code>HttpServletResponse</code>, а затем вызывает метод <code>service(HttpServletRequest request, HttpServletResponse response)</code> у соответствующего сервлета. В него передаются эти объекты, чтобы метод мог взять нужные данные из <code>request’а</code> и положить результат работы в <code>response</code>.</p>
+<p>У метода <code>service()</code> есть реализация по умолчанию. Если ее не переопределить, то выполняться будет именно она. Вот что он делает.</p>
+<p>Метод <code>service()</code> определяет из request’а тип HTTP-метода (GET, POST, …) и вызывает метод соответствующий запросу.</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th width="350">Метод</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td><code>service(HttpRequest, HttpResponse)</code></td>
+        <td>Вызывается для каждого нового запроса к сервлету</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td><code><span class="text-red">doGet</span>(HttpRequest, HttpResponse)</code></td>
+        <td>Вызывается для каждого нового GET-запроса к сервлету</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td><code><span class="text-red">doPost</span>(HttpRequest, HttpResponse)</code></td>
+        <td>Вызывается для каждого нового POST-запроса к сервлету</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td><code><span class="text-red">doHead</span>(HttpRequest, HttpResponse)</code></td>
+        <td>Вызывается для каждого нового HEAD-запроса к сервлету</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td><code><span class="text-red">doDelete</span>(HttpRequest, HttpResponse)</code></td>
+        <td>Вызывается для каждого нового DELETE-запроса к сервлету</td>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td><code><span class="text-red">doPut</span>(HttpRequest, HttpResponse)</code></td>
+        <td>Вызывается для каждого нового PUT-запроса к сервлету</td>
+    </tr>
+
+
+    </tbody>
+</table>
+<p>В своем классе ты можешь или переопределить один метод <code>service()</code>, или не трогать его, но тогда переопределять методы <code>doGet()</code>, <code>doPost()</code>, … по необходимости.</p>

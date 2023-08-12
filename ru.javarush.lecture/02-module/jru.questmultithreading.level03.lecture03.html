@@ -1,0 +1,169 @@
+Вложенные классы
+<p>----------------------------------------</p>
+&#8212; Привет, Амиго! &#8212; Привет, Элли! &#8212; Сегодня будет очень интересная тема. Я сегодня расскажу о внутренних классах. Если один класс объявить внутри другого, то такой класс называется внутренним. Объекты внутренних классов при этом вложены в объекты внешних классов и могут обращаться к переменным внешних классов. Пример public class Car { int height = 160; ...
+<p>----------------------------------------</p>
+
+<a href='https://cdn.javarush.com/images/article/245c0141-e994-41e2-b97c-5c057ade535a/original.jpeg' target='_blank'><img data-id="245c0141-e994-41e2-b97c-5c057ade535a" data-max-width="850" alt="Вложенные классы - 1" src="https://cdn.javarush.com/images/article/245c0141-e994-41e2-b97c-5c057ade535a/original.jpeg"></a>
+
+<p>&#8212; Привет, Амиго!</p>
+<p><span class="text-user">&#8212; Привет, Элли!</span></p>
+<p>&#8212; Сегодня будет очень интересная тема. Я сегодня расскажу о внутренних классах.</p>
+<p>Если один класс объявить внутри другого, то такой класс называется внутренним.</p>
+<p>Объекты внутренних классов при этом вложены в объекты внешних классов и могут обращаться к переменным внешних классов.</p>
+<div class="code-heading">Пример</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public class Car
+{
+ int <span class="text-red">height</span> = 160;
+ ArrayList doors = new ArrayList();
+
+ public Car
+ {
+  doors.add(<span class="text-green">new Door</span>());
+  doors.add(<span class="text-green">new Door</span>());
+  doors.add(<span class="text-green">new Door</span>());
+  doors.add(<span class="text-green">new Door</span>());
+ } 
+
+class <span class="text-green">Door</span>()
+ {
+  public int getDoorHeight()
+  {
+   return (int)(<span class="text-red">height</span> * 0.80);
+  }
+ }
+}</code></pre>
+<p>Обрати внимание, у класса Door(дверь) есть метод, который возвращает высоту двери – getDoorHeight, этот метод использует переменную height объекта Car.</p>
+
+<a href='https://cdn.javarush.com/images/article/87c9f75b-b904-4672-bfc5-4204b7574d84/original.jpeg' target='_blank'><img data-id="87c9f75b-b904-4672-bfc5-4204b7574d84" data-max-width="1024" alt="Вложенные классы - 2" src="https://cdn.javarush.com/images/article/87c9f75b-b904-4672-bfc5-4204b7574d84/original.jpeg"></a>
+
+
+<p>Объект типа Door не может существовать отдельно от объекта типа Car – ведь он использует его переменные. Компилятор незаметно добавляет в конструктор и в класс Door ссылку на объект внешнего класса Car, чтобы методы внутреннего класса Door могли обращаться к переменным и вызвать методы внешнего класса Car.</p>
+<p><span class="text-user">&#8212; Вложенные объекты. Мне все понятно. Судя по картинке тут все элементарно.</span></p>
+<p>&#8212; Так и есть. Лишь пара нюансов.</p>
+<p>Во внутреннем классе Door имеется ссылка на объект класса Car, поэтому:</p>
+<p><strong>1) Нельзя создать объект Door внутри статического метода в классе Car:</strong> негде взять ссылку на объект типа Car, который неявно передается в конструктор типа Door.</p>
+<table>
+<tbody>
+<tr>
+<th>Правильно</th>
+<th><span class="text-red">Неправильно</span></th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public class Car
+{
+ public static Door createDoor()
+ {
+<span class="text-green">  Car car = new Car();</span>
+  return <span class="text-green">car.new Door();</span>
+ }
+
+ public class Door
+ {
+  int width, height;
+ }
+}</code></pre>
+</td>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public class Car
+{
+ public static Door createDoor()
+ {
+  return <span class="text-red">new Door</span>();
+ }
+
+ public class Door
+ {
+  int width, height;
+ }
+}</code></pre>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>2) Класс Door не может содержать статические переменные и методы.</strong></p>
+<table>
+<tbody>
+<tr>
+<th>Правильно</th>
+<th><span class="text-red">Неправильно</span></th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public class Car
+{
+ public int <span class="text-green">count</span>;
+ public int getCount()
+ {
+  return <span class="text-green">count</span>;
+ }
+
+ public class Door
+ {
+  int width, height;
+ }
+}</code></pre>
+</td>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public class Car
+{
+
+ public class Door
+ {
+  public <span class="text-red">static</span> int <span class="text-red">count</span>;
+  int width, height;
+
+  public <span class="text-red">static</span> int getCount()
+  {
+   return <span class="text-red">count</span>;
+  }
+ }
+}</code></pre>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="text-user">&#8212; А если мне нужна общая переменная для всех объектов Door?</span></p>
+<p>Ты всегда можешь объявить ее просто в классе Car – это и будет общая переменная для всех объектов Door, вложенных в объект Car.</p>
+<p>3) Обрати внимание, что <strong>если внутренний класс объявлен как public, то его объекты можно создавать вне внешнего класса, но объект внешнего класса при этом обязан присутствовать:</strong></p>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-green">Car car = new Car();</span>
+Car.Door door = <span class="text-green">car</span>.new Door();</code></pre>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>Car.Door door = <span class="text-green">new Car()</span>.new Door();</code></pre>
+<p><strong>4)</strong> И еще одно замечание – чуть не забыла.</p>
+<p>Т.к. у нас два вложенных объекта, то в методах внутреннего объекта доступно две ссылки this:</p>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public class <span class="text-green">Car</span>
+{
+ int width, height;
+
+ public class Door
+ {
+  int width, height;
+
+  public void setHeight(int height)
+  {
+   <span class="text-viola">this</span>.height = height;
+  } 
+
+  public int getHeight()
+  {
+   if (height!=0)
+    return <span class="text-viola">this</span>.height;
+   else 
+    return (int)(<span class="text-green">Car.this</span>.height * 0.8);
+  }
+ }
+}</code></pre>
+<p>Я специально объявила в классах одинаковые переменные.</p>
+<p>Чтобы обратиться к переменной внешнего класса, когда она скрыта, или к this внешнего класса, достаточно написать «имя класса» точка this:</p>
+<div class="code-heading">Как получить доступ к this внешнего (или любого) класса</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>Car.this</code></pre>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>Car.Door.this</code></pre>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>Car.Door.InnerClass2.InnerClass3.this</code></pre>
+<p><span class="text-user">&#8212; Т.е. если мы внутри метода внутреннего класса пишем this, то этот this относится к внутреннему классу?</span></p>
+<p>&#8212; Да. Именно так.</p>
+<p>Как тебе внутренние классы, Амиго?</p>
+<p><span class="text-user">&#8212; Очень интересно. Я бы не сказал, что очень сложно.</span></p>
+<p>Есть много ограничений, но они вполне логичны, когда ты мне объяснила, откуда и зачем они берутся.</p>
+<p><span class="text-user">А я уже два месяца в практических заданиях постоянно пишу вложенные классы и только сейчас понял, что же я писал на самом деле.</span></p>
+<p><span class="text-user">Спасибо за отличный урок, Элли.</span></p>
+<p>&#8212; Рада, что тебе понравилось, Амиго.</p>

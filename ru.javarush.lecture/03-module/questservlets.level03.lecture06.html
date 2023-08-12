@@ -1,0 +1,102 @@
+Популярные аннотации в JUnit
+<p>----------------------------------------</p>
+Аннотация @Suite
+Аннотация @Order
+Аннотация @DisplayName
+<p>----------------------------------------</p>
+<h2>7.1 Аннотация @Suite</h2>
+<p>И еще несколько часто используемых аннотаций.  Даже если ты не будешь их использовать, то точно увидишь тесты с ними. Поэтому нужно хотя бы в общих чертах понимать, что там написано.</p>
+<p>Тесты можно объединять в группы. Для этого есть специальная аннотация <code>@Suite</code>. Пример:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-green">@Suite
+@SuiteDisplayName("JUnit Platform Suite Demo")
+@SelectPackages("com.javarush.test")
+@IncludeClassNamePatterns(".*Tests")</span>
+class SuiteDemo {
+}
+</code></pre>
+<p>В данном случае аннотация @Suite работает в паре с другими аннотациями.</p>
+<ul>
+    <li><code>SuiteDisplayName</code> – задает имя группы тестов в логе;</li>
+    <li><code>SelectPackages</code> – задает список пакетов, где искать классы-тесты;</li>
+    <li><code>IncludeClassNamePatterns</code> – задает шаблон имен классов-тестов.</li>
+</ul>
+<p>Зачем такие сложности? Ну представь, что все тесты проекта выполняются, скажем, 50 часов. И выполнять их после каждого коммита очень накладно. В таком случае полезно создать некоторые отдельные сценарии тестирования и настроить тестирование гораздо гибче.</p>
+
+<h2>7.2 Аннотация @Order</h2>
+<p>Еще одна часто встречающаяся аннотация – <code>@TestMethodOrder</code>. Она позволяет задать порядок вызова тестовых методов в тестовом классе. Бывает очень полезна, когда вы знаете, что вызовы методов влияют друг на друга, но при определенном порядке все должно работать, как нужно. Используется довольно часто.</p>
+<p>Во-первых, можно задать <strong>вызов методов в алфавитном порядке</strong>:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-green">@TestMethodOrder</span>(<span class="text-red">MethodOrderer.MethodName</span>.<span class="text-green">class</span>)
+public class AlphanumericOrderUnitTest {
+ 
+}
+</code></pre>
+<p>Во-вторых, у каждого метода можно расставить специальную аннотацию с его порядковым номером.</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-green">@TestMethodOrder(</span><span class="text-red">OrderAnnotation</span>.<span class="text-green">class)</span>
+public class OrderAnnotationUnitTest {
+   
+<span class="text-green">    @Test
+    @Order(1)</span>   
+    public void firstTest() {
+    }
+   
+<span class="text-green">    @Test
+    @Order(2)</span>   
+    public void secondTest() {
+    }
+}
+</code></pre>
+<p>Или даже создать отдельный класс, который будет указывать порядок вызова тестов:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-green">@TestMethodOrder(</span><span class="text-red">CustomOrder</span>.<span class="text-green">class)</span>
+public class CustomOrderUnitTest {
+ 
+}
+ 
+//сортируем имена методов по алфавитному порядку, но игнорируя регистр
+public class <span class="text-red">CustomOrder</span> implements MethodOrderer {
+    public void orderMethods(MethodOrdererContext context) {
+        context.getMethodDescriptors().<span class="text-user">sort</span>(
+        (MethodDescriptor m1, MethodDescriptor m2)->
+           m1.getMethod().getName().<span class="text-user">compareToIgnoreCase</span>(m2.getMethod().getName()));
+    }
+}
+</code></pre>
+<h2>7.3 Аннотация @DisplayName</h2>
+<p>И наконец, каждому тесту можно задавать его имя. Бывает удобно, если тестов очень много и вы создаете специальные сценарии (подмножества) тестов. Для этого есть специальная аннотация <code>@DisplayName</code>.</p>
+<p>Пример:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-green">@DisplayName("Понятное имя для теста")</span>
+public class DisplayNameCustomTest {
+ 
+<span class="text-green">    @Test
+    @DisplayName("Проверка входных данных")</span>
+    void inputData() {
+    }
+ 
+<span class="text-green">    @DisplayName("Проверка критических ситуаций")
+    @Test</span>
+    void criticalCases() {
+    }
+}
+</code></pre>
+<p>Как и в случае с заданием порядка тестов, тут можно создать специальный метод, который будет генерировать имена тестов и тестовых методов. Пример:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-green">@DisplayNameGeneration(</span><span class="text-user">DisplayNameGeneratorUnitTest.ReplaceCamelCase</span>.<span class="text-green">class)</span>
+class DisplayNameGeneratorUnitTest {
+ 
+<span class="text-green">    @Test</span>
+    void camelCaseName() {
+    }
+ 
+<span class="text-user">    static class ReplaceCamelCase extends DisplayNameGenerator.Standard {</span>
+        @Override
+<span class="text-user">        public String generateDisplayNameForClass(Class<?> testClass) {
+            return super.generateDisplayNameForClass(testClass).toUpperCase();
+        }
+ }</span>
+}
+</code></pre>
+<p>Видите, как все просто :)</p>

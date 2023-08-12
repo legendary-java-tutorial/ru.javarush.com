@@ -1,0 +1,107 @@
+Аннотации, как создавать
+<p>----------------------------------------</p>
+&#8212; Так вот, давай-ка сейчас создадим парочку аннотаций и используем их. Например, мы пишем движок для игры. При этом у нас в игре очень много персонажей, которые делятся на три категории: эльфы, охрана дворца и злодей. В процессе разработки игры, могут добавляться новые персонажи, и при этом будет меняться баланс игры. Поэтому было бы очень ...
+<p>----------------------------------------</p>
+<p>&#8212; Так вот, давай-ка сейчас создадим парочку аннотаций и используем их.</p>
+<p>Например, мы пишем движок для игры. При этом у нас в игре очень много персонажей, которые делятся на три категории: эльфы, охрана дворца и злодей.</p>
+<p>В процессе разработки игры, могут добавляться новые персонажи, и при этом будет меняться баланс игры. Поэтому было бы очень удобно приписать каждому «классу персонажа» свою аннотацию с описанием его физических характеристик.</p>
+<p>Тогда можно было бы очень просто симулировать бои между различными персонажами и/или быстро просчитать баланс игры.</p>
+<p><span class="text-user">&#8212; Согласен – это хорошая идея.</span></p>
+<p>&#8212; Давай создадим аннотацию<span class="text-red"> @Person</span>, где будем хранить: жизнь, силу, магию, а также параметры атаки и защиты. Вот как бы выглядела такая аннотация:</p>
+<div class="code-heading">Пример</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>@<strong>interface</strong> Person
+{
+ String name() <strong>default</strong> "";
+ int live();
+ int strength();
+ int magic() <strong>default</strong> 0;
+ int attack() <strong>default</strong> 0;
+ int defense();
+}</code></pre>
+<p>А вот так выглядело бы описание, например, лесного эльфа-мага:</p>
+<div class="code-heading">Пример</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-red">@Person(live=100, strength=10, magic=5, attack=20, defense=20)</span>
+class Elf
+{
+ …
+}</code></pre>
+<p>А вот так выглядело бы описание главного злодея:</p>
+<div class="code-heading">Пример</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-red">@Person(live=1000, strength=150, magic=250, attack=99, defense=99)</span>
+class EvilMaster
+{
+ …
+}</code></pre>
+<p><span class="text-user">&#8212; Ясно. Чем-то напоминает интерфейсы-маркеры.</span></p>
+<p>&#8212; Да, только, во-первых, не приходится ничего наследовать, во вторых, в аннотациях можно хранить дополнительную информацию.</p>
+<p>Есть еще <span class="text-corporate text-red">несколько аннотаций, которыми помечаются аннотации. Вот они:</span></p>
+<p><span class="text-corporate">Аннотация @Retention указывает, где будет видна наша аннотация: только в исходном коде, еще и после компиляции, будет доступна даже во время исполнения программы.</span></p>
+<p><span class="text-green">Аннотация @Target указывает, что именно можно пометить этой аннотацией: класс, поле, метод, параметр метода и т.д.</span></p>
+<p><span class="text-viola">Если мы хотим, чтобы наша аннотация действовала не только на отмеченный ей класс, но и на его наследников, то надо пометить ее @Inherited.</span></p>
+<p>Вот как будет выглядеть наша аннотация<span class="text-red"> @Person.</span></p>
+<div class="code-heading">Пример</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-red">@Target(value=ElementType.TYPE)
+@Retention(value=RetentionPolicy.RUNTIME)</span>
+@interface Person
+{
+ String name() default "";
+ int live();
+ int strength();
+ int magic() default 0;
+ int attack() default 0;
+ int defense();
+}</code></pre>
+<p><span class="text-user">&#8212; Это было очень интересно, спасибо, Риша.</span></p>
+<p><span class="text-user">А как работать с этими аннотациями в программе? Как их использовать? Как прочитать их значения?</span></p>
+<p>&#8212; Для этого принято использовать <strong>Reflection</strong>.</p>
+<p>Вот как выглядело бы определение того, какой из персонажей сильнее:</p>
+<div class="code-heading">Пример</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public boolean fight(Class <span class="text-user">first</span>, Class <span class="text-green">second</span>)
+{
+ if (!<span class="text-user">first</span>.isAnnotationPresent(Person.class))
+  throw new RuntimeException("first param is not game person");
+ if (!<span class="text-green">second</span>.isAnnotationPresent(Person.class))
+  throw new RuntimeException("second param is not game person");
+
+ <span class="text-red">Person</span> <span class="text-user">firstPerson</span> = (<span class="text-red">Person</span>) <span class="text-user">first</span>.<span class="text-red">getAnnotation(Person.class);</span>
+ <span class="text-red">Person</span> <span class="text-green">secondPerson</span> = (<span class="text-red">Person</span>) <span class="text-green">second</span>.<span class="text-red">getAnnotation(Person.class);</span>
+
+ int <span class="text-user">firstAttack</span> = <span class="text-user">firstPerson</span>.attack() * firstPerson.strength() + <span class="text-user">firstPerson</span>.magic();
+ int <span class="text-user">firstPower</span> = <span class="text-user">firstPerson</span>.live() * <span class="text-user">firstPerson</span>.defense() * <span class="text-user">firstAttack</span>;
+
+ int <span class="text-green">secondAttack</span> =<span class="text-green"> secondPerso</span>n.attack() * <span class="text-green">secondPerson</span>.strength() + <span class="text-green">secondPerso</span>n.magic();
+ int <span class="text-green">secondPower</span> =<span class="text-green"> secondPerson</span>.live() * <span class="text-green">secondPerson</span>.defense() * <span class="text-green">secondAttack</span>;
+
+ return <span class="text-user">firstPower</span> &gt; <span class="text-green">secondPower</span>;
+}</code></pre>
+<p>Вот методы класса, которые нам нужны:</p>
+<table>
+<tbody>
+<tr>
+<th>Методы</th>
+<th>Описание</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><strong>isAnnotationPresent</strong>(Annotation.class)</code></pre>
+</td>
+<td>Проверяет, если ли у класса нужная аннотация</td>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><strong>getAnnotation</strong>(Annotation.class)</code></pre>
+</td>
+<td>Возвращает объект-аннотацию, если такая у класса есть.</td>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>Annotation[] <strong>getAnnotations</strong>()</code></pre>
+</td>
+<td>Возвращает массив всех аннотаций класса</td>
+</tr>
+</tbody>
+</table>
+<p><span class="text-user">&#8212; Отлично. А я и не думал, что получить аннотацию так просто.</span></p>
+<p>&#8212; Ага. Просто вызвал метод getAnnotation у объекта класса, и передал туда нужный тебе тип аннотации.</p>
+<p>На этом на сегодня все.</p>
+<p><span class="text-user">&#8212; Спасибо, Риша, это была очень интересная лекция. И теперь я уже не боюсь аннотаций как воды.</span></p>

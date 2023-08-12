@@ -1,0 +1,228 @@
+Потоки вывода
+<p>----------------------------------------</p>
+Класс OutputStream
+С потоками ввода мы только что разобрались. Настало время поговорить о потоках вывода.
+Класс OutputStream является классом-родителем для всех классов, которые поддерживают байтовый вывод.
+<p>----------------------------------------</p>
+<h2>1. Класс <code>OutputStream</code></h2>
+<p>С потоками ввода мы только что разобрались. Настало время поговорить о потоках вывода.</p>
+<p>Класс <code>OutputStream</code> является классом-родителем для всех классов, которые поддерживают байтовый вывод. Это абстрактный класс, который сам ничего не делает: для этого у него есть классы-наследники на все случаи жизни.</p>
+<p>Сложновато звучит. Если попроще, этот класс оперирует байтами, а не, например, символами или другими типами данных. А то, что он абстрактный, значит, что мы обычно используем не его, а один из его классов-наследников. Например, <code>FileOutputStream</code> и ему подобные.</p>
+<p>Но вернемся к классу <code>OutputStream</code>. У этого класса есть методы, которые обязаны реализовывать все его классы-наследники. Вот основные из них:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Методы</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>void <span class="text-red">write</span>(int b)</code></pre>
+        </td>
+        <td>Записывает один байт (не <code>int</code>) в поток.</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>void <span class="text-red">write</span>(byte[] buffer)</code></pre>
+        </td>
+        <td>Записывает массив байт в поток</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>void <span class="text-red">write</span>(byte[] buffer, off, len)</code></pre>
+        </td>
+        <td>Записывает часть массива байт в поток</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>void <span class="text-red">flush</span>()</code></pre>
+        </td>
+        <td>Записывает в поток все данные, которые хранятся в буфере</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>void <span class="text-red">close</span>()</code></pre>
+        </td>
+        <td>Закрывает поток</td>
+    </tr>
+    </tbody>
+</table>
+<p>При создании объекта класса-наследника <code>InputStream</code> обычно указывается объект-источник, из которого <code>InputStream</code> читает данные. При создании объекта класса-наследника <code>OutputStream</code> также обычно указывается целевой объект или целевой поток, в который будут записываться данные.</p>
+<p>Вкратце пройдемся по всем методам класса <code>OutputStream</code>:</p>
+<p><strong>Метод <code>write(int b)</code></strong></p>
+<p>Этот метод записывает в поток вывода один байт (не <code>int</code>). Переданное значение приводится к типу байт, три первые байта отбрасываются.</p>
+<p><strong>Метод <code>write(byte[] buffer)</code></strong></p>
+<p>Записывает в поток вывода переданный массив байтов. Все.</p>
+<p><strong>Метод <code>write(byte[] buffer, int offset, int length)</code></strong></p>
+<p>Записывает в поток вывода часть переданного массива байтов. Переменная offset задает номер первого элемента массива, <code>length</code> — длина записываемого фрагмента.</p>
+<p><strong>Метод <code>flush()</code></strong></p>
+<p>Метод <code>flush()</code> используется, чтобы принудительно записать в целевой поток данные, которые могут кэшироваться в текущем потоке. Актуально при использовании буферизации и/или нескольких объектах потоков, организованных в цепочку.</p>
+<p><strong>Метод <code>close()</code></strong></p>
+<p>Записывает в целевой объект все незаписанные данные. Метод <code>close()</code> можно не вызывать, если вы используете <code>try</code>-with-resources.</p>
+<p>Пример — копирование файла</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Примечание</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>String <span class="code text-green">src</span> = "c:\\projects\\log.txt";
+String <span class="code text-user">dest</span> = "c:\\projects\\copy.txt";
+
+try(<span class="text-viola">FileInputStream</span> <span class="text-green">input</span> = new <span class="text-viola">FileInputStream</span>(<span class="code text-green">src</span>);
+<span class="text-viola">FileOutputStream</span> <span class="text-user">output</span> = new <span class="text-viola">FileOutputStream</span>(<span class="code text-user">dest</span>))
+{
+   byte[] <span class="code text-orange">buffer</span> = new byte[65536]; // 64Kb
+   while (<span class="text-green">input</span>.<span class="text-red">available</span>() &gt; 0)
+   {
+      int <span class="code text-neon">real</span> = <span class="text-green">input</span>.<span class="text-red">read</span>(<span class="code text-orange">buffer</span>);
+      <span class="text-user">output</span>.<span class="text-red">write</span>(<span class="code text-orange">buffer</span>, 0, <span class="code text-neon">real</span>);
+   }
+}</code></pre>
+        </td>
+        <td><br><br><br><code>InputStream</code> для чтения из файла<br>
+            <code>OutputStream</code> для записи в файл<br><br>
+            Буфер, в который мы будем считывать данные<br>
+            Пока данные есть в потоке<br><br>
+            Считываем данные в буфер<br>
+            Записываем данные из буфера во второй поток
+        </td>
+    </tr>
+    </tbody>
+</table>
+<hr>
+<h2>2. Класс <code>Writer</code></h2>
+<p>Класс <code>Writer</code> — это полный аналог класса <code>OutputStream</code>, и снова только с одним отличием: он работает с символами, <code>char</code>, вместо байт.</p>
+<p>Это абстрактный класс: объекты класса <code>Writer</code> создать нельзя. Его основная цель — быть единым классом-родителем для сотен классов-наследников и задать для них общие методы работы с символьными потоками.</p>
+<p>Методы класса <code>Writer</code> (и всех его классов-наследников):</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Методы</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>void <span class="text-red">write</span>(int b)</code></pre>
+        </td>
+        <td>Записывает один символ (не <code>int</code>) в поток.</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>void <span class="text-red">write</span>(char[] buffer)</code></pre>
+        </td>
+        <td>Записывает массив символов в поток</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>void <span class="text-red">write</span>(char[] buffer, off, len)</code></pre>
+        </td>
+        <td>Записывает часть массива символов в поток</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>void <span class="text-red">write</span>(String str)</code></pre>
+        </td>
+        <td>Записывает строку в поток</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>void <span class="text-red">write</span>(String str, off, len)</code></pre>
+        </td>
+        <td>Записывает часть строки в поток</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>void <span class="text-red">flush</span>()</code></pre>
+        </td>
+        <td>Записывает в поток все данные, которые хранятся в буфере</td>
+    </tr>
+    <tr>
+        <td>
+            <pre><code>void <span class="text-red">close</span>()</code></pre>
+        </td>
+        <td>Закрывает поток</td>
+    </tr>
+    </tbody>
+</table>
+<p>Методы очень похожи на методы класса <code>OutputStream</code>, только работают с символами вместо байт.</p>
+<p>Краткое описание методов:</p>
+<p><strong>Метод <code>write(int b)</code></strong></p>
+<p>Этот метод записывает в поток вывода один символ <code>char</code> (не <code>int</code>). Переданное значение приводится к типу <code>char</code>, два первых байта отбрасываются.</p>
+<p><strong>Метод <code>write(char[] buffer)</code></strong></p>
+<p>Записывает в поток вывода переданный массив символов.</p>
+<p><strong>Метод <code>write(char[] buffer, int offset, int length)</code></strong></p>
+<p>Записывает в поток вывода часть переданного массива символов. Переменная <code>offset</code> задает номер первого элемента массива, <code>length</code> — длина записываемого фрагмента.</p>
+<p><strong>Метод <code>write(String str)</code></strong></p>
+<p>Записывает в поток вывода переданную строку.</p>
+<p><strong>Метод <code>write(String str, int offset, int length)</code></strong></p>
+<p>Записывает в поток вывода часть переданной строки: строку преобразуют в массив символов. Переменная <code>offset</code> задает номер первого элемента массива, <code>length</code> — длина записываемого фрагмента.</p>
+<p><strong>Метод <code>flush()</code></strong></p>
+<p>Метод <code>flush()</code> используется, чтобы принудительно записать в целевой поток данные, которые могут кэшироваться в текущем потоке. Актуально при использовании буферизации и/или нескольких объектах потоков, организованных в цепочку.</p>
+<p><strong>Метод <code>close()</code></strong></p>
+<p>Записывает в целевой объект все незаписанные данные. Метод <code>close()</code> можно не вызывать, если вы используете <code>try</code>-with-resources.</p>
+<p>Пример программы, которая копирует текстовый файл:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Примечание</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>String <span class="code text-green">src</span> = "c:\\projects\\log.txt";
+String <span class="code text-user">dest</span> = "c:\\projects\\copy.txt";
+
+try(<span class="text-viola">FileReader</span> <span class="text-green">reader</span> = new <span class="text-viola">FileReader</span>(<span class="code text-green">src</span>);
+<span class="text-viola">FileWriter</span> <span class="text-user">writer</span> = new <span class="text-viola">FileWriter</span>(<span class="code text-user">dest</span>))
+{
+   char[] <span class="code text-orange">buffer</span> = new char[65536]; // 128Kb
+   while (<span class="text-green">reader</span>.<span class="text-red">ready</span>())
+   {
+      int <span class="code text-neon">real</span> = <span class="text-green">reader</span>.<span class="text-red">read</span>(<span class="code text-orange">buffer</span>);
+      <span class="text-user">writer</span>.write(<span class="code text-orange">buffer</span>, 0, <span class="code text-neon">real</span>);
+   }
+}</code></pre>
+        </td>
+        <td><br><br><br><code>Reader</code> для чтения из файла<br>
+            <code>Writer</code> для записи в файл<br><br>
+            Буфер, в который будем считывать данные<br>
+            Пока данные есть в потоке<br><br>
+            Читаем данные в буфер<br>
+            Записываем данные из буфера во второй поток
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p><strong>Класс <code>StringWriter</code></strong></p>
+<p>Есть еще один интересный класс-наследник от класса <code>Writer</code> — это <code>StringWriter</code>. В нем находится изменяемая строка — объект <code>StringBuffer</code>. И каждый раз, когда вы что-то «пишете» в объект <code>StringWriter</code>, текст просто добавляется во внутренний буфер.</p>
+<p>Пример:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Примечание</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>StringWriter writer = new StringWriter();
+writer.write("Hello");
+writer.write(String.valueOf(123));
+
+String result = writer.toString();</code></pre>
+        </td>
+        <td>Создается целевой символьный поток <code>StringWriter</code><br>
+            Строка пишется в буфер внутри <code>StringWriter</code><br>
+            Строка пишется в буфер внутри <code>StringWriter</code><br><br>
+            Преобразовываем содержимое объекта к строке
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p>В данном случае класс <code>StringWriter</code> — это, по сути, обертка над классом <code>StringBuffer</code>, однако класс <code>StringWriter</code> — это наследник класса-потока <code>Writer</code>, и он может использоваться в цепочках из объектов-потоков. Довольно полезное свойство на практике.</p>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task15.task1528"></div>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task15.task1529"></div>
+<hr>

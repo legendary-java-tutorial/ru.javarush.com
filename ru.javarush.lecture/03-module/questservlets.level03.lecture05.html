@@ -1,0 +1,173 @@
+JUnit Assertions
+<p>----------------------------------------</p>
+assert’ы. 
+Методы assertEquals, assertTrue, assertFalse. 
+Метод assertAll. 
+Метод assertTimeout. 
+Метод assertThrows.
+<p>----------------------------------------</p>
+    <h2>6.1 assert’ы</h2>
+
+    <p>Ассерты (asserts) — это <span class="text-bold">специальные проверки</span>, которые можно вставить в разные места кода. Их задача определять, что что-то пошло не так. Вернее, проверять, что все идет как нужно. Вот это “как нужно” они и позволяют задать различными способами.</p>
+
+    <p>С некоторыми ассертами ты уже сталкивался в коде выше. Первый из них – проверка объектов на равенство. Если объекты не равны — кинется исключение и тест будет провален.  </p>
+
+    <p>Тут <span class="text-green">важен порядок сравнения</span>, ведь JUnit в итоговом отчете напишет что-то типа “получено значение 1, а ожидалось 3”. Общий формат такой проверки имеет вид:
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code><span class="text-red">assertEquals(</span><span class="text-neon">эталон,</span> <span class="text-green">значение</span><span class="text-red">)</span></code></pre>
+    </div>
+ 
+    <p>Пример:</p>
+ 
+    <pre class='language-java line-numbers'><code>
+@Test
+public void whenAssertingEquality () {
+    String expected = "3.1415";
+    String actual = "3";
+ 
+    assertEquals(expected, actual);
+}
+</code></pre>
+ 
+    <h2>6.2 Методы assertEquals, assertTrue, assertFalse</h2>
+
+    <p>Ниже я приведу список самых популярных методов — ассертов. По их названиям вполне можно догадаться как они работают. Но все же напишу краткое пояснение:</p>
+ 
+    <table>
+        <tbody>
+            <tr>
+                <th>assertEquals</th>
+                <td>Проверяет, что два объекта равны</td>
+            </tr>
+            <tr>
+                <th>assertArrayEquals</th>
+                <td>Проверяет, что два массива содержат равные значения</td>
+            </tr>
+            <tr>
+                <th>assertNotNull</th>
+                <td>Проверяет, что аргумент не равен null</td>
+            </tr>
+            <tr>
+                <th>assertNull</th>
+                <td>Проверяет, что аргумент равен null</td>
+            </tr>
+            <tr>
+                <th>assertNotSame</th>
+                <td>Проверят, что два аргумента — это не один и тот же объект</td>
+            </tr>
+            <tr>
+                <th>assertSame</th>
+                <td>Проверят, что два аргумента — это один и тот же объект</td>
+            </tr>
+            <tr>
+                <th>assertTrue</th>
+                <td>Проверяет, что аргумент равен <em><span class="text-green">true</span></em></td>
+            </tr>
+            <tr>
+                <th>assertFalse</th>
+                <td>Проверяет, что аргумент равен <em><span class="text-green">false</span></em></td>
+            </tr>
+        </tbody>
+    </table>
+ 
+    <p>Некоторые из этих методов кажутся излишними. Зачем использовать <span class="code text-orange">assertSame(a, b)</span>, если можно просто написать <span class="code text-orange">assertTrue(a == b)</span>?</p>
+
+    <p>Все дело в том, что <span class="code text-orange">assert</span> — это очень умный метод. Он делает много чего полезного и, в том числе, <span class="text-green">пишет в лог информацию об ошибке</span>. В первом случае он напишет, что ожидался объект А, а получен объект Б. Во втором случае просто напишет, что ожидалось <em><span class="text-green">true</span></em>.</p>
+
+    <p>Когда у тебя сотни тестов, особенно выполняемые на специальном тестовом сервере, то наличие детальных логов может быть суперполезным. Думаю,ты понимаешь, о чем я.</p>
+
+    <p>Пример сравнения массивов:</p>
+ 
+    <pre class='language-java line-numbers'><code>
+@Test
+public void whenAssertingArraysEquality() {
+    char[] expected = {'J','u','n','i','t'};
+    char[] actual = "Junit".toCharArray();
+   
+    assertArrayEquals(expected, actual);
+}
+</code></pre>
+ 
+    <h2>6.3 Метод assertAll</h2>
+
+    <p>Как уже говорилось выше, метод <span class="code text-orange">assert</span> не просто выполняет проверку, но и пишет в лог много информации о сравнимых объектах.</p>
+
+    <p>Допустим выполняется сравнение:</p>
+ 
+    <pre class='language-java line-numbers'><code>
+Address address = unitUnderTest.methodUnderTest();
+assertEquals("Вашингтон", address.getCity());
+assertEquals("Oracle Parkway", address.getStreet());
+assertEquals("500", address.getNumber());
+</code></pre>
+ 
+    <p>Но если один из параметров не совпадет, то проверки остальных не произойдет. А хотелось бы чтобы они все-таки произошли и их результаты записались в лог. Но при этом, если хотя бы одна проверка не прошла, то тест все-таки был провален.</p>
+
+    <p>Для этого есть специальный метод — <span class="code text-orange">assertAll()</span>. В качестве первого аргумента он принимает комментарий, который нужно записать в лог, а дальше — любое количество функций-ассертов.</p>
+
+    <p>Вот как будет переписан наш пример с его помощью:</p>
+ 
+    <pre class='language-java line-numbers'><code>
+Address address = unitUnderTest.methodUnderTest();
+assertAll("Сложный сценарий сравнение адреса",
+    () -> assertEquals("Вашингтон", address.getCity()),
+    () -> assertEquals("Oracle Parkway", address.getStreet()),
+    () -> assertEquals("500", address.getNumber())
+);
+</code></pre>
+
+    <p>Тогда если адрес будет неправильный, в лог будет написано что-то типа:</p>
+ 
+    <pre><code>	Сложный сценарий сравнение адреса (3 failures)
+	expected: &lt;Вашингтон> but was: &lt;Сиэтл>
+    expected: &lt;Oracle Parkway> but was: &lt;Main Street>
+    expected: &lt;500> but was: &lt;5772>
+</code></pre>
+ 
+    <h2>6.4 Метод assertTimeout</h2>
+
+    <p>Помнишь аннотацию <span class="text-yellow"><span class="text-bold">@Timeout</span></span>? Она позволяла контролировать время выполнения всего метода. Но иногда бывает полезно задать ограничения на выполнения некоторой части кода внутри метода. Для этого можно использовать <span class="code text-orange">assertTimeout()</span>.</p>
+
+    <p>В качестве первого параметра в него передается время, а в качестве второго — код (функция), который должен выполниться за указанное время. Пример:</p>
+ 
+    <pre class='language-java line-numbers'><code>
+@Test
+public void whenAssertingTimeout() {
+    assertTimeout(
+  	ofSeconds(2),
+  	() -> {
+    	// пауза в одну секунду
+    	Thread.sleep(1000);
+  	}
+	);
+}
+</code></pre>
+
+    <p>У класса <span class="code"><span class="text-green">Assert</span></span> есть 12 вариантов метода <span class="code text-orange">assertTimeout()</span>. Если хочешь ознакомиться с ними подробнее, добро пожаловать в <a href="https://junit.org/junit5/docs/5.0.1/api/org/junit/jupiter/api/Assertions.html" target="_blank">официальную документацию</a>.
+ 
+    <h2>6.5 Метод assertThrows</h2>
+
+    <p>Очень часто бывают ситуации, когда тебе нужно убедиться, что в определенной ситуации код кидает нужное исключение: определил ошибку и кинул нужное исключение. Это очень распространенная ситуация.</p>
+
+    <p>На этот случай есть еще один полезный метод <span class="code text-orange">assert</span> — это <span class="code text-orange">assertThrows()</span>. Общий формат его вызова имеет вид:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">assertThrows(</span><span class="text-neon">исключение,</span> <span class="text-green">код</span><span class="text-red">)</span></code></pre>
+    </div>
+ 
+    <p>По сути, он очень похож на метод <span class="code text-orange">assertTimeout()</span>, только он проверяет, чтобы указанный код выкинул нужное исключение. Пример:</p>
+ 
+    <pre class='language-java line-numbers'><code>
+@Test
+void whenAssertingException() {
+    Throwable exception = assertThrows(
+  	IllegalArgumentException.class,
+  	() -> {
+      	throw new IllegalArgumentException("Exception message");
+  	}
+    );
+    assertEquals("Exception message", exception.getMessage());
+}
+</code></pre>

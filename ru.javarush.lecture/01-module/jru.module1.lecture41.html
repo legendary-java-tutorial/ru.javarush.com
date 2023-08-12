@@ -1,0 +1,422 @@
+IO vs NIO
+<p>----------------------------------------</p>
+IO (Input &amp; Output) API — это Java API, которое облегчает разработчикам работу с потоками. Скажем, мы получили какие-то данные (например, фамилия, имя и отчество) и нам нужно записать их в файл — в этот момент и приходит время использовать java.io...
+<p>----------------------------------------</p>
+    <h2>Чем так плох Java IO?</h2>
+
+    <p>IO (Input & Output) API — это Java API, которое облегчает разработчикам работу с потоками. Скажем, мы получили какие-то данные (например, фамилия, имя и отчество) и нам нужно записать их в файл — в этот момент и приходит время использовать <span class="text-bold">java.io</span>.</p>
+
+    <img data-max-width="800" data-id="7f63efc7-40de-426e-80f0-50a194df2b90" src="https://cdn.javarush.com/images/article/7f63efc7-40de-426e-80f0-50a194df2b90/original.png" alt="">
+
+    <div class="text-center"><small><em><p style="margin-top:-20px;">Структура библиотеки java.io</p></em></small></div>
+
+    <p>Но у <span class="text-orange"><span class="text-bold">Java IO</span></span> есть свои недостатки, так что давай поговорим по порядку о каждом из них:</p>
+
+    <ol>
+        <li>Блокирующий доступ для ввода/вывода данных. Проблема состоит в том, что когда разработчик пытается прочитать файл или записать что-то в него, используя <span class="text-orange"><span class="text-bold">Java IO</span></span>, он блокирует файл и доступ к нему до момента окончания выполнения своей задачи.</li>
+        <li>Отсутствует поддержка виртуальных файловых систем.</li>
+        <li>Нет поддержки ссылок.</li>
+        <li>Очень большое количество checked исключений.</li>
+    </ol>
+
+    <p>Работа с файлами всегда несет за собой работу с исключениями: например, попытка создать новый файл, который уже существует, вызовет <span class="text-red"><span class="text-bold">IOException</span></span>. В данном случае работа приложения должна быть продолжена и пользователь должен получить уведомление о том, по какой причине файл не может быть создан.</p>
+
+    <pre class='language-java line-numbers'><code>
+try {
+	File.createTempFile("prefix", "");
+} catch (IOException e) {
+	// Handle IOException
+}
+
+/**
+ * Creates an empty file in the default temporary-file directory 
+ * any exceptions will be ignored. This is typically used in finally blocks. 
+ * @param prefix 
+ * @param suffix 
+ * @throws IOException - If a file could not be created
+ */
+public static File createTempFile(String prefix, String suffix) 
+throws IOException {
+...
+}
+</code></pre>
+
+    <p>Здесь мы видим, что метод <span class="code text-orange">createTempFile</span> выбрасывает <span class="text-red"><span class="text-bold">IOException</span></span>, когда файл не может быть создан. Это исключение должно быть обработано соответственно. Если попытаться вызвать этот метод вне блока <span class="text-viola">try-catch</span>, то компилятор выдаст ошибку и предложит нам два варианта исправления: окружить метод блоком <span class="text-viola">try-catch</span> или сделать так, чтобы метод, внутри которого вызывается <span class="code text-orange">File.createTempFile</span>, выбрасывал исключение <span class="text-red"><span class="text-bold">IOException</span></span> (чтобы передать его на верхний уровень для обработки).</p>
+
+    <h2>Приход к Java NIO и сравнение с Java IO</h2>
+
+    <p><span class="text-orange"><span class="text-bold">Java NIO</span></span>, или Java Non-blocking I/O (иногда — Java New I/O, “новый ввод-вывод”) предназначена для реализации высокопроизводительных операций ввода-вывода.</p>
+
+    <p>Давай попробуем сравнить методы <span class="text-orange"><span class="text-bold">Java IO</span></span> и те, что пришли им на замену.</p>
+
+    <p>Сначала поговорим о работе с <span class="text-orange"><span class="text-bold">Java IO</span></span>:</p>
+
+    <h3>Класс InputStream</h3>
+
+    <pre class='language-java line-numbers'><code>
+try(FileInputStream fin = new FileInputStream("C:/javarush/file.txt")){
+    System.out.printf("File size: %d bytes \n", fin.available());
+    int i=-1;
+    while((i=fin.read())!=-1){
+        System.out.print((char)i);
+    }   
+} catch(IOException ex) {
+    System.out.println(ex.getMessage());
+}
+</code></pre>
+
+    <p>Класс <span class="code"><span class="text-green">FileInputStream</span></span> предназначен для считывания данных из файла. Он является наследником класса <span class="code"><span class="text-green">InputStream</span></span> и поэтому реализует все его методы. Если файл не может быть открыт, то генерируется исключение <span class="text-red"><span class="text-bold">FileNotFoundException</span></span>.</p>
+
+    <h3>Класс OutputStream</h3>
+
+    <pre class='language-java line-numbers'><code>
+String text = "Hello world!"; // строка для записи
+try(FileOutputStream fos = new FileOutputStream("C:/javarush/file.txt")){
+    // переводим нашу строку в байты
+    byte[] buffer = text.getBytes();
+    fos.write(buffer, 0, buffer.length);
+    System.out.println("The file has been written");
+} catch(IOException ex){
+    System.out.println(ex.getMessage());
+}
+</code></pre>
+
+    <p>Класс <span class="code"><span class="text-green">FileOutputStream</span></span> предназначен для записи байтов в файл. Он является производным от класса <span class="code"><span class="text-green">OutputStream</span></span>.</p>
+
+    <h3>Классы Reader и Writer</h3>
+
+    <p>Класс <span class="code"><span class="text-green">FileReader</span></span> позволяет нам читать символьные данные из потоков, а класс <span class="code"><span class="text-green">FileWriter</span></span> используется для записи потоков символов. Реализация записи и чтения из файла приведена ниже:</p>
+
+    <pre class='language-java line-numbers'><code>
+        String fileName = "c:/javarush/Example.txt";
+
+        // Создание объекта FileWriter
+        try (FileWriter writer = new FileWriter(fileName)) {
+
+            // Запись содержимого в файл
+            writer.write("Это простой пример,\n в котором мы осуществляем\n с помощью языка Java\n запись в файл\n и чтение из файла\n");
+            writer.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Создание объекта FileReader
+        try (FileReader fr = new FileReader(fileName)) {
+            char[] a = new char[200];// Количество символов, которое будем считывать
+            fr.read(a);   // Чтение содержимого в массив
+            for (char c : a) {
+                System.out.print(c); // Вывод символов один за другими
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+</code></pre>
+
+    <p>Теперь поговорим о <span class="text-orange"><span class="text-bold">Java NIO</span></span>:</p>
+
+    <h3>Channel</h3>
+
+    <p>В отличие от потоков, которые используются в <span class="text-orange"><span class="text-bold">Java IO</span></span>, <span class="code"><span class="text-green">Channel</span></span> является двусторонним, то есть может и считывать, и записывать. Канал <span class="text-orange"><span class="text-bold">Java NIO</span></span> поддерживает асинхронный поток данных как в режиме блокировки, так и в режиме без блокировки.</p>
+
+    <pre class='language-java line-numbers'><code>
+RandomAccessFile aFile = new RandomAccessFile("C:/javarush/file.txt", "rw");
+FileChannel inChannel = aFile.getChannel();
+
+ByteBuffer buf = ByteBuffer.allocate(100);
+int bytesRead = inChannel.read(buf);
+
+while (bytesRead != -1) {
+  System.out.println("Read " + bytesRead);
+  buf.flip();
+	  while(buf.hasRemaining()){
+	      System.out.print((char) buf.get());
+	  }
+  buf.clear();
+  bytesRead = inChannel.read(buf);
+}
+aFile.close();
+</code></pre>
+
+    <p>Здесь мы реализовали <span class="code"><span class="text-green">FileChannel</span></span>. Для чтения данных из файла мы используем файловый канал. Объект файлового канала может быть создан только вызовом метода <span class="code text-orange">getChannel()</span> для файлового объекта, поскольку мы не можем напрямую создать объект файлового канала.</p>
+
+    <p>Кроме <span class="code"><span class="text-green">FileChannel</span></span> у нас есть и другие реализации каналов:</p>
+
+    <ul>
+        <li><p><span class="code"><span class="text-green">FileChannel</span></span> — работа с файлами</p></li>
+        <li><p><span class="code"><span class="text-green">DatagramChannel</span></span> — канал для работы по UDP-соединению</p></li>
+        <li><p><span class="code"><span class="text-green">SocketChannel</span></span> — канал для работы по TCP-соединению</p></li>
+        <li><p><span class="code"><span class="text-green">ServerSocketChannel</span></span> содержит в себе <span class="code"><span class="text-green">SocketChannel</span></span> и схож с принципом работы веб-сервера</p></li>
+    </ul>
+
+    <img data-max-width="1080" data-id="bc23a859-452c-4620-a8d0-37aa985d050f" src="https://cdn.javarush.com/images/article/bc23a859-452c-4620-a8d0-37aa985d050f/original.png" alt="">
+
+    <p>Обрати внимание: <span class="code"><span class="text-green">FileChannel</span></span> нельзя переключить в неблокирующий режим. Неблокирующий режим <span class="text-orange"><span class="text-bold">Java NIO</span></span> позволяет запрашивать считанные данные из канала (channel) и получать только то, что доступно на данный момент, или вообще ничего, если доступных данных пока нет. В это же время <span class="code"><span class="text-green">SelectableChannel</span></span> и его реализации могут устанавливаться в неблокирующем режиме с помощью метода <span class="code text-orange">connect()</span>.</p>
+
+    <h3>Selector</h3>
+
+    <p>В <span class="text-orange"><span class="text-bold">Java NIO</span></span> появилась возможность создать поток, который будет знать, какой канал готов для записи и чтения данных и может обрабатывать этот конкретный канал. Возможность эта реализуется с помощью класса <span class="code"><span class="text-green">Selector</span></span>.</p>
+
+    <img data-max-width="512" data-id="89d44a59-660d-42b6-b6c5-cc616a8ee9f1" src="https://cdn.javarush.com/images/article/89d44a59-660d-42b6-b6c5-cc616a8ee9f1/original.png" alt="">
+
+    <div class="text-center"><small><em><p style="margin-top:-20px;">Реализация связи каналов и селектора</p></em></small></div>
+
+    <pre class='language-java line-numbers'><code>
+Selector selector = Selector.open();
+channel.configureBlocking(false); // неблокирующий режим
+SelectionKey key = channel.register(selector, SelectionKey.OP_READ);
+</code></pre>
+
+    <p>Таким образом мы создаем наш <span class="code"><span class="text-green">Selector</span></span> и связываем его с <span class="code"><span class="text-green">SelectableChannel</span></span>.</p>
+
+    <p>Для использования с селектором канал должен находиться в неблокирующем режиме. Это значит, что вы не можете использовать <span class="code"><span class="text-green">FileChannel</span></span> с селектором, поскольку <span class="code"><span class="text-green">FileChannel</span></span> нельзя переключить в неблокирующий режим. Сокетные каналы будут работать нормально.</p>
+
+    <p>Здесь мы можем отметить, что в нашем примере <span class="code"><span class="text-green">SelectionKey</span></span> — это набор операций, которые можно выполнить с каналом. Мы можем узнать состояние канала с помощью клавиши выбора.</p>
+
+    <p>Типы SelectionKey:</p>
+
+    <ul>
+        <li><p><span class="text-orange"><span class="text-bold">SelectionKey.OP_CONNECT</span></span> — канал, который готов к подключению к серверу.</p></li>
+        <li><p><span class="text-orange"><span class="text-bold">SelectionKey.OP_ACCEPT</span></span> — канал, который готов принимать входящие соединения.</p></li>
+        <li><p><span class="text-orange"><span class="text-bold">SelectionKey.OP_READ</span></span> — канал, который готов к чтению данных.</p></li>
+        <li><p><span class="text-orange"><span class="text-bold">SelectionKey.OP_WRITE</span></span> — канал, который готов к записи данных.</p></li>
+    </ul>
+
+    <h3>Buffer</h3>
+
+    <p>Данные считываются в буфер для последующей обработки. Разработчик может двигаться по буферу вперед и назад, что дает нам немного больше гибкости при обработке данных. В то же время нам нужно проверять, содержит ли буфер необходимый для корректной обработки объем данных. Также не забывай следить, чтобы при чтении данных в буфер не уничтожить еще не обработанные данные, находящиеся там.</p>
+
+    <pre class='language-java line-numbers'><code>
+ByteBuffer buf = ByteBuffer.allocate (2048); 
+int bytesRead = channel.read(buf);
+buf.flip(); // меняем режим на чтение
+while (buf.hasRemaining()) { 
+	byte data = buf.get(); // есть методы для примитивов 
+}
+
+buf.clear(); // очистили и можно переиспользовать
+</code></pre>
+
+    <p>Основные свойства буфера:</p>
+
+    <table>
+        <tbody>
+            <tr>
+                <th colspan =  "2"><center>Основные атрибуты</center></th>
+            </tr>
+            <tr>
+                <td><span class="text-green">capacity</span></td>
+                <td>Размер буфера, который является длиной массива.</td>
+            </tr>
+            <tr>
+                <td><span class="text-green">position</span></td>
+                <td>Начальная позиция для работы с данными.</td>
+            <tr>
+            </tr>
+                <td><span class="text-green">limit</span></td>
+                <td>Операционный лимит. Для операций чтения предел — это объем данных, который можно поместить в оперативный режим, а для операций записи — предел емкости или доступная для записи квота, указанная ниже.</td>
+            </tr>
+            <tr>
+                <td><span class="text-green">mark</span></td>
+                <td>Индекс значения, до которого будет сброшен параметр <span class="text-green">position</span> при вызове метода <span class="code text-orange">reset()</span>.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>Теперь давай немного поговорим о том, что нового появилось в <span class="text-orange"><span class="text-bold">Java NIO2</span></span>.</p>
+
+    <h3>Path</h3>
+
+    <p><span class="code"><span class="text-green">Path</span></span> представляет из себя путь в файловой системе. Он содержит имя файла и список каталогов, определяющих путь к нему.</p>
+
+    <pre class='language-java line-numbers'><code>
+Path relative = Paths.get("Main.java");
+System.out.println("Файл: " + relative);
+//получение файловой системы
+System.out.println(relative.getFileSystem());
+</code></pre>
+
+    <p><span class="code"><span class="text-green">Paths</span></span> — это совсем простой класс с единственным статическим методом <span class="code text-orange">get()</span>. Его создали исключительно для того, чтобы из переданной строки или URI получить объект типа <span class="text-orange">Path</span>.</p>
+
+    <pre class='language-java line-numbers'><code>
+Path path = Paths.get("c:\\data\\file.txt");
+</code></pre>
+
+    <h3>Files</h3>
+
+    <p><span class="code"><span class="text-green">Files</span></span> — это утилитный класс, с помощью которого мы можем напрямую получать размер файла, копировать их, и не только.</p>
+
+    <pre class='language-java line-numbers'><code>
+Path path = Paths.get("files/file.txt");
+boolean pathExists = Files.exists(path);
+</code></pre>
+
+    <h3>FileSystem</h3>
+
+    <p><span class="code"><span class="text-green">FileSystem</span></span> предоставляет интерфейс к файловой системе. Файловая система работает как фабрика для создания различных объектов (<mark class="green">Path</mark>, <mark class="green">PathMatcher</mark>, <mark class="green">Files</mark>). Этот объект помогает получить доступ к файлам и другим объектам в файловой системе.</p>
+
+    <pre class='language-java line-numbers'><code>
+try {
+      FileSystem filesystem = FileSystems.getDefault();
+      for (Path rootdir : filesystem.getRootDirectories()) {
+          System.out.println(rootdir.toString());
+      }
+  } catch (Exception e) {
+      e.printStackTrace();
+  }
+</code></pre>
+
+    <h2>Тест производительности</h2>
+
+    <p>Для этого теста давай возьмем два файла. Первый — маленький файл с текстом, а второй — большой видеоролик.</p>
+
+    <p>Создаем файл и добавляем в него немного слов и символов:</p>
+
+    <div class="terminal">% touch text.txt</div>
+
+    <img data-max-width="512" data-id="6c4bffd9-ad54-4aa4-96d7-ad331d4a704d" src="https://cdn.javarush.com/images/article/6c4bffd9-ad54-4aa4-96d7-ad331d4a704d/original.png" alt="">
+ 
+    <p>Наш файл по итогу занимает в памяти 42 байта:</p>
+
+    <img data-max-width="512" data-id="37fa5f4a-69c2-40b1-a17e-b578c654f41e" src="https://cdn.javarush.com/images/article/37fa5f4a-69c2-40b1-a17e-b578c654f41e/original.png" alt="">
+
+    <p>Теперь напишем код, который будет копировать наш файл из одной папки в другую. Проверим его работу на маленьком и большом файлах, и тем самым сравним скорость работы <span class="text-orange"><span class="text-bold">IO</span></span>, <span class="text-orange"><span class="text-bold">NIO</span></spam> и <span class="text-orange"><span class="text-bold">NIO2</span></span>.</p>
+
+    <p>Код для копирования, написанный на <span class="text-orange"><span class="text-bold">Java IO</span></span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) {
+        long currentMills = System.currentTimeMillis();
+        long startMills = currentMills;
+        File src = new File("/Users/IdeaProjects/testFolder/text.txt");
+        File dst = new File("/Users/IdeaProjects/testFolder/text1.txt");
+        copyFileByIO(src, dst);
+        currentMills = System.currentTimeMillis();
+        System.out.println("Время выполнения в миллисекундах: " + (currentMills - startMills));
+    }
+
+    public static void copyFileByIO(File src, File dst){
+        try(InputStream inputStream = new FileInputStream(src);
+            OutputStream outputStream = new FileOutputStream(dst)){
+
+            byte[] buffer = new byte[1024];
+            int length;
+            // Читаем данные в байтовый массив, а затем выводим в OutStream
+            while((length = inputStream.read(buffer)) > 0){
+                outputStream.write(buffer, 0, length);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+</code></pre>
+
+    <p>И код для <span class="text-orange"><span class="text-bold">Java NIO</span></span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) {
+        long currentMills = System.currentTimeMillis();
+        long startMills = currentMills;
+
+        File src = new File("/Users/IdeaProjects/testFolder/text.txt");
+        File dst = new File("/Users/IdeaProjects/testFolder/text2.txt");
+        // копия nio
+        copyFileByChannel(src, dst);
+        currentMills = System.currentTimeMillis();
+        System.out.println("Время выполнения в миллисекундах: " + (currentMills - startMills));
+    }
+
+    public static void copyFileByChannel(File src, File dst){
+        // 1. Получаем FileChannel исходного файла и целевого файла
+        try(FileChannel srcFileChannel  = new FileInputStream(src).getChannel();
+            FileChannel dstFileChannel = new FileOutputStream(dst).getChannel()){
+            // 2. Размер текущего FileChannel
+            long count = srcFileChannel.size();
+            while(count > 0){
+                /**=============================================================
+                 * 3. Записать байты из FileChannel исходного файла в целевой FileChannel
+                 * 1. srcFileChannel.position (): начальная позиция в исходном файле не может быть отрицательной
+                 * 2. count: максимальное количество переданных байтов, не может быть отрицательным
+                 * 3. dstFileChannel: целевой файл
+                 *==============================================================*/
+                long transferred = srcFileChannel.transferTo(srcFileChannel.position(),
+                        count, dstFileChannel);
+                // 4. После завершения переноса измените положение исходного файла на новое место
+                srcFileChannel.position(srcFileChannel.position() + transferred);
+                // 5. Рассчитаем, сколько байтов осталось перенести
+                count -= transferred;
+            }
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+</code></pre>
+
+    <p>Код для <span class="text-orange"><span class="text-bold">Java NIO2</span></span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) {
+  long currentMills = System.currentTimeMillis();
+  long startMills = currentMills;
+
+  Path sourceDirectory = Paths.get("/Users/IdeaProjects/testFolder/test.txt");
+  Path targetDirectory = Paths.get("/Users/IdeaProjects/testFolder/test3.txt");
+  Files.copy(sourceDirectory, targetDirectory);
+
+  currentMills = System.currentTimeMillis();
+  System.out.println("Время выполнения в миллисекундах: " + (currentMills - startMills));
+}
+</code></pre>
+
+    <p>Начнем с маленького файла.</p>
+
+    <p>Время выполнения с помощью <span class="text-orange"><span class="text-bold">Java IO</span></span> в среднем было 1 миллисекунду. Запуская тест несколько раз, получаем резульат от 0 до 2 миллисекунд.</p>
+
+    <div class="terminal">Время выполнения в миллисекундах: 1</div>
+
+    <p>Время выполнения с помощью <span class="text-orange"><span class="text-bold">Java NIO</span></span> гораздо больше. Среднее время — 11 миллисекунд. Результаты были от 9 до 16. Это связанно с тем, что <span class="text-orange"><span class="text-bold">Java IO</span></span> работает не так, как наша операционная система. <span class="text-orange"><span class="text-bold">IO</span></span> перемещает и обрабатывает файлы один за другим, в то время как операционная система отправляет данные в одном большом виде. А <span class="text-orange"><span class="text-bold">NIO</span></span> показал плохие результаты из-за того, что он ориентирован на буфер, а не на поток, как <span class="text-orange"><span class="text-bold">IO</span></span>.</p>
+
+    <div class="terminal">Время выполнения в миллисекундах: 12</div>
+
+    <p>И так же запустим наш тест для <span class="text-orange"><span class="text-bold">Java NIO2</span></span>. <span class="text-orange"><span class="text-bold">NIO2</span></span> имеет улучшенное управление с файлами по сравнению с <span class="text-orange"><span class="text-bold">Java NIO</span></span>. Из-за этого результаты обновленной библиотеки так отличаются:</p>
+
+    <div class="terminal">Время выполнения в миллисекундах: 3</div>
+
+    <p>А теперь давай попробуем протестировать наш большой файл, видео на 521 МБ. Задача будет точно такой же: скопировать в другую папку. Смотрим!</p>
+
+    <p>Результаты с <span class="text-orange"><span class="text-bold">Java IO</span></span>:</p>
+
+    <div class="terminal">Время выполнения в миллисекундах: 1866</div>
+
+    <p>А вот результат <span class="text-orange"><span class="text-bold">Java NIO</span></span>:</p>
+
+    <div class="terminal">Время выполнения в миллисекундах: 205</div>
+
+    <p><span class="text-orange"><span class="text-bold">Java NIO</span></span> справился с файлом в 9 раз быстрее при первом тесте. Повторные тесты показывали примерно такие же результаты.</p>
+
+    <p>А так же попробуем наш тест на <span class="text-orange"><span class="text-bold">Java NIO2</span></span>:</p>
+
+    <div class="terminal">Время выполнения в миллисекундах: 360</div>
+
+    <p>Почему же такой результат? Просто потому что у нас нет особого смысла сравнивать производительность между ними, так как они служат разным целям. <span class="text-orange"><span class="text-bold">NIO</spaN></span> представляет собой более абстрактный низкоуровневый ввод-вывод данных, а <span class="text-orange"><span class="text-bold">NIO2</span></span> ориентирован на управление файлами.</p>
+
+    <h2>Итоги</h2>
+
+    <p>Можем смело заявить, что <span class="text-orange"><span class="text-bold">Java NIO</span></span> существенно повышает эффективность работы с файлами за счет использования внутри блоков. Еще один плюс состоит в том, что библиотека <span class="text-orange"><span class="text-bold">NIO</span></span> разбита на две части: одна для работы с файлами, вторая — для работы в сети.</p>
+
+    <p>Новый API, который используется в <span class="text-orange"><span class="text-bold">Java NIO2</span></span> для работы с файлами, предлагает множество полезных функций: </p>
+
+    <ul>
+        <li><p>гораздо более полезную адресацию файловой системы с помощью <span class="code"><span class="text-green">Path</span></span>, </p></li>
+        <li><p>значительно улучшенную работу с ZIP-файлами с использованием пользовательского поставщика файловой системы, </p></li>
+        <li><p>доступ к специальным атрибутам файла, </p></li>
+        <li><p>множество удобных методов, например, чтение всего файла с помощью одной команды, копирование файла с помощью одной команда и т. д. </p></li>
+    </ul>
+
+    <p>Все это связано с файлом и файловой системой, и все довольно высокого уровня.</p>
+
+    <p>В современных реалиях <span class="text-orange"><span class="text-bold">Java NIO</span></span> занимает около 80-90% работы с файлами, хотя доля <span class="text-orange"><span class="text-bold">Java IO</span></span> тоже еще существенна.</p>
+
+    <p>💡 P. S. Тесты проводились на MacBook Pro 14’ 16/512. Результаты теста могут отличатся от операционной системы и параметров рабочей машины программиста.</p>

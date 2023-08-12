@@ -1,0 +1,187 @@
+Работа с ошибками
+<p>----------------------------------------</p>
+Слезы и боль. 
+SQL Exception. 
+Примеры ошибок.
+<p>----------------------------------------</p>
+<h2>Слезы и боль</h2>
+
+<p>При работе Java-программы могут возникать ошибки. При работе с базой данных ошибки <strong>будут</strong> возникать. Все дело лишь в том, какие из них ты можешь предсказать и предложить адекватное решение.</p>
+
+<p>Первая большая группа ошибок будет тебя ждать при выполнении этой строчки:</p>
+ 
+<pre><code><strong><span class="text-neon">Connection connection</span>  = <span class="text-red">DriverManager</span>.<span class="text-red">getConnection</span>(<span class="text-green">"jdbc:mysql://localhost:3306/test"</span>,  <span class="text-green">"root"</span>, <span class="text-green">"secret"</span>);</strong>
+</code></pre>
+ 
+<p>Что вас тут может ожидать?</p>
+
+<p>Ошибка 1. <strong>Драйвер не найден</strong>.</p>
+
+<p>Если ты получил ошибку <strong>“No suitable driver found for …”</strong> это значит, что DriverManager не смог понять какой тип СУБД скрывается за вашим URL. Например, ты написал jdbc_mysql: вместо jdbc:mysql:</p>
+
+<p>Ошибка 2. <strong>Ошибка соединения</strong>.</p>
+
+<p>Если ты допустил ошибку в имени хоста, то, скорее всего, получишь сообщение типа “No such host is known” или “Communications link failure”.</p>
+
+<p>Ошибка 3. <strong>Неверно указано имя базы данных</strong>.</p>
+
+<p>Если ты допустил опечатку в имени базы данных или подключаешься к другому серверу, где ее нет, то получишь сообщение типа <span class="text-neon">“Unknown database 'supershop3'”</span>.</p>
+
+<p>Ошибка 4. <strong>Неверный логин или пароль</strong>.</p>
+
+<p>Если ты забыл пароль от базы или неверно его указал, то, скорее всего, получишь сообщение типа <span class="text-red">“Access denied for user 'root'@'localhost' (using password: YES)”</span>.</p>
+
+<h2>SQL Exception</h2>
+
+<p>Если соединение с базой все же установилось, то дальше будет интереснее. На случай ошибок при работе с базой у JDBC есть специальные исключение – <strong>java.sql.SQLException</strong>. А также несколько ее разновидностей.</p>
+
+<p>У этого исключения есть только один дополнительный метод (в сравнении с классом Exception) – это метод getSQLState(), который возвращает код состояния (строку), который вернул ему SQL-сервер. Обработка ошибок при этом выглядит так:</p>
+
+<pre class='language-java line-numbers'><code>
+Connection connection  = DriverManager.getConnection("jdbc:mysql://localhost:3306/test",  "root", "secret");
+try {
+   int rowsCount = statement.executeUpdate("DELETE FROM ‘Unemployees’");
+} catch (SQLException ex) {
+  // Если таблица не существует
+   if (ex.getSQLState().compareTo("X0Y32") != 0) {
+  	throw ex;
+  }
+ } finally {
+  connection.close();
+ }
+</code></pre>
+
+<p>Кодов ошибок при этом несколько сотен. Полный список можешь <a href="https://en.wikipedia.org/wiki/SQLSTATE" target="_blank">посмотреть тут</a>.</p>
+
+<p>Но иногда коды ошибок помогают JDBC понять ошибку лучше и тогда он создает не просто SQLException, а специализированные SQLException:</p>
+ 
+<table>
+<tbody>
+<tr>
+<td><span class="text-red"><span class="text-bold">BatchUpdateException</span></span></td>
+<td>Ошибка во время группового запроса</td>
+</tr>
+<tr>
+<td><span class="text-red"><span class="text-bold">DataTruncation</span></span></td>
+<td>Часто возникает при обрезании длинных данных</td>
+</tr>
+<tr>
+<td><span class="text-red"><span class="text-bold">SQLClientInfoException</span></span></td>
+<td>Клиент передал параметры, которые не могут быть установлены у соединения: Connection</td>
+</tr>
+<tr>
+<td><span class="text-red"><span class="text-bold">SQLDataException</span></span></td>
+<td>Ошибка с данными, детали зависят от типа СУБД</td>
+</tr>
+<tr>
+<td><span class="text-red"><span class="text-bold">SQLException</span></span></td>
+<td>Ошибка доступа к базе или другие общие ошибки</td>
+</tr>
+<tr>
+<td><span class="text-red"><span class="text-bold">SQLFeatureNotSupportedException</span></span></td>
+<td>СУБД не поддерживает данную функциональность</td>
+</tr>
+<tr>
+<td><span class="text-red"><span class="text-bold">SQLIntegrityConstraintViolationException</span></span></td>
+<td>Все ошибки с для SQLState ==22</td>
+</tr>
+<tr>
+<td><span class="text-red"><span class="text-bold">SQLInvalidAuthorizationSpecException</span></span></td>
+<td>Ошибка доступа и/или авторизации</td>
+</tr>
+<tr>
+<td><span class="text-red"><span class="text-bold">SQLNonTransientConnectionException</span></span></td>
+<td>Все ошибки с для SQLState ==08</td>
+</tr>
+<tr>
+<td><span class="text-red"><span class="text-bold">SQLRecoverableException</span></span></td>
+<td>Ошибка есть, но ее можно исправить при вмешательстве application</td>
+</tr>
+<tr>
+<td><span class="text-red"><span class="text-bold">SQLSyntaxErrorException</span></span></td>
+<td>Ошибка в синтаксисе запроса</td>
+</tr>
+<tr>
+<td><span class="text-red"><span class="text-bold">SQLTimeoutException</span></span></td>
+<td>Запрос выполнялся слишком долго</td>
+</tr>
+<tr>
+<td><span class="text-red"><span class="text-bold">SQLTransactionRollbackException</span></span></td>
+<td>Ошибка во время отката транзакции</td>
+</tr>
+<tr>
+<td><span class="text-red"><span class="text-bold">SQLWarning</span></span></td>
+<td>Предупреждение, которое выслала СУБД</td>
+</tr>
+</tbody>
+</table>
+
+<h2>Примеры ошибок</h2>
+
+<p>Если ошибка произошла на этапе работы серверного приложения, то обычно ее можно только логировать и потом подробнее с ней разбираться. А вот если она произошла во время работы приложения на компьютере программиста, то тут тебе нужно тщательно исследовать причину этого.</p>
+
+<p>Есть два самых больших классов ошибок при работе с базой данных:</p>
+
+<ul>
+<li>Ошибка в тексте запроса</li>
+<li>Ошибка при работе с ResultSet</li>
+</ul>
+
+<p>Ошибка в тексте запроса может возникать очень часто. Запрос может быть очень длинным, содержать несколько таблиц (объединенных через JOIN) и подзапросов (SUBSELECT). Найти ошибку в таком запросе непросто. Кроме того, запросы часто склеиваются из частей, туда добавляются данные.</p>
+
+<p>Самая первая ошибка, о которой тебе следует знать, — это <span class="text-red"><span class="text-bold">SQLSyntaxErrorException</span></span>. Такая ошибка обычно значит, что у тебя опечатка в теле запроса.</p>
+
+<p>Возьмем наш любимый пример:</p>
+
+<pre class='language-java line-numbers'><code>
+    ResultSet results = statement.executeQuery("SELECT Count(*) FROM user");
+	results.next();
+    int count = results.getInt(1);
+</code></pre>
+ 
+<p>И “случайно” сотрем звездочку в теле запроса:</p>
+
+<pre class='language-java line-numbers'><code>
+	ResultSet results = statement.executeQuery("SELECT Count() FROM user");
+	results.next();
+    int count = results.getInt(1);
+</code></pre>
+ 
+<p>Тогда мы получим исключение:</p>
+
+<pre><code>Exception in thread "main" <span class="text-red">java.sql.SQLSyntaxErrorException</span>:
+
+<span class="text-user">You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ') FROM task' at line 1</span>
+
+           	at com.mysql.cj.jdbc.exceptions.SQLError.createSQLException(SQLError.java:120)
+</code></pre>
+
+<p>SQL-сервер пишет нам, что перед FROM была синтаксическая ошибка.</p>
+
+<p>Внимательно смотрим на запрос и думаем. Если ничего не приходит в голову, а такое бывает очень часто, то нужно попросить кого-нибудь посмотреть, что не так.</p>
+
+<p>Еще одна популярная ошибка — <strong>неправильная работа с ResultSet</strong> — результатом запроса. Допустим ты забыл, что перед чтением данных “текущая строка” объекта ResultSet стоит перед первой строкой, то у тебя будет такой код:</p>
+
+<pre class='language-java line-numbers'><code>
+	ResultSet results = statement.executeQuery("SELECT Count(*) FROM user");
+//    results.next();
+    int count = results.getInt(1);
+
+</code></pre> 
+
+<p>Ты получишь такую ошибку:</p>
+
+<pre><code>
+2012 12:55:48 AM jButton5ActionPerformed
+SEVERE: null
+<span class="text-red">java.sql.SQLException</span>: <span class="text-red">Before start of result set</span>
+    at com.mysql.jdbc.SQLError.createSQLException(SQLError.java:1073)
+    at com.mysql.jdbc.SQLError.createSQLException(SQLError.java:987)
+    at com.mysql.jdbc.SQLError.createSQLException(SQLError.java:982)
+    at com.mysql.jdbc.SQLError.createSQLException(SQLError.java:927)
+    at com.mysql.jdbc.ResultSetImpl.checkRowPos(ResultSetImpl.java:841)
+    at com.mysql.jdbc.ResultSetImpl.getStringInternal(ResultSetImpl.java:5650)
+    at com.mysql.jdbc.ResultSetImpl.getString(ResultSetImpl.java:5570)
+</code></pre>
+
+<p>Внимательно смотрим на ошибку и думаем. Затем гуглим и находим пару примеров и пытаемся понять решение. </p>

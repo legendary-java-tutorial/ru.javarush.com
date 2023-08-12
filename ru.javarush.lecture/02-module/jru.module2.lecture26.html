@@ -1,0 +1,339 @@
+ThreadLocal, ThreadLocalRandom
+<p>----------------------------------------</p>
+В этой лекции мы поговорим о работе с классом java.lang.ThreadLocal&lt;&gt; в целом и о том, как с ним работать в многопоточной среде. Класс ThreadLocal используется для хранения переменных. Особенность этого класса...
+<p>----------------------------------------</p>
+<p>В этой лекции мы поговорим о работе с классом <span class="code"><span class="text-green">java.lang.ThreadLocal&lt;&gt;</span></span> в целом и о том, как с ним работать в многопоточной среде.</p>
+
+<p>Класс <span class="code"><span class="text-green">ThreadLocal</span></span> используется для хранения переменных. Особенность этого класса в том, что он хранит отдельную независимую копию значения для каждого использующего ее потока.</p>
+
+<img data-max-width="512" data-id="f1aa1a7c-92e2-405f-bbed-48cdce539b80" src="https://cdn.javarush.com/images/article/f1aa1a7c-92e2-405f-bbed-48cdce539b80/original.png" alt="">
+
+<p>Если разобрать работу класса более подробно, можем представить себе <span class="text-neon"><span class="text-bold"><em>Map</em></span></span> вида поток→значение, который при использовании обращается к значению для текущего потока.</p>
+
+<h2>Конструктор класса ThreadLocal</h2>
+
+<table>
+<tbody>
+<tr>
+<th>Конструктор</th>
+<th>Действие</th>
+</tr>
+<tr>
+<td><span class="code"><span class="text-green">ThreadLocal()</span></span></td>
+<td>Cоздает пустую переменную в Java</td>
+</tr>
+</tbody>
+</table>
+
+<h2>Методы</h2>
+
+<table>
+<tbody>
+<tr>
+<th>Метод</th>
+<th>Действие</th>
+</tr>
+<tr>
+<td><span class="code text-orange">get()</span></td>
+<td>Возвращает значение локальной переменной текущего потока</td>
+</tr>
+<tr>
+<td><span class="code text-orange">set()</span></td>
+<td>Устанавливает значение локальной переменной для текущего потока</td>
+</tr>
+<tr>
+<td><span class="code text-orange">remove()</td>
+<td>Удаляет значение локальной переменной текущего потока</td>
+</tr>
+<tr>
+<td><span class="code text-orange">ThreadLocal.withInitial()</span></td>
+<td>Дополнительный фабричный метод, который устанавливает начальное значение</td>
+</tr>
+</tbody>
+</table>
+
+<h3>get() & set()</h3>
+
+<p>Давайте напишем пример, где создадим два счётчика. Первая, обычная переменная будет для подсчёта количества потоков, а вторую мы обернем в <span class="code"><span class="text-green">ThreadLocal</span></span> и посмотрим, как они будут работать совместно. Для начала напишем класс <span class="code"><span class="text-green">ThreadDemo</span></span>, унаследованный от <span class="text-neon"><span class="text-bold"><em>Runnable</em></span></span>, где будут хранится наши данные и основной метод <span class="code text-orange">run()</span>, а также добавим метод для вывода счётчиков на экран:</p>
+
+<pre class='language-java line-numbers'><code>
+class ThreadDemo implements Runnable {
+
+    int counter;
+    ThreadLocal&lt;Integer&gt; threadLocalCounter = new ThreadLocal&lt;&gt;();
+
+    public void run() {
+        counter++;
+
+        if(threadLocalCounter.get() != null) {
+            threadLocalCounter.set(threadLocalCounter.get() + 1);
+        } else {
+            threadLocalCounter.set(0);
+        }
+        printCounters();
+    }
+
+    public void printCounters(){
+        System.out.println("Counter: " + counter);
+        System.out.println("threadLocalCounter: " + threadLocalCounter.get());
+    }
+}
+</code></pre>
+
+<p>С каждым запуском нашего класса мы будем увеличивать переменную <mark class="user">counter</mark>, и дополнительно будем вызвать метод <span class="code text-orange">get()</span> для получения данных из <span class="code"><span class="text-green">ThreadLocal</span></span>-переменной. Если в новом потоке не будет данных, то будем устанавливать 0, а если данные будут — увеличим их на единицу. И давайте напишем наш класс <span class="code"><span class="text-green">main</span></span>:</p>
+
+<pre class='language-java line-numbers'><code>
+public static void main(String[] args) {
+    ThreadDemo threadDemo = new ThreadDemo();
+
+    Thread t1 = new Thread(threadDemo);
+    Thread t2 = new Thread(threadDemo);
+    Thread t3 = new Thread(threadDemo);
+
+    t1.start();
+    t2.start();
+    t3.start();
+
+}
+</code></pre>
+
+<p>В результате работы нашего класса видим, что <span class="code"><span class="text-green">ThreadLocal</span></span>-переменная остается такой же вне зависимости от потока, который обращается к ней, а вот количество потоков растет.</p>
+
+<div class="terminal">Counter: 1<br />
+Counter: 2<br />
+Counter: 3<br />
+threadLocalCounter: 0<br />
+threadLocalCounter: 0<br />
+threadLocalCounter: 0<br />
+ <br />
+<span class="text-user">Process finished with exit code 0</span></div>
+
+<h3>remove()</h3>
+
+<p>Чтобы понять работу метода <span class="code text-orange">remove</span>, мы просто немного изменим код класса <span class="code"><span class="text-green">ThreadDemo</span></span>:</p>
+
+<pre class='language-java line-numbers'><code>
+if(threadLocalCounter.get() != null) {
+      threadLocalCounter.set(threadLocalCounter.get() + 1);
+  } else {
+      if (counter % 2 == 0) {
+          threadLocalCounter.remove();
+      } else {
+          threadLocalCounter.set(0);
+      }
+  }
+</code></pre>
+
+<p>В этом коде мы определим, что если это счётчик потока — четное число, то мы вызовем метод <span class="code text-orange">remove()</span> у нашей <span class="code"><span class="text-green">ThreadLocal</span></span>-переменной. Результат кода:</p>
+
+<div class="terminal">Counter: 3<br />
+threadLocalCounter: 0<br />
+Counter: 2<br />
+threadLocalCounter: null<br />
+Counter: 1<br />
+threadLocalCounter: 0<br />
+ <br />
+<span class="text-user">Process finished with exit code 0</span></div>
+
+<p>И здесь мы легко можем увидеть, что <span class="code"><span class="text-green">ThreadLocal</span></span>-переменная во втором потоке равна <strong>null</strong>.</p>
+
+<h3>ThreadLocal.withInitial()</h3>
+
+<p>Этот метод создает локальную переменную потока.</p>
+
+<p>Реализация класса <span class="code"><span class="text-green">ThreadDemo</span></span>:</p>
+
+<pre class='language-java line-numbers'><code>
+class ThreadDemo implements Runnable {
+
+    int counter;
+    ThreadLocal&lt;Integer&gt; threadLocalCounter = ThreadLocal.withInitial(() -&gt; 1);
+
+    public void run() {
+        counter++;
+        printCounters();
+    }
+
+    public void printCounters(){
+        System.out.println("Counter: " + counter);
+        System.out.println("threadLocalCounter: " + threadLocalCounter.get());
+    }
+}
+</code></pre>
+
+<p>И мы можем посмотреть на результат нашего кода:</p>
+
+<div class="terminal">Counter: 1<br />
+Counter: 2<br />
+Counter: 3<br />
+threadLocalCounter: 1<br />
+threadLocalCounter: 1<br />
+threadLocalCounter: 1<br />
+ <br />
+<span class="text-user">Process finished with exit code 0</span></div>
+
+<p>Зачем нам использовать такие переменные?</p>
+
+<p><span class="code"><span class="text-green">ThreadLocal</span></span> предоставляет абстракцию над локальными переменными по отношению к потоку исполнения <span class="code"><span class="text-green">java.lang.Thread</span></span>.</p>
+
+<p><span class="code"><span class="text-green">ThreadLocal</span></span> переменные отличаются от обычных тем, что у каждого потока свой собственный, индивидуально инициализируемый экземпляр переменной, доступ к которой он получает через методы <span class="code text-orange">get()</span> или <span class="code text-orange">set()</span>.</p>
+
+<p>У каждого потока, то есть экземпляра класса <span class="code"><span class="text-green">Thread</span></span>, есть ассоциированная с ним таблица <span class="code"><span class="text-green">ThreadLocal</span></span>-переменных. Ключами таблицы являются cсылки на объекты класса <span class="code"><span class="text-green">ThreadLocal</span></span>, а значениями — ссылки на объекты, “захваченные” <span class="code"><span class="text-green">ThreadLocal</span></span>-переменными.</p>
+
+<h2>Почему генерация случайных чисел через Random не подходит для многопоточных приложений?</h2>
+
+<p>Мы используем класс <span class="code"><span class="text-green">Random</span></span> для получения случайного числа. Но будет ли все так же хорошо работать в многопоточной среде? На самом деле, нет. <span class="code"><span class="text-green">Random</span></span> не подходит для работы в многопоточной среде, потому что когда несколько потоков одновременно обращаются к классу, он становится менее производительным.</p>
+
+<p>Для этого в JDK 7 представили класс <span class="code"><span class="text-green">java.util.concurrent.ThreadLocalRandom</span></span> для генерации случайных чисел в многопоточной среде. Он состоит из двух классов: <span class="code"><span class="text-green">ThreadLocal</span></span> и <span class="code"><span class="text-green">Random</span></span>.</p>
+
+<p>Случайное число, полученное одним потоком, не зависит от другого потока, тогда как <span class="code"><span class="text-green">java.util.Random</span></span> предоставляет случайные числа глобально. Кроме того, в отличие от <span class="code"><span class="text-green">Random</span></span>, <span class="code"><span class="text-green">ThreadLocalRandom</span></span> не поддерживает явное задание начального значения. Вместо этого он переопределяет метод <span class="code text-orange">setSeed()</span>, унаследованный от <span class="code"><span class="text-green">Random</span></span>, чтобы всегда вызывать <span class="text-red"><span class="text-bold">UnsupportedOperationException</span></span> при вызове.</p>
+
+<p>Давайте рассмотрим методы <span class="code"><span class="text-green">ThreadLocalRandom</span></span>:</p>
+
+<table>
+<tbody>
+<tr>
+<th>Метод</th>
+<th>Дейстивие</th>
+</tr>
+<tr>
+<td><span class="code text-orange">ThreadLocalRandom current()</span></td>
+<td>Возвращает ThreadLocalRandom текущего потока.</td>
+</tr>
+<tr>
+<td><span class="code text-orange">int next(int bits)</span></td>
+<td>Генерирует следующее псевдослучайное число.</td>
+</tr>
+<tr>
+<td><span class="code text-orange">double nextDouble(double least, double bound)</span></td> 
+<td>Возвращает псевдослучайное, равномерно распределенное значение между заданным наименьшим (<span class="code">least</span>) значением (включительно) и граничным (<span class="code">bound</span>) (исключительно). </td>
+</tr>
+<tr>
+<td><span class="code text-orange">int nextInt(int least, int bound)</span></td>
+<td>Возвращает псевдослучайное, равномерно распределенное значение между заданным наименьшим значением (включительно) и связанным (исключительно). </td>
+</tr>
+<tr>
+<td><span class="code text-orange">long nextLong(long n)</span></td>
+<td>Возвращает псевдослучайное, равномерно распределенное значение между 0 (включительно) и заданным значением (исключительно). </td>
+</tr>
+<tr>
+<td><span class="code text-orange">long nextLong(long least, long bound) </span></td>
+<td>Возвращает псевдослучайное, равномерно распределенное значение между заданным наименьшим значением (включительно) и связанным (исключительно). </td>
+</tr>
+<tr>
+<td><span class="code text-orange">void setSeed(long seed) </span></td>
+<td>Выдает исключение <span class="text-red"><span class="text-bold">UnsupportedOperationException</span></span>. Установка начального числа в этом генераторе не поддерживается.</td>
+</tr>
+</tbody>
+</table>
+
+<h3>Получение случайных данных с помощью ThreadLocalRandom.current()</h3>
+
+<p><span class="code"><span class="text-green">ThreadLocalRandom</span></span> представляет собой комбинацию классов <span class="code"><span class="text-green">ThreadLocal</span></span> и <span class="code"><span class="text-green">Random</span></span>. Таким образом он достигает лучшей производительности в многопоточной среде, просто избегая любого параллельного доступа к экземплярам <span class="code"><span class="text-green">Random</span></span>.</p>
+
+<p>Давайте реализуем пример для нескольких потоков и посмотрим, какой будет результат нашего приложения с классом <span class="code"><span class="text-green">ThreadLocalRandom</span></span>:</p>
+
+<pre class='language-java line-numbers'><code>
+import java.util.concurrent.ThreadLocalRandom;
+
+class RandomNumbers extends Thread {
+
+    public void run() {
+        try {
+            int bound = 100;
+            int result = ThreadLocalRandom.current().nextInt(bound);
+            System.out.println("Thread " + Thread.currentThread().getId() + " generated " + result);
+        }
+        catch (Exception e) {
+            System.out.println("Exception");
+        }
+    }
+
+    public static void main(String[] args) {
+        long startTime = System.currentTimeMillis();
+
+				for (int i = 0; i &lt; 10; i++) {
+            RandomNumbers randomNumbers = new RandomNumbers();
+            randomNumbers.start();
+        }
+
+        long endTime = System.currentTimeMillis();
+
+        System.out.println("Time taken: " + (endTime - startTime));
+    }
+}
+</code></pre>
+
+<p>Результат нашей программы:</p>
+
+<div class="terminal">Time taken: 1<br />
+Thread 17 generated 13<br />
+Thread 18 generated 41<br />
+Thread 16 generated 99<br />
+Thread 19 generated 25<br />
+Thread 23 generated 33<br />
+Thread 24 generated 21<br />
+Thread 15 generated 15<br />
+Thread 21 generated 28<br />
+Thread 22 generated 97<br />
+Thread 20 generated 33</div>
+
+<p>А теперь изменим наш класс <span class="code"><span class="text-green">RandomNumbers</span></span> и будем использовать в нем <span class="code"><span class="text-green">Random</span></span>:</p>
+
+<pre class='language-java line-numbers'><code>
+int result = new Random().nextInt(bound);
+</code></pre>
+
+<div class="terminal">Time taken: 5<br />
+Thread 20 generated 48<br />
+Thread 19 generated 57<br />
+Thread 18 generated 90<br />
+Thread 22 generated 43<br />
+Thread 24 generated 7<br />
+Thread 23 generated 63<br />
+Thread 15 generated 2<br />
+Thread 16 generated 40<br />
+Thread 17 generated 29<br />
+Thread 21 generated 12</div>
+
+<table>
+<tbody>
+<tr>
+<td>
+<p>Важно отметить! В текущих тестах результаты иногда совпадали и были разными по значению. Но если мы будем говорить о большем количестве потоков (например, 100), результат будет выглядеть вот так:</p>
+
+<div class="terminal">Random - 19-25 mls<br />
+ThreadLocalRandom - 17-19 mls</div>
+
+<p>Соответсвенно, чем больше потоков в нашем приложении, тем сильнее использование класса <span class="code"><span class="text-green">Random</span></span> для многопоточности будет уменьшать производительность.</p>
+</td>
+</tr>
+</tbody>
+</table>
+
+<p>Подведем итог и повторим еще раз различия между классом <span class="code"><span class="text-green">Random</span> и <span class="code"><span class="text-green">ThreadLocalRandom</span>:</p>
+
+<table>
+<tbody>
+<tr>
+<th><span class="code"><span class="text-green">Random</span></span></th>
+<th><span class="code"><span class="text-green">ThreadLocalRandom</span></span></th>
+</tr>
+<tr>
+<td>Если разные потоки используют один и тот же экземпляр <span class="code"><span class="text-green">Random</span></span>, это приводит к конфликтам и отрицательно влияет на производительность.</td>
+<td>Споров и проблем нет, потому что сгенерированные случайные числа являются локальными для текущего потока.</td>
+</tr>
+<tr>
+<td>Использует линейную конгруэнтную формулу для изменения начального значения.</td>
+<td>Генератор случайных чисел инициализируется с использованием внутренне сгенерированного начального числа.</td>
+</tr>
+<tr>
+<td>Полезно в приложениях, где каждый поток имеет собственный набор экземпляров <span class="code"><span class="text-green">Random</span></span> для использования.</td>
+<td>Полезно в приложениях, где несколько потоков используют случайные числа параллельно в пулах потоков.</td>
+</tr>
+<tr>
+<td>Это родительский класс.</td>
+<td>Это дочерний класс.</td>
+</tr>
+</tbody>
+</table>

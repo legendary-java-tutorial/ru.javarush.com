@@ -1,0 +1,163 @@
+Метод newCachedThreadPool
+<p>----------------------------------------</p>
+Еще один тип пула потока – кэшированный. Эти пулы потоков точно так же распространены в использовании, как и фиксированные. Пул потоков кэширует потоки, отсюда и название. Он держит активными...
+<p>----------------------------------------</p>
+    <p>Еще один тип пула потока – кэшированный. Эти пулы потоков точно так же распространены в использовании, как и фиксированные. </p>
+
+    <p>Пул потоков кэширует потоки, отсюда и название. Он держит активными (но не используемыми) потоки в течение ограниченного количества времени, для того чтобы использовать эти потоки для выполнения новых задач. Такой пул потоков лучше всего использовать, когда у нас есть на выполнение некоторое разумное количество легких задач. </p>
+
+    <p>Понимание “некоторого разумного количества” довольно растянуто, но нужно понимать, что не для каждого количества задач подойдет такой пул. Например, если мы захотим создать миллион задач, каждая из которых занимает даже совсем малое количество времени, мы все равно необоснованно будем использовать ресурсы и ухудшим производительность. Также мы должны избегать такого пула, когда время выполнения непредсказуемо, например, при задачах ввода-вывода.</p>
+
+    <p>Под капотом вызывается конструктор <span class="code text-orange"><span class="text-bold">ThreadPoolExecutor</span></span> со следующими параметрами:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static ExecutorService newCachedThreadPool() {
+    return new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, 
+      new SynchronousQueue&lt;Runnable&gt;());
+}</code></pre>
+
+    <p>В качестве параметров в конструктор передаются следующие значения:</p> 
+
+    <table>
+        <tbody>
+            <tr>
+                <th>Параметр</th>
+                <th>Значение</th>
+            </tr>
+            <tr>
+                <td><span class="text-green">corePoolSize</span> (какое количество потоков будет готово (запущено) при старте <span class="text-green"><span class="text-bold"><em>executor</em></span></span> сервиса)</td>
+                <td>0</td>
+            </tr>
+            <tr>
+                <td><span class="text-green">maximumPoolSize</span> (Максимальное количество потоков, которое может создать <span class="text-green"><span class="text-bold"><em>executor</em></span></span> сервис)</td>
+                <td><span class="text-yellow"><span class="text-bold">Integer.MAX_VALUE</span></span></td>
+            </tr>
+            <tr>
+                <td><span class="text-green">keepAliveTime</span> (Время, в течение которого освободившийся поток будет жить и впоследствии будет уничтожен, если количество потоков больше <span class="text-green">corePoolSize</span>)</td>
+                <td>60L</td>
+            </tr>
+            <tr>
+                <td><span class="text-green">unit</span> (Временные единицы)</td>
+                <td><span class="text-yellow"><span class="text-bold">TimeUnit.SECONDS</span></td>
+            </tr>
+            <tr>
+                <td><span class="text-green">workQueue</span> (Реализация очереди)</td>
+                <td><span class="code text-orange">new SynchronousQueue&lt;Runnable&gt;()</span></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>Также в параметры мы можем передать собственную реализацию <span class="text-neon"><span class="text-bold"><em>ThreadFactory</em></span></span>.</p>
+
+    <h2>Поговорим о SynchronousQueue</h2>
+
+    <p>Основная идея синхронной передачи довольна проста и в то же время контринтуитивна (не кажется истинной при ее оценке на основе интуиции, здравого смысла или эмоций): можно поставить элемент в очередь <em>тогда и только тогда</em>, когда другой поток принимает этот элемент одновременно. Другими словами, <span class="text-bold">синхронная очередь не может иметь в себе задач, потому что в момент, когда поступает новая задача, выполняющий поток уже забирает эту задачу</span>.</p>
+
+    <img data-max-width="800" data-id="ca8d767c-540b-4ead-947d-b288a73f2e05" src="https://cdn.javarush.com/images/article/ca8d767c-540b-4ead-947d-b288a73f2e05/original.png" alt="">
+
+    <p>В момент, когда новая задача поступает в очередь, если в пуле есть свободный активный поток, то он забирает эту задачу, а если все потоки заняты — создается новый поток.</p>
+
+    <p>Кэшированный пул начинается с нуля потоков и потенциально может вырасти до количества потоков <span class="text-yellow"><span class="text-bold">Integer.MAX_VALUE</span></span>. Практически единственным ограничением для кэшированного пула потоков являются системные ресурсы.</p>
+
+    <p>Чтобы управлять системными ресурсами, кэшированные пулы потоков удаляют потоки, которые простаивают в течение одной минуты.</p>
+
+    <p>Давайте на практике проверим, как это работает. Мы создаем класс задачи, моделируя запрос пользователя: </p>
+
+    <pre class='language-java line-numbers'><code>
+public class Task implements Runnable {
+   int taskNumber;
+
+   public Task(int taskNumber) {
+       this.taskNumber = taskNumber;
+   }
+
+   @Override
+   public void run() {
+       System.out.println("Обработан запрос пользователя №" + taskNumber + " на потоке " + Thread.currentThread().getName());
+   }
+}
+    </code></pre>
+
+    <p>В <span class="code text-orange">main</span> мы создаем <span class="code text-orange">newCachedThreadPool</span>, после чего добавляем 3 задачи на исполнение. Здесь мы выводим статус нашего сервиса <span class="text-bold">(1)</span>.</p>
+
+    <p>Далее мы делаем паузу в 30 секунд, после чего запускаем на исполнение еще одну задачу и выводим статус <span class="text-bold">(2)</span>.</p>
+
+    <p>После чего мы ставим на паузу наш основной поток на 70 секунд, выводим статус <span class="text-bold">(3)</span> и снова добавляем 3 задачи на выполнение и снова печатаем статус <span class="text-bold">(4)</span>.</p>
+
+    <p>Перед выводом статусов в местах, где статус выводится сразу после добавления задачи, мы поставим <span class="code text-orange">sleep</span> на 1 секунду для актуального вывода.</p>
+
+    <pre class='language-java line-numbers'><code>
+ExecutorService executorService = Executors.newCachedThreadPool();
+        for (int i = 0; i < 3; i++) {
+            executorService.submit(new Task(i));
+        }
+ 
+        TimeUnit.SECONDS.sleep(1);
+            System.out.println(executorService);	//(1)
+ 
+        TimeUnit.SECONDS.sleep(30);
+ 
+        executorService.submit(new Task(3));
+        TimeUnit.SECONDS.sleep(1);
+            System.out.println(executorService);	//(2)
+ 
+        TimeUnit.SECONDS.sleep(70);
+ 
+            System.out.println(executorService);	//(3)
+ 
+        for (int i = 4; i < 7; i++) {
+            executorService.submit(new Task(i));
+        }
+ 
+        TimeUnit.SECONDS.sleep(1);
+            System.out.println(executorService);	//(4)
+        executorService.shutdown();</code></pre>
+
+    <p>Итак, результат выполнения:</p>
+
+    <div class="terminal">Обработан запрос пользователя №0 на потоке pool-1-thread-1<br />
+Обработан запрос пользователя №1 на потоке pool-1-thread-2<br />
+Обработан запрос пользователя №2 на потоке pool-1-thread-3<br />
+(1) java.util.concurrent.ThreadPoolExecutor@f6f4d33[Running, pool size = 3, active threads = 0, queued tasks = 0, completed tasks = 3]<br />
+Обработан запрос пользователя №3 на потоке pool-1-thread-2<br />
+(2) java.util.concurrent.ThreadPoolExecutor@f6f4d33[Running, pool size = 3, active threads = 0, queued tasks = 0, completed tasks = 4]<br />
+(3) java.util.concurrent.ThreadPoolExecutor@f6f4d33[Running, pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 4]<br />
+Обработан запрос пользователя №4 на потоке pool-1-thread-4<br />
+Обработан запрос пользователя №5 на потоке pool-1-thread-5<br />
+Обработан запрос пользователя №6 на потоке pool-1-thread-4<br />
+(4) java.util.concurrent.ThreadPoolExecutor@f6f4d33[Running, pool size = 2, active threads = 0, queued tasks = 0, completed tasks = 7]</div>
+
+    <p>Разберем каждый из шагов: </p>
+
+    <table>
+        <tbody>
+            <tr>
+                <th>Шаг</th>
+                <th>Разъяснение</th>
+            </tr>
+            <tr>
+                <td>1 (после 3х выполненных задач)</td>
+                <td>Создались 3 потока, на этих трех потоках выполнялись 3 задачи.<br />
+В момент вывода статуса все 3 задачи выполнены, а потоки готовы к выполнению других задач.</td>
+            </tr>
+            <tr>
+                <td>2 (после паузы в 30 секунд и выполнения еще одной задачи)</td>
+                <td>После 30 секунд бездействия потоки все еще живы и ждут задач.<br />
+Добавляется еще одна задача и выполняется на потоке из пула оставшихся живых потоков.<br />
+Нового потока в пуле не появилось.</td>
+            </tr>
+            <tr>
+                <td>3 (после паузы в 70 секунд)</td>
+                <td>Потоки удалились из пула.<br />
+Потоков, готовых принять задачи, нет.</td>
+            </tr>
+            <tr>
+                <td>4 (после выполнения еще 3х задач)</td>
+                <td>После того, как поступили еще задачи на выполнение, создались новые потоки, причем в этот раз всего два потока смогли обработать 3 задачи.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>Таким образом мы познакомились с работой еще одного вида сервиса со своей логикой управления потоками.</p>
+
+    <p>По аналогии с другими утильными методами класса <span class="code"><span class="text-green">Executors</span></span>, у метода <span class="code text-orange">newCachedThreadPool</span> тоже есть его перегруженный вариант, который в качестве параметра принимает объект типа <span class="text-orange">ThreadFactory</span>.</p>

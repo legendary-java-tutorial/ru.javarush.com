@@ -1,0 +1,192 @@
+UDP Socket
+<p>----------------------------------------</p>
+Говоря о сетевом взаимодействии мы не можем не упомянуть модель OSI. Сегодня в этой модели нас больше всего интересует транспортный уровень (4)...
+<p>----------------------------------------</p>
+    <p>Говоря о сетевом взаимодействии мы не можем не упомянуть модель OSI. </p>
+
+    <img data-max-width="512" data-id="3d8963af-b097-4c25-b809-749cb30988a0" src="https://cdn.javarush.com/images/article/3d8963af-b097-4c25-b809-749cb30988a0/original.png" alt="">
+
+    <p>Сегодня в этой модели нас больше всего интересует транспортный уровень (4).</p>
+
+    <p>На этом уровне мы работаем с данными, которые идут “из точки А в точку Б”. Основная задача транспортного уровня — гарантировать доставку сообщения до адресата, сохраняя правильную последовательность. Есть 2 самых распространенных протокола транспортного уровня: TCP и UDP. Работают они концептуально по-разному, но каждый имеет свои преимущества, что позволяет использовать их профильно для решения определенных задач. </p>
+
+    <img data-max-width="800" data-id="67b068ac-fd31-4872-91d9-59ba3bf48850" src="https://cdn.javarush.com/images/article/67b068ac-fd31-4872-91d9-59ba3bf48850/original.png" alt="">
+
+    <p>Сначала давай рассмотрим схему работы TCP.</p>
+
+    <p>TCP (Transmission Control Protocol) — это сетевой протокол, который перед обменом данными убеждается, что соединение между хостами установлено. </p>
+
+    <img data-max-width="512" data-id="74839620-cd21-4d53-96e6-c2dc279ed242" src="https://cdn.javarush.com/images/article/74839620-cd21-4d53-96e6-c2dc279ed242/original.png" alt="">
+
+    <p>Это очень надежный протокол, ведь каждый раз, отправляя очередной пакет данных, он должен проверить, что предыдущий пакет дошел. </p>
+
+    <p>Передаваемые пакеты упорядочены, а в случае проблем с определенным пакетом (когда принимающая сторона не подтверждает, что пакет пришел) пакет отправляется заново. Из-за этого скорость передачи относительно низкая, ведь упорядочивание и жесткий контроль передачи данных занимает больше времени. </p>
+
+    <p>Именно тут и приходит его “брат-антагонист” — протокол UDP. Ему, в отличие от TCP, не так важен порядок и статус каждого пакета, он просто шлет данные без подтверждения доставки. Более того, он не занимается установкой соединения и никак не зависит от его статуса. </p>
+
+    <img data-max-width="512" data-id="ee86fbc6-8e3e-41bf-9937-e787466adc98" src="https://cdn.javarush.com/images/article/ee86fbc6-8e3e-41bf-9937-e787466adc98/original.png" alt="">
+
+    <p>Его задача — просто отправлять данные по адресу. Из этого выплывает и главный минус протокола — низкая надежность, ведь он попросту может потерять куски данных. К тому же получатель должен быть готов к тому, что данные могут приходить неупорядоченно. У протокола есть и преимущество — более высокая скорость передачи, обусловленная тем, что круг задач данного протокола ограничивается отправкой данных.</p>
+
+    <p>Есть различия и в методе самих передаваемых данных. В TCP данные передаются потоком, что означает, что данные не имеют обозначения границ. В случае с UDP данные передаются в виде датаграмм и имеют обозначения границ, а проверка данных на целостность производит уже принимающая сторона, но только в случае успешного получения сообщения. </p>
+
+    <p>Подводем итог: </p>
+
+    <table>
+        <tbody>
+            <tr>
+                <td>TCP — надежный и точный протокол, который не дает шансов на потерю данных. Сообщение всегда будет доставлено с максимальной точностью, либо не доставлено вообще. Принимающая сторона может не иметь логики по упорядочиванию данных, так как приходящие данные уже будут упорядочены. </td>
+                <td>UDP — не такой надежный, но более быстрый протокол передачи данных. Логика отправляющей и принимающей сторон должна дополняться некоторыми махинациями для того, чтобы работать с этим протоколом. Но Но давай взглянеем на его работу на примере компьютерной или мобильной игры по сети. Нам уже может быть не важно, что должно было прийти 5 секунд назад, и мы можем пропустить пару пакетов, если они не успевают — игра подлагивает, но играть можно!</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>В Java для работы датаграммами для передачи через UDP используются объекты классов <span class="code"><span class="text-green">DatagramSocket</span></span> и <span class="code"><span class="text-green">DatagramPacket</span></span>.</p>
+
+    <p>Для обмена данными отправитель и получатель создают сокеты датаграммного типа — объекты класса <span class="code"><span class="text-green">DatagramSocket</span></span>. Класс имеет несколько конструкторов, разница которых в том, куда присоединится создаваемый сокет: </p>
+
+    <table>
+        <tbody>
+            <tr>
+                <td><span class="code text-orange"><span class="text-bold">DatagramSocket ()</span></span></td>
+                <td>К любому свободному порту на локальной машине</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange"><span class="text-bold">DatagramSocket (int port) </span></span></td>
+                <td>К указанному порту на локальной машине</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange"><span class="text-bold">DatagramSocket(int port, InetAddress addr)</span></span></td>
+                <td>К указанному порту по одному из адресов локальной машины (addr)</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>Класс содержит множество методов для доступа к параметрам сокета и управлением им (чуть ниже мы их рассмотрим), а также методы для приема и отправки датаграмм: </p>
+
+    <table>
+        <tbody>
+            <tr>
+                <td><span class="code text-orange">send(DatagramPacket pack)</span></td>
+                <td>Отправляет датаграммы, упакованные в пакеты</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">receive (DatagramPacket pack)</span></td>
+                <td>Принимает датаграммы, упакованные в пакеты</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p><span class="code"><span class="text-green">DatagramPacket</span></span> — класс, который представляет собой пакет датаграмм. Пакеты датаграмм используются для реализации службы доставки пакетов без подключения. Каждое сообщение направляется с одной машины на другую исключительно на основе информации, содержащейся в этом пакете. Несколько пакетов, отправленных с одной машины на другую, могут быть маршрутированы по-разному и могут поступать в любом порядке. Доставка пакетов не гарантируется.</p>
+
+    <p>Конструкторы: </p>
+
+    <table>
+        <tbody>
+            <tr>
+                <td><span class="code text-orange"><span class="text-bold">DatagramPacket(byte[] buf, int length)</span></span></td>
+                <td>Создает <span class="code"><span class="text-green">DatagramPacket</span></span> для приема пакетов длины <span class="text-green">length</span>.</td>
+            <tr>
+            </tr>
+                <td><span class="code text-orange"><span class="text-bold">DatagramPacket(byte[] buf, int length, InetAddress address, int port)</span></span></td>
+                <td>Создает пакет датаграммы для отправки пакетов длины <span class="text-green">length</span> на указанный номер порта на указанном узле.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange"><span class="text-bold">DatagramPacket(byte[] buf, int offset, int length)</span></span></td>
+                <td>Создает <span class="code"><span class="text-green">DatagramPacket</span></span> для приема пакетов длины <span class="text-green">length</span>, указывая смещение в буфере.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange"><span class="text-bold">DatagramPacket(byte[] buf, int offset, int length, InetAddress address, int port)</span></span></td>
+                <td>Создает пакет датаграммы для отправки пакетов длины <span class="text-green">length</span> со смещением <span class="text-green">offset</span> к указанному номеру порта на указанном узле.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange"><span class="text-bold">DatagramPacket(byte[] buf, int offset, int length, SocketAddress address)</span></span></td>
+                <td>Создает пакет датаграммы для отправки пакетов длины <span class="text-green">length</span> со смещением <span class="text-green">offset</span> к указанному номеру порта на указанном узле.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange"><span class="text-bold">DatagramPacket(byte[] buf, int length, SocketAddress address)</span></span></td>
+                <td>Создает пакет датаграммы для отправки пакетов длины <span class="text-green">length</span> на указанный номер порта на указанном узле.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>Из схемы работы UDP мы помним, что соединение не устанавливается и пакеты посылаются на удачу в расчете на то, что получатель их ждет. Но с помощью метода класса <span class="code"><span class="text-green">DatagramSocket</span></span> <span class="code text-orange">connect(InetAddress addr, int port)</span> можно установить соединение.</p>
+
+    <p>Устанавливается одностороннее соединение с хостом по адресу и порту: или на отправку, или на прием датаграмм. Такое соединение можно разорвать методом <span class="code text-orange">disconnect()</span>.</p>
+
+    <p>Давай попробуем написать код сервера (принимающей стороны) на основе <span class="code"><span class="text-green">DatagramSocket</span></span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+
+class Recipient {
+
+   public static void main(String[] args) {
+       try {
+           DatagramSocket ds = new DatagramSocket(1050);
+
+           while (true) {
+               DatagramPacket pack = new DatagramPacket(new byte[5], 5);
+               ds.receive(pack);
+               System.out.println(new String(pack.getData()));
+           }
+       } catch (IOException e) {
+           e.printStackTrace();
+       }
+   }
+}
+</code></pre>
+
+    <p>Мы создаем объект <span class="code"><span class="text-green">DatagramSocket</span></span>, предназначенный для прослушивания порта 1050. Получив сообщение, он выводит его в консоль. Передавать мы будем слово “Hello”, поэтому ограничиваем размер буфера пятью байтами.</p>
+
+    <p>Теперь создаем класс отправителя:</p>
+
+    <pre class='language-java line-numbers'><code>
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+
+class Sender {
+   private String host;
+   private int port;
+
+   Sender(String host, int port) {
+       this.host = host;
+       this.port = port;
+   }
+
+   private void sendMessage(String mes) {
+       try {
+           byte[] data = mes.getBytes();
+           InetAddress address = InetAddress.getByName(host);
+           DatagramPacket pack = new DatagramPacket(data, data.length, address, port);
+           DatagramSocket ds = new DatagramSocket();
+           ds.send(pack);
+           ds.close();
+       } catch (IOException e) {
+           System.err.println(e);
+       }
+   }
+
+   public static void main(String[] args) {
+   Sender sender = new Sender("localhost", 1050);
+   String message = "Hello";
+
+   Timer timer = new Timer();
+   timer.scheduleAtFixedRate(new TimerTask() {
+       @Override
+       public void run() {
+           sender.sendMessage(message);
+       }
+   }, 1000, 1000);
+}
+
+}
+</code></pre>
+
+    <p>В методе <span class="code text-orange">sendMessage</span> мы создаем <span class="code"><span class="text-green">DatagramPacket</span></span>, <span class="code"><span class="text-green">DatagramSocket</span></span> и отправляем наше сообщение. Обрати внимание, что после отправки <span class="code"><span class="text-green">DatagramSocket</span></span> закрывается методом <span class="code text-orange">close()</span>. </p>
+
+    <p>В консоле получателя мы видим каждую секунду приходящее сообщение “Hello”, отправленное отправителем. Значит, взаимодействие налажено и все работает правильно.</p>

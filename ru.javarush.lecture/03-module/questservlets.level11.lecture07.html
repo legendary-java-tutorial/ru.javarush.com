@@ -1,0 +1,239 @@
+Настройка веб-приложений с помощью аннотаций
+<p>----------------------------------------</p>
+Знакомство с аннотациями сервлетов
+Настройка мапинга сервлета
+Настройка мапинга фильтров
+<p>----------------------------------------</p>
+<h2>8.1 Знакомство с аннотациями сервлетов</h2>
+<p>Начиная с 7-й версии Tomcat стал поддерживать спецификацию веб-сервлетов <strong>Servlet API 3.0</strong>. В ней в частности появился пакет под названием <code>javax.servlet.annotation</code>. Он содержит различные типы аннотаций, которые можно использовать для аннотирования класса сервлета. Если ты используешь аннотацию, то дескриптор развертывания (web.xml) не требуется.  </p>
+<p>Список самых полезных аннотаций:</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th>Аннотация</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td><code>@WebServlet</code></td>
+        <td>Объявляет сервлет</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td><code>@WebInitParam</code></td>
+        <td>Указывает параметр инициализации</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td><code>@WebFilter</code></td>
+        <td>Объявляет веб-фильтр</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td><code>@WebListener</code></td>
+        <td>Объявляет веб-лисенер</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td><code>@ServletSecurity</code></td>
+        <td>Позволяет настроить параметры безопасности</td>
+    </tr>
+
+    </tbody>
+</table>
+<p>Пример:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-green">@WebServlet( urlPatterns = {"/api/*"} )</span>
+public class Example extends HttpServlet {          
+    protected void doGet( HttpServletRequest request, HttpServletResponse response) throws Exception {
+         response.setContentType("text/html");
+         PrintWriter out = response.getWriter();
+         out.println("Hello World!");
+    }
+}
+
+</code></pre>
+<p>Одной аннотации достаточно, чтобы объявить сервлет и замапить его на обслуживание всех запросов, которые будут приходить на URL, заданный шаблоном <code>/api/*</code>.</p>
+<h2>8.2 Настройка мапинга сервлета</h2>
+<p>У аннотации <code>@WebServlet</code> много параметров, которые позволяют очень гибко сконфигурировать сервлет, которые она описывает. Давай ознакомимся с основными из них:</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th>Атрибут</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td><code>name</code></td>
+        <td>Уникальное имя сервлета (как в web.xml)</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td><code>displayName</code></td>
+        <td>Читаемое имя сервлета для человека</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td><code>description</code></td>
+        <td>Описание сервлета</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td><code>value</code></td>
+        <td>Задает url для мапинга</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td><code>urlPatterns</code></td>
+        <td>Задает список url-ов для мапинга (используется вместо value)</td>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td><code>initParams</code></td>
+        <td>Позволяет задать стартовые параметры сервлета</td>
+    </tr>
+    <tr>
+        <td>7</td>
+        <td><code>asyncSupported</code></td>
+        <td>Указывает, что сервлет может работать асинхронно (HTTP/2)</td>
+    </tr>
+    <tr>
+        <td>8</td>
+        <td><code>loadOnStartup</code></td>
+        <td>Порядковый номер для управления приоритетом старта сервлетов</td>
+    </tr>
+    <tr>
+        <td>9</td>
+        <td><code>smallIcon</code></td>
+        <td>Задает маленькую иконку сервлета</td>
+    </tr>
+    <tr>
+        <td>10</td>
+        <td><code>largeIcon</code></td>
+        <td>Задает большую иконку сервлета</td>
+    </tr>
+    </tbody>
+</table>
+<p>Интересных моментов тут несколько.</p>
+<p>Во-первых, обрати внимание, что <code>value</code> и <code>urlPatterns</code> — взаимозаменяемые атрибуты. Они оба позволяют задать список урлов, на которые должен замапиться сервлет.</p>
+<p>Во-вторых, параметр <code>asyncSupported</code> указывает, будет ли сервлет корректно обрабатывать асинхронные запросы по протоколу HTTP/2.</p>
+<p>И третий важный атрибут — это <code>initParams</code>, он позволяет задать список параметров, которые будут помещены в ServletContext.</p>
+<p>Пример:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-green">@WebServlet(
+        urlPatterns = {"/sendFile", "/uploadFile"},
+        loadOnStartup = 1,
+        asyncSupported = true,
+        initParams = {
+            @WebInitParam(name = "saveDir", value = "c:/uploaded"),
+            @WebInitParam(name = "allowedTypes", value = "jpg,gif,png")
+        }
+)</span>
+public class ImageUploadServlet extends HttpServlet {
+ 
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        String saveDir = getInitParameter("saveDir");
+        String fileTypes = getInitParameter("allowedTypes");
+ 
+        PrintWriter writer = response.getWriter();
+ 
+        writer.println("saveDir = " + saveDir);
+        writer.println("fileTypes = " + fileTypes);
+    }
+}
+
+</code></pre>
+<h2>8.3 Настройка маппинга фильтров</h2>
+<p>Как уже говорилось выше, фильтры — это служебная разновидность сервлетов, и настраиваются они подобно сервлетам. Вот какие атрибуты есть у аннотации <code>@WebFilter</code>:</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th>Атрибут</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td><code>filterName</code></td>
+        <td>Уникальное имя фильтра (как в web.xml)</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td><code>displayName</code></td>
+        <td>Читаемое имя фильтра для человека</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td><code>description</code></td>
+        <td>Описание фильтра</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td><code>value / urlPatterns</code></td>
+        <td>Задает список url-ов для мапинга</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td><code>dispatcherTypes</code></td>
+        <td>Задает список типов DispatcherType</td>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td><code>servletNames</code></td>
+        <td>Задает список сервлетов, к которым применяется</td>
+    </tr>
+    <tr>
+        <td>7</td>
+        <td><code>initParams</code></td>
+        <td>Позволяет задать стартовые параметры фильтра</td>
+    </tr>
+    <tr>
+        <td>8</td>
+        <td><code>asyncSupported</code></td>
+        <td>Указывает, что фильтр может работать асинхронно (HTTP/2)</td>
+    </tr>
+    <tr>
+        <td>9</td>
+        <td><code>smallIcon</code></td>
+        <td>Задает маленькую иконку фильтра</td>
+    </tr>
+    <tr>
+        <td>10</td>
+        <td><code>largeIcon</code></td>
+        <td>Задает большую иконку фильтра</td>
+    </tr>
+    </tbody>
+</table>
+<p>Пример фильтра, который <strong>перехватывает все запросы к определенным сервлетам</strong>:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-green">@WebFilter(servletNames = {"MyOwnServlet", "UploadServlet"})</span>
+public class MyFilter implements Filter {
+    // implements Filter's methods here...
+}
+
+</code></pre>
+<p>Пример фильтра, которому <strong>задано несколько параметров</strong>:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-green">@WebFilter(
+        urlPatterns = "/uploadFilter",
+        initParams = @WebInitParam(name = "fileTypes", value = "doc;xls;zip;txt;jpg;png;gif")       
+)</span>
+public class UploadFilter implements Filter {
+    // implements Filter's methods here...
+}
+
+</code></pre>
+<p>Пример фильтра, которому <strong>заданы типы для RequestDispatcher</strong>:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-green">@WebFilter(
+        urlPatterns = "/admin",
+        dispatcherTypes = {DispatcherType.REQUEST, DispatcherType.FORWARD}
+)</span>
+public class MyFilter implements Filter {
+    // implements Filter's methods here...
+}
+
+</code></pre>
+<p>Более детально о назначении фильтров и сервлетов ты узнаешь в следующих лекциях.</p>

@@ -1,0 +1,265 @@
+@ManyToOne
+<p>----------------------------------------</p>
+Связь на уровне таблиц
+Связь на уровень Java-классов
+Аннотация @ManyToOne
+Примеры запросов
+<p>----------------------------------------</p>
+<h2>2.1 Связь на уровне таблиц</h2>
+<p>Мы познакомились с тем, как Hibernate хранит коллекции во вспомогательных таблицах. Теперь же разберемся, как организовать связи между полноценными таблицами, которые хранят настоящие Entity-классы.</p>
+<p>Всего между Entity-классами в Hibernate есть четыре вида отношений:</p>
+<ul>
+	<li><span class="text-green">one</span>-to-<span class="text-green">one</span></li>
+	<li><span class="text-green">one</span>-to-<span class="text-brown">many</span></li>
+	<li><span class="text-brown">many</span>-to-<span class="text-green">one</span></li>
+	<li><span class="text-brown">many</span>-to-<span class="text-brown">many</span></li>
+</ul>
+<p>И начнем мы разбор с самого простого варианта – <span class="text-brown">many</span>-to-<span class="text-green">one</span>.</p>
+<p>С таким отношением между таблицами в SQL ты уже сталкивался. Вот как оно обычно выглядит:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>occupation</th>
+        <th>salary</th>
+        <th>age</th>
+        <th>join_date</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>Иванов Иван</td>
+        <td>Программист</td>
+        <td>100000</td>
+        <td>25</td>
+        <td>2012-06-30</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>Петров Петр</td>
+        <td>Программист</td>
+        <td>80000</td>
+        <td>23</td>
+        <td>2013-08-12</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Иванов Сергей</td>
+        <td>Тестировщик</td>
+        <td>40000</td>
+        <td>30</td>
+        <td>2014-01-01</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>Рабинович Мойша</td>
+        <td>Директор</td>
+        <td>200000</td>
+        <td>35</td>
+        <td>2015-05-12</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td>Кириенко Анастасия</td>
+        <td>Офис-менеджер</td>
+        <td>40000</td>
+        <td>25</td>
+        <td>2015-10-10</td>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td>Васька</td>
+        <td>Кот</td>
+        <td>1000</td>
+        <td>3</td>
+        <td>2018-11-11</td>
+    </tr>
+    </tbody>
+</table>
+<p><strong>Таблица employee:</strong></p>
+<p>В этой таблице есть такие колонки:</p>
+<ul>
+	<li><strong>id</strong> INT</li>
+	<li><strong>name </strong>VARCHAR</li>
+	<li><strong>occupation </strong>VARCHAR</li>
+	<li><strong>salary </strong>INT</li>
+	<li><strong>age </strong>INT</li>
+	<li><strong>join_date </strong>DATE</li>
+</ul>
+<p>А так выглядит <strong>таблица task</strong>, которая содержит задачи для сотрудников:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>id</th>
+        <th>employee_id</th>
+        <th>name</th>
+        <th>deadline</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>1</td>
+        <td>Исправить багу на фронтенде</td>
+        <td>2022-06-01</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>2</td>
+        <td>Исправить багу на бэкенде</td>
+        <td>2022-06-15</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>5</td>
+        <td>Купить кофе</td>
+        <td>2022-07-01</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>5</td>
+        <td>Купить кофе</td>
+        <td>2022-08-01</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td>5</td>
+        <td>Купить кофе</td>
+        <td>2022-09-01</td>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td>(NULL)</td>
+        <td>Убрать офис</td>
+        <td>(NULL)</td>
+    </tr>
+    <tr>
+        <td>7</td>
+        <td>4</td>
+        <td>Наслаждаться жизнью</td>
+        <td>(NULL)</td>
+    </tr>
+    <tr>
+        <td>8</td>
+        <td>6</td>
+        <td>Наслаждаться жизнью</td>
+        <td>(NULL)</td>
+    </tr>
+
+    </tbody>
+</table>
+<p>В этой таблице есть всего 4 колонки:</p>
+<ul>
+	<li><strong>id </strong>– уникальный номер задания (и строки в таблице);</li>
+	<li><span class="text-red">
+<strong>employee_id</strong></span> – ID сотрудника из таблицы employee, на которого назначена задача;</li>
+	<li><strong>name </strong>– название и описание задачи;</li>
+	<li><strong>deadline </strong>– время до которого нужно выполнить задачу.</li>
+</ul>
+<p>Мы видим, что много строк таблицы task могут ссылаться на одну запись таблицы employee. Такая связь на уровне таблиц называется <strong>многие-к-одному</strong> (many-to-one).</p>
+<h2>2.2 Связь на уровень Java-классов</h2>
+<p>Кроме связи на уровне таблиц, можно еще организовать связь на уровне Entity-классов в Hibernate. Делается это с помощью аннотации <code>@ManyToOne</code>.</p>
+<p>Но для начала просто создадим два класса: <strong>Employee</strong> и <strong>EmployeeTask</strong>:</p>
+<pre class='line-numbers'><code>
+<span class="text-brown">@Entity
+@Table(name</span>=<span class="text-green">"employee"</span><span class="text-brown">)</span>
+class Employee {
+   <span class="text-brown">@Column(name="id")</span>
+   public Integer id;
+ 
+   <span class="text-brown">@Column(name="name")</span>
+   public String name;
+ 
+   <span class="text-brown">@Column(name="occupation")</span>
+   public String occupation;
+ 
+   <span class="text-brown">@Column(name="salary")</span>
+   public Integer salary;
+ 
+   <span class="text-brown">@Column(name="join_date")</span>
+   public Date join;
+}
+</code></pre>
+<p>И второй класс для хранения заданий сотрудников:</p>
+<p></p>
+<pre class='line-numbers'><code>
+<span class="text-brown">@Entity
+@Table(name</span>=<span class="text-green">"task"</span><span class="text-brown">)</span>
+class EmployeeTask {
+   <span class="text-brown">@Column(name="id")</span>
+   public Integer id;
+ 
+   <span class="text-brown">@Column(name="name")</span>
+   public String description;
+ 
+  <span class="text-red">@Column(name="employee_id")</span>
+   public Integer <span class="text-user">employeeId</span>;
+ 
+   <span class="text-brown">@Column(name="deadline")</span>
+   public Date deadline;
+}
+</code></pre>
+<p>С этими классами все хорошо, но между ними нет никакой связи, которая бы отражала тот факт, что поле employeeId класса EmployeeTask ссылается на поле id класса Employee. Пришло время это исправить</p>
+<h2>2.3 Аннотация @ManyToOne.</h2>
+<p>Во-первых, в Java мы привыкли оперировать объектами (и ссылками на объекты), а не их id. Так что первым делом давайте вместо поля employeeId в классе EmployeeTask просто укажем ссылку на объект типа Employee. Вот как будет выглядеть наш новый класс:</p>
+<pre class='line-numbers'><code>
+<span class="text-brown">@Entity
+@Table(name</span>=<span class="text-green">"task"</span><span class="text-brown">)</span>
+class EmployeeTask {
+   <span class="text-brown">@Column(name="id")</span>
+   public Integer id;
+ 
+   <span class="text-brown">@Column(name="name")</span>
+   public String description;
+ 
+   <span class="text-red">@ManyToOne
+   @JoinColumn(name = "employee_id")</span>
+   public Employee <span class="text-user">employee</span>;
+ 
+   <span class="text-brown">@Column(name="deadline")</span>
+   public Date deadline;
+}
+</code></pre>
+<p>С помощью <strong>аннотации</strong> <code>@ManyToOne</code> мы указали, что много объектов EmployeeTask могут ссылаться на один объект типа Employee. Также с помощью <strong>аннотации</strong> <code>@JoinColumn</code> мы указали, в какой колонке нашей таблицы хранится id объекта Employee.</p>
+<h2>2.4 Примеры запросов</h2>
+<p>А теперь покажем несколько примеров, как Hibernate умеет работать с такими связанными классами.</p>
+<h3>Сценарий первый</h3>
+<p>Давай напишем запрос, чтобы узнать все задачи, которые были назначены на определенного пользователя. Вот как этот запрос будет выглядеть на HQL:</p>
+<pre><code><span class="text-brown">from</span> EmployeeTask <span class="text-brown">where</span> employee.name = <span class="text-user">"Иван Иванович"</span>
+</code></pre>
+<p>Ты можешь просто обращаться к полям зависимых классов через точку. Это очень удобно. Но давай все же запишем этот запрос в виде Java-кода:</p>
+<pre class='line-numbers'><code>
+String hql = <span class="text-green">"from EmployeeTask where employee.name = :username"</span>;
+Query&lt;<span class="token keyword">EmployeeTask</span>&gt; <span class="text-viola">query</span> = <span class="text-user">session</span>.createQuery( hql, <span class="token keyword">EmployeeTask</span>.class);
+<span class="text-viola">query</span>.setParameter(<span class="text-green">"username"</span>, <span class="text-user">"Иван Иванович"</span>);
+List&lt;<span class="token keyword">EmployeeTask</span>&gt; resultLIst = <span class="text-viola">query</span>.<span class="text-red">list</span>();
+</code></pre>
+<h3>Сценарий второй</h3>
+<p>Давай напишем запрос, который возвращает список сотрудников, у которых есть просроченные задачи. Задача просрочена, если ее deadline уже в прошлом. Вот как будет выглядеть этот запрос на SQL:</p>
+<pre class='line-numbers'><code>
+<span class="text-brown">SELECT</span> DISTINCT <span class="text-yellow">employee</span>.*
+<span class="text-brown">FROM</span> <span class="text-yellow">task</span> <span class="text-brown">JOIN</span> <span class="text-yellow">employee</span> <span class="text-brown">ON</span> <span class="text-yellow">task</span>.<span class="text-green">employee_id</span> = <span class="text-yellow">employee</span>.<span class="text-green">id</span>
+<span class="text-brown">WHERE</span> <span class="text-yellow">task</span>.<span class="text-green">deadline</span> &lt; <span class="text-user">CURDATE()</span>;
+</code></pre>
+<p><code>DISTINCT</code> используется, потому что может быть много задач назначенных на одного пользователя.</p>
+<p>А теперь запишем этот же запрос на HQL:</p>
+<pre><code><span class="text-brown">select distinct</span> employee <span class="text-brown">from</span> EmployeeTask <span class="text-brown">where</span> deadline &lt; CURDATE();
+</code></pre>
+<p>Employee в этом запросе – это поле класса EmployeeTask</p>
+<h3>Ситуация третья</h3>
+<p>Назначим все неназначенные задачи на директора. Запрос на SQL будет выглядеть так:</p>
+<pre><code>
+<span class="text-brown">UPDATE</span> task <span class="text-brown">SET</span> employee_id = 4 <span class="text-brown">WHERE</span> employee_id IS NULL
+</code></pre>
+<p>А теперь запишем этот же запрос на HQL:</p>
+<pre><code><span class="text-brown">update</span> EmployeeTask <span class="text-brown">set</span> employee = :user <span class="text-brown">where</span> employee is null
+</code></pre>
+<p>Последний запрос самый сложный. Нам нужно передать ID директора, но класс EmployeeTask не содержит поля, куда можно записать id, вместо этого он содержит поле Employee, куда нужно присвоить ссылку на объект типа Employee.</p>
+<pre class='line-numbers'><code>
+Employee <span class="text-brown">director</span> = <span class="text-user">session</span>.get(Employee.class, 4);
+ 
+String hql = <span class="text-green">"update EmployeeTask set employee = :user where employee is null"</span>;
+Query&lt;<span class="token keyword">EmployeeTask</span>&gt; <span class="text-viola">query</span> = <span class="text-user">session</span>.createQuery(hql, <span class="token keyword">EmployeeTask</span>.class);
+<span class="text-viola">query</span>.setParameter(<span class="text-green">"user"</span>, <span class="text-brown">director</span>);
+<span class="text-viola">query</span>.<span class="text-red">executeUpdate</span>();
+
+</code></pre>
+

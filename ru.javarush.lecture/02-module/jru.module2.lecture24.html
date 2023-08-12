@@ -1,0 +1,170 @@
+Метод newWorkStealingPool
+<p>----------------------------------------</p>
+Разберемся со следующим методом, который подготавливает нам ExecutorService – newWorkStealingPool. Данный пул потоков особенный – концепция его работы стоит...
+<p>----------------------------------------</p>
+    <p>Разберемся со следующим методом, который подготавливает нам <span class="text-green"><span class="text-bold"><em>ExecutorService</em></span></span> — <span class="code text-orange">newWorkStealingPool</span>. </p>
+
+    <img data-max-width="512" data-id="98dd51bb-7f44-411a-9db2-521aa66b959d" src="https://cdn.javarush.com/images/article/98dd51bb-7f44-411a-9db2-521aa66b959d/original.png" alt="">
+
+    <p>Данный пул потоков особенный — концепция его работы стоит на “краже” работы. </p>
+
+    <p>Задачи собираются в очередь и распределяются по процессорам. Но если процессор занят, то другой свободный процессор может украсть у него задачу и ее выполнить. Такой формат был введен в Java для того, чтобы сократить споры в многопоточных приложениях. В основе лежит фреймворк <span class="text-bold">fork/join</span>. </p>
+
+    <h2>fork/join</h2>
+
+    <img data-max-width="800" data-id="b01a75b9-2c21-4b1f-ac9b-707003d7202c" src="https://cdn.javarush.com/images/article/b01a75b9-2c21-4b1f-ac9b-707003d7202c/original.png" alt="">
+
+    <p>В фреймворке <span class="text-bold">fork/join</span> задачи рекурсивно декомпозируются, то есть разбираются на подзадачи. Далее задачи выполняются индивидуально, а результаты подзадач объединяются для формирования результатов главной задачи.</p>
+
+    <p>Метод <span class="code text-orange">fork</span> запускает асинхронно в некотором потоке задачу, а метод <span class="code text-orange">join</span> позволяет дождаться завершения работы над этой задачей.</p>
+
+    <h2>newWorkStealingPool </h2>
+
+    <p>Метод <span class="code text-orange">newWorkStealingPool</span> имеет две реализации: </p>
+
+    <pre class='language-java line-numbers'><code>
+public static ExecutorService newWorkStealingPool(int parallelism) {
+        return new ForkJoinPool
+            (parallelism,
+             ForkJoinPool.defaultForkJoinWorkerThreadFactory,
+             null, true);
+    }
+ 
+public static ExecutorService newWorkStealingPool() {
+        return new ForkJoinPool
+            (Runtime.getRuntime().availableProcessors(),
+             ForkJoinPool.defaultForkJoinWorkerThreadFactory,
+             null, true);
+    }
+</code></pre>
+
+    <p>Мы сразу же замечаем, что под капотом мы не вызываем конструктор у <span class="text-green"><span class="text-bold"><em>ThreadPoolExecutor</em></span></span>, здесь мы работаем с сущностью <span class="text-green"><span class="text-bold"><em>ForkJoinPool</em></span></span>. Это, как и <span class="text-green"><span class="text-bold"><em>ThreadPoolExecutor</em></span></span>, — реализация <span class="code"><span class="text-green">AbstractExecutorService</span></span>.</p>
+
+    <p>На выбор нам предоставляют 2 метода. Отличаются они тем, что в первом случае мы сами указываем какой уровень параллелизма мы хотим видеть. Если мы не указываем это значение, то в нашем пуле мы увидим уровень параллелизма равный количеству ядер процессора доступных виртуальной машине Java в данный момент времени. </p>
+
+    <p>Осталось разобраться на деле как это работает:</p>
+
+    <pre class='language-java line-numbers'><code>
+Collection&lt;Callable&lt;Void&gt;&gt; tasks = new ArrayList&lt;&gt;();
+        ExecutorService executorService = Executors.newWorkStealingPool(10);
+ 
+        for (int i = 0; i &lt; 10; i++) {
+            int taskNumber = i;
+            Callable&lt;Void&gt; callable = () -&gt; {
+                System.out.println("Обработан запрос пользователя №" + taskNumber + " на потоке " + Thread.currentThread().getName());
+                return null;
+            };
+            tasks.add(callable);
+        }
+        executorService.invokeAll(tasks);
+</code></pre>
+
+    <p>Мы создаем 10 задач, где выводим статус их выполнения. После чего все задачи мы запускаем в работу с помощью метода <span class="code text-orange">invokeAll</span>. </p>
+
+    <p>Результаты при выполнении 10 задач на 10 потоках в пуле: </p>
+
+    <div class="terminal">Обработан запрос пользователя №9 на потоке ForkJoinPool-1-worker-10<br />
+Обработан запрос пользователя №4 на потоке ForkJoinPool-1-worker-5<br />
+Обработан запрос пользователя №7 на потоке ForkJoinPool-1-worker-8<br />
+Обработан запрос пользователя №1 на потоке ForkJoinPool-1-worker-2<br />
+Обработан запрос пользователя №2 на потоке ForkJoinPool-1-worker-3<br />
+Обработан запрос пользователя №3 на потоке ForkJoinPool-1-worker-4<br />
+Обработан запрос пользователя №6 на потоке ForkJoinPool-1-worker-7<br />
+Обработан запрос пользователя №0 на потоке ForkJoinPool-1-worker-1<br />
+Обработан запрос пользователя №5 на потоке ForkJoinPool-1-worker-6<br />
+Обработан запрос пользователя №8 на потоке ForkJoinPool-1-worker-9</div>
+
+<p>Мы видим, что после формирования очереди потоки брали задачи на выполнение. Также можно проверить, как поведет себя распределение между потоками из пула для 20 задач на 10 потоках.</p>
+
+<div class="terminal">Обработан запрос пользователя №3 на потоке ForkJoinPool-1-worker-4<br />
+Обработан запрос пользователя №7 на потоке ForkJoinPool-1-worker-8<br />
+Обработан запрос пользователя №2 на потоке ForkJoinPool-1-worker-3<br />
+Обработан запрос пользователя №4 на потоке ForkJoinPool-1-worker-5<br />
+Обработан запрос пользователя №1 на потоке ForkJoinPool-1-worker-2<br />
+Обработан запрос пользователя №5 на потоке ForkJoinPool-1-worker-6<br />
+Обработан запрос пользователя №8 на потоке ForkJoinPool-1-worker-9<br />
+Обработан запрос пользователя №9 на потоке ForkJoinPool-1-worker-10<br />
+Обработан запрос пользователя №0 на потоке ForkJoinPool-1-worker-1<br />
+Обработан запрос пользователя №6 на потоке ForkJoinPool-1-worker-7<br />
+Обработан запрос пользователя №10 на потоке ForkJoinPool-1-worker-9<br />
+Обработан запрос пользователя №12 на потоке ForkJoinPool-1-worker-1<br />
+Обработан запрос пользователя №13 на потоке ForkJoinPool-1-worker-8<br />
+Обработан запрос пользователя №11 на потоке ForkJoinPool-1-worker-6<br />
+Обработан запрос пользователя №15 на потоке ForkJoinPool-1-worker-8<br />
+Обработан запрос пользователя №14 на потоке ForkJoinPool-1-worker-1<br />
+Обработан запрос пользователя №17 на потоке ForkJoinPool-1-worker-6<br />
+Обработан запрос пользователя №16 на потоке ForkJoinPool-1-worker-7<br />
+Обработан запрос пользователя №19 на потоке ForkJoinPool-1-worker-6<br />
+Обработан запрос пользователя №18 на потоке ForkJoinPool-1-worker-1</div>
+
+    <p>Из вывода видно, что некоторые потоки успевают выполнить несколько задач (<span class="text-green"><span class="text-bold">ForkJoinPool-1-worker-6</span></span> выполнил 4 задачи), а некоторые — только одну (<span class="text-green"><span class="text-bold">ForkJoinPool-1-worker-2</span></span>). Если в реализацию метода <span class="code text-orange">call</span> добавить задержку в 1 секунду, картина изменится.</p>
+
+    <pre class='language-java line-numbers'><code>
+Callable&lt;Void&gt; callable = () -&gt; {
+   System.out.println("Обработан запрос пользователя №" + taskNumber + " на потоке " + Thread.currentThread().getName());
+   TimeUnit.SECONDS.sleep(1);
+   return null;
+};
+</code></pre>
+
+    <p>Ради эксперимента, выполним этот же код на другой машине. Полученный вывод:</p>
+
+    <div class="terminal">Обработан запрос пользователя №2 на потоке ForkJoinPool-1-worker-23<br />
+Обработан запрос пользователя №7 на потоке ForkJoinPool-1-worker-31<br />
+Обработан запрос пользователя №4 на потоке ForkJoinPool-1-worker-27<br />
+Обработан запрос пользователя №5 на потоке ForkJoinPool-1-worker-13<br />
+Обработан запрос пользователя №0 на потоке ForkJoinPool-1-worker-19<br />
+Обработан запрос пользователя №8 на потоке ForkJoinPool-1-worker-3<br />
+Обработан запрос пользователя №9 на потоке ForkJoinPool-1-worker-21<br />
+Обработан запрос пользователя №6 на потоке ForkJoinPool-1-worker-17<br />
+Обработан запрос пользователя №3 на потоке ForkJoinPool-1-worker-9<br />
+Обработан запрос пользователя №1 на потоке ForkJoinPool-1-worker-5<br />
+Обработан запрос пользователя №12 на потоке ForkJoinPool-1-worker-23<br />
+Обработан запрос пользователя №15 на потоке ForkJoinPool-1-worker-19<br />
+Обработан запрос пользователя №14 на потоке ForkJoinPool-1-worker-27<br />
+Обработан запрос пользователя №11 на потоке ForkJoinPool-1-worker-3<br />
+Обработан запрос пользователя №13 на потоке ForkJoinPool-1-worker-13<br />
+Обработан запрос пользователя №10 на потоке ForkJoinPool-1-worker-31<br />
+Обработан запрос пользователя №18 на потоке ForkJoinPool-1-worker-5<br />
+Обработан запрос пользователя №16 на потоке ForkJoinPool-1-worker-9<br />
+Обработан запрос пользователя №17 на потоке ForkJoinPool-1-worker-21<br />
+Обработан запрос пользователя №19 на потоке ForkJoinPool-1-worker-17</div>
+
+    <p>Из интересного в этот выводе можно отметить, что мы “заказывали” потоки в пуле. А имена воркеров идут не с единицы до десяти включительно, а больше. Если смотреть по уникальным названиям, то воркеров действительно десять (3, 5, 9, 13, 17, 19, 21, 23, 27 и 31). Возникает резонный вопрос: почему так произошло? В любой непонятной ситуации используй debug.</p
+
+    <p>Этим и займемся. Приведем объект <mark class="green">executorService</mark> к типу <span class="text-green"><span class="text-bold"><em>ForkJoinPool</em></span></span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+final ForkJoinPool forkJoinPool = (ForkJoinPool) executorService;
+</code></pre>
+
+    <p>Смотреть будем именно на этот объект после вызова метода <span class="code text-orange">invokeAll</span> в режиме Evaluate Expression. Для этого после метода <span class="code text-orange">invokeAll</span> добавим любую команду, например, пустой sout, и на нем поставим брейкпоинт.</p>
+
+    <img data-max-width="800" data-id="3d7ef6f9-97cb-4e54-8380-6f6ed65492f1" src="https://cdn.javarush.com/images/article/3d7ef6f9-97cb-4e54-8380-6f6ed65492f1/original.png" alt="">
+
+    <p>Видим, что в пуле 10 потоков, но массив потоков (воркеров) имеет размерность 32. Странно, но ладно, будем копать дальше. Попробуем при создании пула параметр параллелизма поставить больше, чем 32, например, 40.</p>
+
+    <pre class='language-java line-numbers'><code>
+ExecutorService executorService = Executors.newWorkStealingPool(40);
+</code></pre>
+
+    <p>И в дебаге еще раз посмотрим на объект <mark class="green">forkJoinPool</span>.</p>
+
+    <img data-max-width="800" data-id="ad0001ac-1097-4a84-80e6-bc3ecfcf4471" src="https://cdn.javarush.com/images/article/ad0001ac-1097-4a84-80e6-bc3ecfcf4471/original.png" alt="">
+
+    <p>Теперь размер массива воркеров 128. Можно предположить, что это внутренняя оптимизация JVM. Давай попробуем ее найти в коде JDK (openjdk-14):</p>
+
+    <img data-max-width="512" data-id="b8662303-b52e-4289-93f1-dc6ec32405f9" src="https://cdn.javarush.com/images/article/b8662303-b52e-4289-93f1-dc6ec32405f9/original.png" alt="">
+
+    <p>Да, действительно: размер массива воркеров рассчитывается исходя из значения параллелизма, и побитовых манипуляций с ним. Не нужно пытаться разобраться что именно здесь происходит. Просто достаточно знать сам факт наличия такой оптимизации.</p>
+
+    <p>Еще одна особенность нашего примера — использование метода <span class="code text-orange">invokeAll</span>. Стоит отметить, что метод <span class="code text-orange">invokeAll</span> нам может вернуть результат, вернее лист результатов (в нашем случае — <span class="text-red">List&lt;Future&lt;Void&gt;&gt;)</span>, где мы можем получить результат выполнения каждой из задач.</p>
+
+    <pre class='language-java line-numbers'><code>
+var results = executorService.invokeAll(tasks);
+        for (Future&lt;Void&gt; result : results) {
+            // Обработать результат выполнения задачи
+        }
+</code></pre>
+
+    <p>Такой особенный вид сервиса и пула потоков можно использовать в задачах, где прогнозируется уровень параллелизма, либо не прогнозируется, но подразумевается.</p>

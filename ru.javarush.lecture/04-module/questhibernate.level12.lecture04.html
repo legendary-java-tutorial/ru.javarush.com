@@ -1,0 +1,177 @@
+Управление обновлением данных
+<p>----------------------------------------</p>
+Время изменения данных
+Аннотация @PrePersist
+Добавляем свои EntityListeners
+<p>----------------------------------------</p>
+<h2>5.1 Время изменения данных</h2>
+<p>Когда ты хранишь различные записи в базе данных долгие годы, то очень часто возникают два вопроса:</p>
+<ul>
+	<li>Когда данная запись была добавлена в базу данных?</li>
+	<li>Когда данная запись менялась последний раз?</li>
+</ul>
+<p>Это настолько частые задачи, что практически в каждую таблицу в базе данных добавляют две колонки:</p>
+<ul>
+	<li>created_time</li>
+	<li>updated_time</li>
+</ul>
+<p>В первой хранится дата и время создания записи, а во второй – дата и время ее последнего изменения. И в каждом Entity-классе есть поля:</p>
+<pre class='line-numbers'><code>
+@Entity
+@Table(name = "entities")	
+public class Entity {
+  ...
+ 
+  <span class="text-brown">@Column(name="created_time")</span>
+  private Date created;
+ 
+  <span class="text-brown">@Column(name="updated_time")</span>
+  private Date updated;
+}
+
+</code></pre>
+<p>Hibernate может взять на себя всю работу по контролю за временем обновления объектов в базе с помощью двух аннотаций <code>@CreationTimestamp</code> и <code>@UpdateTimestamp</code>.</p>
+<p>Пример:</p>
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name = "entities")	
+public class Entity {
+  ...
+ 
+	<span class="text-red">@CreationTimestamp</span>
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "create_date")
+    private Date createDate;
+ 
+	<span class="text-red">@UpdateTimestamp</span>
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "modify_date")
+	private Date modifyDate;
+}
+</code></pre>
+<p>В колонках, помеченных данными аннотациями, всегда будет храниться правильное время создания объекта и его последнего изменения. </p>
+<h2>5.2 Аннотация @PrePersist</h2>
+<p>Если тебе нужны какие-то более сложные сценарии для контроля времени объекта, то у Hibernate есть аннотации и на этот случай. Ими можно пометить методы класса, и Hibernate вызовет эти методы, когда будет сохранять объект в базу. Всего таких аннотаций 7:</p>
+<table>
+    <tbody>
+    <tr>
+        <td><strong>@PrePersist</strong></td>
+        <td>Вызывается перед сохранением объекта в базу. (SQL INSERT)</td>
+    </tr>
+    <tr>
+        <td><strong>@PostPersist</strong></td>
+        <td>Вызывается сразу после сохранения объекта в базу. (SQL INSERT)</td>
+    </tr>
+
+<tr>
+        <td><strong>@PreRemove</strong></td>
+        <td>Вызывается перед удалением объекта в базе.</td>
+    </tr>
+
+<tr>
+        <td><strong>@PostRemove</strong></td>
+        <td>Вызывается после удаления объекта в базе.</td>
+    </tr>
+
+<tr>
+        <td><strong>@PreUpdate</strong></td>
+        <td>Вызывается перед обновлением (SQL UPDATE) объекта в базе.</td>
+    </tr>
+
+<tr>
+        <td><strong>@PostUpdate</strong></td>
+        <td>Вызывается после обновления (SQL UPDATE) объекта в базе.</td>
+    </tr>
+
+<tr>
+        <td><strong>@PostLoad</strong></td>
+        <td>Вызывается после того, как объект был загружен из базы.</td>
+    </tr>
+    </tbody>
+</table>
+<p>Давай напишем пример, где мы прописываем классу правильное время создания и обновления его объектов:</p>
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name = "entities")	
+public class Entity {
+  ...
+ 
+  <span class="text-brown">@Column(name="created_time")</span>
+  private Date created;
+ 
+  <span class="text-brown">@Column(name="updated_time")</span>
+  private Date updated;
+ 
+  <span class="text-red">@PrePersist</span>
+  protected void onCreate() {
+    created = new Date();
+  }
+ 
+  <span class="text-red">@PreUpdate</span>
+  protected void onUpdate() {
+  updated = new Date();
+  }
+}
+</code></pre>
+<p>Если Hibernate сохраняет объект в первый раз, то он вызовет метод, помеченный аннотацией <code>@PrePersist</code>. Если обновляет в базе существующий объект, то вызовет метод, помеченный аннотацией <code>@PreUpdate</code>.</p>
+<h2>5.3 Добавляем свои EntityListeners</h2>
+<p>Если тебе очень надо, то ты можешь отделить методы, которые вызывает Hibernate, от объекта, у которого он их вызывает. Спецификация JPA позволяет тебе объявить listener-классы, которые будут вызываться в определенные моменты обработки Entity-объектов.</p>
+<p>Если у тебя много похожих Entity-объектов, то ты можешь вынести их часть в базовый класс и добавить Listener, который бы управлял их поведением. Пример:</p>
+<pre class='line-numbers'><code>
+<span class="text-brown">@MappedSuperclass</span>
+public abstract class <span class="text-user">BaseEntity</span> {
+ 
+    private Timestamp createdOn;
+ 
+    private Timestamp updatedOn;
+ 
+}
+
+
+<span class="text-brown">@Entity</span>
+public class <span class="text-yellow">User</span> extends <span class="text-user">BaseEntity</span> {
+ 
+     @Id
+     private Long id;
+ 
+     private String name;
+}
+</code></pre>
+<p>Тогда для класса BaseEntity можно создать специальный listener-класс:</p>
+<pre class='line-numbers'><code>
+public class TimeEntityListener {
+ 
+    public void <span class="text-brown">onPersist</span>(Object entity) {
+    	if (entity instanceof <span class="text-user">BaseEntity</span>) {
+        	<span class="text-user">BaseEntity</span> baseEntity = (<span class="text-user">BaseEntity</span>) entity;
+        	baseEntity.createdOn = <span class="text-brown">now</span>();
+    	}
+    }
+ 
+    public void <span class="text-brown">onUpdate</span>(Object entity) {
+    	if (entity instanceof <span class="text-user">BaseEntity</span>) {
+        	<span class="text-user">BaseEntity</span> baseEntity = (<span class="text-user">BaseEntity</span>) entity;
+        	baseEntity.updatedOn = <span class="text-brown">now</span>();
+    	}
+    }
+ 
+    private Timestamp <span class="text-brown">now</span>() {
+    	return Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)   );
+    }
+}
+</code></pre>
+<p> И связать класс User и его listener можно с помощью парочки аннотаций:</p>
+<pre class='line-numbers'><code>
+<span class="text-brown">@Entity
+@EntityListeners(class= TimeEntityListener.class)</span>
+public class <span class="text-yellow">User</span> extends BaseEntity {
+ 
+     @Id
+     private Long id;
+ 
+     private String name;
+}
+</code></pre>
+<p></p>
+<p></p>
+<p></p>

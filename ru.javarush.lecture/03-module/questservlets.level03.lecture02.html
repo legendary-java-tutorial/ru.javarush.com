@@ -1,0 +1,149 @@
+Настройка окружения теста в JUnit
+<p>----------------------------------------</p>
+Аннотации @BeforeEach, @AfterEach. 
+Аннотации @BeforeAll, @AfterAll.
+<p>----------------------------------------</p>
+    <h2>3.1 Аннотации @BeforeEach, @AfterEach</h2>
+
+    <p>Обрати внимание, что в предыдущем примере нам в каждом методе приходилось писать код для создания объекта <mark class="green">Calculator</mark>.</p>
+
+    <p>Конечно, это всего одна строчка, но если мы будем тестировать реальные системы, то часто будет возникать ситуация, когда нужно создать и сконфигурировать несколько объектов, что может занять несколько десятков строк кода. Пример:</p>
+
+    <pre class='language-java line-numbers'><code>
+   //Создаем объект HttpClient
+   HttpClient client = HttpClient.newBuilder()
+    	.version(Version.HTTP_1_1)
+    	.followRedirects(Redirect.NORMAL)
+        .connectTimeout(Duration.ofSeconds(20))
+    	.proxy(ProxySelector.of(new InetSocketAddress("proxy.example.com", 80)))
+        .authenticator(Authenticator.getDefault())
+    	.build();
+ 
+   //Создаем объект HttpRequest
+  HttpRequest request = HttpRequest.newBuilder()
+     .uri(new URI("https://javarush.com"))
+     .headers("Content-Type", " application/octet-stream")
+     .POST( HttpRequest.BodyPublishers. ofInputStream ( () -> is; ))
+     .build();
+ 
+   //Вызываем метод send()
+   HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+   System.out.println(response.statusCode());
+   System.out.println(response.body());
+</code></pre> 
+ 
+    <p>В примере выше мы создали и сконфигурировали объект <mark class="green">HttpClient</mark> и хотим протестировать работу метода <span class="code text-orange">send()</span>.</p>
+
+    <p>Чтобы каждый раз в тестовом методе не писать создание объекта <mark class="green">HttpClient</mark>, его можно вынести в отдельный метод и поставить ему специальную аннотацию <span class="text-yellow"><span class="text-bold">@BeforeEach</span></span>. Тогда Junit будет вызывать этот метод перед каждым тестовым методом. Пример:</p>
+
+    <pre class='language-java line-numbers'><code>
+    class HttpClientTest {
+     	public HttpClient client;
+ 
+   	@BeforeEach
+    	public void init(){
+   	   client = HttpClient.newBuilder()
+   	        .version(Version.HTTP_1_1)
+   	        .followRedirects(Redirect.NORMAL)
+   	        .connectTimeout(Duration.ofSeconds(20))
+   	        .proxy(ProxySelector.of(new InetSocketAddress("proxy.example.com", 80)))
+   	        .authenticator(Authenticator.getDefault())
+   	        .build();
+    	}
+ 
+   	@Test
+    	public void send200() throws Exception {
+     	   //Создаем объект HttpRequst()
+         	HttpRequest request = HttpRequest.newBuilder(new URI("https://javarush.com")).build();
+ 
+     	   //Вызываем метод send()
+     	   HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+        	assertEquals(200, response.statusCode());
+        }
+ 
+   	@Test
+    	public void send404() throws Exception {
+     	   //Создаем объект HttpRequst()
+         	HttpRequest request = HttpRequest.newBuilder(new URI("https://javarush.com/unknown")).build();
+ 
+     	   //Вызываем метод send()
+     	   HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+        	assertEquals(404, response.statusCode());
+    	}
+}
+</code></pre>
+
+    <p>Также можно создать специальный метод, который будет вызываться каждый раз после очередного тестового метода, и <span class="text-red">подчищать использованные ресурсы</span>, писать что-то в лог и т. п. Такой метод нужно пометить аннотацией <span class="text-yellow"><span class="text-bold">@AfterEach</span></span>.</p>
+
+    <p>Если у тебя есть 3 тестовых метода <span class="code text-orange">test1()</span>, <span class="code text-orange">test2()</span> и <span class="code text-orange">test3()</span>, то порядок вызова будет таким:</p>
+
+    <ul>
+        <li><span class="text-green">BeforeEach-метод</span></li>
+        <li><span class="text-green">test1()<span></li>
+        <li><span class="text-green">AfterEach-метод</span></li>
+        <li><span class="text-neon">BeforeEach-метод</span></li>
+        <li><span class="text-neon">test2()</span></li>
+        <li><span class="text-neon">AfterEach-метод</span></li>
+        <li><span class="text-orange">BeforeEach-метод</span></li>
+        <li><span class="text-orange">test3()</span></li>
+        <li><span class="text-orange">AfterEach-метод</span></li>
+    </ul>
+
+    <h2>3.2 Аннотации @BeforeAll, @AfterAll</h2>
+
+    <p>JUnit также позволяет добавить метод, который будет вызван <span class="text-red">один раз перед всеми тестовыми методами</span>. Такой метод нужно пометить аннотацией <span class="text-yellow"><span class="text-bold">@BeforeAll</span></span>. Для нее так же существует парная аннотация <span class="text-yellow"><span class="text-bold">@AfterAll</span></span>. Метод, помеченный ею, JUnit вызовет после всех тестовых методов.</p>
+
+    <p>Давай напишем специальный пример, который позволяет лучше понять, как это все работает. За основу возьмем тестирование нашего калькулятора:</p>
+ 
+    <pre class='language-java line-numbers'><code>
+class CalculatorTest {
+    private Calculator calc = new Calculator();
+
+    @BeforeAll
+    public static void init(){
+        System.out.println("BeforeAll init() method called");
+    }
+ 
+    @BeforeEach
+    public void initEach(){
+        System.out.println("BeforeEach initEach() method called");
+    }
+ 
+    @Test
+    public void add(){
+        System.out.println("Testing Addition");
+    }
+ 
+    @Test
+    public void sub() {
+        System.out.println("Testing Subtraction");
+    }
+ 
+    @Test
+    public void mul(){
+        System.out.println("Testing Multiplication");
+    }
+ 
+    @Test
+    public void div() {
+        System.out.println("Testing Division");
+    }
+}
+</code></pre>
+ 
+    <p>Этот тест напечатает в консоль такой текст:</p>
+
+    <pre><code>
+BeforeAll init() method called
+BeforeEach initEach() method called
+Testing Addition
+ 
+BeforeEach initEach() method called
+Testing Subtraction
+ 
+BeforeEach initEach() method called
+Testing Multiplication
+ 
+BeforeEach initEach() method called
+Testing Division
+</code></pre>

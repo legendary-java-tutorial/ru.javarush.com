@@ -1,0 +1,110 @@
+Единая таблица для всей иерархии классов
+<p>----------------------------------------</p>
+Описание. 
+Как данные сохраняются.
+<p>----------------------------------------</p>
+<h2>Описание</h2>
+
+<p>Следующий подход к хранению иерархии классов – это <span class="text-green">хранить все классы иерархии в одной таблице</span>. Такая стратегия называется <strong>Single Table</strong>.</p>
+
+<p>Например, так:</p>
+
+<pre class='language-java line-numbers'><code>
+CREATE TABLE user_ employee_client {
+  id INT,
+  name VARCHAR,
+  birthday DATE,
+  occupation VARCHAR,
+  salary INT,
+  join DATE,
+  address VARCHAR,
+  DTYPE VARCHAR
+}
+</code></pre>
+
+<p>То есть у нас есть одна таблица, у которой колонки для всех классов нашей иерархии обозначены разными цветами. Также есть специальная служебная колонка <strong>DTYPE VARCHAR</strong>, где Hibernate будет хранить имя Entity-класса.</p>
+
+<p>Дело осталось за малым – объяснить Hibernate, что данные Entity-классов теперь хранятся в базе в одной таблице. Сделать это можно с помощью аннотации <span class="text-yellow"><span class="text-bold">@Inheritance</span></span>:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red"><strong>@Inheritance(strategy = InheritanceType.SINGLE_TABLE)</strong></span></code></pre>
+    </div>
+
+<p>Пример наших классов:</p>
+
+<pre class='language-java line-numbers'><code>
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@Entity
+class User {
+  int id;
+  String name;
+  LocalDate birthday;
+}
+</code></pre>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+class Employee extends User {
+ 	String occupation;
+ 	int salary;
+ 	LocalDate join;
+}
+</code></pre>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+class Client extends User {
+   String address;
+}
+</code></pre>
+
+<h2>Как данные сохраняются</h2>
+
+<p>Теперь давай напишем пример, где создадим парочку наших сущностей и сохраним их в базу:</p>
+
+<pre class='language-java line-numbers'><code>
+Employee employee = new Employee();
+employee.id = 101;
+employee.name = "Иванов";
+employee.birthday = LocalDate.of("01-01-1999");
+employee.occupation = "Программист"
+employee.salary = 100000;
+employee.join = LocalDate.of("12-01-2018");
+session.persist(employee);
+ 
+Client client = new Client();
+client.id = 102;
+client.name = "Петров";
+client.birthday = LocalDate.of("15-11-1988");
+client.address = "Шандара";
+session.persist(client);
+</code></pre>
+
+<p>При сохранении в базу данных будет выполнен такой SQL-запрос:</p>
+
+<pre class='language-java line-numbers'><code>
+INSERT INTO user_ employee_client (id, name, birthday, occupation, salary, join, DTYPE)
+VALUES (101, 'Иванов', '01-01-1999', 'Программист', 100000, '12-01-2018', 'Employee')
+ 
+INSERT INTO user_ employee_client (id, name, birthday, address, DTYPE)
+VALUES (102, 'Петров', '15-11-1988', 'Шандара', 'Client')
+</code></pre>
+ 
+<p>При сохранении данных в таблицу Hibernate передает только известные ему поля сущностей. Это означает, что неуказанные колонки будут иметь значение NULL.</p>
+
+<p>А это значит, что ты не можешь указать для колонки occupation тип NOT NULL, так как при хранении клиента в этой же таблице его occupation будет NULL. Это один из минусов хранения разных сущностей в одной таблице.</p>
+
+<p>Последнее поле в SQL-запросе – это колонка DTYPE, в ней передается имя Entity-класса. Он используется Hibernate, когда ты хочешь прочитать данные из своей таблицы.</p>
+
+<p>Пример:</p>
+ 
+<pre class='language-java line-numbers'><code>
+ List&lt;User> accounts = session.createQuery("from User").list();
+</code></pre>
+ 
+<p>Данный запрос вернет список всех сохраненных в базе объектов типа пользователь: User, Employee и Client. <span class="text-neon">На основе колонки DTYPE будет правильно определен тип сущности и создан объект правильного класса.</span></p>
+
+<p>В нашем случае в списке accounts будут два объекта: типа Employee и типа Client.</p>
+
+<p>HQL рулит.</p>

@@ -1,0 +1,70 @@
+DeadLock, и его причины
+<p>----------------------------------------</p>
+&#8212; Привет, Амиго! Сегодня я тебе расскажу, что такое дедлок (Dead Lock) &#8212; смертельный захват. &#8212; Так ты же уже что-то такое рассказывала. &#8212; Ага, было дело. Но сегодня мы рассмотрим эту тему детальнее. В самом простом случае в дедлоке участвуют две нити и два объекта-мютекса. Взаимная блокировка возникает, когда: А) Каждой нити в процессе работы ...
+<p>----------------------------------------</p>
+
+<a href='https://cdn.javarush.com/images/article/5a51d025-cb79-4d26-9742-812799c919ff/original.jpeg' target='_blank'><img data-id="5a51d025-cb79-4d26-9742-812799c919ff" data-max-width="1024" alt="DeadLock, и его причины - 1" src="https://cdn.javarush.com/images/article/5a51d025-cb79-4d26-9742-812799c919ff/original.jpeg"></a>
+
+<p>&#8212; Привет, Амиго!</p>
+<p>Сегодня я тебе расскажу, что такое дедлок (DeadLock) &#8212; взаимная блокировка.</p>
+<p><span class="text-user">&#8212; Так ты же уже что-то такое рассказывала.</span></p>
+<p>&#8212; Ага, было дело. Но сегодня мы рассмотрим эту тему детальнее.</p>
+<p>В самом простом случае в дедлоке участвуют две нити и два объекта-мютекса. Взаимная блокировка возникает, когда:</p>
+<p><strong>А) </strong>Каждой нити в процессе работы нужно захватить оба мютекса.</p>
+<p><strong>Б)</strong> Первая нить захватила первый мютекс и ждет освобождения второго.</p>
+<p><strong>В)</strong> Вторая нить захватила второй мютекс и ждет освобождения первого.</p>
+<p>Примеры:</p>
+<div class="code-heading">Пример</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code> public class Student
+{
+ private ArrayList <span class="text-red">friends</span> = new ArrayList();
+
+ public synchronized ArrayList getFriends()
+ {
+  synchronized(<span class="text-red">friends</span>)
+  {
+   return new ArrayList(<span class="text-red">friends</span>);
+  }
+ }
+
+ public synchronized int getFriendsCount()
+ {
+  return <span class="text-red">friends</span>.size();
+ }
+
+ public int addFriend(Student student)
+ {
+  synchronized(<span class="text-red">friends</span>)
+  {
+   <span class="text-red">friends</span>.add(student)
+   return getFriendsCount();
+  }
+ }
+}</code></pre>
+<p>Допустим, первая нить вызвала метод <strong>getFriends</strong>, тогда она сначала захватит мютекс объекта <strong>this</strong>, а затем мютекс объекта <strong>friends</strong>.</p>
+<p>Вторая нить при этом вызвала метод <strong>addFriend</strong>, она сначала захватывает мютекс объекта <strong>friends</strong>, а затем мютекс объекта this (при вызове <strong>getFriendsCount</strong>).</p>
+<p>Сначала все будет хорошо, но как гласит Закон Мерфи &#8212; если неприятность может случиться, она случается. Обязательно возникнет ситуация, когда первая нить успеет захватить только один мютекс, а вторая нить в это время захватит второй. Они так и будут висеть вечно в ожидании, что кто-то из них первым освободит мютекс.</p>
+<p>Еще один простой пример, нашла в книге:</p>
+<div class="code-heading">Пример</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class KnightUtil
+{
+ public static void kill(Knight knight1, Knight knight2)
+ {
+  synchronized(knight1)
+  {
+   synchronized(knight2)
+   {
+    knight2.live = 0;
+    knight1.experience +=100;
+   } 
+  }
+ }
+}</code></pre>
+<p>Есть игра, где два рыцаря сражаются друг с другом. Один рыцарь убивает другого. Это поведение отражено в методе <strong>kill</strong>. Туда передаются два объекта-рыцаря.</p>
+<p>Сначала мы защищаем оба объекта, чтобы никто больше не мог их изменить.</p>
+<p>Второй рыцарь умирает (live=0)</p>
+<p>Первый рыцарь получает +100 опыта.</p>
+<p>Все вроде бы отлично, но иногда может возникнуть ситуация, когда второй рыцарь в это время атакует первого. Для него тоже вызывается этот метод, но рыцари передаются в другом порядке.</p>
+<p><span class="text-user">&#8212; Т.е. нам даже не нужно несколько методов для получения дедлока?</span></p>
+<p>&#8212; Ага. Иногда бывает достаточно одного простого метода, в котором уже могут происходить процессы, приводящие к зависанию нитей и всей программы.</p>
+<p><span class="text-user">&#8212; Да, оказывается, это явление встречается чаще, чем я думал. Спасибо, Элли.</span></p>

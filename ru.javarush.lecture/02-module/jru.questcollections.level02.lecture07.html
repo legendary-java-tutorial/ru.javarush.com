@@ -1,0 +1,98 @@
+Dynamic Proxy
+<p>----------------------------------------</p>
+&#8212; Привет, Амиго. &#8212; Привет, Амиго. &#8212; Здорово, Риша. &#8212; Сегодня я расскажу тебе новую и очень интересную тему – динамические прокси. В Java есть несколько способов изменить функциональность нужного класса&#8230; Способ первый &#8212; наследование. Самый простой способ изменить поведение некоторого класса – это создать новый класс, унаследовать его от оригинального (базового) и переопределить его методы. ...
+<p>----------------------------------------</p>
+<p><span class="text-user">&#8212; Привет, Амиго.</span></p>
+<p class="amigo">&#8212; Здорово, Риша.</p>
+<p>&#8212; Сегодня я расскажу тебе новую и очень интересную тему — <b>динамические прокси</b>.</p>
+<p>В Java есть несколько способов изменить функциональность нужного класса&#8230;</p>
+<p><b>Способ первый. Наследование</b></p>
+<p>Самый простой способ изменить поведение некоторого класса — это создать новый класс, унаследовать его от оригинального (базового) и переопределить его методы. Затем, вместо объектов оригинального класса использовать объекты класса наследника. Пример:</p>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>Reader <span class="text-red">reader</span> = new <span class="text-viola">UserCustomReader</span>();</code></pre>
+<p><strong>Способ второй. Использование класса-обертки (Wrapper).</strong></p>
+<p>Примером такого класса является <span class="text-corporate"><strong>BufferedReader</strong></span>. Во-первых, он унаследован от <strong>Reader</strong>, то есть может быть использован вместо него. Во-вторых, он переадресует все вызовы к оригинальному объекту <span class="text-red"><strong>Reader</strong>, который обязательно нужно передать в конструкторе объекту BufferedReader.</span> Пример:</p>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>Reader <span class="text-green">readerOriginal</span> = new <span class="text-viola">UserCustomReader</span>();
+Reader <span class="text-red">reader</span> = new <span class="text-corporate">BufferedReader</span>(<span class="text-green">readerOriginal</span>);</code></pre>
+<p><strong>Способ третий. Создание динамического прокси (Proxy).</strong></p>
+<div class="row">
+<div class="col"><img data-id="1718e788-2199-432a-acdd-db9a0dcab8a5" data-max-width="1427" alt="Dynamic Proxy - 1" src="https://cdn.javarush.com/images/article/1718e788-2199-432a-acdd-db9a0dcab8a5/original.gif"></div>
+</div>
+<p>В Java есть специальный класс (java.lang.reflect.Proxy), с помощью которого фактически <span class="text-red"><strong>можно сконструировать объект во время исполнения программы (динамически), не создавая для него отдельного класса.</strong></span></p>
+<p>Это делается очень просто:</p>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>Reader <span class="text-red">reader</span> = <strong>(Reader)</strong>Proxy.newProxyInstance();</code></pre>
+<p><span class="text-user">&#8212; А вот это уже что-то новенькое!</span></p>
+<p>&#8212; Но, нам ведь не нужен просто объект без методов. Надо чтобы у этого объекта были методы, и они делали то, что нам нужно. Для этого в Java используется специальный интерфейс <strong>InvocationHandler</strong>, с помощью которого <strong><span class="text-red">можно перехватывать все вызовы методов</span></strong>, обращенные к proxy-объекту. proxy-объект можно создать только используя интерфейсы.</p>
+<p><span class="text-user"><strong>Invoke</strong></span> – стандартное название для метода/класса, основная задача которого просто вызвать какой-то метод.</p>
+<p><span class="text-red"><strong>Handler</strong></span> – стандартное название для класса, который обрабатывает какое-то событие. Например, обработчик клика мышки будет называться MouseClickHandler, и т.д.</p>
+<p>У интерфейса InvocationHandler есть единственный <strong><span class="text-red">метод invoke, в который направляются все вызовы, обращенные к proxy-объекту</span></strong>. Пример:</p>
+<div class="code-heading">Код</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-red">Reader</span> <strong><span class="text-red">reader</span></strong> = (<span class="text-red">Reader</span>)<strong>Proxy.newProxyInstance</strong>(<span class="text-user">new CustomInvocationHandler</span>());
+<strong><span class="text-red">reader</span></strong>.<span class="text-corporate">close</span>();</code></pre>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><strong>class</strong> CustomInvocationHandler implements InvocationHandler
+{
+ <strong>public</strong> Object <span class="text-user">invoke</span>(Object proxy, Method method, Object[] args) throws Throwable
+ {
+  <strong>System.out.println</strong>("<span class="text-green">yes!</span>");
+  <strong>return</strong> null;
+ }
+}</code></pre>
+<p>При вызове метода <span class="text-red">reader</span>.<span class="text-corporate">close</span>(), вызовется метод <strong><span class="text-user">invoke</span></strong>, и на экран будет выведена надпись “yes!”</p>
+<p><span class="text-user">&#8212; Т.е. мы объявили класс <strong>CustomInvocationHandler,</strong> в нем реализовали интерфейс <strong>InvocationHandler</strong> и его метод <strong>invoke</strong>. Метод invoke при вызове выводит на экран строку “yes!”- Затем мы создали объект типа <strong>CustomInvocationHandler</strong> и передали его в метод <strong>newProxyInstance</strong> при создании объекта-proxy.</span></p>
+<p>&#8212; Да, все верно.</p>
+<p>Это очень мощный инструмент, обычно создание таких прокси используется для имитации <span class="text-corporate">объектов из программ, которые физически запущены на другом компьютере.</span> Или для контроля доступа</p>
+<p>– в таком методе можно проверять права текущего пользователя, обрабатывать ошибки, логировать ошибки и многое другое.</p>
+<p>Вот пример, где метод invoke еще и вызывает методы оригинального объекта:</p>
+<div class="code-heading">Код</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-green">Reader</span> <span class="text-green">original</span> = new <span class="text-red"><span class="text-viola">UserCustomReader</span>();
+
+Reader</span> <strong><span class="text-red">reader</span></strong> = (<span class="text-red">Reader</span>)<strong>Proxy.newProxyInstance</strong>(new <span class="text-user">CustomInvocationHandler</span>(<span class="text-green">original</span>));
+<span class="text-red">reader</span>.<span class="text-corporate">close</span>();</code></pre>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><strong>class</strong> <span class="text-user">CustomInvocationHandler</span> <strong>implements</strong> <span class="text-user">InvocationHandler
+{
+</span> <strong>private</strong> Reader <span class="text-green">readerOriginal;
+
+</span> <span class="text-user">CustomInvocationHandler</span>(Reader <span class="text-green">readerOriginal</span>)
+ {
+  this.<span class="text-green">readerOriginal</span> = <span class="text-green">readerOriginal;
+</span> }
+
+ <span class="text-user">public</span> Object invoke(Object proxy, <span class="text-user"><strong>Method</strong></span> method, Object[] args) throws Throwable
+ {
+  <strong>if</strong> (method.<strong>getName</strong>().equals("<span class="text-green">close</span>"))
+  {
+   <strong>System.out.println</strong>("<span class="text-green">Reader closed!</span>");
+  }
+
+  // это вызов метода close у объекта readerOriginal
+  // имя метода и описание его параметров хранится в переменной method
+  return <span class="text-user">method</span>.<strong>invoke</strong>(<span class="text-green">readerOriginal</span>, args);
+ }
+}</code></pre>
+<p>В данном примере есть две особенности.</p>
+<p>Во-первых, в конструктор передается «оригинальный» объект <span class="text-green"><strong>Reader</strong></span>, ссылка на который сохраняется внутри <span class="text-user">CustomInvocationHandler</span>.</p>
+<p>Во-вторых, в методе invoke мы снова вызываем этот же метод, но уже у «оригинального» объекта.</p>
+<p><span class="text-user">&#8212; Ага. Т.е. вот эта последняя строчка и есть вызов того же самого метода, но уже у оригинального объекта:</span></p>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>return <span class="text-user">method</span>.<strong>invoke</strong>(<span class="text-green">readerOriginal</span>, args);</code></pre>
+<p>&#8212; Ага.</p>
+<p><span class="text-user">&#8212; Не сказал бы, что слишком очевидно, но все же понятно. Вроде бы.</span></p>
+<p>&#8212; Отлично. Тогда вот еще что. В метод newProxyInstance нужно передавать еще немного служебной информации для создания proxy-объекта. Но, т.к. мы не создаем монструозные прокси-объекты, то эту информацию легко получить из самого оригинального класса.</p>
+<p>Вот тебе пример:</p>
+<div class="code-heading">Код</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-green"><strong>Reader</strong> original</span> = new UserCustomReader();
+
+ClassLoader <span class="text-corporate">classLoader</span> = <span class="text-green">original</span>.getClass().<span class="text-corporate">getClassLoader</span>();
+Class&lt;?&gt;[] <span class="text-viola">interfaces</span> = <span class="text-green">original</span>.getClass().<span class="text-viola">getInterfaces</span>();
+CustomInvocationHandler <span class="text-user">invocationHandler</span> = new CustomInvocationHandler(<span class="text-green">original</span>);
+
+<span class="text-red">Reader <strong>reader</strong></span> = (<span class="text-red">Reader</span>)<strong>Proxy.newProxyInstance</strong>(<span class="text-corporate">classLoader</span>, <span class="text-viola">interfaces,</span> <span class="text-green">invocationHandler);</span></code></pre>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><strong>class</strong> <span class="text-user">CustomInvocationHandler</span> implements <span class="text-user">InvocationHandler</span>
+{
+ <strong>public</strong> Object invoke(Object proxy, Method method, Object[] args) throws Throwable
+ {
+  <strong>return</strong> null;
+ }
+}</code></pre>
+<p><span class="text-user">&#8212; Ага. ClassLoader и список интерфейсов. Это что-то из Reflection, да?</span></p>
+<p>&#8212; Ага.</p>
+<p><span class="text-user">&#8212; Ясно. Что ж, думаю, я смогу создать примитивный простенький прокси объект, если это когда-нибудь мне понадобится.</span></p>
+<p>&#8212; А ты спроси у Диего</p>

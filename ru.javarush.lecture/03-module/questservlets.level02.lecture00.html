@@ -1,0 +1,177 @@
+Продвинутая сборка Maven-проекта
+<p>----------------------------------------</p>
+Список плагинов для сборки в Maven
+Плагин компиляции maven-compiler-plugin
+Плагин создания jar-файла maven-jar-plugin
+Плагин генерации номера сборки buildnumber-maven-plugin
+<p>----------------------------------------</p>
+<h2>1.1 Список плагинов для сборки в Maven</h2>
+<p>Сборка в Maven может быть настроена очень гибко. Разработчики Maven специально создали десятки плагинов, используя которые  можно очень гибко настраивать различные сборки. Самые популярные из них приведены в таблице ниже:</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th width="40%">Плагин</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>maven-compiler-plugin</td>
+        <td>Управляет Java-компиляцией</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>maven-resources-plugin</td>
+        <td>Управляет включением ресурсов в сборку</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>maven-source-plugin</td>
+        <td>Управляет включением исходного кода в сборку</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>maven-dependency-plugin</td>
+        <td>Управляет процессом копирования библиотек зависимостей</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td>maven-jar-plugin</td>
+        <td>Плагин для создания итогового jar-файла</td>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td>maven-war-plugin</td>
+        <td>Плагин для создания итогового war-файла</td>
+    </tr>
+    <tr>
+        <td>7</td>
+        <td>maven-surefire-plugin</td>
+        <td>Управляет запуском тестов</td>
+    </tr>
+    <tr>
+        <td>8</td>
+        <td>buildnumber-maven-plugin</td>
+        <td>Генерирует номер сборки</td>
+    </tr>
+    </tbody>
+</table> 
+<p>Каждый плагин по-своему интересен, но разобрать нам придется их все. Начнем мы с главного – плагина по управлению компиляцией.</p>
+<h2>1.2 Плагин компиляции maven-compiler-plugin</h2>
+<p>Самый популярный плагин, позволяющий управлять версией компилятора и используемый практически во всех проектах, – это компилятор <code>maven-compiler-plugin</code>. У него имеются настройки по умолчанию, однако практически в каждом проекте их нужно задать заново.</p>
+<p>В самом простом варианте в плагине нужно задать версию исходного Java-кода и версию Java-машины, под которые осуществляется сборка:</p>
+<pre class=><code>&lt;plugin&gt;
+    &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+    &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+    &lt;version&gt;3.2&lt;/version&gt;
+    &lt;configuration&gt;
+        &lt;source&gt;1.11&lt;/source&gt;
+        &lt;target&gt;1.13&lt;/target&gt;
+        &lt;encoding&gt;UTF-8&lt;/encoding&gt;
+    &lt;/configuration&gt;
+&lt;/plugin&gt;
+</code></pre>
+<p>В примере выше мы задаем три параметра Java-компилятора: <code>source</code>, <code>target</code> и <code>encoding</code>.</p>
+<p>Параметр <code>source</code> позволяет нам задать версию Java для наших исходников. Параметр <code>target</code> – версию Java-машины, под которую нужно скомпилировать классы. Если версия кода или Java-машины не задана, то по умолчанию используется параметр 1.3</p>
+<p>Наконец параметр <code>encoding</code> позволяет указать кодировку Java-файлов. Мы указали <code>UTF-8</code>. Сейчас практически все исходники хранятся в кодировке <code>UTF-8</code>. Но если этот параметр не указан, то выберется текущая кодировка операционной системы. Для Windows – это кодировка <code>Windows-1251</code>.</p>
+<p>Также бывают случаи, когда компьютер, на котором производится сборка имеет несколько установленных версий Java: для сборки разных модулей и/или разных проектов. В этом случае в переменной <code>JAVA_HOME</code> может быть указан только путь к одной из них.</p>
+<p>Кроме того, бывают разные реализации Java-машины: OpenJDK, OracleJDK, Amazon JDK. И чем больше проект, тем сложнее его структура. Но вы можете явно задать плагину путь к компилятору javac с помощью тега <executable>. Его добавили специально на этот случай.</p>
+<p> Плагин <code>maven-compiler-plugin</code> имеет две цели (goals):</p>
+<ul>
+    <li><code>compiler:compile</code> – компиляция исходников, по умолчанию связана с фазой compile</li>
+    <li><code>compiler:testCompile</code> – компиляция тестов, по умолчанию связана с фазой test-compile.</li>
+</ul>
+<p>Также можно указать список аргументов, которые будут переданы javac-компилятору в командной строке:</p>
+<pre class=><code>&lt;plugin&gt;
+    &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+    &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+    &lt;version&gt;3.2&lt;/version&gt;
+    &lt;configuration&gt;
+        &lt;compilerArgs&gt;
+            <span class="text-red">&lt;arg&gt;-verbose&lt;/arg&gt;
+            &lt;arg&gt;-Xlint:all,-options,-path&lt;arg&gt;</span>
+        &lt;/compilerArgs&gt;
+    &lt;/configuration&gt;
+&lt;/plugin&gt;
+</code></pre>
+
+<h2>1.3 Плагин создания jar-файла maven-jar-plugin</h2>
+<p>Если вы захотите собрать с помощью Maven свою собственную jar-библиотеку, то вам понадобится плагин maven-jar-plugin. Этот плагин умеет много полезных вещей.</p>
+<p>Пример такого плагина:</p>
+<pre><code>&lt;plugin&gt;
+    &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+    &lt;artifactId&gt;maven-jar-plugin&lt;/artifactId&gt;
+    &lt;version&gt;2.4&lt;/version&gt;
+    &lt;configuration&gt;
+        <span class="text-green">&lt;includes&gt;
+            &lt;include&gt;**/properties/*&lt;/include&gt;
+        &lt;/includes&gt;</span>
+        <span class="text-red">&lt;archive&gt;
+           &lt;manifestFile&gt;src/main/resources/META-INF/MANIFEST.MF&lt;/manifestFile&gt;
+        &lt;/archive&gt;</span>
+    &lt;/configuration&gt;
+&lt;/plugin&gt;
+</code></pre>
+<p>Во-первых, с его помощью можно указать, какие файлы попадут в библиотеку, а какие – нет. С помощью тегов <code>&lt;include&gt;</code> в секции <code>&lt;includes&gt;</code> можно задать <span class="text-green">список директорий, чей контент нужно добавить в библиотеку</span>.</p>
+<p>Во-вторых, каждая jar-библиотека должна иметь манифест (файл <strong>MANIFEST.MF</strong>). Плагин сам положит его в нужное место библиотеки, вам всего лишь нужно указать, по какому пути его взять. Для этого используется тег <code>&lt;manifestFile&gt;</code>.</p>
+<p>И наконец, плагин может самостоятельно сгенерировать манифест. Для этого вместо тега <code>&lt;manifestFile&gt;</code> вам нужно добавить тег <code>&lt;manifest&gt;</code> и в нем указать данные для будущего манифеста. Пример:</p>
+<pre><code>&lt;configuration&gt;
+    &lt;archive&gt;
+        &lt;manifest&gt;
+            &lt;addClasspath&gt;true&lt;/addClasspath&gt;
+            &lt;classpathPrefix&gt;lib/&lt;/classpathPrefix&gt;
+            &lt;mainClass&gt;ru.javarush.MainApplication&lt;/mainClass&gt;
+        &lt;/manifest&gt;
+    &lt;/archive&gt;
+&lt;/configuration&gt;
+</code></pre>
+<p>Тег <code>&lt;addClasspath&gt;</code> определяет необходимость добавления в манифест <code>CLASSPATH</code>.</p>
+<p>Тег <code>&lt;classpathPrefix&gt;</code> позволяет дописывать префикс (в примере lib) перед каждым ресурсом. Определение префикса в <code>&lt;classpathPrefix&gt;</code> позволяет размещать зависимости в отдельной папке.</p>
+<p>Да, вы можете размещать библиотеки внутри другой библиотеки. И вас ждет много сюрпризов, когда вам нужно будет куда-то передать путь к properties-файлу, который находится в jar-библиотеке, которая находится в jar-библиотеке.</p>
+<p>И наконец, тег <code>&lt;mainClass&gt;</code> указывает на главный исполняемый класс. “Что за  <span class="text-green">главный исполняемый класс?</span>”, – спросите вы. А все дело в том, что Java-машина может запустить программу, которая задана не только Java-классом, но и jar-файлом. И именно для такого случая нужен главный стартовый класс.</p>
+<h2>1.4 Плагин генерации номера сборки buildnumber-maven-plugin</h2>
+<p>Очень часто jar-библиотеки и war-файлы включают в себя информацию с названием проекта и его версией, а также версией сборки. Мало того, что это полезно для управления зависимостями, так еще и упрощает тестирование: понятно, в какой версии библиотеки ошибка исправлена, а в какой – добавлена.</p>
+<p>Чаще всего эту задачу решают так – создают специальный файл <code>application.properties</code>, который содержит всю нужную информацию и включают его в сборку. Так же можно настроить сценарий сборки так, чтобы данные из этого файла перекочевывали в <code>MANIFEST.MF</code> и тому подобное.</p>
+<p>Но что самое интересное, так это то, что у Maven есть специальный плагин, который может генерировать такой application.properties файл. Для этого нужно создать такой файл и заполнить его специальными шаблонами данных. Пример:</p>
+<pre><code># application.properties
+<span class="text-green">app.name=${pom.name}
+app.version=${pom.version}
+app.build=${buildNumber}</span>
+</code></pre>
+<p>Значения всех трех параметров будут подставляться на этапе сборки.</p>
+<p>Параметры <code>pom.name</code> и <code>pom.version</code> будут браться прямо из <code>pom.xml</code>. А для генерации уникального номера сборки в Maven есть специальный плагин – <code>buildnumber-maven-plugin</code>. Смотрите пример ниже:</p>
+<pre><code>&lt;packaging&gt;war&lt;/packaging&gt;
+&lt;version&gt;1.0&lt;/version&gt;
+&lt;plugins&gt;
+    &lt;plugin&gt;
+        <span class="text-red">&lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+        &lt;artifactId&gt;buildnumber-maven-plugin&lt;/artifactId&gt;
+        &lt;version&gt;1.2&lt;/version&gt;</span>
+        <span class="text-user">&lt;executions&gt;
+            &lt;execution&gt;
+                &lt;phase&gt;validate&lt;/phase&gt;
+                &lt;goals&gt;
+                    &lt;goal&gt;create&lt;/goal&gt;
+                &lt;/goals&gt;
+            &lt;/execution&gt;
+        &lt;/executions&gt;</span>
+        <span class="text-green">&lt;configuration&gt;
+            &lt;revisionOnScmFailure&gt;true&lt;/revisionOnScmFailure&gt;
+            &lt;format&gt;{0}-{1,date,yyyyMMdd}&lt;/format&gt;
+            &lt;items&gt;
+                 &lt;item&gt;${project.version}&lt;/item&gt;
+                 &lt;item&gt;timestamp&lt;/item&gt;
+            &lt;/items&gt;
+        &lt;/configuration&gt;</span>
+    &lt;/plugin&gt;
+&lt;/plugins&gt;
+</code></pre>
+<p>В примере выше происходят три важные вещи. <span class="text-red">Во-первых, указан сам плагин для задания версии сборки</span>. <span class="text-user">Во-вторых, указано, что он будет запускаться во время фазы validate (самая первая фаза)</span> и генерировать номер сборки – <code>${buildNumber}</code>.</p>
+<p>И в-третьих, <span class="text-green">указан формат этого номера сборки, который склеивается из нескольких частей</span>. Это версия проекта <code>project.version</code> и текущее время заданное шаблоном. Формат шаблона задается Java-классом <code>MessageFormat</code>.</p>
+
+ <span class="text-red"></span> 
+ <span class="text-green"></span>
+    <span class="text-user"></span>
+
+
+

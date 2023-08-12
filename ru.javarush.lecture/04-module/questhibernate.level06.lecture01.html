@@ -1,0 +1,130 @@
+Создание таблиц
+<p>----------------------------------------</p>
+Осмысленное создание таблиц. 
+Ключи в таблице. 
+Настройки типа данных.
+<p>----------------------------------------</p>
+<h2>Осмысленное создание таблиц</h2>
+
+<p>В предыдущих лекциях мы уже немного познакомились с запросами для создания таблиц, теперь настало время разобраться в этом поглубже.</p>
+
+<p>Создание таблицы очень напоминает объявление класса в Java и имеет такой шаблон:</p>
+ 
+<pre><code><strong><span class="text-red">CREATE TABLE</span> <span class="text-orange">table_name</span> (
+	<span class="text-green">column1</span> <span class="text-user">datatype</span>,
+	<span class="text-green">column2</span> <span class="text-user">datatype</span>,
+	<span class="text-green">column3</span> <span class="text-user">datatype</span>,
+   ....
+);</strong>
+</code></pre>
+ 
+<p>Давай для примера напишем запрос, который создает таблицу с пользователями:</p>
+<pre><code><strong><span class="text-red">CREATE TABLE</span> <span class="text-orange">user</span> (
+	<span class="text-green">id</span> <span class="text-user">INT</span>,
+	<span class="text-green">name</span> <span class="text-user">VARCHAR(100)</span>,
+	<span class="text-green">level</span> <span class="text-user">INT</span>,
+	<span class="text-green">created_date</span> <span class="text-user">DATE</span>,
+);</strong>
+</code></pre>
+ 
+<p>Выглядит очень просто, потому что тут не указано куча нюансов.</p>
+
+<p>Во-первых, у таблицы могут быть дополнительные настройки.</p>
+
+<p>А во-вторых, у каждой колонки могут быть дополнительные настройки.</p>
+
+<p>И начнем мы с настроек создания колонок.</p>
+
+<h2>Ключи в таблице</h2>
+
+<p>У колонки таблицы кроме имени и типа данных могут быть еще такие настройки:</p>
+
+<table>
+<tbody>
+<tr>
+<td><strong>PRIMARY KEY</strong></td>
+<td>Колонка является ключом таблицы</td>
+</tr>
+<tr>
+<td><strong>UNIQUE KEY</strong></td>
+<td>Все значения колонки должны быть уникальны</td>
+</tr>
+<tr>
+<td><strong>DEFAULT value</strong></td>
+<td>Значение по умолчанию</td>
+</tr>
+<tr>
+<td><strong>NOT NULL</strong></td>
+<td>Запрет принимать значение NULL</td>
+</tr>
+<tr>
+<td><strong>AUTO_INCREMENT</strong></td>
+<td>SQL-сервер будет автоматически увеличивать значение при добавлении новой записи в таблицу</td>
+</tr>
+<tr>
+<td><strong>GENERATED</strong></td>
+<td>Вычисляемое поле</td>
+</tr>
+<tr>
+<td><strong>STORAGE</strong></td>
+<td>Где хранить данные: на диске или в памяти</td>
+</tr>
+<tr>
+<td><strong>COMMENT</strong></td>
+<td>Комментарий к колонке, например, название на локальном языке</td>
+</tr>
+</tbody>
+</table>
+
+<p>Ниже мы рассмотрим некоторые из них.</p>
+
+<p>Во-первых, это <strong>PRIMARY KEY</strong>.</p>
+
+<p>Чаще всего это отдельная колонка с именем id и типом INT. Это так называемый “главный ключ” таблицы, и все ее строки имеют уникальные значения этого ключа. В первую очередь он используется для того, чтобы другие таблицы могли ссылаться на записи нашей таблицы и указывать на ее определенную запись.</p>
+
+<p>Во-вторых, это <strong>UNIQUE KEY</strong>.</p>
+
+<p>Чем-то он похож на PRIMARY KEY, хотя смысловая нагрузка у него абсолютно другая. Если колонка имеет атрибут UNIQUE, то все значения этой колонки должны быть уникальны. Хороший пример отличия UNIQUE KEY и PRIMARY KEY – это список людей в паспортном столе.</p>
+
+<p>Налоговый номер – это PRIMARY KEY, он используется для того, чтобы легко было ссылаться на нужного человека из других таблиц.</p>
+
+<p>Номер паспорта – это UNIQUE KEY. Не может быт двух людей с одинаковым номером паспорта. Однако номер паспорта можно поменять. Например, при смене фамилии. А налоговый номер останется с вами навсегда. Это и есть основная задача PRIMARY KEY.
+Пример запроса с указанием PRIMARY KEY:</p>
+ 
+<pre><code><strong><span class="text-red">CREATE TABLE</span> <span class="text-orange">user</span> (
+	<span class="text-green">id</span> <span class="text-user">INT</span> <span class="text-red">PRIMARY KEY</span>,
+	<span class="text-green">name</span> <span class="text-user">VARCHAR(100)</span>,
+	<span class="text-green">level</span> <span class="text-user">INT</span>,
+	<span class="text-green">created_date</span> <span class="text-user">DATE</span>,
+);</strong>
+</code></pre>
+ 
+<h2>Настройки типа данных</h2>
+
+<p>Есть менее важные, но полезные атрибуты.</p>
+
+<p><strong>DEFAUL value</strong></p>
+
+<p>При вставке данных (добавлении новой строки) в таблицу можно не указывать значения некоторых колонок, если те имеют значение по умолчанию. В таком случае SQL-сервер просто установит значение колонки сам.</p>
+
+<p>Начиная с 8-й версии MySQL в качестве значения можно указывать выражение.</p>
+
+<p><strong>NOT NULL</strong></p>
+
+<p>Если при создании таблицы у колонки указать атрибут NOT NULL, то SQL-сервер будет следить за тем, чтобы в эту колонку нельзя было сохранить значение NULL. По умолчанию у любой колонки может быть значение NULL, даже у колонки с типом INT. Что немного неочевидно для Java-программиста.</p>
+
+<p><strong>AUTO_INCREMENT</strong></p>
+
+<p>Обычно он используется для id колонок. Когда ты добавляешь новую строку в таблицу, то очень хочется, чтобы SQL-сервер сам присвоил id для этой записи. Кто как не сервер лучше всего знает, сколько у него строк в таблице. Особенно если к одному SQL-серверу идут запросы с разных клиентов.</p>
+
+<p>Именно это и делает атрибут AUTO_INCREMENT. При добавлении новой строки мы просто не передаем ничего в качестве id, и SQL-сервер сам укажет нужный ID для этой записи: он просто возьмет ID последней существующей записи и увеличит его на 1.
+Этот атрибут можно использовать только с типами целых и вещественных чисел.
+И, конечно же, давай сделаем пример создания такой таблицы:</p>
+ 
+<pre><code><strong><span class="text-red">CREATE TABLE</span> <span class="text-orange">user</span> (
+	<span class="text-green">id</span> <span class="text-user">INT</span> <span class="text-viola">PRIMARY KEY</span> <span class="text-red">AUTO_INCREMENT</span>,
+	<span class="text-green">name</span> <span class="text-user">VARCHAR(100)</span> <span class="text-red">NOT NULL</span>,
+	<span class="text-green">level</span> <span class="text-user">INT</span> <span class="text-red">DEFAULT 1</span>,
+	<span class="text-green">created_date</span> <span class="text-user">DATE</span> <span class="text-red">NOT NULL</span>,
+);</strong>
+</code></pre>

@@ -1,0 +1,167 @@
+Полезные Maven-плагины
+<p>----------------------------------------</p>
+Свой maven-репозиторий на GitHub. 
+Запаковываем сборку в Docker образ.
+<p>----------------------------------------</p>
+    <h2>Свой maven-репозиторий на GitHub</h2>
+
+    <p>Разработчики могут загружать свою библиотеку в GitHub, для этого у него есть специальный плагин <span class="text-bold">site-maven-plugin</span>. Давай рассмотрим пример его использования:</p>
+
+    <pre><code>&lt;project>
+    &lt;properties>
+        <span class="text-orange">&lt;github.global.server>github&lt;/github.global.server>
+        &lt;github.maven-plugin>0.9&lt;/github.maven-plugin></span>
+    &lt;/properties>
+ 
+    &lt;distributionManagement>
+    	<span class="text-neon">&lt;repository>
+            &lt;id>internal.repo&lt;/id>
+        	&lt;name>Temporary Staging Repository&lt;/name>
+            &lt;url>file://${project.build.directory}/mvn-repo&lt;/url>
+    	&lt;/repository></span>
+    &lt;/distributionManagement>
+ 
+    &lt;build>
+    	&lt;plugins>
+        	<span class="text-red">&lt;plugin>
+                &lt;artifactId>maven-deploy-plugin&lt;/artifactId>
+    	        &lt;version>2.8.1&lt;/version>
+            	&lt;configuration>
+                    <span class="text-bold">&lt;altDeploymentRepository>
+                        internal.repo::default::file://${project.build.directory}/mvn-repo
+                    &lt;/altDeploymentRepository></span>
+            	&lt;/configuration>
+        	&lt;/plugin></span>
+        	<span class="text-green">&lt;plugin>
+                &lt;groupId>com.github.github&lt;/groupId>
+                &lt;artifactId>site-maven-plugin&lt;/artifactId>
+                &lt;version>${github.maven-plugin}&lt;/version>
+            	&lt;configuration>
+                	&lt;message>Maven artifacts for ${project.version}&lt;/message>
+                    &lt;noJekyll>true&lt;/noJekyll>
+                    &lt;outputDirectory>${project.build.directory}/mvn-repo&lt;/outputDirectory>
+                	&lt;branch>refs/heads/mvn-repo&lt;/branch>
+                    &lt;includes>**/*&lt;/includes>
+                	&lt;repositoryName>SuperLibrary&lt;/repositoryName>
+                	&lt;repositoryOwner>javarushu-student&lt;/repositoryOwner>
+            	&lt;/configuration>
+            	&lt;executions>
+                	&lt;execution>
+                    	&lt;goals>
+                            &lt;goal>site&lt;/goal>
+                    	&lt;/goals>
+                        &lt;phase>deploy&lt;/phase>
+                	&lt;/execution>
+            	&lt;/executions>
+        	&lt;/plugin></span>
+    	&lt;/plugins>
+    &lt;/build>
+ 
+&lt;/project>
+</code></pre>
+
+    <p>Разберемся, что тут написано.</p>
+
+    <p><span class="text-neon">Синим цветом выделено создание временного локального репозитория.</span> Технически это просто папка, но нам нужно, чтобы Maven-рассматривал ее как отдельный репозиторий.</p>
+
+    <p><span class="text-bold">Красным цветом мы выделили запуск плагина maven-deploy-plugin</span>, где указали, что собранную библиотеку нужно класть именно в этот временный репозиторий.</p>
+
+    <p><span class="text-green">И, наконец, зеленым цветом выделен плагин site-maven-plugin</span>, который должен взять все файлы из репозитория и закомитить их на GitHub. Тут понадобятся некоторые пояснения. Все параметры делятся на две группы: что заливаем и куда заливаем.</p>
+
+    <span class="text-bold">Что заливаем:</span>
+
+    <ul>
+        <li><span class="text-bold">outputDirectory</span> — директория, где брать файлы для коммита</li>
+        <li><span class="text-bold">includes</span> — задает маску файлов для коммита</li>
+    </ul>
+
+    <span class="text-bold">Куда заливаем:</span>
+
+    <ul>
+        <li><span class="text-bold">repositoryOwner</span> — имя владельца репозитория на GitHub</li>
+        <li><span class="text-bold">repositoryName</span> — имя репозитория</li>
+        <li><span class="text-bold">branch</span> — задает ветку репозитория на GitHub, в которую комитить</li>
+        <li><span class="text-bold">message</span> — сообщение, которое будет добавлено при коммите</li>
+    </ul>
+
+    <p>Так же нужно указать логин и пароль к своему репозиторию в Maven <span class="text-bold">setting.xml</span>:</p>
+ 
+    <pre><code>&lt;settings>
+  &lt;servers>
+    &lt;server>
+  	&lt;id>github&lt;/id>
+      &lt;username>[username]&lt;/username>
+      &lt;password>[password]&lt;/password>
+    &lt;/server>
+  &lt;/servers>
+&lt;/settings>
+</code></pre>
+ 
+    <p>Чтобы подключить (использовать) библиотеку из GitHub-репозитория в другой проект, нужно указать этот репозиторий в своем <span class="text-bold">pom.xml</span>:</p>
+ 
+    <pre><code>&lt;repositories>
+    &lt;repository>
+        &lt;id>[name-project]-mvn-repo&lt;/id>
+        &lt;url>https://raw.github.com/[username]/[name-project]/mvn-repo/&lt;/url>
+    	&lt;snapshots>
+            &lt;enabled>true&lt;/enabled>
+            &lt;updatePolicy>always&lt;/updatePolicy>
+    	&lt;/snapshots>
+	&lt;/repository>
+&lt;/repositories>
+</code></pre>
+ 
+    <p>После этого Maven будет понимать, откуда брать библиотеку.</p>
+
+    <ul>
+        <li><span class="text-bold">[name-project]</span> — это имя проекта, в нашем случае SuperLibrary</li>
+        <li><span class="text-bold">[username]</span> — это логин на GitHub, в примере это javarush-user</li>
+    </ul>
+ 
+    <h2>Запаковываем сборку в Docker образ</h2>
+
+    <p>Мы живем в новое время, когда проекты в результате сборки могу класться в Maven-репозиторий, а могут и в docker storage.</p>
+
+    <p>Чтобы подружить Maven и Docker, нам понадобиться плагин <span class="text-bold">docker-maven-plugin</span>. Ничего сложного:</p>
+ 
+    <pre><code>  &lt;build>
+    &lt;plugins>
+  	  &lt;plugin>
+        <span class="text-green">&lt;groupId>com.spotify&lt;/groupId>
+        &lt;artifactId>docker-maven-plugin&lt;/artifactId>
+    	&lt;version>0.4.10&lt;/version></span>
+    	&lt;configuration>
+          <span class="text-red">&lt;dockerDirectory>${project.basedir}&lt;/dockerDirectory>
+      	  &lt;imageName>javarush/${project.artifactId}&lt;/imageName></span>
+    	&lt;/configuration>
+    	&lt;executions>
+      	  <span class="text-neon">&lt;execution>
+            &lt;phase>package&lt;/phase>
+        	&lt;goals>
+          	&lt;goal>build&lt;/goal>
+        	&lt;/goals>
+      	  &lt;/execution></span>
+    	&lt;/executions>
+  	  &lt;/plugin>
+    &lt;/plugins>
+  &lt;/build>
+</code></pre>
+ 
+    <p><span class="text-neon">Синим выделен момент, где мы добавили goal bulid в package-фазу сборки.</span> Его можно вызвать с помощью команды <span class="text-bold">mvn docker:build</span>.</p>
+
+    <p>Тег <span class="text-bold">dockerDirectory</span> задает папку, где находится Dockerfile. А имя образа задается с помощью тега <span class="text-bold">imageName</span>.</p>
+
+    <p>Если проект упакован в jar-файл, то docker-файл будет выглядеть примерно так:</p>
+ 
+    <pre><code>FROM java:11
+EXPOSE 8080
+ADD /target/demo.jar demo.jar
+ENTRYPOINT ["java","-jar","demo.jar"]
+</code></pre>
+ 
+    <p>Если же ты упаковываешь web-приложение, то может понадобиться добавить Tomcat:</p>
+
+    <pre><code>FROM tomcat8
+ADD sample.war ${CATALINA_HOME}/webapps/ROOT.war
+CMD ${CATALINA_HOME}/bin/catalina.sh run
+</code></pre>

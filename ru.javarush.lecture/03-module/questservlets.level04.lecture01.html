@@ -1,0 +1,77 @@
+Основные аннотации Mockito
+<p>----------------------------------------</p>
+Аннотация @Mock
+Аннотация @Spy
+<p>----------------------------------------</p>
+<h2>2.1 Аннотация @Mock</h2>
+<p>Есть два способа работы с мок-объектами в Mockito. Первый – это <strong>создать полностью виртуальный объект</strong>, второй – это <strong>обернуть существующий объект</strong> в некую обертку. Начнем с первого.</p>
+<p>Чтобы создать полностью виртуальный объект, нужно написать код:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present "><code><span class="text-user">ИмяКласса</span> <span class="text-green">имяПеременной</span> = <span class="text-red">Mockito</span>.<span class="text-orange">mock</span>(<span class="text-user">ИмяКласса</span>.class);</code></pre>
+</div>
+<p>Давайте ради примера создадим мок класса ArrayList:</p>
+<pre class='language-java line-numbers'><code>
+@ExtendWith(MockitoExtension.class)
+class MockTest {
+<span class="text-green">    @Test</span>
+    public void whenNotUseMockAnnotation_thenCorrect() {
+<span class="text-text">        List</span><span class="text-green"> mockList</span> = <span class="text-red">Mockito</span>.<span class="text-orange">mock</span>(<span class="text-user">ArrayList</span>.class);
+        //эти методы не будут ничего делать – это заглушки
+<span class="text-green">        mockList</span>.add("one");  
+<span class="text-green">        mockList</span>.add("two");
+    }
+}
+</code></pre>
+<p>В этом примере мы создаем фейковый объект типа ArrayList и сохраняем ссылку на него в переменную mockList. Методы этого объекта ничего не делают.</p>
+<p>Кстати, этот код можно записать еще короче, так как для этого есть специальная аннотация <code>@Mock</code>.</p>
+<pre class='language-java line-numbers'><code>
+@ExtendWith(MockitoExtension.class)
+class MockTest {
+<span class="text-green">    @Mock</span>
+<span class="text-red">    List mockList;</span>
+ 
+<span class="text-green">    @Test</span>
+    public void whenNotUseMockAnnotation_thenCorrect() {
+        //эти методы не будут ничего делать – это заглушки
+<span class="text-red">        mockList</span>.add("one");  
+<span class="text-red">        mockList</span>.add("two");
+    }
+}
+</code></pre>
+<p>Во втором случае <code><span class="text-yellow">MockitoExtension</span></code> сам проанализирует код класса и создаст нужные заглушки. Вызывать метод <code>Mockito.mock()</code> не нужно. Одна аннотация и виртуальный объект готов. Красота.</p>
+<h2>2.2 Аннотация @Spy</h2>
+<p>Второй важный тип объектов в Mockito – это обертки над существующими объектами. Они позволяют с одной стороны пользоваться уже существующими классами, а с другой – перехватывать обращение ко всем методам и переменным таких объектов: подкорректировать их работу, где это нужно. Используются так же часто, как и Mock-объекты.</p>
+<p>Чтобы создать обертку над объектом, нужно написать код:</p>
+ <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present "><code><span class="text-user">ИмяКласса</span> <span class="text-green">имяПеременной</span> = <span class="text-red">Mockito</span>.<span class="text-orange">spy</span>(<span class="text-user">объект</span>);</code></pre>
+</div>
+<p>Пример с оберткой вокруг класса ArrayList:</p>
+<pre class='language-java line-numbers'><code>
+@ExtendWith(MockitoExtension.class)
+class SpyTest {
+<span class="text-green">    @Test</span>
+    public void whenMockAnnotation() {
+<span class="text-text">        List&lt;String&gt; <span class="text-green">mockList</span> = <span class="text-red">Mockito</span>.<span class="text-orange">spy</span>(<span class="text-user">new ArrayList&lt;String&gt;()</span>);
+        //эти методы будут работать!
+<span class="text-green">        mockList</span>.add("one");  
+<span class="text-green">        mockList</span>.add("two");
+    }
+}
+</code></pre>
+<p>В самом простом варианте обращение к <span class="text-green">объекту-обертке просто перенаправляет вызовы к оригинальному объекту, ссылку на который он хранит у себя внутри</span>. Все будет работать, как и с оригинальным объектом.</p>
+<p>Создать обертку так же можно с помощью аннотации – <code>@Spy</code>.</p>
+<pre class='language-java line-numbers'><code>
+@ExtendWith(MockitoExtension.class)
+class SpyTest {
+<span class="text-green">    @Spy</span>
+<span class="text-red">    List mockList =</span><span class="text-user"> new ArrayList&lt;String&gt;();</span>
+ 
+<span class="text-green">    @Test</span>
+    public void whenMockAnnotation() {
+        // эти методы будут работать!
+<span class="text-red">        mockList</span>.add("one");  
+<span class="text-red">        mockList</span>.add("two");
+    }
+}
+</code></pre>
+<p>Эти два примера кода эквиваленты.</p>

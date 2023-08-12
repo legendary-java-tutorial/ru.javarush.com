@@ -1,0 +1,327 @@
+Современная работа с датой
+<p>----------------------------------------</p>
+Введение в Date Time API  Создателям Java не сильно нравилась текущая ситуация с классами Date и Calendar. Они были хороши в свое время, но времена меняются. И нужно было что-то простое, мощное и надежное. И вот вместе с выходом Java8 (15 лет спустя после выхода Calendar) был представлен Java Da
+<p>----------------------------------------</p>
+<h2>1. Введение в Date Time API</h2>
+<p><img data-id="7c436671-306e-45f7-887f-5fe1587ddb66" src="https://cdn.javarush.com/images/article/7c436671-306e-45f7-887f-5fe1587ddb66/original.png" alt="Введение в Date Time API"></p>
+<p>Создателям Java не сильно нравилась текущая ситуация с классами Date и Calendar. Они были хороши в свое время, но времена меняются. И нужно было что-то простое, мощное и надежное. И вот вместе с выходом Java8 (15 лет спустя после выхода <code><span class="text-viola">Calendar</span></code>) был представлен <strong>Java Date Time API</strong>: набор классов, которые должны решить все возможные проблемы со временем.</p>
+<p>Классов было так много, что их решили разнести по нескольким пакетам:</p>
+<p>Пакет <code>java.time</code> — базовый пакет для Java Date Time API: в нем содержатся такие классы как <code>LocalDate</code>, <code>LocalTime</code>, <code>LocalDateTime</code>, <code>Instant</code>, <code>Period</code>, <code>Duration</code>. Все объекты этих классов — <code>immutable</code>: их нельзя изменить после создания.</p>
+<p>Пакет <code>java.time.format</code> содержит в себе классы для форматирования времени: преобразования времени (и даты) в текстовую строку и обратно. Например, в нем содержится такой универсальный класс как <code>DateTimeFormatter</code>, который пришел на смену <code>SimpleDateFormat</code>.</p>
+<p>Пакет <code>java.time.zone</code> содержит классы для работы с часовыми поясами (time zones). Он содержит такие классы как <code>TimeZone</code> и <code>ZonedDateTime</code>. Если вы пишете код для сервера, клиенты которого находятся в разных частях света, эти классы вам очень понадобятся.</p>
+<hr>
+<h2>2. Класс <code>LocalDate</code></h2>
+<p>Первый и самый полезный класс из Date Time API, который мы изучим — это класс <code>LocalDate</code>. Как вы, скорее всего, догадываетесь по его названию, этот класс создан для работы с датой.</p>
+<p>Объекты этого класса не изменяются после создания (класс <code>LocalDate</code> immutable). Зато это добавило классу простоты и надежности. Особенно если с объектом класса одновременно взаимодействуют несколько нитей (потоков исполнения).</p>
+<p>Чтобы создать новый объект класса <code>LocalDate</code>, нужно использовать один из статических методов. Вот список основных.</p>
+<p><strong>Получение текущей даты</strong></p>
+<p>Чтобы получить текущую дату, нужно воспользоваться статическим методом <code><span class="text-red">now</span>()</code>. Это гораздо проще, чем кажется:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code><span class="text-neon">LocalDate</span> today = <span class="text-neon">LocalDate</span>.<span class="text-red">now</span>();</code></pre>
+</div>
+<p>Где <code>today</code> — это переменная класса <code><span class="text-neon">LocalDate</span></code>, а <code><span class="text-neon">LocalDate</span>.now()</code> — вызов статического метода <code><span class="text-red">now</span>()</code> у класса <code><span class="text-neon">LocalDate</span></code>.</p>
+<p>Пример:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Вывод на экран</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code><span class="text-neon">LocalDate</span> <span class="text-user">today</span> = <span class="text-neon">LocalDate</span>.<span class="text-red">now</span>();
+System.out.println("Сегодня = " + <span class="text-user">today</span>);</code></pre>
+        </td>
+        <td>
+                <pre><code>
+Сегодня = 2019-02-22</code></pre>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p><strong>Получение даты в определенном часовом поясе</strong></p>
+<p>Также у класса <code>LocalDate</code> есть разновидность метода <code>now(ZoneId)</code>, который позволяет получить текущую дату в определенном часовом поясе.</p>
+<p>Для этого нам понадобится еще один класс — <code>ZoneId</code> (java.time.ZoneId). У него есть метод <code>of()</code>, который возвращает объект <code>ZoneId</code> по имени часового пояса.</p>
+<p>Чтобы определить текущую дату в Шанхае, нужно написать код:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Вывод на экран</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>ZoneId  <span class="text-orange">timezone</span> = ZoneId.of(<span class="text-green">"Asia/Shanghai"</span>);
+<span class="text-neon">LocalDate</span> <span class="text-user">today</span> = <span class="text-neon">LocalDate</span>.<span class="text-red">now</span>(timezone);
+System.out.println("Сейчас в Шанхае = " + <span class="text-user">today</span>);</code></pre>
+        </td>
+        <td>
+                <pre><code>
+
+Сейчас в Шанхае = 2019-02-22</code></pre>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p>Список имен всех часовых поясов (time zone) можно найти в интернете.</p>
+<hr>
+<h2>3. Получение конкретной даты</h2>
+<p>Чтобы получить объект <code><span class="text-neon">LocalDate</span></code>, содержащий определенную дату, нужно воспользоваться статическим методом <code><span class="text-red">of</span>()</code>. Выглядит все тоже очень просто и понятно:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present-sm language-java"><code><span class="text-neon">LocalDate</span> date = <span class="text-neon">LocalDate</span>.<span class="text-red">of</span>(2019, Month.<span class="text-green">FEBRUARY</span>, 22);</code></pre>
+</div>
+<p>Где <code>date</code> — это переменная класса <code><span class="text-neon">LocalDate</span></code>, а <code><span class="text-neon">LocalDate</span>.<span class="text-red">of</span>()</code> — вызов статического метода <code><span class="text-red">of</span>()</code> у класса <code><span class="text-neon">LocalDate</span></code>.</p>
+<p>Также тут мы видим использование специальной константы <code><span class="text-green">FEBRUARY</span></code> класса <code>Month</code> (java.time.Month) для задания месяца Февраль.</p>
+<p>Можно задать месяц и по старинке — с помощью числа:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present-sm language-java"><code><span class="text-neon">LocalDate</span> date = <span class="text-neon">LocalDate</span>.<span class="text-red">of</span>(2019, <span class="text-user">2</span>, <span class="text-user">22</span>);</code></pre>
+</div>
+<p><span class="text-viola">Двойка? Вместо месяца Февраль? Это что, месяцы теперь опять нумеруются с единицы?</span></p>
+<p><span class="text-viola">Да, наконец-то спустя почти 20 лет после создания Java месяцы перестали нумеровать с нуля.</span></p>
+<p>Пример:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Вывод на экран</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code><span class="text-neon">LocalDate</span> <span class="text-user">today</span> = <span class="text-neon">LocalDate</span>.<span class="text-red">of</span>(2019, 2, 22);
+System.out.println("Сегодня = " + <span class="text-user">today</span>);</code></pre>
+        </td>
+        <td>
+                <pre><code>
+Сегодня = 2019-02-22</code></pre>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p><strong>Получение даты по номеру дня</strong></p>
+<p>Есть еще один любопытный метод создания даты: с помощью метода <code><span class="text-red">ofYearDay</span></code> можно получить дату, имея только номер года и номер дня года. Общий вид такой:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present-sm language-java"><code><span class="text-neon">LocalDate</span> date = <span class="text-neon">LocalDate</span>.<span class="text-red">ofYearDay</span>(<span class="text-user">год</span>, <span class="text-user">день</span>);</code></pre>
+</div>
+<p>Где год — это номер года, а день — номер дня в году.</p>
+<p>Пример:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Вывод на экран</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code><span class="text-neon">LocalDate</span> <span class="text-user">today</span> = LocalDate.<span class="text-red">ofYearDay</span>(<span class="text-user">2019</span>, <span class="text-user">100</span>);
+<span>System.out.println("Сегодня = " + today);</span></code></pre>
+        </td>
+        <td>
+                <pre><code>
+Сегодня = 2019-04-10</code></pre>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p>Сотый день в 2019 году — это 10 апреля.</p>
+<p><strong>Получение даты Unix</strong></p>
+<p>Помните, что объекты класса <code>Date</code> всегда хранили время в миллисекундах с 1 января 1970 года? Чтобы программисты не скучали по старым добрым временам, в класс <code>LocalDate</code> добавили метод <code><span class="text-red">ofEpochDay</span>()</code>, который возвращает дату, отсчитанную от 1 января 1970 года. Общий вид такой:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present-sm language-java"><code><span class="text-neon">LocalDate</span> date = LocalDate.<span class="text-red">ofEpochDay</span>(<span class="text-user">день</span>);</code></pre>
+</div>
+<p>Где <code><span class="text-user">день</span></code> — это количество дней, прошедшее с 1 января 1970 года.</p>
+<p>Пример:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Вывод на экран</th>
+    </tr>
+    <tr>
+        <td>
+                <pre class="language-java"><code><span class="text-neon">LocalDate</span> <span class="text-user">today</span> = LocalDate.<span class="text-red">ofEpochDay</span>(<span class="text-user">1</span>);
+System.out.println("Сегодня = " + <span class="text-user">today</span>);</code></pre>
+        </td>
+        <td>
+                <pre><code>
+Сегодня = 1970-01-02</code></pre>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<hr>
+<h2>4. Получение фрагментов даты</h2>
+<p>Изменять объекты класса <code>LocalDate</code> нельзя, а вот получать отдельные фрагменты даты еще как можно. Для этого у объектов класса <code>LocalDate</code> есть несколько методов:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Метод</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>int getYear()</code></pre>
+        </td>
+        <td>Возвращает год из конкретной даты</td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>Month getMonth()</code></pre>
+        </td>
+        <td>Возвращает месяц даты — одну из специальных констант<br><code>JANUARY, FEBRUARY, ...;</code></td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>int getMonthValue()</code></pre>
+        </td>
+        <td>Возвращает номер месяца из даты. Январь == 1.</td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>int getDayOfMonth()</code></pre>
+        </td>
+        <td>Возвращает номер дня в месяце</td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>int getDayOfYear()</code></pre>
+        </td>
+        <td>Возвращает номер дня с начала года</td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>DayOfWeek getDayOfWeek()</code></pre>
+        </td>
+        <td>
+            Возвращает день недели: одну из специальных констант<br>
+            <code>MONDAY, TUESDAY, ...;</code>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>IsoEra getEra()</code></pre>
+        </td>
+        <td>Возвращает эру: константа <code>BC</code> (Before Current Era) и <code>CE</code>(Current Era)</td>
+    </tr>
+    </tbody>
+</table>
+<p>Пример:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Вывод на экран</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code><span class="text-neon">LocalDate</span> <span class="text-user">today</span> = <span class="text-neon">LocalDate</span>.<span class="text-red">now</span>();
+System.out.println(<span class="text-user">today</span>.getYear());
+System.out.println(<span class="text-user">today</span>.getMonth());
+System.out.println(<span class="text-user">today</span>.getMonthValue());
+System.out.println(<span class="text-user">today</span>.getDayOfMonth());
+System.out.println(<span class="text-user">today</span>.getDayOfWeek());</code></pre>
+        </td>
+        <td>
+                <pre><code>
+2019
+FEBRUARY
+2
+22
+FRIDAY</code></pre>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<hr>
+<h2>5. Изменение даты в объекте <code>LocalDate</code></h2>
+<p>Класс <code>LocalDate</code> содержит несколько методов, которые позволяют работать с датой. Эти методы реализованы по аналогии с методами класса <code>String</code>: <span class="text-orange">каждый из этих методов не меняет существующий объект LocalDate, а возвращает новый с нужными данными.</span></p>
+<p>Вот какие методы есть у класса <code>LocalDate</code>:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Метод</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>plusDays(int days)</code></pre>
+        </td>
+        <td>Добавляет определенное количество дней к дате</td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>plusWeeks(int weeks)</code></pre>
+        </td>
+        <td>Добавляет недели к дате</td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>plusMonths(int months)</code></pre>
+        </td>
+        <td>Добавляет месяцы к дате</td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>plusYears(int years)</code></pre>
+        </td>
+        <td>Добавляет годы к дате</td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>minusDays(int days)</code></pre>
+        </td>
+        <td>Отнимает дни от даты</td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>minusWeeks(int weeks)</code></pre>
+        </td>
+        <td>Отнимает недели от даты</td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>minusMonths(int months)</code></pre>
+        </td>
+        <td>Отнимает месяцы от даты</td>
+    </tr>
+    <tr>
+        <td>
+            <pre class="language-java"><code>minusYears(int years)</code></pre>
+        </td>
+        <td>Отнимает годы от даты</td>
+    </tr>
+    </tbody>
+</table>
+<p>Пример:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Вывод на экран</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code>LocalDate <span class="text-viola">birthday</span> = LocalDate.of(2019, 2, 28);
+LocalDate <span class="text-green">nextBirthday</span> = <span class="text-viola">birthday</span>.<span class="text-red">plusYears</span>(1);
+LocalDate <span class="text-user">firstBirthday</span> = <span class="text-viola">birthday</span>.<span class="text-red">minusYears</span>(30);
+
+System.out.println(<span class="text-viola">birthday</span>);
+System.out.println(<span class="text-green">nextBirthday</span>);
+System.out.println(<span class="text-user">firstBirthday</span>);</code></pre>
+        </td>
+        <td>
+                <pre><code>
+
+
+
+2019-02-28
+2020-02-28
+1989-02-28</code></pre>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p><span class="text-orange">Объект <code><span class="text-orange">birthday</span></code>, чьи методы мы вызываем, не меняется.</span> Вместо этого его методы возвращают новые объекты, которые и содержат нужные данные.</p>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task16.task1607"></div>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task16.task1608"></div>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task16.task1609"></div>

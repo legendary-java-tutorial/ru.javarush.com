@@ -1,0 +1,127 @@
+Метод newScheduledThreadPool
+<p>----------------------------------------</p>
+Еще один тип пула потоков — пул запланированных задач. Судя по названию, можно предположить, что мы используем данный тип для планирования запуска той или иной задачи, распределенного во времени...
+<p>----------------------------------------</p>
+    <p>Еще один тип пула потоков — пул запланированных задач. Судя по названию, можно предположить, что мы используем данный тип для планирования запуска той или иной задачи, распределенного во времени.</p>
+
+    <p>Этот вид сервиса полезен, когда у нас есть задача запуска той или иной активности с условием истечения некоторого времени или периодичности выполнения задачи.</p>
+
+    <p>Для использования мы вызываем <span class="code text-orange">Executors.newScheduledThreadPool(1)</span>.</p>
+
+    <p>О параметрах поговорим чуть позже, сейчас нам важно понимать, что при вызове этого метода нам возвращается объект типа <span class="text-neon"><span class="text-bold"><em>ScheduledExecutorService</em></span></span>.</p>
+
+    <p><span class="text-neon"><span class="text-bold"><em>ScheduledExecutorService</em></span></span> — это интерфейс, унаследованный от <span class="text-green"><span class="text-bold"><em>ExecutorService</em></span></span>.</p>
+
+    <p>В этом интерфейсе появляются следующие методы:</p>
+ 
+    <table>
+        <tbody>
+            <tr>
+                <th>Метод</th>
+                <th>Пояснение</th>
+            </tr>
+            <tr>
+                <td>
+                    <pre class='language-java line-numbers'><code>
+ScheduledFuture&lt;?&gt;
+schedule(Runnable command,
+                                  long delay, TimeUnit unit);
+</code></pre>
+                </td>
+                <td>Создает и выполняет однократное действие, которое выполняется после заданной задержки.</td>
+            </tr>
+            <tr>
+                <td>
+                    <pre class='language-java line-numbers'><code>
+&lt;V&gt; ScheduledFuture&lt;V&gt;
+schedule(Callable&lt;V&gt; callable,
+                                      long delay, TimeUnit unit);
+</code></pre>
+                </td>
+                <td>Создает и выполняет объект <mark class="green">ScheduledFuture</mark>, который выполняется после заданной задержки.</td>
+            </tr>
+            <tr>
+                <td>
+                    <pre class='language-java line-numbers'><code>
+ScheduledFuture&lt;?&gt;
+scheduleAtFixedRate(Runnable command,
+                                             long initialDelay,
+                                             long period,
+                                             TimeUnit unit);
+</code></pre>
+                </td>
+                <td>Создает и выполняет периодическое действие, которое выполняется вначале после заданной начальной задержки, а затем с заданным периодом; то есть выполнение начнется после <span class="text-green">initialDelay</span>, затем <span class="text-green">initialDelay+period</span>, <span class="text-green">theninitialDelay + 2 * period</span> и так далее.</td>
+            </tr>
+            <tr>
+                <td>
+                    <pre class='language-java line-numbers'><code>
+ScheduledFuture&lt;?&gt; scheduleWithFixedDelay(Runnable command,
+                                                long initialDelay,
+                                                long delay,
+                                                TimeUnit unit);
+</code></pre>
+                </td>
+                <td>Создает и выполняет периодическое действие, которое выполняется сначала после данной первоначальной задержки, а затем с заданной задержкой между завершением одного выполнения и началом следующего.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>Как мы видим, интерфейс нам предоставляет возможность запуска задач с периодичностью или спустя какое-то время.</p>
+
+    <p>Далее о методе newScheduledThreadPool.</p>
+
+    <p>Вызвать мы его можем несколькими способами:</p>
+
+    <table>
+        <tbody>
+            <tr>
+                <td>
+                    <pre class='language-java line-numbers'><code>
+newScheduledThreadPool(int corePoolSize)
+</code></pre>
+                </td>
+                <td><span class="text-green">corePoolSize</span> — количество потоков, которые нужно хранить в пуле, даже если они простаивают.</td>
+            </tr>
+            <tr>
+                <td>
+                    <pre class='language-java line-numbers'><code>
+newScheduledThreadPool(int corePoolSize, ThreadFactory threadFactory)
+</code></pre>
+                </td>
+                <td>
+                    <p><span class="text-green">corePoolSize</span> количество потоков, которые нужно хранить в пуле, даже если они простаивают.</p>
+                    <p><span class="text-green">threadFactory</span> — фабрика, используемая при создании новых потоков.</p>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>Оба метода создадут пул потоков, который может планировать выполнение команд после заданной задержки или для периодического выполнения. </p>
+
+    <p>Давайте рассмотрим работу <span class="text-green"><span class="text-bold"><em>ScheduledThreadPool</em></span></span> на примере.</p>
+
+    <p>Например, у нас есть задача проверять почту каждые 5 секунд, при этом эта проверка не должна сказываться на работе основной программы и несет за собой возможное дополнительное потребление ресурсов.</p>
+
+    <p>У нас есть класс задачи, который моделирует проверку почты. </p>
+
+    <pre class='language-java line-numbers'><code>
+public class Task implements Runnable {
+   @Override
+   public void run() {
+       System.out.println("Проверяем почту...");
+   }
+}
+</code></pre>
+
+    <p>Далее мы создаем пул потоков и задаем расписание для выполнения проверки.
+
+    <pre class='language-java line-numbers'><code>
+ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
+executorService.scheduleAtFixedRate(new Task(), 0, 5, TimeUnit.SECONDS);
+</code></pre>
+
+    <p>В выводе мы видим каждые 5 секунд:</p>
+
+    <div class="terminal">Проверяем почту...</div>
+
+    <p>В целом, такой пул, как и в примере, мы можем использовать для выполнения “сервисных” периодических задач. Сервисными мы называем те задачи, которые должны быть выполнены вне зависимости от работы основного функционала программы.</p>

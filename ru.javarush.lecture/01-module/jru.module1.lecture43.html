@@ -1,0 +1,89 @@
+Selector
+<p>----------------------------------------</p>
+В этой лекции мы познакомимся с селектором, представленным классом Selector. Класс находится в пакете java.nio.channels, поэтому для его использования не понадобится ничего скачивать или настраивать. Объект типа Selector может следить за одним...
+<p>----------------------------------------</p>
+    <p>В этой лекции мы познакомимся с селектором, представленным классом <span class="code"><span class="text-green">Selector</span></span>. Класс находится в пакете <span class="text-bold">java.nio.channels</span>, поэтому для его использования не понадобится ничего скачивать или настраивать. Объект типа <span class="text-orange">Selector</span> может следить за одним или несколькими объектами типа <span class="text-orange">Channel</span>, проверять их готовность к чтению/записи и т. д. И главное: для selector нужен один поток, а не по одному потоку на каждый канал.</p>
+ 
+    <img data-max-width="512" data-id="106e0c9f-4e81-4683-86d4-79edbf1bd47c" src="https://cdn.javarush.com/images/article/106e0c9f-4e81-4683-86d4-79edbf1bd47c/original.png" alt="">
+
+    <p>Создаем селектора с помощью статического метода <span class="code text-orange">open</span>:</p>
+
+    <pre class='language-java line-numbers'><code>
+Selector selector = Selector.open();
+</code></pre>
+
+    <p>После чего в объекте селектора можно регистрировать каналы:</p>
+
+    <pre class='language-java line-numbers'><code>
+SelectionKey key1 = channel1.register(selector, SelectionKey.OP_READ);
+SelectionKey key2 = channel2.register(selector, SelectionKey.OP_WRITE);
+</code></pre>
+
+    <p>Второй параметр в метод <span class="code text-orange">register</span> определяет, какую операцию будет мониторить селектор. Если нужно следить сразу за несколькими операциями, можно использовать побитовое ИЛИ: </p>
+
+    <pre class='language-java line-numbers'><code>
+SelectionKey.OP_READ | SelectionKey.OP_WRITE
+</code></pre>
+
+    <p>Когда на любом из каналов будет происходить действие ввода-вывода, селектор уведомляет нас об этом. Таким образом можно, например, читать данные из большого количества источников данных.</p>
+
+    <p>Здесь нужно сделать примечание: чтобы канал можно было использовать с селектором, он должен находиться в так называемом неблокирующем режиме:</p>
+
+    <pre class='language-java line-numbers'><code>
+channel1.configureBlocking(false);
+channel2.configureBlocking(false);
+SelectionKey key1 = channel1.register(selector, SelectionKey.OP_READ);
+SelectionKey key2 = channel2.register(selector, SelectionKey.OP_WRITE);
+</code></pre>
+
+    <p>Из этого следует, что селектор не будет работать с <span class="code"><span class="text-green">FileChannel</span></span>, так как <span class="code"><span class="text-green">FileChannel</span></span> нельзя переключить в неблокирующий режим (метод <span class="code text-orange">configureBlocking</span> объявлен в классе <span class="code"><span class="text-green">SelectableChannel</span></span>, а <span class="code"><span class="text-green">FileChannel</span></span> его не наследует).</p>
+
+    <img data-max-width="800" data-id="2aa13b88-38b6-4dfb-9faa-cd9e11f99820" src="https://cdn.javarush.com/images/article/2aa13b88-38b6-4dfb-9faa-cd9e11f99820/original.png" alt="">
+
+    <p>Из схемы ты можешь увидеть, что селекторы уместно использовать с сокетами. С ними мы поработаем в конце второго модуля.</p>
+
+    <h2>SelectionKey</h2>
+
+    <p>При регистрации канала с помощью селектора мы получаем объект <mark class="green">SelectionKey</mark>. Этот объект содержит данные, представляющие регистрацию канала.</p>
+
+    <p>Из ключа можно определить, готов ли канал к определенному значению:</p>
+
+    <pre class='language-java line-numbers'><code>
+key.isReadable()
+key.isAcceptable()
+key.isConnectable()
+key.isWritable()
+</code></pre>
+
+    <p>Из ключа можно получить соответствующие канал и селектор:</p>
+
+    <pre class='language-java line-numbers'><code>
+Channel channel = key.channel();
+Selector selector = key.selector();
+</code></pre>
+
+    <p>К ключу можно прикрепить любой объект, чтобы в дальнейшем его отслеживать. Это можно сделать как во время регистрации канала (третьим аргументом), так и позже:</p>
+
+    <ol>
+        <li><p><span class="code">SelectionKey key = channel.register(selector, SelectionKey.OP_ACCEPT, object);</p></li>
+        <li><p><span class="code">key.attach(object);</span></p></li>
+    </ol>
+
+    <p>В дальнейшем из ключа можно получить прикрепленный объект:</p>
+
+    <pre class='language-java line-numbers'><code>
+Object object = key.attachment();
+</code></pre>
+
+    <h2>Заключение</h2>
+
+    <p>После регистрации каналов с помощью селектора мы можем:</p>
+
+    <ul>
+        <li>узнать количество каналов, готовых к выполнению заданных операций;</li>
+        <li>заблокировать выполнение программы до появления хотя бы одного готового канала;</li>
+        <li>получить множество ключей готовых каналов;</li>
+        <li>и другое.</li>
+    </ul>
+
+    <p>В конце второго модуля будем испытывать селекторы на практике.</p>

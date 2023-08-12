@@ -1,0 +1,745 @@
+Проект по теме: JSP и сервлеты
+<p>----------------------------------------</p>
+Проект по теме: JSP и сервлеты
+<p>----------------------------------------</p>
+<h2>Сегодня будем писать игру «Крестики-Нолики» используя сервлеты и JSP.</h2>
+<p>Этот проект будет немного отличаться от предыдущих. В нем будут не только задания, но и объяснения как их сделать. То есть это будет проект из серии «HOW TO …». </p>
+<p>Инструкция: </p>
+	<ol>
+		<li>Сделать fork из репозитория: <a href="https://github.com/vasylmalik/project-servlet.git" target="_blank">https://github.com/vasylmalik/project-servlet.git</a> </li>
+		<li>Скачать свою версию проекта к себе на компьютер. </li>
+		<li>Настроить запуск приложения в IDEA: </li>
+			<ul>
+				<li>Alt + Shift + F9 -> Edit Configurations… -> Alt + insert -> tom (в строку поиска) -> Local.</li>
+				<li>После этого нужно нажать “CONFIGURE” и указать, куда скачан и распакован архив с Tomcat. </li>
+				<li>Во вкладке “Deployment”: Alt + insert -> Artifact… -> tic-tac-toe:war exploded -> OK. </li>
+				<li>В поле “Application context”: оставить только “/” (слеш). </li>
+				<li>Нажать “APPLY”. </li>
+				<li>Закрыть окно настройки. </li>
+				<li>Сделать первый пробный запуск настроенной конфигурации. Если все сделал правильно – откроется твой браузер по умолчанию, в котором будет: </li>
+				<img data-max-width="512" data-id="83128ce5-d310-4f23-b1d4-f2d65f21ca68" src="https://cdn.javarush.com/images/article/83128ce5-d310-4f23-b1d4-f2d65f21ca68/512.jpeg" alt="">
+			</ul>
+		<li>Открой файл <strong>“pom.xml”</strong>. В блоке <strong>“dependencies”</strong> есть 2 зависимости. </li>
+			<ul>
+				<li><code>javax.servlet-api</code> отвечает за спецификацию сервлетов. Scope <strong>“provided”</strong> нужен во время разработки, но не нужен в рантайме (у Tomcat уже есть эта зависимость в папке lib).</li>
+				<li><code>jstl</code> – можно рассматривать как шаблонизатор.</li>
+			</ul>
+		<li>В папке <strong>“webapp”</strong> есть 3 файла: </li>
+			<ul>
+				<li><code>index.jsp</code> – это наш шаблон (аналог HTML страницы). В ней будет разметка и скрипты. Именно файл с названием <strong>“index”</strong> отдается как начальная страница, если нет каких-либо конфигураций, что мы и увидели в п.3.</li>
+				<li><code>/static/main.css</code> – файл для стилей. Как и в прошлом проекте, здесь все на твое усмотрение, крась как хочешь.</li>
+				<li><code>/static/jquery-3.6.0.min.js</code> – фронтенд зависимость, которую наш сервер будет раздавать как статику.</li>
+			</ul>
+		<li>В пакете <strong>“com.tictactoe”</strong> будет весь Java-код. Сейчас там есть 2 класса:</li>
+			<ul>
+				<li><code>Sign</code> – enum, который отвечает за <strong>“крестик/нолик/пустота”</strong>.</li>
+				<li><code>Field</code> – это наше поле. В этом классе есть мапа <strong>“field”</strong>. Принцип хранения данных будет таким: ячейки поля крестиков-ноликов пронумерованы с нуля. В первой строке 0, 1 и 2. Во второй: 3, 4 и 5. И так далее. Есть также 3 метода. <strong>“getEmptyFieldIndex”</strong> ищет первую незанятую ячейку (да, соперник у нас будет не очень умным). “checkWin” проверяет не завершена ли игра. Если есть ряд из трех крестиков – возвращает крестик, если из трех ноликов – нолик. Иначе – пустоту. <strong>“getFieldData”</strong> – возвращает значения мапы <strong>“field”</strong> в виде списка, отсортированного в порядке возрастания индексов.</li>
+			</ul>
+		<li>Объяснения оп темплиту закончены, теперь можно приступать к выполнению задания. Начнем с того, что отрисуем таблицу 3 на 3. Для этого в <strong>“index.jsp”</strong> добавь код: 
+				<pre class='line-numbers'><code>
+&lt;table&gt; 
+	&lt;tr&gt; 
+		&lt;td&gt;0&lt;/td&gt; 
+		&lt;td&gt;1&lt;/td&gt; 
+		&lt;td&gt;2&lt;/td&gt; 
+	&lt;/tr&gt; 
+	&lt;tr&gt; 
+		&lt;td&gt;3&lt;/td&gt; 
+		&lt;td&gt;4&lt;/td&gt; 
+		&lt;td&gt;5&lt;/td&gt; 
+	&lt;/tr&gt; 
+	&lt;tr&gt; 
+		&lt;td&gt;6&lt;/td&gt; 
+		&lt;td&gt;7&lt;/td&gt; 
+		&lt;td&gt;8&lt;/td&gt; 
+	&lt;/tr&gt; 
+&lt;/table&gt; 	
+				</code></pre>
+		Числа в таблице потом уберем и заменим их на крестик, нолик или пустое поле. Также внутри тега “head” подключи файл стилей. Для этого добавь строку: <code>&lt;link href="static/main.css" rel="stylesheet"&gt;</code> 
+		</p>
+		Содержимое файла стилей остается на твое усмотрение. Я использовал такой:
+		<pre class='line-numbers'><code>
+td { 
+    border: 3px solid black; 
+    padding: 10px; 
+    border-collapse: separate; 
+    margin: 10px; 
+    width: 100px; 
+    height: 100px; 
+    font-size: 50px; 
+    text-align: center; 
+    empty-cells: show; 
+} 
+		</code></pre> 
+		После запуска у меня результат выглядит так: 
+		<img data-max-width="512" data-id="960b8e58-7f83-4a79-b7c0-a517bbbc1823" src="https://cdn.javarush.com/images/article/960b8e58-7f83-4a79-b7c0-a517bbbc1823/512.jpeg" alt=""></li>
+		<li>Теперь давай добавим такой функционал: при клике на ячейку, на сервер будет отправляться запрос, в котором параметром передадим индекс ячейки, по которой был произведен клик. Эту задачу можно разделить на две части: с фронта запрос отправить, на сервере запрос принять. Давай, ради разнообразия, начнем с фронта.
+		</p> 
+		Давай каждому тегу <strong>“d”</strong> добавим параметр <strong>“onclick”</strong>. В значении укажем смену текущей страницы на указанный URL. Сервлет, который будет отвечать за логику, будет иметь URL <strong>“/logic”</strong>. И будет принимать параметр с названием <strong>“click”</strong>. Так будем передавать индекс ячейки, по которой кликнул пользователь. 
+		<pre class='line-numbers'><code>
+&lt;table&gt; 
+    &lt;tr&gt; 
+        &lt;td onclick="window.location='/logic?click=0'"&gt;0&lt;/td&gt; 
+        &lt;td onclick="window.location='/logic?click=1'"&gt;1&lt;/td&gt; 
+        &lt;td onclick="window.location='/logic?click=2'"&gt;2&lt;/td&gt; 
+    &lt;/tr&gt; 
+    &lt;tr&gt; 
+        &lt;td onclick="window.location='/logic?click=3'"&gt;3&lt;/td&gt; 
+        &lt;td onclick="window.location='/logic?click=4'"&gt;4&lt;/td&gt; 
+        &lt;td onclick="window.location='/logic?click=5'"&gt;5&lt;/td&gt; 
+    &lt;/tr&gt; 
+    &lt;tr&gt; 
+        &lt;td onclick="window.location='/logic?click=6'"&gt;6&lt;/td&gt; 
+        &lt;td onclick="window.location='/logic?click=7'"&gt;7&lt;/td&gt; 
+        &lt;td onclick="window.location='/logic?click=8'"&gt;8&lt;/td&gt; 
+    &lt;/tr&gt; 
+&lt;/table&gt; 			
+
+		</code></pre>
+		Проверить, что все сделано правильно, можно через панель разработчика в браузере. Например, в Chrome она открывается по кнопке <strong>F12</strong>. В результате клика на ячейку с индексом 4 картина будет такая: 
+		<img data-max-width="1080" data-id="37b6d7b2-1f49-493c-b052-c8fb6bd63784" src="https://cdn.javarush.com/images/article/37b6d7b2-1f49-493c-b052-c8fb6bd63784/1080.jpeg" alt="">
+		Ошибку мы получаем потому, что сервлета, который может отдать сервер по адресу <strong>“logic”</strong>, мы еще не создали. 
+		</li>
+		</p>
+		<li>В пакете “com.tictactoe” создай класс <strong>“LogicServlet”</strong>, который нужно унаследовать от класса <strong>“javax.servlet.http.HttpServlet”</strong>. В классе переопредели метод <strong>“doGet”</strong>. 
+		</p>	
+		И давай добавим метод, который будет получать индекс ячейки, по которой произошел клик. Также нужно добавить маппинг (адрес, по которому этот сервлет будет перехватывать запрос). Предлагаю это делать через аннотацию (но если любишь трудности – можно и через web.xml). Общий код сервлета: 
+		<pre class='language-java line-numbers'><code>
+package com.tictactoe; 
+
+import javax.servlet.ServletException; 
+import javax.servlet.annotation.WebServlet; 
+import javax.servlet.http.HttpServlet; 
+import javax.servlet.http.HttpServletRequest; 
+import javax.servlet.http.HttpServletResponse; 
+import java.io.IOException; 
+
+
+@WebServlet(name = "LogicServlet", value = "/logic") 
+public class LogicServlet extends HttpServlet { 
+    @Override 
+	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException { 
+        int index = getSelectedIndex(req); 
+        resp.sendRedirect("/index.jsp"); 
+    } 
+
+ 
+    private int getSelectedIndex(HttpServletRequest request) { 
+        String click = request.getParameter("click"); 
+        boolean isNumeric = click.chars().allMatch(Character::isDigit); 
+        return isNumeric ? Integer.parseInt(click) : 0; 
+    } 
+
+} 
+		</code></pre> 
+		Теперь, при клике по любой ячейке, мы будем на сервере получать индекс этой ячейки (можно убедиться, запустив сервер в дебаге). И будет происходить редирект на эту же страницу, с которой был произведен клик.</li> 
+		</p>
+		<li>Теперь мы можем кликать, но это еще не игра. Для того, чтоб игра имела логику, нужно сохранять состояние игры (где стоят крестики, где нолики) между запросами. Самый простой метод это сделать – сохранять эти данные в сессии. При таком подходе сессия будет храниться на сервере, а клиент получит идентификатор сессии в куке с именем <strong>“JSESSIONID”</strong>. Но сессию не нужно создавать каждый раз, а только в начале игры. Давай для этого заведем еще один сервлет, который назовем <strong>“InitServlet”</strong>. В нем переопределим метод <strong>“doGet”</strong>, в котором создадим новую сессию, создадим игровое поле, положим это игровое поле и список типа Sign в атрибуты сессии, и отправим <strong>“forward”</strong> на страницу index.jsp. Код: 
+<pre class='language-java line-numbers'><code>
+package com.tictactoe; 
+ 
+import javax.servlet.ServletException; 
+import javax.servlet.annotation.WebServlet; 
+import javax.servlet.http.HttpServlet; 
+import javax.servlet.http.HttpServletRequest; 
+import javax.servlet.http.HttpServletResponse; 
+import javax.servlet.http.HttpSession; 
+import java.io.IOException; 
+import java.util.List; 
+import java.util.Map; 
+ 
+@WebServlet(name = "InitServlet", value = "/start") 
+public class InitServlet extends HttpServlet { 
+    @Override 
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException { 
+        // Создание новой сессии 
+        HttpSession currentSession = req.getSession(true); 
+ 
+        // Создание игрового поля 
+        Field field = new Field(); 
+        Map&lt;Integer, Sign&gt; fieldData = field.getField(); 
+ 
+        // Получение списка значений поля 
+        List&lt;Sign&gt; data = field.getFieldData(); 
+ 
+        // Добавление в сессию параметров поля (нужно будет для хранения состояния между запросами) 
+        currentSession.setAttribute("field", field); 
+        // и значений поля, отсортированных по индексу (нужно для отрисовки крестиков и ноликов) 
+        currentSession.setAttribute("data", data); 
+ 
+        // Перенаправление запроса на страницу index.jsp через сервер 
+        getServletContext().getRequestDispatcher("/index.jsp").forward(req, resp); 
+    } 
+} 
+</code></pre>
+		И чтоб не забыть, давай стартовую страницу, которая открывается в браузере после запуска сервера, сменим на <strong>“/start”</strong>: 
+		<img data-max-width="800" data-id="b2ad55cf-7d01-4938-a468-e1f647fb6238" src="https://cdn.javarush.com/images/article/b2ad55cf-7d01-4938-a468-e1f647fb6238/800.jpeg" alt="">
+		Теперь после перезапуска сервера и клика по любой ячейке поля в меню разработчика браузера в секции <strong>“Request Headers”</strong> будет присутствовать кука с идентификатором сессии: 
+		<img data-max-width="1080" data-id="ca94ddd6-cc0f-4356-a0c3-c8985d64587d" src="https://cdn.javarush.com/images/article/ca94ddd6-cc0f-4356-a0c3-c8985d64587d/1080.jpeg" alt=""></li>
+		<li>Когда у нас появилось хранилище, в котором мы можем хранить состояние между запросами с клиента (браузера), можно начинать писать логику игры. Логика у нас находится в <strong>“LogicServlet”</strong>. Работать нам нужно с методом <strong>“doGet”</strong>. Давай в метод добавим такое поведение: 
+			<ul>
+				<li>получим объект <strong>“field”</strong> типа Field из сессии (вынесем в метод <strong>“extractField”</strong>).</li>
+				<li>поставим крестик там, где кликнул пользователь (пока что без каких-либо проверок).</li>
+			</ul>
+<pre class='language-java line-numbers'><code>
+@Override 
+protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException { 
+    // Получаем текущую сессию 
+    HttpSession currentSession = req.getSession(); 
+ 
+    // Получаем объект игрового поля из сессии 
+    Field field = extractField(currentSession); 
+ 
+    // получаем индекс ячейки, по которой произошел клик 
+    int index = getSelectedIndex(req); 
+ 
+    // ставим крестик в ячейке, по которой кликнул пользователь 
+    field.getField().put(index, Sign.CROSS); 
+ 
+    // Считаем список значков 
+    List&lt;Sign&gt; data = field.getFieldData(); 
+ 
+    // Обновляем объект поля и список значков в сессии 
+    currentSession.setAttribute("data", data); 
+    currentSession.setAttribute("field", field); 
+ 
+    resp.sendRedirect("/index.jsp"); 
+} 
+
+ 
+
+private Field extractField(HttpSession currentSession) { 
+    Object fieldAttribute = currentSession.getAttribute("field"); 
+    if (Field.class != fieldAttribute.getClass()) { 
+        currentSession.invalidate(); 
+        throw new RuntimeException("Session is broken, try one more time"); 
+    } 
+    return (Field) fieldAttribute; 
+} 
+</code></pre>
+		Поведение пока не изменилось, но если запустить сервер в дебаге и поставить брейкпоинт на строке, где шлется редирект, можно посмотреть “внутренности” объекта <strong>“data”</strong>. Там действительно появляется <strong>“CROSS”</strong> под индексом, по котором был клик. 
+		</li>
+		</p>
+		<li>Теперь время отобразить крестик на фронтенде. Для этого поработаем с файлом <strong>“index.jsp” </strong>и технологией <strong>“JSTL”</strong>. 
+			<ul>
+				<li>В секции &lt;head&gt; добавим:<code>&lt;%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %&gt; </code></li>
+				<li>В таблице внутри каждого блока &lt;td&gt; поменяем индекс на конструкцию, которая позволяет вычислять значения. Например, для индекса ноль: <code>
+					&lt;td onclick="window.location='/logic?click=0'"&gt;${data.get(0).getSign()}&lt;/td&gt; 
+				</code>
+			Теперь при клике на ячейку там будет появляться крестик: 
+			<img data-max-width="512" data-id="190bd8aa-8c1b-495c-8aaf-2a595e42058c" src="https://cdn.javarush.com/images/article/190bd8aa-8c1b-495c-8aaf-2a595e42058c/512.jpeg" alt=""></li>
+			</ul>
+		</li>
+		<li>Мы свой ход сделали, теперь очередь за “ноликом”. И добавим парочку проверок здесь же, чтоб знаки не ставились в уже занятые клетки. </li>
+		<ul>
+			<li>Нужно проверить, что ячейка, по которой был клик пустая. Иначе ничего не делаем и отправляем пользователя на ту же страницу без изменений параметров сессии. </li>
+			<li>Так как количество клеток на поле нечетное, возможна ситуация, когда крестик удалось поставить, а для нолика уже нет места. Поэтому, после того как поставили крестик, пытаемся получить индекс незанятой ячейки (метод getEmptyFieldIndex класса Field). Если индекс не отрицательный, тогда ставим туда нолик. 
+			<img data-max-width="512" data-id="29c1b5b8-762a-4f48-9a0f-37ee498670e8" src="https://cdn.javarush.com/images/article/29c1b5b8-762a-4f48-9a0f-37ee498670e8/512.jpeg" alt="">
+		Код: 
+<pre class='language-java line-numbers'><code>
+package com.tictactoe; 
+ 
+import javax.servlet.RequestDispatcher; 
+import javax.servlet.ServletException; 
+import javax.servlet.annotation.WebServlet; 
+import javax.servlet.http.HttpServlet; 
+import javax.servlet.http.HttpServletRequest; 
+import javax.servlet.http.HttpServletResponse; 
+import javax.servlet.http.HttpSession; 
+import java.io.IOException; 
+import java.util.List; 
+ 
+@WebServlet(name = "LogicServlet", value = "/logic") 
+public class LogicServlet extends HttpServlet { 
+    @Override 
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException { 
+        // Получаем текущую сессию 
+        HttpSession currentSession = req.getSession(); 
+ 
+        // Получаем объект игрового поля из сессии 
+        Field field = extractField(currentSession); 
+ 
+        // получаем индекс ячейки, по которой произошел клик 
+        int index = getSelectedIndex(req); 
+        Sign currentSign = field.getField().get(index); 
+ 
+        // Проверяем, что ячейка, по которой был клик пустая. 
+        // Иначе ничего не делаем и отправляем пользователя на ту же страницу без изменений 
+        // параметров в сессии 
+        if (Sign.EMPTY != currentSign) { 
+            RequestDispatcher dispatcher = getServletContext().getRequestDispatcher("/index.jsp"); 
+            dispatcher.forward(req, resp); 
+            return; 
+        } 
+ 
+        // ставим крестик в ячейке, по которой кликнул пользователь 
+        field.getField().put(index, Sign.CROSS); 
+ 
+        // Получаем пустую ячейку поля 
+        int emptyFieldIndex = field.getEmptyFieldIndex(); 
+ 
+        if (emptyFieldIndex >= 0) { 
+            field.getField().put(emptyFieldIndex, Sign.NOUGHT); 
+        } 
+ 
+        // Считаем список значков 
+        List&lt;Sign&gt; data = field.getFieldData(); 
+ 
+        // Обновляем объект поля и список значков в сессии 
+        currentSession.setAttribute("data", data); 
+        currentSession.setAttribute("field", field); 
+ 
+        resp.sendRedirect("/index.jsp"); 
+    } 
+ 
+    private int getSelectedIndex(HttpServletRequest request) { 
+        String click = request.getParameter("click"); 
+        boolean isNumeric = click.chars().allMatch(Character::isDigit); 
+        return isNumeric ? Integer.parseInt(click) : 0; 
+    } 
+ 
+    private Field extractField(HttpSession currentSession) { 
+        Object fieldAttribute = currentSession.getAttribute("field"); 
+        if (Field.class != fieldAttribute.getClass()) { 
+            currentSession.invalidate(); 
+            throw new RuntimeException("Session is broken, try one more time"); 
+        } 
+        return (Field) fieldAttribute; 
+    } 
+} 
+</code></pre>
+			</li>
+			</ul>
+		<li>На данном этапе можно ставить крестики, AI отвечает ноликами. Но нет проверки, когда стоит остановить игру. Это может быть в трех случаях: 
+			<ul>
+				<li>после очередного хода крестика образовалась линия из трех крестиков; </li>
+				<li>после очередного ответного хода ноликом образовалась линия из трех ноликов;</li>
+				<li>после очередного хода крестика закончились пустые клетки.</li>
+			</ul>
+			Добавим метод, который проверяет, нет ли трех крестиков/ноликов в ряд: 
+<pre class='language-java line-numbers'><code>
+/** 
+ * Метод проверяет, нет ли трех крестиков/ноликов в ряд. 
+ * Возвращает true/false 
+ */ 
+private boolean checkWin(HttpServletResponse response, HttpSession currentSession, Field field) throws IOException { 
+    Sign winner = field.checkWin(); 
+    if (Sign.CROSS == winner || Sign.NOUGHT == winner) { 
+        // Добавляем флаг, который показывает что кто-то победил 
+        currentSession.setAttribute("winner", winner); 
+ 
+        // Считаем список значков 
+        List&lt;Sign&gt; data = field.getFieldData(); 
+ 
+        // Обновляем этот список в сессии 
+        currentSession.setAttribute("data", data); 
+ 
+        // Шлем редирект 
+        response.sendRedirect("/index.jsp"); 
+        return true; 
+    } 
+    return false; 
+} 
+</code></pre>
+		Особенность этого метода в том, что если победитель нашелся – добавляем в сессию еще параметр, используя который, изменим отображение в <strong>“index.jsp”</strong> в последующих пунктах. 			
+		</li>
+		</p>
+		<li>Добавим в метод “doGet” два раза вызов метода <strong>“checkWin”</strong>. Первый раз после установки крестика, второй – после установки нолика.  
+<pre class='language-java line-numbers'><code>
+// Проверяем, не победил ли крестик после добавления последнего клика пользователя 
+if (checkWin(resp, currentSession, field)) { 
+    return; 
+} 
+</code></pre>
+<pre class='language-java line-numbers'><code>
+if (emptyFieldIndex >= 0) { 
+    field.getField().put(emptyFieldIndex, Sign.NOUGHT); 
+    // Проверяем, не победил ли нолик после добавление последнего нолика 
+    if (checkWin(resp, currentSession, field)) { 
+        return; 
+    } 
+} 
+</code></pre>
+		</li>
+	</p>
+		<li>По поведению почти ничего не изменилось (кроме того, что в случае победы одного из знаков перестают ставиться нолики. Давай в <strong>“index.jsp”</strong> используем параметр <strong>“winner”</strong> и выведем победителя. Используем директивы <code>c:set</code> и <code>c:if</code> после таблицы: 
+<pre class='line-numbers'><code>
+&lt;hr&gt; 
+&lt;c:set var="CROSSES" value="&lt;%=Sign.CROSS%&gt;"/&gt; 
+&lt;c:set var="NOUGHTS" value="&lt;%=Sign.NOUGHT%&gt;"/&gt; 
+ 
+&lt;c:if test="${winner == CROSSES}"&gt; 
+    &lt;h1&gt;CROSSES WIN!&lt;/h1&gt; 
+&lt;/c:if&gt; 
+&lt;c:if test="${winner == NOUGHTS}"&gt; 
+    &lt;h1&gt;NOUGHTS WIN!&lt;/h1&gt; 
+&lt;/c:if&gt; 
+</code></pre>
+		Если выигрывают крестики, то выведется сообщение <strong>“CROSSES WIN!”</strong>, если нолики – <strong>“NOUGHTS WIN!”</strong>. 
+		В результате можем получить одну из двух надписей: 
+<img data-max-width="800" data-id="20218ef6-d6b8-4697-bab9-18d1c71f238e" src="https://cdn.javarush.com/images/article/20218ef6-d6b8-4697-bab9-18d1c71f238e/800.jpeg" alt="">
+		<li>Если есть победитель, нужно иметь возможность взять реванш. Для этого нужна кнопка, которая отправит на сервер запрос. А сервер инвалидирует текущую сессию и перенаправит запрос снова на <strong>“/start”</strong>. 
+			<ul>
+				<li>В <strong>“index.jsp” </strong>в секции <strong>“head” </strong>пропишем скрипт <strong>“jquery”</strong>. Используя эту библиотеку, мы будет отправлять запрос на сервер. 
+<pre class='line-numbers'><code>
+&lt;script src="&lt;c:url value="/static/jquery-3.6.0.min.js"/&gt;"&gt;&lt;/script&gt; 
+</code></pre> </li>
+				<li>В <strong>“index.jsp”</strong> в секции <strong>“script”</strong> добавим функцию, которая умеет оправлять POST запрос на сервер. Функцию сделаем синхронной, и когда придет ответ с сервера – перезагрузит текущую страницу. 
+<pre class='line-numbers'><code>
+&lt;script&gt; 
+    function restart() { 
+        $.ajax({ 
+            url: '/restart', 
+            type: 'POST', 
+            contentType: 'application/json;charset=UTF-8', 
+            async: false, 
+            success: function () { 
+                location.reload(); 
+            } 
+        }); 
+    } 
+&lt;/script&gt; 
+</code></pre>
+				</li>
+				<li>Внутри блоков <strong>“c:if”</strong> добавим кнопку, при клике на которую вызывается только что написанная функция: 
+<pre class='line-numbers'><code>
+&lt;c:if test="${winner == CROSSES}"&gt; 
+    &lt;h1&gt;CROSSES WIN!&lt;/h1&gt; 
+    &lt;button onclick="restart()"&gt;Start again&lt;/button&gt; 
+&lt;/c:if&gt; 
+&lt;c:if test="${winner == NOUGHTS}"&gt; 
+    &lt;h1&gt;NOUGHTS WIN!&lt;/h1&gt; 
+    &lt;button onclick="restart()"&gt;Start again&lt;/button&gt; 
+&lt;/c:if&gt; 
+</code></pre>
+				</li>
+				<li>Создадим новый сервлет, который будет обслуживать URL <strong>“/restart”</strong>. 
+<pre class='language-java line-numbers'><code>
+package com.tictactoe; 
+ 
+import javax.servlet.annotation.WebServlet; 
+import javax.servlet.http.HttpServlet; 
+import javax.servlet.http.HttpServletRequest; 
+import javax.servlet.http.HttpServletResponse; 
+import java.io.IOException; 
+ 
+@WebServlet(name = "RestartServlet", value = "/restart") 
+public class RestartServlet extends HttpServlet { 
+    @Override 
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException { 
+        req.getSession().invalidate(); 
+        resp.sendRedirect("/start"); 
+    } 
+} 
+</code></pre>
+				После победы появится кнопка <strong>“Start again”</strong>. После клика по ней – поле полностью очистится, и игра начнется сначала.
+				<img data-max-width="800" data-id="b323597b-bedd-46ce-a0e1-d66bda1747a9" src="https://cdn.javarush.com/images/article/b323597b-bedd-46ce-a0e1-d66bda1747a9/800.jpeg" alt="">
+				</li>
+			</ul>
+		</li>
+		<li>Осталось рассмотреть последнюю ситуацию. Что, если крестик пользователь поставил, победы не произошло, и для нолика нету места? Тогда это ничья, именно ее сейчас и обработаем: 
+			<ul>
+				<li>В <strong>“LogicServlet”</strong> в сессию добавим еще один параметр <strong>“draw”</strong>, обновим поле <strong>“data”</strong> и отправим редирект на <strong>“index.jsp”</strong>:
+<pre class='language-java line-numbers'><code>
+// Если такая ячейка присутствует 
+if (emptyFieldIndex >= 0) { 
+    … 
+} 
+// Если пустой ячейки нет и никто не победил - значит это ничья 
+else { 
+    // Добавляем в сессию флаг, который сигнализирует что произошла ничья 
+    currentSession.setAttribute("draw", true); 
+ 
+    // Считаем список значков 
+    List&lt;Sign&gt; data = field.getFieldData(); 
+ 
+    // Обновляем этот список в сессии 
+    currentSession.setAttribute("data", data); 
+ 
+    // Шлем редирект 
+    response.sendRedirect("/index.jsp"); 
+    return; 
+} 
+</code></pre>
+				</li>
+				<li>В <strong>“index.jsp”</strong> обработаем этот параметр:
+<pre class='language-java line-numbers'><code>
+&lt;c:if test="${draw}"&gt; 
+    &lt;h1&gt;IT'S A DRAW&lt;/h1&gt; 
+    &lt;br&gt; 
+    &lt;button onclick="restart()"&gt;Start again&lt;/button&gt; 
+&lt;/c:if&gt; 
+</code></pre>
+				В результате ничьей получим соответствующее сообщение и предложение начать сначала: 
+				<img data-max-width="512" data-id="1d9847b6-3a6c-4b50-955d-2ef167708dc8" src="https://cdn.javarush.com/images/article/1d9847b6-3a6c-4b50-955d-2ef167708dc8/512.jpeg" alt="">
+				</li>
+			</ul>
+		</li>
+	</ol>
+
+<p>На этом написание игры закончено.</p>
+<p></p>
+<h2>Код классов и файлов, с которыми работали</h2>
+<p><strong>InitServlet</strong></p>
+<pre class='language-java line-numbers'><code>
+package com.tictactoe; 
+ 
+import javax.servlet.ServletException; 
+import javax.servlet.annotation.WebServlet; 
+import javax.servlet.http.HttpServlet; 
+import javax.servlet.http.HttpServletRequest; 
+import javax.servlet.http.HttpServletResponse; 
+import javax.servlet.http.HttpSession; 
+import java.io.IOException; 
+import java.util.List; 
+import java.util.Map; 
+ 
+@WebServlet(name = "InitServlet", value = "/start") 
+public class InitServlet extends HttpServlet { 
+    @Override 
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException { 
+        // Создание новой сессии 
+        HttpSession currentSession = req.getSession(true); 
+ 
+        // Создание игрового поля 
+        Field field = new Field(); 
+        Map&lt;Integer, Sign&gt; fieldData = field.getField(); 
+ 
+        // Получение списка значений поля 
+        List&lt;Sign&gt; data = field.getFieldData(); 
+ 
+        // Добавление с сессию параметров поля (нужно будет для хранения состояния между запросами) 
+        currentSession.setAttribute("field", field); 
+        // и значений поля, отсортированных по индексу (нужно для отрисовки крестиков и ноликов) 
+        currentSession.setAttribute("data", data); 
+ 
+        // Перенаправление запроса на страницу index.jsp через сервер 
+        getServletContext().getRequestDispatcher("/index.jsp").forward(req, resp); 
+    } 
+} 
+</code></pre>
+<p></p>
+<p><strong>LogicServlet </strong></p>
+<pre class='language-java line-numbers'><code>
+package com.tictactoe; 
+ 
+import javax.servlet.RequestDispatcher; 
+import javax.servlet.ServletException; 
+import javax.servlet.annotation.WebServlet; 
+import javax.servlet.http.HttpServlet; 
+import javax.servlet.http.HttpServletRequest; 
+import javax.servlet.http.HttpServletResponse; 
+import javax.servlet.http.HttpSession; 
+import java.io.IOException; 
+import java.util.List; 
+ 
+@WebServlet(name = "LogicServlet", value = "/logic") 
+public class LogicServlet extends HttpServlet { 
+    @Override 
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException { 
+        // Получаем текущую сессию 
+        HttpSession currentSession = req.getSession(); 
+ 
+        // Получаем объект игрового поля из сессии 
+        Field field = extractField(currentSession); 
+ 
+        // получаем индекс ячейки, по которой произошел клик 
+        int index = getSelectedIndex(req); 
+        Sign currentSign = field.getField().get(index); 
+ 
+        // Проверяем, что ячейка, по которой был клик пустая. 
+        // Иначе ничего не делаем и отправляем пользователя на ту же страницу без изменений 
+        // параметров в сессии 
+        if (Sign.EMPTY != currentSign) { 
+            RequestDispatcher dispatcher = getServletContext().getRequestDispatcher("/index.jsp"); 
+            dispatcher.forward(req, resp); 
+            return; 
+        } 
+ 
+        // ставим крестик в ячейке, по которой кликнул пользователь 
+        field.getField().put(index, Sign.CROSS); 
+ 
+        // Проверяем, не победил ли крестик после добавление последнего клика пользователя 
+        if (checkWin(resp, currentSession, field)) { 
+            return; 
+        } 
+ 
+        // Получаем пустую ячейку поля 
+        int emptyFieldIndex = field.getEmptyFieldIndex(); 
+ 
+        if (emptyFieldIndex >= 0) { 
+            field.getField().put(emptyFieldIndex, Sign.NOUGHT); 
+            // Проверяем, не победил ли нолик после добавление последнего нолика 
+            if (checkWin(resp, currentSession, field)) { 
+                return; 
+            } 
+        } 
+        // Если пустой ячейки нет и никто не победил - значит это ничья 
+        else { 
+            // Добавляем в сессию флаг, который сигнализирует что произошла ничья 
+            currentSession.setAttribute("draw", true); 
+ 
+            // Считаем список значков 
+            List&lt;Sign&gt; data = field.getFieldData(); 
+ 
+            // Обновляем этот список в сессии 
+            currentSession.setAttribute("data", data); 
+ 
+            // Шлем редирект 
+            resp.sendRedirect("/index.jsp"); 
+            return; 
+        } 
+ 
+        // Считаем список значков 
+        List&lt;Sign&gt; data = field.getFieldData(); 
+ 
+        // Обновляем объект поля и список значков в сессии 
+        currentSession.setAttribute("data", data); 
+        currentSession.setAttribute("field", field); 
+ 
+        resp.sendRedirect("/index.jsp"); 
+    } 
+ 
+    /** 
+     * Метод проверяет, нет ли трех крестиков/ноликов в ряд. 
+     * Возвращает true/false 
+     */ 
+    private boolean checkWin(HttpServletResponse response, HttpSession currentSession, Field field) throws IOException { 
+        Sign winner = field.checkWin(); 
+        if (Sign.CROSS == winner || Sign.NOUGHT == winner) { 
+            // Добавляем флаг, который показывает что кто-то победил 
+            currentSession.setAttribute("winner", winner); 
+ 
+            // Считаем список значков 
+            List&lt;Sign&gt; data = field.getFieldData(); 
+ 
+            // Обновляем этот список в сессии 
+            currentSession.setAttribute("data", data); 
+ 
+            // Шлем редирект 
+            response.sendRedirect("/index.jsp"); 
+            return true; 
+        } 
+        return false; 
+    } 
+ 
+    private int getSelectedIndex(HttpServletRequest request) { 
+        String click = request.getParameter("click"); 
+        boolean isNumeric = click.chars().allMatch(Character::isDigit); 
+        return isNumeric ? Integer.parseInt(click) : 0; 
+    } 
+ 
+    private Field extractField(HttpSession currentSession) { 
+        Object fieldAttribute = currentSession.getAttribute("field"); 
+        if (Field.class != fieldAttribute.getClass()) { 
+            currentSession.invalidate(); 
+            throw new RuntimeException("Session is broken, try one more time"); 
+        } 
+        return (Field) fieldAttribute; 
+    } 
+} 
+</code></pre>
+<p></p>
+<p><strong>RestartServlet</strong></p>
+<pre class='language-java line-numbers'><code>
+package com.tictactoe; 
+ 
+import javax.servlet.annotation.WebServlet; 
+import javax.servlet.http.HttpServlet; 
+import javax.servlet.http.HttpServletRequest; 
+import javax.servlet.http.HttpServletResponse; 
+import java.io.IOException; 
+ 
+@WebServlet(name = "RestartServlet", value = "/restart") 
+public class RestartServlet extends HttpServlet { 
+    @Override 
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException { 
+        req.getSession().invalidate(); 
+        resp.sendRedirect("/start"); 
+    } 
+} 
+</code></pre>
+<p><strong>index</strong>.jsp</p>
+<pre class='language-java line-numbers'><code>
+&lt;%@ page import="com.tictactoe.Sign" %&gt; 
+&lt;%@ page contentType="text/html;charset=UTF-8" language="java" %&gt; 
+ 
+&lt;!DOCTYPE html&gt; 
+&lt;html&gt; 
+&lt;head&gt; 
+    &lt;link href="static/main.css" rel="stylesheet"&gt; 
+    &lt;%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %&gt; 
+    &lt;script src="&lt;c:url value="/static/jquery-3.6.0.min.js"/&gt;"&gt;&lt;/script&gt; 
+    &lt;title&gt;Tic-Tac-Toe&lt;/title&gt; 
+&lt;/head&gt; 
+&lt;body&gt; 
+&lt;h1&gt;Tic-Tac-Toe&lt;/h1&gt; 
+ 
+&lt;table&gt; 
+    &lt;tr&gt; 
+        &lt;td onclick="window.location='/logic?click=0'"&gt;${data.get(0).getSign()}&lt;/td&gt; 
+        &lt;td onclick="window.location='/logic?click=1'"&gt;${data.get(1).getSign()}&lt;/td&gt; 
+        &lt;td onclick="window.location='/logic?click=2'"&gt;${data.get(2).getSign()}&lt;/td&gt; 
+    &lt;/tr&gt; 
+    &lt;tr&gt; 
+        &lt;td onclick="window.location='/logic?click=3'"&gt;${data.get(3).getSign()}&lt;/td&gt; 
+        &lt;td onclick="window.location='/logic?click=4'"&gt;${data.get(4).getSign()}&lt;/td&gt; 
+        &lt;td onclick="window.location='/logic?click=5'"&gt;${data.get(5).getSign()}&lt;/td&gt; 
+    &lt;/tr&gt; 
+    &lt;tr&gt; 
+        &lt;td onclick="window.location='/logic?click=6'"&gt;${data.get(6).getSign()}&lt;/td&gt; 
+        &lt;td onclick="window.location='/logic?click=7'"&gt;${data.get(7).getSign()}&lt;/td&gt; 
+        &lt;td onclick="window.location='/logic?click=8'"&gt;${data.get(8).getSign()}&lt;/td&gt; 
+    &lt;/tr&gt; 
+&lt;/table&gt; 
+ 
+&lt;hr&gt; 
+&lt;c:set var="CROSSES" value="&lt;%=Sign.CROSS%&gt;"/&gt; 
+&lt;c:set var="NOUGHTS" value="&lt;%=Sign.NOUGHT%&gt;"/&gt; 
+ 
+&lt;c:if test="${winner == CROSSES}"&gt; 
+    &lt;h1&gt;CROSSES WIN!&lt;/h1&gt; 
+    &lt;button onclick="restart()"&gt;Start again&lt;/button&gt; 
+&lt;/c:if&gt; 
+&lt;c:if test="${winner == NOUGHTS}"&gt; 
+    &lt;h1&gt;NOUGHTS WIN!&lt;/h1&gt; 
+    &lt;button onclick="restart()"&gt;Start again&lt;/button&gt; 
+&lt;/c:if&gt; 
+&lt;c:if test="${draw}"&gt; 
+    &lt;h1&gt;IT'S A DRAW&lt;/h1&gt; 
+    &lt;button onclick="restart()"&gt;Start again&lt;/button&gt; 
+&lt;/c:if&gt; 
+ 
+&lt;script&gt; 
+    function restart() { 
+        $.ajax({ 
+            url: '/restart', 
+            type: 'POST', 
+            contentType: 'application/json;charset=UTF-8', 
+            async: false, 
+            success: function () { 
+                location.reload(); 
+            } 
+        }); 
+    } 
+&lt;/script&gt; 
+ 
+&lt;/body&gt; 
+&lt;/html&gt; 
+</code></pre>
+</p>
+<p><strong>main</strong>.css</p>
+<pre class='language-java line-numbers'><code>
+td { 
+    border: 3px solid black; 
+    padding: 10px; 
+    border-collapse: separate; 
+    margin: 10px; 
+    width: 100px; 
+    height: 100px; 
+    font-size: 50px; 
+    text-align: center; 
+    empty-cells: show;
+   }
+</code></pre>
+

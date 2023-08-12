@@ -1,0 +1,99 @@
+Настройка кэша запросов
+<p>----------------------------------------</p>
+Зачем нужен кэш запросов. 
+Очистка кэша. 
+Ручная очистка кэша.
+<p>----------------------------------------</p>
+<h2>Зачем нужен кэш запросов</h2>
+
+<p>Перепишем наш пример с получением сотрудников на HQL:</p>
+
+<pre class='language-java line-numbers'><code>
+Employee director1 = session.createQuery("from Employee where id = 4").uniqueResult();
+Employee director2 = session.createQuery("from Employee where id = 4").uniqueResult();
+ 
+assertTrue(director1 != director2);
+</code></pre>
+ 
+<p>Результаты такого рода запросов <span class="text-red">не сохраняются</span> кэшем ни первого, ни второго уровня.</p>
+
+<p>Это как раз то место, где можно использовать <strong>кэш запросов</strong>. Он тоже по умолчанию отключен. Для включения нужно добавить следующую строку в конфигурационный файл:</p>
+ 
+<pre><code>&lt;property name="hibernate.cache.use_query_cache" value="true"/></code></pre>
+ 
+<p>Но это только половина решения. Кэш запросов мы включили, но нам нужно еще и указать, результаты каких запросов мы хотим кэшировать. Это нужно прописать в запросе Query:</p>
+ 
+<pre class='language-java line-numbers'><code>
+Query query = session.createQuery("from Employee where id = 4");
+query.setCacheable(true);
+Employee director1 = query.uniqueResult();
+</code></pre>
+ 
+<p>Кэш запросов похож на кэш второго уровня. Но, в отличии от него, тут ключом к данным кэша выступает не идентификатор объекта, а совокупность параметров запроса. А сами данные — это идентификаторы объектов, соответствующих критериям запроса. Таким образом этот кэш рационально использовать с кэшем второго уровня.</p>
+ 
+<h2>Очистка кэша</h2>
+
+<p>Одна из важных задач при работе с кэшем — это следить за тем, чтобы кэшируемые объекты изменились, и удалять их из кэша (или обновлять). Hibernate делает это очень даже успешно. Иногда даже кажется, что он руководствуется правилом “в любой непонятной ситуации очищай кэш”.</p>
+
+<p>Допустим, ты хочешь обновить данные пользователя через HQL:</p>
+ 
+<pre class='language-java line-numbers'><code>
+Query query = session.createQuery("update Employee set name=’Alex’ where id = 4")
+query. executeUpdate();
+</code></pre>
+ 
+<p>Hibernate не может точно знать, что в базе поменялось, но он знает, что ты меняешь объект типа Employee. Поэтому после выполнения этого запроса Hibernate удалит из своего кэша <strong>вообще все объекты</strong> типа Employee.</p>
+
+<p>Но еще интересней работает NativeQuery:</p>
+ 
+<pre class='language-java line-numbers'><code>
+Query nativeQuery = session.createNativeQuery("update employee set name=’Alex’ where id = 4")
+nativeQuery.executeUpdate();
+</code></pre>
+ 
+<p>Выполнился родной SQL-запрос к базе данных. А значит, в базе данных что-то поменялось — запрос-то вызван в методе <span class="code text-orange">executeUpdate()</span>. Поэтому в этом случае Hibernate немного перестрахуется и удалит из своего кэша <strong>вообще все объекты <span class="text-red">всех</span> типов</strong>.
+
+<p>Как тебе такое? Ты вызываешь безобидный запрос, а Hibernate в ответ стирает все данные из кэша!  Это конечно лучше, чем если бы он хранил у себя объекты, которые отличаются от базы, но такое!</p>
+
+<p>Поэтому создатели Hibernate быстро придумали, как помочь Hibernate в этом случае. Ты можешь указать ему, какой тип сущностей нужно удалить из кэша:</p>
+ 
+<pre class='language-java line-numbers'><code>
+Query nativeQuery = session.createNativeQuery("update employee set name=’Alex’ where id = 4");
+nativeQuery.unwrap(org.hibernate.SQLQuery.class).addSynchronizedEntityClass(Employee.class);
+nativeQuery.executeUpdate();
+</code></pre>
+ 
+<strong>Замечание</strong>. Нативные <strong>select</strong>-запросы <strong>не сбрасывают кэш</strong>, только insert, update, delete, вызовы процедур и т. п.
+
+<h2>Ручная очистка кэша</h2>
+
+<p>По определенным причинам ты можешь захотеть удалить объект из кэша самостоятельно. Сделать это можно разными способами.</p>
+
+<p><strong>Примечание</strong>. Объекты в кэше сохраняются группами, которые называются <strong>регионами</strong>. По умолчанию имя региона совпадает с именем класса. Поэтому если у тебя есть объекты типа <strong>com.javarush.Employee</strong>, то все они будут сохранены в группу (регион) с именем “<strong>com.javarush.employee</strong>”.</p>
+
+<p>Если ты хочешь получить доступ к кэшу и что-то с ним сделать, то это можно сделать с помощью объекта SessionFactory и метода <span class="code text-orange">getCache()</span>:</p>
+ 
+<pre class='language-java line-numbers'><code>
+session.getSessionFactory().getCache().evictQueryRegion("com.javarush.employee”);
+</code></pre>
+ 
+<p>Если ты хотчешь удалить данные из всех групп (регионов), то нужно выполнить такой запрос:</p>
+ 
+<pre class='language-java line-numbers'><code>
+session.getSessionFactory().getCache().evictAllRegions();
+</code></pre>
+ 
+<p>Чтобы удалить один объект из кэша, нужно передать его имя (тип) и id. Сделать это можно двумя способами:</p>
+ 
+<pre class='language-java line-numbers'><code>
+session.getSessionFactory().getCache().evictEntityData("Employee”, 4);
+ 
+session.getSessionFactory().getCache().evictEntityData(com.javarush.Employee.class, 4);
+</code></pre>
+ 
+<p>Также ты можешь проверить, содержится ли определенный объект в кэше:</p>
+ 
+<pre class='language-java line-numbers'><code>
+session.getSessionFactory().getCache().containsEntity("Employee”, 4);
+session.getSessionFactory().getCache().containsEntity(com.javarush.Employee.class, 4);
+</code></pre>

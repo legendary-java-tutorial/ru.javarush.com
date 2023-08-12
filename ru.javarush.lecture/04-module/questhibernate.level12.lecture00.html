@@ -1,0 +1,456 @@
+Маппинг примитивных типов данных
+<p>----------------------------------------</p>
+Поддерживаемые типы данных. 
+Задания типа вручную – аннотация @Type. 
+Список Hibernate-типов для баз данных.
+<p>----------------------------------------</p>
+<h2>Поддерживаемые типы данных</h2>
+
+<p>Во время предыдущих трех уровней мы немного познакомились с Hibernate. Настало время зайти на второй круг. Теперь мы начнем изучать тоже самое, только глубже. И начнем мы с маппинга полей Entity-класса на колонки таблиц в базе данных.</p>
+
+<p>Как ты уже знаешь, маппинг поля в Entity классе на колонку выполняется с помощью аннотации <span class="text-yellow"><span class="text-bold">@Column</span></span>. И теперь вопрос: а поля каких типов можно замапить такой аннотацией?</p>
+
+<p>Все типы данных в Java можно разбить на три группы:</p>
+
+<ul>
+<li>Тип достаточно простой и его <strong>легко сохранить в базу данных</strong>.</li>
+<li>Тип сложный и для него нужно <strong>писать специальный конвертор</strong>.</li>
+<li>Тип очень сложный и для хранения его значений <strong>нужна отдельная таблица</strong>.</li>
+</ul>
+
+<p>К простым типам, про которые Hibernate знает, как их сохранять, относятся такие:</p>
+
+<table>
+<tbody>
+<tr>
+<th>Типы в языке Java</th>
+<th>package</th>
+<th>Примеры классов</th>
+</tr>
+<tr>
+<td><strong>Примитивные типы языка Java</strong></td>
+<td></td>
+<td><span class="code"><span class="text-green">boolean</span></span>, <span class="code"><span class="text-green">int</span></span>, <span class="code"><span class="text-green">double</span></span> и т. п.</td>
+</tr>
+<tr>
+<td><strong>Обертки над примитивами</strong></td>
+<td>java.lang</td>
+<td><span class="code"><span class="text-green">Boolean</span></span>, <span class="code"><span class="text-green">Integer</span></span>, <span class="code"><span class="text-green">Double</span></span> и т. п.</td>
+</tr>
+<tr>
+<td><strong>Строки</strong></td>
+<td>java.lang</td>
+<td><span class="code"><span class="text-green">String</span></span></td>
+</tr>
+<tr>
+<td><strong>"Продвинутые" числа</strong></td>
+<td>java.math</td>
+<td><span class="code"><span class="text-green">BigInteger</span></span> и <span class="code"><span class="text-green">BigDecimal</span></span></td>
+</tr>
+<tr>
+<td><strong>Дата и время</strong></td>
+<td>java.time</td>
+<td><span class="code"><span class="text-green">LocalDate</span></span>, <span class="code"><span class="text-green">LocalTime</span></span>, <span class="code"><span class="text-green">LocalDateTime</span></span>, <span class="code"><span class="text-green">OffsetTime</span></span>, <span class="code"><span class="text-green">OffsetDateTime</span></span>, <span class="code"><span class="text-green">Instant</span></span></td>
+</tr>
+<tr>
+<td><strong>Различные вариации даты и времени</strong></td>
+<td>java.util</td>
+<td><span class="code"><span class="text-green">Date</span></span> и <span class="code"><span class="text-green">Calendar</span></span></td>
+</tr>
+<tr>
+<td><strong>Старые форматы даты и времени</strong></td>
+<td>java.sql</td>
+<td><span class="code"><span class="text-green">Date</span></span>, <span class="code"><span class="text-green">Time</span></span>, <span class="code"><span class="text-green">Timestamp</span></span></td>
+</tr>
+<tr>
+<td><strong>Массив байт или символов</strong></td>
+<td> </td>
+<td><span class="code"><span class="text-green">byte[]</span></span> или <span class="code"><span class="text-green">Byte[]</span></span>, <span class="code"><span class="text-green">char[]</span></span> или <span class="code"><span class="text-green">Character[]</span></span></td>
+</tr>
+<tr>
+<td><strong>Перечисления (enum)</strong></td>
+<td> </td>
+<td>Любой enum</td>
+</tr>
+<tr>
+<td><strong>Сериализуемые объекты</strong></td>
+<td> </td>
+<td>Любая имплементация java.io.Serializable</td>
+</tr>
+</tbody>
+</table>
+
+<p>Для всех этих типов есть их аналоги в языке SQL, поэтому Hibernate хорошо знает, как их сохранять и загружать из базы.</p>
+
+<p>Пример:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+class User
+{
+   @Column(name="id")
+   public Integer id;
+ 
+   @Column(name="name")
+   public String name;
+ 
+   @Column(name="level")
+   public Integer level;
+ 
+   @Column(name="created_date")
+   public Date createdDate;
+}
+</code></pre>
+
+<h2>Задания типа вручную – аннотация @Type</h2>
+
+<p>Иногда ты можешь захотеть вмешаться в политику Hibernate и явно указать ему в каком типе нужно хранить данные в базе. Например, у тебя в Entity-классе поле имеет тип Integer, но в базе для него есть колонка с типом VARCHAR.</p>
+
+<p>Для этого есть специальная аннотация – <span class="text-yellow"><span class="text-bold">@Type</span></span>. Выглядит она очень просто:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+@Type(type="имя-типа")</code></pre>
+    </div>
+
+<p>Давай, например, попросим Hibernate, чтобы поле <mark>createdDate</mark> нашего класса <span class="code"><span class="text-green">User</span></span> хранилось в базе в виде строки:</p>
+
+<pre class='language-java line-numbers'><code>
+@Entity
+@Table(name="user")
+class User
+{
+   @Column(name="id")
+    public Integer id;
+ 
+   @Column(name="created_date")
+   @Type(type="org.hibernate.type.StringType")
+    public Date createdDate;
+}
+</code></pre>
+
+<p>Если Hibernate поймет, как конвертировать тип Date в ваш новый тип, то просто сделает это. Если не поймет, тогда тебе нужно будет указать специальной конвертор типов. Но об этом немного позднее.</p>
+
+<h2>Список Hibernate-типов для баз данных</h2>
+
+<p>Кстати, ты обратил внимание, что мы указали тип <strong>org.hibernate.type.StringType</strong>, а не <strong>String</strong>. Это потому, что мы выбрали один из типов, который поддерживает СУБД, а не язык Java. У них у каждого своя система типов. Просто разработчики Hibernate придумали удобные названия в стиле Java, вместо этих VARCHAR’ов.</p>
+
+<p>Кстати, этот список не такой уж и маленький. Приведу тут его часть:</p>
+
+<table>
+<tbody>
+<tr>
+<th>Hibernate type (org.hibernate.type package)</th>
+<th>JDBC type</th>
+<th>Java type</th>
+<th>BasicTypeRegistry key(s)</th>
+</tr>
+<tr>
+<td><strong>StringType</strong></td>
+<td>VARCHAR</td>
+<td>java.lang.String</td>
+<td>string, java.lang.String</td>
+</tr>
+<tr>
+<td><strong>MaterializedClob</strong></td>
+<td>CLOB</td>
+<td>java.lang.String</td>
+<td>materialized_clob</td>
+</tr>
+<tr>
+<td><strong>TextType</strong></td>
+<td>LONGVARCHAR</td>
+<td>java.lang.String</td>
+<td>text</td>
+</tr>
+<tr>
+<td><strong>CharacterType</strong></td>
+<td>CHAR</td>
+<td>char, java.lang.Character</td>
+<td>char, java.lang.Character</td>
+</tr>
+<tr>
+<td><strong>BooleanType</strong></td>
+<td>BIT</td>
+<td>boolean, java.lang.Boolean</td>
+<td>boolean, java.lang.Boolean</td>
+</tr>
+<tr>
+<td><strong>NumericBooleanType</strong></td>
+<td>INTEGER, 0 is false, 1 is true</td>
+<td>boolean, java.lang.Boolean</td>
+<td>numeric_boolean</td>
+</tr>
+<tr>
+<td><strong>YesNoType</strong></td>
+<td>CHAR, 'N'/'n' is false, 'Y'/'y' is true. The uppercase value is written to the database.</td>
+<td>boolean, java.lang.Boolean</td>
+<td>yes_no</td>
+</tr>
+<tr>
+<td><strong>TrueFalseType</strong></td>
+<td>CHAR, 'F'/'f' is false, 'T'/'t' is true. The uppercase value is written to the database.</td>
+<td>boolean, java.lang.Boolean</td>
+<td>true_false</td>
+</tr>
+<tr>
+<td><strong>ByteType</strong></td>
+<td>TINYINT</td>
+<td>byte, java.lang.Byte</td>
+<td>byte, java.lang.Byte</td>
+</tr>
+<tr>
+<td><strong>ShortType</strong></td>
+<td>SMALLINT</td>
+<td>short, java.lang.Short</td>
+<td>short, java.lang.Short</td>
+</tr>
+<tr>
+<td><strong>IntegerTypes</strong></td>
+<td>INTEGER</td>
+<td>int, java.lang.Integer</td>
+<td>int, java.lang.Integer</td>
+</tr>
+<tr>
+<td><strong>LongType</strong></td>
+<td>BIGINT</td>
+<td>long, java.lang.Long</td>
+<td>long, java.lang.Long</td>
+</tr>
+<tr>
+<td><strong>FloatType</strong></td>
+<td>FLOAT</td>
+<td>float, java.lang.Float</td>
+<td>float, java.lang.Float</td>
+</tr>
+<tr>
+<td><strong>DoubleType</strong></td>
+<td>DOUBLE</td>
+<td>double, java.lang.Double</td>
+<td>double, java.lang.Double</td>
+</tr>
+<tr>
+<td><strong>BigIntegerType</strong></td>
+<td>NUMERIC</td>
+<td>java.math.BigInteger</td>
+<td>big_integer, java.math.BigInteger</td>
+</tr>
+<tr>
+<td><strong>BigDecimalType</strong></td>
+<td>NUMERIC</td>
+<td>java.math.BigDecimal</td>
+<td>big_decimal, java.math.bigDecimal</td>
+</tr>
+<tr>
+<td><strong>TimestampType</strong></td>
+<td>TIMESTAMP</td>
+<td>java.sql.Timestamp</td>
+<td>timestamp, java.sql.Timestamp</td>
+</tr>
+<tr>
+<td><strong>TimeType</strong></td>
+<td>TIME</td>
+<td>java.sql.Time</td>
+<td>time, java.sql.Time</td>
+</tr>
+<tr>
+<td><strong>DateType</strong></td>
+<td>DATE</td>
+<td>java.sql.Date</td>
+<td>date, java.sql.Date</td>
+</tr>
+<tr>
+<td><strong>CalendarType</strong></td>
+<td>TIMESTAMP</td>
+<td>java.util.Calendar</td>
+<td>calendar, java.util.Calendar</td>
+</tr>
+<tr>
+<td><strong>CalendarDateType</strong></td>
+<td>DATE</td>
+<td>java.util.Calendar</td>
+<td>calendar_date</td>
+</tr>
+<tr>
+<td><strong>CurrencyType</strong></td>
+<td>java.util.Currency</td>
+<td>VARCHAR</td>
+<td>currency, java.util.Currency</td>
+</tr>
+<tr>
+<td><strong>LocaleType</strong></td>
+<td>VARCHAR</td>
+<td>java.util.Locale</td>
+<td>locale, java.utility.locale</td>
+</tr>
+<tr>
+<td><strong>TimeZoneType</strong></td>
+<td>VARCHAR, using the TimeZone ID</td>
+<td>java.util.TimeZone</td>
+<td>timezone, java.util.TimeZone</td>
+</tr>
+<tr>
+<td><strong>UrlType</strong></td>
+<td>VARCHAR</td>
+<td>java.net.URL</td>
+<td>url, java.net.URL</td>
+</tr>
+<tr>
+<td><strong>ClassType</strong></td>
+<td>VARCHAR (class FQN)</td>
+<td>java.lang.Class</td>
+<td>class, java.lang.Class</td>
+</tr>
+</tbody>
+</table>
+ 
+<p>Таблица, конечно, большая, но очень полезная. Например, из нее понятно, что тип Boolean можно сохранить в базу как минимум шестью разными способами. Тебе столько не нужно? А кто сказал, что способ сохранения выбираешь ты?</p>
+
+<p>В SQL нет типа Boolean и его часто хранят так:</p>
+
+<ul>
+<li>1 или 0</li>
+<li>‘F’ или ‘T’</li>
+<li>‘Y’ или ‘N’</li>
+</ul>
+
+<p>Поэтому очень хорошо, когда Hibernate понимает все эти заморочки. Или, например, давай возьмем хранение массивов данных в базе. Есть куча разных вариантов и Hibernate умеет работать с ними со всеми:</p>
+
+<table>
+<tbody>
+<tr>
+<th>Hibernate type (org.hibernate.type package)</th>
+<th>JDBC type</th>
+<th>Java type</th>
+<th>BasicTypeRegistr</th>
+</tr>
+<tr>
+<td><strong>BlobType</strong></td>
+<td>BLOB</td>
+<td>java.sql.Blob</td>
+<td>blog, java.sql.Blob</td>
+</tr>
+<tr>
+<td><strong>ClobType</strong></td>
+<td>CLOB</td>
+<td>java.sql.Clob</td>
+<td>clob, java.sql.Clob</td>
+</tr>
+<tr>
+<td><strong>BinaryType</strong></td>
+<td>VARBINARY</td>
+<td>byte[]</td>
+<td>binary, byte[]</td>
+</tr>
+<tr>
+<td><strong>MaterializedBlobType</strong></td>
+<td>BLOB</td>
+<td>byte[]</td>
+<td>materized_blob</td>
+</tr>
+<tr>
+<td><strong>ImageType</strong></td>
+<td>LONGVARBINARY</td>
+<td>byte[]</td>
+<td>image</td>
+</tr>
+<tr>
+<td><strong>WrapperBinaryType</strong></td>
+<td>VARBINARY</td>
+<td>java.lang.Byte[]</td>
+<td>wrapper-binary, Byte[], java.lang.Byte[]</td>
+</tr>
+<tr>
+<td><strong>CharArrayType</strong></td>
+<td>VARCHAR</td>
+<td>char[]</td>
+<td>characters, char[]</td>
+</tr>
+<tr>
+<td><strong>CharacterArrayType</strong></td>
+<td>VARCHAR</td>
+<td>java.lang.Character[]</td>
+<td>wrapper-characters, Character[], java.lang.Character[]</td>
+</tr>
+<tr>
+<td><strong>UUIDBinaryType</strong></td>
+<td>BINARY</td>
+<td>java.util.UUID</td>
+<td>uuid-binary, java.util.UUID</td>
+</tr>
+<tr>
+<td><strong>UUIDCharType</strong></td>
+<td>CHAR, can also read VARCHAR</td>
+<td>java.util.UUID</td>
+<td>uuid-char</td>
+</tr>
+<tr>
+<td><strong>PostgresUUIDType</strong></td>
+<td>PostgreSQL UUID, through Types#OTHER, which complies to the PostgreSQL JDBC driver definition</td>
+<td>java.util.UUID</td>
+<td>pg-uuid</td>
+</tr>
+</tbody>
+</table>
+ 
+А после выпуска JDK 8 в Hibernate добавилось еще несколько типов, связанных со временем. И все с целью упростить тебе жизнь. Тебе больше не нужно думать, поддерживаются ли все эти новомодные типы. Создатели Hibernate уже добавили их поддержку для тебя:
+
+<table>
+<tbody>
+<tr>
+<th>Hibernate type (org.hibernate.type package)</th>
+<th>JDBC type</th>
+<th>Java type</th>
+<th>BasicTypeRegistr</th>
+</tr>
+<tr>
+<td><strong>DurationType</strong></td>
+<td>BIGINT</td>
+<td>java.time.Duration</td>
+<td>Duration, java.time.Duration</td>
+</tr>
+<tr>
+<td><strong>InstantType</strong></td>
+<td>TIMESTAMP</td>
+<td>java.time.Instant</td>
+<td>Instant, java.time.Instant</td>
+</tr>
+<tr>
+<td><strong>LocalDateTimeType</strong></td>
+<td>TIMESTAMP</td>
+<td>java.time.LocalDateTime</td>
+<td>LocalDateTime, java.time.LocalDateTime</td>
+</tr>
+<tr>
+<td><strong>LocalDateType</strong></td>
+<td>DATE</td>
+<td>java.time.LocalDate</td>
+<td>LocalDate, java.time.LocalDate</td>
+</tr>
+<tr>
+<td><strong>LocalTimeType</strong></td>
+<td>TIME</td>
+<td>java.time.LocalTime</td>
+<td>LocalTime, java.time.LocalTime</td>
+</tr>
+<tr>
+<td><strong>OffsetDateTimeType</strong></td>
+<td>TIMESTAMP</td>
+<td>java.time.OffsetDateTime</td>
+<td>OffsetDateTime, java.time.OffsetDateTime</td>
+</tr>
+<tr>
+<td><strong>OffsetTimeType</strong></td>
+<td>TIME</td>
+<td>java.time.OffsetTime</td>
+<td>OffsetTime, java.time.OffsetTime</td>
+</tr>
+<tr>
+<td><strong>OffsetTimeType</strong></td>
+<td>TIMESTAMP</td>
+<td>java.time.ZonedDateTime</td>
+<td>ZonedDateTime, java.time.ZonedDateTime</td>
+</tr>
+</tbody>
+</table>

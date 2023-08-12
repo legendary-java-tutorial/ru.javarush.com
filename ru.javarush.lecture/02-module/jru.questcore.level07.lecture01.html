@@ -1,0 +1,185 @@
+Проблемы многопоточности: обращение к общему ресурсу
+<p>----------------------------------------</p>
+Нити, разумеется, круты и открывают перед программистами мир невероятных возможностей и… ворох сложностей. Разные нити меняют состояние разных объектов в соответствии с задачей, которую каждая из них выполняет. И, разумеется, могут мешать друг другу! Но самое страшное происходит глубоко в недрах Java-машины… Звучит интригующе?
+<p>----------------------------------------</p>
+<p>&#8212; Привет, Амиго! Вчера мы обсудили преимущества и удобства, которые несет с собой многонитиевость (multithreading). Теперь пора взглянуть и на минусы. А они, к сожалению, не маленькие.</p>
+<p><strong>Раньше мы смотрели на программу, как на набор объектов, которые вызывают методы друг друга. </strong>Теперь все стало немного сложнее. Программа – это скорее набор объектов, по которым лазает несколько «маленьких роботиков» – нитей – и выполняют команды, содержащиеся в методах.</p>
+<p>Формально – второе не отменяет первое. Это все еще объекты, и они все еще вызывают методы друг у друга.<span class="text-red"> Но нужно не забывать, что нитей – несколько, и каждая нить выполняет свою работу – свое задание.</span></p>
+<p>Программа становится сложнее. <span class="text-red">Разные нити меняют состояние разных объектов в соответствии с задачей, которую каждая из них выполняет. И могут мешать друг другу.</span></p>
+<p>Но самое страшное происходит глубоко внутри Java-машины. Как я уже рассказывала, видимая одновременность работы нитей достигается за счет того, что процессор постоянно переключается с одной нити на другую. Переключился на нить, поработал 10 миллисекунд, переключился на следующую нить, там поработал 10 миллисекунд и так далее. И тут возникает проблема: переключение может произойти в самый неподходящий момент. Пример:</p>
+<table>
+<tbody>
+<tr>
+<th>Код первой нити</th>
+<th>Код второй нити</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-green">System.out.print ("Коле");
+System.out.print (" ");
+System.out.print ("15");
+System.out.print (" ");
+System.out.print ("лет");</span>
+<span class="text-green">System.out.println ();</span></code></pre>
+</td>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-user">System.out.print ("Лене");
+System.out.print (" ");
+System.out.print ("21");
+System.out.print (" ");
+System.out.print ("год");</span>
+<span class="text-user">System.out.println ();</span></code></pre>
+</td>
+</tr>
+</tbody>
+</table>
+<table>
+<tbody>
+<tr>
+<th>Ожидаемый вывод на консоль</th>
+</tr>
+<tr>
+<td><span class="text-green">Коле 15 лет</span><br />
+<span class="text-user">Лене 21 год</span></td>
+</tr>
+</tbody>
+</table>
+<table>
+<tbody>
+<tr>
+<th>Итоговый порядок</th>
+<th>Код первой нити</th>
+<th>Код второй нити</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-green">System.out.print ("Коле");</span>
+<span class="text-user">System.out.print ("Лене");
+System.out.print (" ")</span>;
+<span class="text-green">System.out.print (" ");
+System.out.print ("15");</span>
+<span class="text-user">System.out.print ("21");
+System.out.print (" ");</span>
+<span class="text-green">System.out.print (" ");
+System.out.print ("лет");
+System.out.println ();</span>
+<span class="text-user">System.out.print ("год");
+System.out.println ();</span></code></pre>
+</td>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-green">System.out.print ("Коле");</span>
+//исполняется другая нить
+//исполняется другая нить
+<span class="text-green">System.out.print (" ");
+System.out.print ("15");
+</span>//исполняется другая нить
+//исполняется другая нить
+<span class="text-green">System.out.print (" ");
+System.out.print ("лет");
+System.out.println ();</span>
+//исполняется другая нить
+//исполняется другая нить</code></pre>
+</td>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>//исполняется другая нить
+<span class="text-user">System.out.print ("Лене");
+System.out.print (" ");</span>
+//исполняется другая нить
+//исполняется другая нить
+<span class="text-user">System.out.print ("21");
+System.out.print (" ");</span>
+//исполняется другая нить
+//исполняется другая нить
+//исполняется другая нить
+<span class="text-user">System.out.print ("год");
+System.out.println ();</span></code></pre>
+</td>
+</tr>
+</tbody>
+</table>
+<table>
+<tbody>
+<tr>
+<th>Реальный вывод на консоль</th>
+</tr>
+<tr>
+<td><span class="text-green">Коле</span> <span class="text-user">Лене</span>  <span class="text-green">15</span> <span class="text-user">21</span> <span class="text-green">лет</span><br />
+<span class="text-user">год</span></td>
+</tr>
+</tbody>
+</table>
+<p>Или вот еще пример:</p>
+<table>
+<tbody>
+<tr>
+<th>Код</th>
+<th>Описание</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class MyClass
+{
+private String <span class="text-green">name1</span> = "Оля";
+private String <span class="text-user">name2</span> = "Лена";
+public void <span class="text-red">swap()</span>
+{
+String s = name1;
+name1 = name2;
+name2 = s;
+}
+}</code></pre>
+</td>
+<td>Метод <code><span class="text-red">swap</span></code> меняет местами значения переменных <code><span class="text-green">name1</span></code> &amp; <code><span class="text-user">name2</span></code>.</p>
+<p></td>
+</tr>
+</tbody>
+</table>
+<p>Что же будет если его вызывать из двух нитей одновременно?</p>
+<table>
+<tbody>
+<tr>
+<th>Итоговый порядок</th>
+<th>Код первой нити</th>
+<th>Код второй нити</th>
+</tr>
+<tr>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-green">String s1 = name1;</span> //Оля
+<span class="text-green">name1 = name2;</span> //Лена
+<span class="text-user">String s2 = name1;</span> //Лена(!)
+<span class="text-user">name1 = name2;</span> //Лена
+<span class="text-green">name2 = s1;</span> //Оля
+<span class="text-user">name2 = s2;</span> //Лена</code></pre>
+</td>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code><span class="text-green">String s1 = name1;
+name1 = name2;</span>
+//исполняется другая нить
+//исполняется другая нить
+<span class="text-green">name2 = s1;</span>
+//исполняется другая нить</code></pre>
+</td>
+<td>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>//исполняется другая нить
+//исполняется другая нить
+<span class="text-user">String s2 = name1;
+name1 = name2;</span>
+//исполняется другая нить
+<span class="text-user">name2 = s2;</span></code></pre>
+</td>
+</tr>
+</tbody>
+</table>
+<table>
+<tbody>
+<tr>
+<th>Итог</th>
+</tr>
+<tr>
+<td><span class="text-red">Обе переменных имеют значение «Лена».</span><br />
+Объект «Оля» был перезатерт и потерян.</td>
+</tr>
+</tbody>
+</table>
+<p><span class="text-user">&#8212; Кто бы мог подумать, что при элементарном присваивании возможны такие ошибки?</span></p>
+<p>&#8212; Да, но для этой проблемы есть решение. Но об этом немного позже – у меня горло пересохло.</p>

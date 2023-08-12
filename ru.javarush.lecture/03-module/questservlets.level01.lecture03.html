@@ -1,0 +1,64 @@
+Зависимости в Maven-проекте
+<p>----------------------------------------</p>
+dependency
+Как искать библиотеки в Maven Repository
+dependency repository
+<p>----------------------------------------</p>
+<h2>4.1 dependency</h2>
+<p>Теперь давай разберем еще одну вещь, которая сделала maven таким популярным – управление зависимостями.</p>
+<p>Если хочешь добавить в свой Maven-проект какую-нибудь библиотеку, тебе просто <span class="text-green">нужно добавить ее в pom-файл, в раздел dependencies</span>. Выглядит это до банальности просто.</p>
+<p>Давай добавим в наш проект последнюю версию Spring и Hibernate. Вот как это будет выглядеть:</p>
+<pre class=><code>&lt;dependencies>
+ 
+  &lt;dependency&gt;
+<span class="text-green">    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-core&lt;/artifactId&gt;
+	&lt;version&gt;5.3.18&lt;/version&gt; </span>
+  &lt;/dependency&gt;
+
+  &lt;dependency&gt;
+<span class="text-user">    &lt;groupId&gt;org.hibernate&lt;/groupId&gt;
+    &lt;artifactId&gt;hibernate-core&lt;/artifactId&gt;
+    &lt;version&gt;6.0.0.Final&lt;/version&gt;</span>
+  &lt;/dependency&gt;
+
+&lt;/dependencies&gt;
+</code></pre>
+<p>Все,  <span class="text-red">больше ничего делать не нужно</span>. Если ты добавишь такие строки в свой проект, IDEA тут же скачает нужные библиотеки. Спустя несколько секунд после этого ты сможешь использовать их классы в своем коде.</p>
+<p>Важный момент: если зальешь проект на GitHub или вышлешь кому-то в виде архива, этот человек гарантированно сможет его собрать. Вся информация по библиотекам, зависимостям и сценариям сборки уже зашита в проект.</p>
+<h2>4.2 Как искать библиотеки в Maven Repository</h2>
+<p>Кстати, я добавил XML-код этих двух библиотек в мой pom.xml меньше чем за минуту. Неплохо, да?  Сейчас я научу тебя быстро добавлять в проект любую библиотеку.</p>
+<p>Во-первых, в интернете есть <strong>центральный публичный Maven-репозиторий</strong>, в котором хранятся миллионы библиотек. Находится он по ссылке <a href="https://mvnrepository.com" target="_blank">https://mvnrepository.com/</a>, нужную тебе библиотеку можно искать непосредственно в нем.</p>
+<img data-max-width="1024" data-id="0e152cf9-cbd4-4a41-a2ca-517cfd94a32b" src="https://cdn.javarush.com/images/article/0e152cf9-cbd4-4a41-a2ca-517cfd94a32b/1024.jpeg" alt="Maven">
+<p>Во-вторых, можно еще проще – сразу пиши в Google <strong>“maven hibernate”</strong>, переходи по первой ссылке и получишь:</p>
+<img data-max-width="1024" data-id="0d39a8c7-6860-401b-b272-9090248bc5c0" src="https://cdn.javarush.com/images/article/0d39a8c7-6860-401b-b272-9090248bc5c0/1024.jpeg" alt="Maven 2">
+<p>Выбери нужную версию и кликай по ней. Иногда последняя версия содержит суффикс Beta, тогда бери что-нибудь постарее.</p>
+<p>Я выбрал версию 6.0.0.Final и перешел на последнюю страницу.</p>
+<img data-max-width="1024" data-id="a2d7e84e-abfb-4134-ab32-8d9105c2520d" src="https://cdn.javarush.com/images/article/a2d7e84e-abfb-4134-ab32-8d9105c2520d/1024.jpeg" alt="">
+<p>Зеленым квадратом тут выделен код, который тебе нужно скопировать в свой pom.xml. Все.</p>
+
+<h2>4.3 dependency repository</h2>
+<p>Во время сборки проекта твой Maven сначала будет искать указанную библиотеку (артефакт) в твоем локальном репозитории. Если он там ее не найдет, то затем будет искать в глобальном Maven-репозитории. И потом загрузит ее в твой локальный репозиторий – для ускорения следующей сборки.</p>
+<p>Но, кроме этих двух репозиториев существуют еще и другие.</p>
+<p>Во-первых, у многих крупных компаний есть maven-репозитории со своими собственными библиотеками.</p>
+<p>Во-вторых, до изобретения Docker, многие проекты после сборки просто клались в корпоративный Maven-репозиторий. А что? Отличное место для хранения всего. И версионирование опять-таки поддерживается.</p>
+<p>В общем, если ты вдруг решишь подключить к вашему проекту сторонний репозиторий, то это можно сделать так же просто, как и добавление зависимостей:</p>
+<pre class=><code>&lt;repositories&gt;
+ 
+  &lt;repository&gt;
+<span class="text-green">  	&lt;id&gt;public-javarush-repo&lt;/id&gt;
+  	&lt;name&gt;Public JavaRush Repository&lt;/name&gt;
+  	&lt;url&gt;http://maven.javarush.com&lt;/url&gt;</span>
+  &lt;/repository&gt;
+ 
+  &lt;repository&gt;
+<span class="text-user">  	&lt;id&gt;private-javarush-repo&lt;/id&gt;
+  	&lt;name&gt;Private JavaRush Repository&lt;/name&gt;
+  	&lt;url&gt;http://maven2.javarush.com&lt;/url&gt;</span>
+  &lt;/repository&gt;
+ 
+&lt;/repositories&gt;
+</code></pre>
+<p>У каждого репозитория есть 3 вещи: <strong>Key/ID, Имя</strong> и <strong>URL</strong>.  Имя можно указать любое – оно для твоего удобства, ID тоже для ваших внутренних нужд, фактически тебе нужно указать только URL.</p>
+<p>Если это публичный репозиторий, то эта информация легко гуглится, если корпоративный, то тебе ее дадут, когда дадут доступ к такому репозиторию.</p>
+<p>Создатели Maven умеют в стандартизацию, в этом им не откажешь.</p>

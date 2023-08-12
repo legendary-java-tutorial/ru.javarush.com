@@ -1,0 +1,90 @@
+Запросы с параметрами
+<p>----------------------------------------</p>
+Параметры к запросам
+Метод setParameterList()
+Защита от SQL Injection
+<p>----------------------------------------</p>
+<h2>4.1 Параметры к запросам</h2>
+<p>Hibernate позволяет передавать параметры запросам. Таким образом сильно упрощается вся работа с запросами и базой данных.</p>
+<p>Очень редко можно встретить неизменяемые запросы. Вначале ведь кажется, что тебе нужно вернуть из базы просто список товаров. А потом выясняется, что нужен актуальный список товаров для определенного пользователя на определенную дату. Отсортированный по нужному полю, и еще не весь список, а определенная страница: например, товары с 21 по 30-й.</p>
+<p>И именно эту задачу решают параметризированные запросы. Ты пишешь на HQL запрос, а потом значения, которые можно поменять заменяете на “специальные имена” – параметры. И потом отдельно при выполнении запроса можно передать значения этих параметров.</p>
+<p>Давай напишем HQL-запрос, который будет возвращать все задачи для пользователя с определенным именем:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-brown">from</span> EmployeeTask <span class="text-brown">where</span> employee.name = <span class="text-user">"Иван Иванович"</span>
+</code></pre>
+<p>А теперь заменим имя на параметр:</p>
+<pre class='language-java line-numbers'><code>
+<span class="text-brown">from</span> EmployeeTask <span class="text-brown">where</span> employee.name = <span class="text-user">:username</span>
+</code></pre>
+<p>И вот как будет выглядеть наш Java-код для поиска задач:</p>
+<pre class='line-numbers'><code>
+String hql = <span class="text-green">"from EmployeeTask where employee.name = :username"</span>;
+Query&lt;<span class="token keyword">EmployeeTask</span>&gt; <span class="text-viola">query</span> = <span class="text-user">session</span>.createQuery( hql, <span class="token keyword">EmployeeTask</span>.class);
+<span class="text-viola">query</span>.setParameter(<span class="text-green">"username"</span>, <span class="text-user">"Иван Иванович"</span>);
+List&lt;<span class="token keyword">EmployeeTask</span>&gt; resultLIst = <span class="text-viola">query</span>.<span class="text-red">list</span>();
+
+</code></pre>
+<p>Также вместо имени параметр, можно использовать просто номер:</p>
+<pre class='line-numbers'><code>
+String hql = <span class="text-green">"from EmployeeTask where employee.name = :1"</span>;
+Query&lt;<span class="token keyword">EmployeeTask</span>&gt; <span class="text-viola">query</span> = <span class="text-user">session</span>.createQuery( hql, <span class="token keyword">EmployeeTask</span>.class);
+<span class="text-viola">query</span>.setParameter(<span class="text-green">1</span>, <span class="text-user">"Иван Иванович"</span>);
+List&lt;<span class="token keyword">EmployeeTask</span>&gt; resultLIst = <span class="text-viola">query</span>.<span class="text-red">list</span>();
+
+</code></pre>
+<p>Хотя лучше, конечно, использовать имя – читать и поддерживать такой код гораздо легче. </p>
+<h2>4.2 Метод setParameterList().</h2>
+<p>Также бывают случаи, когда значение параметра не одно, а представляет список объектов. Например, мы хотим проверить, что профессии сотрудников содержатся в определенном списке.</p>
+<p>Как бы это можно было сделать:</p>
+<pre class='ine-numbers'><code>
+String hql = <span class="text-green">"from EmployeeTask where occupation IN (:occupation_list)"</span>;
+Query&lt;<span class="token keyword">EmployeeTask</span>&gt; <span class="text-viola">query</span> = <span class="text-user">session</span>.createQuery( hql, <span class="token keyword">EmployeeTask</span>.class);
+<span class="text-viola">query</span>.setParameterList(<span class="text-green">"occupation_list"</span>, <span class="text-user">new String[] {"Программист", "Тестировщик"}</span>);
+List&lt;<span class="token keyword">EmployeeTask</span>&gt; resultLIst = <span class="text-viola">query</span>.list();
+</code></pre>
+<p>В качестве значения параметра можно передать 4 вида списка:</p>
+<ul>
+	<li>массив объектов: Object[]</li>
+	<li>коллекция: Collection</li>
+	<li>типизированный массив: T[]</li>
+	<li>типизированная коллекция: Collection&lt;T&gt;</li>
+</ul>
+<p>Если ты решил передавать типизированную коллекцию или массив, то тебе нужно передать тип данных третьим параметром. Пример:</p>
+<pre class='ine-numbers'><code>
+String hql = <span class="text-green">"from EmployeeTask where occupation IN (:occupation_list)"</span>;
+Query&lt;<span class="token keyword">EmployeeTask</span>&gt; <span class="text-viola">query</span> = <span class="text-user">session</span>.createQuery( hql, <span class="token keyword">EmployeeTask</span>.class);
+<span class="text-viola">query</span>.setParameterList(<span class="text-green">"occupation_list"</span>, <span class="text-user">new String[] {"Программист", "Тестировщик"}</span>, <span class="text-red">String.class</span>);
+List&lt;<span class="token keyword">EmployeeTask</span>&gt; resultLIst = <span class="text-viola">query</span>.list();
+</code></pre>
+<p>При работе с параметрами-списками также можно использовать номер вместо имени параметра. Но опять-таки с именем удобнее.</p>
+<h2>4.3 Защита от SQL Injection</h2>
+<p>Одно из важнейший назначений параметров – это защита базы от SQL-инъекций. Многие программисты-новички вместо использования параметров просто бы склеили строку из нескольких частей.</p>
+<p>Вместо того, чтобы написать так:</p>
+<pre class='line-numbers'><code>
+String hql = <span class="text-green">"from EmployeeTask where employee.name = :username"</span>;
+Query&lt;<span class="token keyword">EmployeeTask</span>&gt; <span class="text-viola">query</span> = <span class="text-user">session</span>.createQuery( hql, <span class="token keyword">EmployeeTask</span>.class);
+<span class="text-viola">query</span>.setParameter(<span class="text-green">"username"</span>, <span class="text-user">"Иван Иванович"</span>);
+List&lt;<span class="token keyword">EmployeeTask</span>&gt; resultLIst = <span class="text-viola">query</span>.<span class="text-red">list</span>();
+</code></pre>
+<p>Написали бы так:</p>
+<pre class='line-numbers'><code>
+String hql = <span class="text-green">"from EmployeeTask where employee.name = "</span> + <span class="text-user">"Иван Иванович"</span>;
+Query&lt;<span class="token keyword">EmployeeTask</span>&gt; <span class="text-viola">query</span> = <span class="text-user">session</span>.createQuery( hql, <span class="token keyword">EmployeeTask</span>.class);
+List&lt;<span class="token keyword">EmployeeTask</span>&gt; resultLIst = <span class="text-viola">query</span>.<span class="text-red">list</span>();
+</code></pre>
+<p><mark class="red">Никогда так не делайте!</mark> Никогда не склеивай SQL/HQL-запрос из нескольких частей. Потому что рано или поздно имя пользователя придет тебе с клиента. И злобный хакер в качестве имени клиента передаст вам строку типа <code class="text-red">""Иван"; DROP TABLE user;"</code></p>
+<p>И тогда твой запрос к базе данных примет вид:</p>
+<pre class='line-numbers'><code>
+from EmployeeTask where employee.name = "Иван"; <span class="text-brown">DROP TABLE user</span>;
+</code></pre>
+<p>И это еще хорошо, если твои данные просто удалят. Можно ведь написать и так:</p>
+<pre class='line-numbers'><code>
+from EmployeeTask where employee.name = "Иван";
+<span class="text-brown">UPDATE user SET password = '1' WHERE user.role = 'admin'</span>
+</code></pre>
+<p>Или так:</p>
+<pre class='line-numbers'><code>
+from EmployeeTask where employee.name = "Иван";
+<span class="text-brown">UPDATE user SET role = 'admin' WHERE user.id = 123;</span>
+</code></pre>
+<img data-max-width="800" data-id="0fc861cf-6b1d-4351-bade-e963daab3228" src="https://cdn.javarush.com/images/article/0fc861cf-6b1d-4351-bade-e963daab3228/800.jpeg" alt="">

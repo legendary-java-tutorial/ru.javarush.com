@@ -1,0 +1,211 @@
+DAO
+<p>----------------------------------------</p>
+Знакомство с DAO. 
+Преимущества DAO. 
+Стандартный подход.
+<p>----------------------------------------</p>
+<h2>Знакомство с DAO</h2>
+
+<p>При работе с базой данных через JDBC или даже через Hibernate код часто получается более громоздким, чем это хотелось бы. Запрос к базе часто содержит:</p>
+
+<ul>
+<li>валидацию данных</li>
+<li>установку параметров запроса</li>
+<li>выбор HQL-запроса в зависимости от параметров запроса</li>
+<li>конструирование запроса с помощью Criteria API</li>
+<li>настройку кэширования</li>
+<li>первичную обработку ошибок и т. п.</li>
+</ul>
+
+<p>Поэтому общепринятая практика — создавать специальные классы для работы с базой данных. Такие классы получили название DAO, Data Access Object. Их задача — скрывать все сложности работы с базой и предоставлять наружу красивый и удобный интерфейс.</p>
+
+<p>Пример:</p>
+ 
+<pre class='language-java line-numbers'><code>
+public class EmployeeDAO {
+ 
+   public List&lt;Employee> getEmployeeList(int from, int count) {
+   	String hqlQuery = “from Employee”;
+   	Query&lt;Employee> query = session.createQuery(hqlQuery, Employee.class);
+   	query.setFirstResult(from);
+   	query.setMaxResults(count);
+   	return query.getResultList();
+  }
+ 
+	public int getEmployeeCount() {
+	     String hqlQuery = “select count(*) from Employee”;
+     	Query&lt;Integer> query = session.createQuery(hqlQuery, Integer.class);
+     	return query.getSingleResult();
+   }
+ 
+	public Employee getEmployeeByUniqName(String name) {
+	     String hqlQuery = “from Employee where name = :name”;
+     	Query&lt;Integer> query = session.createQuery(hqlQuery, Employee.class);
+     	query.setParametуr(“name”, name);
+     	return query.getSingleResult();
+   }
+}
+</code></pre>
+ 
+<p>У нас есть класс <span class="code"><span class="text-green">EmployeeDAO</span></span>, с помощью которого мы получаем из базы данных объекты типа Employee. Сам класс, хоть и напичкан аннотациями, не содержит методов по сохранению себя в базу.</p>
+
+<h2>Преимущества DAO</h2>
+
+<p>Преимуществ у такого подхода очень много:</p>
+
+<p>Во-первых, мы полностью скрыли в DAO-классе работу с базой данных. Если ты в будущем решишь переписать все запросы с HQL на Criteria API или на Native Query, это никак не затронет код за границами этого класса.</p>
+
+<p>Во-вторых, ты можешь усложнять поведение этих методов. Можно добавить кеширование, events, валидацию параметров. Это все будет скрыто от кода снаружи.</p>
+
+<p>В-третьих, если тебе нужен метод, которого еще нет, ты просто добавляешь его сюда. Например, мне нужен метод, который вернет все задачи пользователя, которые уже проэкспарились. Тогда я просто сделают так:  </p>
+ 
+<pre class='language-java line-numbers'><code>
+public class EmployeeDAO {
+ 
+   public List&lt;Task> getExpiredTasks(int userId, int from, int count) {
+   	String hqlQuery = “from Task where task.user.id = :id and deadline &lt; curdate()”;
+   	Query&lt;Task> query = session.createQuery(hqlQuery, Task.class);
+   	query.setFirstResult(from);
+   	query.setMaxResults(count);
+   	return query.getResultList();
+  }
+ 
+   public int getExpiredTasksCount(int userId) {
+   	String hqlQuery = “select count(*) from Task where task.user.id = :id and deadline &lt; curdate()”;
+   	Query&lt;Integer> query = session.createQuery(hqlQuery, Integer.class);
+   	return query.getSingleResult();
+  }
+}
+</code></pre>
+ 
+<p>Я добавил в класс два метода:</p>
+
+<ul>
+<li><span class="code text-orange">getExpiredTasksCount()</span> — возвращает количество проэкспареных задач у пользователя</li>
+<li><span class="code text-orange">getExpiredTasks()</span> — возвращает список проэкспареных задач у пользователя</li>
+</ul>
+
+<p>Мне нужны методы — я их добавил. И сразу могу использовать. А оптимизировать их буду потом.</p>
+
+<p>Более того, эти методы можно покрыть Unit-тестами перед переписыванием и оптимизациями, таким образом мы будем знать, что работа с базой данных осталась такой, как и была.</p>
+
+<h2>Стандартный подход</h2>
+
+<p>Очень часто у DAO-классов есть методы, которые совпадают. Например, такие:</p>
+ 
+<table>
+<tbody>
+<tr>
+<td><span class="code text-orange">T <span class="text-red">getById</span>(final long id)</span></td>
+<td>Получить объект по его id</td>
+</tr>
+<tr>
+<td><span class="code text-orange">List&lt;T> <span class="text-red">getItems</span>(int from, int count)</span></td>
+<td>Получить список объектов по заданному диапазону</td>
+</tr>
+<tr>
+<td><span class="code text-orange">List&lt;T> <span class="text-red">getAll</span>()</span></td>
+<td>Получить все объекты данного типа</td>
+</tr>
+<tr>
+<td><span class="code text-orange">int <span class="text-red">getCount</span>()</span></td>
+<td>Узнать количество объектов</td>
+</tr>
+<tr>
+<td><span class="code text-orange">T <span class="text-red">save</span>(final T entity)</span></td>
+<td>Сохранить объект в базу</td>
+</tr>
+<tr>
+<td><span class="code text-orange">T <span class="text-red">update</span>(final T entity)</span></td>
+<td>Обновить объект в базе</td>
+</tr>
+<tr>
+<td><span class="code text-orange">void <span class="text-red">delete</span>(final T entity)</span></td>
+<td>Удалить объект из базы</td>
+</tr>
+<tr>
+<td><span class="code text-orange">void <span class="text-red">deleteById</span>(final long entityId)</span></td>
+<td>Удалить объект из базы по id</td>
+</tr>
+</tbody>
+</table>
+ 
+<p>Эти методы встречаются практически у каждого DAO-класса в мире. Вот если есть какой-то DAO-класс, то с 90% вероятностью у него будут такие методы.</p>
+
+<p>Да, могут быть и другие, но такие тоже будут. Потому что это очень удобно. И позволяет не взаимодействовать с базой или Hibernate напрямую.</p>
+
+<p>А если есть одинаковые методы, то их нужно что? Правильно, вынести в базовый класс.</p>
+
+<p>Выглядит он примерно так:</p>
+
+<pre class='language-java line-numbers'><code>
+public abstract class AbstractHibernateDao&lt;T > {
+    private final Class&lt;T> clazz;
+    private SessionFactory sessionFactory;
+ 
+    public AbstractHibernateDao(final Class&lt;T> clazzToSet)   {
+    	this.clazz = clazzToSet;
+    }
+ 
+    public T getById(final long id) {
+    	return (T) getCurrentSession().get(clazz, id);
+    }
+ 
+    public List&lt;T> getItems(int from, int count) {
+    	Query query = getCurrentSession().createQuery(clazz , "from " + clazz.getName())
+    	query.setFirstResult(offset);
+    	query.setMaxResults(count);
+  	  return query.singleResult();
+    }
+ 
+    public List&lt;T> findAll() {
+    	return getCurrentSession().createQuery(clazz, "from " + clazz.getName()).list();
+    }
+ 
+    public T create(final T entity) {
+    	getCurrentSession().saveOrUpdate(entity);
+    	return entity;
+    }
+ 
+    public T update(final T entity) {
+    	return (T) getCurrentSession().merge(entity);
+    }
+ 
+    public void delete(final T entity) {
+    	getCurrentSession().delete(entity);
+    }
+ 
+    public void deleteById(final long entityId) {
+    	final T entity = getById(entityId);
+    	delete(entity);
+    }
+ 
+    protected Session getCurrentSession() {
+    	return sessionFactory.getCurrentSession();
+    }
+}
+</code></pre>
+
+<p>И тогда наш <span class="code"><span class="text-green">EmployeeDAO</span></span> будет выглядеть так:</p>
+
+<pre class='language-java line-numbers'><code>
+public class EmployeeDAO extends AbstractHibernateDAO&lt;Employee> {
+ 
+   public EmployeeDAO (){
+  	super(Employee.class );
+   }
+}
+</code></pre>
+
+<p>А <span class="code"><span class="text-green">TaskDAO</span></span> — так:</p>
+
+<pre class='language-java line-numbers'><code>
+public class TaskDAO extends AbstractHibernateDAO&lt;Task> {
+ 
+   public TaskDAO (){
+  	super(Task.class );
+   }
+}
+</code></pre>
+
+<p>И у обоих этих классов будут все методы, которые мы объявили у <span class="code"><span class="text-green">AbstractHibernateDAO</span></span>. Унификация — это очень удобно и практично.</p>

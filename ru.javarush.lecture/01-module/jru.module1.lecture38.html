@@ -1,0 +1,380 @@
+ByteArrayOutputStream
+<p>----------------------------------------</p>
+Класс ByteArrayOutputStream реализует поток вывода, в котором данные пишутся в байтовый массив. Буфер автоматически растет, поскольку данные пишутся ему. Поток класса ByteArrayOutputStream создает буфер в памяти...
+<p>----------------------------------------</p>
+    <p>Класс <span class="code"><span class="text-green">ByteArrayOutputStream</span></span> реализует поток вывода, в котором данные пишутся в байтовый массив. Буфер автоматически растет, поскольку данные пишутся ему.</p>
+
+    <p>Поток класса <span class="code"><span class="text-green">ByteArrayOutputStream</span></span> создает буфер в памяти, и все данные, отправленные в поток, хранятся в буфере.</p>
+
+    <img data-max-width="512" data-id="0ffe7749-6c4e-4672-9a0e-4145cd30b926" src="https://cdn.javarush.com/images/article/0ffe7749-6c4e-4672-9a0e-4145cd30b926/original.png" alt="">
+
+    <h2>Конструкторы ByteArrayOutputStream</h2>
+
+    <p>У класса <span class="code"><span class="text-green">ByteArrayOutputStream</span></span> есть такие конструкторы:</p>
+
+    <table>
+        <tbody>
+            <tr>
+                <th>Конструктор</th>
+                <th></th>
+            </tr>
+            <tr>
+                <td><span class="code text-orange"><span class="text-bold">ByteArrayOutputStream()</span></span></td>
+                <td>Конструктор создает буфер в памяти в 32 байта.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange"><span class="text-bold">ByteArrayOutputStream(int a)</span></span></td>
+                <td>Конструктор создает буфер в памяти с определенным размером.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>А вот так класс выглядит внутри: </p>
+
+    <pre class='language-java line-numbers'><code>
+//сам буфер, в котором хранятся данные.
+protected byte buf[];
+
+//текущее количество байтов, записанных в буфер.
+protected int count;
+
+public ByteArrayOutputStream() {
+    this(32);
+}
+
+public ByteArrayOutputStream(int size) {
+    if (size &lt; 0) {
+        throw new IllegalArgumentException("Negative initial size: "
+                                           + size);
+    }
+    buf = new byte[size];
+}
+    </code></pre>
+
+    <h2>Методы ByteArrayOutputStream </h2>
+
+    <p>Давайте поговорим о методах, которые мы можем использовать в нашем классе.</p>
+
+    <p>Попробуем положить что-то в наш поток. Для этого будем использовать метод <span class="code text-orange">write()</span> — он может принять один байт или набор байтов, который ему нужно записать.</p>
+
+    <table>
+        <tbody>
+            <tr>
+                <th>Метод</th>
+                <th></th>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">void write(int b)</span></td>
+                <td>Запись одного байта.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">void write(byte b[], int off, int len)</span></td>
+                <td>Запись массива байтов определенного размера.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">void writeBytes(byte b[])</span></td>
+                <td>Запись массива байтов.</td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">void writeTo(OutputStream out)</span></td>
+                <td>Записывает все данные текущего выходного потока в указанный выходной поток.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>Реализация методов:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws IOException {
+   ByteArrayOutputStream outputByte = new ByteArrayOutputStream();
+   //запись одного байта
+   while(outputByte.size()!= 8) {
+      outputByte.write("javarush".getBytes());
+   }
+
+   //запись массива байтов
+   String value = "\nWelcome to Java\n";
+   byte[] arrBytes = value.getBytes();
+   outputByte.write(arrBytes);
+
+   //запись массива по размерности
+   String javaRush = "JavaRush";
+   byte[] b = javaRush.getBytes();
+   outputByte.write(b, 4, 4);
+
+   //запись в файл
+   FileOutputStream fileOutputStream = new FileOutputStream("output.txt");
+   outputByte.write(80);
+   outputByte.writeTo(fileOutputStream);
+}
+    </code></pre>
+
+    <p>В результате выполнения у нас создастся файл <span class="code">output.txt</span> с текстом внутри:</p>
+
+    <img data-max-width="512" data-id="bd01fb13-2528-445d-b71f-be3cf6ea0f2f" src="https://cdn.javarush.com/images/article/bd01fb13-2528-445d-b71f-be3cf6ea0f2f/original.png" alt="">
+
+    <p>Метод <span class="code text-orange">toByteArray()</span> возвращает текущее содержимое этого выходного потока в виде массива байтов. А с помощью метода <span class="code text-orange">toString()</span> можно получить массив байтов <span class="text-neon">buf</span> в виде текста:</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws IOException {
+    ByteArrayOutputStream outputByte = new ByteArrayOutputStream();
+
+    String value = "JavaRush";
+    outputByte.write(value.getBytes());
+
+    byte[] result = outputByte.toByteArray();
+    System.out.println("Вывод содержимого:");
+
+    for(int i = 0 ; i &lt; result.length; i++) {
+        // Вывод символов
+        System.out.print((char)result[i]);
+    }
+}
+    </code></pre>
+
+    <p>Как результат — в нашем буфере лежит массив байтов, которые мы ему передали.</p>
+
+    <img data-max-width="512" data-id="80d53e77-b743-468f-b507-75c8101ac64b" src="https://cdn.javarush.com/images/article/80d53e77-b743-468f-b507-75c8101ac64b/original.png" alt="">
+
+    <p>Метод <span class="code text-orange">reset()</span> сбрасывает количество действительных байт в выходном потоке байтового массива до нуля (поэтому все накопленное на выходе будет сброшено).</p>
+
+    <pre class='language-java line-numbers'><code>
+public static void main(String[] args) throws IOException {
+   ByteArrayOutputStream outputByte = new ByteArrayOutputStream(120);
+
+   String value = "JavaRush";
+   outputByte.write(value.getBytes());
+   byte[] result = outputByte.toByteArray();
+   System.out.println("Вывод до сброса: ");
+
+   for (byte b : result) {
+      // Вывод символов
+      System.out.print((char) b);
+   }
+
+   outputByte.reset();
+
+   byte[] resultAfterReset = outputByte.toByteArray();
+   System.out.println("\nВывод содержимого после сброса:");
+
+   for (byte b : resultAfterReset) {
+      // Вывод символов
+      System.out.print((char) b);
+   }
+}
+    </code></pre>
+
+    <p>В результате при выводе нашего буфера после метода <span class="code text-orange">reset()</span> мы ничего не получим.</p>
+
+    <h3>Особенности метода close()</h3>
+
+    <p>Этот метод заслуживает особого внимания. Чтобы понять, что он делает, перейдем внутрь него:</p>
+
+    <pre class='language-java line-numbers'><code>
+/**
+ * Closing a {@code ByteArrayOutputStream} has no effect. The methods in
+ * this class can be called after the stream has been closed without
+ * generating an {@code IOException}.
+ */
+public void close() throws IOException {
+}
+    </code></pre>
+
+    <p>Стоит отметить, что метод <span class="code text-orange">close()</span> в <span class="code"><span class="text-green">ByteArrayOutputStream</span></span>, по факту, ничего не делает. </p>
+
+    <p>Почему же так? <span class="code"><span class="text-green">ByteArrayOutputStream</span></span> — это поток на основе памяти (то есть, управляемый и заполняемый пользователем в коде), поэтому при вызове <span class="code text-orange">close()</span> никакого эффекта не происходит. </p>
+
+    <h2>Практика</h2>
+
+    <p>Теперь давайте попробуем реализовать файловую систему, используя наш <span class="code"><span class="text-green">ByteArrayOutputStream</span></span> и <span class="code"><span class="text-green">ByteArrayInputStream</span></span>. </p>
+
+    <p>Напишем класс <span class="code"><span class="text-green">FileSystem</span></span> с применением паттерна <span class="code text-brown">Singleton</span> и будем использовать статическую <span class="code"><span class="text-green">HashMap&lt;String, byte[]&gt;</span></span>, где: </p>
+
+    <ul>
+        <li><span class="code">String</span> — путь к файлу;</li>
+        <li><span class="code">byte[]</span> — данные в сохраненном файле.</li>
+    </ul>
+
+    <pre class='language-java line-numbers'><code>
+import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
+
+class FileSystem {
+   private static final FileSystem fileSystem = new FileSystem();
+   private static final Map&lt;String, byte[]&gt; files = new HashMap&lt;&gt;();
+
+   private FileSystem() {
+   }
+
+   public static FileSystem getFileSystem() {
+       return fileSystem;
+   }
+
+   public void create(String path) {
+       validateNotExists(path);
+       files.put(path, new byte[0]);
+   }
+
+   public void delete(String path) {
+       validateExists(path);
+       files.remove(path);
+   }
+
+   public boolean isExists(String path) {
+       return files.containsKey(path);
+   }
+
+   public InputStream newInputStream(String path) {
+       validateExists(path);
+       return new ByteArrayInputStream(files.get(path));
+   }
+
+   public OutputStream newOutputStream(String path) {
+       validateExists(path);
+       return new ByteArrayOutputStream() {
+           @Override
+           public void flush() throws IOException {
+               final byte[] bytes = toByteArray();
+               files.put(path, bytes);
+               super.flush();
+           }
+
+           @Override
+           public void close() throws IOException {
+               final byte[] bytes = toByteArray();
+               files.put(path, bytes);
+               super.close();
+           }
+       };
+   }
+
+   private void validateExists(String path) {
+       if (!files.containsKey(path)) {
+           throw new RuntimeException("File not found");
+       }
+   }
+
+   private void validateNotExists(String path) {
+       if (files.containsKey(path)) {
+           throw new RuntimeException("File exists");
+       }
+   }
+}
+    </code></pre>
+
+    <p>В этом классе мы создали публичные методы: </p>
+
+    <ul>
+        <li>стандартные методы CRUD (create, read, update, delete), </li>
+        <li>метод проверки того, существует ли файл,</li>
+        <li>метод получения инстанса файловой системы.</li>
+    </ul>
+
+    <p>Для чтения из файла возвращаем пользователю <span class="code"><span class="text-green">InputStream</span></span>. Под капотом — реализация <span class="code"><span class="text-green">ByteArrayInputStream</span></span>. Буфером выступает байтовый массив, который хранится в мапе <span class="text-neon">files</span>.</p>
+
+    <p>Второй интересный метод — <span class="code text-orange">newOutputStream</span>. При вызове этого метода мы возвращаем пользователю новый объект типа <span class="text-orange">ByteArrayOutputStream</span> с двумя переопределенными методами: <span class="code text-orange">flush</span> и <span class="code text-orange">close</span>. Вызов любого из этих методов выступает триггером того, что нужно произвести запись. </p>
+
+    <p>Именно это мы и делаем: получаем байтовый массив, в который пользователь писал что угодно, и сохраняем его копию как <mark class="user">value</mark> в мапу <span class="text-neon">files</span> с соответствующим ключом.</p>
+
+    <p>Для тестирования написанной файловой системы (FS) используем такой код:</p>
+
+    <pre class='language-java line-numbers'><code>
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+public class MyFileSystemTest {
+   public static void main(String[] args) throws IOException {
+       FileSystem fileSystem = FileSystem.getFileSystem();
+       final String path = "/user/bin/data.txt";
+
+       // Создаем файл
+       fileSystem.create(path);
+       System.out.println("Файл успешно создан");
+
+       // Убеждаемся что он пустой
+       try (InputStream inputStream = fileSystem.newInputStream(path)) {
+           System.out.print("Содержимое файла:\t");
+           System.out.println(read(inputStream));
+       }
+
+       // Записываем в него данные
+       try (final OutputStream outputStream = fileSystem.newOutputStream(path)) {
+           outputStream.write("JavaRush".getBytes(UTF_8));
+           System.out.println("Данные записаны в файл");
+       }
+
+       // Читаем данные
+       try (InputStream inputStream = fileSystem.newInputStream(path)) {
+           System.out.print("Содержимое файла:\t");
+           System.out.println(read(inputStream));
+       }
+
+       // Удаляем файл
+       fileSystem.delete(path);
+
+       // Проверяем что такого файла в FS не существует
+       System.out.print("Файл существует:\t");
+       System.out.println(fileSystem.isExists(path));
+
+   }
+
+   private static String read(InputStream inputStream) throws IOException {
+       return new String(inputStream.readAllBytes(), UTF_8);
+   }
+}
+    </code></pre>
+
+    <p>При тестировании проверим действия: </p>
+
+    <ol>
+        <li>Создаем новый файл.</li>
+        <li>Проверяем, что созданный файл пустой.</li>
+        <li>Записываем какие-либо данные в файл.</li>
+        <li>Читаем записанные данные, убеждаемся, что они соответствуют записанным.</li>
+        <li>Удаляем файл.</li>
+        <li>Проверяем, что файл удалился.</li>
+    </ol>
+
+    <p>В результате работы этого кода получим вывод:</p>
+
+    <div class="terminal">Файл успешно создан<br />
+Содержимое файла:	<br />
+Данные записаны в файл</br >
+Содержимое файла:	JavaRush<br />
+Файл существует:	false</div>
+
+    <p>Зачем нам был нужен этот пример? </p>
+
+    <p>Все просто: любые данные — это набор байтов. Если нужно часто и много читать с диска и записывать на диск, код будет работать медленно из-за проблем IO. В таком случае уместно держать в RAM виртуальную файловую систему, с которой можно работать так же, как и с привычным диском. А что может быть проще, чем <span class="code"><span class="text-green">InputStream</span></span> и <span class="code"><span class="text-green">OutputStream</span></span>? </p>
+
+    <p>Естественно, это учебный пример, а не production read код. В нем НЕ учтены (список не исключительный):</p>
+
+    <ul>
+        <li>многопоточный доступ;</li>
+        <li>ограничения на размер файлов (объем доступной RAM для запущенной JVM);</li>
+        <li>нет проверки структуры путей;</li>
+        <li>нет проверок на данные, полученные в качестве параметров.</li>
+    </ul>
+
+    <p><span class="text-bold"><em>Интересный инсайд:</em></span><br />
+В чем-то похожий подход используется на сервере валидации задач JavaRush. Поднимается виртуальная FS, определяется, какие именно тесты нужно запустить для валидации задачи, происходит тестирование и чтение результатов.</p>
+
+    <h2>Итог и главный вопрос</h2>
+
+    <p>Самым главным вопросом после прочтения лекции будет: “Почему я не могу просто использовать <span class="text-neon">byte[]</span>, ведь это удобнее и у меня нет ограничений?”</p>
+
+    <p>Преимущество <span class="code"><span class="text-green">ByteArrayInputStream</span></span> — он служит очень убедительным указанием на то, что вы собираетесь использовать байты только для чтения (поскольку поток не предоставляет интерфейс для их изменения). Хотя, важно отметить, что программист <em>может</em> по-прежнему напрямую обращаться к байтам.</p>
+
+    <p>Но если иногда это <span class="text-neon">byte[]</span>, иногда файл, иногда сетевое соединение и так далее, вам будет нужна какая-то абстракция для "потока байтов, и мне все равно, откуда они". Вот что такое <span class="code"><span class="text-green">InputStream</span></span>. Когда источником оказывается байтовый массив, <span class="code"><span class="text-green">ByteArrayInputStream</span></span> является хорошим <span class="code"><span class="text-green">InputStream</span></span> для использования.</p>
+
+    <p>Это полезно во многих ситуациях, но приведем два конкретных примера:</p>
+
+    <ol>
+        <li><p>Вы пишете библиотеку, которая принимает байты и как-то их обрабатывает (например, это библиотека обработки изображений). Пользователи вашей библиотеки могут предоставлять байты из файла, из <span class="text-neon">byte[]</span> в памяти или из какого-либо другого источника. Итак, вы предоставляете интерфейс, который принимает <span class="code"><span class="text-green">InputStream</span></span> — это означает, что если у них есть <span class="text-neon">byte[]</span>, им нужно обернуть его в <span class="code"><span class="text-green">ByteArrayInputStream</span></span>.</p></li>
+
+        <li><p>Вы пишете код, который считывает сетевое соединение. Но для модульного тестирования этого кода вам не нужно открывать соединение; вы хотите просто добавить несколько байтов в код. Таким образом, код принимает <span class="code"><span class="text-green">InputStream</span></span>, а ваш тест предоставляет <span class="code"><span class="text-green">ByteArrayInputStream</span></span>.</p></li>
+    </ol>

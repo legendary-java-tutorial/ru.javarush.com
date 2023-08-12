@@ -1,0 +1,83 @@
+Порядок загрузки классов, статические данные&#8230;
+<p>----------------------------------------</p>
+Вы уже в курсе, что классы в Java – это файлы на диске, содержащие байт-код, то есть скомпилированный Java-код. Java-машина не загружает их без необходимости. Как только где-то в коде происходит обращение к классу, Java-машина проверяет, загружен ли он. Из этой лекции вы узнаете, что происходит, если он не загружен… и многое другое.
+<p>----------------------------------------</p>
+<p>&#8212; Привет, Амиго! Слышала, Риша рассказал тебе новую и очень интересную тему?!</p>
+<p><span class="text-user">&#8212; Да, Ким.</span></p>
+<p>&#8212; Моя тема будет не менее интересной. Я хочу рассказать тебе о загрузке в память классов.</p>
+<p>Классы в Java – это файлы на диске, содержащие байт-код – скомпилированный Java-код.</p>
+<p><span class="text-user">&#8212; Да, я помню.</span></p>
+<p><span class="text-red">&#8212; Java-машина не загружает их без необходимости.</span> Как только где-то в коде происходит обращение к классу, Java-машина проверяет – загружен ли он. И если нет, то <span class="text-red">загружает и инициализирует его.</span></p>
+<p>Инициализация класса – это присваивание значений всех его статических переменных и вызов всех статических блоков.</p>
+<p><span class="text-user">&#8212; Похоже на вызов конструктора у объекта. А что такое статический блок?</span></p>
+<p>&#8212; Если для инициализации переменных объекта нужно выполнить сложный код (например, что-то загрузить из файла), мы можем сделать это в конструкторе. Статические переменные такой возможности лишены. Но т.к. потребность в этом осталась, в классы можно добавить статический блок или блоки, которые по сути своей эквивалентны вызову статических конструкторов.</p>
+<p>Вот как это выглядит:</p>
+<table>
+<tbody>
+<tr>
+<th width="50%">Код</th>
+<th width="50%">Что происходит на самом деле</th>
+</tr>
+<tr>
+<td>
+<pre data-line="" data-start="" class="line-numbers language-java"><code>class Cat
+{
+public static int catCount = 0 ;
+public static String namePrefix;
+
+static
+{
+Properties p = new Properties();
+p.loadFromFile("cat.properties");
+namePrefix = p.get("name-prefix");
+}
+
+public static int maxCatCount = 50;
+
+static
+{
+Properties p = new Properties();
+p.loadFromFile("max.properties");
+if (p.get("cat-max") != null)
+maxCatCount = p.getInt("cat-max");
+}
+
+}
+
+
+</code></pre>
+</td>
+<td>
+<pre data-line="" data-start="" class="line-numbers language-java"><code>class Cat
+{
+public static int catCount;
+public static String namePrefix;
+public static int maxCatCount;
+
+//статические конструкторы в Java
+//запрещены, но если бы они были, то все
+//выглядело бы так
+public static Cat()
+{
+catCount = 0;
+
+Properties p = new Properties();
+p.loadFromFile("cat.properties");
+namePrefix = p.get("name-prefix");
+
+maxCatCount = 50;
+
+Properties p2 = new Properties();
+p2.loadFromFile("max.properties");
+if (p2.get("cat-max")!=null)
+maxCatCount = p2.getInt("cat-max");
+}
+}</code></pre>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.task15.task1533"></div>
+<p>Это очень похоже на то, что происходит при вызове конструктора. Я даже <span class="text-red">записала это в виде несуществующего статического конструктора.</span></p>
+<p><span class="text-user">&#8212; Да, я все понял.</span></p>
+<p>&#8212; Отлично.</p>

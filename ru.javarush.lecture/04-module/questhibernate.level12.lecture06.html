@@ -1,0 +1,152 @@
+Использование различных конвертеров типов данных
+<p>----------------------------------------</p>
+Создание собственного конвертера типов
+Создаем собственный тип данных
+Регистрация своего типа
+<p>----------------------------------------</p>
+<h2>7.1 Создание собственного конвертера типов</h2>
+<p>Иногда возникают ситуации, когда ты хочешь сохранить в одну колонку таблицы достаточно сложный тип данных. Если Hibernate знает, как преобразовать его в строку (и обратно), то все отлично. Если же нет, то тебе придется написать собственный конвертер данных.</p>
+<p>Допустим, кто-то решил хранить год рождения пользователя в базе в виде <code>ГГ.ММ.ДД</code>, например: <code>98.12.15</code>. Тебе же нужно преобразовать его к обычной дате: <code>15/12/1998</code>. Тогда придется написать собственный конвертер.</p>
+<p>Для этого нужно реализовать интерфейс <code>AttributeConverter&lt;EntityType, DbType&gt;</code>.</p>
+<pre class='line-numbers'><code>
+@Converter(autoApply = true)
+public class <span class="text-viola">DateConverter</span> implements <span class="text-brown">AttributeConverter</span>&lt;<span class="text-user">java.time.LocalDate, String</span>&gt; {
+ 
+    public <span class="text-green">String</span> <span class="text-red">convertToDatabaseColumn</span>(<span class="text-user">java.time.LocalDate date</span>) {
+    	return <span class="text-user">date</span>.format("YY.MM.DD");
+    }
+ 
+    public <span class="text-user">java.time.LocalDate</span> <span class="text-red">convertToEntityAttribute</span>(<span class="text-green">String</span> dbData) {
+    	String[] data = dbData.split(".");
+    	return LocalDate.of(data[2], data[1], "19"+data[0]);
+    }
+}
+</code></pre>
+<p>И, конечно, этот конвертер можно добавить к любому полю (при условии совпадения типов):</p>
+<pre class='line-numbers'><code>
+<span class="text-brown">@Entity
+@Table(name</span>=<span class="text-green">"user"</span><span class="text-brown">)</span>
+class User {
+   @Id
+   @Column(name="id")
+   public Integer id;
+ 
+   <span class="text-brown">@Column(name="join_date")</span>
+   <span class="text-red">@Convert(converter = DateConverter.class)</span>
+   public java.time.LocalDate date;
+}
+</code></pre>
+<p>Конвертеры очень часто приходится использовать, если не ты проектировал базу данных. Данные там могут находиться в "странных форматах". Даты могут храниться как строки, Boolean как CHAR со значениями Y и N и тому подобное.</p>
+<h2>7.2 Создаем собственный тип данных</h2>
+<p>Помнишь таблицу со списком типов, которые известны Hibernate? Я про типы, которые указываются вместе с аннотацией <code>@Type</code>. Ты можешь написать свой собственный тип данных, который можно так же использовать, как и остальные встроенные типы в Hibernate.</p>
+<p>Например, мы хотим иметь тип LocalTime, который будет сохраняться в базу не как TIME, а как VARCHAR. И, например, у нас есть доступ к такой базе, и нам не разрешают поменять типы данных в ее колонках. Тогда мы можем написать свой Hibernate-тип. Назовем его LocalTimeString.</p>
+<p>Для начала нам понадобится небольшой класс, который будет описывать наш новый тип:</p>
+<pre class='language-java line-numbers'><code>
+public class <span class="text-yellow">LocalTimeStringType</span> extends <span class="text-brown">AbstractSingleColumnStandardBasicType<</span>&lt;<span class="text-user">LocalTime</span>&gt; {
+ 
+    public static final <span class="text-yellow">LocalTimeStringType</span>  INSTANCE = new <span class="text-yellow">LocalTimeStringType</span> ();
+ 
+    public <span class="text-yellow">LocalTimeStringType</span> () {
+    	super(<span class="text-green">VarcharTypeDescriptor</span>.INSTANCE, <span class="text-viola">LocalTimeStringJavaDescriptor</span>.INSTANCE);
+    }
+ 
+    @Override
+    public String getName() {
+    	return "<span class="text-green">LocalTimeString</span>";
+    }
+}
+</code></pre>
+<p>Это что-то типа Enum, который состоит из одного значения. Набор таких одиноких энамов и есть все типы известные Hibernate.</p>
+<p>Также нам понадобится класс – аналог конвертера, который будет содержать два метода – <code>wrap()</code> и <code>unwrap()</code> для преобразования значений типа LocalTime в String.</p>
+<p>Вот так он будет выглядеть без реализации методов:</p>
+<pre class='language-java line-numbers'><code>
+public class <span class="text-viola">LocalTimeStringJavaDescriptor</span> extends <span class="text-brown">AbstractTypeDescriptor</span>&lt;<span class="text-user">LocalTime</span>&gt; {
+ 
+    public static final <span class="text-viola">LocalTimeStringJavaDescriptor</span> INSTANCE =  new  <span class="text-viola">LocalTimeStringJavaDescriptor</span>();
+ 
+    public <span class="text-viola">LocalTimeStringJavaDescriptor</span>() {
+    	super(<span class="text-user">LocalTime</span>.class, ImmutableMutabilityPlan.INSTANCE);
+    }
+ 
+    public &lt;X&gt; X unwrap(<span class="text-user">LocalTime</span> value, Class&lt;X&gt; type, WrapperOptions options) {
+ 
+    }
+ 
+    public &lt;X&gt; <span class="text-user">LocalTime</span> wrap(X value, WrapperOptions options) {
+ 
+    }
+ 
+}
+</code></pre>
+<p>А теперь напишем реализацию методов:</p>
+<pre class='language-java line-numbers'><code>
+public &lt;X&gt; X unwrap(LocalTime value, Class&lt;X&gt; type, WrapperOptions options) {
+ 
+    if (value == null)
+    	return null;
+ 
+    if (String.class.isAssignableFrom(type))
+    	return (X) LocalTimeType.FORMATTER.format(value);
+ 
+    throw unknownUnwrap(type);
+}
+</code></pre>
+<p>И второй метод:</p>
+<pre class='language-java line-numbers'><code>
+@Override
+public &lt;X&gt; LocalTime wrap(X value, WrapperOptions options) {
+    if (value == null)
+    	return null;
+ 
+    if(String.class.isInstance(value))
+    	return LocalTime.from(LocalTimeType.FORMATTER.parse((CharSequence) value));
+ 
+    throw unknownWrap(value.getClass());
+}
+</code></pre>
+<p>Готово. Можно использовать этот класс для хранения времени в виде строки:</p>
+<pre class='line-numbers'><code>
+<span class="text-brown">@Entity
+@Table(name</span>=<span class="text-green">"user"</span><span class="text-brown">)</span>
+class User
+{
+   @Id
+   @Column(name="id")
+   public Integer id;
+ 
+   <span class="text-brown">@Column(name="join_time")</span>
+   <span class="text-red">@Type(type = "com.javarush.hibernate.customtypes.LocalTimeStringType")</span>  
+   public java.time.LocalTime time;
+}
+</code></pre>
+<h2>7.3 Регистрация своего типа</h2>
+<p>Также ты можешь зарегистрировать свой тип данных во время конфигурирования Hibernate. Это немного нетривиально.</p>
+<pre class='line-numbers'><code>
+ServiceRegistry serviceRegistry = StandardServiceRegistryBuilder()
+    .applySettings(getProperties()).build();
+                                                                                                                                                              	                                        	 
+    MetadataSources metadataSources = new MetadataSources(serviceRegistry);
+    Metadata metadata = metadataSources
+  	.addAnnotatedClass(User.class)
+  	<span class="text-brown">.getMetadataBuilder()</span>
+  	<span class="text-red">.applyBasicType(LocalTimeStringType.INSTANCE)</span>
+  	<span class="text-brown">.build()</span>;
+                                                                                                                                                              	                                        	 
+    SessionFactory factory =  metadata.buildSessionFactory();
+</code></pre>
+<p>Тебе сначала нужно будет получить MetadataSources, из нее получить MetadataBuilder, а уже с помощью него добавлять свой класс. Можно и через <code>hibernate.cfg.xml</code>, но тоже немного громоздко.</p>
+<p>Зато после регистрации ты сможешь писать так:</p>
+<pre class='line-numbers'><code>
+<span class="text-brown">@Entity
+@Table(name</span>=<span class="text-green">"user"</span><span class="text-brown">)</span>
+class User
+{
+   @Id
+   @Column(name="id")
+   public Integer id;
+ 
+   <span class="text-brown">@Column(name="join_time")</span>
+   <span class="text-red">@Type(type = "LocalTimeString")</span>  
+   public java.time.LocalTime time;
+}
+</code></pre>

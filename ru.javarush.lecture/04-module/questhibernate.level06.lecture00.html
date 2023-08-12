@@ -1,0 +1,148 @@
+Работа с SQL-сервером
+<p>----------------------------------------</p>
+SQL наше все. 
+Создание схемы в базе данных. 
+Выбор текущей схемы. 
+Создание View.
+<p>----------------------------------------</p>
+<h2>SQL наше все</h2>
+
+<p>Как ты уже, наверное, догадываешься, все команды SQL-серверу можно давать посредством SQL-запросов. Абсолютно все.</p>
+
+<p>Эти команды официально разбиты на 4 группы:</p>
+
+<ul>
+<li><p>операторы <strong>определения данных</strong> (Data Definition Language, <strong>DDL</strong>):</p>
+
+<ul>
+<li><span class="text-red"><strong>CREATE</strong></span> создаёт объект базы данных (саму базу, таблицу, представление, пользователя и так далее)</li>
+<li><span class="text-red"><strong>ALTER</strong></span> изменяет объект</li>
+<li><span class="text-red"><strong>DROP</strong></span> удаляет объект</li>
+</ul></li>
+
+<li><p>операторы <strong>манипуляции данными</strong> (Data Manipulation Language, <strong>DML</strong>):</p>
+
+<ul>
+<li><span class="text-green"><strong>SELECT</strong></span> выбирает данные, удовлетворяющие заданным условиям</li>
+<li><span class="text-green"><strong>INSERT</strong></span> добавляет новые данные</li>
+<li><span class="text-green"><strong>UPDATE</strong></span> изменяет существующие данные</li>
+<li><span class="text-green"><strong>DELETE</strong></span> удаляет данные</li>
+</ul></li>
+
+<li><p>операторы <strong>определения доступа к данным</strong> (Data Control Language, <strong>DCL</strong>):</p>
+
+<ul>
+<li><span class="text-user"><strong>GRANT</strong></span> предоставляет пользователю (группе) разрешения на определённые операции с объектом</li>
+<li><span class="text-user"><strong>REVOKE</strong></span> отзывает ранее выданные разрешения</li>
+<li><span class="text-user"><strong>DENY</strong></span> задаёт запрет, имеющий приоритет над разрешением</li>
+</ul></li>
+
+<li><p>операторы <strong>управления транзакциями</strong> (Transaction Control Language, <strong>TCL</strong>):</p>
+
+<ul>
+<li><span class="text-viola"><strong>COMMIT</strong></span> применяет транзакцию</li>
+<li><span class="text-viola"><strong>ROLLBACK</strong></span> откатывает все изменения, сделанные в контексте текущей транзакции</li>
+<li><span class="text-viola"><strong>SAVEPOINT</strong></span> делит транзакцию на более мелкие участки</li>
+</ul></li>
+</ul>
+
+<p>И первые два уровня мы изучали только разновидности оператора SELECT. Представь, сколько всего интересного ждет нас в будущем.</p>
+
+<p>Но мы тут готовим в первую очередь про Java-программистов, поэтому будем изучать те сценарии, с которыми ты точно столкнешься на работе.</p>
+
+<p>Созданием всех баз данных скорее всего будет заниматься системный администратор на проекте, а вот выборку из данных тебе точно придется делать самостоятельно много раз.</p>
+
+<p>Более того, иногда твой код будет записывать в базу не все данные или записывать их не так, так что тебе придется частенько лазить в нее ручками и смотреть, а что же там все-таки хранится по факту.</p>
+
+<p>Давай еще раз пройдемся по вещам, которых мы коснулись в предыдущих лекциях.</p>
+
+<h2>Создание схемы в базе данных</h2>
+
+<p>Чтобы создать в СУБД новую схему, нужно выполнить команду:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">CREATE SCHEMA</span> <span class="text-green">имя</span>;</code></pre>
+    </div>
+
+<p>Это самый простой вариант. Так же при создании новой схемы можно указать формат кодировки данных и другие параметры.</p>
+
+<p>Если ты хочешь удалить схему, но не уверен, что она существует, то нужно выполнить команду:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">DROP SCHEMA IF EXIST</span> <span class="text-green">имя</span>;</code></pre>
+    </div>
+
+<p>Ты будешь часто встречать эти команды в файлах с бэкапами разных баз, поэтому я и привожу их тут.</p>
+
+<h2>Выбор текущей схемы</h2>
+
+<p>Если у вас в СУБД много схем, то легко может возникнуть ситуация, когда в разных схемах есть одинаковые таблицы. Чтобы не возникло путаницы, можно сделать две вещи:</p>
+
+<ul>
+<li>Всегда указывать имя схемы перед именем таблицы</li>
+<li>Указать схему по умолчанию</li>
+</ul>
+
+<p>Давай напишем запрос, который выберет данные из <span class="text-orange"><strong>таблицы user</strong></span>, которая находится в <span class="text-viola"><strong>схеме test</strong></span>. Он будет выглядеть примерно так:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-viola">test</span>.<span class="text-orange">user</span>;</code></pre>
+    </div>
+
+<p>Без этого просто не обойтись, если нужно объединить (JOIN) несколько таблиц из разных схем в одном запросе.</p>
+
+<p>Кстати, в языке Java мы часто делаем что-то похожее: если в коде нам нужно использовать классы с одинаковыми именами из разных пакетов, мы добавляем имя пакета перед именем класса.</p>
+
+<p>Второй способ – это <strong>указание схемы по умолчанию</strong>. Если в запросе указано имя таблицы, но не указана схема, то используется схема по умолчанию. Для этого используется <strong>оператор USE</strong>:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">USE</span> <span class="text-green">имя-схемы</span>;</code></pre>
+    </div>
+
+<p>Давай перепишем предыдущий запрос с использованием оператора USE:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+             	<span class="text-red">USE</span> <span class="text-viola">test;
+<span class="text-red">SELECT</span> * <span class="text-red">FROM</span> <span class="text-orange">user</span>;</code></pre>
+    </div>
+
+<h2>Создание View</h2>
+
+<p>Кроме таблиц с реальными данными SQL позволяет хранить что-то типа виртуальных таблиц, куда подтягиваются данные из реальных таблиц. Называются такие виртуальные таблицы VIEW.</p>
+
+<p>Такая таблица не может хранить реальных данных, и каждый раз при обращении к ней подтягивает данные из реальных таблиц. Содержимое такой VIEW задается с помощью SQL-запроса.</p>
+
+<p>Ты можешь создать VIEW из любого SELECT запроса с помощью команды вида:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+             	<span class="text-red">CREATE VIEW</span> <span class="text-green">имя</span> <span class="text-red">AS</span>
+SELECT-запрос;</code></pre>
+    </div>
+
+ 
+
+Давай напишем запрос, который создаст нам виртуальную таблицу public_employee на основе таблицы employee, где будет скрыта информация о зарплате сотрудников:
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+ 	<span class="text-red">CREATE VIEW</span> <span class="text-green">public_employee</span> <span class="text-red">AS</span>
+ 	<span class="text-red">SELECT</span> <span class="text-green">id</span>, <span class="text-green">name</span> <span class="text-red">FROM</span> <span class="text-orange">employee</span></code></pre>
+    </div>
+
+<p>В приведенном примере наша таблица (VIEW) public_employee будет содержать только ID сотрудников и их имена, но не информацию об их зарплате. Использовать такие View можно там же, где и реальные таблицы.</p>
+
+<p>Зачем нужны View? У них есть ряд преимуществ:</p>
+
+<p><strong>Гибкое управление доступом к информации</strong>. Ты можешь дать определенным пользователям доступ только ко VIEW, но не давать доступ к таблицам. А во View вынести только публичную информацию из таблиц. Кроме того, если в будущем в таблицы будут добавлены новые колонки с важной информацией, она случайно не попадет во View.</p>
+
+<p><strong>Денормализация данных</strong>. Для удобства хранения данные часто разбиваются по сотням и тысячам таблиц, но с такими данными не сильно удобно работать обычному человеку – приходится писать слишком сложные запросы. С помощью View можно создать виртуальные таблицы, которые будут отображать данные из десятков различных таблиц в виде одной таблицы.</p>
+
+<p><strong>Полиморфизм и инкапсуляция</strong>. Ты можешь менять структуры своей базы данных. При этом пользователи программы, которые работают с вашими View, не догадаются, что что-то поменялось. И не нужно будет переписывать код программ, которые имеют доступ к View. Нужно будет просто подправить SQL-скрипт, который имеет отношение к VIEW.</p>
+
+<p><strong>Только чтение</strong>. View можно задать только запросом вида SELECT, поэтому работа с View никак не может поменять данные в реальных таблицах. Кстати, это еще один плюс в пользу кеширования запросов. Но об этом как-нибудь в следующий раз.</p>

@@ -1,0 +1,251 @@
+Апендеры в Log4j
+<p>----------------------------------------</p>
+Список апендеров
+ConsoleAppender
+FileAppender
+RollingFileAppender
+<p>----------------------------------------</p>
+<h2>Список апендеров</h2>
+<p>Логгер позволяет сохранять данные сразу в несколько файлов. Такие выходные потоки данных называются аппендерами (от append). Существует довольно много стандартных апендеров, поэтому мы рассмотрим только самые популярные из них:</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th width="200">Апендеры</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>Console</td>
+        <td>Выводит данные в консоль</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>File</td>
+        <td>Выводит данные в файл</td>
+    </tr>
+        <tr>
+        <td>3</td>
+        <td>DailyRollingFile</td>
+        <td>Выводит данные в файл, файл циклически перезаписывается</td>
+    </tr>
+        <tr>
+        <td>4</td>
+        <td>Async</td>
+        <td>Позволяет писать данные в другой аппендер асинхронно</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td>Socket</td>
+        <td>Пишет данные в определенный сокет</td>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td>JDBC</td>
+        <td>Пишет сообщения в базу по протоколу JDBC</td>
+    </tr>
+        <tr>
+        <td>7</td>
+        <td>JPA</td>
+        <td>Пишет сообщения в базу по протоколу JPA</td>
+    </tr>
+        <tr>
+        <td>8</td>
+        <td>HTTP</td>
+        <td>Шлет события по HTTP-протоколу на удаленный сервер</td>
+    </tr>
+    </tr>
+        <tr>
+        <td>9</td>
+        <td>SMTP</td>
+        <td>Складирует сообщения в буфер, а потом шлет в виде email’а</td>
+    </tr>
+    </tbody>
+</table>
+<p>Хорошая документация по все апендерам есть на их <a href="https://logging.apache.org/log4j/2.x/manual/appenders.html" target="_blank">официальном сайте</a></p>
+<p>А ниже мы рассмотрим самые популярные и простые из них</p>
+<h2>ConsoleAppender</h2>
+<p><strong>Самый простой аппендер – это <code>ConsoleApender</code></strong>. Как вы уже догадались, он пишет свои сообщения просто в консоль.  У него есть аж несколько интересных нам параметров:</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th width="200">Атрибуты</th>
+        <th></th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>name</td>
+        <td>Имя аппендера</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>filter</td>
+        <td>Позволяет отфильтровать часть сообщений</td>
+    </tr>
+        <tr>
+        <td>3</td>
+        <td>layout</td>
+        <td>Задает форматирование сообщений при выводе</td>
+    </tr>
+        <tr>
+        <td>4</td>
+        <td>target</td>
+        <td>Задает, куда пишем: <code>SYTEM_OUT</code> или <code>SYSTEM_ERR</code></td>
+    </tr>
+    </tbody>
+</table>
+<p>Сконфигурировать его очень просто:</p>
+<pre class='line-numbers'><code>
+    &lt;?xml version="1.0" encoding="UTF-8"?&gt;
+    &lt;Configuration status="warn" name="MyApp" packages=""&gt;
+    &lt;Appenders&gt;
+<span class="text-red">        &lt;Console name="STDOUT" target="SYSTEM_OUT"&gt;</span>
+<span class="text-green">        &lt;PatternLayout pattern="%m%n"/&gt;</span>
+        &lt;/Console&gt;
+    &lt;/Appenders&gt;
+      &lt;Loggers&gt;
+        &lt;Root level="error"&gt;
+        &lt;AppenderRef ref="<span class="text-red">STDOUT</span>"/&gt;
+        &lt;/Root&gt;
+    &lt;/Loggers&gt;
+    &lt;/Configuration&gt;
+</code></pre>
+<h2>FileAppender</h2>
+<p><strong>Самый полезный апендер – это <code>FileAppender</code></strong>. В отличии от <code>ConsoleAppender</code>он пишет свои сообщения в файл. Что очень полезно, когда ваше приложение работает где-нибудь на сервере.  У него куча параметров, т.к. он должен уметь писать файлы в разных операционных системах.</p>
+<p>Но мы рассмотрим только самые популярные из них</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th width="200"></th>
+        <th></th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>name</td>
+        <td>Задает имя аппендера</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>filter</td>
+        <td>Позволяет отфильтровать часть сообщений</td>
+    </tr>
+        <tr>
+        <td>3</td>
+        <td>layout</td>
+        <td>Задает форматирование сообщений при выводе</td>
+    </tr>
+        <tr>
+        <td>4</td>
+        <td>fileName</td>
+        <td>Задает имя файла, куда писать сообщения</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td>append</td>
+        <td>Если <code>true</code>, то сообщения будут дописаны в старый лог, если <code>false</code> – лог-файл будет пересоздаваться каждый раз при запуске приложения.</td>
+    </tr>
+        <tr>
+        <td>6</td>
+        <td>bufferSize</td>
+        <td>Задает размер буфера в байтах</td>
+    </tr>
+        <tr>
+        <td>7</td>
+        <td>immediateFlush</td>
+        <td>Если <code>true</code>, то каждое сообщение сразу реально пишется на диск (без буфера). Лог начинает работать медленно, но это спасает от потери данных при падении программы.</td>
+    </tr>
+    </tbody>
+</table>
+<p>Вы уже умеете хорошо работать с файлами, так что в этих настройках для вас ничего нового. Сконфигурировать такой логгер  даже проще чем консольный:</p>
+<pre class='line-numbers'><code>
+    &lt;?xml version="1.0" encoding="UTF-8"?&gt;
+    &lt;Configuration status="warn" name="MyApp" packages=""&gt;
+    &lt;Appenders&gt;
+<span class="text-red">        &lt;File name="MyFile" fileName="logs/app.log"&gt;</span>
+        &lt;PatternLayout&gt;
+            &lt;Pattern&gt;%d %p %c{1.} [%t] %m%n&lt;/Pattern&gt;
+        &lt;/PatternLayout&gt;
+        &lt;/File&gt;
+    &lt;/Appenders&gt;
+    &lt;Loggers&gt;
+        &lt;Root level="error"&gt;
+        &lt;AppenderRef ref="<span class="text-red">MyFile</span>"/&gt;
+        &lt;/Root&gt;
+    &lt;/Loggers&gt;
+    &lt;/Configuration&gt;
+</code></pre>
+<h2>RollingFileAppender</h2>
+<p><strong>Самый популярный аппендер – это <code>RollingFileAppender</code></strong>. В отличии от <code>FileAppender</code> он позволяет разбить лог на много маленьких файлов. Это очень актуально для больших логов. Кроме того, он позволяет задать правила, что делать со старыми файлами после того, как начали писаться новые.</p>
+<p>А у этого аппендера почти под сотню различных настроек. Подробнее с ними вы можете ознакомиться <a href="https://logging.apache.org/log4j/2.x/manual/appenders.html#RollingFileAppender" target="_blank">по ссылке</a></p>
+<p>Рассмотрим самые популярные атрибуты этого аппендера:</p>
+<table>
+    <tbody>
+    <tr>
+        <th></th>
+        <th width="200">Атрибуты</th>
+        <th></th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>name</td>
+        <td>Задает имя аппендера</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>filter</td>
+        <td>Позволяет отфильтровать часть сообщений</td>
+    </tr>
+        <tr>
+        <td>3</td>
+        <td>layout</td>
+        <td>Задает форматирование сообщений при выводе</td>
+    </tr>
+        <tr>
+        <td>4</td>
+        <td>fileName</td>
+        <td>Задает имя файла, куда писать сообщения</td>
+         <tr>
+        <td>5</td>
+        <td>filePattern</td>
+        <td>Задает шаблон имен для архивных файлов, которые больше не пишутся</td>
+    </tr>
+        <tr>
+        <td>6</td>
+        <td>policy</td>
+        <td>Задает условие, когда файл должен начать перезаписываться</td>
+    </tr>
+        <tr>
+        <td>7</td>
+        <td>strategy</td>
+        <td>Описывает, что делать со старыми файлами: архивировать, историю за сколько дней хранить и т.п.</td>
+    </tr>
+    </tbody>
+</table>
+<p>Вот хороший пример:</p>
+<pre class='line-numbers'><code>
+&lt;Configuration status="warn" name="MyApp" packages=""&gt;
+  &lt;Appenders&gt;
+<span class="text-red">    &lt;RollingFile name="RollingFile" fileName="logs/app.log" filePattern="logs/app-%d{MM-dd-yyyy}-%i.log.gz"&gt;</span>
+<span class="text-user">    &lt;PatternLayout&gt;
+        &lt;Pattern&gt;%d %p %c{1.} [%t] %m%n&lt;/Pattern&gt;
+    &lt;/PatternLayout&gt;</span>
+<span class="text-green">    &lt;Policies&gt;
+        &lt;TimeBasedTriggeringPolicy /&gt;
+        &lt;SizeBasedTriggeringPolicy size="250 MB"/&gt;
+    &lt;/Policies&gt;</span>
+<span class="text-red">    &lt;/RollingFile&gt;</span>
+  &lt;/Appenders&gt;
+  &lt;Loggers&gt;
+    &lt;Root level="error"&gt;
+    &lt;AppenderRef ref="<span class="text-red">RollingFile</span>"/&gt;
+    &lt;/Root&gt;
+  &lt;/Loggers&gt;
+&lt;/Configuration&gt;
+</code></pre>
+<p>С помощью параметра <code>filePattern</code> задан шаблон для архивов старых логов. Так же тут есть два при срабатывании которых начнется писаться новый файл:</p>
+<ul>
+    <li> <code>TimeBasedTriggeringPolicy</code> – сработает, если начнутся новые сутки (поменяется текущая дата)</li>
+    <li><code>SizeBasedTriggeringPolicy</code>– сработает, если размер файла достигнет 250Мб</li>
+</ul>

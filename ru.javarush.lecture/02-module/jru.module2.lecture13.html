@@ -1,0 +1,290 @@
+Условия выхода. StackOverflowError
+<p>----------------------------------------</p>
+Давайте еще раз посмотрим на рекурсивную задачу. В качестве примера можно рассмотреть поиск чисел Фибоначчи. Кто не помнит, последовательность Фибоначчи – элементы числовой последовательности...
+<p>----------------------------------------</p>
+    <h2>Пример кода на рекурсию без условия выхода</h2>
+
+    <p>Давайте еще раз посмотрим на рекурсивную задачу. В качестве примера можно рассмотреть поиск чисел Фибоначчи. Кто не помнит, последовательность Фибоначчи – элементы числовой последовательности, в которой первые два числа равны 0 и 1, а каждое последующее число равно сумме двух предыдущих чисел.</p>
+
+    <p>Напишем код для поиска и вывода таких чисел:</p>
+
+    <pre class='language-java line-numbers'><code>
+public class Fibonacci {
+    public static void main(String[] args) {
+        System.out.println(0);
+        System.out.println(1);
+        printFibonacci(0, 1);
+    }
+
+    private static void printFibonacci(long penultimate, long previous) {
+        long current = penultimate + previous;
+        System.out.println(current);
+        printFibonacci(previous, current);
+    }
+}
+    </code></pre>
+
+    <p>Перед первым вызовом рекурсивного метода <span class="code text-orange">printFibonacci</span>, выведем первые два числа последовательности – ноль и единицу. Это нужно, потому что в рекурсивном методе мы выводим только сумму полученных параметров, а не сами параметры.</p>
+
+    <p>Выглядит ОК: получаем два числа, считаем их сумму, выводим ее в консоль, и снова вызываем рекурсивный метод <span class="code text-orange">printFibonacci</span>. В качестве параметров передаем предыдущее (previous) и текущее число (current).</p>
+
+    <p><em><span class="text-bold">На самом деле в этом коде есть 2 ошибки.</span></em> Их можно заметить, если запустить код.</p>
+
+    <p>Первая ошибка заключается в переполнении типа <span class="text-orange">long</span>. Уже 104-е число в нашей последовательности вывелось отрицательным, а это значит, что произошло переполнение типа <span class="text-orange">long</span>.</p>
+
+    <p>Вторая ошибка имеет другой характер. После найденного 12 тысяч с копейками числа, на экран выводится:</p>
+
+    <div class="terminal">Exception in thread "main" java.lang.StackOverflowError</div>
+
+    <p>Здесь уместно вспомнить, что такое стек вызова методов в Java. Java-машина ведет запись всех вызовов функций. У нее есть для этого специальная коллекция – стек (Stack). Когда одна функция вызывает другую, Java-машина помещает в этот стек новый элемент StackTraceElement. Когда функция завершается, этот элемент удаляется из стека. Таким образом в этом стеке всегда хранится актуальная информация о текущем состоянии "стека вызовов функций". Дословный перевод ошибки <span class="text-red"><span class="text-bold">StackOverflowError</span></span> – "стек переполнен". В Javadoc-е написано: "Бросается, когда стек вызова слишком глубокий". В запущенной JVM есть специальная область памяти для хранения стека вызова методов. Размер этой области памяти зависит от ОС и настроек JVM. Кроме самого стека вызовов методов в этой области памяти хранятся примитивные переменные (конкретные значения параметров вызова метода) и адреса ссылочных переменных (в HEAP области памяти). Модель доступа к стеку – LIFO. </p>
+
+    <h2>Исправленный пример с условием выхода</h2>
+
+    <p>Исправления нашего кода начнем со второй проблемы.</p>
+
+    <p>Попробуем проблему решить в лоб: если маленький размер стека, то давайте его увеличим. Для этого нужно запустить JVM со специальным флагом "-Xss" и указать сколько выделить памяти под стек. Давай попробуем выделить 5 мегабайт. Выглядеть это в IDEA будет так:</p>
+
+    <img data-max-width="512" data-id="51fc3375-6b68-43be-a901-507170cf37b1" src="https://cdn.javarush.com/images/article/51fc3375-6b68-43be-a901-507170cf37b1/original.png" alt="">
+
+    <p>Да, длина вывода увеличилась и сейчас составляет не 12+ тысяч найденных чисел последовательности, а 49+ тысяч. Но после какого-то числа все равно получаем <span class="text-red"><span class="text-bold">StackOverflowError</span></span>.</p>
+
+    <p>Можно пробовать еще увеличивать стек-область памяти, но принципиально ничего не изменится. Значит, будем искать проблему в логике. У рекурсии должна быть точка остановки. То есть должно быть какое-то условие, после которого рекурсивный метод не вызовется, и стек вызова будет возвращаться. Для того, чтобы определить такое условие, давайте конкретизируем задачу – выводить числовой ряд Фибоначчи до тех пор, пока они меньше, чем <span class="text-yellow"><span class="text-bold">Integer.MAX_VALUE</span></span>.</p>
+
+    <p>Напишем новый метод <span class="code text-orange">printFibonacciWithCondition</span>, в котором учтем это условие. И в методе main вызовем именно новый исправленный метод.</p>
+
+    <pre class='language-java line-numbers'><code>
+public class Fibonacci {
+    public static void main(String[] args) {
+        System.out.println(0);
+        System.out.println(1);
+//        printFibonacci(0, 1);
+        printFibonacciWithCondition(0, 1);
+    }
+
+    private static void printFibonacci(long penultimate, long previous) {
+        long current = penultimate + previous;
+        System.out.println(current);
+        printFibonacci(previous, current);
+    }
+
+    private static void printFibonacciWithCondition(long penultimate, long previous) {
+        long current = penultimate + previous;
+        if (current &gt; Integer.MAX_VALUE) {
+            return;
+        }
+        System.out.println(current);
+        printFibonacciWithCondition(previous, current);
+    }
+}
+    </code></pre>
+
+    <p>После запуска кода действительно видим, что вывод завершился числом 1836311903. Перед этим числом было 1134903170. Их сумма 2_971_215_073, что действительно больше <span class="text-yellow"><span class="text-bold">Integer.MAX_VALUE (2_147_483_647)</span></span>.</p>
+ 
+    <p>Вместе с этим исправлением у нас автоматически исправилась ошибка с переполнением типа <span class="text-orange">long</span>. Если нужен более длинный числовой ряд, нужно использовать другие типы данных, например <span class="text-orange">BigInteger</span>.</p>
+
+    <h2>Метод рекурсивного спуска и возврата</h2>
+
+    <p>Давайте попробуем поэтапно проанализировать как выполняется наш код. Для это добавим метод <span class="code text-orange">echo</span> и будем его вызывать перед и после рекурсивного вызова метода <span class="code text-orange">printFibonacciWithCondition</span>.</p>
+
+    <pre class='language-java line-numbers'><code>
+public class Fibonacci {
+    public static void main(String[] args) {
+        System.out.println(0);
+        System.out.println(1);
+        printFibonacciWithCondition(0, 1);
+    }
+
+    private static void printFibonacciWithCondition(long penultimate, long previous) {
+        long current = penultimate + previous;
+        if (current &gt; Integer.MAX_VALUE) {
+            return;
+        }
+        echo(true, penultimate, previous);
+        System.out.println(current);
+        printFibonacciWithCondition(previous, current);
+        echo(false, penultimate, previous);
+    }
+
+    private static void echo(boolean isBeforeRecursiveCall, long penultimate, long previous) {
+        if (isBeforeRecursiveCall) {
+            System.out.printf("Before method call with args: %d, %d. Current number = ", penultimate, previous);
+        } else {
+            System.out.printf("After  method call with args: %d, %d\n", penultimate, previous);
+        }
+    }
+}
+    </code></pre>
+
+    <p>В результате работы программы получим вывод:</p>
+
+    <div class="terminal">0<br />
+1<br />
+Before method call with args: 0, 1. Current number = 1<br />
+Before method call with args: 1, 1. Current number = 2<br />
+Before method call with args: 1, 2. Current number = 3<br />
+Before method call with args: 2, 3. Current number = 5<br />
+Before method call with args: 3, 5. Current number = 8<br />
+Before method call with args: 5, 8. Current number = 13<br />
+Before method call with args: 8, 13. Current number = 21<br />
+Before method call with args: 13, 21. Current number = 34<br />
+Before method call with args: 21, 34. Current number = 55<br />
+Before method call with args: 34, 55. Current number = 89<br />
+Before method call with args: 55, 89. Current number = 144<br />
+Before method call with args: 89, 144. Current number = 233<br />
+Before method call with args: 144, 233. Current number = 377<br />
+Before method call with args: 233, 377. Current number = 610<br />
+Before method call with args: 377, 610. Current number = 987<br />
+Before method call with args: 610, 987. Current number = 1597<br />
+Before method call with args: 987, 1597. Current number = 2584<br />
+Before method call with args: 1597, 2584. Current number = 4181<br />
+Before method call with args: 2584, 4181. Current number = 6765<br />
+Before method call with args: 4181, 6765. Current number = 10946<br />
+Before method call with args: 6765, 10946. Current number = 17711<br />
+Before method call with args: 10946, 17711. Current number = 28657<br />
+Before method call with args: 17711, 28657. Current number = 46368<br />
+Before method call with args: 28657, 46368. Current number = 75025<br />
+Before method call with args: 46368, 75025. Current number = 121393<br />
+Before method call with args: 75025, 121393. Current number = 196418<br />
+Before method call with args: 121393, 196418. Current number = 317811<br />
+Before method call with args: 196418, 317811. Current number = 514229<br />
+Before method call with args: 317811, 514229. Current number = 832040<br />
+Before method call with args: 514229, 832040. Current number = 1346269<br />
+Before method call with args: 832040, 1346269. Current number = 2178309<br />
+Before method call with args: 1346269, 2178309. Current number = 3524578<br />
+Before method call with args: 2178309, 3524578. Current number = 5702887<br />
+Before method call with args: 3524578, 5702887. Current number = 9227465<br />
+Before method call with args: 5702887, 9227465. Current number = 14930352<br />
+Before method call with args: 9227465, 14930352. Current number = 24157817<br />
+Before method call with args: 14930352, 24157817. Current number = 39088169<br />
+Before method call with args: 24157817, 39088169. Current number = 63245986<br />
+Before method call with args: 39088169, 63245986. Current number = 102334155<br />
+Before method call with args: 63245986, 102334155. Current number = 165580141<br />
+Before method call with args: 102334155, 165580141. Current number = 267914296<br />
+Before method call with args: 165580141, 267914296. Current number = 433494437<br />
+Before method call with args: 267914296, 433494437. Current number = 701408733<br />
+Before method call with args: 433494437, 701408733. Current number = 1134903170<br />
+Before method call with args: 701408733, 1134903170. Current number = 1836311903<br />
+After  method call with args: 701408733, 113490317<br />
+After  method call with args: 433494437, 701408733<br />
+After  method call with args: 267914296, 433494437<br />
+After  method call with args: 165580141, 267914296<br />
+After  method call with args: 102334155, 165580141<br />
+After  method call with args: 63245986, 102334155<br />
+After  method call with args: 39088169, 63245986<br />
+After  method call with args: 24157817, 39088169<br />
+After  method call with args: 14930352, 24157817<br />
+After  method call with args: 9227465, 14930352<br />
+After  method call with args: 5702887, 9227465<br />
+After  method call with args: 3524578, 5702887<br />
+After  method call with args: 2178309, 3524578<br />
+After  method call with args: 1346269, 2178309<br />
+After  method call with args: 832040, 1346269<br />
+After  method call with args: 514229, 832040<br />
+After  method call with args: 317811, 514229<br />
+After  method call with args: 196418, 317811<br />
+After  method call with args: 121393, 196418<br />
+After  method call with args: 75025, 121393<br />
+After  method call with args: 46368, 75025<br />
+After  method call with args: 28657, 46368<br />
+After  method call with args: 17711, 28657<br />
+After  method call with args: 10946, 17711<br />
+After  method call with args: 6765, 10946<br />
+After  method call with args: 4181, 6765<br />
+After  method call with args: 2584, 4181<br />
+After  method call with args: 1597, 2584<br />
+After  method call with args: 987, 1597<br />
+After  method call with args: 610, 987<br />
+After  method call with args: 377, 610<br />
+After  method call with args: 233, 377<br />
+After  method call with args: 144, 233<br />
+After  method call with args: 89, 144<br />
+After  method call with args: 55, 89<br />
+After  method call with args: 34, 55<br />
+After  method call with args: 21, 34<br />
+After  method call with args: 13, 21<br />
+After  method call with args: 8, 13<br />
+After  method call with args: 5, 8<br />
+After  method call with args: 3, 5<br />
+After  method call with args: 2, 3<br />
+After  method call with args: 1, 2<br />
+After  method call with args: 1, 1<br />
+After  method call with args: 0, 1</div>
+
+    <p>Давайте графически проиллюстрируем, как это происходит.</p>
+
+    <img data-max-width="1024" data-id="72906458-3cda-4b3c-a651-4b0395f08dc9" src="https://cdn.javarush.com/images/article/72906458-3cda-4b3c-a651-4b0395f08dc9/original.png" alt="">
+
+    <p>Проговорим еще раз: вызывается метод <span class="code text-orange">printFibonacciWithCondition</span>. В нем вычисляется текущее число. Если оно подходит нам, то выводим его и снова вызываем метод <span class="code text-orange">printFibonacciWithCondition</span> с новыми параметрами.</p>
+
+    <p>Пока идет вызов рекурсивного метода – это называется "Рекурсивный спуск". Когда идет возврат по стеку вызова – "Рекурсивный возврат".</p>
+
+    <p>Рекурсия – интересная тема в программировании. Для лучшего усвоения материала немного изменим нашу задачу. Нужно вывести ряд чисел Фибоначчи, которые не превышают <span class="text-yellow"><span class="text-bold">Integer.MAX_VALUE</span></span> в убывающем порядке. Для того, чтоб решить эту задачу, у нас уже написан весь код. Все что остается – это поменять местами вывод текущего числа и вызов рекурсивного метода. То есть в первом примере вывод найденного числа происходил "на этапе спуска", а сейчас нам нужно "спуститься в самый низ" и выводить числа на этапе "возврата". Ну и конечно, в методе <span class="code text-orange">main</span> вывод двух начальных чисел последовательности (ноль и единица) поменять местами и вывести после вызова рекурсивного метода. Для читаемости удалим метод <span class="code text-orange">echo</span>.</p>
+
+    <pre class='language-java line-numbers'><code>
+public class Fibonacci {
+    public static void main(String[] args) {
+        printFibonacciWithCondition(0, 1);
+        System.out.println(1);
+        System.out.println(0);
+    }
+
+    private static void printFibonacciWithCondition(long penultimate, long previous) {
+        long current = penultimate + previous;
+        if (current &gt; Integer.MAX_VALUE) {
+            return;
+        }
+        printFibonacciWithCondition(previous, current);
+        System.out.println(current);
+    }
+}
+    </code></pre>
+
+    <p>Вывод будет:</p>
+
+    <div class="terminal">1836311903<br />
+1134903170<br />
+701408733<br />
+433494437<br />
+267914296<br />
+165580141<br />
+102334155<br />
+63245986<br />
+39088169<br />
+24157817<br />
+14930352<br />
+9227465<br />
+5702887<br />
+3524578<br />
+2178309<br />
+1346269<br />
+832040<br />
+514229<br />
+317811<br />
+196418<br />
+121393<br />
+75025<br />
+46368<br />
+28657<br />
+17711<br />
+10946<br />
+6765<br />
+4181<br />
+2584<br />
+1597<br />
+987<br />
+610<br />
+377<br />
+233<br />
+144<br />
+89<br />
+55<br />
+34<br />
+21<br />
+13<br />
+8<br />
+5<br />
+3<br />
+2<br />
+1<br />
+1<br />
+0</div>

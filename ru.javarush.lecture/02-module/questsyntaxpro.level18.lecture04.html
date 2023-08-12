@@ -1,0 +1,61 @@
+Работа с потоками, часть 2
+<p>----------------------------------------</p>
+Преобразование данных Так же у класса Stream&lt;T&gt; есть метод, который позволяет преобразовать данные из одного типа в другой. Этот метод называется map(). Он тоже возвращает поток Stream&lt;R&gt;, но уже с элементами нового типа. В качестве параметра в метод map нужно передать функцию, котор
+<p>----------------------------------------</p>
+<h2>1. Преобразование данных</h2>
+<p>Также у класса <code>Stream&lt;T&gt;</code> есть метод, который позволяет преобразовать данные из одного типа в другой. Этот метод называется <code><span class="text-red">map</span>()</code>.</p>
+<p>Он тоже возвращает поток <code>Stream&lt;R&gt;</code>, но уже с элементами нового типа. В качестве параметра в метод <code><span class="text-red">map</span>()</code> нужно передать функцию, которая преобразовывает один тип данных в другой.</p>
+<p>Примеры:</p>
+<div class="lesson-example">
+        <pre class="language-java"><code>Stream&lt;Integer&gt; <span class="text-viola">stream</span> = Stream.of(1, 2, 3, 4, 5);
+Stream&lt;String&gt; <span class="text-yellow">stream2</span> = <span class="text-viola">stream</span>.<span class="text-red">map</span>(<span class="code">(<span class="text-neon">x</span>) -&gt; String.valueOf(<span class="text-neon">x</span>)</span>);</code></pre>
+    <div class="lesson-example-caption">Преобразовываем поток <code>Integer</code> в поток <code>String</code></div>
+</div>
+<p>Функция, которую передали в метод <code><span class="text-red">map</span>()</code> в качестве параметра, принимает число <code class="text-neon">x</code>, а в качестве результата возвращает строку. Можно, кстати, записать этот код короче:</p>
+<div class="lesson-example">
+        <pre class="language-java"><code>Stream&lt;Integer&gt; <span class="text-viola">stream</span> = Stream.of(1, 2, 3, 4, 5);
+Stream&lt;String&gt; <span class="text-yellow">stream2</span> = <span class="text-viola">stream</span>.<span class="text-red">map</span>(<span class="code">String::valueOf</span>);</code></pre>
+    <div class="lesson-example-caption">Преобразовываем поток <code>Integer</code> в поток <code>String</code></div>
+</div>
+<p><strong>Преобразование строки в число</strong></p>
+<p>Аналогично можно написать код и для преобразования строки в число — тоже ничего сложного:</p>
+<div class="lesson-example">
+    <pre class="language-java"><code>Stream&lt;Integer&gt; <span class="text-user">stream</span> = Stream.of(1, 2, 3, 4, 5);
+Stream&lt;String&gt; <span class="text-yellow">stream2</span> = <span class="text-user">stream</span>.<span class="text-red">map</span>(<span class="code text-neon">String::valueOf</span>);
+Stream&lt;Integer&gt; <span class="text-viola">stream3</span> = <span class="text-green">stream2</span>.<span class="text-red">map</span>(<span class="code text-neon">Integer::parseInt</span>);</code></pre>
+    <div class="lesson-example-caption">Преобразовываем поток <code>String</code> в поток <code>Integer</code></div>
+</div>
+<p><strong>Преобразование строки в <code>URI</code></strong></p>
+<p>Операции по преобразованию данных могут быть большими и тяжелыми. Допустим, мы хотим преобразовать коллекцию строк в объекты URI. Это очень легко сделать, ведь URI принимает строку в качестве параметра конструктора</p>
+<div class="lesson-example">
+    <pre class="language-java"><code>ArrayList&lt;<span class="text-orange">String</span>&gt; list = new ArrayList&lt;<span class="text-orange">String</span>&gt;();
+list.add("https://google.com");
+list.add("https://linkedin.com");
+list.add("https://yandex.com");
+
+Stream&lt;URI&gt; <span class="text-green">stream</span> = <span class="text-user">list.stream</span>().<span class="text-red">map</span>( <span class="text-orange">URI::new</span> );</code></pre>
+    <div class="lesson-example-caption">Преобразовываем поток <code>String</code> в поток <code>URI</code></div>
+</div>
+<p>Мы создали коллекцию, записали в нее 3 ссылки на сайты в интернете. Затем получили у коллекции объект <code>Stream&lt;String&gt;</code> и у него — объект <code>Stream&lt;URI&gt;</code>. А в метод map передали ссылку на метод, который будет использоваться для преобразования из String в URI.</p>
+<p>Этот метод (конструктор) должен принимать в качестве параметра тип <code>String</code>. Все вроде бы идеально...</p>
+<hr>
+<h2>2. Исключения</h2>
+<p>Код выше должен работать, но он работать не будет — программа не скомпилируется. И не потому, что мы где-то сделали ошибку, а потому, что ее сделали разработчики Java.</p>
+<p>Когда-то давно им пришла в голову замечательная идея — добавить в конструктор(!) класса <code class="text-user">URI</code> checked-исключение <code><span class="text-red">URISyntaxException</span></code>. А такие исключения нужно обязательно заворачивать в <code>try-catch</code>.</p>
+<p>Поэтому последняя строка нашего кода будет выглядеть вот так:</p>
+<pre class="language-java"><code><span class="text-viola">Stream</span>&lt;<span class="code text-user">URI</span>&gt; <span class="text-viola">stream</span> = list.stream().<span class="text-red">map</span>(<span class="text-neon">str</span> -&gt;
+{
+  try
+  {
+     return new <span class="code text-user">URI</span>(<span class="text-neon">str</span>);
+  }
+  catch (<span class="code"><span class="text-red">URISyntaxException</span></span> e)
+  {
+     e.printStackTrace();
+     return null;
+  }
+});</code></pre>
+<p>Что вам сказать? Нужно дважды подумать, прежде чем использовать <span class="term">checked-исключения</span>. И трижды, прежде чем использовать их в конструкторе.</p>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1815"></div>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1816"></div>

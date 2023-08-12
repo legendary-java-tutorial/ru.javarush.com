@@ -1,0 +1,145 @@
+Создание Maven-проекта
+<p>----------------------------------------</p>
+Одна из вещей, которую Maven стандартизировал в первую очередь – это описание проекта. До Maven у каждой IDE был свой project-файл, который хранил информацию о проекте и его сборке (и зачастую в бинарном виде)...
+<p>----------------------------------------</p>
+    <h2>Объектная модель описания проекта</h2>
+
+    <p>Одна из вещей, которую Maven стандартизировал в первую очередь, — это описание проекта. До Maven у каждой IDE был свой project-файл, который хранил информацию о проекте и его сборке (и зачастую в бинарном виде).</p>
+
+    <p>Maven предложил универсальный открытый стандарт на основе XML, в котором с помощью различных тегов описывается, что это за проект, как его нужно собирать и какие у него зависимости. Описание проекта заключено в одном файле, обычно с именем <span class="text-bold">pom.xml</span>.</p>
+
+    <p>Пример файла <span class="text-bold">pom.xml</span>:</p>
+ 
+    <div class="terminal"><span class="text-viola">&lt;?xml version="1.0" encoding="UTF-8"?&gt;<br />
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xsi:schemaLocation="http://maven.apache.org/POM/4.0.0<br /> http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;<br /></span>
+ <br />
+ &nbsp;&nbsp;<span class="text-user">&lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;<br /></span>
+ <br />
+&nbsp;&nbsp;&nbsp;<span class="text-red">&lt;groupId&gt;example.com&lt;/groupId&gt;<br />
+&nbsp;&nbsp;&nbsp;&lt;artifactId&gt;example&lt;/artifactId&gt;<br />
+&nbsp;&nbsp;&nbsp;&lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;<br /></span>
+ <br />
+&nbsp;&nbsp;&nbsp;<span class="text-green">&lt;dependencies&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;dependency&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;groupId&gt;commons-io&lt;/groupId&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;artifactId&gt;commons-io&lt;/artifactId&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;version&gt;2.6&lt;/version&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/dependency&gt;<br />
+&nbsp;&nbsp;&nbsp;&lt;/dependencies&gt;</span><br />
+ <br />
+<span class="text-viola">&lt;/project&gt;</span></div>
+ 
+    <p>В этом примере записано три вещи:</p>
+
+    <ul>
+        <li><span class="text-user">Информация о версии стандарта maven-проекта — синим.</span></li>
+        <li><span class="text-red">Информация о самом проекте — красным.</span></li>
+        <li><span class="text-green">Информация об используемых библиотеках — зеленым.</span></li>
+    </ul>
+
+    <p>Давай разберем устройство pom-файла подробнее.</p>
+ 
+    <h2>Устройство Maven-проекта</h2>
+
+    <p>И сразу вопрос: обратили внимание на странность в прошлом примере? <span class="text-red">В нем нет информации о самом коде проекта!</span> Нет ни слова о том, где хранятся java-файлы, ресурсы, файлы свойств, html, скрипты сборки и тому подобное.</p>
+
+    <p>А ответ прост — Maven стандартизировал устройство проекта. Есть несколько вариантов организации кода внутри проекта и самый распространенный имеет вид:</p>
+<img data-max-width="512" data-id="1fcd876d-df8f-4ea6-b5de-b671582da78e" src="https://cdn.javarush.com/images/article/1fcd876d-df8f-4ea6-b5de-b671582da78e/512.jpeg" alt="">
+
+    <p>Структура немного непривычная после стандартных проектов IDEA, но на то она и универсальная. 90% проектов, с которыми вы будете сталкиваться в своей жизни, <span class="text-green">будут иметь именно такую структуру папок</span>.</p>
+
+    <p>Если ты создашь Maven-проект (с помощью IDEA или с помощью консоли), то он примет указанный вид. Давай разберем, как тут все устроено.</p>
+
+    <p>Папка <span class="text-bold">src</span>, как ты уже догадываешься, содержит исходный код проекта. В ней есть две подпапки: <span class="text-bold">main</span> и <span class="text-bold">test</span>.</p>
+
+    <p>Папка <span class="text-bold">/src/main/java</span> является корнем для всех Java-классов проекта. Если у тебя есть класс com.javarush.Cat, то он будет лежать в папке <span class="text-red">/src/main/java</span><span class="text-green">/com/javarush</span><span class="text-neon">/Cat.java</span>. Если есть текстовые или бинарные ресурсы, то они должны храниться в папке <span class="text-red">/src/main/resources</span>.</p>
+
+    <p>Устройство папки <span class="text-bold">/src/test</span> аналогично устройству папки <span class="text-bold">/src/main</span>, но в ней содержатся тесты и их ресурсы. Maven сам умеет запускать нужные тесты при сборке проекта, но об этом поговорим в отдельной лекции.</p>
+
+    <p>Также в проекте есть папка <span class="text-bold">/target</span>, в которую Maven будет сохранять проект после его сборки. Так как у крупных проектов зачастую нетривиальные сценарии сборки, то в этой папке чего только не хранится.</p>
+
+    <p>Второе назначение папки <span class="text-bold">/target</span> — это кеширование промежуточных результатов сборок. При сборке большого проекта Maven может пересобрать только ту его часть, которая изменилась, ускорив, таким образом время сборки в несколько раз.</p>
+
+    <p>Ну и как вишенка на торте — в самом корне проекта лежит файл pom.xml. В нем-то и содержится вся необходимая информация о проекте, о котором мы поговорим ниже.</p>
+
+    <h2>Устройство pom.xml</h2>
+
+    <p>Начнем с того, что pom-файл — это xml, поэтому он содержит стандартные заголовки и информацию о namespaces. Это все касается чисто XML-стандарта, так что подробно об этом говорить не будем. Имеется в виду это:</p>
+ 
+    <div class="terminal"><span class="text-viola">&lt;?xml version="1.0" encoding="UTF-8"?&gt;<br />
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;<br />
+ <br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;…<br />
+ <br />
+&lt;/project&gt;</span></div>
+ 
+    <p>Также обычно первой строкой внутри тега &lt;project&gt; идет описание версии стандарта pom-файла. Почти всегда оно 4.0. В этом тоже для нас ничего интересного.</p>
+
+    <p>Первые строки, которые нас интересуют, выглядят так:</p>
+ 
+    <div class="terminal">&nbsp;&nbsp;<span class="text-user">&lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;</span><br /><br />
+&nbsp;&nbsp;<span class="text-red">&lt;groupId&gt;com.sample.app&lt;/groupId&gt;<br />
+&nbsp;&nbsp;&lt;artifactId&gt;new-app&lt;/artifactId&gt;<br />
+&nbsp;&nbsp;&lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;</span></div>
+ 
+    <p>Чтобы не разбираться лишний раз, что мы описываем (программу, проект, модуль, библиотеку и тому подобное) в стандарте Maven это все называется словом <span class="text-bold">артефакт</span>. Уж в чем создателям Maven не откажешь, так это в любви к стандартизации.</p>
+
+    <p>Три тега, которые ты видишь, означают:</p>
+
+    <ul>
+        <li><span class="text-bold">groupId</span> – пакет, к которому принадлежит приложение, с добавлением имени домена;</li>
+        <li><span class="text-bold">artifactId</span> – уникальный строковый ключ (id проекта);</li>
+        <li><span class="text-bold">version – версия проекта.</li>
+    </ul>
+
+    <p>Трех указанных параметров достаточно, чтобы <span class="text-neon">однозначно описать любой артефакт</span>.</p>
+
+    <p>Далее, после описания проекта обычно идет список артефактов (библиотек), которые проект использует. Выглядит это примерно так:</p>
+ 
+    <div class="terminal"><span class="text-green">&nbsp;&nbsp;&nbsp;&lt;dependencies&gt;<br />
+ <br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;dependency&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;groupId&gt;commons-io&lt;/groupId&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;artifactId&gt;commons-io&lt;/artifactId&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;version&gt;2.6&lt;/version&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/dependency&gt;<br />
+ <br />
+&nbsp;&nbsp;&nbsp;&lt;/dependencies&gt;</span></div>
+ 
+    <p>В данном примере мы добавляем в свой проект библиотеку commons-io из пакета commons-io, с версией 2.6.</p>
+
+    <p>Во время сборки Maven найдет такую библиотеку в своем глобальном репозитории и добавит ее в твой проект. И кстати, так умеет не только Maven.</p>
+
+    <h2>Как IDEA работает с Maven</h2>
+
+    <p>Intellij IDEA отлично умеет работать с Maven. Она умеет открывать такие проекты, самостоятельно создавать, запускать различные сценарии сборки и отлично понимает подключаемые библиотеки.</p>
+
+    <p>У нее даже с некоторых пор есть свой встроенный Maven, но вам все равно нужно уметь ставить и настраивать его самостоятельно, поэтому об этой особенности IDEA ранее не упоминалось. Чисто теоретически у IDEA может быть конфликт двух Maven’ов, так что вам полезно знать, что их два.</p>
+
+    <p>Как создать в IDEA новый Maven-проект:</p>
+
+    <p>Кликаем меню Files > New Project. Выбираем слева в меню пункт <strong>New Project</strong>.</p>
+
+<img data-max-width="800" data-id="031564fb-d0de-439c-a134-22347e7b3c6b" src="https://cdn.javarush.com/images/article/031564fb-d0de-439c-a134-22347e7b3c6b/800.jpeg" alt="Maven-проект">
+
+    <p>Поясним некоторые пункты:</p>
+
+    <ol>
+        <li>Имя проекта;</li>
+        <li>Папка для проекта;</li>
+        <li>Язык проекта — Java;</li>
+        <li>Тип проекта — Maven.</li>
+    </ol>
+ 
+    <p>В разделе Advanced Settings внизу IDEA предложит указать goupID, artifactID и версию нашего нового проекта. Эти данные всегда легко можно сменить позже. Выбираем предложенные или указываем свои:</p>
+
+<img data-max-width="512" data-id="146b77c0-fce6-4a8f-9e18-d1426a336762" src="https://cdn.javarush.com/images/article/146b77c0-fce6-4a8f-9e18-d1426a336762/512.jpeg" alt="Maven-проект 2">
+
+    <p>Далее стандартно создаем проект в необходимом месте. В итоге видим структуру:</p>
+
+<img data-max-width="512" data-id="f96079a3-3b41-40dc-9924-9308298ceb17" src="https://cdn.javarush.com/images/article/f96079a3-3b41-40dc-9924-9308298ceb17/512.jpeg" alt="Maven-проект 3">
+    <p>Классы и пакеты нужно создавать в папке java, об этом мы уже говорили. И, думаю, ты с этим легко справишься. Мы готовы идти дальше, но давай немного вернемся назад, к одному важному вопросу, который мы немного "проскочили". </p>

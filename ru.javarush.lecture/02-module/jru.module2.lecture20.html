@@ -1,0 +1,166 @@
+ThreadPoolExecutor
+<p>----------------------------------------</p>
+Обычно, разрабатывая многопоточное приложение, мы сталкиваемся с организацией работы потоков. Чем больше наше приложение и чем больше потоков нам требуется для организации выполнения многопоточных задач, тем больше объектов Runnable мы создаем...
+<p>----------------------------------------</p>
+    <p>Обычно, разрабатывая многопоточное приложение, мы сталкиваемся с организацией работы потоков. Чем больше наше приложение и чем больше потоков нам требуется для организации выполнения многопоточных задач, тем больше объектов <mark class="green">Runnable</mark> мы создаем. </p>
+
+    <p>Тут необходимо отметить, что создание потока в Java — достаточно дорогостоящая операция. Если мы будем создавать новый экземпляр потока каждый раз для выполнения операции, мы получим большие проблемы с производительностью и в итоге – с работоспособностью приложения. </p>
+
+    <p>Тут нам на помощь приходит <span class="text-green"><span class="text-bold"><em>Thread pool</em></span></span> (пул потоков) и <span class="code"><span class="text-green">ThreadPoolExecutor</span></span>.</p>
+
+    <p><span class="text-green"><span class="text-bold"><em>Thread pool</em></span></span> — это набор предварительно инициализированных потоков, размер которого может быть как фиксированным, так и переменным. </p>
+
+    <img data-max-width="512" data-id="4735a1e8-c36e-4750-b674-9186c714db68" src="https://cdn.javarush.com/images/article/4735a1e8-c36e-4750-b674-9186c714db68/original.png" alt="">
+
+    <p>Если задач больше, чем потоков, то задачи ждут в очереди (Task Queue). Из очереди задача попадает на исполнение к N-ному потоку из пула, а после выполнения задачи поток забирает новую задачу из очереди. После выполнения всех задач из очереди потоки остаются активными и ждут новых задач. Когда задачи появляются, потоки начинают выполнять и их. </p>
+
+    <h2>ThreadPoolExecutor </h2>
+
+    <p>Начиная с Java 5 в решении многопоточности появляется <span class="text-bold">Executor framework</span>. В целом он имеет множество компонентов и пришел к нам, чтобы решить проблему эффективного управления очередью и пулом потоков. </p>
+
+    <p>Главные интерфейсы — <span class="text-neon"><span class="text-bold"><em>Executor</em></span></span> и <span class="text-neon"><span class="text-bold"><em>ExecutorService</em></span></span>. </p>
+
+    <p><span class="text-neon"><span class="text-bold"><em>Executor</em></span></span> — интерфейс с единственным методом void execute(Runnable runnable).</p>
+
+    <p>Передавая в реализацию этого метода задачу, знай: она будет выполнена асинхронно в будущем. </p>
+
+    <p><span class="text-neon"><span class="text-bold"><em>ExecutorService</em></span></span> — интерфейс, который наследуется от интерфейса <span class="text-neon"><span class="text-bold"><em>Executor</em></span></span> и предоставляет возможности для выполнения заданий. У него также есть методы для прерывания выполняемой задачи и завершения работы пула потоков. <p>
+
+    <p><span class="code"><span class="text-green">ThreadPoolExecutor</span></span> реализует интерфейсы <span class="text-neon"><span class="text-bold"><em>Executor</em></span></span> и <span class="text-neon"><span class="text-bold"><em>ExecutorService</em></span></span> и разделяет создание задачи и ее выполнение. Нам необходимо реализовать объекты <span class="text-neon"><span class="text-bold"><em>Runnable</em></span></span> и отправить их исполнителю, а <span class="code"><span class="text-green">ThreadPoolExecutor</span></span> отвечает за их исполнение, создание экземпляров и работу с потоками.</p>
+ 
+    <img data-max-width="800" data-id="dfc5d0d3-d97a-4881-88a8-8b0d8ea881a5" src="https://cdn.javarush.com/images/article/dfc5d0d3-d97a-4881-88a8-8b0d8ea881a5/original.png" alt="">
+
+    <p>После того, как задача отправляется на исполнение, используется уже созданный поток из пула. Тем самым решается вопрос траты ресурсов на создание и инициализацию нового потока, а после использования – на его очистку GC-ом – и повышается производительность. </p>
+
+    <p><span class="code"><span class="text-green">ThreadPoolExecutor</span></span> имеет 4 конструктора:</p>
+
+    <pre class='language-java line-numbers'><code>
+ThreadPoolExecutor(
+int corePoolSize,
+int maximumPoolSize,
+long keepAliveTime, 
+TimeUnit unit, 
+BlockingQueue&lt;Runnable&gt; workQueue)
+    </code></pre>
+ 
+    <pre class='language-java line-numbers'><code>
+ThreadPoolExecutor(
+int corePoolSize,
+int maximumPoolSize,
+long keepAliveTime,
+TimeUnit unit,
+BlockingQueue&lt;Runnable&gt; workQueue,
+RejectedExecutionHandler handler)
+    </code></pre>
+ 
+    <pre class='language-java line-numbers'><code>
+ThreadPoolExecutor(
+int corePoolSize,
+int maximumPoolSize,
+long keepAliveTime, 
+TimeUnit unit,
+BlockingQueue&lt;Runnable&gt; workQueue,
+ThreadFactory threadFactory)
+    </code></pre>
+ 
+    <pre class='language-java line-numbers'><code>
+ThreadPoolExecutor(
+int corePoolSize,
+int maximumPoolSize,
+long keepAliveTime, 
+TimeUnit unit,
+BlockingQueue&lt;Runnable&gt; workQueue,
+ThreadFactory threadFactory, 
+RejectedExecutionHandler handler)
+    </code></pre> 
+
+    <p>В конструктор передаются параметры <span class="code"><span class="text-green">ThreadPoolExecutor</span></span>: </p>
+
+    <table>
+        <tbody>
+            <tr>
+                <td><span class="text-green">corePoolSize</span></td>
+                <td>Параметр, который показывает, какое количество потоков будет готово (запущено) при старте executor сервиса.</td>
+            </tr>
+            <tr>
+                <td><span class="text-green">maximumPoolSize</span></td>
+                <td>Максимальное количество потоков, которое может создать executor сервис.</td>
+            </tr>
+            <tr>
+                <td><span class="text-green">keepAliveTime</span></td>
+                <td>Время, в течение которого освободившийся поток будет жить и впоследствии будет уничтожен, если количество потоков больше <mark class="user">corePoolSize</mark>. Временные единицы указываются в следующем параметре.</td>
+            </tr>
+            <tr>
+                <td><span class="text-green">unit</span></td>
+                <td>Времненные единицы (часы, минуты, секунды, милисекунды и так далее).</td>
+            </tr>
+            <tr>
+                <td><span class="text-green">workQueue</span></td>
+                <td>Реализация очереди для задач.</td>
+            </tr>
+            <tr>
+                <td><span class="text-green">handler</span></td>
+                <td>Обработчик задач, которые не могут быть выполнены.</td>
+            </tr>
+            <tr>
+                <td><span class="text-green">threadFactory</span></td>
+                <td>Объект, который создает новые потоки по требованию. Использование фабрик потоков устраняет аппаратную привязку вызовов к новому потоку, позволяя приложениям использовать специальные подклассы потоков, приоритеты и т. д.</td>
+            </tr>
+        </tbody>
+    </table>
+ 
+    <h2>Создание ThreadPoolExecutor</h2>
+
+    <p>Создание <span class="code"><span class="text-green">ThreadPoolExecutor</span></span> может нам упростить утилитарный класс <span class="code"><span class="text-green">Executors</span></span>. В этом утилитарном классе есть методы, которые нам помогут подготовить объект <mark class="green">ThreadPoolExecutor</mark>.</p>
+ 
+    <table>
+        <tbody>
+            <tr>
+                <td><span class="code text-orange">newFixedThreadPool</span> — создает пул потоков, который повторно использует фиксированное количество потоков для выполнения любого количества задач.</td>
+ 
+                <td>
+                    <pre class='language-java line-numbers'><code>
+ExecutorService executor = Executors.newFixedThreadPool(10);
+                    </code></pre>
+                </td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">newWorkStealingPool</span> – создает пул потоков, где количество потоков = количество ядер процессора, которые доступны для JVM. Дефолтный уровень параллелизма – один. Это значит, что в пуле будет создано столько потоков, сколько ядер ЦП доступно JVM. Если параллелизм равен 4, тогда вместо количества ядер используется переданное значение.</td>
+ 
+                <td>
+                    <pre class='language-java line-numbers'><code>
+ExecutorService executor = Executors.newWorkStealingPool(4);
+                    </code></pre>
+                </td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">newSingleThreadExecutor</span> – создает пул с единственным потоком для выполнения всех задач.</td>
+ 
+                <td>
+                    <pre class='language-java line-numbers'><code>
+ExecutorService executor = Executors.newSingleThreadExecutor();
+                    </code></pre>
+                </td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">newCachedThreadPool</span> – создает пул потоков, который создает новые потоки по мере необходимости, но будет повторно использовать ранее созданные потоки, когда они будут доступны.</td>
+ 
+                <td>
+                    <pre class='language-java line-numbers'><code>
+ExecutorService executor = Executors.newCachedThreadPool();
+                    </code></pre>
+                </td>
+            </tr>
+            <tr>
+                <td><span class="code text-orange">newScheduledThreadPool</span> – создает пул потоков, который может планировать выполнение команд после заданной задержки или для периодического выполнения.</td>
+ 
+                <td>
+                    <pre class='language-java line-numbers'><code>
+ScheduledExecutorService executor = Executors.newScheduledThreadPool(10);
+                    </code></pre>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>Каждый из видов пулов мы рассмотрим в следующих лекциях.</p>

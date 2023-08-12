@@ -1,0 +1,131 @@
+CONSTRAINT: целостность базы данных
+<p>----------------------------------------</p>
+Контроль целостности базы данных. 
+Добавление FOREIGN KEY. 
+FOREIGN KEY и изменение данных.
+<p>----------------------------------------</p>
+<h2>Контроль целостности базы данных</h2>
+
+<p>Еще одна важная вещь, которую нужно знать об базах данных — это констрейты (CONSTRAINS). С помощью констрейнов ты можешь контролировать изменения данных в своих таблицах и поддерживать их целостность и согласованность.</p>
+
+<p>Что такое <strong>согласованность данных</strong>, когда мы говорим о базе данных?</p>
+
+<p>Давай возьмем наш интернет-магазин с <strong>таблицами employee, product и task</strong>. Мы уже знаем, что в таблице task могут быть задачи, не назначенные ни на кого: <strong>employee_id</strong> у таких строк равен NULL.  </p>
+
+<p>А вот что будет, если в таблице task будет запись с employee_id равным, допустим, 115? Ведь у нас нет такого сотрудника. У нас нет сотрудника с id = 115 в таблице employee. В то же время ссылка на сотрудника с таким id есть в таблице task. Это и есть пример <strong>несогласованности данных</strong>.</p>
+
+<p>Так как же нам согласовать эти данные? Идеально было бы сделать так, что SQL-сервер при любом изменении данных контролировал все эти нюансы. И такая возможность есть, называется она FOREIGN_KEY.</p>
+
+<p>Если какая-то колонка в вашей таблице содержит не просто цифры, а id строк из другой таблицы, то это можно указать явно.</p>
+
+<h2>Добавление FOREIGN KEY</h2>
+
+<p>Такой ключ можно добавлять в таблицу как на этапе ее создания, так и после, с помощью ALTER TABLE. Формат принципиально не отличается. Мы приведем оба варианта.</p>
+
+<p>Общий вид такого ключа/правила имеет вид:</p>
+ 
+<pre><code><strong><span class="text-red">FOREIGN KEY</span> (<span class="text-green">колонка</span>)
+  	<span class="text-red">REFERENCES</span> <span class="text-orange">таблица</span><span class="text-user">(<span class="text-green">колонка</span>)</span></strong>
+</code></pre>
+ 
+<p>Давай добавим в таблицу <strong>task</strong> этот ключ/правило, чтобы гарантировать, что все <strong>employee_id</strong> из таблицы ссылаются на существующую запись в таблице employee. Выглядеть этот скрипт будет так:</p>
+ 
+<pre><code><strong><span class="text-red">ALTER TABLE</span> <span class="text-orange">task</span>
+      <span class="text-red">ADD FOREIGN KEY</span> (<span class="text-green">employee_id</span>)
+  	<span class="text-red">REFERENCES</span> <span class="text-orange">employee</span><span class="text-user">(<span class="text-green">id</span>)</span></strong>
+</code></pre>
+ 
+<p>А если бы мы решили добавить это правило в момент создания таблицы task, то код выглядел бы так:</p>
+ 
+<pre><code><strong><span class="text-red">CREATE TABLE</span> <span class="text-orange">task</span> (
+      <span class="text-green">id</span> <span class="text-user">INT</span>,
+      <span class="text-green">name</span> <span class="text-user">VARCHAR</span>(<span class="text-user">100</span>),
+      <span class="text-green">employee_id</span> <span class="text-user">INT</span>,
+      <span class="text-green">deadline</span> <span class="text-user">DATE</span>,
+ 
+      <span class="text-red">PRIMARY KEY</span> (<span class="text-green">id</span>),
+  	  <span class="text-red">FOREIGN KEY</span> (<span class="text-green">employee_id</span>)  
+	      <span class="text-red">REFERENCES</span> <span class="text-orange">employee</span><span class="text-user">(<span class="text-green">id</span>)</span>
+);</strong>
+</code></pre>
+ 
+<p>Кстати, бывают ситуации, когда строка, на которую мы ссылаемся, имеет уникальный составной ключ: например “ФИО и год рождения” или “productCatogoryId и productId”. Тогда FOREIGN KEY можно записать так:</p>
+ 
+<pre><code><strong><span class="text-red">FOREIGN KEY</span> (<span class="text-green">наша_колонка1</span>, <span class="text-user">наша_колонка2</span>)
+  	<span class="text-red">REFERENCES</span> <span class="text-orange">таблица</span>(<span class="text-green">их_колонка1</span>, <span class="text-user">их_колонка2</span>)</strong>
+</code></pre>
+ 
+<h2>FOREIGN KEY и изменение данных</h2>
+
+<p>А теперь представь ситуацию, когда в таблице employee мы решили обновить некоторые данные и у нас поменялся id сотрудника. Что при этом произойдет с данными в таблице task? Правильно, они станут неактуальными, и целостность нашей базы данных нарушится.</p>
+
+<p>Чтобы такого не произошло, можно указать SQL-серверу, чтобы он при изменении id в таблице employee поменял бы и employee_id всех строк во всех таблицах, которые ссылаются на это конкретное изменившееся id.</p>
+
+<p>Такие сценарии называются <strong>OnUpdate</strong> и <strong>OnDelete</strong>. Что сделать в случае изменения id-записи, и что делать в случае удаления записи?</p>
+
+<p>С удалением вообще не все так однозначно. Если у тебя есть зависимые объекты, представленные строками в БД, которые ссылаются друг на друга, то возможны самые разнообразные сценарии поведения при удалении одного объекта.</p>
+
+<p>Допустим, у нас удаляется пользователь сайта, значит, мы должны удалить всю его личную переписку. Но вряд ли мы при этом должны удалить все его публичные комментарии.</p>
+
+<p>Или увольняется сотрудник. Было бы странно, чтобы он уволился и одновременно из базы исчезли все задачи, которые на него назначены. Но если бы они остались назначенными не него, тоже вышло бы нехорошо. Правильнее сделать так, чтобы сотрудник мог уволиться после того, как переназначил все свои задачи на других людей.</p>
+
+<p>Вот как мы можем описать эти сценарии с помощью FOREIGN KEY. Общий вид такого ключа/правила имеет вид:</p>
+ 
+<pre><code><strong><span class="text-red">FOREIGN KEY</span> (<span class="text-green">колонка</span>)
+  	<span class="text-red">REFERENCES</span> <span class="text-orange">таблица</span>(<span class="text-green">колонка</span>)
+ 	<span class="text-viola">[ON DELETE reference_option]</span>
+ 	<span class="text-viola">[ON UPDATE reference_option]</span></strong>
+</code></pre>
+ 
+<p>Что делать в случае удаления (ON DELETE) или изменения (ON UPDATE) записей?
+Всего может быть 5 вариантов действия SQL-сервера в каждой из этих ситуаций:</p>
+
+<table>
+<tbody>
+<tr>
+<th>#</th>
+<th>reference_option</th>
+<th>Пояснение</th>
+</tr>
+<tr>
+<td><strong>1</strong></td>
+<td><strong>RESTRICT</strong></td>
+<td>Запретить действие, если найдены ссылки на строку</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td><strong>CASCADE</strong></td>
+<td>Поменять id в зависимых строках</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td><strong>SET NULL</strong></td>
+<td>Установить id в зависимых строках в NULL</td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td><strong>NO ACTION</strong></td>
+<td>Ничего не делать</td>
+</tr>
+<tr>
+<td><strong>5</strong></td>
+<td><strong>SET DEFAULT x</strong></td>
+<td>Установить id в зависимых стоках в значение x</td>
+</tr>
+</tbody>
+</table>
+ 
+<p>Вот как бы мы могли изменить нашу таблицу task:</p>
+ 
+<pre><code><strong><span class="text-red">ALTER TABLE</span> <span class="text-orange">task</span>
+  	<span class="text-red">ADD FOREIGN KEY</span> (<span class="text-green">employee_id</span>)
+  	<span class="text-red">REFERENCES</span> <span class="text-orange">employee</span><span class="text-user">(<span class="text-green">id</span>)</span>
+  	<span class="text-red">ON UPDATE</span> <span class="text-viola">CASCADE</span>
+  	<span class="text-red">ON DELETE</span> <span class="text-viola">RESTRICT;</span></strong>
+</code></pre>
+ 
+<p>Что тут написано:</p>
+
+<p><strong>ON UPDATE CASCADE</strong>: Если меняется ключ id в таблице employee, то так же поменять employee_id в таблице task, которая на него ссылается.</p>
+
+<p><strong>ON DELETE RESTRICT</strong>: Если удаляется строка из таблицы employee и на нее есть ссылка из таблицы task, то запретить удаление строки из таблицы employee.</p>

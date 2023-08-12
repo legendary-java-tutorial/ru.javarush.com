@@ -1,0 +1,273 @@
+Предыстория появления Лямбда-выражений
+<p>----------------------------------------</p>
+Интерфейсы Чтобы понять, что такое лямбда-функции, сначала нужно понять, что такое интерфейсы. Вы будете изучать интерфейсы в 1 и 2 уровнях квеста ООП. Однако уже сейчас можно дать краткую выжимку этого материала, которая существенно облегчит вам дальнейшее понимание. Интерфейс – это разновиднос
+<p>----------------------------------------</p>
+<h2>1. Интерфейсы</h2>
+<p>Чтобы понимать, что такое лямбда-функции, сначала нужно понимать, что такое интерфейсы. Поэтому напомним основные моменты.</p>
+<p><strong>Интерфейс</strong> — это разновидность класса. Сильно урезанная, если можно так сказать. У интерфейса, в отличие от класса, не может быть своих переменных (кроме статических). Также нельзя создавать объекты типа Интерфейс:</p>
+<ul>
+    <li>Нельзя объявлять переменные класса</li>
+    <li>Нельзя создавать объекты</li>
+</ul>
+<p>Пример:</p>
+<div class="lesson-example">
+        <pre class="language-java"><code>interface <span class="code text-viola">Runnable</span>
+{
+   void <span class="text-red">run</span>();
+}</code></pre>
+    <div class="lesson-example-caption">Пример стандартного интерфейса</div>
+</div>
+<p><strong>Использование интерфейса</strong></p>
+<p>Так зачем же интерфейс нужен? Интерфейсы используются только совместно с наследованием. Один и тот же интерфейс могут наследовать разные классы, или еще говорят, что <span class="term text-user">классы</span> реализуют <span class="code text-viola">интерфейс</span>.</p>
+<p>Если класс реализует интерфейс, он обязан реализовать у себя внутри те методы, которые были объявлены, но не реализованы внутри интерфейса. Пример:</p>
+<pre class="language-java"><code>interface <span class="code text-viola">Runnable</span>
+{
+   void <span class="text-red">run</span>();
+}
+
+class <span class="code text-user">Timer</span> implements <span class="code text-viola">Runnable</span>
+{
+   void <span class="text-red">run</span>()
+   {
+      System.out.println(<span class="text-green">LocalTime.now()</span>);
+   }
+}
+
+class <span class="code text-user">Calendar</span> implements <span class="code text-viola">Runnable</span>
+{
+   void <span class="text-red">run</span>()
+   {
+      var date = LocalDate.now();
+      System.out.println(<span class="text-user">"Сегодня " + date.getDayOfWeek()</span>);
+   }
+}</code></pre>
+<p>Класс <code class="text-user">Timer</code> реализует (implements) интерфейс <code class="text-viola">Runnable</code>, поэтому обязан объявить внутри себя все методы, которые есть в интерфейсе <code class="text-viola">Runnable</code> и реализовать их: написать код в теле метода. То же касается и класса <code class="text-user">Calendar</code>.</p>
+<p>Зато теперь в переменные типа <code class="text-viola">Runnable</code> можно сохранять ссылки на объекты классов, которые реализуют интерфейс <code class="text-viola">Runnable</code>.</p>
+<p>Пример:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Код</th>
+        <th>Примечание</th>
+    </tr>
+    <tr>
+        <td>
+<pre class="language-java"><code><span class="text-green">Timer</span> timer = new <span class="text-green">Timer</span>();
+timer.<span class="text-red">run</span>();
+
+<span class="code text-viola">Runnable</span> r1 = new <span class="text-green">Timer</span>();
+r1.<span class="text-red">run</span>();
+
+<span class="code text-viola">Runnable</span> r2 = new <span class="text-user">Calendar</span>();
+r2.<span class="text-red">run</span>();</code></pre>
+        </td>
+        <td>
+            <br>Будет вызван метод <code><span class="text-red">run</span>()</code> класса <code><span class="text-green">Timer</span></code><br>
+            <br><br>Будет вызван метод <code><span class="text-red">run</span>()</code> класса <code><span class="text-green">Timer</span></code><br>
+            <br><br>Будет вызван метод <code><span class="text-red">run</span>()</code> класса <code><span class="text-user">Calendar</span></code>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p>Вы <span class="text-green">всегда можете присвоить ссылку на объект переменной любого типа, если этот тип — один из классов-родителей объекта.</span> Для классов <code><span class="text-green">Timer</span></code> и <code><span class="text-user">Calendar</span></code> таких типов два: <code>Object</code> и <code><span class="text-viola">Runnable</span></code>.</p>
+<p>Если вы присвоите ссылку на объект переменной типа <code>Object</code>, сможете вызывать у нее только методы, объявленные в классе <code>Object</code>. А если присвоите ссылку на объект переменной типа <code><span class="text-viola">Runnable</span></code>, сможете вызвать у нее методы, которые есть в типе <code><span class="text-viola">Runnable</span></code>.</p>
+<p>Пример 2:</p>
+<pre class="language-java"><code>ArrayList&lt;<span class="text-viola">Runnable</span>&gt; <span class="text-viola">list</span> = new ArrayList&lt;<span class="text-viola">Runnable</span>&gt;();
+<span class="text-viola">list</span>.add (new <span class="text-green">Timer</span>());
+<span class="text-viola">list</span>.add (new <span class="text-user">Calendar</span>());
+
+for (<span class="text-viola">Runnable</span> <span class="text-orange">element</span>: <span class="text-viola">list</span>)
+    <span class="text-orange">element</span>.<span class="text-red">run</span>();</code></pre>
+<p>Такой код будет работать, ведь у объектов <code><span class="text-green">Timer</span></code> и <code><span class="text-user">Calendar</span></code> есть отличные рабочие методы run. Поэтому нет никаких проблем с тем, чтобы их вызвать. Если бы мы просто добавили метод run() в оба класса, не смогли бы вызвать их таким простым способом.</p>
+<p>Интерфейс <code><span class="text-viola">Runnable</span></code> фактически используется только для того, чтобы было куда поместить метод run.</p>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1801"></div>
+<hr>
+<h2>2. Сортировка</h2>
+<p>Давайте перейдем к чему-то более практичному. Например, рассмотрим сортировку строк.</p>
+<p>Чтобы сортировать коллекцию строк в алфавитном порядке, в Java есть отличный метод — <code><span class="text-viola">Collections</span>.<span class="text-red">sort</span>(<span class="text-green">коллекция</span>);</code></p>
+<p>Этот статический метод выполняет сортировку переданной коллекции, и в процессе сортировки попарно сравнивает ее элементы: чтобы понять, менять элементы местами или нет.</p>
+<p>Сравнение элементов в процессе сортировки выполняется с помощью метода <code>compareTo</code>(), который есть у всех стандартных классов: <code>Integer</code>, <code>String</code>, ...</p>
+<p>Метод compareTo() класса Integer сравнивает значения двух чисел, а метод compareTo() класса String смотрит на алфавитный порядок строк.</p>
+<p>Таким образом, коллекция чисел будет отсортирована в порядке их возрастания, а коллекция строк — в алфавитном порядке.</p>
+<p><strong>Альтернативная сортировка</strong></p>
+<p>А если мы хотим сортировать строки не по алфавиту, а по их длине? И числа хотим сортировать в порядке убывания. Как быть в этой ситуации?</p>
+<p>Для этого у класса <code class="text-neon">Collections</code> есть еще один метод <code class="code-raw"><span class="code text-red">sort</span>()</code>, но уже с двумя параметрами:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code><span class="code text-neon">Collections</span>.<span class="code text-red">sort</span>(<span class="code text-green">коллекция</span>, <span class="code text-user">компаратор</span>);</code></pre>
+</div>
+<p>Где <span class="text-user"><span class="term text-user">компаратор</span></span> — это специальный объект, который знает, как <span class="text-user">сравнивать объекты</span> в <span class="term text-green">коллекции</span> в процессе <span class="term text-red">сортировки</span>. Компаратор происходит от английского слова <code>Comparator</code> (сравнитель), а <code>Comparator</code> — от слова <span class="term">Compare</span> — сравнивать.</p>
+<p>Так что же это за специальный объект-то такой?</p>
+<p><strong>Интерфейс <code>Comparator</code></strong></p>
+<p>На самом деле все очень просто. Тип второго параметра метода <code><span class="text-user">sort</span>()</code> — <code><span class="text-neon">Comparator</span>&lt;<span class="text-orange">T</span>&gt;</code></p>
+<p>Где T — это тип-параметр, такой же, как и тип элементов <span class="text-green">коллекции</span>, а <code><span class="text-neon">Comparator</span></code> — это интерфейс, который имеет единственный метод <code>int <span class="text-red">compare</span>(<span class="text-orange">T</span> obj1, <span class="text-orange">T</span> obj2);</code></p>
+<p>Другими словами, объект-компаратор — это любой объект класса, который реализует интерфейс Comparator. Выглядит интерфейс Comparator очень просто:</p>
+<div class="lesson-example">
+    <pre class="language-java"><code>public interface <span class="text-neon">Comparator</span>&lt;<span class="text-orange">Tип</span>&gt;
+{
+   public int <span class="text-red">compare</span>(<span class="text-orange">Tип</span> obj1, <span class="text-orange">Tип</span> obj2);
+}</code></pre>
+    <div class="lesson-example-caption">Код интерфейса Comparator</div>
+</div>
+<p>Метод <code><span class="text-red">compare</span>()</code> сравнивает два параметра, которые в него передают.</p>
+<p>Если метод возвращает отрицательное число, то <code>obj1 &lt; obj2</code>. Если метод возвращает положительное число, то <code>obj1 &gt; obj2</code>. Если метод возвращает 0, то считается, что <code>obj1 == obj2</code>.</p>
+<p>Вот как будет выглядеть объект компаратор, который сравнивает строки по их длине:</p>
+<div class="lesson-example">
+    <pre class="language-java"><code>public class <span class="text-viola">StringLengthComparator</span> implements <span class="text-neon">Comparator</span>&lt;<span class="text-orange">String</span>&gt;
+{
+   public int <span class="text-red">compare</span> (<span class="text-orange">String</span> <span class="text-green">obj1</span>, <span class="text-orange">String</span> <span class="text-user">obj2</span>)
+   {
+      return <span class="text-green">obj1</span>.length() - <span class="text-user">obj2</span>.length();
+   }
+}</code></pre>
+    <div class="lesson-example-caption">Код класса <code>StringLengthComparator</code></div>
+</div>
+<p>Для того, чтобы сравнить длины строк, достаточно просто вычесть одну длину из другой.</p>
+<p>Полный код программы, которая сортирует строки по длине, будет выглядеть вот так:</p>
+<div class="lesson-example">
+    <pre class="language-java"><code>public class Solution
+{
+   public static void main(String[] args)
+<span>   {
+</span><span>      ArrayList&lt;<span class="text-orange">String</span>&gt; <span class="text-user">list</span> = new ArrayList&lt;<span class="text-orange">String</span>&gt;();
+</span><span>      <span class="text-neon">Collections</span>.addAll(<span class="text-user">list</span>, "<span class="text-green">Привет</span>", "<span class="text-green">как</span>", "<span class="text-green">дела?</span>");
+</span><span>      <span class="text-neon">Collections</span>.sort(<span class="text-user">list</span>, new StringLengthComparator());
+</span><span>   }
+</span><span>}
+</span><span>
+class <span class="text-viola">StringLengthComparator</span> implements <span class="text-neon">Comparator</span>&lt;<span class="text-orange">String</span>&gt;
+</span><span>{
+</span><span>   public int <span class="text-red">compare</span> (<span class="text-orange">String</span> <span class="text-green">obj1</span>, <span class="text-orange">String</span> <span class="text-user">obj2</span>)
+</span><span>   {
+</span><span>      return <span class="text-green">obj1</span>.length() - <span class="text-user">obj2</span>.length();
+</span><span>   }
+</span><span>}</span></code></pre>
+    <div class="lesson-example-caption">Сортировка строк по длине</div>
+</div>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1802"></div>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1803"></div>
+<hr>
+<h2>3. Синтаксический сахар</h2>
+<p>А как вы думаете, можно ли записать данный код короче? По сути, тут только одна строка, которая несет полезную информацию — <code>obj1.length() - obj2.length();</code>.</p>
+<p>Но ведь код не может существовать вне метода, поэтому пришлось добавить метод <code>compare()</code>, а для метода пришлось добавить новый класс &#8211; <code class="text-viola">StringLengthComparator</code>. И еще типы переменных нужно указывать... В общем, вроде бы все правильно.</p>
+<p>Однако, есть способы записать этот код короче. У нас для вас припасено немного синтаксического сахара. Ведра эдак два!</p>
+<p><b>Анонимный внутренний класс</b></p>
+<p>Вы можете записать код компаратора прямо внутри метода <code>main()</code>, а компилятор сам сделает все остальное. Пример:</p>
+<div class="lesson-example">
+    <pre class="language-java"><code>public class Solution
+{
+    public static void main(String[] args)
+<span>    {
+</span><span>        ArrayList&lt;<span class="text-orange">String</span>&gt; <span class="text-user">list</span> = new ArrayList&lt;<span class="text-orange">String</span>&gt;();
+</span><span>        <span class="text-neon">Collections</span>.addAll(<span class="text-user">list</span>, "<span class="text-green">Привет</span>", "<span class="text-green">как</span>", "<span class="text-green">дела?</span>");
+
+</span><span>        <span class="text-neon">Comparator</span>&lt;<span class="text-orange">String</span>&gt; <span class="text-viola">comparator</span> = new Comparator&lt;<span class="text-orange">String</span>&gt;()
+</span><span>        {
+</span><span>            public int <span class="text-red">compare</span> (<span class="text-orange">String</span> <span class="text-green">obj1</span>, <span class="text-orange">String</span> <span class="text-user">obj2</span>)
+</span><span>            {
+</span><span>                return <span class="text-green">obj1</span>.length() - <span class="text-user">obj2</span>.length();
+</span><span>            }
+</span><span>        };
+</span><span>
+        <span class="text-neon">Collections</span>.sort(<span class="text-user">list</span>, <span class="text-viola">comparator</span>);
+</span><span>    }
+</span><span>}</span></code></pre>
+    <div class="lesson-example-caption">Сортировка строк по длине</div>
+</div>
+<p>Вы можете создать объект наследник интерфейса <code class="text-green">Comparator</code>, не создавая сам класс! Компилятор создаст его автоматически и даст ему какое-нибудь временное имя. Сравните:</p>
+<div class="lesson-example">
+    <pre class="language-java"><code><span class="code text-green">Comparator</span>&lt;String&gt; comparator = new <span class="code text-green">Comparator</span>&lt;String&gt;()
+<span>{</span>
+    public int compare (String obj1, String obj2)
+    {
+        return obj1.length() - obj2.length();
+    }
+};</code></pre>
+    <div class="lesson-example-caption">Анонимный внутренний класс</div>
+</div>
+<div class="lesson-example">
+        <pre class="language-java"><code><span class="code text-green">Comparator</span>&lt;String&gt; comparator = new <span class="code text-viola">StringLengthComparator</span>();
+
+class <span class="code text-viola">StringLengthComparator</span> implements <span class="code text-green">Comparator</span>&lt;String&gt;
+{
+    public int compare (String obj1, String obj2)
+    {
+        return obj1.length() - obj2.length();
+    }
+}</code></pre>
+    <div class="lesson-example-caption">Класс <code>StringLengthComparator</code></div>
+</div>
+<p>Одинаковым цветом раскрашены одинаковые блоки кода в двух разных случаях. Отличия совсем небольшие на самом деле.</p>
+<p>Когда компилятор встретит в коде первый блок кода, он просто сгенерирует для него второй блок кода и даст классу какое-нибудь случайное имя.</p>
+<hr>
+<h2>4. Лямбда-выражения в Java</h2>
+<p>Допустим, вы решили использовать в вашем коде анонимный внутренний класс. В этом случае у вас будет блок кода типа такого:</p>
+<div class="lesson-example">
+    <pre class="language-java"><code><span class="text-neon">Comparator</span>&lt;<span class="text-orange">String</span>&gt; comparator = new <span class="text-neon">Comparator</span>&lt;<span class="text-orange">String</span>&gt;()
+<span>{
+</span>    public int <span class="text-red">compare</span> (<span class="text-orange">String</span> <span class="text-green">obj1</span>, <span class="text-orange">String</span> <span class="text-green">obj2</span>)
+    {
+        return <span class="text-green">obj1</span>.length() - <span class="text-green">obj2.</span>length();
+    }
+};</code></pre>
+    <div class="lesson-example-caption">Анонимный внутренний класс</div>
+</div>
+<p>Тут и объявление переменной, и создание анонимного класса — все вместе. Однако есть способ записать этот код короче. Например, так:</p>
+<pre class="language-java"><code><span class="text-neon">Comparator</span>&lt;<span class="text-orange">String</span>&gt; <span class="text-viola">comparator</span> = (<span class="text-orange">String</span> <span class="text-green">obj1</span>, <span class="text-orange">String</span> <span class="text-user">obj2</span>) -&gt;
+{
+    return <span class="text-green">obj1</span>.length() - <span class="text-user">obj2</span>.length();
+};</code></pre>
+<p>Точка с запятой нужна, т.к. у вас тут не только скрытое объявление класса, но и создание переменной.</p>
+<p>Такая запись называется <strong><span class="text-red">лямбда-выражением.</span></strong></p>
+<p>Если компилятор встретит такую запись в вашем коде, он просто сгенерирует по ней полную версию кода (с анонимным внутренним классом).</p>
+<p>Обратите внимание: при записи лямбда-выражения мы опустили не только имя класса <code><span class="text-neon">Comparator</span>&lt;<span class="text-orange">String</span>&gt;</code>, но и имя метода <code>int <span class="text-red">compare</span>()</code>.</p>
+<p>У компилятора <strong>не возникнет проблем с определением метода</strong>, т.к. лямбда-выражение можно писать <strong>только для интерфейсов, у которых метод один.</strong> Впрочем есть способ обойти это правило, но об этом вы узнаете, когда начнете изучать ООП активнее (мы говорим о default-методах).</p>
+<p>Давайте еще раз посмотрим на полную версию кода, только раскрасим серым цветом ту ее часть, которую можно опустить при записи лямбда выражения:</p>
+<div class="lesson-example">
+        <pre class="language-java"><code><span class="text-neon">Comparator</span>&lt;<span class="text-orange">String</span>&gt; <span class="text-viola">comparator</span> = <span class="text-gray">new Comparator&lt;String&gt;()</span>
+{
+    <span class="text-gray">public int compare</span> (<span class="text-orange">String</span> <span class="text-green">obj1</span>, <span class="text-orange">String</span> <span class="text-user">obj2</span>)
+   {
+      return <span class="text-green">obj1</span>.length() - <span class="text-user">obj2</span>.length();
+   }
+};</code></pre>
+    <div class="lesson-example-caption">Анонимный внутренний класс</div>
+</div>
+<p>Вроде бы ничего важного не упустили. Действительно, если у интерфейса <code><span class="text-neon">Comparator</span></code> есть только один метод <code><span class="text-viola">compare</span>()</code>, по оставшемуся коду компилятор вполне может восстановить серый код.</p>
+<p><strong>Сортировка</strong></p>
+<p>Кстати, код вызова сортировки теперь можно записать так:</p>
+<pre class="language-java"><code><span class="text-neon">Comparator</span>&lt;String&gt; <span class="text-viola">comparator</span> = (<span class="text-orange">String</span> <span class="text-green">obj1</span>, <span class="text-orange">String</span> <span class="text-user">obj2</span>) -&gt;
+{
+   return <span class="text-green">obj1</span>.length() - <span class="text-user">obj2</span>.length();
+};
+<span class="text-neon">Collections</span>.sort(<span class="text-user">list</span>, <span class="text-viola">comparator</span>);</code></pre>
+<p>Или даже так:</p>
+<pre class="language-java"><code><span class="text-neon">Collections</span>.sort(<span class="text-user">list</span>, (<span class="text-orange">String</span> <span class="text-green">obj1</span>, <span class="text-orange">String</span> <span class="text-user">obj2)</span> -&gt;
+   {
+      return <span class="text-green">obj1</span>.length() - <span class="text-user">obj2</span>.length();
+   }
+);</code></pre>
+<p>Мы просто подставили вместо переменной <code><span class="text-viola">comparator</span></code> сразу то значение, которое присваивали переменной <code><span class="text-viola">comparator</span></code>.</p>
+<p><strong>Выведение типов</strong></p>
+<p>Но и это еще не все. Код в этих примерах можно записать еще короче. Во-первых, компилятор может сам определить, что у переменных <code><span class="text-green">obj1</span></code> и <code><span class="text-user">obj2</span></code> тип <code>String</code>. А во-вторых, фигурные скобки и оператор return тоже можно не писать, если у вас в коде метода всего одна команда.</p>
+<p>Сокращенный вариант будет таким:</p>
+<pre class="language-java"><code><span class="text-neon">Comparator</span>&lt;String&gt; <span class="text-viola">comparator</span> = (<span class="text-green">obj1</span>, <span class="text-user">obj2</span>) -&gt;
+   <span class="text-green">obj1</span>.length() - <span class="text-user">obj2</span>.length();
+
+<span class="text-neon">Collections</span>.sort(<span class="text-user">list</span>, <span class="text-viola">comparator</span>);</code></pre>
+<p>А если вместо переменной <code><span class="text-viola">comparator</span></code> сразу подставить ее значение, то получим такой вариант:</p>
+<pre class="language-java"><code><span class="text-neon">Collections</span>.sort(<span class="text-user">list</span>, (<span class="text-green">obj1</span>, <span class="text-user">obj2</span>) -&gt;  <span class="text-green">obj1</span>.length() - <span class="text-user">obj2</span>.length() );</code></pre>
+<p><span class="text-viola">Ну и как вам: всего одна строка кода, никакой лишней информации — только переменные и код. Короче уже некуда! Или есть куда?</span></p>
+<hr>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1804"></div>
+<div class="task-widget-container" showCover="true" taskKey="com.javarush.task.pro.task18.task1805"></div>
+<hr>
+<h2>5. Как это работает</h2>
+<p>На самом деле, код можно записать еще короче. Но об этом чуть позже.</p>
+<p>Лямбда-выражение можно записать там, где используется <strong>тип-интерфейс с одним-единственным методом.</strong></p>
+<p>Например, в этом коде <code><span class="text-neon">Collections</span>.sort(<span class="text-user">list</span>, (<span class="text-green">obj1</span>, <span class="text-user">obj2</span>) -&gt; <span class="text-green">obj1</span>.length() - <span class="text-user">obj2</span>.length());</code> можно записать лямбда-выражение, т.к. сигнатура метода <code>sort()</code> имеет вид:</p>
+<div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>sort(<span class="text-viola">Collection</span>&lt;<span class="text-orange">T</span>&gt; colls, <span class="text-neon">Comparator</span>&lt;<span class="text-orange">T</span>&gt; comp)</code></pre>
+</div>
+<p>Когда мы передали в метод sort в качестве первого параметра коллекцию <code>ArrayList&lt;String&gt;</code>, компилятор смог определить тип второго параметра как <code><span class="text-neon">Comparator</span>&lt;<span class="text-orange">String</span>&gt;</code>. А из этого сделал вывод, что этот интерфейс имеет единственный метод <code>int compare(String obj1, String obj2)</code>. Остальное уже дело техники.</p>

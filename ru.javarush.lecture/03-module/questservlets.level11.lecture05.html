@@ -1,0 +1,77 @@
+Устройство war-файла
+<p>----------------------------------------</p>
+Структура war-файла. 
+Структура war-файла и Maven-проект.
+<p>----------------------------------------</p>
+    <h2>Структура war-файла</h2>
+
+    <p>Каждое веб-приложение, когда оно заливается на веб-сервер, упаковано в единый war-файл. WAR сейчас расшифровывается как Web Application Resources, хотя раньше это было Web ARchive. Фактически это zip-архив, который содержит в себе упакованное веб-приложение.</p>
+
+    <p>Вот как выглядит типичное содержание war-файла:</p>
+
+    <pre><code><span class="text-neon">/index.html
+/guestbook.jsp
+/images/logo.png
+/js/jquery.js</span>
+<span class="text-green">/WEB-INF/</span><span class="text-red">web.xml</span>
+<span class="text-green">/WEB-INF/classes/com/javarush/Util.class
+/WEB-INF/classes/com/javarush/MainServlet.class
+/WEB-INF/classes/application.properties
+/WEB-INF/lib/util.jar</span>
+/META-INF/MANIFEST.MF
+</code></pre>
+
+    <p>Внутри war-файла лежат <span class="text-bold">статические веб-ресурсы</span>, такие как файлы .html, .css, .js и так далее. Так же там могут быть картинки, видео и вообще любые файлы. Они могут лежать в корне или в подпапках, это не имеет значения. Tomcat будет просто отдавать их, если на них поступит запрос.</p>
+
+    <p>Допустим, твое веб-приложение загружено на веб-сервер под именем apple, тогда при запросе <a href="http://localhost/apple/images/logo.png" target="_blank">http://localhost/apple/images/logo.png</a> Tomcat отдаст файл <span class="text-neon">/images/logo.png</span>.</p>
+
+    <p>Отдельно стоит отметить <span class="text-bold">папку WEB-INF</span>. Она предназначена для хранения в ней Java-кода. <span class="text-red">Tomcat <span class="text-bold">не</span> будет отдавать наружу ее содержимое.</span></p>
+
+    <table>
+        <tbody>
+            <tr>
+                <td>/WEB-INF/classes/</td>
+                <td>каталог для скомпилированных Java-классов, не объединенных в JAR-архивы, включая классы сервлета и файлы ресурсов, необходимые загрузчику перед выполнением приложения</td>
+            </tr>
+            <tr>
+                <td>/WEB-INF/lib/</td> 
+                <td>место для хранения jar-библиотек</td>
+            </tr>
+            <tr>
+                <td>/WEB-INF/web.xml</td>
+                <td>дескриптор развертывания</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Структура war-файла и Maven-проект</h2>
+
+    <p>Теперь перейдем к иерархии каталогов проекта Maven. Полную схему каталога можно посмотреть в официальном руководстве. Здесь мы ознакомимся с ней в несколько сокращенном варианте, исключив тестовые ресурсы. Итак, стандартная иерархия каталогов Maven имеет вид:</p>
+
+    <table>
+        <tbody>
+            <tr>
+                <td>src/main/java</td>
+                <td>исходники классов и библиотек приложения в соответствии с общепринятой иерархией пакетов</td>
+            </tr>
+            <tr>
+                <td>src/main/resources</td>
+                <td>файлы ресурсов приложения: настройки баз данных, файлы локализации и т. д.</td>
+            </tr>
+            <tr>
+                <td>src/main/webapp</td>
+                <td>ресурсы веб-приложения (JSP-файлы, текстовые файлы, скрипты и т. п.)</td>
+             </tr>
+        </tbody>
+    </table>
+
+    <p>Как видишь, она существенно отличается от известной вам структуры WAR-файла. Но на самом деле при компиляции веб-приложения происходит простое перемещение и объединение файлов в структуру, определенную в спецификации Java EE.</p>
+
+    <p>Каталог <span class="text-bold">src/main/webapp</span> определяет корневой контекст веб-приложения (при развертывании на сервере корневой контекст совпадает с именем WAR-файла) и уже содержит внутри себя каталог WEB-INF. То есть содержимое <span class="text-bold">src/main/webapp</span> полностью переносится в веб-приложение.</p>
+
+    <p>Все твои Java-классы компилируются в class-файлы и, сохраняя свою структуру пакетов, перемещаются в каталог <span class="text-bold">/WEB-INF/classes/</span>. JAR-архивы подключенных библиотек, которые определены в зависимостях pom.xml файла Maven'а, как мы определили выше, перемещаются в каталог <span class="text-bold">/WEB-INF/lib/</span>.</p>
+
+    <p>Ресурсы приложения <span class="text-bold">src/main/resources</span> переносятся в classpath приложения, а конкретно в тот же каталог <span class="text-bold">/WEB-INF/classes/</span>.</p>
+
+    <p>Чтобы было совсем понятно, посмотри эту схему, которая поможет понять, как и что куда кладется при сборке проекта:</p>
+    <img data-max-width="512" data-id="0abbb31e-30ce-4c88-a4f7-27a282f86f91" src="https://cdn.javarush.com/images/article/0abbb31e-30ce-4c88-a4f7-27a282f86f91/512.jpeg" alt="Устройство war-файла">

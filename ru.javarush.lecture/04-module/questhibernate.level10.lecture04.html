@@ -1,0 +1,113 @@
+Ограничение длины запроса
+<p>----------------------------------------</p>
+Работа со страницами: LIMIT и OFFSET. 
+Сортировка результатов. 
+Функции в HQL.
+<p>----------------------------------------</p>
+<h2>Работа со страницами: LIMIT и OFFSET</h2>
+
+<p>Очень часто данные из базы данных извлекаются “страницами”. Потому что именно так удобно работать с большими списками. Сначала запросим строки с 1 по 20, затем с 21 по 40 и так далее. </p>
+
+<p>Это настолько распространенная ситуация, что в SQL появились специальные операторы для этого LIMIT и OFFSET.</p>
+
+<p>Аналоги этих операторов присутствуют и в Hibernate. Только их сразу решили сделать в виде отдельных методов:</p>
+
+<ul>
+<li><span class="code text-orange">setFirstResult()</span> – аналог <strong>OFFSET</strong>.</li>
+<li><span class="code text-orange">setMaxResults()</span> – аналог <strong>LIMIT</strong>.</li>
+</ul>
+
+<p>Писать запросы с использованием этих методов очень просто. Давай напишем запрос, где попросим вернуть 20 задач начиная с 41. Вот как это будет выглядеть:</p>
+         	
+<pre class='language-java line-numbers'><code>
+           	Query&lt;EmployeeTask> query = session.createQuery( “from EmployeeTask”, EmployeeTask.class);
+           	query.setFirstResult(41); 
+           	query.setMaxResults(20);
+           	List&lt;EmployeeTask> resultLIst = query.list();
+</code></pre>
+ 
+<h2>Сортировка результатов</h2>
+
+<p>Как получать часть строк результата запроса мы разобрались. Следующий насущный вопрос – сортировка.</p>
+
+<p>Сортировка в Hibernate пишется прямо в HQL-запросе и выглядит в общем-то ожидаемо:  </p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">from</span> Employee <span class="text-red">order by</span> joinDate</code></pre>
+    </div>
+
+<p>Если ты хочешь поменять порядок сортировки, то нужно использовать знакомые слова: asc и desc. Пример:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">from</span> Employee <span class="text-red">order by</span> joinDate <span class="text-red">desc</span></code></pre>
+    </div>
+
+<p>Так же, как и в SQL, ты можешь сортировать по нескольким полям:</p>
+ 
+    <div class="lesson-example lesson-example--center">
+    <pre class="lecture-code lecture-code--present language-java"><code>
+<span class="text-red">from</span> Employee <span class="text-red">order by</span> joinDate <span class="text-red">desc</span>, name <span class="text-red">asc</span></code></pre>
+    </div>
+ 
+<p>Кроме того, поле для сортировки можно передать в качестве параметра:</p>
+         	
+<pre class='language-java line-numbers'><code>
+           	String hql = "from EmployeeTask where employee.name = :username order by :ord";
+           	Query&lt;EmployeeTask> query = session.createQuery( hql, EmployeeTask.class);
+           	query.setParameter(“username”, “Иван Иванович”);
+           	query.setParameter(“ord”, “name”);
+ 
+           	List&lt;EmployeeTask> resultLIst = query.list();
+</code></pre>
+ 
+<h2>Функции в HQL</h2>
+
+<p>Так же, как и в SQL в HQL, можно использовать различные функции.</p>
+
+<p>Вот список <strong>агрегатных функций</strong>, которые поддерживает HQL:</p>
+ 
+<table>
+<tbody>
+<tr>
+<th>Агрегатные функции</th>
+<th>Описание</th>
+</tr>
+<tr>
+<td><span class="code text-orange">count()</span></td>
+<td>Возвращает количество строк</td>
+</tr>
+<tr>
+<td><span class="code text-orange">sum()</span></td>
+<td>Считает сумму значений</td>
+</tr>
+<tr>
+<td><span class="code text-orange">min()</span></td>
+<td>Возвращает минимальное значение</td>
+</tr>
+<tr>
+<td><span class="code text-orange">max()</span></td>
+<td>Возвращает максимальное значение</td>
+</tr>
+<tr>
+<td><span class="code text-orange">avg()</span></td>
+<td>Возвращает среднее значение</td>
+</tr>
+</tbody>
+</table>
+
+<p>Как ты, надеюсь, помнишь, агрегатные функции, – это те, которые можно использовать вместе с group by. Group By работает точно так же, как в SQL, поэтому повторяться не будем.</p>
+
+<p>Ну и, конечно, <strong>обычные функции</strong>. С обычными функциями все намного проще – их выполняет SQL-сервер, Hibernate’у нужно только правильно сгенерировать запрос с их использованием.</p>
+
+<p>Поэтому Hibernate поддерживает все функции, которые поддерживает SQL-сервер. А тип SQL-сервера задается параметром sqlDialect, когда ты конфигурируешь свой SessionFactory.</p>
+
+<p>Давай найдем количество задач, назначенных на пользователя:</p>
+         	
+<pre class='language-java line-numbers'><code>
+           	String hql = "select count(*) from EmployeeTask where employee.name = :username ";
+           	Query&lt;Integer> query = session.createQuery( hql, Integer.class);
+           	query.setParameter(“username”, “Иван Иванович”);
+           	Integer count = query.uniqueResult();
+</code></pre>

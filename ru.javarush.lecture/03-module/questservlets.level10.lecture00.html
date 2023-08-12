@@ -1,0 +1,131 @@
+Новый HttpClient
+<p>----------------------------------------</p>
+Знакомство с HttpClient
+Декларативный подход
+<p>----------------------------------------</p>
+<h2>1.1 Знакомство с HttpClient</h2>
+<p>Начиная с JDK 11 разработчики платформы Java добавили в JDK новый мощный инструмент для выполнения http-запросов — пакет <code>java.net.http</code>. Он содержит четыре ключевых класса:</p>
+<ul>
+    <li><strong>HttpClient</strong></li>
+    <li><strong>HttpRequest</strong></li>
+    <li><strong>HttpResponse</strong></li>
+    <li><strong>WebSocket</strong></li>
+</ul>
+<p>Это очень мощные классы, которые позволяют выполнять все возможные виды запросов по протоколам <code>HTTP</code>, <code>HTTP/2</code> и <code>WebSocket</code>.</p>
+<p>Кроме того, с помощью этих классов можно выполнять как синхронные, так и асинхронные http-запросы.</p>
+<p>Выполнение http-запроса состоит из таких частей:</p>
+<ol>
+    <li>Создание объекта <code>HttpClient</code></li>
+    <li>Создание объекта <code>HttpRequеst</code></li>
+    <li>Отправка запроса с помощью метода <code>send()</code> или <code>sendAsync()</code></li>
+    <li>Обработка ответа <code>HttpResponse</code></li>
+</ol>
+<p>Пример такого запроса:</p>
+<pre class='line-numbers'><code>
+ <span class="text-red">HttpClient</span> <span class="text-green">client</span> = <span class="text-red">HttpClient</span>.newBuilder()
+        .version(Version.HTTP_1_1)
+        .followRedirects(Redirect.NORMAL)
+        .connectTimeout(Duration.ofSeconds(20))
+        .proxy(ProxySelector.of(new InetSocketAddress(<span class="text-green">"proxy.example.com"</span>, 80)))
+        .authenticator(Authenticator.getDefault())
+        .build();
+ 
+HttpResponse&lt;String&gt; <span class="text-user">response</span> = <span class="text-green">client</span>.<span class="text-red">send</span>(<span class="text-orange">request</span>, BodyHandlers.ofString());
+System.out.println(<span class="text-user">response</span>.statusCode());
+System.out.println(<span class="text-user">response</span>.body()); 
+</code></pre>
+<h2>1.2 Декларативный подход</h2>
+<p>В примере выше ты наблюдаешь пример так называемого декларативного подхода к написанию кода. Давай разберем первую часть примера: </p>
+<pre class='line-numbers'><code>
+ <span class="text-red">HttpClient</span> <span class="text-green">client</span> = <span class="text-red">HttpClient</span>.newBuilder()
+.version(Version.HTTP_1_1)
+.followRedirects(Redirect.NORMAL)
+.connectTimeout(Duration.ofSeconds(20))
+.proxy(ProxySelector.of(new InetSocketAddress(<span class="text-green">"proxy.example.com"</span>, 80)))
+.authenticator(Authenticator.getDefault())
+.build();
+</code></pre>
+<p> Как бы выглядел этот код, написанный в классическом стиле:</p>
+<pre class='line-numbers'><code>
+<span class="text-red">HttpClient</span> <span class="text-green">client</span> = <span class="text-red">HttpClient</span>.new();
+<span class="text-green">client</span>.setVersion(Version.HTTP_1_1);
+<span class="text-green">client</span>.setFollowRedirects(Redirect.NORMAL);
+<span class="text-green">client</span>.setConnectTimeout(Duration.ofSeconds(20));
+<span class="text-green">client</span>.setProxy(ProxySelector.of(new InetSocketAddress(<span class="text-green">"proxy.example.com"</span>, 80)));
+<span class="text-green">client</span>.setAuthenticator(Authenticator.getDefault());
+</code></pre>
+<p>При использовании декларативного подхода в коде меняются две вещи.
+<strong>Во-первых</strong>, все методы класса <code class="text-red">HttpClient</code> <span class="text-red">возвращают свой же объект</span>, что позволяет организовать код в виде цепочек. </p>
+<table>
+    <tbody>
+    <tr>
+        <th>Классический код:</th>
+    </tr>
+    <tr>
+    <td><pre class='line-numbers'><code>
+<span class="text-red">HttpClient</span> <span class="text-green">client</span> = <span class="text-red">HttpClient</span>.new();
+<span class="text-green">client</span>.setVersion(Version.HTTP_1_1);
+<span class="text-green">client</span>.setFollowRedirects(Redirect.NORMAL);
+<span class="text-green">client</span>.setConnectTimeout(Duration.ofSeconds(20));
+<span class="text-green">client</span>.setAuthenticator(Authenticator.getDefault());
+</code></pre>
+    </td>
+    </tr>
+    <tr>
+        <th>В виде цепочки:</th>
+    </tr>
+    <td>
+        <pre class='line-numbers'><code>
+<span class="text-red">HttpClient</span> <span class="text-green">client</span> = <span class="text-red">HttpClient</span>.new() .setVersion(Version.HTTP_1_1) .setFollowRedirects(Redirect.NORMAL). setConnectTimeout(Duration.ofSeconds(20)) .setAuthenticator(Authenticator.getDefault());
+</code></pre>
+    </td>
+
+        <tr>
+        <th>Переносим каждый метод на отдельную строку (это один длинный statement)</th>
+    </tr>
+    <td>
+        <pre class='line-numbers'><code>
+<span class="text-red">HttpClient</span> <span class="text-green">client</span> = <span class="text-red">HttpClient</span>.new()
+.setVersion(Version.HTTP_1_1)
+.setFollowRedirects(Redirect.NORMAL)
+.setConnectTimeout(Duration.ofSeconds(20))
+.setAuthenticator(Authenticator.getDefault());
+</code></pre>
+    </td>
+
+    </tbody>
+</table>
+<p><strong>Во-вторых</strong>, у методов убирают префикс <code>set</code>, что позволяет писать код еще компактнее:</p>
+<table>
+    <tbody>
+    <tr>
+        <th>Было</th>
+    </tr>
+    <tr>
+    <td><pre class='line-numbers'><code>
+<span class="text-red">HttpClient</span> <span class="text-green">client</span> = <span class="text-red">HttpClient</span>.new()
+.setVersion(Version.HTTP_1_1)
+.setFollowRedirects(Redirect.NORMAL)
+.setConnectTimeout(Duration.ofSeconds(20))
+.setAuthenticator(Authenticator.getDefault());
+
+</code></pre>
+    </td>
+    </tr>
+    <tr>
+        <th>Стало</th>
+    </tr>
+    <td>
+        <pre class='line-numbers'><code>
+<span class="text-red">HttpClient</span> <span class="text-green">client</span> = <span class="text-red">HttpClient</span>.new()
+.version(Version.HTTP_1_1)
+.followRedirects(Redirect.NORMAL)
+.connectTimeout(Duration.ofSeconds(20))
+.authenticator(Authenticator.getDefault());
+    </td>
+    </tbody>
+</table>
+<p>Такой код проще читать, хотя сложнее писать.
+</p>
+<p>И еще один важный момент. В этом примере использовался шаблон (pattern) Builder. Бывают сценарии, когда создание объекта — это сложный процесс. Поэтому его предпочитают формализовать: он начинается с вызова условного метода <code>begin()</code> и заканчивается вызовом условного метода <code>end()</code>.</p>
+<p>В примере, который мы разбирали, метод <code>HttpClient.newBuilder()</code> возвращает объект <code>HttpClient.Builder</code> (это внутренний служебный класс у класса <code>HttpClient</code>). Все методы типа <code>version()</code> вызываются как раз у этого служебного объекта. Ну а вызов метода <code>build()</code> обозначает окончание построения объекта и возвращает объект <code>HttpClient</code>. </p>

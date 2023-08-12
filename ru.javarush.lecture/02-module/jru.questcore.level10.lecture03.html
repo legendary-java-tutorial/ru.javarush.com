@@ -1,0 +1,55 @@
+Сериализация. Начало.
+<p>----------------------------------------</p>
+Java-машина умеет сохранять и загружать свои объекты. Для этого ей даже не требуются методы save & load: все объекты хранятся внутри Java-машины, и она имеет к ним полный доступ. Так вот, сериализация – это встроенный прямо в Java-машину процесс сохранения состояния объекта в последовательность байт.
+<p>----------------------------------------</p>
+<p>&#8212; Помнишь, мы сегодня разбирали сохранение объектов в файл и чтение из файла?</p>
+<p><span class="text-user">&#8212; Да, только мы сохраняли в поток вывода, а читали из потока ввода.</span></p>
+<p>&#8212; Молодец, Амиго. Приятно слышать, что ты замечаешь такие мелочи. А ты бы смог дописать код, чтобы было сохранение в файл и чтение из файла?</p>
+<p><span class="text-user">&#8212; А что там писать?! Объявил FileInputStream и FileOutputStream и передавай их в методы save &amp; load. Тут уже ничего не перепутаешь &#8212; все просто.</span></p>
+<p>&#8212; Рада за тебя. Итак, новая тема – <strong><span class="text-red">сериализация</span></strong>.</p>
+<p><strong><span class="text-red">Сериализация</span></strong> – это практически то же самое, что мы с тобой только что делали, только гораздо круче и встроено прямо в Java-машину. <span class="text-red">Java-машина умеет сохранять и загружать свои объекты.</span> Для этого ей даже не требуются методы save &amp; load: все объекты хранятся внутри Java-машины, и она имеет к ним полный доступ.</p>
+<p>Мы просто берем объект и сохраняем его в поток/читаем из потока:</p>
+<div class="code-heading">Код</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>public static void main(String[] args) throws Exception
+{
+<span class="text-green"> Cat cat</span> = new <span class="text-green">Cat</span>();
+
+ //save cat to file
+ FileOutputStream <span class="text-user">fileOutput</span> = new FileOutputStream("cat.dat");
+ <span class="text-red">ObjectOutputStream outputStream = new ObjectOutputStream</span>(<span class="text-user">fileOutput</span>);
+ <span class="text-red">outputStream.writeObject</span>(<span class="text-green">cat</span>);
+ <span class="text-user">fileOutput.close</span>();
+ <span class="text-red">outputStream.close</span>();
+
+ //load cat from file
+ FileInputStream <span class="text-user">fiStream</span> = new FileInputStream("cat.dat");
+ <span class="text-red">ObjectInputStream objectStream = new ObjectInputStream</span>(<span class="text-user">fiStream</span>);
+ Object object = <span class="text-red">objectStream.readObject</span>();
+ <span class="text-user">fiStream.close</span>();
+ <span class="text-red">objectStream.close</span>();
+
+ <span class="text-green">Cat newCat</span> = (<span class="text-green">Cat</span>)object;
+}</code></pre>
+<p><span class="text-user">&#8212; И все?</span></p>
+<p>&#8212; Да. Там очень большой и сложный механизм сериализации, который поддерживает сохранение в поток и чтение из потока почти всех типов данных.</p>
+<p><span class="text-user">&#8212; Почти всех, это значит не всех?</span></p>
+<p>&#8212; Да, дело в том, что <span class="text-red">не все объекты по своей сути можно сохранить</span>. Некоторые объекты не хранят все свои данные в себе, а лишь ссылаются на другие объекты и/или источники данных. Например, консоль (System.in), поток ввода (InputStream), или что-нибудь еще.</p>
+<p>Поэтому разработчики Java придумали специальный <span class="text-red">интерфейс-маркер – <strong>Serializable</strong></span>. Его называют <strong>маркером</strong>, т.к. он не содержит никаких данных и методов. Он используется только для того, чтобы «помечать» (маркировать) классы. Если мы считаем, что наш класс хранит в себе все свои данные, тогда мы можем пометить его этим маркером – написать <strong>implements Serializable</strong>.</p>
+<p>Пример «кота» с поддержкой сериализации:</p>
+<div class="code-heading">Код</div>
+<pre class="line-numbers language-java" data-line="" data-start=""><code>class Cat <span class="text-red">implements Serializable</span>
+{
+ public String name;
+ public int age;
+ public int weight;
+}</code></pre>
+<p>Когда мы пытаемся сериализовать (сохранить) какой-нибудь объект, Java-машина проверяет – поддерживает ли он сериализацию: реализует ли он интерфейс Serializable? Если да, то сохраняет объект, если нет – выкидывает исключение о невозможности сериализации.<br />
+Тут нужно понимать, что сериализуемый объект должен состоять тоже только из сериализуемых объектов.</p>
+<p><span class="text-user">&#8212; Ну, этого и следовало ожидать. Нельзя же сохранить целое, не сохранив какие-то его части.</span></p>
+<p>&#8212; Именно так.</p>
+<p><span class="text-user">&#8212; А как же типы int, String, ArrayList?</span></p>
+<p>&#8212; Они все поддерживают сериализацию, на этот счет разработчики Java специально позаботились. Тут проблем быть не должно.</p>
+<p>Более того, при сериализации объекта сохраняется его тип. Теперь ты можешь в переменную класса с типом Object сохранить ссылку на объект Cat, и все это отлично сериализуется и десериализуется.</p>
+<p><span class="text-user">&#8212; Десериализуется?</span></p>
+<p>&#8212; <span class="text-red">Десериализация</span> – так называют процесс, обратный сериализации – чтение и восстановление объекта из потока/файла.</p>
+<p><span class="text-user">&#8212; Тогда вопросов больше нет.</span></p>
