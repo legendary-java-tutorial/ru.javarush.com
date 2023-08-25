@@ -1,0 +1,294 @@
+Создание системы мониторинга цен на авиабилеты: пошаговое руководство [Часть 3]
+<p>----------------------------------------</p>
+Всем привет, JavaRush сообщество! Сегодня поговорим о том, как шаг за шагом написать Spring Boot приложение для мониторинга цен на авиабилеты. Статья рассчитана на людей, которые имеют представление...
+<p>----------------------------------------</p>
+<a href="https://javarush.com/groups/posts/2400-sozdanie-sistemih-monitoringa-cen-na-aviabiletih-poshagovoe-rukovodstvo" target="_blank">Создание системы мониторинга цен на авиабилеты: пошаговое руководство [Часть 1]</a>
+<a href="https://javarush.com/groups/posts/2401-sozdanie-sistemih-monitoringa-cen-na-aviabiletih-poshagovoe-rukovodstvo-chastjh-2" target="_blank">Создание системы мониторинга цен на авиабилеты: пошаговое руководство [Часть 2]</a>
+<h3>Содержание</h3><ul>
+<li><a href="#topic7">Пишем уровень Controller’ов. SubscriptionController</a></li>
+<li><a href="#topic8">Тестирование приложения</a></li>
+<li><a href="#topic9">Планы на развитие</a></li>
+<li><a href="#topic10">Выводы</a></li>
+<li><a href="#topic11">Полезные ссылки</a></li>
+</ul><img data-id="40ba4c05-f725-47e4-ba22-cb4de8cda06a" data-max-width="850" alt="Создание системы мониторинга цен на авиабилеты: пошаговое руководство [Часть 3] - 1" src="https://cdn.javarush.com/images/article/40ba4c05-f725-47e4-ba22-cb4de8cda06a/1024.jpeg"><h2 id="topic7">Пишем уровень Controller’ов. SubscriptionController</h2>Последний этап — написание REST API, через который будем общаться с приложением. Для этого будет использоваться <strong>Spring boot starter web</strong>.
+
+В SubscriptionController будет 4 метода для CRUD операций. 
+
+Для контроллеров есть набор аннотаций, при помощи которых это работает:
+<ul>
+    <li>@Controller — используется для добавления в ApplicationContext;</li>
+    <li>@RequestMapping(“path”) — определяет, что в этом классе будут REST методы, также path — путь, на котором будет начинаться запрос;</li>
+    <li>@PostMapping — для POST запросов, используется для создания;</li>
+    <li>@GetMapping — для GET запросов, используется для чтения;</li>
+    <li>@PutMapping — для  PUT запросов, используется для редактирования;</li>
+    <li>@DeleteMapping — для DELETE запросов, используется для удаления;</li>
+    <li>@PathVariable — значит переменная будет задана в URI запроса;</li>
+    <li>@RequestBody — значит, что данные будут лежать в теле запроса;</li>
+    <li>@Valid — значит, что будет проходить валидация данных, если они не соответствуют, то будет ошибка.</li>
+</ul><strong>SubscriptionController</strong>
+
+<pre class="lang-java line-numbers"><code>
+import com.github.romankh3.flightsmonitoring.rest.dto.SubscriptionCreateDto;
+import com.github.romankh3.flightsmonitoring.rest.dto.SubscriptionDto;
+import com.github.romankh3.flightsmonitoring.rest.dto.SubscriptionUpdateDto;
+import com.github.romankh3.flightsmonitoring.service.SubscriptionService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import java.util.List;
+import javax.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+/**
+* {@link Controller} to handle Subscriptions.
+*/
+@Api(value = "Operations with Subscriptions", tags = "Subscription Controller")
+@RequestMapping(SubscriptionController.SUBSCRIPTION_CONTROLLER_EP)
+@Controller
+public class SubscriptionController {
+
+   public static final String SUBSCRIPTION_CONTROLLER_EP = "/subscription";
+
+   @Autowired
+   private SubscriptionService subscriptionService;
+
+   @ApiOperation("Create new subscription based on SubscriptionDto")
+   @PostMapping
+   public @ResponseBody
+   SubscriptionDto create(@RequestBody @Valid SubscriptionCreateDto dto) {
+       return subscriptionService.create(dto);
+   }
+
+   @ApiOperation("Finds all subscriptions based on email")
+   @GetMapping("/{email}")
+   public @ResponseBody
+   List&lt;SubscriptionDto&gt; findByEmail(@PathVariable final String email) {
+       return subscriptionService.findByEmail(email);
+   }
+
+   @ApiOperation("Updates subscription based on it ID")
+   @PutMapping("/{id}")
+   public SubscriptionDto update(@PathVariable final Long id,
+           @RequestBody @Valid SubscriptionUpdateDto dto) {
+       return subscriptionService.update(id, dto);
+   }
+
+   @ApiOperation("Deletes subscription based on it ID")
+   @DeleteMapping("/{id}")
+   public void delete(@PathVariable final Long id) {
+       subscriptionService.delete(id);
+   }
+}
+</code></pre>
+Также определим какие новые DTO классы добавились:
+<ul>
+<li><p>SubscriptionCreateDto</p>
+<pre class="lang-java line-numbers"><code>
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.github.romankh3.flightsmonitoring.repository.entity.Subscription;
+import io.swagger.annotations.ApiModelProperty;
+import java.time.LocalDate;
+import javax.validation.constraints.Email;
+import javax.validation.constraints.NotNull;
+import lombok.Data;
+
+/**
+* Data transfer object to create a {@link Subscription} object.
+*/
+@Data
+public class SubscriptionCreateDto {
+
+   @NotNull
+   @Email
+   @ApiModelProperty(value = "Subscriber's email", example = "test@test.com")
+   private String email;
+
+   @NotNull
+   @ApiModelProperty(value = "Country Code", example = "UA")
+   private String country;
+
+   @NotNull
+   @ApiModelProperty(value = "Currency Code", example = "UAH")
+   private String currency;
+
+   @NotNull
+   @ApiModelProperty(value = "Locale", example = "ru-RU")
+   private String locale;
+
+   @NotNull
+   @ApiModelProperty(value = "Code of the origin place", example = "HRK-sky")
+   private String originPlace;
+
+   @NotNull
+   @ApiModelProperty(value = "Code of the destination place", example = "KBP-sky")
+   private String destinationPlace;
+
+   @NotNull
+   @JsonFormat(pattern = "yyyy-MM-dd")
+   @ApiModelProperty(value = "Date front", example = "2019-12-18")
+   private LocalDate outboundPartialDate;
+
+   @JsonFormat(pattern = "yyyy-MM-dd")
+   @ApiModelProperty(value = "Date back", example = "2019-12-25")
+   private LocalDate inboundPartialDate;
+}
+
+</code></pre></li>
+<li><p>SubscriptionUpdateDto</p>
+<pre class="lang-java line-numbers"><code>
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.github.romankh3.flightsmonitoring.repository.entity.Subscription;
+import io.swagger.annotations.ApiModelProperty;
+import java.time.LocalDate;
+import javax.validation.constraints.Email;
+import javax.validation.constraints.NotNull;
+import lombok.Data;
+
+/**
+* Dto for updating {@link Subscription} object.
+*/
+@Data
+public class SubscriptionUpdateDto {
+
+   @NotNull
+   @Email
+   @ApiModelProperty(value = "Subscriber's email", example = "test@test.com")
+   private String email;
+
+   @NotNull
+   @ApiModelProperty(value = "Country Code", example = "UA")
+   private String country;
+
+   @NotNull
+   @ApiModelProperty(value = "Currency Code", example = "UAH")
+   private String currency;
+
+   @NotNull
+   @ApiModelProperty(value = "Locale", example = "ru-RU")
+   private String locale;
+
+   @NotNull
+   @ApiModelProperty(value = "Code of the origin place", example = "HRK-sky")
+   private String originPlace;
+
+   @NotNull
+   @ApiModelProperty(value = "Code of the destination place", example = "KBP-sky")
+   private String destinationPlace;
+
+   @NotNull
+   @JsonFormat(pattern = "yyyy-MM-dd")
+   @ApiModelProperty(value = "Date front", example = "2019-12-18")
+   private LocalDate outboundPartialDate;
+
+   @JsonFormat(pattern = "yyyy-MM-dd")
+   @ApiModelProperty(value = "Date back", example = "2019-12-25")
+   private LocalDate inboundPartialDate;
+}
+</code></pre></li>
+<li><p>SubscriptionDto</p>
+<pre class="lang-java line-numbers"><code>
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.github.romankh3.flightsmonitoring.client.dto.FlightPricesDto;
+import io.swagger.annotations.ApiModelProperty;
+import java.time.LocalDate;
+import javax.validation.constraints.Email;
+import javax.validation.constraints.NotNull;
+import lombok.Data;
+
+/**
+* Data transfer object to see all the data related to subscription.
+*/
+@Data
+public class SubscriptionDto {
+
+   private Long id;
+
+   @NotNull
+   @Email
+   @ApiModelProperty(value = "Subscriber's email", example = "test@test.com")
+   private String email;
+
+   @NotNull
+   @ApiModelProperty(value = "Country Code", example = "UA")
+   private String country;
+
+   @NotNull
+   @ApiModelProperty(value = "Currency Code", example = "UAH")
+   private String currency;
+
+   @NotNull
+   @ApiModelProperty(value = "Locale", example = "ru-RU")
+   private String locale;
+
+   @NotNull
+   @ApiModelProperty(value = "Code of the origin place", example = "HRK-sky")
+   private String originPlace;
+
+   @NotNull
+   @ApiModelProperty(value = "Code of the destination place", example = "KBP-sky")
+   private String destinationPlace;
+
+   @NotNull
+   @JsonFormat(pattern = "yyyy-MM-dd")
+   @ApiModelProperty(value = "Date front", example = "2019-12-18")
+   private LocalDate outboundPartialDate;
+
+   @JsonFormat(pattern = "yyyy-MM-dd")
+   @ApiModelProperty(value = "Date back", example = "2019-12-25")
+   private LocalDate inboundPartialDate;
+
+   @ApiModelProperty(value = "Min price based on all these data", example = "100")
+   private Integer minPrice;
+
+   @ApiModelProperty(value = "Response which contains all the need info about min price flight")
+   private FlightPricesDto flightPricesDto;
+}
+</code></pre></li>
+</ul>В DTO есть аннотации из Bean Validation API(<a href="https://habr.com/ru/post/68318/" rel="nofollow" target="_blank">статья на хабре</a>), такие как:
+<ul>
+<li>@Email — проверяет на правильность написания электронной почты;</li>
+<li>@NotNull — проверяет, что переменная не должна быть пустой.</li>
+</ul>И это всё… Полностью проект можно посмотреть на <a href="https://github.com/romankh3/flights-monitoring" rel="nofollow" target="_blank">GitHub flights-monitoring</a>. Более того, он сейчас развернут на Heroku и его можно посмотреть <a href="https://flights-monitoring.herokuapp.com/" rel="nofollow" target="_blank">здесь</a>. 
+
+P.S. не удивляйтесь, что долго грузится первый запрос. Это аккаунт бесплатный, и поэтому после 30 минут бездействия хероку останавливает приложение и при запросе он его обратно развертывает. Поэтому и данные не сохраняются, так как при остановке H2 убивает все данные.
+<h2 id="topic8">Тестирование приложения</h2>В статье я не буду описывать тестирование. Тем не менее, <a href="https://github.com/romankh3/flights-monitoring/tree/master/src/test/java/com/github/romankh3/flightsmonitoring" rel="nofollow" target="_blank">тесты на проекте есть</a>, и их можно посмотреть и изучить самостоятельно. Более того, если будут какие-то вопросы, можно задавать их здесь в комментариях: я с удовольствием отвечу на них.
+<h2 id="topic9">Планы на развитие</h2>Проект уже есть и я планирую заниматься им дальше. В ближайшем будущем хочу сделать следующее:
+<ul>
+<li>написать отдельно как библиотеку клиент для Skyscanner Flight Search, чтоб можно было использовать это как зависимость не только в этом проекте, но и в других;</li>
+<li>перевести на PostgreSQL, чтоб не терялись данные на Heroku при остановке приложения. Это сделает его более стабильным;</li>
+<li>создать контроллеры для данных клиента, которые поддерживаются им. Например для Places, Currencies, Countries;</li>
+<li>расширить функционал поиска. Там еще есть много опций;</li>
+<li>жду предложения от сообщества.</li>
+</ul><h2 id="topic10">Выводы</h2>Написать веб-приложение с REST API на основании Spring Boot и экосистемы в целом — это не так сложно, как может показаться. Да, есть нюансы, которые нужно знать. Чтоб прояснить всё, что связано со спрингом, я рекомендую к прочтению <strong>Spring in Action 5th edition</strong>. После этой книги станет яснее, что здесь происходит. 
+
+P.S. ее можно найти в вк бесплатно.
+<h2 id="topic11">Полезные ссылки</h2>Все данные, которыми я пользовался при написании проекта и просто полезные ссылки для понимания того, что хорошо бы изучить:
+<ol>
+    <li>Ссылка на проект: <a href="https://github.com/romankh3/flights-monitoring" rel="nofollow" target="_blank">flights-monitoring</a>.</li>
+    <li>Ссылка на <a href="https://flights-monitoring.herokuapp.com/" rel="nofollow" target="_blank">развернутый проект на хероку</a>.</li>
+    <li><a href="https://start.spring.io/" rel="nofollow" target="_blank">Sptring Initializr</a> — быстрый способ сформировать проект с нужными конфигурациями, зависимостями. <a href="https://start.spring.io/#!type=maven-project&amp;language=java&amp;platformVersion=2.1.10.RELEASE&amp;packaging=jar&amp;jvmVersion=1.8&amp;groupId=ru.javarush&amp;artifactId=flights-monitoring&amp;name=flights-monitoring&amp;description=Demo%20project%20for%20Spring%20Boot&amp;packageName=ru.javarush.flights-monitoring&amp;dependencies=web,mail,data-jpa,h2" rel="nofollow" target="_blank">Ссылка на сформированный проект</a>.</li>
+    <li><a href="https://english.api.rakuten.net/skyscanner/api/skyscanner-flight-search/endpoints" rel="nofollow" target="_blank">Skyscanner Flight Search</a> — открытый API для получения данных о полетах.</li>
+    <li>Хабр: <a href="https://habr.com/ru/post/435144/" rel="nofollow" target="_blank">Введение в Spring Boot: создание простого REST API на Java</a>.</li>
+    <li>JavaRush: <a href="https://javarush.com/groups/posts/579-vvedenie-v-jackson-framework" target="_blank">Введение в Jackson Framework</a>.</li>
+    <li>JavaRush:<a href="https://habr.com/ru/post/142356/" rel="nofollow" target="_blank"> Project Lombok, или объявляем войну бойлерплейту</a>.</li>
+    <li>Rapidapi: <a href="https://rapidapi.com/blog/skyscanner-api-overview/java/" rel="nofollow" target="_blank">Skyscanner Flight Search API(Java)</a>.</li>
+    <li>Wiki: <a href="https://ru.wikipedia.org/wiki/POJO" rel="nofollow" target="_blank">POJO</a>.</li>
+    <li><a href="https://www.baeldung.com/spring-boot-h2-database" rel="nofollow" target="_blank">Spring Boot With H2 database</a>.</li>
+    <li><a href="https://stackoverflow.com/questions/35347269/javax-mail-authenticationfailedexception-535-5-7-8-username-and-password-not-ac/45212730#45212730" rel="nofollow" target="_blank">Решение проблем с Gmail для отправки писем.</a></li>
+    <li><a href="https://www.mkyong.com/spring-boot/spring-boot-how-to-send-email-via-smtp/" rel="nofollow" target="_blank">Spring Boot - how to send email via SMTP.</a></li>
+    <li><a href="https://spring.io/guides/gs/scheduling-tasks/" rel="nofollow" target="_blank">Scheduling tasks.</a></li>
+    <li><a href="https://www.baeldung.com/swagger-2-documentation-for-spring-rest-api" rel="nofollow" target="_blank">Setting Up Swagger 2 with a Spring REST API.</a></li>
+</ol><strong>Смотрите также мои другие статьи:</strong><ul>
+<li><a href="https://javarush.com/groups/posts/2367-kak-ja-napisal-open-source-biblioteku-kotoruju-ispoljhzujut-v-realjhnihkh-proektakh" target="_blank">Как тестовое задание на собеседование превратилось в open-source библиотеку</a></li>
+<li><a href="https://javarush.com/groups/posts/2430-gayd-po-sozdaniju-klienta-dlja-skyscanner-api-i-ego-publikacii-v-jcenver-i-maven-central" target="_blank">Гайд по созданию клиента для Skyscanner API и его публикации в jCenter и Maven Central [Часть 1]</a></li>
+<li><a href="https://javarush.com/groups/posts/2388-logirovanie-chto-kak-gde-i-chem" target="_blank">Логирование: что, как, где и чем?</a></li>
+<li><a href="https://javarush.com/groups/posts/2463-debug-v-intellij-idea-gayd-dlja-novichkov" target="_blank">Debug в Intellij IDEA: гайд для новичков</a></li>
+</ul>

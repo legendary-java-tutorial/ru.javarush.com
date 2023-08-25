@@ -1,0 +1,115 @@
+Введение в Jackson Framework
+<p>----------------------------------------</p>
+Статья написана для тех, кого заинтересовали аспекты JSON сериализации/десериализации. Первая статья короткая и вводная. Ее цель - оценить интерес аудитории к данной теме. Холодной весенней ночью я наконец-таки перешел на 33 уровень. Потирая свои программистские ручки, я уже ...
+<p>----------------------------------------</p>
+Холодной весенней ночью я наконец-таки перешел на 33 уровень. Потирая свои программистские ручки, я уже готовился объять всю сферу сериализации, десериализации JSON, но, к сожалению, ничего не понял. Текст лекции не запомнился, а задачи решались как-то интуитивно. В связи с этим решил полезть в дебри Jackson Framework и разобраться, что же такое этот JSON.
+
+<div class='row justify-content-center jr-image-wrap'><div class='col-12 col-sm-10 col-md-8'><img data-id="c468cc2e-468a-4946-bb31-455469b96782" data-max-width="710" alt="Jackson Framework" src="https://cdn.javarush.com/images/article/c468cc2e-468a-4946-bb31-455469b96782/1024.jpeg"></div></div>
+Все свои познания постараюсь изложить практико-ориентированно и лаконично в формате шпаргалки (как для себя, так и для читателей).
+
+<strong>Путешествие в Jackson Annotations.</strong>
+
+Первое, что мы встречаем на пути в JSON — это аннотация @JsonAutoDetect. На первый взгляд легкая аннотация, но с ней автору пришлось разбираться дольше всего. Аннотация имеет 5 нужных нам методов:
+
+<ul>
+<li><em>fieldVisibility</em>() - сериализует поля только с указанным модификатором доступа</li>
+<li><em>getterVisibility()/setterVisibility()</em> - сериализует поля, у которых геттер/сеттер имеет указанный модификатор доступа</li>
+<li><em>isGetterVisibility() </em> - отдельная реализация для булевских геттеров</li>
+</ul>
+<strong>Важно понимать, что методы работают дизъюнктивно.</strong> Т.е. если поле соответствует хотя бы одному из указанных в аннотации параметров, то оно попадет в JSON.
+
+Попытайтесь ответить, что выведет данный код, если мы создадим экземляр, используя конструктор без параметров:
+
+<pre class="lang-java line-numbers"><code>
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.PUBLIC_ONLY,
+        getterVisibility        = JsonAutoDetect.Visibility.PUBLIC_ONLY,
+        setterVisibility        = JsonAutoDetect.Visibility.PUBLIC_ONLY,
+        isGetterVisibility      = JsonAutoDetect.Visibility.PROTECTED_AND_PUBLIC)
+public class HeadClass {
+    public String name;
+    private Map&lt;String, String&gt; properties;
+    public Queue&lt;String&gt; queue;
+    protected List&lt;String&gt; list;
+    private int age;
+    private int number;
+    private boolean isHead;
+
+    protected HeadClass(int age) {
+        this.age = age;
+    }
+
+    public HeadClass() {}
+
+    Map&lt;String, String&gt; getProperties() {
+        return properties;
+    }
+
+    protected boolean isHead() {
+        return isHead;
+    }
+
+    protected void setProperties(Map&lt;String, String&gt; properties) {
+        this.properties = properties;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public int getAge() {
+        return age;
+    }
+}
+</code></pre>
+А если убрать isGetterVisibility?
+
+Четыре перечисленных метода конфигурировали процесс сериализации. Пятый же в свою очередь регулирует процесс десериализации:
+<ul>
+<li><em>creatorVisibility()</em> - самый сложный метод для понимания. Он работает с конструкторами и с фабричными методами (методы, которые создают объект при обращении к ним). Рассмотрим пример: </li>
+</ul>
+<pre class="lang-java line-numbers"><code>
+@JsonAutoDetect(creatorVisibility = JsonAutoDetect.Visibility.PROTECTED_AND_PUBLIC)
+public class HeadClass {
+    public String name;
+    public int id;
+
+    HeadClass(@JsonProperty(value = "name") String name, @JsonProperty(value = "id") int id) {
+        this.name = name;
+        this.id = id;
+    }
+
+    protected HeadClass(String name) {
+        this.name = name;
+        this.id = 123;
+    }
+
+    protected HeadClass(int id) {
+        this.id = id;
+        this.name = "Yes!";
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+</code></pre>
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) throws Exception {
+    ObjectMapper mapper = new ObjectMapper();
+    String forDeserialize = "{\"name\":\"No!\",\"id\":123}";
+    StringReader reader = new StringReader(forDeserialize);
+
+    HeadClass headClass1 = (HeadClass) mapper.readValue(reader, HeadClass.class);
+}
+</code></pre>
+<strong>Важное замечание по механизму десериализации!</strong> Когда мы пытаемся создать объект из JSON, то будет осуществляться поиск конструктора требуемого класса с таким же набором параметров, что и в JSON объекте. В примере выше наш JSON объект состоит из двух параметров: name, id. Угадайте, к какому конструктору он обратится. И да, если мы скомпилируем этот код, он выдаст ошибку, а почему? Потому что мы ограничили видимость конструктора (видны только конструкторы с модификатором protected, public). Если вы удалите creatorVisibility, то он заработает.
+
+Возникает вопрос. А что за @JsonProperty в конструкторе. Об этом думаю рассказать в следующей части статьи.
+         
+<strong>P.S. </strong>Господа, очень бы хотелось получить хоть какой-то отклик о статье. Интересно, пользуется ли спросом эта тема и стоит ли продолжать, потому что тем очень много и все они очень интересные. Хотелось бы еще рассмотреть такие аннотации, как @JsonView, @JsonManagedReference, @JsonBackReference, @JsonUnwrapped и т.д.
+
+Спасибо :)

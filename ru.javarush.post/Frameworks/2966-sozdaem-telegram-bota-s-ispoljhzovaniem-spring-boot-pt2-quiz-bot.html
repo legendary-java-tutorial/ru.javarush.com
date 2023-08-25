@@ -1,0 +1,704 @@
+Создаем телеграм-бота с использованием Spring Boot Pt.2: Quiz Bot
+<p>----------------------------------------</p>
+В этой статье мы попробуем сделать минимально функционирующего Quiz бота, работающего с Postgres базой через Spring Data JPA.
+<p>----------------------------------------</p>
+<a href="https://javarush.com/groups/posts/2959-sozdaem-telegram-bota-s-ispoljhzovaniem-spring-boot" target="_blank" rel="nofollow">ЧАСТЬ 1</a>
+
+Алоха!
+
+<a href="https://javarush.com/groups/posts/2959-sozdaem-telegram-bota-s-ispoljhzovaniem-spring-boot" target="_blank" rel="nofollow">В предыдущей статье</a> мы создали простого бота, который приветствовал нас на любое событие. Мы уже написали не одну тысячу строк кода, и пришла пора добавить нашему боту более сложный функционал. 
+
+Сегодня мы попробуем написать простенького бота, чтобы в свободное время оттачивать свои знания Java Core перед собеседованиями (удивительно, но ни одного рабочего бота подобного рода я не нашел). 
+
+Для этого мы сделаем следующее:<ul>
+<li>подключим внешнюю базу данных Postgres на Heroku;</li>
+<li>напишем свои первые скрипты для инициализации и заполнения базы данных;</li>
+<li>подключим Spring Boot Data JPA для работы с базой данных;</li>
+<li>реализуем различные сценарии поведения бота.</li>
+
+</ul>Если это вам интересно, и дочитав статью, вы не захотите кидаться тухлыми помидорами, то ставьте звездочку в <a href="https://github.com/whiskels/TelegramNotifierBot" target="_blank" rel="nofollow">моем репозитории</a>, мне будет приятно! При возникновении вопросов — обсудим их в комментариях.
+
+Вот, что мы получим в итоге:<img data-id="70c8b59c-16d3-4810-8bf3-4b44418793ed" src="/images/article/70c8b59c-16d3-4810-8bf3-4b44418793ed/1024.jpeg" alt="Создаем телеграм-бота с использованием Spring Boot Pt.2: Quiz Bot - 1"><img data-id="9f5d0b77-018c-426e-a63c-17453b989e6a" src="/images/article/9f5d0b77-018c-426e-a63c-17453b989e6a/1024.jpeg" alt="Создаем телеграм-бота с использованием Spring Boot Pt.2: Quiz Bot - 2"><img data-id="f7caf1eb-a333-4c49-9ec2-b1e018348bdb" src="/images/article/f7caf1eb-a333-4c49-9ec2-b1e018348bdb/1024.jpeg" alt="Создаем телеграм-бота с использованием Spring Boot Pt.2: Quiz Bot - 3">&lt;h2&gt;Итак, поехали!&lt;/h2&gt;&lt;h3&gt;Создание базы данных на Heroku&lt;/h3&gt;Начнем с того, что создадим свою первую внешнюю базу данных. Для локальной работы я рекомендую ознакомиться с <a href="https://www.pgadmin.org/" target="_blank" rel="nofollow">pgAdmin</a>. Но я хочу, чтобы вы ориентировались на то, что в будущем будете деплоить бота на Heroku, чтобы он не зависел от вашей локальной машины, а для этого давайте познакомимся с этим сервисом. 
+
+Порядок действий:<ul>
+
+<li>регистрируемся на <a href="https://www.heroku.com/" target="_blank" rel="nofollow">Heroku</a>;</li>
+<li>Заходим в наш <a href="https://dashboard.heroku.com/apps" target="_blank" rel="nofollow">dashboard</a> -&gt; New -&gt; Create new app и создаем новое приложение;</li>
+<li>Заходим в свежесозданное приложение, пугаемся множества кнопок, но концентрируемся на панели "Installed add-ons" - рядом с ней есть кнопка Configure Add-ons, ее мы и нажимаем;</li>
+<li>В поиск вводим "Heroku Postgres", выбираем план "Hobby Dev - Free" -&gt; Submit Order Form;</li>
+<li>Открываем свежеполученную базу данных -&gt; Settings -&gt; View Credentials. На этой вкладке будут наши ключи для доступа к базе данных. Запоминаем их расположение - они нам потребуются, чтобы подключить базу данных, как DataSource в IDEA.</li>
+
+</ul>&lt;h3&gt;Добавляем зависимости в pom.xml&lt;/h3&gt;В рамках работы над нашим ботом, добавим в наш pom следующие зависимости: Lombok, Spring Boot Data JPA, PostgreSQL. Стоп! Что это все такое и зачем мы это добавляем?<ul>
+<li><a href="https://projectlombok.org/" target="_blank" rel="nofollow">Lombok</a> — библиотека, благодаря которой мы в разы уменьшим количество различного кода. С его помощью мы можем автоматически создавать конструкторы, сеттеры, геттеры и многое другое.</li>
+<li><a href="https://spring.io/projects/spring-data-jpa" target="_blank" rel="nofollow">Spring Data JPA</a> — <a href="https://javarush.com/groups/posts/2953-iz-rezjume-dzhuna-hibernate--freymvork-dlja-rabotih-s-bazami-dannihkh" target="_blank" rel="nofollow">фреймворк для работы с базами данных</a> (хотя это звучит слишком просто). Описание возможностей Spring Data JPA тянет на цикл статей, а указанная нами зависимость еще тянет с собой Hibernate и многое другое, так что опустим подробности и просто попробуем сегодня что-то написать с использованием Spring JPA.</li>
+<li>PostgreSQL — тянем библиотеку для получения драйвера, который будет работать с нашей базой данных.</li>
+
+</ul>Наш pom.xml начинает выглядеть следующим образом:
+
+Properties:<img data-id="3057df74-6fb8-4b59-8d96-4ddede814484" src="/images/article/3057df74-6fb8-4b59-8d96-4ddede814484/512.jpeg" alt="Создаем телеграм-бота с использованием Spring Boot Pt.2: Quiz Bot - 1">Dependencies:<img data-id="63ba3dfe-08d8-4389-b486-618e937790fa" src="/images/article/63ba3dfe-08d8-4389-b486-618e937790fa/512.jpeg" alt="Создаем телеграм-бота с использованием Spring Boot Pt.2: Quiz Bot - 2">Если вы не читали предыдущую статью, то учтите, что здесь мы добавляем новые зависимости, так что это не полная структура pom.xml.
+
+Не забываем подгрузить эти зависимости в наш проект (например, зайдя в окошко Maven -&gt; Reimport all Maven projects).&lt;h3&gt;Подключаем базу данных в IDEA&lt;/h3&gt;Если вы пользуютесь IDEA Community Edition, то включить вкладку DataSource можно <a href="https://stackoverflow.com/a/45948177" target="_blank" rel="nofollow">следующим образом</a>. 
+
+После добавления плагина нам нужно сконфигурировать DataSource. Для этого сначала включим отображение плагина: View —&gt; Tool Windows -&gt; DB Browser.
+
+В открывшемся окне нажимаем на зеленый плюс (new connection) -&gt; PostgreSQL. Здесь нам понадобятся credentials, которые мы уже видели на Heroku. Заполняем окно:<img data-id="4cf0e6b4-57d9-487c-8b8b-9a08ffe95d0f" src="/images/article/4cf0e6b4-57d9-487c-8b8b-9a08ffe95d0f/512.jpeg" alt="Создаем телеграм-бота с использованием Spring Boot Pt.2: Quiz Bot - 3">И нажимаем "Test Connection". Если все сделано правильно — появится всплывающее окошко об успешном выполнении подключения к базе данных. Сохраняем наш Data Source.&lt;h3&gt;Создаем таблицы в базе данных&lt;/h3&gt;Теперь давайте создадим таблицы, с которыми мы будем работать. 
+
+Сначала установим себе <a href="https://www.postgresql.org/" target="_blank" rel="nofollow">PostgreSQL</a>.  После установки создадим файл initDB.sql в папке src/main/resources:
+
+<pre class="lang-java line-numbers"><code>
+DROP TABLE IF EXISTS java_quiz;
+DROP TABLE IF EXISTS users;
+CREATE SEQUENCE global_seq START WITH 100000;
+
+CREATE TABLE users
+(
+    id         INTEGER PRIMARY KEY DEFAULT nextval('global_seq'),
+    chat_id    INTEGER UNIQUE                NOT NULL,
+    name       VARCHAR                       NOT NULL,
+    score      INTEGER             DEFAULT 0 NOT NULL,
+    high_score INTEGER             DEFAULT 0 NOT NULL,
+    bot_state  VARCHAR                       NOT NULL
+);
+
+CREATE TABLE java_quiz
+(
+    id             INTEGER PRIMARY KEY DEFAULT nextval('global_seq'),
+    question       VARCHAR NOT NULL,
+    answer_correct VARCHAR NOT NULL,
+    option1        VARCHAR NOT NULL,
+    option2        VARCHAR NOT NULL,
+    option3        VARCHAR NOT NULL
+);
+</code></pre>
+Что делает наш скрипт? 
+
+Первые две строки стирают таблицы при наличии, чтобы выполнить их повторное создание.
+
+В третьей строке создается последовательность, которая будет использоваться для создания уникальных id записям в нашу базу данных.
+
+Далее мы создаем две таблицы: для пользователей и для вопросов.
+
+У пользователя будет уникальный id, id телеграм чата, имя, количество очков (текущее и максимальное), а также текущий статус бота.
+
+У вопросов также будет уникальный id, а также поля, отвечающие за вопрос и варианты ответа к нему.
+
+Полученный скрипт мы можем выполнить, нажав на него правой кнопкой мыши и выбрав "Execute SQL Script".  Особое внимание стоит уделить пункту "Cmd-Line interface" — здесь нам потребуется свежеустановленный PostgreSQL. При конфигурировании этого поля выбираем "New Cmd-Line interface" и указываем путь к psql.exe. 
+
+В итоге настройки должны выглядеть примерно так:<img data-id="5f849062-b791-4a5f-b3a7-814554692842" src="/images/article/5f849062-b791-4a5f-b3a7-814554692842/512.jpeg" alt="Создаем телеграм-бота с использованием Spring Boot Pt.2: Quiz Bot - 4">Выполняем скрипт и если мы нигде не ошиблись, то результат нашей работы будет следующим:<img data-id="90abcf80-f2d5-4d4a-accc-7ddd1cbf3e4f" src="/images/article/90abcf80-f2d5-4d4a-accc-7ddd1cbf3e4f/512.jpeg" alt="Создаем телеграм-бота с использованием Spring Boot Pt.2: Quiz Bot - 8">&lt;h3&gt;Создаем модель&lt;/h3&gt;Теперь пора возвращаться к написанию Java кода. Для сокращения статьи я опущу описание аннотаций, использованных для написания классов, чтобы вы могли сами с ними ознакомиться.
+
+Создадим пакет model, в котором у нас будет три класса:<ul>
+<li><span>AbstractBaseEntity</span> — класс, описывающий любой объект, у которого может быть id (этот класс — сильное упрощение того, что вы можете увидеть на стажировке):
+
+<pre class="lang-java line-numbers"><code>
+package com.whiskels.telegram.model;
+
+import lombok.Getter;
+import lombok.Setter;
+
+import javax.persistence.*;
+// Аннотация, которая говорит нам, что это суперкласс для всех Entity
+// https://vladmihalcea.com/how-to-inherit-properties-from-a-base-class-entity-using-mappedsuperclass-with-jpa-and-hibernate/
+@MappedSuperclass
+// http://stackoverflow.com/questions/594597/hibernate-annotations-which-is-better-field-or-property-access
+@Access(AccessType.FIELD)
+
+// Аннотации Lombok для автогенерации сеттеров и геттеров на все поля
+@Getter
+@Setter
+public abstract class AbstractBaseEntity {
+
+// Аннотации, описывающие механизм генерации id - разберитесь в документации каждой!
+    @Id
+    @SequenceGenerator(name = "global_seq", sequenceName = "global_seq", allocationSize = 1, initialValue = START_SEQ)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "global_seq")
+//  See https://hibernate.atlassian.net/browse/HHH-3718 and https://hibernate.atlassian.net/browse/HHH-12034
+//  Proxy initialization when accessing its identifier managed now by JPA_PROXY_COMPLIANCE setting
+    protected Integer id;
+
+    protected AbstractBaseEntity() {
+    }
+}
+</code></pre></li>
+
+<li><span>User</span>:
+<pre class="lang-java line-numbers"><code>
+package com.whiskels.telegram.model;
+
+import com.whiskels.telegram.bot.State;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
+
+import javax.persistence.*;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import java.util.Set;
+
+import static javax.persistence.FetchType.EAGER;
+
+@Entity
+@Table(name = "users", uniqueConstraints = {@UniqueConstraint(columnNames = "chat_id", name = "users_unique_chatid_idx")})
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class User extends AbstractBaseEntity {
+    @Column(name = "chat_id", unique = true, nullable = false)
+    @NotNull
+    private Integer chatId;
+
+    @Column(name = "name", unique = true, nullable = false)
+    @NotBlank
+    private String name;
+
+    @Column(name = "score", nullable = false)
+    @NotNull
+    private Integer score;
+
+    @Column(name = "high_score", nullable = false)
+    @NotNull
+    private Integer highScore;
+
+    @Column(name = "bot_state", nullable = false)
+    @NotBlank
+    private State botState;
+
+// Конструктор нужен для создания нового пользователя (а может и нет? :))
+    public User(int chatId) {
+        this.chatId = chatId;
+        this.name = String.valueOf(chatId);
+        this.score = 0;
+        this.highScore = 0;
+        this.botState = State.START;
+    }
+}
+
+</code></pre></li>
+<li>Класс <span>Question</span>:
+<pre class="lang-java line-numbers"><code>
+package com.whiskels.telegram.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+import javax.validation.constraints.NotBlank;
+
+@Entity
+@Table(name = "java_quiz")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class Question extends AbstractBaseEntity {
+    @Column(name = "question", nullable = false)
+    @NotBlank
+    private String question;
+
+    @Column(name = "answer_correct", nullable = false)
+    @NotBlank
+    private String correctAnswer;
+
+    @Column(name = "option2", nullable = false)
+    @NotBlank
+    private String optionOne;
+
+    @Column(name = "option1", nullable = false)
+    @NotBlank
+    private String optionTwo;
+
+    @Column(name = "option3", nullable = false)
+    @NotBlank
+    private String optionThree;
+
+    @Override
+    public String toString() {
+        return "Question{" +
+                "question='" + question + '\'' +
+                ", correctAnswer='" + correctAnswer + '\'' +
+                ", optionOne='" + optionOne + '\'' +
+                ", optionTwo='" + optionTwo + '\'' +
+                ", optionThree='" + optionThree + '\'' +
+                '}';
+    }
+}
+</code></pre></li></ul>&lt;h3&gt;Создаем репозитории&lt;/h3&gt;Теперь напишем репозитории Spring Data Jpa. Создаем пакет repository, в котором будут два <em>интерфейса</em>: JpaUserRepository, JpaQuestionRepository. Они будут наследоваться от JpaRepository — интерфейса Spring Data, который позволяет нам практически творить магию. Для понимания их работы рекомендую посмотреть <a href="https://www.youtube.com/watch?v=nwM7A4TwU3M" target="_blank" rel="nofollow">видео Евгения Борисова</a>.
+
+Классы будут совсем маленькие:<ul>
+<li>JpaUserRepository:
+<pre class="lang-java line-numbers"><code>
+package com.whiskels.telegram.repository;
+
+import com.whiskels.telegram.model.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
+
+@Repository
+@Transactional(readOnly = true)
+public interface JpaUserRepository extends JpaRepository&lt;user, integer=""&gt; {
+// По названию метода Spring сам поймет, что мы хотим получить пользователя по переданному chatId
+    Optional&lt;user&gt; getByChatId(int chatId);
+}
+&lt;/user&gt;&lt;/user,&gt;</code></pre></li>
+<li>JpaQuestionRepository:
+<pre class="lang-java line-numbers"><code>
+package com.whiskels.telegram.repository;
+
+import com.whiskels.telegram.model.Question;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+
+@Repository
+@Transactional(readOnly = true)
+public interface JpaQuestionRepository extends JpaRepository&lt;question, integer=""&gt; {
+// А здесь мы написали SQL Query, которая будет выбирать 1 случайный вопрос из таблицы вопросов
+    @Query(nativeQuery = true, value = "SELECT *  FROM java_quiz ORDER BY random() LIMIT 1")
+    Question getRandomQuestion();
+}
+&lt;/question,&gt;</code></pre></li></ul>&lt;h3&gt;Добавляем функционал боту&lt;/h3&gt;В классе <span>User</span> у нас есть поле еще не созданного класса <span>State</span>, которое будет сообщать нам о том, на каком этапе работы с ботом пользователь сейчас находится. Давайте его создадим в пакете /bot:
+
+<pre class="lang-java line-numbers"><code>
+package com.whiskels.telegram.bot;
+
+public enum State {
+    NONE,
+    START,
+    ENTER_NAME,
+    PLAYING_QUIZ,
+}
+
+</code></pre>
+Далее мы создадим пакет bot/handler, в котором объявим интерфейс handler:
+
+<pre class="lang-java line-numbers"><code>
+package com.whiskels.telegram.bot.handler;
+
+import com.whiskels.telegram.bot.State;
+import com.whiskels.telegram.model.User;
+import org.telegram.telegrambots.meta.api.methods.PartialBotApiMethod;
+
+import java.io.Serializable;
+import java.util.List;
+
+public interface Handler {
+
+// основной метод, который будет обрабатывать действия пользователя
+    List&lt;partialbotapimethod&lt;? extends="" serializable=""&gt;&gt; handle(User user, String message);
+// метод, который позволяет узнать, можем ли мы обработать текущий State у пользователя
+    State operatedBotState();
+// метод, который позволяет узнать, какие команды CallBackQuery мы можем обработать в этом классе
+    List&lt;string&gt; operatedCallBackQuery();
+}
+
+&lt;/string&gt;&lt;/partialbotapimethod&lt;?&gt;</code></pre>
+Обработчики мы создадим чуть позже, а пока давайте делегируем обработку событий новому классу <span>UpdateReceiver</span>, который мы создадим в корне пакета bot:
+
+<span>ВНИМАНИЕ! </span> Здесь и далее будут методы, которые отображаются, как List&gt; handle(args); на деле они выглядят так, но форматтер кода их сломал:<img data-id="39dedfac-cba4-4f72-a1c1-c571e2915413" src="/images/article/39dedfac-cba4-4f72-a1c1-c571e2915413/1024.jpeg" alt="Создаем телеграм-бота с использованием Spring Boot Pt.2: Quiz Bot - 6"><pre class="lang-java line-numbers"><code>
+package com.whiskels.telegram.bot;
+
+import com.whiskels.telegram.bot.handler.Handler;
+import com.whiskels.telegram.model.User;
+import com.whiskels.telegram.repository.JpaUserRepository;
+import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.methods.PartialBotApiMethod;
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
+import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.api.objects.Update;
+
+import java.io.Serializable;
+import java.util.Collections;
+import java.util.List;
+
+@Component
+public class UpdateReceiver {
+    // Храним доступные хендлеры в списке (подсмотрел у Miroha)
+    private final List&lt;handler&gt; handlers;
+    // Имеем доступ в базу пользователей
+    private final JpaUserRepository userRepository;
+
+    public UpdateReceiver(List&lt;handler&gt; handlers, JpaUserRepository userRepository) {
+        this.handlers = handlers;
+        this.userRepository = userRepository;
+    }
+
+    // Обрабатываем полученный Update
+    public List&lt;partialbotapimethod&lt;? extends="" serializable=""&gt;&gt; handle(Update update) {
+        // try-catch, чтобы при несуществующей команде просто возвращать пустой список
+        try {
+            // Проверяем, если Update - сообщение с текстом
+            if (isMessageWithText(update)) {
+                // Получаем Message из Update
+                final Message message = update.getMessage();
+                // Получаем айди чата с пользователем
+                final int chatId = message.getFrom().getId();
+                
+                // Просим у репозитория пользователя. Если такого пользователя нет - создаем нового и возвращаем его.
+                // Как раз на случай нового пользователя мы и сделали конструктор с одним параметром в классе User
+                final User user = userRepository.getByChatId(chatId)
+                        .orElseGet(() -&gt; userRepository.save(new User(chatId)));
+                // Ищем нужный обработчик и возвращаем результат его работы
+                return getHandlerByState(user.getBotState()).handle(user, message.getText());
+                
+            } else if (update.hasCallbackQuery()) {
+                final CallbackQuery callbackQuery = update.getCallbackQuery();
+                final int chatId = callbackQuery.getFrom().getId();
+                final User user = userRepository.getByChatId(chatId)
+                        .orElseGet(() -&gt; userRepository.save(new User(chatId)));
+
+                return getHandlerByCallBackQuery(callbackQuery.getData()).handle(user, callbackQuery.getData());
+            }
+
+            throw new UnsupportedOperationException();
+        } catch (UnsupportedOperationException e) {
+            return Collections.emptyList();
+        }
+    }
+
+    private Handler getHandlerByState(State state) {
+        return handlers.stream()
+                .filter(h -&gt; h.operatedBotState() != null)
+                .filter(h -&gt; h.operatedBotState().equals(state))
+                .findAny()
+                .orElseThrow(UnsupportedOperationException::new);
+    }
+
+    private Handler getHandlerByCallBackQuery(String query) {
+        return handlers.stream()
+                .filter(h -&gt; h.operatedCallBackQuery().stream()
+                        .anyMatch(query::startsWith))
+                .findAny()
+                .orElseThrow(UnsupportedOperationException::new);
+    }
+
+    private boolean isMessageWithText(Update update) {
+        return !update.hasCallbackQuery() &amp;&amp; update.hasMessage() &amp;&amp; update.getMessage().hasText();
+    }
+}
+
+&lt;/partialbotapimethod&lt;?&gt;&lt;/handler&gt;&lt;/handler&gt;</code></pre>
+И делегируем ему обработку в классе Bot:
+
+<pre class="lang-java line-numbers"><code>
+package com.whiskels.telegram.bot;
+
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.PartialBotApiMethod;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+
+import java.io.Serializable;
+import java.util.List;
+
+@Slf4j
+@Component
+public class Bot extends TelegramLongPollingBot {
+    @Value("${bot.name}")
+    @Getter
+    private String botUsername;
+
+    @Value("${bot.token}")
+    @Getter
+    private String botToken;
+
+    private final UpdateReceiver updateReceiver;
+
+    public Bot(UpdateReceiver updateReceiver) {
+        this.updateReceiver = updateReceiver;
+    }
+
+    @Override
+    public void onUpdateReceived(Update update) {
+        List&lt;partialbotapimethod&lt;? extends="" serializable=""&gt;&gt; messagesToSend = updateReceiver.handle(update);
+
+        if (messagesToSend != null &amp;&amp; !messagesToSend.isEmpty()) {
+            messagesToSend.forEach(response -&gt; {
+                if (response instanceof SendMessage) {
+                    executeWithExceptionCheck((SendMessage) response);
+                }
+            });
+        }
+    }
+
+    public void executeWithExceptionCheck(SendMessage sendMessage) {
+        try {
+            execute(sendMessage);
+        } catch (TelegramApiException e) {
+            log.error("oops");
+        }
+    }
+}
+
+&lt;/partialbotapimethod&lt;?&gt;</code></pre>
+Теперь наш бот делегирует обработку событий классу <span>UpdateReceiver</span>, но обработчиков у нас еще нет. Давайте их создадим!
+
+DISCLAIMER! Мне очень хотелось поделиться возможностями по написанию такого бота, поэтому дальнейший код (как в принципе и код UpdateReceiver) можно очень хорошо отрефакторить с применением различных паттернов. Но мы учимся и наша цель — минимально жизнеспособный бот, так что в качестве еще одного домашнего задания можно отрефакторить все, что вы увидели :)
+
+Создаем пакет util, а в нем — класс <span>TelegramUtil</span>:
+
+<pre class="lang-java line-numbers"><code>
+package com.whiskels.telegram.util;
+
+import com.whiskels.telegram.model.User;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+
+public class TelegramUtil {
+    public static SendMessage createMessageTemplate(User user) {
+        return createMessageTemplate(String.valueOf(user.getChatId()));
+    }
+
+    // Создаем шаблон SendMessage с включенным Markdown
+    public static SendMessage createMessageTemplate(String chatId) {
+        return new SendMessage()
+                .setChatId(chatId)
+                .enableMarkdown(true);
+    }
+
+    // Создаем кнопку
+    public static InlineKeyboardButton createInlineKeyboardButton(String text, String command) {
+        return new InlineKeyboardButton()
+                .setText(text)
+                .setCallbackData(command);
+    }
+}
+</code></pre>
+Мы напишем четыре обработчика: HelpHandler, QuizHandler, RegistrationHandler, StartHandler.
+
+StartHandler:
+<pre class="lang-java line-numbers"><code>
+package com.whiskels.telegram.bot.handler;
+
+import com.whiskels.telegram.bot.State;
+import com.whiskels.telegram.model.User;
+import com.whiskels.telegram.repository.JpaUserRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.methods.PartialBotApiMethod;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+
+import java.io.Serializable;
+import java.util.Collections;
+import java.util.List;
+
+import static com.whiskels.telegram.util.TelegramUtil.createMessageTemplate;
+
+@Component
+public class StartHandler implements Handler {
+    @Value("${bot.name}")
+    private String botUsername;
+
+    private final JpaUserRepository userRepository;
+
+    public StartHandler(JpaUserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
+    @Override
+    public List&lt;partialbotapimethod&lt;? extends="" serializable=""&gt;&gt; handle(User user, String message) {
+        // Приветствуем пользователя
+        SendMessage welcomeMessage = createMessageTemplate(user)
+                .setText(String.format(
+                        "Hola! I'm *%s*%nI am here to help you learn Java", botUsername
+                ));
+        // Просим назваться
+        SendMessage registrationMessage = createMessageTemplate(user)
+                .setText("In order to start our journey tell me your name");
+        // Меняем пользователю статус на - "ожидание ввода имени"
+        user.setBotState(State.ENTER_NAME);
+        userRepository.save(user);
+
+        return List.of(welcomeMessage, registrationMessage);
+    }
+
+    @Override
+    public State operatedBotState() {
+        return State.START;
+    }
+
+    @Override
+    public List&lt;string&gt; operatedCallBackQuery() {
+        return Collections.emptyList();
+    }
+}
+
+&lt;/string&gt;&lt;/partialbotapimethod&lt;?&gt;</code></pre>
+RegistrationHandler:
+
+<pre class="lang-java line-numbers"><code>
+package com.whiskels.telegram.bot.handler;
+
+import com.whiskels.telegram.bot.State;
+import com.whiskels.telegram.model.User;
+import com.whiskels.telegram.repository.JpaUserRepository;
+import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.methods.PartialBotApiMethod;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+
+import java.io.Serializable;
+import java.util.List;
+
+import static com.whiskels.telegram.bot.handler.QuizHandler.QUIZ_START;
+import static com.whiskels.telegram.util.TelegramUtil.createInlineKeyboardButton;
+import static com.whiskels.telegram.util.TelegramUtil.createMessageTemplate;
+
+@Component
+public class RegistrationHandler implements Handler {
+    //Храним поддерживаемые CallBackQuery в виде констант
+    public static final String NAME_ACCEPT = "/enter_name_accept";
+    public static final String NAME_CHANGE = "/enter_name";
+    public static final String NAME_CHANGE_CANCEL = "/enter_name_cancel";
+
+    private final JpaUserRepository userRepository;
+
+    public RegistrationHandler(JpaUserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
+    @Override
+    public List&lt;partialbotapimethod&lt;? extends="" serializable=""&gt;&gt; handle(User user, String message) {
+        // Проверяем тип полученного события
+        if (message.equalsIgnoreCase(NAME_ACCEPT) || message.equalsIgnoreCase(NAME_CHANGE_CANCEL)) {
+            return accept(user);
+        } else if (message.equalsIgnoreCase(NAME_CHANGE)) {
+            return changeName(user);
+        }
+        return checkName(user, message);
+
+    }
+
+    private List&lt;partialbotapimethod&lt;? extends="" serializable=""&gt;&gt; accept(User user) {
+        // Если пользователь принял имя - меняем статус и сохраняем
+        user.setBotState(State.NONE);
+        userRepository.save(user);
+
+        // Создаем кнопку для начала игры
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+
+        List&lt;inlinekeyboardbutton&gt; inlineKeyboardButtonsRowOne = List.of(
+                createInlineKeyboardButton("Start quiz", QUIZ_START));
+
+        inlineKeyboardMarkup.setKeyboard(List.of(inlineKeyboardButtonsRowOne));
+
+        return List.of(createMessageTemplate(user).setText(String.format(
+                "Your name is saved as: %s", user.getName()))
+                .setReplyMarkup(inlineKeyboardMarkup));
+    }
+
+    private List&lt;partialbotapimethod&lt;? extends="" serializable=""&gt;&gt; checkName(User user, String message) {
+        // При проверке имени мы превентивно сохраняем пользователю новое имя в базе 
+        // идея для рефакторинга - добавить временное хранение имени
+        user.setName(message);
+        userRepository.save(user);
+
+        // Делаем кнопку для применения изменений
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+
+        List&lt;inlinekeyboardbutton&gt; inlineKeyboardButtonsRowOne = List.of(
+                createInlineKeyboardButton("Accept", NAME_ACCEPT));
+
+        inlineKeyboardMarkup.setKeyboard(List.of(inlineKeyboardButtonsRowOne));
+
+        return List.of(createMessageTemplate(user)
+                .setText(String.format("You have entered: %s%nIf this is correct - press the button", user.getName()))
+                .setReplyMarkup(inlineKeyboardMarkup));
+    }
+    
+    private List&lt;partialbotapimethod&lt;? extends="" serializable=""&gt;&gt; changeName(User user) {
+        // При запросе изменения имени мы меняем State
+        user.setBotState(State.ENTER_NAME);
+        userRepository.save(user);
+
+        // Создаем кнопку для отмены операции
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+
+        List&lt;inlinekeyboardbutton&gt; inlineKeyboardButtonsRowOne = List.of(
+                createInlineKeyboardButton("Cancel", NAME_CHANGE_CANCEL));
+
+        inlineKeyboardMarkup.setKeyboard(List.of(inlineKeyboardButtonsRowOne));
+
+        return List.of(createMessageTemplate(user).setText(String.format(
+                "Your current name is: %s%nEnter new name or press the button to continue", user.getName()))
+                .setReplyMarkup(inlineKeyboardMarkup));
+    }
+
+    @Override
+    public State operatedBotState() {
+        return State.ENTER_NAME;
+    }
+
+    @Override
+    public List&lt;string&gt; operatedCallBackQuery() {
+        return List.of(NAME_ACCEPT, NAME_CHANGE, NAME_CHANGE_CANCEL);
+    }
+}
+
+&lt;/string&gt;&lt;/inlinekeyboardbutton&gt;&lt;/partialbotapimethod&lt;?&gt;&lt;/inlinekeyboardbutton&gt;&lt;/partialbotapimethod&lt;?&gt;&lt;/inlinekeyboardbutton&gt;&lt;/partialbotapimethod&lt;?&gt;&lt;/partialbotapimethod&lt;?&gt;</code></pre>
+Help Handler:
+
+<pre class="lang-java line-numbers"><code>
+package com.whiskels.telegram.bot.handler;
+
+import com.whiskels.telegram.bot.State;
+import com.whiskels.telegram.model.User;
+import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.methods.PartialBotApiMethod;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import static com.whiskels.telegram.bot.handler.RegistrationHandler.NAME_CHANGE;
+import static com.whiskels.telegram.util.TelegramUtil.createInlineKeyboardButton;
+import static com.whiskels.telegram.util.TelegramUtil.createMessageTemplate;
+
+@Component
+public class HelpHandler implements Handler {
+
+    @Override
+    public List&lt;partialbotapimethod&lt;? extends="" serializable=""&gt;&gt; handle(User user, String message) {
+        // Создаем кнопку для смены имени
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+
+        List&lt;inlinekeyboardbutton&gt; inlineKeyboardButtonsRowOne = List.of(
+                createInlineKeyboardButton("Change name", NAME_CHANGE));
+
+        inlineKeyboardMarkup.setKeyboard(List.of(inlineKeyboardButtonsRowOne));
+
+        return List.of(createMessageTemplate(user).setText(String.format("" +
+                "You've asked for help %s? Here it comes!", user.getName()))
+        .setReplyMarkup(inlineKeyboardMarkup));
+
+    }
+
+    @Override
+    public State operatedBotState() {
+        return State.NONE;
+    }
+
+    @Override
+    public List&lt;string&gt; operatedCallBackQuery() {
+        return Collections.emptyList();
+    }
+}
+
+&lt;/string&gt;&lt;/inlinekeyboardbutton&gt;&lt;/partialbotapimethod&lt;?&gt;</code></pre>
+QuizHandler (самый ужасно

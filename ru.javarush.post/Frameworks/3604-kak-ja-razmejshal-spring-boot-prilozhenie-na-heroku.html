@@ -1,0 +1,90 @@
+Как я размещал Spring-Boot приложение на Heroku
+<p>----------------------------------------</p>
+Решил попробовать запустить простое приложение на облаке. За основу я взял эту статью Как разместить Spring-Boot-приложение на heroku.com. Пошаговая инструкция
+<p>----------------------------------------</p>
+<strong><u><a href="https://javarush.com/groups/posts/3092-spring-ehto-nestrashno" target="_blank" rel="nofollow">СОДЕРЖАНИЕ ЦИКЛА СТАТЕЙ</a></u></strong>
+
+Решил попробовать запустить простое приложение на облаке. За основу я взял эту статью <a href="https://skillbox.ru/media/base/kak-razmestit-spring-boot-prilozhenie-na-heroku-com-poshagovaya-instruktsiya/" target="_blank" rel="nofollow">Как разместить Spring-Boot-приложение на heroku.com. Пошаговая инструкция
+</a>
+Если ты ее прочитал(-а) и все заработало без вопросов, то ниже текст не для тебя. 
+
+Лично у меня возникло несколько дополнений:
+1.  В пунктах 5, 6 и 7 показывается как использовать в приложении облачную базу данных, прочитать это все интересно.
+Но если тебе, как и мне, это показалось лишним, то можно использовать <a href="https://www.baeldung.com/spring-boot-h2-database" target="_blank" rel="nofollow">СУБД H2</a>  (включи гугл траслит). Тут показан пример как наполнить БД с помощью файла data.sql и скриптов.
+Я использовал не скрипты, а интерфейс <a href="https://zetcode.com/springboot/commandlinerunner/ " target="_blank" rel="nofollow">CommandLineRunner</a>, который предоставляет метод  run.
+Нужно просто реализовать класс, например MyRunner навесить на него java-конфигурацию и имплементировать интерфейс. 
+Ниже пример использования:
+<pre class="language-java line-numbers"><code>
+@Component
+public class MyRunner implements CommandLineRunner {
+
+    @Autowired
+    private CityRepository repository;
+
+    @Override
+    public void run(String... args) throws Exception {
+        repository.deleteAll();
+
+        repository.save(new City("Bratislava", 432000));
+        repository.save(new City("Budapest", 1759000));
+        repository.save(new City("Prague", 1280000));
+    }
+}
+</code></pre>
+Метод исполниться в момент запуска приложения и сохранит сущности в БД.
+
+<strong>Важно: из пункта 7 основной статьи, в application.properties  (или application.yaml) необходимо добавить настройку server.port=${PORT:8080} –  дефолтный порт избавит от распространенной проблемы: 
+heroku[router]: at=error code=H20 desc="App boot timeout" method=GET</strong>
+
+
+2.  В пункте 8 показывается как публиковать приложение. Там довольно интересно написано про особенности использования приложений на версии Java 11, я как старообрядец использую восьмую Java, поэтому файл system.properties мне не нужен. Если у тебя Java 9+ то не забудь создать упомянутый файл и добавить версию Java.
+
+Автор предлагает следующий порядок публикации:
+
+&lt;samp&gt;Для этого выполним следующие шаги:
+•	Откроем папку с репозиторием проекта в терминале Git Bash.
+•	Найдём ссылку на удалённый репозиторий heroku для вашего приложения в Settings — в разделе App Information → Heroku git URL.
+•	Добавим новый удалённый репозиторий к вашему Git.&lt;/samp&gt;
+
+Я использовал порядок, который описан на сайте Heroku. В созданном на сайте приложении нужно найти вкладку Deploy, прочитать все что там написано.
+А затем выполнить команды в блоке Create a new Git repository.
+<img data-id="44ba0b64-1f43-4133-8039-21557c004aa3" src="https://cdn.javarush.com/images/article/44ba0b64-1f43-4133-8039-21557c004aa3/1024.jpeg" alt="Как я размещал Spring-Boot приложение на Heroku - 1">
+В структуре проекта IDEA должен присутствовать файл . gitignore и папка target должна быть исключена из отслеживания Git.
+
+В качестве консоли я использовал Terminal IDEA, просто в том же проекте который хочу запустить в облако, открыл вкладку Terminal, вот так она выглядит: 
+<img data-id="ccf1c3d2-bdab-4803-8404-e1ecaf5e68d2" src="https://cdn.javarush.com/images/article/ccf1c3d2-bdab-4803-8404-e1ecaf5e68d2/256.jpeg" alt="Как я размещал Spring-Boot приложение на Heroku - 2">
+Поэтому не мне надо искать нужную директорию. (<em>cd my-project/</em>)
+
+<em>heroku login</em>  - мы уже сделали(если нет, то самое время).
+
+Далее копирую и исполняю по очереди гит команды:
+Сначала создаю гит репозиторий
+
+<em>git init</em>
+<em>heroku git:remote -a from-java-rush</em>
+
+Теперь делаю коммит и осуществляю деплой
+
+<em>git add .</em>
+<em>git commit -am "make it better"</em>
+<em>git push heroku master</em>
+
+В консоли будут появляться логи: что приложение начало сборку, что Maven выкачивает зависимости и в конце: 
+<pre class="language-java line-numbers"><code>
+remote:        https://from-java-rush.herokuapp.com/ deployed to Heroku
+remote: 
+remote: Verifying deploy... done.
+To https://git.heroku.com/from-java-rush.git
+ * [new branch]      master -&gt; master
+</code></pre>
+
+Где указана ссылка https://from-java-rush.herokuapp.com/, у тебя будет своя ссылка, вот в нее и тыкни. Само собой, если у тебя нет графического интерфейса в приложении, а только набор rest методов, нужно после ссылки указать через слеш название метода, например так:
+<a href="https://from-java-rush.herokuapp.com/heroku/city" target="_blank" rel="nofollow">https://from-java-rush.herokuapp.com/heroku/city</a> (надо подождать пока контейнер проснется, если не проснулся, то значит я удалил приложение)
+
+Теперь ты можешь вносить изменения в развернутое приложение на heroku, прямо из IDEA, используя консольные Git команды 
+<em>git add .</em>
+<em>git commit -am "make it better"</em>
+<em>git push heroku master</em>
+
+Или привычные, но менее информативные кнопки интерфейса
+<img data-id="4ceb1e3a-6940-43dc-a4cc-c67af46b1385" src="https://cdn.javarush.com/images/article/4ceb1e3a-6940-43dc-a4cc-c67af46b1385/256.jpeg" alt="Как я размещал Spring-Boot приложение на Heroku - 3">

@@ -1,0 +1,97 @@
+Spring. Урок 1. IoC / DI
+<p>----------------------------------------</p>
+В этом курсе хочу познакомить вас с самым популярным и необходимым фреймворком Spring. Курс будет состоят из нескольких занятий, поэтапно раскрывающих секреты фреймворка. Приятного обучения!
+<p>----------------------------------------</p>
+И так... Для изучения Spring`а потребуется знания Java core, Intellij IDEA Ultimate и немного терпения. Курс будет состоят из нескольких занятий. Каждое занятие будет описывать отдельную тему. Так же я очень посоветовал бы писать конспекты. Да, никто за это вам не поставит зачет за семестр. Просто при написании конспекта работают все части мозга, предназначенные для запоминания информации. Хватит воды. Начинаем.
+
+<strong>Inversion of Control (IoC) &amp;&amp; Dependency Injection (DI)</strong>
+Для начала определим две самые важные термины, как Инверсия управления - Inversion of Control (IoC) и Внедрение зависимостей - Dependency Injection (DI).
+<strong>IoC</strong> - это принцип ООП, используемый для уменьшения связанности между классами и объектами. Программист в нужные точки программы разместит необходимый код и не волнуется как и когда должен работать размещенный код. Говоря простым языком, при использовании IoC кодом будет управлять фреймворк а не программист.
+<strong>DI</strong> - делает объекты приложения слабо зависимым друг от друга. То есть об инициализации объектов будет заботится внешний механизм разработанный программистом. При использовании DI программист будет работать не на "уровне классов" а на "уровне интерфейсов". Таким образом зависимости между объектами будут сведены к минимуму. 
+
+<strong>Попрактикуемся</strong>
+Для начала создадим простой maven проект. Для этого выбираем пункт "Create new Project" и из меню выбирает "Maven": 
+<img data-id="b4212602-53a9-485f-a55a-e1231715c395" src="https://cdn.javarush.com/images/article/b4212602-53a9-485f-a55a-e1231715c395/1024.jpeg" alt="Курс Spring - IoC / DI - 1">
+В остальных частях можно оставить дефолтные значения либо изменить по своему усмотрению (кроме версии):
+<img data-id="14fdd71c-d973-4a7d-b9f2-8198d820bb5b" src="https://cdn.javarush.com/images/article/14fdd71c-d973-4a7d-b9f2-8198d820bb5b/1024.jpeg" alt="Курс Spring - IoC / DI - 2">
+После чего откроется проект примерно с такой структурой:
+<img data-id="0fe73c1a-ccb4-41d1-a5aa-658b7b6550e6" src="https://cdn.javarush.com/images/article/0fe73c1a-ccb4-41d1-a5aa-658b7b6550e6/800.jpeg" alt="Курс Spring - IoC / DI - 3">
+В папке main хранятся пакеты, коды и файлы для работы основной части программы. В пакетах (в нашем случае org.example) будет хранится Java - код. Папка resources будет содержат конфигурационные файлы или файлы - ресурсы. Именно в этой папке мы создадим файл applicationContext.xml, в котором будем описать наши бины(об этом чуть позже) . В папке Test будет хранится классы с тестированием. Мы не будем затрагивать эту тему. Один из самых важных файлов является файл pom.xml. В этом файле будут описываться Spring - зависимости  для нашего проекта.  Именно с этого файла мы и начнем работу. 
+
+Для начала откроем этот файл. Файл будет иметь примерно такой вид:
+<pre class="language-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+    &lt;groupId&gt;org.example&lt;/groupId&gt;
+    &lt;artifactId&gt;IoC&lt;/artifactId&gt;
+    &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+
+  &lt;properties&gt;
+        &lt;maven.compiler.source&gt;11&lt;/maven.compiler.source&gt;
+        &lt;maven.compiler.target&gt;11&lt;/maven.compiler.target&gt;
+    &lt;/properties&gt;
+
+&lt;/project&gt;
+</code></pre>
+В этот файл будем добавлять необходимые зависимости (dependencies). Для этого переходим на сайт <a href="https://mvnrepository.com/" target="_blank" rel="nofollow">mvnrepository.com</a>, в котором находятся все зависимости для управления maven проектом. В поисковой части набираем "Spring context". Среди списка результатов выбираем "Spring context" (именно "Spring context" от apache а не другое). Затем выбираем версию, желательно RELEASE версию. После чего откроется примерно следующее окно:
+<img data-id="fbb81b9d-118b-4f8a-a1aa-04926e859014" src="https://cdn.javarush.com/images/article/fbb81b9d-118b-4f8a-a1aa-04926e859014/800.jpeg" alt="Курс Spring - IoC / DI - 5">
+Нас интересует та часть, которая выделена красным цветом. Скопируем код и вставляем внутри тега &lt;dependencies&gt; &lt;/dependencies&gt;. Такие же действия производим и для зависимостей "Spring bean" и "Spring core". В итоге файл pom.xml должен иметь следующий вид:
+<pre class="language-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+    &lt;groupId&gt;org.example&lt;/groupId&gt;
+    &lt;artifactId&gt;IoC&lt;/artifactId&gt;
+    &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+
+    &lt;dependencies&gt;
+        &lt;!-- https://mvnrepository.com/artifact/org.springframework/spring-context --&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-context&lt;/artifactId&gt;
+            &lt;version&gt;5.2.15.RELEASE&lt;/version&gt;
+        &lt;/dependency&gt;
+
+        &lt;!-- https://mvnrepository.com/artifact/org.springframework/spring-context --&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-context&lt;/artifactId&gt;
+            &lt;version&gt;5.2.15.RELEASE&lt;/version&gt;
+        &lt;/dependency&gt;
+
+        &lt;!-- https://mvnrepository.com/artifact/org.springframework/spring-beans --&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-beans&lt;/artifactId&gt;
+            &lt;version&gt;5.2.15.RELEASE&lt;/version&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+
+    &lt;properties&gt;
+        &lt;maven.compiler.source&gt;11&lt;/maven.compiler.source&gt;
+        &lt;maven.compiler.target&gt;11&lt;/maven.compiler.target&gt;
+    &lt;/properties&gt;
+
+&lt;/project&gt;
+</code></pre>
+Коротко обо всём. В <strong>Spring core</strong> хранится все базовые операции для работы фреймворка. <strong>Spring context</strong> - создает и хранит объекты классов для работы DI / IoC. А <strong>Spring beans</strong> служит для создания бинов. О бинах расскажу чуть позже. После добавления зависимостей на правом верхнем углу появится значок: <img data-id="54ec51c4-df9c-4b53-a0f6-699d002f91d4" src="https://cdn.javarush.com/images/article/54ec51c4-df9c-4b53-a0f6-699d002f91d4/256.jpeg" alt="Курс Spring - IoC / DI - 6">
+Нажимаем на него и ждем пока Idea загрузит все эти зависимости. После загрузки в папке проекта "External Libraries" можем увидеть скачанные .jar файлы в которых содержатся Spring - зависимости:
+<img data-id="d4225b04-0fe5-4dd6-be2c-9b7537cd035d" src="https://cdn.javarush.com/images/article/d4225b04-0fe5-4dd6-be2c-9b7537cd035d/800.jpeg" alt="Курс Spring - IoC / DI - 7">
+На этом заканчиваем первый урок нашего курса. Таким образом мы коротко узнали:
+<ul>
+<li>Что такое IoC / DI</li>
+<li>Как создать Spring проекты</li>
+<li>Как их настроить</li>
+</ul>
+
+Полный исходной код можете найти по <a href="https://github.com/Umaralikhon/Spring-for-JavaRush/blob/main/Lesson1/pom.xml" target="_blank" rel="nofollow">ссылке</a>.
+Мой <a href="https://github.com/Umaralikhon" target="_blank" rel="nofollow">GitHub аккаунт</a>
+<a href="https://javarush.com/groups/posts/3396-spring-soderzhanie-kursa" target="_blank" rel="nofollow">Содержание курса</a>
+Продолжение следует...

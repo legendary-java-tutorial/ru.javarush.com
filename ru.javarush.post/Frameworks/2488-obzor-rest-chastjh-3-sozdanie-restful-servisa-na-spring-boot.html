@@ -1,0 +1,434 @@
+Обзор REST. Часть 3: создание RESTful сервиса на Spring Boot
+<p>----------------------------------------</p>
+В данном разделе мы создадим небольшое RESTful приложение на Spring Boot. В нашем приложении будут реализованы CRUD (Create, Read, Update, Delete) операции над клиентами из примера из прошлой части разбора. Для начала создадим новое Spring Boot приложение через...
+<p>----------------------------------------</p>
+Это заключительная часть разбора REST. В предыдущих частях:
+<ul>
+<li><a href="https://javarush.com/groups/posts/2486-obzor-rest-chastjh-1-chto-takoe-rest" target="_blank">Что такое REST</a></li>
+<li><a href="https://javarush.com/groups/posts/2487-obzor-rest-chastjh-2-kommunikacija-mezhdu-klientom-i-serverom-" target="_blank">Коммуникация между клиентом и сервером</a></li>
+</ul><img data-max-width="850" alt="Обзор REST. Часть 3: создание RESTful сервиса на Spring Boot - 1" src="https://cdn.javarush.com/images/article/3a2427b4-a6c2-417e-9d6c-bb4cb12e15fc/original.jpeg"><h2>Создание проекта</h2>В данном разделе мы создадим небольшое RESTful приложение на Spring Boot. В нашем приложении будут реализованы CRUD (Create, Read, Update, Delete) операции над клиентами из примера из <a href="https://javarush.com/groups/posts/2487-obzor-rest-chastjh-2-kommunikacija-mezhdu-klientom-i-serverom-" target="_blank">прошлой части</a> разбора. 
+
+Для начала создадим новое Spring Boot приложение через меню <em>File -&gt; New -&gt; Project...</em>
+
+В открывшимся окне выбираем Spring Initializr и указываем Project SDK:
+<img data-max-width="850" alt="Обзор REST. Часть 3: создание RESTful сервиса на Spring Boot - 2" src="https://cdn.javarush.com/images/article/f20a26d1-e67f-42d3-8ce3-f41aaec757ab//original.jpeg">Нажимаем кнопку Next. В следующем окне указываем тип проекта Maven, указываем Group и Artifact:
+<img data-max-width="850" alt="Обзор REST. Часть 3: создание RESTful сервиса на Spring Boot - 3" src="https://cdn.javarush.com/images/article/7c264991-614f-440f-ac80-435bf5bd038f//original.jpeg">Нажимаем кнопку Next. В следующем окне нам необходимо выбрать нужные для проекта компоненты Spring Framework. Нам будет достаточно Spring Web:
+<img data-max-width="850" alt="Обзор REST. Часть 3: создание RESTful сервиса на Spring Boot - 4" src="https://cdn.javarush.com/images/article/3258772e-dbb4-4f44-b3c1-a32fa00e3c1a//original.jpeg">Нажимаем кнопку Next. Далее осталось указать только наименование проекта и его расположение в файловой системе: 
+<img data-max-width="850" alt="Обзор REST. Часть 3: создание RESTful сервиса на Spring Boot - 5" src="https://cdn.javarush.com/images/article/ea737a8d-3529-42ab-9097-582353a8ddaa//original.jpeg">Нажимаем кнопку Finish. Проект создан, теперь мы можем увидеть его структуру: 
+<img data-max-width="450" alt="Обзор REST. Часть 3: создание RESTful сервиса на Spring Boot - 6" src="https://cdn.javarush.com/images/article/81bbe715-dabb-4ac9-baa7-d41b26464c57//original.jpeg">IDEA сгенерировала за нас дескриптор развертывания системы сборки Maven — pom.xml и главный класс приложения: <code>RestExampleApplication</code>. Приведем их код: 
+
+<pre class="lang-java line-numbers"><code>
+pom.xml:
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+   &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+   &lt;parent&gt;
+       &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+       &lt;artifactId&gt;spring-boot-starter-parent&lt;/artifactId&gt;
+       &lt;version&gt;2.2.2.RELEASE&lt;/version&gt;
+       &lt;relativePath/&gt; &lt;!-- lookup parent from repository --&gt;
+   &lt;/parent&gt;
+   &lt;groupId&gt;com.javarush.lectures&lt;/groupId&gt;
+   &lt;artifactId&gt;rest_example&lt;/artifactId&gt;
+   &lt;version&gt;0.0.1-SNAPSHOT&lt;/version&gt;
+   &lt;name&gt;rest_example&lt;/name&gt;
+   &lt;description&gt;REST example project&lt;/description&gt;
+
+   &lt;properties&gt;
+       &lt;java.version&gt;1.8&lt;/java.version&gt;
+   &lt;/properties&gt;
+
+   &lt;dependencies&gt;
+       &lt;dependency&gt;
+           &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+           &lt;artifactId&gt;spring-boot-starter-web&lt;/artifactId&gt;
+       &lt;/dependency&gt;
+
+       &lt;dependency&gt;
+           &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+           &lt;artifactId&gt;spring-boot-starter-test&lt;/artifactId&gt;
+           &lt;scope&gt;test&lt;/scope&gt;
+           &lt;exclusions&gt;
+               &lt;exclusion&gt;
+                   &lt;groupId&gt;org.junit.vintage&lt;/groupId&gt;
+                   &lt;artifactId&gt;junit-vintage-engine&lt;/artifactId&gt;
+               &lt;/exclusion&gt;
+           &lt;/exclusions&gt;
+       &lt;/dependency&gt;
+   &lt;/dependencies&gt;
+
+   &lt;build&gt;
+       &lt;plugins&gt;
+           &lt;plugin&gt;
+               &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+               &lt;artifactId&gt;spring-boot-maven-plugin&lt;/artifactId&gt;
+           &lt;/plugin&gt;
+       &lt;/plugins&gt;
+   &lt;/build&gt;
+
+&lt;/project&gt;
+</code></pre>
+RestExampleApplication:
+
+<pre class="lang-java line-numbers"><code>
+@SpringBootApplication
+public class RestExampleApplication {
+
+   public static void main(String[] args) {
+       SpringApplication.run(RestExampleApplication.class, args);
+   }
+
+}
+</code></pre>
+<h2>Создание REST функционала</h2>Наше приложение управляет клиентами. Поэтому первым делом нам необходимо создать сущность клиента. Это будет POJO класс.
+
+Создадим пакет <code>model</code> внутри пакета <code>com.javarush.lectures.rest_example</code>. Внутри пакета <code>model</code> создадим класс <code>Client</code>:
+
+<pre class="lang-java line-numbers"><code>
+public class Client {
+
+   private Integer id;
+   private String name;
+   private String email;
+   private String phone;
+
+   public Integer getId() {
+       return id;
+   }
+
+   public void setId(Integer id) {
+       this.id = id;
+   }
+
+   public String getName() {
+       return name;
+   }
+
+   public void setName(String name) {
+       this.name = name;
+   }
+
+   public String getEmail() {
+       return email;
+   }
+
+   public void setEmail(String email) {
+       this.email = email;
+   }
+
+   public String getPhone() {
+       return phone;
+   }
+
+   public void setPhone(String phone) {
+       this.phone = phone;
+   }
+}
+</code></pre>
+В сервисе будут реализованы CRUD операции над клиентом. Следующим шагом мы должны создать сервис, в котором будут реализованы эти операции. В пакете <code>com.javarush.lectures.rest_example</code> создадим пакет <code>service</code>, внутри которого создадим интерфейс <code>ClientService</code>. 
+
+Приведем код интерфейса с комментариями:
+
+<pre class="lang-java line-numbers"><code>
+public interface ClientService {
+
+   /**
+    * Создает нового клиента
+    * @param client - клиент для создания
+    */
+   void create(Client client);
+
+   /**
+    * Возвращает список всех имеющихся клиентов
+    * @return список клиентов
+    */
+   List&lt;client&gt; readAll();
+
+   /**
+    * Возвращает клиента по его ID
+    * @param id - ID клиента
+    * @return - объект клиента с заданным ID
+    */
+   Client read(int id);
+
+   /**
+    * Обновляет клиента с заданным ID,
+    * в соответствии с переданным клиентом
+    * @param client - клиент в соответсвии с которым нужно обновить данные
+    * @param id - id клиента которого нужно обновить
+    * @return - true если данные были обновлены, иначе false
+    */
+   boolean update(Client client, int id);
+
+   /**
+    * Удаляет клиента с заданным ID
+    * @param id - id клиента, которого нужно удалить
+    * @return - true если клиент был удален, иначе false
+    */
+   boolean delete(int id);
+}
+</code></pre>
+Далее нам необходимо создать реализацию этого интерфейса. Сейчас в роли хранилища клиентов будет выступать <code>Map&lt;Integer, Client&gt;</code>. Ключом карты будет id клиента, а значением — сам клиент. Сделано это для того, чтобы не перегружать пример спецификой работы с БД. Однако в будущем мы сможем написать другую реализацию интерфейса, в которой можно будет подключить реальную базу данных. 
+
+В пакете <code>service</code> создадим реализацию интерфейса <code>ClientService</code>:
+
+<pre class="lang-java line-numbers"><code>
+@Service
+public class ClientServiceImpl implements ClientService {
+
+   // Хранилище клиентов
+   private static final Map&lt;Integer, Client&gt; CLIENT_REPOSITORY_MAP = new HashMap&lt;&gt;();
+  
+   // Переменная для генерации ID клиента
+   private static final AtomicInteger CLIENT_ID_HOLDER = new AtomicInteger();
+
+   @Override
+   public void create(Client client) {
+       final int clientId = CLIENT_ID_HOLDER.incrementAndGet();
+       client.setId(clientId);
+       CLIENT_REPOSITORY_MAP.put(clientId, client);
+   }
+
+   @Override
+   public List&lt;Client&gt; readAll() {
+       return new ArrayList&lt;&gt;(CLIENT_REPOSITORY_MAP.values());
+   }
+
+   @Override
+   public Client read(int id) {
+       return CLIENT_REPOSITORY_MAP.get(id);
+   }
+
+   @Override
+   public boolean update(Client client, int id) {
+       if (CLIENT_REPOSITORY_MAP.containsKey(id)) {
+           client.setId(id);
+           CLIENT_REPOSITORY_MAP.put(id, client);
+           return true;
+       }
+
+       return false;
+   }
+
+   @Override
+   public boolean delete(int id) {
+       return CLIENT_REPOSITORY_MAP.remove(id) != null;
+   }
+}
+</code></pre>
+Аннотация <code>@Service</code> говорит спрингу, что данный класс является сервисом. Это специальный тип классов, в котором реализуется некоторая бизнес логика приложения. Впоследствии, благодаря этой аннотации Spring будет предоставлять нам экземпляр данного класса в местах, где это, нужно с помощью Dependency Injection. 
+
+Теперь пришло время для создания контроллера. Специального класса, в котором мы реализуем логику обработки клиентских запросов на эндпоинты (URI). 
+
+Чтобы было понятней, будем создавать данный класс по частям. Сначала создадим сам класс и внедрим в него зависимость от <code>ClientService</code>:
+
+<pre class="lang-java line-numbers"><code>
+@RestController
+public class ClientController {
+
+   private final ClientService clientService;
+
+   @Autowired
+   public ClientController(ClientService clientService) {
+       this.clientService = clientService;
+   }
+}
+</code></pre>
+Поясним аннотации: 
+
+<span class="text-user">@RestController</span> — говорит спрингу, что данный класс является REST контроллером. Т.е. в данном классе будет реализована логика обработки клиентских запросов
+
+<span class="text-user">@Autowired</span> — говорит спрингу, что в этом месте необходимо внедрить зависимость. В конструктор мы передаем интерфейс <code>ClientService</code>. Реализацию данного сервиса мы пометили аннотацией <code>@Service</code> ранее, и теперь спринг сможет передать экземпляр этой реализации в конструктор контроллера. 
+
+Далее мы пошагово будем реализовывать каждый метод контроллера, для обработки CRUD операций. Начнем с операции Create. Для этого напишем метод <code>create</code>:
+
+<pre class="lang-java line-numbers"><code>
+@PostMapping(value = "/clients")
+public ResponseEntity&lt;?&gt; create(@RequestBody Client client) {
+   clientService.create(client);
+   return new ResponseEntity&lt;&gt;(HttpStatus.CREATED);
+}
+</code></pre>
+Разберем данный метод:
+
+<code>@PostMapping(value = "/clients")</code> — здесь мы обозначаем, что данный метод обрабатывает POST запросы на адрес /clients
+
+Метод возвращает <code>ResponseEntity&lt;?&gt;</code>. <code>ResponseEntity</code> — специальный класс для возврата ответов. С помощью него мы сможем в дальнейшем вернуть клиенту HTTP статус код. 
+
+Метод принимает параметр <code>@RequestBody Client client</code>, значение этого параметра подставляется из тела запроса. Об этом говорит аннотация  <code>@RequestBody</code>.
+
+Внутри тела метода мы вызываем метод create у ранее созданного сервиса и передаем ему принятого в параметрах контроллера клиента. 
+
+После чего возвращаем статус 201 Created, создав новый объект <code>ResponseEntity</code> и передав в него нужное значение енума <code>HttpStatus</code>.
+
+Далее реализуем операцию <code>Read</code>: 
+
+Для начала реализуем операцию получения списка всех имеющихся клиентов: 
+
+<pre class="lang-java line-numbers"><code>
+@GetMapping(value = "/clients")
+public ResponseEntity&lt;List&lt;Client&gt;&gt; read() {
+   final List&lt;Client&gt; clients = clientService.readAll();
+
+   return clients != null &amp;&amp;  !clients.isEmpty()
+           ? new ResponseEntity&lt;&gt;(clients, HttpStatus.OK)
+           : new ResponseEntity&lt;&gt;(HttpStatus.NOT_FOUND);
+}
+</code></pre>
+Приступим к разбору: 
+
+<code>@GetMapping(value = "/clients")</code> — все аналогично аннотации <code>@PostMapping</code>, только теперь мы обрабатываем GET запросы.
+
+На этот раз мы возвращаем <code>ResponseEntity&lt;List&lt;Client&gt;&gt;</code>, только в этот раз, помимо HTTP статуса, мы вернем еще и тело ответа, которым будет список клиентов. 
+
+В REST контроллерах спринга все POJO объекты, а также коллекции POJO объектов, которые возвращаются в качестве тел ответов, автоматически сериализуются в JSON, если явно не указано иное. Нас это вполне устраивает.
+
+Внутри метода, с помощью нашего сервиса мы получаем список всех клиентов. Далее, в случае если список не null и не пуст, мы возвращаем c помощью класса <code>ResponseEntity</code> сам список клиентов и HTTP статус 200 OK. Иначе мы возвращаем просто HTTP статус 404 Not Found. 
+
+Далее реализуем возможность получать клиента по его id: 
+
+<pre class="lang-java line-numbers"><code>
+@GetMapping(value = "/clients/{id}")
+public ResponseEntity&lt;Client&gt; read(@PathVariable(name = "id") int id) {
+   final Client client = clientService.read(id);
+
+   return client != null
+           ? new ResponseEntity&lt;&gt;(client, HttpStatus.OK)
+           : new ResponseEntity&lt;&gt;(HttpStatus.NOT_FOUND);
+}
+</code></pre>
+Из нового, у нас тут появилась переменная пути. Переменная, которая определена в URI. <code>value = "/clients/{id}"</code>. Мы указали ее в фигурных скобках. А в параметрах метода принимаем её в качестве <code>int</code> переменной, с помощью аннотации <code>@PathVariable(name = "id")</code>. 
+
+Данный метод будет принимать запросы на uri вида <code>/clients/{id}</code>, где вместо <code>{id}</code> может быть любое численное значение. Данное значение, впоследствии, передается переменной <code>int id</code> — параметру метода. 
+
+В теле мы получаем объект <code>Client</code> с помощью нашего сервиса и принятого <code>id</code>. И далее, по аналогии со списком, возвращаем либо статус 200 OK и сам объект <code>Client</code>, либо просто статус 404 Not Found, если клиента с таким <code>id</code> не оказалось в системе. 
+
+Осталось реализовать две операции — Update и Delete. Приведем код этих методов: 
+
+<pre class="lang-java line-numbers"><code>
+@PutMapping(value = "/clients/{id}")
+public ResponseEntity&lt;?&gt; update(@PathVariable(name = "id") int id, @RequestBody Client client) {
+   final boolean updated = clientService.update(client, id);
+
+   return updated
+           ? new ResponseEntity&lt;&gt;(HttpStatus.OK)
+           : new ResponseEntity&lt;&gt;(HttpStatus.NOT_MODIFIED);
+}
+
+@DeleteMapping(value = "/clients/{id}")
+public ResponseEntity&lt;?&gt; delete(@PathVariable(name = "id") int id) {
+   final boolean deleted = clientService.delete(id);
+
+   return deleted
+           ? new ResponseEntity&lt;&gt;(HttpStatus.OK)
+           : new ResponseEntity&lt;&gt;(HttpStatus.NOT_MODIFIED);
+}
+</code></pre>
+Чего-то существенно нового в данных методах нет, поэтому подробное описание пропустим. Единственное, о чем стоит сказать: метод <code>update</code> обрабатывает PUT запросы (аннотация <code>@PutMapping</code>), а метод <code>delete</code> обрабатывает DELETE запросы (аннотация <code>DeleteMapping</code>). 
+
+Приведем полный код контроллера:
+
+<pre class="lang-java line-numbers"><code>
+@RestController
+public class ClientController {
+
+   private final ClientService clientService;
+
+   @Autowired
+   public ClientController(ClientService clientService) {
+       this.clientService = clientService;
+   }
+
+   @PostMapping(value = "/clients")
+   public ResponseEntity&lt;?&gt; create(@RequestBody Client client) {
+       clientService.create(client);
+       return new ResponseEntity&lt;&gt;(HttpStatus.CREATED);
+   }
+
+   @GetMapping(value = "/clients")
+   public ResponseEntity&lt;List&lt;Client&gt;&gt; read() {
+       final List&lt;client&gt; clients = clientService.readAll();
+
+       return clients != null &amp;&amp;  !clients.isEmpty()
+               ? new ResponseEntity&lt;&gt;(clients, HttpStatus.OK)
+               : new ResponseEntity&lt;&gt;(HttpStatus.NOT_FOUND);
+   }
+
+   @GetMapping(value = "/clients/{id}")
+   public ResponseEntity&lt;Client&gt; read(@PathVariable(name = "id") int id) {
+       final Client client = clientService.read(id);
+
+       return client != null
+               ? new ResponseEntity&lt;&gt;(client, HttpStatus.OK)
+               : new ResponseEntity&lt;&gt;(HttpStatus.NOT_FOUND);
+   }
+
+   @PutMapping(value = "/clients/{id}")
+   public ResponseEntity&lt;?&gt; update(@PathVariable(name = "id") int id, @RequestBody Client client) {
+       final boolean updated = clientService.update(client, id);
+
+       return updated
+               ? new ResponseEntity&lt;&gt;(HttpStatus.OK)
+               : new ResponseEntity&lt;&gt;(HttpStatus.NOT_MODIFIED);
+   }
+
+   @DeleteMapping(value = "/clients/{id}")
+   public ResponseEntity&lt;?&gt; delete(@PathVariable(name = "id") int id) {
+       final boolean deleted = clientService.delete(id);
+
+       return deleted
+               ? new ResponseEntity&lt;&gt;(HttpStatus.OK)
+               : new ResponseEntity&lt;&gt;(HttpStatus.NOT_MODIFIED);
+   }
+}
+</code></pre>
+В итоге, структура нашего проекта выглядит следующим образом:
+<img data-max-width="550" alt="Обзор REST. Часть 3: создание RESTful сервиса на Spring Boot - 7" src="https://cdn.javarush.com/images/article/cd2f1bda-edcb-4292-ad1e-a39cdea8ddc7//original.jpeg"><h2>Запуск и тестирование</h2>Чтобы запустить наше приложение, достаточно запустить метод <code>main</code> в классе <code>RestExampleApplication</code>.
+
+А для того, чтобы тестировать RESTful веб сервисы, нужно скачать новое ПО )
+
+Дело в том, что GET запросы довольно просто отправлять из обычного браузера, а вот для POST, PUT и DELETE обычным браузером не обойтись. 
+
+Не переживай: чтобы отправлять любые HTTP запросы, можно воспользоваться программой Postman. Скачать её можно <a href="https://www.getpostman.com/downloads/" rel="nofollow" target="_blank">отсюда</a>.
+
+После скачивания и установки, приступаем к тестированию нашего приложения. 
+
+Для этого открываем программу и создаем новый запрос: 
+<img data-max-width="850" alt="Обзор REST. Часть 3: создание RESTful сервиса на Spring Boot - 9" src="https://cdn.javarush.com/images/article/884ef307-d1f8-41c8-9e09-5341b40e2c1d//original.jpeg">Нажимаем кнопку New в левом верхнем углу. 
+
+Далее выбираем Request: 
+<img data-max-width="850" alt="Обзор REST. Часть 3: создание RESTful сервиса на Spring Boot - 10" src="https://cdn.javarush.com/images/article/3db4d6b9-0919-470a-b200-472ae84b1d8d//original.jpeg">Далее задаем ему имя и сохраняем его. 
+
+Попробуем теперь отправить POST запрос на сервер и создать первого клиента: 
+<img data-max-width="1024" alt="Обзор REST. Часть 3: создание RESTful сервиса на Spring Boot - 11" src="https://cdn.javarush.com/images/article/f41989fa-ee14-41dd-8858-0f87f53bd129//original.jpeg">Создаем таким образом несколько клиентов. Затем меняем тип запроса на GET и отправляем его на сервер: 
+<img data-max-width="850" alt="Обзор REST. Часть 3: создание RESTful сервиса на Spring Boot - 12" src="https://cdn.javarush.com/images/article/08fd8b61-ec59-47bd-9619-15cd2b49edc8//original.jpeg"><h2>Общие итоги</h2>Поздравляю: мы рассмотрели довольно тему REST. Весь материал получился объемным, но, надеемся, полезным для тебя: 
+<ol>
+<li><p>Мы узнали, что такое REST.</p></li>
+<li><p>Познакомились с историей возникновения REST.</p></li>
+<li><p>Поговорили об ограничениях и принципах данного архитектурного стиля:</p>
+<ul>
+<li>приведение архитектуры к модели клиент-сервер;</li>
+<li>отсутствие состояния;</li>
+<li>кэширование;</li>
+<li>единообразие интерфейса;</li>
+<li>слои;</li>
+<li>код по требованию (необязательное ограничение).</li>
+</ul></li>
+<li><p>Разобрали преимущества которые дает REST</p></li>
+<li><p>Подробно рассмотрели, как сервер и клиент взаимодействуют друг с другом по HTTP протоколу.</p></li>
+<li><p>Поближе познакомились с запросами и ответами. Разобрали их составные части. </p></li>
+<li><p>Наконец, мы перешли к практике и написали свое небольшое RESTful приложение на Spring Boot. И даже научились его тестировать с помощью программы Postman. </p></li>
+
+</ol>Фуух. Вышло объемно, но, тем не менее есть чем заняться, в качестве домашнего задания. 
+
+<div class="email-subscription"><iframe frameborder="0" src="https://secure.esputnik.com.ua/4Q0Ef6d2SOs" width="100%" height="200" scrolling="no"></iframe></div><h2>Домашнее задание</h2>Попробуй сделать следующее: 
+<ol>
+<li>Следуя описанию выше, создай самостоятельно Spring Boot проект и реализуй в нем ту же логику, что и в лекции. Повтори все 1 в 1.</li>
+<li>Запусти. приложение.</li>
+<li>Скачай и настрой Postman (либо любой другой инструмент для отправки запросов, хоть curl).</li>
+<li>Протестируй запросы POST и GET так же, как было указано в лекции. </li>
+<li>Протестируй запросы PUT и DELETE самостоятельно.
+</li></ol>
+<a href="https://javarush.com/groups/posts/2486-obzor-rest-chastjh-1-chto-takoe-rest" target="_blank">Часть 1: что такое REST</a>
+<a href="https://javarush.com/groups/posts/2487-obzor-rest-chastjh-2-kommunikacija-mezhdu-klientom-i-serverom-" target="_blank">Часть 2: коммуникация между клиентом и сервером</a>

@@ -1,0 +1,347 @@
+Исключения в Java: перехват и обработка
+<p>----------------------------------------</p>
+Привет! Не хочется тебе об этом говорить, но огромная часть работы программиста — это работа с ошибками. Причем чаще всего — со своими собственными.  Так уж сложилось, что не бывает людей, которые не допускают ошибок. И программ таких тоже не бывает ...
+<p>----------------------------------------</p>
+Привет! Не хочется тебе об этом говорить, но огромная часть работы программиста — это работа с ошибками. Причем чаще всего — со своими собственными. 
+
+Так уж сложилось, что не бывает людей, которые не допускают ошибок. И программ таких тоже не бывает. Конечно, главное при работе над ошибкой — понять ее причину. А причин таких в программе может быть целая куча. 
+
+В один прекрасный момент перед создателями Java встал вопрос: что делать с этими самыми потенциальными ошибками в программах? Избежать их полностью — нереально. Программисты могут понаписать такого, что невозможно даже представить :) 
+
+Значит, надо заложить в язык механизм работы с ошибками. Иными словами, если уж в программе произошла какая-то ошибка, нужен сценарий для дальнейшей работы. Что именно программа должна делать при возникновении ошибки? 
+
+Сегодня мы познакомимся с этим механизмом. И называется он “Исключения” (<span class="text-bold">Exceptions</span>). 
+<h2>Что такое исключение в Java</h2><span class="text-bold">Исключение — некая исключительная, незапланированная ситуация, которая произошла при работе программы. </span>
+
+Примеров исключений в Java может быть много. Например, ты написал код, который считывает текст из файла и выводит в консоль первую строку. 
+
+<pre class="lang-java line-numbers"><code>
+public class Main { 
+
+   public static void main(String[] args) throws IOException { 
+       BufferedReader reader = new BufferedReader(new FileReader("C:\\Users\\Username\\Desktop\\test.txt")); 
+       String firstString = reader.readLine(); 
+       System.out.println(firstString); 
+   } 
+} 
+</code></pre>
+Но такого файла не существует! 
+ 
+Результатом работы программы будет исключение — <code>FileNotFoundException</code>. 
+
+Вывод: 
+
+<pre><code>
+Exception in thread "main" java.io.FileNotFoundException: C:\Users\Username\Desktop\test.txt (Системе не удается найти указанный путь)
+</code></pre>
+Каждое исключение представлено в Java отдельным классом. 
+
+Все классы исключений происходят от общего “предка” — родительского класса <code>Throwable</code>. 
+
+Название класса-исключения обычно коротко отображает причину его возникновения:
+<ul>
+<li><code>FileNotFoundException</code> (файл не найден) </li>
+<li><code>ArithmeticException</code> (исключение при выполнении математической операции) </li>
+<li><code>ArrayIndexOutOfBoundsException</code> (указан номер ячейки массива за пределами его длины). Например, если попытаться вывести в консоль ячейку array[23] для массива array длиной 10. </li>
+</ul>Всего таких классов в Java почти 400 штук! Зачем так много? Именно для того, чтобы программистам было удобнее с ними работать. 
+
+Представь себе: ты написал программу, и она при работе выдает исключение, которое выглядит вот так: 
+
+<pre class="lang-java line-numbers"><code>
+Exception in thread "main"
+</code></pre> 
+Э-э-э-м :/ Ничего не понятно. Что за ошибка, откуда взялась — неясно. Никакой полезной информации нет.  
+
+А вот благодаря такому разнообразию классов программист получает для себя главное — тип ошибки и ее вероятную причину, которая заложена в названии класса. 
+
+Ведь совсем другое дело увидеть в консоли: 
+
+<pre class="lang-java line-numbers"><code>
+Exception in thread "main" java.io.FileNotFoundException: C:\Users\Username\Desktop\test.txt (Системе не удается найти указанный путь)
+</code></pre>  
+Сразу становится понятно, в чем может быть дело и “в какую сторону копать” для решения проблемы! 
+
+Исключения, как и любые экземпляры классов, являются объектами.
+<h2>Перехват и обработка исключений</h2>Для работы с исключениями в Java существуют специальные блоки кода: <code>try</code>, <code>catch</code> и <code>finally</code>.
+<img data-id="25a28599-f523-4ced-a3f9-ec4489acc6ed" data-max-width="850" alt="Исключения: перехват и обработка - 2" src="https://cdn.javarush.com/images/article/25a28599-f523-4ced-a3f9-ec4489acc6ed/1024.jpeg">Код, в котором программист ожидает возникновения исключений, помещается в блок <code>try</code>. Это не значит, что исключение в этом месте обязательно произойдет. Это значит, что оно может там произойти, и программист в курсе этого. 
+
+Тип ошибки, который ты ожидаешь получить, помещается в блок <code>catch</code> (“перехват”). Сюда же помещается весь код, который нужно выполнить, если исключение произойдет. 
+
+Вот пример: 
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) throws IOException { 
+   try { 
+       BufferedReader reader = new BufferedReader(new FileReader("C:\\Users\\Username\\Desktop\\test.txt")); 
+
+       String firstString = reader.readLine(); 
+       System.out.println(firstString); 
+   } catch (FileNotFoundException e) { 
+ 
+       System.out.println("Ошибка! Файл не найден!"); 
+   } 
+}
+</code></pre>
+Вывод: 
+
+<pre><code>
+Ошибка! Файл не найден!
+</code></pre>
+Мы поместили наш код в два блока. В первом блоке мы ожидаем, что может произойти ошибка “Файл не найден”. Это блок <code>try</code>. 
+
+Во втором — указываем программе что делать, если произошла ошибка. Причем ошибка конкретного вида — <code>FileNotFoundException</code>. Если мы передадим в скобки блока <code>catch</code> другой класс исключения, оно не будет перехвачено. 
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) throws IOException { 
+   try { 
+       BufferedReader reader = new BufferedReader(new FileReader("C:\\Users\\Username\\Desktop\\test.txt")); 
+       String firstString = reader.readLine(); 
+       System.out.println(firstString); 
+   } catch (ArithmeticException e) { 
+ 
+       System.out.println("Ошибка! Файл не найден!"); 
+   } 
+} 
+</code></pre>
+Вывод: 
+
+<pre><code>
+Exception in thread "main" java.io.FileNotFoundException: C:\Users\Username\Desktop\test.txt (Системе не удается найти указанный путь)
+</code></pre> 
+Код в блоке <code>catch</code> не отработал, потому что мы “настроили” этот блок на перехват <code>ArithmeticException</code>, а код в блоке <span class="text-bold"><code>try</code></span> выбросил другой тип — <code>FileNotFoundException</code>. Для <code>FileNotFoundException</code> мы не написали сценарий, поэтому программа вывела в консоль ту информацию, которая выводится по умолчанию для <code>FileNotFoundException</code>. 
+
+Здесь тебе нужно обратить внимание на 3 вещи. 
+
+<span class="text-bold">Первое.</span>
+
+Как только в какой-то строчке кода в блоке try возникнет исключение, код после нее уже не будет выполнен. Выполнение программы сразу “перепрыгнет” в блок <code>catch</code>. 
+
+Например: 
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) { 
+   try { 
+       System.out.println("Делим число на ноль"); 
+       System.out.println(366/0);//в этой строчке кода будет выброшено исключение 
+
+       System.out.println("Этот"); 
+       System.out.println("код"); 
+       System.out.println("не"); 
+       System.out.println("будет"); 
+       System.out.println("выполнен!"); 
+
+   } catch (ArithmeticException e) { 
+
+       System.out.println("Программа перепрыгнула в блок catch!"); 
+       System.out.println("Ошибка! Нельзя делить на ноль!"); 
+   } 
+} 
+</code></pre>
+Вывод: 
+
+<pre><code>
+Делим число на ноль 
+Программа перепрыгнула в блок catch! 
+Ошибка! Нельзя делить на ноль! 
+</code></pre>
+В блоке <code>try</code> во второй строчке мы попытались разделить число на 0, в результате чего возникло исключение <code>ArithmeticException</code>. 
+
+После этого строки 6-10 блока <code>try</code> выполнены уже не будут. Как мы и говорили, программа сразу начала выполнять блок <code>catch</code>. 
+
+<span class="text-bold">Второе.</span> 
+
+Блоков <code>catch</code> может быть несколько. 
+
+Если код в блоке <code>try</code> может выбросить не один, а несколько видов исключений, для каждого из них можно написать свой блок <code>catch</code>. 
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) throws IOException { 
+   try { 
+       BufferedReader reader = new BufferedReader(new FileReader("C:\\Users\\Username\\Desktop\\test.txt")); 
+
+       System.out.println(366/0); 
+       String firstString = reader.readLine(); 
+       System.out.println(firstString); 
+   } catch (FileNotFoundException e) { 
+
+       System.out.println("Ошибка! Файл не найден!"); 
+
+   } catch (ArithmeticException e) { 
+
+       System.out.println("Ошибка! Деление на 0!"); 
+
+   } 
+} 
+</code></pre>
+В этом примере мы написали два блока <code>catch</code>. Если в блоке <code>try</code> произойдет <code>FileNotFoundException</code>, будет выполнен первый блок <code>catch</code>. 
+
+Если произойдет <code>ArithmeticException</code>, выполнится второй. 
+
+Блоков <code>catch</code> ты можешь написать хоть 50. Но, конечно, лучше не писать код, который может выбросить 50 разных видов ошибок :) 
+
+<span class="text-bold">Третье.</span> 
+
+Откуда тебе знать, какие исключения может выбросить твой код? 
+ 
+Ну, про некоторые ты, конечно, можешь догадываться, но держать все в голове невозможно. Поэтому компилятор Java знает о самых распространенных исключениях и знает, в каких ситуациях они могут возникнуть. 
+
+Например, если ты написал код и компилятор знает, что при его работе могут возникнуть 2 вида исключений, твой код не скомпилируется, пока ты их не обработаешь. Примеры этого мы увидим ниже. 
+
+Теперь что касается обработки исключений. Существует 2 способа их обработки. 
+ 
+С первым мы уже познакомились — метод может обработать исключение самостоятельно в блоке <code>catch()</code>. 
+
+Есть и второй вариант — метод может выбросить исключение вверх по стеку вызовов. 
+
+Что это значит?
+
+Например, у нас в классе есть метод — все тот же <code>printFirstString()</code>, который считывает файл и выводит в консоль его первую строку: 
+
+<pre class="lang-java line-numbers"><code>
+public static void printFirstString(String filePath) { 
+
+   BufferedReader reader = new BufferedReader(new FileReader(filePath)); 
+   String firstString = reader.readLine(); 
+   System.out.println(firstString); 
+} 
+</code></pre>
+На текущий момент наш код не компилируется, потому что в нем есть необработанные исключения. 
+
+В строке 1 ты указываешь путь к файлу. Компилятор знает, что такой код легко может привести к <code>FileNotFoundException</code>. 
+
+В строке 3 ты считываешь текст из файла. В этом процессе легко может возникнуть <code>IOException</code> — ошибка при вводе-выводе данных (Input-Output). 
+
+Сейчас компилятор говорит тебе: <em>“Чувак, я не одобрю этот код и не скомпилирую его, пока ты не скажешь мне, что я должен делать в случае, если произойдет одно из этих исключений. А они точно могут произойти, исходя из того кода, который ты написал!”</em>. 
+
+Деваться некуда, нужно обрабатывать оба!  
+
+Первый вариант обработки нам уже знаком: надо поместить наш код в блок <code>try</code>, и добавить два блока <code>catch</code>: 
+
+<pre class="lang-java line-numbers"><code>
+public static void printFirstString(String filePath) { 
+
+   try { 
+       BufferedReader reader = new BufferedReader(new FileReader(filePath)); 
+       String firstString = reader.readLine(); 
+       System.out.println(firstString); 
+   } catch (FileNotFoundException e) { 
+       System.out.println("Ошибка, файл не найден!"); 
+       e.printStackTrace(); 
+   } catch (IOException e) { 
+       System.out.println("Ошибка при вводе/выводе данных из файла!"); 
+       e.printStackTrace(); 
+   } 
+}
+</code></pre> 
+Но это не единственный вариант. 
+
+Мы можем не писать сценарий для ошибки внутри метода, и просто пробросить исключение наверх. 
+
+Это делается с помощью ключевого слова <code>throws</code>, которое пишется в объявлении метода: 
+
+<pre class="lang-java line-numbers"><code>
+public static void printFirstString(String filePath) throws FileNotFoundException, IOException { 
+   BufferedReader reader = new BufferedReader(new FileReader(filePath)); 
+   String firstString = reader.readLine(); 
+   System.out.println(firstString); 
+} 
+</code></pre>
+После слова <code>throws</code> мы через запятую перечисляем все виды исключений, которые этот метод может выбросить при работе. 
+
+Зачем это делается? 
+
+Теперь, если кто-то в программе захочет вызвать метод <code>printFirstString()</code>, он должен будет сам реализовать обработку исключений. К примеру, в другой части программы кто-то из твоих коллег написал метод, внутри которого вызывает твой метод <code>printFirstString()</code>: 
+
+<pre class="lang-java line-numbers"><code>
+public static void yourColleagueMethod() { 
+
+   //...метод твоего коллеги что-то делает 
+
+   //...и в один момент вызывает твой метод printFirstString() c нужным ему файлом 
+   printFirstString("C:\\Users\\Евгений\\Desktop\\testFile.txt"); 
+}
+</code></pre> 
+Ошибка, код не компилируется! 
+
+В методе <code>printFirstString()</code> мы не написали сценарий обработки ошибок. Поэтому задача ложится на плечи тех, кто будет этот метод использовать. 
+
+То есть перед методом <code>yourColleagueMethod()</code> теперь стоят те же 2 варианта: он должен или обработать оба исключения, которые ему “прилетели”, с помощью <code>try-catch</code>, или пробросить их дальше. 
+
+<pre class="lang-java line-numbers"><code>
+public static void yourColleagueMethod() throws FileNotFoundException, IOException { 
+   //...метод что-то делает 
+
+   //...и в один момент вызывает твой метод printFirstString() c нужным ему файлом 
+   printFirstString("C:\\Users\\Евгений\\Desktop\\testFile.txt"); 
+} 
+</code></pre>
+Во втором случае обработка ляжет на плечи следующего по стэку метода — того, который будет вызывать <code>yourColleagueMethod()</code>.  
+
+Вот поэтому такой механизм называется “пробрасыванием исключения наверх”, или “передачей наверх”. 
+Когда ты пробрасываешь исключения наверх с помощью <code>throws</code>, код компилируется. Компилятор в этот момент как бы говорит: <em>“Окей, ладно. Твой код содержит кучу потенциальных исключений, но я, так и быть, его скомпилирую. Мы еще вернемся к этому разговору!”</em> 
+
+И когда ты где-то в программе вызываешь метод, который не обработал свои исключения, компилятор выполняет свое обещание и снова напоминает о них. 
+
+В завершении мы поговорим о блоке <code>finally</code> (простите за каламбур). Это последняя часть триумвирата обработки исключений <code>try-catch-finally</code>. 
+
+Его особенность в том, что он выполняется при любом сценарии работы программы.
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) throws IOException { 
+   try { 
+       BufferedReader reader = new BufferedReader(new FileReader("C:\\Users\\Username\\Desktop\\test.txt")); 
+
+       String firstString = reader.readLine(); 
+       System.out.println(firstString); 
+   } catch (FileNotFoundException e) { 
+       System.out.println("Ошибка! Файл не найден!"); 
+       e.printStackTrace(); 
+   } finally { 
+       System.out.println("А вот и блок finally!"); 
+   } 
+} 
+</code></pre>
+В этом примере код внутри блока <code>finally</code> выполняется в обоих случаях. 
+
+Если код в блоке <code>try</code> выполнится целиком и не выбросит исключения, в конце сработает блок <code>finally</code>. 
+
+Если код внутри <code>try</code> прервется, и программа перепрыгнет в блок <code>catch</code>, после того, как отработает код внутри <code>catch</code>, все равно будет выбран блок <code>finally</code>. 
+
+Зачем он нужен? 
+
+Его главное назначение — выполнить обязательную часть кода; ту часть, которая должна быть выполнена независимо от обстоятельств. 
+
+Например, в нем часто освобождают какие-то используемые программой ресурсы. 
+
+В нашем коде мы открываем поток для чтения информации из файла и передаем его в объект <code>BufferedReader</code>. 
+
+Наш <code>reader</code> нужно закрыть и освободить ресурсы. Это нужно сделать в любом случае: неважно, отработает программа как надо или вызовет исключение. 
+
+Это удобно делать в блоке <code>finally</code>: 
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) throws IOException { 
+
+   BufferedReader reader = null; 
+   try { 
+       reader = new BufferedReader(new FileReader("C:\\Users\\Username\\Desktop\\test.txt")); 
+
+       String firstString = reader.readLine(); 
+       System.out.println(firstString); 
+   } catch (FileNotFoundException e) { 
+       e.printStackTrace(); 
+   } finally { 
+       System.out.println("А вот и блок finally!"); 
+       if (reader != null) { 
+           reader.close(); 
+       } 
+   } 
+} 
+</code></pre>
+Теперь мы точно уверены, что позаботились о занятых ресурсах независимо от того, что произойдет при работе программы :) 
+
+Это еще не все, что тебе нужно знать об исключениях. 
+
+Обработка ошибок — очень важная тема в программировании: ей посвящена не одна статья. 
+
+На следующем занятии мы узнаем, какие бывают виды исключений и как создать свое собственное исключение:) До встречи! 

@@ -1,0 +1,321 @@
+Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 4
+<p>----------------------------------------</p>
+Всем привет, сегодня я продолжаю разбор 250+ вопросов с собеседований на Java-разработчика. 29. Можно ли в конструкторе использовать return? Можно, но без возвращаемого значения справа от return. То есть...
+<p>----------------------------------------</p>
+Всем привет, сегодня я продолжаю разбор <a href="https://dou.ua/lenta/articles/interview-questions-java-developer/" rel="nofollow" target="_blank">250+ вопросов</a> с собеседований на Java-разработчика.<img data-max-width="800" data-id="fb5a6049-00b4-4c5c-bb67-590e501d6e33" src="https://cdn.javarush.com/images/article/fb5a6049-00b4-4c5c-bb67-590e501d6e33/800.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 4 - 1">Предыдущие части разбора: <a href="https://javarush.com/groups/posts/3243-razbor-voprosov-i-otvetov-na-sobesedovanii-chastjh-1" target="_blank">первая</a>, <a href="https://javarush.com/groups/posts/3252-razbor-voprosov-i-otvetov-na-sobesedovanii-chastjh-2" target="_blank">вторая</a>, <a href="https://javarush.com/groups/posts/3273-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-3" target="_blank">третья</a>. 
+ 
+Итак, продолжим.<h4>29. Можно ли в конструкторе использовать return?</h4>Можно, но без возвращаемого значения справа от <span class="code">return</span>. То есть можно использовать <span class="code">return;</span> как вспомогательную конструкцию при вычислениях в конструкторе, чтобы срочно закончить (прервать) выполнение дальнейшего кода и завершить инициализацию объекта. 
+
+Например, у нас есть класс <span class="code">Cat</span>, и если <span class="code">Cat</span> бездомный — <span class="code">isHomeless = true</span>, нам нужно закончить инициализацию и не заполнять другие поля (ведь они нам неизвестны, так как котик бездомный):  
+
+<pre class="language-java line-numbers"><code>
+public Cat(int age, String name, boolean isHomeless) {
+   if (isHomeless){
+       this.isHomeless = isHomeless;
+       return;
+   }
+   this.isHomeless = isHomeless;
+   this.age = age;
+   this.name = name;
+}
+</code></pre>
+ Но если говорить о конкретных значениях, конструктор не может использовать return для возврата какого-то значения, потому что:<ul>
+
+<li>при объявлении конструктора у вас не будет ничего похожего на возвращаемый тип;</li>
+<li>как правило, конструктор неявно вызывается во время создания экземпляра;</li>
+<li>конструктор — это не метод: это отдельный механизм, единственная цель которого — инициализировать переменные экземпляра, а именно созданием объекта занимается оператор <span class="code">new</span>.</li>
+
+ </ul><img data-max-width="512" data-id="ead1f587-8c0c-4a53-8d8b-cc1175e12cd0" src="https://cdn.javarush.com/images/article/ead1f587-8c0c-4a53-8d8b-cc1175e12cd0/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 4 - 2"><h4>30. Можно ли из конструктора бросить исключение?</h4>С исключениями конструкторы работают точно так же, как и методы.
+
+И если методы позволяют нам пробрасывать исключения, прописывая в заголовке метода <span class="code">throws &lt;ТипИсключения&gt;</span>, то и конструктор позволяет нам это делать, и так же при наследовании и определении конструктора наследника мы можем расширять тип исключения. Например, IOException -&gt; Exception (но не наоборот).
+ 
+В качестве примера для пробрасывания конструктором исключения возьмем класс <span class="code">Cat</span>. Допустим, при его создании мы хотим вводить имя и возраст с консоли:
+ 
+<pre class="language-java line-numbers"><code>
+public Cat() throws IOException {
+   BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+   this.name = reader.readLine();
+   this.age = Integer.parseInt(reader.readLine());
+}
+</code></pre>
+Так как <span class="code">reader.readLine()</span> бросает исключение IOException, в заголовке мы его прописываем как возможное выбрасываемое исключение.<h4>31. Из каких элементов состоит заголовок класса? Напишите пример</h4>Говоря об элементах, составляющих заголовок класса, рассмотрим небольшую схему:<ul>
+
+<li>обязательные составляющие будут в скобках &lt;&gt;</li>
+<li>необязательные — в {} </li>
+
+</ul><span class="text-bold">{модификатор доступа класса}{статичность класса}{финальность класса}{абстрактность класса}<class>&lt;имя класса&gt;{наследование от класса Родителя} {реализация интерфейсов}</class></span>
+ 
+Итак, что мы имеем:
+
+<span class="text-bold">{модификатор доступа класса}</span> — для класса доступны лишь модификаторы <span class="code">public</span> и отсутствующий модификатор доступа, то есть <span class="code">default</span>.
+
+<span class="text-bold">{статичность класса}</span> — <span class="code">static</span> — модификатор, который указывает, что данный класс статичен, применим только к внутренним классам (классам внутри других классов).
+
+<span class="text-bold">{финальность класса}</span> — как мы помним, это модификатор <span class="code">final</span>, при наличии которого класс стает не наследуемым (пример из коробки — <span class="code">String</span>).
+
+<span class="text-bold">{абстрактность класса}</span> — модификатор — <span class="code">abstract</span>, который указывает на то, что данный класс может иметь нереализованные методы. 
+
+Этот модификатор конфликтует с модификатором <span class="code">final</span>, то есть в заголовке класса может быть только один из них, так как модификатор <span class="code">abstract</span> подразумевает, что данный класс будет унаследован и будут реализованы его абстрактные части. А <span class="code">final</span> указывает на то, что это финальная (окончательная) версия класса, и унаследован он быть не может. Собственно, одновременное использование обоих модификаторов будет абсурдным, и компилятор не даст нам этого сделать.  
+
+<span class="text-bold">&lt;class&gt;</span> — ключевое обязательное слово, которое указывает на объявление класса.
+
+<span class="text-bold">&lt;имя класса&gt;</span> — простое имя класса, которое является идентификатором конкретного Java класса. Полное имя класса состоит из полного составного имени пакета + . + простое имя класса.
+
+<span class="text-bold">{наследование от класса Родителя}</span> — указание класса родителя (если таковой имеется) с помощью ключевого слова <span class="code">extends</span>. Например, .. <span class="code">extends ParentClass</span>.
+
+<span class="text-bold">{реализация интерфейсов}</span> — указание интерфейсов, которые данный класс реализует (если они имеются) с помощью ключевого слова <span class="code">implements</span>. Например: … <span class="code">implements FirstInterface, SecondInterface</span>…
+
+Ну и в качестве примера заголовка класса рассмотрим заголовок класса <span class="code">Lion</span>, который наследуется от <span class="code">Cat</span> и реализует интерфейс <span class="code">WildAnimal</span>:
+
+<pre class="language-java line-numbers"><code>
+public final class Lion extends Cat implements WildAnimal
+</code></pre><img data-max-width="512" data-id="6a753813-e97a-4a0d-a22c-78801a3f3064" src="https://cdn.javarush.com/images/article/6a753813-e97a-4a0d-a22c-78801a3f3064/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 4 - 3"><h4>32. Из каких элементов состоит заголовок метода? Напишите пример</h4>Опять же, при рассмотрении элементов, из которых состоит заголовок метода, рассмотрим небольшую схему, в которой:<ul>
+
+<li>обязательные составляющие —в скобках &lt;&gt;</li>
+<li>необязательные — в {}</li>
+ 
+</ul><span class="text-bold">{модификатор доступа}{статичность класса}{абстрактность метода}{финальность метода}{модификатор синхронизации} {модификатор native}&lt;возвращаемое значение&gt;&lt;имя метода&gt; &lt;(&gt; {аргументы метода} &lt;}&gt;{бросаемые исключения}</span>
+ 
+<span class="text-bold">{модификатор доступа}</span> — для метода доступны все модификаторы доступа — <span class="code">public</span>, <span class="code">protected</span>, <span class="code">default</span>, <span class="code">private</span>.
+ 
+<span class="text-bold">{статичность класса}</span> — <span class="code">static</span> — модификатор, который указывает, что данный метод статичен, то есть привязан не к объекту, а к классу.
+ 
+<span class="text-bold">{абстрактность метода}</span> — модификатор <span class="code">abstract</span>, который указывает на то, что реализация (тело) метода отсутствует. Для корректной работы также нужен модификатор <span class="code">abstract</span> у класса, в котором приведен метод. Как и в заголовке класса, данный модификатор конфликтует с модификатором <span class="code">final</span>, но помимо него конфликтует и с модификатором <span class="code">static</span>, т.к. абстрактный метод подразумевает переопределение метода в наследнике, а статические методы не переопределяются.
+ 
+<span class="text-bold">{финальность метода}</span> — <span class="code">final</span> — модификатор, указывающий на то, что данный метод нельзя переопределить.
+ 
+<span class="text-bold">{модификатор синхронизации}</span> — <span class="code">synchronized</span> — модификатор, который означает, что данный метод защищен от одновременного доступа к нему из разных потоков. Если метод не статический, он закрывается на мьютекc this объекта. Если метод статический, он закрывается на мьютекс текущего класса.
+ 
+<span class="text-bold">{модификатор native}</span> — <span class="code">native</span> — данный модификатор указывает на то, что метод написан на другом языке программирования.
+ 
+<span class="text-bold">&lt;возвращаемое значение&gt;</span> — тип значения, который должен вернуть метод. Если он не должен ничего возвращать — <span class="code">void</span>.
+ 
+<span class="text-bold">&lt;имя метода&gt;</span> — имя метода, его идентификатор его в системе.
+ 
+<span class="text-bold">{аргументы метода}</span> — аргументы (параметры), которые принимает метод: они необходимы для реализации его функционала.
+ 
+<span class="text-bold">{бросаемые исключения}</span> — <span class="code">throws ТипИсключения</span> — перечисление проверяемых исключений, которые может бросать данный метод.
+ 
+И в качестве примера заголовка метода приведу этот:
+ 
+<pre class="language-java line-numbers"><code>
+public static void main(String[] args) throws IOException
+</code></pre><h4>33. Создайте в объекте-наследнике конструктор по умолчанию, если в базовом он не определен (но определен другой конструктор)</h4>Я не до конца понимаю сам вопрос, но <span class="text-bold">возможно</span> имеется в виду, что, к примеру, в родителе у нас есть некоторый кастомный конструктор:
+ 
+<pre class="language-java line-numbers"><code>
+public Cat(int age, String name) {
+   this.age = age;
+   this.name = name;
+}
+</code></pre>
+Поэтому в классе предке нам обязательно нужно определить конструктор, который будет заполнять (вызывать) родительский конструктор:
+ 
+<pre class="language-java line-numbers"><code>
+public  class Lion extends Cat {
+ 
+   public Lion(int age, String name) {
+       super(age, name);
+   }
+}
+</code></pre><img data-max-width="512" data-id="8092d841-4560-49cc-9fe5-030bf049d02f" src="https://cdn.javarush.com/images/article/8092d841-4560-49cc-9fe5-030bf049d02f/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 4 - 4"><h4>34. Когда применяется ключевое слово this?</h4>В Java <span class="code">this</span> используется в двух разных значениях.
+ 
+1. Как ссылка на текущий объект, типа <span class="code">this.age = 9</span>. То есть <span class="code">this</span> ссылается на объект, в котором была вызвана и к которому относится код, использующий <span class="code">this</span>. Главная функция — повысить читабельность кода и избежать неоднозначности. Например, при одинаковом имени внутреннего поля класса и аргумента метода:
+ 
+<pre class="language-java line-numbers"><code>
+public void setName(String name) {
+   this.name = name;
+}
+</code></pre>
+То есть, <span class="code">this.name</span> — поле объекта
+<span class="code">name</span> — аргумент метода
+ 
+Ссылка <span class="code">this</span> не может использоваться в статических методах.
+ 
+2. <span class="code">this</span> можно применять в конструкторе в форме вызова метода, типа <span class="code">this(value)</span>. В таком случае это будет вызов другого конструктора этого же класса. 
+ 
+Словом, можно вызвать сразу два конструктора при создании объекта:
+ 
+<pre class="language-java line-numbers"><code>
+public Cat(int age, String name) {
+   this(name);
+   this.age = age;
+}
+ 
+public Cat(String name) {
+   this.name = name;
+}
+</code></pre>
+При создании объекта <span class="code">Cat</span> и вызове первого конструктора будут вызваны оба поля объекта и успешно проинициализированы.
+ 
+Есть пара нюансов:<ol>
+ 
+<li><span class="code">this()</span> работает только в конструкторе.</li>
+<li>Ссылка на другой конструктор должна находиться в первой строке блока (тела) конструктора. Поэтому в одном конструкторе более одного (другого) конструктора данного класса вызвать нельзя.</li>
+
+</ol><img data-max-width="512" data-id="78849627-c9f8-4d68-aba6-6ad74841ea42" src="https://cdn.javarush.com/images/article/78849627-c9f8-4d68-aba6-6ad74841ea42/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 4 - 5">Больше примеров — <a href="https://javarush.com/groups/posts/608-kljuchevoe-slovo-this-v-primerakh" target="_blank">в этой статье</a>.<h4>35. Что такое инициализатор?</h4>Насколько я понимаю, в данном вопросе речь идет об обычных и статистических блоках инициализации.
+ 
+Для начала давайте вспомним, что такое инициализация. 
+ 
+Инициализация — это создание, активация, подготовка к работе, определение параметров. Приведение программы или компонента в состояние готовности к использованию.
+ 
+Как вы помните, во время создания объекта переменную класса можно инициализировать непосредственно при объявлении:
+ 
+<pre class="language-java line-numbers"><code>
+class Cat {
+   private int age = 9;
+   private  String name = "Tom";
+</code></pre>
+Или задавать извне через конструктор:
+ 
+<pre class="language-java line-numbers"><code>
+class Cat {
+   private int age;
+   private  String name;
+ 
+   public Cat(int age, String name) {
+       this.age = age;
+       this.name = name;
+   }
+</code></pre>
+Но есть и ещё один способ: задавать внутреннюю переменную объекта через блок инициализации, который имеет вид фигурных скобок <span class="code">{ }</span> внутри класса, без имени (как у метода или конструктора):
+ 
+<pre class="language-java line-numbers"><code>
+class Cat {
+   private int age;
+   private  String name;
+ 
+   {
+       age = 10;
+       name = "Tom";
+   }
+</code></pre>
+То есть блок инициализации — это часть кода, которая загружается при создании объекта. 
+ 
+Как правило такие блоки используются для выполнения некоторых сложных вычислений, которые необходимы при загрузке класса. Результаты этих вычислений можно задавать как значения для переменных.
+ 
+Также помимо обычных блоков инициализации существуют статические, которые выглядят так же, но перед фигурной скобкой имеют ключевое слово <span class="code">static</span>:
+ 
+<pre class="language-java line-numbers"><code>
+class Cat {
+   private static int age;
+   private static String name;
+ 
+   static{
+       age = 10;
+       name = "Tom";
+   }
+</code></pre>
+Этот блок в точности такой же, как и предыдущий. Но если обычный срабатывает при инициализации каждого объекта, то статический отработает лишь однажды, при загрузке класса. 
+ 
+В таком блоке, как правило, тоже производят некоторые сложные вычисления для последующей инициализации статических переменных класса. Для статического блока действуют те же ограничения, что и для статических методов: в нем нельзя использовать не статические данные, как и ссылку на текущий объект — <span class="code">this</span>.<img data-max-width="512" data-id="07557757-4771-4831-9841-5862bdccac7c" src="https://cdn.javarush.com/images/article/07557757-4771-4831-9841-5862bdccac7c/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 4 - 6">Далее мы с вами можем увидеть порядок инициализации класса (вместе с его предком) для лучшего понимания момента, когда срабатывают блоки инициализации.<h4>36. Для наследования класса public class Child extends Parent напишите порядок инициализации объекта</h4>При загрузке класса Child будет следующий порядок инициализации:<ol>
+
+<li>Статические поля класса <span class="code">Parent</span>.</li>
+<li>Статический блок инициализации класса <span class="code">Parent</span>.</li>
+<li>Статические поля класса <span class="code">Сhild</span>.</li>
+<li>Статический блок инициализации класса <span class="code">Child</span>.</li>
+<li>Не статические поля класса <span class="code">Parent</span>.</li>
+<li>Не статический блок инициализации класса <span class="code">Parent</span>.</li>
+<li>Конструктор класса <span class="code">Parent</span>.</li>
+<li>Не статические поля класса <span class="code">Сhild</span>.</li>
+<li>Не статический блок инициализации класса <span class="code">Сhild</span>.</li>
+<li>Конструктор класса <span class="code">Сhild</span>.</li>
+ 
+</ol><img data-max-width="512" data-id="cd1e1361-4607-447d-bf06-18b4b1e3349c" src="https://cdn.javarush.com/images/article/cd1e1361-4607-447d-bf06-18b4b1e3349c/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 4 - 7"><a href="https://javarush.com/groups/posts/2137-porjadok-deystviy-pri-sozdanii-obhhekta" target="_blank">Вот</a> небольшая статья, которая на практике объясняет порядок инициализации.<h4>37. Какие вы знаете отношения между классами (объектами)?</h4>Между классами в Java есть два вида отношений:<ul>
+
+<li>отношения <span class="text-bold">IS-A</span></li>
+
+</ul>Принцип IS-A в ООП основан на наследовании классов или реализации интерфейсов. К примеру, если класс <span class="code">Lion</span> наследует <span class="code">Cat</span>, мы говорим, что <span class="code">Lion</span> является <span class="code">Cat</span>:
+
+<pre class="language-java line-numbers"><code>
+Lion IS-A Cat
+</code></pre>
+(но не всякий <span class="code">Cat</span> является <span class="code">Lion</span>-ом)
+ 
+Точно такая же ситуация с интерфейсами. Если класс <span class="code">Lion</span> реализует интерфейс <span class="code">WildAnimal</span>, то они также находятся в отношении:
+
+<pre class="language-java line-numbers"><code>
+Lion IS-A WildAnimal
+</code></pre>
+<ul><li>отношения <span class="text-bold">HAS-A</span></li>
+
+</ul>Данный тип отношений основан на использовании классов другими классами, ещё называемый “ассоциация”. 
+
+Ассоциация — это один класс ссылается на другой класс (или даже друг на друга).
+
+Например, класс <span class="code">Car</span> может ссылаться на класс <span class="code">Passenger</span>, и это будет отношение:
+
+<pre class="language-java line-numbers"><code>
+Car HAS-A Passenger
+</code></pre>
+И наоборот: если <span class="code">Passenger</span> имеет ссылку на <span class="code">Car</span>, то это будет отношение:
+
+<pre class="language-java line-numbers"><code>
+Passenger HAS-A Car
+</code></pre><h4>38. Какие ассоциативные связи между объектами вы знаете?</h4>Агрегация и композиция — не что иное, как частные случаи ассоциации. 
+ 
+<span class="text-bold">Агрегация</span> — отношение, когда один объект является частью другого. Например, пассажир может находиться в машине. Также пассажиров может быть несколько или не быть вовсе (если мы говорим про теслу, то и водитель не обязателен).
+ 
+Например:
+ 
+<pre class="language-java line-numbers"><code>
+public class Car {
+   private List<passenger> passengers = new ArrayList&lt;&gt;();
+ 
+ void setPassenger(Passenger passenger) {
+     passengers.add(passenger);
+ }
+ 
+   void move() {
+       for (Passenger passenger : passengers) {
+           System.out.println("Перевозка пассажира - " + passenger.toString());
+       }
+       passengers.clear();
+   }
+}
+</passenger></code></pre>
+ То есть нам не важно количество пассажиров (и есть ли они вообще): от этого функционал класса <span class="code">Car</span> не зависит.
+ 
+Также агрегация подразумевает, что при использовании объекта другим объектом первый можно использовать еще в других объектах.
+ 
+Например, один и тот же студент может входить и в кружок вязания, и в музыкальную группу рокеров, и при этом ходить в группу изучающих английских. Как вы поняли, агрегация — это более свободные ассоциативные отношения классов.<img data-max-width="512" data-id="aaf53bfd-0d45-4323-b990-896b7a44840e" src="https://cdn.javarush.com/images/article/aaf53bfd-0d45-4323-b990-896b7a44840e/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 4 - 8"><span class="text-bold">Композиция</span> — еще более жесткое отношение, когда объект не только является частью другого объекта, но и работа другого объекта очень зависит от первого. 
+ 
+Например, двигатель у машины. Хоть двигатель и может быть без машины, но вне ее он бесполезен. 
+ 
+Ну и машина не может работать без двигателя:
+ 
+<pre class="language-java line-numbers"><code>
+public class Car {
+   private Engine engine;
+ 
+   public Car(Engine engine) {
+       this.engine = engine;
+   }
+ 
+   void startMoving() {
+       engine.start();
+           ...
+   }
+</code></pre>
+Также композиция подразумевает, что при использовании объекта другим объектом первый не может принадлежать кому-либо другому.  Если вернуться к нашему примеру, двигатель может принадлежать только одной машине, но никак не двум или более одновременно.
+ 
+На этом сегодня, пожалуй, и сделаем остановочку.<img data-max-width="512" data-id="6eb0e98a-afcf-40cd-af59-df2767075812" src="https://cdn.javarush.com/images/article/6eb0e98a-afcf-40cd-af59-df2767075812/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 4 - 9"><table><tbody>
+<tr><th>
+Другие материалы серии:
+</th></tr><tr><td>
+<ul><li><a href="https://javarush.com/groups/posts/3243-razbor-voprosov-i-otvetov-na-sobesedovanii-chastjh-1" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 1</a></li>
+<li><a href="https://javarush.com/groups/posts/3252-razbor-voprosov-i-otvetov-na-sobesedovanii-chastjh-2" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 2</a></li>
+<li><a href="https://javarush.com/groups/posts/3273-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-3" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 3</a></li>
+<li><a href="https://javarush.com/groups/posts/3296-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-5" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 5</a></li>
+<li><a href="https://javarush.com/groups/posts/3341-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-6" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 6</a></li>
+<li><a href="https://javarush.com/groups/posts/3386-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-7" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 7</a></li>
+<li><a href="https://javarush.com/groups/posts/3415-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-8" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 8</a></li>
+<li><a href="https://javarush.com/groups/posts/3434-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-9" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 9</a></li>
+<li><a href="https://javarush.com/groups/posts/3452-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-10" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 10</a></li>
+<li><a href="https://javarush.com/groups/posts/3464-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-11" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 11</a></li>
+<li><a href="https://javarush.com/groups/posts/3475-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-12" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 12</a></li>
+<li><a href="https://javarush.com/groups/posts/3507-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-13" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 13</a></li>
+<li><a href="https://javarush.com/groups/posts/3558-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-14" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 14</a></li>
+<li><a href="https://javarush.com/groups/posts/3592-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-15" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 15</a></li>
+<li><a href="https://javarush.com/groups/posts/3621-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-16" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 16</a></li>
+</ul>
+</td></tr></tbody></table>

@@ -1,0 +1,264 @@
+Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 15
+<p>----------------------------------------</p>
+Привет-привет! Как много нужно знать Java разработчику? Можно долго спорить по этому вопросу, но правда в том, что на собеседовании вас будут гонять по теории в...
+<p>----------------------------------------</p>
+Привет-привет!
+ 
+Как много нужно знать Java разработчику? Можно долго спорить по этому вопросу, но правда в том, что на собеседовании вас будут гонять по теории в полный рост. Даже по тем областям знаний, которым вам не доведется воспользоваться в работе.
+
+<img data-max-width="800" data-id="71f4a571-2d7b-416e-95c4-be2e18eefa10" src="https://cdn.javarush.com/images/article/71f4a571-2d7b-416e-95c4-be2e18eefa10/800.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 15 - 1">Ну а если вы новичок, по вашим теоретическим знаниям пройдутся очень серьезно. Раз опыта и больших достижений еще нет, остается только проверить прочность базы знаний. 
+ 
+Сегодня мы продолжим заниматься укреплением этой самой базы, разбирая самые популярные вопросы на собеседованиях для Java-разработчиков. 
+ 
+Полетели!
+<h3>Java Core</h3><h4>9. В чем разница между статическим и динамическим связыванием в Java?</h4>На данный вопрос я уже ответил в <a href="https://javarush.com/groups/posts/3252-razbor-voprosov-i-otvetov-na-sobesedovanii-chastjh-2" target="_blank">этой статье</a> в 18 вопросе про статический и динамический полиморфизм, советую ознакомиться.
+<h4>10. Можно ли использовать private или protected переменные в interface?</h4>Нет, нельзя. Так как когда вы объявляете интерфейс, компилятор Java автоматически добавляет ключевые слова <span class="code">public</span> и <span class="code">abstract</span> перед методами интерфейса и ключевые слова <span class="code">public</span>, <span class="code">static</span> и <span class="code">final</span> перед членами данных.
+ 
+Собственно, если вы добавите <span class="code">private</span> или <span class="code">protected</span>, возникнет конфликт, и компилятор будет ругаться на модификатор доступа сообщением: “Modifier ‘&lt;выбранный модификатор&gt;’ not allowed here”
+ 
+Почему же компилятор добавляет <span class="code">public</span>, <span class="code">static</span> и <span class="code">final</span> переменным в интерфейсе?
+ 
+Давайте разберёмся:<ul>
+
+    <li><span class="code">public</span> — интерфейс предоставляет возможность клиенту взаимодействовать с объектом. Если бы переменные не были общедоступными, у клиентов не было бы к ним доступа.</li>
+    <li><span class="code">static</span> — интерфейсы не могут быть созданы (а точнее, их объекты), поэтому переменная статична.</li>
+    <li><span class="code">final</span> — так как интерфейс используется для достижения 100% абстракции, переменная имеет свой конечный вид (и не будет изменена).</li>
+
+</ul><h4>11. Что такое Classloader и для чего используется?</h4><span class="text-bold">Classloader</span> — или Загрузчик классов — обеспечивает загрузку классов Java.
+
+А точнее, обеспечивают загрузку его наследники — конкретные загрузчики классов, т.к. сам <span class="code">ClassLoader</span> абстрактен. 
+ 
+Каждый раз, когда загружается какой-либо .class-файл, например, после обращения к конструктору или статическому методу соответствующего класса, это действие выполняет один из наследников класса <span class="code">ClassLoader</span>.
+ 
+Есть три вида наследников:<ol>
+ 
+    <li><p><span class="text-bold">Bootstrap ClassLoader</span> — базовый загрузчик, реализован на уровне JVM и не имеет обратной связи со средой выполнения, так как является частью ядра JVM и написан в машинном коде. Данный загрузчик служит родительским элементом для всех других экземпляров ClassLoader.</p>
+ 
+В основном отвечает за загрузку внутренних классов JDK, обычно <em>rt.jar</em> и других основных библиотек, расположенных в каталоге <em>$ JAVA_HOME / jre / lib</em>. У разных платформ могут быть разные реализации этого загрузчика классов.<p></p></li>
+ 
+    <li><p><span class="text-bold">Extension Classloader</span> — загрузчик расширений, потомок класса базового загрузчика. Заботится о загрузке расширения стандартных базовых классов Java. Загружается из каталога расширений JDK, обычно — <em>$ JAVA_HOME / lib / ext</em> или любого другого каталога, упомянутого в системном свойстве java.ext.dirs (с помощью данной опции можно управлять загрузкой расширений).</p></li>
+ 
+    <li><p><span class="code">System ClassLoader</span> — системный загрузчик, реализованный на уровне JRE, который заботится о загрузке всех классов уровня приложения в JVM. Он загружает файлы, найденные в переменном окружении классов <em>-classpath</em> или <em>-cp</em> опции командной строки.</p></li>
+
+</ol><img data-max-width="512" data-id="55679f3e-baa9-4442-8715-929d8c44d598" src="https://cdn.javarush.com/images/article/55679f3e-baa9-4442-8715-929d8c44d598/original.png" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 15 - 2">Загрузчики классов — это часть среды выполнения Java. 
+
+В тот момент когда JVM запрашивает класс, загрузчик классов пытается найти класс и загрузить определение класса в среду выполнения, используя полное имя класса.
+
+Метод <span class="code">java.lang.ClassLoader.loadClass()</span> отвечает за загрузку определения класса во время выполнения. 
+
+Он пытается загрузить класс на основе полного имени. Если класс еще не загружен, он делегирует запрос загрузчику родительского класса. 
+
+Этот процесс происходит рекурсивно выглядит так:<ol>
+
+    <li><p>System Classloader пытается найти класс в своем кеше.</p><ul style="list-style: none;">
+        <li><p>1.1. Если класс найден, загрузка успешно завершена.</p></li>
+        <li><p>1.2. Если класс не найден, загрузка делегируется к Extension Classloader-у.</p></li></ul></li>
+    <li><p>Extension Classloader пытается найти класс в собственном кеше.</p><ul style="list-style: none;">
+        <li><p>2.1. Если класс найден — успешно завершена.</p></li>
+        <li><p>2.2. Если класс не найден, загрузка делегируется Bootstrap Classloader-у.</p></li></ul></li>
+    <li><p>Bootstrap Classloader пытается найти класс в собственном кеше.</p><ul style="list-style: none;">
+        <li><p>3.1. Если класс найден, загрузка успешно завершена.</p></li>
+        <li><p>3.2. Если класс не найден, базовый Bootstrap Classloader попытается его загрузить.</p></li></ul></li>
+   <li><p>Если загрузка:</p><ul style="list-style: none;">
+        <li><p>4.1. Прошла успешно — загрузка класса завершена.</p></li>
+        <li><p>4.2. Не прошла успешно — управление передается к Extension Classloader.</p></li></ul></li>
+    <li><p>5. Extension Classloader пытается загрузить класс, и если загрузка:</p><ul style="list-style: none;">
+        <li><p>5.1. Прошла успешно — загрузка класса завершена.</p></li>
+        <li><p>5.2. Не прошла успешно — управление передается к System Classloader.</p></li></ul>
+    </li><li><p>6. System Classloader пытается загрузить класс, и если загрузка:</p><ul style="list-style: none;">
+        <li><p>6.1. Прошла успешно — загрузка класса завершена.</p></li>
+        <li><p>6.2.  Не прошла успешно — генерируется исключение — ClassNotFoundException.</p></li></ul></li>
+
+</ol>Тема загрузчиков классов обширна и ею не стоит пренебрегать. Чтобы ознакомиться с ней подробнее, советую прочесть <a href="https://javarush.com/groups/posts/646-kak-proiskhodit-zagruzka-klassov-v-jvm" target="_blank">эту статью</a>, а мы не будем задерживаться и пойдем дальше.
+<h4>12. Что такое Run-Time Data Areas?</h4><span class="text-bold">Run-Time Data Ares</span> — области данных среды выполнения JVM. 
+ 
+JVM определяет некоторые области данных времени выполнения, необходимые во время выполнения программы. Одни из них создаются при запуске JVM. Другие являются локальными по отношению к потокам и создаются только при создании потока (и уничтожаются, когда поток уничтожается). 
+ 
+Области данных среды выполнения JVM выглядят так:
+<img data-max-width="512" data-id="0fd344e9-cc14-4d88-b544-2735144da82f" src="https://cdn.javarush.com/images/article/0fd344e9-cc14-4d88-b544-2735144da82f/original.png" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 15 - 3"><ul>
+
+    <li><p>PC Register — регистр ПК — локален для каждого потока и содержит адрес инструкции JVM, которую поток выполняет в данный момент.</p></li>
+    <li><p>JVM Stack — область памяти, которая используется как хранилище для локальных переменных и временных результатов. У каждого потока есть свой отдельный стек: как только поток завершается, этот стек также уничтожается. Стоит отметить, что преимуществом stack над heap является производительность, в то время как heap безусловно имеет преимущество в масштабе хранилища.</p></li>
+    <li><p>Native Method Stack — область данных для каждого потока, в которой хранятся элементы данных, аналогичные стеку JVM, для выполнения собственных (не Java) методов.</p></li>
+    <li><p>Heap — используется всеми потоками как хранилище которое содержит объекты, метаданные классов, массивы и т. д., которые создаются во время выполнения. Данная область создается при запуске JVM и уничтожается при завершении ее работы. </p></li>
+    <li><p>Method area — область метода — эта область времени выполнения общая для всех потоков и создается при запуске JVM. Он хранит структуры для каждого класса, такие как пул констант (Runtime Constant Pool — пул для хранения констант), код для конструкторов и методов, данные метода и т. д.</p></li>
+ 
+</ul><h4>13. Что такое immutable object?</h4>В <a href="https://javarush.com/groups/posts/3252-razbor-voprosov-i-otvetov-na-sobesedovanii-chastjh-2" target="_blank">данной части</a> статьи в 14 и 15 вопросе уже есть ответ на этот вопрос, поэтому ознакамливаетесь не теряя времени зря.
+<h4>14. В чем особенность класса String?</h4>Ранее в разборе мы неоднократно говорили про те или иные особенности <span class="code">String</span> (для этого был отдельный раздел). Сейчас же подведем итог по особенностям <span class="code">String</span>:<ol>
+
+    <li><p>Это самый популярный объект в Java, который применяют для разнообразных целей. По частоте использования он не уступает даже примитивным типам.</p></li>
+    <li><p>Объект данного класса можно создать без использования ключевого слова new — непосредственно через кавычки <span class="code">String str = “строка”;</span>.</p></li>
+    <li><p><span class="code">String</span> — это <span class="code">immutable</span> класс: при создании объекта данного класса его данные нельзя изменить (когда вы к некоторой строке добавляете + “другую строку”, как результат вы получите новую, третью строку). Неизменность класса String делает его потокобезопасным.</p></li>
+    <li><p>Класс <span class="code">String</span> финализирован (имеет модификатор <span class="code">final</span>), поэтому его наследование невозможно.</p></li>
+    <li><p>У <span class="code">String</span> есть свой пул строк, область памяти в heap, которая кеширует создаваемые строковые значения. <a href="https://javarush.com/groups/posts/3386-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-7" target="_blank">В этой части серии</a>, в 62 вопросе, я описывал строковой пул.</p></li>
+    <li><p>В Java присутствуют аналоги <span class="code">String</span>, также предназначенные для работы с строками — <span class="code">StringBuilder</span> и <span class="code">StringBuffer</span>, но с тем отличием, что они изменяемые. Подробнее о них вы можете почитать <a href="https://javarush.com/groups/posts/2351-znakomstvo-so-string-stringbuffer-i-stringbuilder-v-java" target="_blank">в этой статье</a>.</p></li>
+
+</ol><img data-max-width="512" data-id="2f6121e7-eaf3-41ea-956e-b0dc604d3137" src="https://cdn.javarush.com/images/article/2f6121e7-eaf3-41ea-956e-b0dc604d3137/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 15 - 4"><h4>15. Что такое ковариантность типов?</h4>Для понимания ковариантности мы рассмотрим пример.
+ 
+Предположим, у нас есть класс животного:
+ 
+<pre class="language-java line-numbers"><code>
+public class Animal {
+ void voice() {
+   System.out.println("*тишина*");
+ }
+}
+</code></pre>
+И некоторый расширяющий его класс <span class="code">Dog</span>:
+
+<pre class="language-java line-numbers"><code>
+public class Dog extends Animal {
+ 
+ @Override
+ public void voice() {
+   System.out.println("Гав, гав, гав!!!");
+ }
+}
+</code></pre>
+Как мы помним, родительскому типу мы можем без проблем присваивать объекты типа наследника:
+
+<pre class="language-java line-numbers"><code>
+Animal animal = new Dog();
+</code></pre>
+ Это у нас будет ничто иное как полиморфизм. Удобно, гибко не так ли? 
+ 
+Ну а в случае со списком животных? Сможем ли мы задать списку с дженериком <span class="code">Animal</span> список с объектами <span class="code">Dog</span>? 
+ 
+<pre class="language-java line-numbers"><code>
+List&lt;Dog&gt; dogs = new ArrayList&lt;&gt;();
+List&lt;Animal&gt; animals = dogs;
+</code></pre>
+В таком случае строка присвоения списку животных списка собак будет подчеркнута красным, т.е. компилятор не пропустит данный код.
+ 
+Несмотря на то, что вроде как это присваивание весьма логично (ведь переменной типа <span class="code">Animal</span> мы можем присвоить объект <span class="code">Dog</span>) его сделать нельзя.
+ 
+Это происходит потому, что если бы это было допустимо, в список, который изначально предназначен для <span class="code">Dog</span>, мы сможем положить объект <span class="code">Animal</span>, при этом думая, что в списке у нас только <span class="code">Dogs</span>. 
+ 
+И потом, к примеру, возьмём с помощью метода <span class="code">get()</span> объект у того списка <span class="code">dogs</span>, думая, что это собака, и вызовем у него некоторый метод объекта <span class="code">Dog</span>, которого нет у <span class="code">Animal</span>. И как вы понимаете, это невозможно — упадет ошибка. Но, к счастью, компилятор не пропускает данную логическую ошибку с присвоением списка потомков, списку родителей (и наоборот). 
+ 
+В Java возможно присвоение объектов списков лишь переменным списков с совпадающими дженериками. Это и называется инвариацией.
+ 
+Если бы могли это сделать, это называлось бы и называлось ковариацией.
+ 
+То есть, <span class="text-bold">ковариация</span> — это если бы мы могли переменной типа <span class="code">List&lt;Animal&gt;</span> задать объект типа <span class="code">ArrayList&lt;Dog&gt;</span>. 
+ 
+Получается что в Java ковариантность не поддерживается? Как бы не так!
+<img data-max-width="512" data-id="413b8861-5d64-40ee-af3c-48fd5019fb00" src="https://cdn.javarush.com/images/article/413b8861-5d64-40ee-af3c-48fd5019fb00/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 15 - 5">Но это делается своим, особым путем.
+ 
+Для этого используется конструкция <span class="code">? extends Animal</span>. Она ставится дженериком переменной, которой мы хотим задать объект списка, с дженериком потомка.
+ 
+Эта конструкция дженерика значит, что подойдёт любой тип, который является потомком типа <span class="code">Animal</span> (и тип <span class="code">Animal</span> также попадает под это обобщение).
+ 
+В свою очередь, <span class="code">Animal</span> может быть не только классом, но и интерфейсом (и пусть вас не вводит в заблуждение ключевое слово <span class="code">extends</span>).
+ 
+Наше предыдущее присваивание мы можем выполнить следующим образом:
+ 
+<pre class="language-java line-numbers"><code>
+List&lt;Dog&gt; dogs = new ArrayList&lt;&gt;();
+List&lt;? extends Animal&gt; animals = dogs;
+</code></pre>
+ В результате вы увидите в IDE, что компилятор не будет ругаться на данную конструкцию.
+ 
+Давайте проверим работоспособность данной конструкции. Предположим, у нас есть метод, который заставляет всех переданных ему животных издать звуки:
+ 
+<pre class="language-java line-numbers"><code>
+public static void animalsVoice(List&lt;? extends Animal&gt; animals) {
+ for (Animal animal : animals) {
+   animal.voice();
+ }
+}
+</code></pre>
+Передадим ему список с собаками:
+ 
+<pre class="language-java line-numbers"><code>
+List&lt;Dog&gt; dogs = new ArrayList&lt;&gt;();
+dogs.add(new Dog());
+dogs.add(new Dog());
+dogs.add(new Dog());
+animalsVoice(dogs);
+</code></pre>
+В консоли мы увидим следующий вывод:
+
+<div class="terminal">Гав, гав, гав!!!
+Гав, гав, гав!!!
+Гав, гав, гав!!!</div>
+А значит данный подход к ковариантности успешно работает.
+ 
+Отмечу, что в список с данным дженериком <span class="code">? extends Animal</span> мы не можем вставить новые данные никакого типа: ни типа <span class="code">Dog</span>, ни даже типа <span class="code">Animal</span>:
+ 
+<pre class="language-java line-numbers"><code>
+List&lt;Dog&gt; dogs = new ArrayList&lt;&gt;();
+List&lt;? extends Animal&gt; animals = dogs;
+animals.add(new Dog());
+dogs.add(new Animal());
+</code></pre>
+Собственно, в последних двух строках компилятор будет подчеркивать красным вставку объектов.
+ 
+Это связано с тем, что мы не можем быть на сто процентов уверены, список с объектами какого типа будет присвоен списку с данных дженериком <span class="code">&lt;? extends Animal&gt;</span>.
+<img data-max-width="512" data-id="62799392-36c0-4d2e-a9ad-ec23bef457ca" src="https://cdn.javarush.com/images/article/62799392-36c0-4d2e-a9ad-ec23bef457ca/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 15 - 6">Хотелось бы ещё рассказать про <span class="text-bold">контравариантность</span>, так как обычно это понятие идет всегда вместе с ковариантностью, и как правило спрашивают о них вместе.
+ 
+Это понятие — некоторая противоположность ковариантности, так как для данной конструкции используется тип наследника.
+ 
+Предположим, нам нужен список, которому можно будет присвоить список с типом объектов, не являющихся предками объекта <span class="code">Dog</span>. При этом мы заранее не знаем, что это будут за конкретные типы.
+ 
+В таком случае нас может выручить конструкция вида <span class="code">? super Dog</span>, для которой подходят все типы — прародители класса <span class="code">Dog</span>: 
+ 
+<pre class="language-java line-numbers"><code>
+List&lt;Animal&gt; animals = new ArrayList&lt;&gt;();
+List&lt;? super Dog&gt; dogs = animals;
+dogs.add(new Dog());
+dogs.add(new Dog());
+</code></pre>
+Мы можем смело добавлять в список с таким дженериком объекты типа <span class="code">Dog</span>, ведь у него в любом случае присутствуют все реализованные методы любого его прародителя.
+
+Но мы не сможем добавить объект типа <span class="code">Animal</span>, так как нет уверенности, что внутри будут именно объекты этого типа, а не, например, <span class="code">Dog</span>. Ведь мы можем запросить у элемента данного списка метод класса <span class="code">Dog</span>, которого не будет в наличии у <span class="code">Animal</span>. В таком случае возникнет ошибка компиляции.
+ 
+Также, если бы мы захотели реализовать предыдущий метод, но уже с данным дженериком: 
+
+<pre class="language-java line-numbers"><code>
+public static void animalsVoice(List&lt;? super Dog&gt; dogs) {
+ for (Dog dog : dogs) {
+   dog.voice();
+ }
+}
+</code></pre>
+мы бы получили ошибку компиляции в цикле <span class="code">for</span>, так как мы не можем быть уверены, что пришедший список содержит объекты типа <span class="code">Dog</span> и свободно использовать его методы.
+ 
+Если у данного списка мы вызовем метод <span class="code">dogs.get(0);</span>  — мы получим объект типа <span class="code">Object</span>.
+ 
+То есть для работы метода <span class="code">animalsVoice()</span> нам как минимум нужно добавить небольшие манипуляции с сужением данных вида:
+ 
+<pre class="language-java line-numbers"><code>
+public static void animalsVoice(List&lt;? super Dog&gt; dogs) {
+ for (Object obj : dogs) {
+   if (obj instanceof Dog) {
+     Dog dog = (Dog) obj;
+     dog.voice();
+   }
+ }
+}
+</code></pre><img data-max-width="512" data-id="28e6b9f8-0d5b-4133-86b5-8e1590f8a083" src="https://cdn.javarush.com/images/article/28e6b9f8-0d5b-4133-86b5-8e1590f8a083/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 15 - 7"><h4>16. Как есть методы в классе Object?</h4>В <a href="https://javarush.com/groups/posts/3252-razbor-voprosov-i-otvetov-na-sobesedovanii-chastjh-2" target="_blank">данной части</a> серии, в 11 пункте, я уже ответил на данный вопрос, поэтому настоятельно советую ознакомиться, если вы до сих пор этого не сделали.
+ 
+На этом на сегодня и закончим. До встречи в следующей части!
+<img data-max-width="512" data-id="66ee3014-ef50-479f-8890-a8d6fd0b3a1a" src="https://cdn.javarush.com/images/article/66ee3014-ef50-479f-8890-a8d6fd0b3a1a/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 15 - 8"><table><tbody>
+<tr><th>
+Другие материалы серии:
+</th></tr><tr><td>
+<ul>
+<li><a href="https://javarush.com/groups/posts/3243-razbor-voprosov-i-otvetov-na-sobesedovanii-chastjh-1" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 1</a></li>
+<li><a href="https://javarush.com/groups/posts/3252-razbor-voprosov-i-otvetov-na-sobesedovanii-chastjh-2" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 2</a></li>
+<li><a href="https://javarush.com/groups/posts/3273-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-3" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 3</a></li>
+<li><a href="https://javarush.com/groups/posts/3284-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-4" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 4</a></li>
+<li><a href="https://javarush.com/groups/posts/3296-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-5" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 5</a></li>
+<li><a href="https://javarush.com/groups/posts/3341-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-6" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 6</a></li>
+<li><a href="https://javarush.com/groups/posts/3386-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-7" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 7</a></li>
+<li><a href="https://javarush.com/groups/posts/3415-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-8" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 8</a></li>
+<li><a href="https://javarush.com/groups/posts/3434-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-9" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 9</a></li>
+<li><a href="https://javarush.com/groups/posts/3452-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-10" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 10</a></li>
+<li><a href="https://javarush.com/groups/posts/3464-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-11" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 11</a></li>
+<li><a href="https://javarush.com/groups/posts/3475-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-12" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 12</a></li>
+<li><a href="https://javarush.com/groups/posts/3507-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-13" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 13</a></li>
+<li><a href="https://javarush.com/groups/posts/3558-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-14" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 14</a></li>
+<li><a href="https://javarush.com/groups/posts/3621-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-16" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 16</a></li>
+</ul>
+</td></tr></tbody></table><a href="https://javarush.com/login/signup" target="_blank"><img data-max-width="1080" id="click_banner5_articles" data-id="45b146ac-f14c-450e-990e-a2b24253c9e6" src="https://cdn.javarush.com/images/article/45b146ac-f14c-450e-990e-a2b24253c9e6/original.png" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 15 - 9"></a>

@@ -1,0 +1,79 @@
+String += String или StringBuilder.append(String)?
+<p>----------------------------------------</p>
+В чем разница между StringBuilder.apped() и String +=? Что оптимальнее и быстрее использовать. В данной статье, хотелось бы рассмотреть, разобрать, рассказать и показать, в чем же разница между методом append из класса StringBuilder и оператором += для String. Здесь вопрос ...
+<p>----------------------------------------</p>
+В данной статье, хотелось бы рассмотреть, разобрать, рассказать и показать, в чем же разница между методом append из класса <code>StringBuilder</code> и оператором <code>+=</code> для <code>String</code>. Здесь вопрос будет стоять не столько в областях применения, сколько в оптимизации кода.
+
+<div class='row justify-content-center jr-image-wrap'><div class='col-12 col-sm-10 col-md-8'><img data-id="99a2446c-b5c1-48b8-8c38-7498ae415245" data-max-width="437" alt="String += String или StringBuilder.append(String)? - 1" src="https://cdn.javarush.com/images/article/99a2446c-b5c1-48b8-8c38-7498ae415245/1024.jpeg"></div></div>
+Да, бесспорно не углублявшийся в этот вопрос человек, скажет: "Зачем мне заменять оператор += созданием нового объекта вообще другого класса, после чего вызывать ещё и метод <code>toString()</code>? О какой оптимальности речь? Выбор ведь очевиден, ты о чем вообще?" и будет совершенно не прав.
+
+Одна из проблем состоит в том, что <code>String</code> не является примитивом. <code>String</code> - объект как и любой <code>class</code> в Java, а как известно, в Java нет такого понятия как перегрузка операторов (Как например в С++), операторы определены только для примитивов, для любого же класса мы с вами не может переопределить никакой оператор. Именно поэтому операторы "<code>+</code>" и "<code>+</code>=" являются своего рода "костылями" библиотеки Java, а костыль всегда несет потери.
+
+Собственно, давайте перестанем тянуть хвост за кота и перейдем к замерам. Вот простая программка замеряющая время "склеивания" строки с переменной цикла 100000 раз.
+
+<pre class="lang-java line-numbers"><code>
+public class MainClass
+{
+    private static long time;
+
+    public static void main(String[] args)
+    {
+
+        saveTime();
+        String s = "Привет";
+        for(int i = 0; i &lt; 100000; ++i)
+        {
+            s+=i;
+        }
+        printDiff();
+
+    }
+    private static void saveTime()
+    {
+        time = System.currentTimeMillis();
+    }
+
+    private static void printDiff()
+    {
+        System.out.println((System.currentTimeMillis() - time) + "ms");
+    }
+}
+</code></pre>
+На моем компьютере в консоль вывелось 6815ms. Т.е моему компьютеру понадобилось почти 7 секунд, чтобы склеить эту строку.
+
+Теперь же давайте заменим на StringBuilder и даже включим метод <code>toString()</code> в замеры.
+
+<pre class="lang-java line-numbers"><code>
+public class MainClass
+{
+    private static long time;
+
+    public static void main(String[] args)
+    {
+
+        saveTime();
+        StringBuilder sb = new StringBuilder("Привет");
+        for(int i = 0; i &lt; 100000; ++i)
+        {
+            sb.append(i);
+        }
+        String s = sb.toString();
+        printDiff();
+
+    }
+    private static void saveTime()
+    {
+        time = System.currentTimeMillis();
+    }
+
+    private static void printDiff()
+    {
+        System.out.println((System.currentTimeMillis() - time) + "ms");
+    }
+}
+</code></pre>
+Мой ПК сказал мне 10ms. Т.е 0.01 Секунды. Думаю, разница на практике весьма очевидна, грубо говоря в 700 раз <code>append</code> отработал быстрее.
+
+Вызвано это тем, что скорее всего "<code>+</code>" и "<code>+=</code>" и сами могут вызывать этот же append, но при этом пройдя долгий путь по костылям языка, чтобы понять, что такой оператор вообще есть и что он должен делать (последний абзац не более чем догадка, я не разработчик JVM и не знаю что там и как).
+
+Это наглядный пример того, что лишний объект совершенно не всегда является затратным. Да, код станет на пару строк длиннее, но зато экономия времени в больших проектах может стать колоссальной. Прошу заметить, что замеры производились далеко не на офисном ПК с доисторическим процессором, а теперь представьте, какая разница будет на этом самом офисном компьютере, который с трудом тянет косынку.

@@ -1,0 +1,71 @@
+tomcat – коротко для windows
+<p>----------------------------------------</p>
+У меня возникло желание установить tomcat, и сделать несколько хостов для начала на локальном компьютере. Итак, сперва я с сайта установил сервис tomcat. Он элементарно настраивается, но без подробного исследования неясно, каких пользователей и с какими ...
+<p>----------------------------------------</p>
+У меня возникло желание установить tomcat, и сделать несколько хостов для начала на локальном компьютере.
+
+<img data-id="228ee737-ae80-44cf-9aac-6c6e2a52a616" data-max-width="500" alt="слон" src="https://cdn.javarush.com/images/article/228ee737-ae80-44cf-9aac-6c6e2a52a616/1024.jpeg">Итак, сперва я с сайта установил сервис <strong>tomcat</strong>.
+
+Он элементарно настраивается, но без подробного исследования неясно, каких пользователей и с какими паролями надо забивать в нетбинс, чтобы он скомпилировал и залил проект.
+
+Поэтому я решил потратить время и воспользоваться теми описаниями, что легко найти в интернете по запросу «tomcat  настройка», или на страничке tomcat.
+
+Итак, если мы не идём простым путём (в дальнейшем выяснилось, что и путь, лежащий через установку инсталлятором тоже верен), то последовательность будет следующей.
+<ol>
+<li><p>С сайта <a href='http://tomcat.apache.org/index.html' rel='nofollow' target='_blank'>http://tomcat.apache.org</a> сохраняем zip-архив, и распаковываем его в папку с путём без пробелов и всяких сложных символов, например, «E:\tomcat\apache-tomcat-8.0.15».</p></li>
+<li><p>Скачиваем последнюю версию JDK с сайта оракл <a href='https://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html' rel='nofollow' target='_blank'>https://www.oracle.com</a> и ставим её тоже в папку с названием без пробелов (если так не сделать, и установить в папку X:\Program Files\... , то затем, когда мы будем править батник, нам придётся неявно указывать имя папки, это не очень хорошо, почему- будет видно дальше.</p></li>
+<li><p>Открываем «e:\tomcat\apache-tomcat-8.0.15\bin\». Видим много батников и sh сценариев.</p>
+<p>Открываем «catalina.bat». Там видим много закомментированных строк с переменными окружения, которые должны быть объявлены, или которые можно объявлять, а можно и нет.</p>
+<p>Те переменные, которые должны быть объявлены — это</p>
+<ul>
+<li>set CATALINA_HOME="e:\tomcat\apache-tomcat-8.0.15"</li>
+<li>set JAVA_HOME="e:\ProgramFiles\Java\jre1.8.0_25"</li>
+</ul><p>причём желательно это сделать в отдельном файле с именем setenv.bat, для этого просто в текстовом редакторе вбиваем эти две строки и сохраняем файл с таким именем в «e:\tomcat\apache-tomcat-8.0.15\bin\»</p>
+<p><strong>Примечание:</strong> если папка с установленным jre содержит пробелы, то имя должно состоять из максимум шести первых букв реального названия папки, и если такое сочетание по алфавиту в диске первое, то ~1, если второе, то ~2, и т. д.</p>
+<p>Например, название папки, внутри которой находится jre, “C:\Program Files\JRE”, а кроме того есть папка «C:\places\», тогда вторая строчка в setenv.bat будет</p><ul>
+<li>set JAVA_HOME="e:\Progra~1\Java\jre1.8.0_25", или</li>
+<li>set JAVA_HOME="e:\P~2\Java\jre1.8.0_25"</li>
+</ul><p>Естественно, это не очень хорошо, особенно когда у вас две папки “Program Files” и «Program Files (x86)». В таком случае, чтобы проименовать правильно папку с JRE, придётся поэкспериментировать ~1 или ~2.</p></li>
+<li><p>Пробуем запустить, для этого из текущей директории запускаем cmd.exe, в нём запускаем startup.bat . Это нам даст контроль над тем что происходит. Если всё пошло хорошо, то запустится окно Java-приложения в режиме консоли, в котором после запуска будет написано время старта, если же что-то пошло не так, например, папки в setenv.bat указаны неверно, мы увидим сообщения об ошибках.</p></li>
+<li><p>Если глобальные переменные сконфигурированы верно, и запустилось окно java – консоли, но какие-то настройки сделаны неверно, то ошибки можно посмотреть в папке «e:\tomcat\apache-tomcat-8.0.15\logs\».</p></li>
+<li><p>Если пункт 4 выполнен полностью успешно, то в окне браузера можно набрать 127.0.0.1:8080 и в окне будет окно tomcat сервера.</p></li>
+<li><p>Но если мы захотим войти в настройки Host Manager, и т. д., то нас попросят ввыести логин и пароль. Взять их негде, но в папке conf есть файл tomcat-users.xml, который, если открыть, то сначала кажется правильным, но роли и пользователи там взяты в комментарий <!--   ...   -->. Да и роли, и пользователи там явно неверные. Итак, что же делать.</p></li>
+<li><p>Для ответа на вопрос, какие роли должны быть, и каких пользоватей назначать, чтобы войти в админку, на страничке  127.0.0.1:8080.
+Например, про роли manager можно узнать на страничке ttp://127.0.0.1:8080/docs/manager-howto.html, и вместо одного пользователя admin, как было раньше, теперь есть два пользователя: admin-gui и admin-script.</p>
+<p>Более подробно про работу с паролями здесь http://127.0.0.1:8080/docs/realm-howto.html</p>
+<p>Итак, открываем файл conf\tomcat-user.xml  и добавляем там после закомментированного блока с логинами и паролями</p>
+<pre class='lang-java line-numbers'><code>
+&lt;!--
+  NOTE:  By default, no user is included in the "manager-gui" role required
+  to operate the "/manager/html" web application.  If you wish to use this app,
+  you must define such a user - the username and password are arbitrary.
+--&gt;
+&lt;!--
+  NOTE:  The sample user and role entries below are wrapped in a comment
+  and thus are ignored when reading this file. Do not forget to remove
+  &lt;!.. ..&gt; that surrounds them.
+--&gt;
+&lt;!--
+  &lt;role rolename="tomcat"/&gt;
+  &lt;role rolename="role1"/&gt;
+  &lt;user username="tomcat" password="tomcat" roles="tomcat"/&gt;
+  &lt;user username="both" password="tomcat" roles="tomcat,role1"/&gt;
+  &lt;user username="role1" password="tomcat" roles="role1"/&gt;
+--&gt;
+  &lt;role rolename = "admin-gui"/&gt;
+  &lt;role rolename = "admin-script"/&gt;
+  &lt;role rolename = "manager-gui"/&gt;
+  &lt;role rolename = "manager-script"/&gt;
+  &lt;role rolename = "manager-jne"/&gt;
+  &lt;user username = "superadmin" password = "pass" roles="admin-gui, admin-script, manager-gui, manager-jne, manager-script" /&gt;  
+&lt;/tomcat-users&gt;
+</code></pre>
+<p>Таким образом, мы получим пользователя superadmin с паролем pass.</p></li>
+<li><p>Про то, как отлаживать работу приложений и т. д. <a href='http://wiki.apache.org/tomcat/HowTo#How_can_I_access_members_of_a_custom_Realm_or_Principal.3F' rel='nofollow' target='_blank'>http://wiki.apache.org/tomcat/HowTo#How_can_I_access_members_of_a_custom_Realm_or_Principal.3F</a></p></li>
+<li><p>Tеперь при помощи скриптов shutdown.bat и startup.bat перезапускаем сервер, и можем войти в админку.</p></li>
+<li><p>Создаём виртуальные хосты. Для этого посмотрим сюда <a href='http://wiki.apache.org/tomcat/TomcatDevelopmentVirtualHosts' rel='nofollow' target='_blank'>http://wiki.apache.org/tomcat/TomcatDevelopmentVirtualHosts</a></p></li>
+<li><p>можно ещё создать в админке ссылку на хост (Это то же самое, что мы сейчас сделали).</p></li>
+<li><p>При создании новых записей в hosts для win8, сначала копируем файл в другую папку, там правим, и затем пишем обратно. После этого рестарт компьютера или сервера не нужен.</p></li>
+</ol>И в заключении в бесплатной версии IntelliJ Idea не поддерживает web, поэтому для начала можно попользоваться нетбинсом.
+<a href='https://netbeans.org/kb/trails/java-ee_ru.html' rel='nofollow' target='_blank'>https://netbeans.org/kb/trails/java-ee_ru.html</a>
+<a href='https://netbeans.org/kb/docs/web/ajax-quickstart_ru.html' rel='nofollow' target='_blank'>https://netbeans.org/kb/docs/web/ajax-quickstart_ru.html</a>

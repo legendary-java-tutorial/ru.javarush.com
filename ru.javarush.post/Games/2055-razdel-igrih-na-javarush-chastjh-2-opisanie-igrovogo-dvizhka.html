@@ -1,0 +1,232 @@
+Раздел "Игры" на JavaRush: Игровой движок
+<p>----------------------------------------</p>
+Это вторая часть гайда по разделу "Игры" на JavaRush. В нем вы найдете полезную информацию о том, как работать с этим типом задач. В реализации компьютерной игры со стороны разработчика есть три стадии ...
+<p>----------------------------------------</p>
+<span class="text-bold">«Игры» от JavaRush</span> — новый раздел, который содержит большие задачи-проекты по написанию популярных компьютерных игр. Делать их проще, чем кажется: каждый проект разделен на два десятка подзадач. Выполняя задачи шаг за шагом, вы напишете свою игру, а затем сможете добавить в нее уникальные «фичи» и поделиться ею с друзьями.<img data-id="03300563-ed25-4490-96a4-5473a40455f4" data-max-width="710" alt="Раздел " src="https://cdn.javarush.com/images/article/03300563-ed25-4490-96a4-5473a40455f4/1024.jpeg">Игры используют <span class="text-bold">простой игровой движок JavaRush</span>. В этом материале <span class="text-bold">расскажем о его ключевых возможностях</span> и том, как выглядит процесс написания игры.<ol>
+	<li><a href="#Введение">Введение</a></li>
+	<li><a href="#Инициализация игры">Инициализация игры</a></li>
+	<li><a href="#Создание игрового поля">Создание игрового поля</a></li>
+	<li><a href="#Примитивная программа">Примитивная программа</a></li>
+	<li><a href="#Работа с клетками игрового поля">Работа с клетками игрового поля</a></li>
+	<li><a href="#Работа с цветом">Работа с цветом</a></li>
+	<li><a href="#Диалоговые окна">Диалоговые окна</a></li>
+	<li><a href="#Утилитные методы">Утилитные методы</a></li>
+	<li><a href="#Ограничения игрового движка">Ограничения игрового движка</a></li>
+</ol><h3 id="Введение">1. Введение</h3>В реализации компьютерной игры со стороны разработчика есть три стадии:
+<ol>
+<li><span class="text-bold">Инициализация игры</span> — это подготовительные действия: установка размера и прорисовка игрового поля, создание и установка игровых объектов в начальное положение, а также другие действия, которые необходимо выполнить в начале игры.</li><br>
+<li><span class="text-bold">Игровой процесс.</span> К нему относятся движение игровых объектов, действия игрока, учет заработанных очков, а также другие действия, которые необходимо выполнять с определенной периодичностью или по нажатию кнопок.</li><br>
+<li><span class="text-bold">Завершение игры.</span> К нему относятся остановка анимации, сообщение о победе или поражении, а также другие действия, которые необходимо выполнить в конце игры.</li></ol><h3 id="Инициализация игры">2. Инициализация игры</h3>Инициализация игры состоит всего из двух шагов:
+<h4>Шаг 1: создаем основной класс игры.</h4>Для разработки своей игры на основе игрового движка JavaRush, вам нужно создать класс и унаследовать его от класса <span class="code">Game</span> (com.javarush.engine.cell.Game). Это даст вашему классу возможность вызывать методы игрового движка, а движку — вызывать ваши методы. 
+
+Пример:
+
+<pre class="lang-java line-numbers"><code>
+import com.javarush.engine.cell.Game;
+
+public class MySuperGame extends Game {
+    ...
+}
+</code></pre><h4>Шаг 2: переопределяем метод initialize().</h4>В этом методе будут происходить все действия, необходимые для старта игры: создание игрового поля, создание игровых объектов, и т.д. Вам нужно просто объявить этот метод в классе, унаследованном от класса <span class="code">Game</span>. 
+
+Пример:
+
+<pre class="lang-java line-numbers"><code>
+import com.javarush.engine.cell.Game;
+
+public class MySuperGame extends Game {
+    
+    @Override
+    public void initialize() {
+        //  Тут выполняем все действия по инициализации игры и ее объектов
+    }
+}
+</code></pre>
+Метод <span class="code">initialize()</span> — это аналог метода <span class="code">main()</span>: именно с него начинает выполняться весь код, написанный для игры.
+<h3 id="Создание игрового поля">3. Создание игрового поля</h3>Создание игрового поля тоже состоит всего из двух шагов.
+<h4>Шаг 1: делим игровое поле на клетки.</h4>Все игровое поле делится игровым движком на клетки. Минимальный размер — 3x3, максимальный — 100x100.
+
+Игровой экран имеет постоянный размер. Его можно разделить на разное количество клеток. Например, ширина 7 и высота 9:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="00df27da-0e65-4a5d-bf5e-4f503bf936f4" data-max-width="400" alt="Раздел " src="https://cdn.javarush.com/images/article/00df27da-0e65-4a5d-bf5e-4f503bf936f4/1024.jpeg"></div></div>Обратите внимание, что нумерация клеток начинается с верхнего левого угла.
+
+Чтобы задать размер игрового поля, используйте метод <span class="code"><span class="text-bold">void setScreenSize(int width, int height)</span></span>. Он задает размер игрового поля. В качестве параметров принимает количество клеток по горизонтали (width) и по вертикали (height). Обычно он вызывается один раз при запуске игры. 
+
+Пример:
+
+<pre class="lang-java line-numbers"><code>
+import com.javarush.engine.cell.Game;
+
+public class MySuperGame extends Game {
+    
+    @Override
+    public void initialize() {
+       //  задали размер поля 7x9 клеток
+       setScreenSize(7, 9);
+        ...
+    }
+}
+</code></pre>
+При написании игры может понадобиться получить текущую ширину и высоту игрового поля. Для этого пригодятся методы <span class="code"><span class="text-bold">int getScreenWidth()</span></span> и <span class="code"><span class="text-bold">int getScreenHeight()</span></span>.<h4>Шаг 2: включаем или выключаем сетку (необязательно).</h4>Если вам не нравится, что на игровом поле отображается черная сетка, разделяющая ячейки, ее можно выключить.
+
+Метод <span class="code"><span class="text-bold">void showGrid(boolean isShow)</span></span> включает и выключает сетку, разделяющую клетки. По умолчанию сетка отображается. Чтобы ее выключить, вызовите этот метод с параметром false:
+
+<pre class="lang-java line-numbers"><code>
+showGrid(false);
+</code></pre>
+Результат:<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="8683b8d2-f035-4de9-ab96-2e2b00823745" data-max-width="400" alt="Раздел " src="https://cdn.javarush.com/images/article/8683b8d2-f035-4de9-ab96-2e2b00823745/1024.jpeg"></div></div>Чтобы снова включить сетку, вызовите:
+
+<pre class="lang-java line-numbers"><code>
+showGrid(true);
+</code></pre><h3 id="Примитивная программа">4. Примитивная программа</h3>Пример программы:
+
+<pre class="lang-java line-numbers"><code>
+public class MySuperGame extends Game {
+
+    @Override
+    public void initialize() {
+
+        //  Создаем игровое поле 3x3 клетки   
+        setScreenSize(3, 3);
+        //  Выключаем отображение сетки
+        showGrid(false);
+        //  Меняем фон центральной клетки на синий, и отображаем в ней “Х” 
+        setCellValueEx(1, 1, Color.BLUE, "X", Color.ORANGE, 50);
+    }
+}
+</code></pre>
+В этом примере игровому полю задается размер 3х3, отключается отображение сетки и по центру устанавливается оранжевый символ «Х» размером в половину клетки на синем фоне. Это будет первое, что увидит игрок при запуске игры.
+<h3 id="Работа с клетками игрового поля">5. Работа с клетками игрового поля</h3>То, что мы можем поделить игровое поле на ячейки — это отлично, а что мы можем делать с самими ячейками?
+
+Каждой клетке игрового поля можно задать:
+<ul>
+<li>цвет клетки (цвет фона ячейки);</li>
+<li>текст (текст или число);</li>
+<li>цвет текста;</li>
+<li>размер текста в процентах относительно размера клетки.</li>
+</ul>Рассмотрим <span class="text-bold">методы для работы с клетками игрового поля</span>:
+<ol>
+<li><p><span class="code"><span class="text-bold">void setCellColor(int x, int y, Color color)</span></span> — устанавливает клетке с координатами (x, y) цвет color:</p>
+<pre class="lang-java line-numbers"><code>
+setCellColor(0, 0, Color.RED);
+setCellColor(3, 6, Color.BLACK);
+setCellColor(6, 8, Color.NONE);
+</code></pre></li><br>
+<li><p><span class="code"><span class="text-bold">Color getCellColor(int x, int y)</span></span> — возвращает цвет клетки с координатами (x, y):</p>
+<pre class="lang-java line-numbers"><code>
+Color myColor = getCellColor(2, 0);
+</code></pre></li><br>
+<li><p><span class="code"><span class="text-bold">void setCellValue(int x, int y, String value)</span></span> — помещает в клетку с координатами (x, y) текст value:</p>
+<pre class="lang-java line-numbers"><code>
+setCellValue(3, 3, "text");
+setCellValue(0, 8, "W");
+setCellValue(4, 1, "2222");
+setCellValue(6, 6, "");
+</code></pre></li><br>
+<li><p><span class="code"><span class="text-bold">String getCellValue(int x, int y)</span></span> — возвращает текст, содержащийся в клетке с координатами (x, y):</p>
+<pre class="lang-java line-numbers"><code>
+String s = getCellValue(3, 3);
+System.out.println(getCellValue(4, 1));
+</code></pre></li><br>
+<li><p><span class="code"><span class="text-bold">void setCellTextSize(int x, int y, int size)</span></span> — устанавливает размер контента в клетке с координатами (x, y). size – высота текста в процентах от высоты клетки:</p>
+<pre class="lang-java line-numbers"><code>
+setCellTextSize(2 , 0, 70); //  70% высоты клетки
+</code></pre></li><br>
+<li><p><span class="code"><span class="text-bold">int getCellTextSize(int x, int y)</span></span> — возвращает размер контента в клетке с координатами (x, y):</p>
+<pre class="lang-java line-numbers"><code>
+int size = getCellTextSize(2 , 0);
+</code></pre></li><br>
+<li><p><span class="code"><span class="text-bold">void setCellNumber(int x, int y, int value)</span></span> — помещает в клетку с координатами (x, y) число value:</p>
+<pre class="lang-java line-numbers"><code>
+setCellNumber(3, 3, 40);
+setCellNumber(0, 8, -8);
+setCellNumber(4, 1, 2222);
+setCellNumber(6, 6, 0);
+</code></pre></li><br>
+<li><p><span class="code"><span class="text-bold">int getCellNumber(int x, int y)</span></span> — возвращает число, содержащееся в клетке с координатами (x, y). Если в клетке содержится не число, возвращает 0:</p>
+<pre class="lang-java line-numbers"><code>
+int i = getCellNumber(3, 3);
+System.out.println(getCellNumber(4, 1));
+</code></pre></li><br>
+<li><p><span class="code"><span class="text-bold">void setCellTextColor(int x, int y, Color color)</span></span> — устанавливает цвет контента(текста) в клетке с координатами (x, y):</p>
+<pre class="lang-java line-numbers"><code>
+setCellTextColor(2, 1, Color.GREEN);
+setCellTextColor(0, 1, Color.NONE);
+</code></pre></li><br>
+<li><p><span class="code"><span class="text-bold">Color getCellTextColor(int x, int y)</span></span> — возвращает цвет контента (текста) в клетке с координатами (x, y):</p>
+<pre class="lang-java line-numbers"><code>
+Color textColor = getCellTextColor(1, 3);
+</code></pre></li></ol>
+Для удобства есть несколько методов <span class="code"><span class="text-bold">setCellValueEx()</span></span> с разным набором параметров:
+<ol>
+<li><p><span class="code"><span class="text-bold">void setCellValueEx(int x, int y, Color cellColor, String value)</span></span> — устанавливает клетке с координатами (x, y) цвет фона cellColor и контент value:</p>
+<pre class="lang-java line-numbers"><code>
+setCellValueEx(0, 2, Color.BLUE, "56");
+</code></pre></li><br>
+<li><p><span class="code"><span class="text-bold">void setCellValueEx(int x, int y, Color cellColor, String value, Color textColor)</span></span> — устанавливает клетке с координатами (x, y) цвет фона cellColor, контент value и цвет контента textColor:</p>
+<pre class="lang-java line-numbers"><code>
+setCellValueEx(0, 2, Color.BLACK, "56", Color.GREEN);
+</code></pre></li><br>
+<li><p><span class="code"><span class="text-bold">void setCellValueEx(int x, int y, Color cellColor, String value, Color textColor, int textSize);</span></span> — устанавливает клетке с координатами (x, y) цвет фона cellColor, контент value, цвет контента textColor и размер контента textSize:</p>
+<pre class="lang-java line-numbers"><code>
+setCellValueEx(0, 2, Color.BLACK, "56", Color.GREEN, 70);
+</code></pre></li></ol><h3 id="Работа с цветом">6. Работа с цветом</h3>За цвета в игровом движке отвечает <span class="code">enum Color</span>, который содержит уникальные значения для 148 цветов. А также специальное значение NONE — отсутствие цвета.  
+
+Пример работы с цветом:
+
+<pre class="lang-java line-numbers"><code>
+Color myColor = Color.WHITE;  //  переменной myColor присваивается белый цвет.
+Color redColor = Color.RED; //  переменной redColor присваивается красный цвет.
+Color blueColor = Color.BLUE; //  переменной blueColor присваивается синий цвет.
+</code></pre>
+Иногда может понадобиться получить массив всех существующих цветов. Для этого используйте метод <span class="code">values()</span>. 
+
+Например:
+
+<pre class="lang-java line-numbers"><code>
+//  переменной colors присваивается массив, содержащий все доступные цвета.
+Color[] colors = Color.values(); 
+</code></pre>
+Получить номер цвета в палитре очень просто:
+
+<pre class="lang-java line-numbers"><code>
+Color color = Color.RED; 
+int redIndex = color.ordinal(); //  Номер красного цвета
+
+int blueIndex = Color.BLUE.ordinal(); //  Номер синего цвета
+</code></pre>
+Также можно получить цвет по его номеру:
+
+<pre class="lang-java line-numbers"><code>
+//  переменной color присваивается цвет с индексом 10 из enum Color.
+Color color = Color.values()[10];
+</code></pre><h3 id="Диалоговые окна">7. Диалоговые окна</h3>В конце игры игроку нужно сообщить о победе или поражении. Для этого есть специальный метод, который выводит диалоговое окно на игровой экран:
+
+<pre class="lang-java line-numbers"><code>
+void showMessageDialog(Color cellColor, String message, Color textColor, int textSize)
+</code></pre>
+Здесь:
+<ul>
+<li><span class="code"><span class="text-bold">cellColor</span></span> — цвет фона диалогового окна;</li>
+<li><span class="code"><span class="text-bold">message</span></span> — текст сообщения;</li>
+<li><span class="code"><span class="text-bold">textColor</span></span> — цвет текста сообщения;</li>
+<li><span class="code"><span class="text-bold">textSize</span></span> — размер текста сообщения.</li>
+</ul>Диалоговое окно закрывается само по себе, если пользователь нажал пробел.
+<h3 id="Утилитные методы">8. Утилитные методы</h3>При написании игр часто используются случайные числа. Чтобы упростить получение случайных чисел, можно использовать утильные методы движка:
+
+<ol>
+<li><span class="code"><span class="text-bold">int getRandomNumber(int max)</span></span> — возвращает случайное целое число от 0 до (max–1) включительно.</li><br>
+<li><span class="code"><span class="text-bold">int getRandomNumber(int min, int max)</span></span> — возвращает случайное целое число от min до (max–1) включительно.</li>
+</ol><h3 id="Ограничения игрового движка">9. Ограничения игрового движка</h3>Чтобы запускать игры на сайте, они переводятся на сервере на JavaScript. В связи с этим появляются некоторые ограничения. В частности, при написании игр с использованием движка JavaRush нельзя работать с файлами, а также использовать все методы класса <span class="code"><span class="text-bold">System</span></span>, кроме <span class="code"><span class="text-bold">currentTimeMillis()</span></span>, <span class="code"><span class="text-bold">setOut()</span></span>, <span class="code"><span class="text-bold">setErr()</span></span>, <span class="code"><span class="text-bold">arrayscopy()</span></span>. Также можно использовать поля <span class="code"><span class="text-bold">err</span></span> и <span class="code"><span class="text-bold">out</span></span>. 
+
+Нарушая эти ограничения, игру, конечно же, можно будет скомпилировать и запустить, но опубликовать не удастся. 
+
+Также не удастся опубликовать игру с бесконечными циклами. 
+
+На этом все!
+
+Если вы хотите узнать о разделе "Игры" больше, вот полезная документация, которая может в этом помочь:
+<ul>
+<li><a href="https://javarush.com/groups/posts/2052-razdel-igrih-na-javarush-chastjh-1-populjarnihe-voprosih" target="_blank">Раздел "Игры" на JavaRush: Популярные вопросы</a></li>
+<li><a href="https://javarush.com/groups/posts/2056-razdel-igrih-na-javarush-chastjh-3-obrabotka-sobihtiy" target="_blank">Раздел "Игры" на JavaRush: Обработка событий</a></li>
+<li><a href="https://javarush.com/groups/posts/2057-razdel-igrih-na-javarush-chastjh-4-poleznaja-teorija" target="_blank">Раздел "Игры" на JavaRush: Полезная теория</a></li>
+</ul>

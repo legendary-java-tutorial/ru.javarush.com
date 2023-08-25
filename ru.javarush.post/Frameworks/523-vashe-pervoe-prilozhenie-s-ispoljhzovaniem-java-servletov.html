@@ -1,0 +1,427 @@
+Ваше первое приложение с использованием Java-сервлетов
+<p>----------------------------------------</p>
+В этой статье читатель впервые познакомится с такой распространенной технологией как Java Servlet, и сможет создать и запустить свое первое приложение.  Вы познакомитесь с таким базовым понятием веб-разработки, как сервлеты, и сможете написать простое приложение с их ...
+
+<p>----------------------------------------</p>
+Всем привет!
+
+В этой статье вы познакомитесь с таким базовым понятием веб-разработки, как сервлеты, и сможете написать простое приложение с их использованием.
+
+<img data-max-width="710" alt="Ваше первое приложение с использованием Java-сервлетов - 1" src="https://cdn.javarush.com/images/article/03199ad2-ea0e-498b-99a8-3951aa373dc1/original.jpeg">Во избежание лишних действий, мы не будем начинать с нуля, и продолжим работу над нашим приложением из моей предыдущей <a href="https://javarush.com/groups/posts/520-vashe-pervoe-prilozhenie-na-hibernate" target="_blank" rel="nofollow">статьи про Hibernate</a>. 
+
+Однако, поскольку мы только начинаем знакомиться с сервлетами, я убрал из приложения все, что связано с классом Auto, и оставил только класс User и действия с ним.
+
+Структура проекта будет выглядеть так:
+<img data-max-width="512" src="/images/article/b062e871-5d0e-40d6-8557-b640962d98c7/original.jpeg" class="img-fluid" alt="Ваше первое приложение с использованием Java-сервлетов - 2">Итак, сервлеты!
+
+Википедия гласит: 
+
+"Сервлет является интерфейсом Java, реализация которого расширяет функциональные возможности сервера. Сервлет взаимодействует с клиентами посредством принципа запрос-ответ."
+
+И это действительно так. Здесь мы впервые сталкиваемся с понятием "клиент-серверная архитектура приложения". Суть ее вполне проста и умещается на одной картинке (взята <a href="http://www.4stud.info/networking/lecture5.html" target="_blank" rel="nofollow">отсюда</a>).
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="bcc140bd-bc64-4326-bbcf-202d21ab8ea2" data-max-width="600" alt="Ваше первое приложение с использованием Java-сервлетов - 3" src="https://cdn.javarush.com/images/article/bcc140bd-bc64-4326-bbcf-202d21ab8ea2/1024.jpeg"></div></div>Клиент обращается к серверу посредством отправки HTTP-запроса. Сервер формирует необходимые данные (например, получает их из базы данных) и возвращает клиенту.
+
+Самый простой пример: в некоей социальной сети вы нажимаете на кнопку "Друзья" и отправляете таким образом запрос серверу. Сервер уточняет в базе данных список ваших друзей, и возвращает его вам (клиенту).
+
+Список HTTP-запросов довольно велик, но если вы никогда с ними не сталкивались, то для лучшего понимания лучше прочитать о них, например, <a href="https://ru.wikipedia.org/wiki/HTTP" target="_blank" rel="nofollow">здесь</a>.
+
+<span class="text-bold">Наша задача состоит в следующем:</span>
+
+Создать CRUD-приложение с использованием сервлетов. Приложение должно уметь создавать, изменять и удалять пользователей из базы данных, используя для этого сервлет, обрабатывающий HTTP-запросы. 
+
+Наше приложение из статьи про Hibernate уже умело делать это, однако оно управлялось прямо из Java-кода, точнее - из метода main().
+
+Здесь же запросы будет отправлять именно клиент, то есть Вы :)
+
+Первое что нам нужно сделать, это добавить новые зависимости в наш файл pom.xml
+
+<pre class="lang-java line-numbers"><code>
+&lt;xml version="1.0" encoding="UTF-8"?&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+    &lt;groupId&gt;com.itis4&lt;/groupId&gt;
+    &lt;artifactId&gt;UsersDaoProject&lt;/artifactId&gt;
+    &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+
+    &lt;build&gt;
+        &lt;plugins&gt;
+            &lt;plugin&gt;
+                &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+                &lt;artifactId&gt;maven-war-plugin&lt;/artifactId&gt;
+                &lt;version&gt;2.6&lt;/version&gt;
+            &lt;/plugin&gt;
+        &lt;/plugins&gt;
+    &lt;/build&gt;
+
+    &lt;dependencies&gt;
+        &lt;!-- PostgreSQL  --&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.postgresql&lt;/groupId&gt;
+            &lt;artifactId&gt;postgresql&lt;/artifactId&gt;
+            &lt;version&gt;9.4.1212.jre7&lt;/version&gt;
+        &lt;/dependency&gt;
+
+        &lt;!-- Hibernate 5.2.6 Final --&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.hibernate&lt;/groupId&gt;
+            &lt;artifactId&gt;hibernate-core&lt;/artifactId&gt;
+            &lt;version&gt;5.2.6.Final&lt;/version&gt;
+        &lt;/dependency&gt;
+
+        &lt;dependency&gt;
+            &lt;groupId&gt;jstl&lt;/groupId&gt;
+            &lt;artifactId&gt;jstl&lt;/artifactId&gt;
+            &lt;version&gt;1.2&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;javax.servlet&lt;/groupId&gt;
+            &lt;artifactId&gt;javax.servlet-api&lt;/artifactId&gt;
+            &lt;version&gt;3.1.0&lt;/version&gt;
+        &lt;/dependency&gt;
+
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-webmvc&lt;/artifactId&gt;
+            &lt;version&gt;4.3.4.RELEASE&lt;/version&gt;
+        &lt;/dependency&gt;
+
+    &lt;/dependencies&gt;
+
+&lt;/project&gt;
+</code></pre>
+Мы добавили 3 зависимости:
+<ol>
+<li>Сама библиотека javax.servlet-api;</li>
+<li>Библиотека тегов JSTL. Она нужна будет для создания клиентской стороны, а именно страниц JSP;</li>
+<li>Spring-WebMVC. Нам понадобится один класс Spring'a, о котором мы поговорим чуть позднее.</li>
+</ol>Управление работой сервлетов осуществляет контейнер сервлетов. В нашем случае мы будем использовать Apache Tomcat. Довольно популярная штука, и, вероятно, вы уже о нем слышали :)
+
+Жизненный цикл сервлета состоит из следующих шагов:
+<ol>
+<li>В случае отсутствия сервлета в контейнере.<br>
+<ul>
+<li>Класс сервлета загружается контейнером.</li>
+<li>Контейнер создает экземпляр класса сервлета.</li>
+<li>Контейнер вызывает метод init(). Этот метод инициализирует сервлет и вызывается в первую очередь, до того, как сервлет сможет обслуживать запросы. За весь жизненный цикл метод init() вызывается только один раз.</li>
+</ul></li><li>Обслуживание клиентского запроса. Каждый запрос обрабатывается в своем отдельном потоке. Контейнер вызывает метод service() для каждого запроса. Этот метод определяет тип пришедшего запроса и распределяет его в соответствующий этому типу метод для обработки запроса. Разработчик сервлета должен предоставить реализацию для этих методов. Если поступил запрос, метод для которого не реализован, вызывается метод родительского класса и обычно завершается возвращением ошибки инициатору запроса.</li>
+<li>В случае если контейнеру необходимо удалить сервлет, он вызывает метод destroy(), который снимает сервлет из эксплуатации. Подобно методу init(), этот метод тоже вызывается единожды за весь цикл сервлета.</li>
+</ol>Наш сервлет будет выглядеть достаточно просто:
+
+<pre class="lang-java line-numbers"><code>
+package servlets;
+
+import models.User;
+import services.UserService;
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.List;
+
+public class UserSimpleServlet extends HttpServlet {
+
+    private UserService service = new UserService();
+
+    public void init(ServletConfig servletConfig) {
+        try {
+            super.init(servletConfig);
+        } catch (ServletException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+
+        List&lt;User&gt; users = service.findAllUsers();
+        req.setAttribute("users", users);
+        RequestDispatcher dispatcher = req.getRequestDispatcher("/showUsers.jsp");
+        dispatcher.forward(req, resp);
+
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
+
+        String name = req.getParameter("name");
+        int age = Integer.parseInt(req.getParameter("age"));
+        User user = new User(name, age);
+        service.saveUser(user);
+        resp.sendRedirect("/users");
+
+    }
+
+    @Override
+    protected void  doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        int id = Integer.parseInt(req.getParameter("id"));
+        User user = service.findUser(id);
+        user.setName(req.getParameter("name"));
+        user.setAge(Integer.parseInt(req.getParameter("age")));
+        service.updateUser(user);
+        resp.sendRedirect("/users");
+    }
+
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        int id = Integer.parseInt(req.getParameter("id"));
+        service.deleteUser(service.findUser(id));
+        resp.sendRedirect("/users");
+    }
+}
+</code></pre>
+Как видите, он содержит в себе метод init(), о котором писалось выше, и реализует 4 метода, совпадающих с четырьмя HTTP-запросами - doGet(), doPost(), doPut() и doDelete(). Каждый из них позволит нам, соответственно, получать, создавать, редактировать и удалять пользоваталей. 
+
+Методы принимают на вход объекты классов javax.servlet.http.HttpServletRequest и javax.servlet.http.HttpServletResponse - то есть, запрос, отправляемый на сервер, и ответ, который получит клиент. 
+Внутри методов выполняются необходимые методы класса  UserService, формируется ответ для клиента, после чего осуществляется перенаправление на адрес /users.
+
+Например, в методе doGet() мы получаем список всех пользователей. Далее мы создаем объект класса RequestDispatcher, который позволяет включать объекты в Http-запрос, а также перенаправлять его к определенному ресурсу (например, к клиентской JSP-странице).
+
+В методе doPut() (обновление данных пользователя) мы обрабатываем HTTP-запрос, вытаскиваем из него параметры id, name и age, находим юзера с указанным id, присваиваем ему те name и age, которые пришли вместе с ним в запросе, и возвращаемся на страницу /users.
+
+Однако, чтобы все эти методы корректно работали, нам необходимо осуществить настройку сервлета. Для этого мы используем файл web.xml в папке WEB-INF.
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;web-app version="3.1"
+         xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"&gt;
+
+    &lt;welcome-file-list&gt;
+        &lt;welcome-file&gt;index.jsp&lt;/welcome-file&gt;
+    &lt;/welcome-file-list&gt;
+
+    &lt;servlet&gt;
+        &lt;servlet-name&gt;UserSimpleServlet&lt;/servlet-name&gt;
+        &lt;servlet-class&gt;servlets.UserSimpleServlet&lt;/servlet-class&gt;
+    &lt;/servlet&gt;
+
+    &lt;servlet-mapping&gt;
+        &lt;servlet-name&gt;UserSimpleServlet&lt;/servlet-name&gt;
+        &lt;url-pattern&gt;/&lt;/url-pattern&gt;
+    &lt;/servlet-mapping&gt;
+
+    &lt;filter&gt;
+        &lt;filter-name&gt;hiddenHttpMethodFilter&lt;/filter-name&gt;
+        &lt;filter-class&gt;org.springframework.web.filter.HiddenHttpMethodFilter&lt;/filter-class&gt;
+    &lt;/filter&gt;
+
+    &lt;filter-mapping&gt;
+        &lt;filter-name&gt;hiddenHttpMethodFilter&lt;/filter-name&gt;
+        &lt;servlet-name&gt;UserSimpleServlet&lt;/servlet-name&gt;
+    &lt;/filter-mapping&gt;
+
+&lt;/web-app&gt;
+</code></pre>
+Все теги в этом файле, в принципе, интуитивно понятны, но давайте пройдемся по ним последовательно.
+
+&lt;welcome-file-list&gt; - указана стартовая JSP-страница, которая будет открываться первой при запуске приложения. В нашем случае это страница index.jsp.
+
+&lt;servlet&gt; - регистрация нашего класса UserSimpleServlet в качестве сервлета. 
+
+&lt;servlet-mapping&gt; - очень важный тег. Он определяет URL-лы, которые будут обрабатываться сервлетом. В нашем случае это вообще все URL'ы, поэтому мы указываем просто "/". 
+Но, например, если бы у нас было приложение с юзерами и их машинами, то можно было бы создать второй сервлет - SimpleAutoServlet. Тогда маппингом для юзер-сервлета было бы "/users" (то есть запросы, касающиеся обработки пользователей), а для авто-сервлета - "/autos".
+
+И, наконец, &lt;filter&gt;.
+
+Он определяет внутри себя объект класса org.springframework.web.filter.HiddenHttpMethodFilter. 
+
+Статья не касается Spring'a, поэтому не буду рассказывать о нем в подробностях. Скажу лишь, что к нашему приложению он прикручен только в качестве дополнительной фичи.
+
+Дело в том, что для создания клиентской стороны мы будем использовать JSP-страницы. Наши данные будут отображаться на странице как таблица со списком пользователей. Внутри JSP-страниц будут использоваться HTML-теги &lt;form/&gt;. А для отправки данных из &lt;form/&gt; могут быть использованы только HTTP-запросы GET и POST. То есть для для всех трех операций - обновления, удаления и создания пользователя - нам пришлось бы использовать только POST-запросы. Использование PUT и DELETE запросов было бы нам недоступно. 
+
+И, в принципе, это вполне нормально и несложно реализовать, но класс HiddenHttpMethodFilter позволяет нам их использовать. Таким образом, читателю будет более явно будет видна разница между операциями в приложении.
+
+Наконец, переходим к клиентской части.
+
+Она представлена пятью JSP-страницами. 
+
+index.jsp
+<pre class="lang-java line-numbers"><code>
+&lt;%@ page contentType="text/html;charset=UTF-8" language="java" %&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;Здравствуйте!&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+Если вы хотите начать работу с базой данных пользователей - &lt;br&gt;
+нажмите кнопку ниже:
+
+&lt;form action = "users" method="get"&gt;
+    &lt;input type="submit" value="Начать работу с базой данных"&gt;
+&lt;/form&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+addUser.jsp
+
+<pre class="lang-java line-numbers"><code>
+
+&lt;%@ page contentType="text/html;charset=UTF-8" language="java" %&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;Добавить нового пользователя&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;form action = "/users" method="post"&gt;
+    &lt;input required type="text" name="name" placeholder="Имя"&gt;
+    &lt;input required type="text" name="age" placeholder="Возраст"&gt;
+    &lt;input type="submit" value="Сохранить"&gt;
+&lt;/form&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+
+</code></pre>
+deleteUser.jsp
+
+<pre class="lang-java line-numbers"><code>
+
+&lt;%@ page contentType="text/html;charset=UTF-8" language="java" %&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;Удалить пользователя&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+
+Вы действительно хотите удалить пользователя ${param.id}?
+
+&amp;lform action="/users/${param.id}" method="post"&gt;
+    &lt;input type="hidden" name="id" value="${param.id}"&gt;
+    &lt;input type="hidden" name="_method" value="delete"&gt;
+    &lt;input type="submit" value="Удалить"&gt;
+&lt;/form&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+
+</code></pre>
+showUsers.jsp
+
+<pre class="lang-java line-numbers"><code>
+&lt;%@ page contentType="text/html;charset=UTF-8" language="java" %&gt;
+&lt;%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;Список пользователей&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;table border="2"&gt;
+    &lt;tr&gt;
+        &lt;td&gt;ID&lt;/td&gt;
+        &lt;td&gt;Имя&lt;/td&gt;
+        &lt;td&gt;Возраст&lt;/td&gt;
+        &lt;td&gt;Действия&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;c:forEach items="${users}" var = "user"&gt;
+        &lt;tr&gt;
+            &lt;td&gt;${user.getId()}&lt;/td&gt;
+            &lt;td&gt;${user.getName()}&lt;/td&gt;
+            &lt;td&gt;${user.getAge()}&lt;/td&gt;
+            &lt;td&gt;
+                &lt;form action = "updateUser.jsp" method="post"&gt;
+                    &lt;input type="hidden" name="id" value="${user.getId()}"&gt;
+                    &lt;input type="hidden" name="name" value="${user.getName()}"&gt;
+                    &lt;input type="hidden" name="age" value="${user.getAge()}"&gt;
+                    &lt;input type="submit" value="Изменить" style="float:left"&gt;
+                &lt;/form&gt;
+                &lt;form action="deleteUser.jsp" method="post"&gt;
+                    &lt;input type="hidden" name="id" value="${user.getId()}"&gt;
+                    &lt;input type="submit" value="Удалить" style="float:left"&gt;
+                &lt;/form&gt;&lt;/td&gt;
+        &lt;/tr&gt;
+    &lt;/c:forEach&gt;
+&lt;/table&gt;
+
+&lt;form action = "addUser.jsp"&gt;
+    &lt;input type="submit" value="Добавить нового пользователя"&gt;
+&lt;/form&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+
+</code></pre>
+updateUser.jsp
+
+<pre class="lang-java line-numbers"><code>
+&lt;%@ page contentType="text/html;charset=UTF-8" language="java" %&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;Изменить данные пользователя&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+
+Редактировать пользователя
+
+&lt;form action="/users/${param.id}" method="post"&gt;
+    &lt;input type="hidden" name = "id" value="${param.id}"&gt;
+    &lt;input type="text" name="name" value="${param.name}" placeholder=${param.name}&gt;
+    &lt;input type="text" name="age" value="${param.age}" placeholder=${param.age}&gt;
+    &lt;input type="hidden" name="_method" value="put"&gt;
+    &lt;input type="submit" value="Обновить"&gt;
+&lt;/form&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+Страница JSP (Java Server Page) содержит текст двух типов: статические исходные данные, которые могут быть оформлены в одном из текстовых форматов (HTML, SVG, WML, или XML), и JSP-элементы, которые конструируют динамическое содержимое.
+
+Для понимания того, что такое JSP я позволю себе скопипастить кусочек очень хорошей статьи одного автора (<a href="http://java-course.ru/student/book1/jsp/" target="_blank" rel="nofollow">отсюда</a>).
+
+"По сути JSP при первом обращении преобразуется в сервлет и работает уже как сервлет. Это очень важно понять. <span class="text-bold">JSP НЕ ЯВЛЯЕТСЯ страницей наподобие HTML-страницы</span> — начинающему программисту важно четко осознавать, что это еще один сервлет — просто его вывод не надо программировать. Его можно просто нарисовать. И в нужные места подставить данные. Но т.к. JSP-страница хоть как-то напоминает HTML, то дизайнеру явно будет проще. И я еще раз НАСТОЙЧИВО говорю начинающим — <span class="text-bold">JSP является СЕРВЛЕТОМ</span>. Ее подготовка со всеми данными происходит на сервере. Именно там подставляются все данные. А пользователю в браузер приходит уже готовая HTML-страница, на которой никаких признаков JAVA нет."
+
+Вы можете сами убедиться в том, что JSP-страница действительно является сервлетом, ведь на каждой мз страниц указан метод, который необходимо выполнить. Например, на стартовой странице index.jsp указано, что при нажатии на кнопку "Начать работу с базой данных" будет выполнен method="get". На странице addUser.jsp, отвечающей за создание нового пользователя, при нажатии на кнопку сохранить, будет выполнен method="post". 
+
+Оставшуюся часть JSP составляет обычная статическая HTML-разметка, поэтому подробно останавливаться на них не будем - это тема отдельной статьи, которых немало на просторах Интернета. 
+
+Итак, мы создали наше приложение, осталось испытать его в деле! 
+
+Для этого нам понадобится упомянутый выше контейнер сервлетов Apache Tomcat. Скачать кота можно <a href="http://tomcat.apache.org/" target="_blank" rel="nofollow">с официального сайта</a> (я использую 8-ую версию).
+
+Далее нам нужно создать в IDEA конфигурацию для запуска нашего приложения через Tomcat. Для этого открываем вкладку "Edit Configurations",
+<img data-max-width="900" alt="Ваше первое приложение с использованием Java-сервлетов - 4" src="https://cdn.javarush.com/images/article/c9e7725e-91d4-4a2a-981e-f0b07499dca2/original.jpeg">создаем новую конфигурацию
+<img data-max-width="900" alt="Ваше первое приложение с использованием Java-сервлетов - 5" src="https://cdn.javarush.com/images/article/9af9fb9a-7fbd-42df-81ec-787edcddcb35/original.jpeg">и выбираем Tomcat Server Local.
+
+Во вкладке Application Server указываем путь к папке, где лежит Tomcat
+<img data-max-width="512" src="/images/article/4359aeca-4d8f-445c-9978-179755dcc564/original.jpeg" class="img-fluid" alt="Ваше первое приложение с использованием Java-сервлетов - 6">Далее переходим на вкладку Deployment.
+<img data-max-width="800" src="/images/article/44f46561-cb4c-48a6-b0c6-791ce89e87a1/original.jpeg" class="img-fluid" alt="Ваше первое приложение с использованием Java-сервлетов - 7">Здесь осуществляется настройка развертывания нашего приложения на локальном сервере.
+
+Наживаем "+", выбираем "Artifact"-&gt; ИмяВашегоПроекта:war (мы будем собирать приложение в war-файл).
+<img data-max-width="512" src="/images/article/5f87d949-130c-4b49-9be2-9859981bd1ab/original.jpeg" class="img-fluid" alt="Ваше первое приложение с использованием Java-сервлетов - 8">Вот, в общем-то, и все! На странице "Server" вы можете увидеть, что наже приложение будет работать по адресу "http://localhost:8080/".
+
+Сохраните эту конфигурацию и как-нибудь назовите (у меня название конфига - "Tommy").
+
+Далее, на вкладке Maven в IDEA (с правой стороны) воспользуемся war-плагином для сборки нашего проекта в war-файл (Plugins -&gt; war -&gt; war:war).
+<img data-max-width="600" alt="Ваше первое приложение с использованием Java-сервлетов - 9" src="https://cdn.javarush.com/images/article/8d1ac020-f221-42fd-aacd-02bc8f66b46e/original.jpeg">После того, как сборка была осуществлена, запускаем приложение и ждем.
+<img data-max-width="900" alt="Ваше первое приложение с использованием Java-сервлетов - 10" src="https://cdn.javarush.com/images/article/767663ef-f62e-4e4c-917b-b51b33178508/original.jpeg">Успех! Стартовая страница запустилась.
+Теперь нажмем на кнопку "Начать работу с базой данных". Наша JSP страница index.jsp сформирует GET-запрос, который будет обработан сервером. Сервер сформирует ответ и вернет его нам в виде списка всех существующих пользователей (если они, конечно, есть в БД).
+
+А вот и они!
+<img data-max-width="600" alt="Ваше первое приложение с использованием Java-сервлетов - 12" src="https://cdn.javarush.com/images/article/c94aa5a0-50eb-4061-aaae-e3e4cc0e9011/original.jpeg">Попробуем удалить одного из пользователей:
+<img data-max-width="600" alt="Ваше первое приложение с использованием Java-сервлетов - 13" src="https://cdn.javarush.com/images/article/135566b6-dab7-40a5-b89a-9f4069a00635/original.jpeg">Тоже работает!
+
+Вот мы и написали наше первое приложение с использованием сервлетов.
+
+Как видите, все оказалось не так уж и сложно :)
+
+В качестве домашнего задания Вы можете, например, вернуть в приложение функционал работы с автомобилями из предыдущей статьи. Т.е. создать для автомобилей отдельный сервлет и jsp-страницы и научить наше приложение выводить список автомобилей пользователя, добавлять ему новые машины, а также редактировать и удалять их. 
+
+P.S. Сервлеты и JSP - технологии достаточно древние, и на просторах интернета часто можно встретить комментарии в духе "кому нужно это старье?".
+
+Ответ достаточно прост - оно нужно прежде всего тем, кто будет работать на настоящих проектах, в которых вполне возможно куча написанного с их использованием кода. И перепиливать "старье" на что-то новое, не понимая как оно работает - то еще удовольствие :)
+
+Для более основательного изучения темы JSP и сервлетов вы можете использовать книгу <a href="http://shop.oreilly.com/product/9780596516680.do" target="_blank" rel="nofollow">"Head First Servlets and JSP"</a> (только на английском языке).
+
+Ее писали те же авторы, что и знаменитую супер-книгу "Head First Java", что для многих может быть гарантом качества:)
+
+Надеюсь, эта статья была полезна для читателей!
+
+Если Вы хотели бы увидеть новые статьи - не забудьте поддержать автора в конкурсе, поставив "Нравится". А лучше - "Очень нравится" :)
+
+Спасибо за внимание, и успехов в обучении!

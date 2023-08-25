@@ -1,0 +1,248 @@
+Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 16
+<p>----------------------------------------</p>
+Hello, friend! Как много времени нужно потратить, чтобы стать разработчиком? Я спрашивал много разных людей и слышал много разных ответов...
+<p>----------------------------------------</p>
+Hello, friend!
+
+Как много времени нужно потратить, чтобы стать разработчиком? Я спрашивал много разных людей и слышал много разных ответов. Для чего-то и кого-то может хватить и месяца, ну а кому-то и года будет мало. 
+
+Но я знаю точно, что становление Java-разработчиком — это тернистый и долгий путь, независимо от твоих начальных способностей. Ведь важны не столько способности, сколько упертость и трудолюбие.
+
+<img data-max-width="800" data-id="c649e687-1bf9-4f72-bc02-cfc85860abc0" src="https://cdn.javarush.com/images/article/c649e687-1bf9-4f72-bc02-cfc85860abc0/800.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 16 - 1">Поэтому сегодня мы все так же целеустремленно продолжаем разбирать самые популярные вопросы с собеседований на Java-разработчика. Их изучение постепенно приблизит тебя к заветной цели.
+
+Приступим!
+<h4>17. Приведите примеры удачного и неудачного использования Optional</h4>Предположим, у нас есть некоторый ряд значений, по которому мы проходимся стримом, и в итоге получаем некоторый <span class="code">Optional</span> как результат:
+ 
+<pre class="language-java line-numbers"><code>
+Optional&lt;String&gt; stringOptional = Stream.of("a", "ab", "abc", "abcd")
+   .filter(str -&gt; str.length() &gt;= 3)
+   .findAny();
+</code></pre>
+Нам, как полагается, нужно достать из этого <span class="code">Optional</span> значение.
+ 
+Просто использовать <span class="code">get()</span> — плохой способ:
+
+<pre class="language-java line-numbers"><code>
+String result = stringOptional.get();
+</code></pre>
+ Но ведь этот метод должен достать значение из <span class="code">Optional</span> и вернуть нам? Это, конечно, так, но если в нём есть значение.
+ 
+Ну а если значения в стриме были другие, и в итоге мы получили пустой <span class="code">Optional</span>, при попытке взять значение из него посредством использования метода <span class="code">get()</span> будет выброшено: 
+<img data-max-width="512" data-id="289868d5-2b14-4def-918b-5613746168ce" src="https://cdn.javarush.com/images/article/289868d5-2b14-4def-918b-5613746168ce/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 16 - 2">Что не есть хорошо.
+ 
+В таком случае лучше использовать конструкции:<ol>
+ 
+<li><p></p><pre class="language-java line-numbers"><code>
+String result = null;
+if (stringOptional.isPresent()) {
+ stringOptional.get();
+}
+</code></pre><p></p>
+<p>В данном случае мы проверяем, есть ли элемент в <span class="code">Optional</span>. Если нет — результирующая строка имеет свое старое значение.</p></li>
+ 
+<li><p></p><pre class="language-java line-numbers"><code>
+String result = stringOptional.orElse("default value");
+</code></pre><p></p>
+<p>В  данном случае мы указываем некоторое значение по умолчанию, которое будет заданно результирующей строке в случае пустого <span class="code">Optional</span>.</p></li>
+ 
+<li><p></p><pre class="language-java line-numbers"><code>
+String result = stringOptional.orElseThrow(() -&gt; new CustomException());
+</code></pre><p></p>
+<p>В данном случае мы сами выбрасываем исключение при пустом <span class="code">Optional</span>.</p></li>
+ 
+</ol>Это бывает удобно в приложении, когда, к примеру, используется метод Spring JPA — <span class="code">findById()</span>, который возвращает <span class="code">Optional</span> значения. В таком случае данным методом мы пытаемся взять значение, и если его нет — бросаем некоторое <span class="text-bold">Runtime</span> исключение, которое обрабатывается на уровне контроллеров с помощью <a href="https://habr.com/ru/post/528116/" rel="nofollow" target="_blank">ExceptionHandler</a> и конвертируется в <span class="text-bold">HTTP</span> ответ со статусом <span class="text-bold">404 - NOT FOUND</span>.
+<img data-max-width="512" data-id="d6714011-9b27-4e97-9e94-eff2a55c4a06" src="https://cdn.javarush.com/images/article/d6714011-9b27-4e97-9e94-eff2a55c4a06/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 16 - 3"><h4>18. Можно ли объявлять main method как final?</h4>Да, несомненно, ничто не мешает нам объявить метод <span class="code">main()</span> как <span class="code">final</span>. Компилятор не выдаст ошибок.
+
+Но стоит помнить, что какой-либо метод после объявления его как <span class="code">final</span> станет <span class="text-bold">последним методом</span> — не переопределяемым. Хотя, кто будет переопределять <span class="code">main</span>???
+<img data-max-width="512" data-id="ff198b61-2eba-4f5a-a409-c99128221515" src="https://cdn.javarush.com/images/article/ff198b61-2eba-4f5a-a409-c99128221515/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 16 - 4"><h4>19. Можно ли импортировать те же package / class дважды? Какие могут быть последствия?</h4>Да можно. Последствия? У нас будет пара ненужных импортов, которые Intelijj IDEA будет отображать как серые, т.е. неиспользуемые.
+<img data-max-width="256" data-id="9b9e1a16-4611-4c1c-be46-d988987bf56b" src="https://cdn.javarush.com/images/article/9b9e1a16-4611-4c1c-be46-d988987bf56b/256.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 16 - 5"><img data-max-width="512" data-id="b007c152-3fd5-4d3c-aac5-d5aad2cb50df" src="https://cdn.javarush.com/images/article/b007c152-3fd5-4d3c-aac5-d5aad2cb50df/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 16 - 6"><h4>20. Что такое Casting? Когда можем получить исключение ClassCastException?</h4>Casting, или <span class="text-bold">приведение типов</span> — это процесс преобразования одного типа данных в другой тип данных: вручную (неявное приведение) или автоматически (явное приведение типов).
+<img data-max-width="512" data-id="ed686a9c-07e1-459b-aecc-2106c8356b75" src="https://cdn.javarush.com/images/article/ed686a9c-07e1-459b-aecc-2106c8356b75/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 16 - 7">Автоматическое преобразование выполняет компилятор, а ручное — разработчик.
+ 
+Приведение типов для примитивов и классов несколько отличается, поэтому и рассмотрим их по отдельности.
+ 
+<span class="text-bold"><em>Примитивные типы</em></span>
+Пример <span class="text-bold">автоматического приведения</span> примитивных типов:
+ 
+<pre class="language-java line-numbers"><code>
+int value = 17;
+double convertedValue = value;
+</code></pre>
+Как видите, никаких дополнительных манипуляций помимо знака <span class="code">=</span> тут не нужно.
+ 
+Пример <span class="text-bold">ручного приведения</span> примитивных типов:
+ 
+<pre class="language-java line-numbers"><code>
+double value = 17.89;
+int convertedValue = (int)value;
+</code></pre>
+В этом случае мы можем наблюдать ручное приведение, которое реализуется с помощью <span class="code">(int)</span>, при этом часть за запятой будет отброшена, и <span class="code">convertedValue</span> будет иметь значение - 17.
+ 
+Подробнее о приведении примитивных типов читайте в <a href="https://javarush.com/groups/posts/1945-rasshirenie-i-suzhenie-primitivnihkh-tipov" target="_blank">этой статье</a>.
+ 
+Ну а теперь давайте перейдем к объектам.
+ 
+<span class="text-bold"><em>Ссылочные типы</em></span>
+Для ссылочных типов <span class="text-bold">автоматическое приведение</span> возможно для классов наследников к классам родителям. Это так же называется <span class="text-bold">полиморфизмом</span>.
+ 
+Предположим, у нас есть класс <span class="code">Lion</span>, который наследуется от класса <span class="code">Cat</span>. В этом случае автоматическое преобразование будет выглядеть так:
+
+<pre class="language-java line-numbers"><code>
+Cat cat = new Lion();
+</code></pre>
+А вот с <span class="text-bold">явным приведением</span> всенесколько сложнее, ведь нет функционала обрезания лишнего, как у примитивов.
+ 
+И сделав просто явно преобразование вида:
+
+<pre class="language-java line-numbers"><code>
+Lion lion= (Lion)new Cat();
+</code></pre>
+Вы и получите ошибку:
+<img data-max-width="1080" data-id="1b2073c5-6f87-4878-9744-cd45de165099" src="https://cdn.javarush.com/images/article/1b2073c5-6f87-4878-9744-cd45de165099/1080.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 16 - 8">В самом деле, вы можете классу наследнику <span class="code">Lion</span> добавить методы, которых не было изначально в классе <span class="code">Cat</span>, и потом пытаться их вызвать, ведь типа объекта у вас станет <span class="code">Lion</span>. Ну а в этом логики никакой нет.
+ 
+Поэтому, сужение типа возможно лишь когда изначальный объект типа <span class="code">Lion</span>, но был позже приведен к классу родителя:
+ 
+<pre class="language-java line-numbers"><code>
+Lion lion = new Lion();
+Cat cat = lion;
+Lion newLion = (Lion)cat;
+</code></pre>
+Также, для большей надежности, сужающее приведение для объектов рекомендуется с использованием конструкции <span class="code">instanceOf</span>:
+ 
+<pre class="language-java line-numbers"><code>
+if (cat instanceof Lion) {
+ newLion = (Lion)new Cat();
+}
+</code></pre>
+Подробнее о приведениях ссылочных типов — <a href="https://javarush.com/groups/posts/2019-rasshirenie-i-suzhenie-ssihlochnihkh-tipov" target="_blank">в этой статье</a>. 
+<h4>21. Почему современные фреймворки используют в основном только unchecked exceptions?</h4>Думаю, это все потому, что обработка <span class="text-bold">checked</span> исключений — это ещё тот спагетти код, который повсеместно повторяется, при этом не во всех случаях действительно нужен.
+<img data-max-width="512" data-id="b529af8e-4b36-4bc8-b381-2177a0b09b17" src="https://cdn.javarush.com/images/article/b529af8e-4b36-4bc8-b381-2177a0b09b17/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 16 - 9">В таких случаях легче уже сделать обработку внутри фреймворка, чтобы лишний раз не перекладывать это на плечи разработчиков.
+ 
+Да, несомненно, аварийная ситуация может возникнуть, но эти самые <span class="text-bold">uncheked</span> исключения можно обрабатывать более удобным способом, не заморачиваясь над обработкой в <span class="code">try-catch</span> и не прокидывая дальше по методам. Достаточно всего лишь в <a href="https://habr.com/ru/post/528116/" rel="nofollow" target="_blank">exceptionHandler</a>-е конвертировать исключение в некоторый HTTP-ответ.
+<h4>22. Что такое static import?</h4>При использовании статических данных (методов, переменных) можно не создавать сам объект, а делать это по имени класса, но и в таком случае нам необходима ссылка на класс. С ней все просто: она добавляется при помощи обычного импорта.
+ 
+Но что если мы заходим использовать статический метод без написания имени класса, как будто это статический метод текущего класса? Это возможно с помощью статического импорта!
+ 
+В таком случае мы должны прописывать <span class="code">static import</span> и ссылку на тот метод. Как вот например, статический метод класса <span class="code">Math</span> для вычисления значения косинуса:
+
+<pre class="language-java line-numbers"><code>
+import static java.lang.Math.cos;
+</code></pre>
+В итоге мы можем использовать метод без указания имени класса:
+
+<pre class="language-java line-numbers"><code>
+double result = cos(60);
+</code></pre>
+Также элементарно мы можем подгрузить сразу все статические методы класса с помощью статического импорта:
+
+<pre class="language-java line-numbers"><code>
+import static java.lang.Math.*;
+</code></pre><img data-max-width="512" data-id="ab9099ee-2740-4bc5-adec-7722297e317a" src="https://cdn.javarush.com/images/article/ab9099ee-2740-4bc5-adec-7722297e317a/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 16 - 10"><h4>23. Какая связь между методами hashCode() и equals()?</h4>Согласно <a href="https://www.oracle.com/index.html" rel="nofollow" target="_blank">Oracle</a>, существует следующее правило: 
+ 
+<em>Если два объекта равны (т.е. метод <span class="code">equals()</span> возвращает <span class="text-bold">true</span>), у них должен быть одинаковый хэш-код.</em>
+ 
+При этом не стоит забывать, что одинаковый хэш-код может быть у двух разных объектов.
+ 
+Xтобы разобраться, почему же <span class="code">equals()</span> и <span class="code">hashCode()</span> переопределяют всегда в паре, рассмотрим следующие случаи:<ol>
+ 
+<li><p>Оба метода переопределенные.</p>
+<p>В таком случае два разных объекта с одинаковыми внутренними состояниями будут возвращать при <span class="code">equals()</span> — <span class="text-bold">true</span>, в то время как и <span class="code">hashCode()</span> будет у обоих возвращать одно и то же число.</p>
+<p>Получается, все окей, ибо правило выполняется.</p></li>
+
+<li><p>Оба метода не переопределенные.</p>
+<p>В таком случае два разных объекта с одинаковыми внутренними состояниями при <span class="code">equals()</span> будут возвращать <span class="code">false</span>, так как сравнение идёт по ссылке через оператор <span class="code">==</span>.</p>
+<p>Метод <span class="code">hashCode()</span> также вернет разные значения (скорее всего), так как он выдает преобразованное значение адреса ячейки памяти. Но у одного и того же объекта это значение будет одинаковым, как и <span class="code">equals()</span> в данном случае вернет <span class="text-bold">true</span>, только когда ссылки указывают на один и тот же объект.</p>
+<p>Получается, и в данном случае все окей и правило выполняется.</p></li>
+ 
+<li><p>Переопределен <span class="code">equals()</span>, не переопределен <span class="code">hashCode()</span>.</p>
+<p>В таком случае для двух разных объектов с одинаковыми внутренними состояниями <span class="code">equals()</span> будет возвращать <span class="text-bold">true</span>, а <span class="code">hashCode()</span> будет возвращать (скорее всего) разные значения.</p>
+<p>Происходит нарушение правила, поэтому так делать не рекомендуется.</p></li>
+
+<li><p>Не переопределен <span class="code">equals()</span>, переопределен <span class="code">hashCode()</span>.</p>
+<p>В таком случае для двух разных объектов с одинаковыми внутренними состояниями <span class="code">equals()</span> будет возвращать <span class="text-bold">false</span>, а <span class="code">hashCode()</span> будет возвращать одинаковые значения.</p>
+<p>Происходит нарушение правила, поэтому подход неверный.</p></li>
+ 
+</ol>Как вы видите, выполнение правила возможно лишь когда <span class="code">equals()</span> и <span class="code">hashCode()</span> переопределяются оба либо оба не переопределяются вовсе.
+<img data-max-width="512" data-id="bdd47f83-90c5-4779-8c6e-d6896142d5ca" src="https://cdn.javarush.com/images/article/bdd47f83-90c5-4779-8c6e-d6896142d5ca/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 16 - 11">Подробнее об <span class="code">equals()</span> и <span class="code">hashCode()</span> читайте <a href="https://javarush.com/groups/posts/1989-kontraktih-equals-i-hashcode-ili-kak-ono-vsje-tam" target="_blank">в данной статье</a>.
+<h4>24. Когда используют BufferedInputStream и BufferedOutputStream классы?</h4><span class="code">InputStream</span> используется для побайтового чтения данных из некоторого ресурса, а <span class="code">OutputStream</span> — для побайтовой записи. Но побайтовые операции могут быть весьма неудобными и требуют дополнительной обработки (чтобы нормально считывать/записывать тексты). Собственно, для упрощения таких байтовых записей ввели <span class="code">BufferedOutputStream</span>, а для чтения <span class="code">BufferedInputStream</span>.
+ 
+Эти классы являются не чем иным как буферами, накапливающими данные, позволяющими работать с данными не побайтово, а целыми пакетами данных (массивами).
+ 
+При создании <span class="code">BufferedInputStream</span> принимает в конструктор экземпляр типа <span class="code">InputStream</span>, с которого идёт считка данных:
+ 
+<pre class="language-java line-numbers"><code>
+BufferedInputStream bufferedInputStream = new BufferedInputStream(System.in);
+byte[] arr = new byte[100];
+bufferedInputStream.read(arr);
+</code></pre>
+<span class="code">System.in</span> — это объект типа <span class="code">InputStream</span>, который считывает данные с консоли.
+
+То есть с помощью данного объекта <span class="code">BufferedInputStream</span> мы можем читать данные с <span class="code">InputStream</span>, записывая их в переданный массив. Получается своего рода обертка класса <span class="code">InputStream</span>.
+ 
+Массив <span class="code">arr</span> из данного примера — массив которому достаются данные из <span class="code">BufferedInputStream</span>. Тот в свою очередь читает данные из <span class="code">InputStream</span> другим массивом, который по умолчанию имеет размер 2048 байт.
+ 
+Аналогично и для <span class="code">BufferedOutputStream</span>: в конструктор необходимо передать экземпляр типа <span class="code">OutputStream</span>, в который мы будем писать данные целыми массивами:
+ 
+<pre class="language-java line-numbers"><code>
+byte[] arr = "Hello world!!!".getBytes();
+BufferedOutputStream bufferedInputStream = new BufferedOutputStream(System.out);
+bufferedInputStream.write(arr);
+bufferedInputStream.flush();
+</code></pre>
+<span class="code">System.out</span> — это объект типа <span class="code">OutputStream</span>, который записывает данные в консоли.
+
+Метод <span class="code">flush()</span> отправляет данные с <span class="code">BufferedOutputStream</span> в <span class="code">OutputStream</span>, очищая при этом <span class="code">BufferedOutputStream</span>. Без этого метода ничего записываться и не будет.
+ 
+И аналогично предыдущему примеру: <span class="code">arr</span> — это массив, из которого записываются данные в <span class="code">BufferedOutputStream</span>. С него же они пишутся в <span class="code">OutputStream</span> уже другим массивом, который по умолчанию имеет размер 512 байт.
+ 
+Подробнее об этих двух классах — <a href="https://betacode.net/13359/java-bufferedoutputstream" rel="nofollow" target="_blank">в статье</a>. 
+<h4>25. Какая разница между классами java.util.Collection и java.util.Collections?</h4><span class="code">Collection</span> — интерфейс, который является головой в иерархии коллекций. Он представляет классы, позволяющие создавать, содержать и изменять целые группы объектов. Для этого предоставляется множество методов, вроде <span class="code">add()</span>, <span class="code">remove()</span>, <span class="code">contains()</span> и других.
+ 
+Основные интерфейсы класса <span class="code">Collection</span>:<ul>
+
+    <li><p><span class="code">Set</span> — интерфейс, описывающий множество, которое содержит неупорядоченные уникальные (неповторяющиеся) элементы.</p></li>
+    <li><p><span class="code">List</span> — интерфейс, описывающий структуру данных, которая хранит упорядоченную последовательность объектов. Эти объекты получают свой индекс (номер), используя который можно взаимодействовать с ними: брать, удалять, изменять, перезаписывать.</p></li>
+    <li><p><span class="code">Queue</span> — интерфейс, описывающий структуру данных с хранением элементов в виде очереди, которая следует правилу — <span class="text-bold">FIFO — First In First Out</span>.</p></li>
+
+</ul><img data-max-width="800" data-id="917ed1a0-ced4-46ba-bc19-fc54eaa087c9" src="https://cdn.javarush.com/images/article/917ed1a0-ced4-46ba-bc19-fc54eaa087c9/800.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 16 - 12">Подробнее о <a href="https://javarush.com/groups/posts/2308-korotko-o-glavnom---java-collections-framework" target="_blank">Collection</a>.
+ 
+<span class="code">Collections</span> — утилитный класс, предоставляющий множество всевозможных служебных методов.
+
+Например:<ul>
+
+    <li><p><span class="code">addAll(Collection&lt;? super T&gt; collection, T…element)</span> — добавляет в <span class="code">collection</span> переданные элементы типа <span class="code">Т</span>.</p></li>
+    <li><p><span class="code">сopy(List&lt;? super T&gt; dest, List&lt;? extends T&gt; src)</span> — копирует все элементы из списка <span class="code">src</span> в список в <span class="code">dest</span>.</p></li>
+    <li><p><span class="code">emptyList()</span> — возвращает пустой список.</p></li>
+    <li><p><span class="code">max(Collection&lt;? extends T&gt; collection, Comparator&lt;? super T&gt; comp)</span> — возвращает максимальный элемент данной коллекции в соответствии с порядком, установленным указанным компаратором.</p></li>
+    <li><p><span class="code">unmodifiableList(List&lt;? extends T&gt; list)</span> — возвращает неизменяемое представление переданного списка.</p></li>
+
+</ul>И таких разнообразных удобных методов в <span class="code">Collections</span> — великое множество.
+<img data-max-width="512" data-id="3e47a31f-cf9e-4c43-9a64-b0f431c87eeb" src="https://cdn.javarush.com/images/article/3e47a31f-cf9e-4c43-9a64-b0f431c87eeb/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 16 - 13">С полным списком данных методов можно ознакомиться <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/Collections.html" rel="nofollow" target="_blank">на сайте Oracle</a>.
+ 
+Я не зря сказал, что они удобные. Ведь они все статические. То есть, вам не нужно каждый раз создавать объект данного класса, чтобы вызвать у него необходимый метод.
+ 
+Вам достаточно лишь прописать название класса, вызвать у него нужный метод и передать все требуемые аргументы.
+ 
+Подводя черту, <span class="code">Collection</span> — корневой интерфейс структуры коллекций. <span class="code">Collections</span> —  вспомогательный класс для более удобной обработки объектов, принадлежащих типу из структуры коллекций.
+ 
+Ну а на сегодня всё. Всем добра!<img data-max-width="512" data-id="7ce5b551-f7fc-40f6-a5ea-5a92553e5be6" src="https://cdn.javarush.com/images/article/7ce5b551-f7fc-40f6-a5ea-5a92553e5be6/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 16 - 14"><table><tbody>
+<tr><th>
+Другие материалы серии:
+</th></tr><tr><td>
+<ul>
+<li><a href="https://javarush.com/groups/posts/3243-razbor-voprosov-i-otvetov-na-sobesedovanii-chastjh-1" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 1</a></li>
+<li><a href="https://javarush.com/groups/posts/3252-razbor-voprosov-i-otvetov-na-sobesedovanii-chastjh-2" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 2</a></li>
+<li><a href="https://javarush.com/groups/posts/3273-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-3" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 3</a></li>
+<li><a href="https://javarush.com/groups/posts/3284-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-4" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 4</a></li>
+<li><a href="https://javarush.com/groups/posts/3296-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-5" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 5</a></li>
+<li><a href="https://javarush.com/groups/posts/3341-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-6" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 6</a></li>
+<li><a href="https://javarush.com/groups/posts/3386-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-7" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 7</a></li>
+<li><a href="https://javarush.com/groups/posts/3415-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-8" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 8</a></li>
+<li><a href="https://javarush.com/groups/posts/3434-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-9" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 9</a></li>
+<li><a href="https://javarush.com/groups/posts/3452-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-10" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 10</a></li>
+<li><a href="https://javarush.com/groups/posts/3464-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-11" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 11</a></li>
+<li><a href="https://javarush.com/groups/posts/3475-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-12" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 12</a></li>
+<li><a href="https://javarush.com/groups/posts/3507-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-13" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 13</a></li>
+<li><a href="https://javarush.com/groups/posts/3558-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-14" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 14</a></li>
+<li><a href="https://javarush.com/groups/posts/3592-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-15" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 15</a></li>
+</ul>
+</td></tr></tbody></table><a href="https://javarush.com/login/signup" target="_blank"><img data-max-width="1080" id="click_banner5_articles" data-id="45b146ac-f14c-450e-990e-a2b24253c9e6" src="https://cdn.javarush.com/images/article/45b146ac-f14c-450e-990e-a2b24253c9e6/original.png" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 16 - 15"></a>

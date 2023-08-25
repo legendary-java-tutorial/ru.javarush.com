@@ -1,0 +1,196 @@
+Паттерн проектирования Адаптер
+<p>----------------------------------------</p>
+Сегодня мы затронем важную новую тему — паттерны, или по-другому — шаблоны проектирования. Что же такое паттерны? Думаю, тебе известно выражение «не надо изобретать велосипед». В программировании, как и во многих других сферах, есть большое...
+<p>----------------------------------------</p>
+Привет! Сегодня мы затронем важную новую тему — <span class="text-bold">паттерны, или по-другому — шаблоны проектирования</span>. Что же такое паттерны?
+
+Думаю, тебе известно выражение «не надо изобретать велосипед». В программировании, как и во многих других сферах, есть большое количество типовых ситуаций. Для каждой из них в процессе развития программирования создавались готовые работающие решения. Это и есть шаблоны проектирования.
+
+Условно говоря, паттерн — это некий пример, который предлагает решение ситуации вида: «если в вашей программе нужно сделать то-то, как это лучше всего сделать».
+
+Паттернов очень много, им посвящена отличная книга «Изучаем шаблоны проектирования», с которой обязательно нужно ознакомиться.
+<img data-max-width="650" alt="Паттерн проектирования «Адаптер» - 2" src="https://cdn.javarush.com/images/article/b1604e52-60d9-435d-8bb3-ebb7b48c2a84/original.jpeg">Если говорить максимально кратко, паттерн состоит из распространенной проблемы и ее решения, которое уже можно считать неким стандартом.
+
+В сегодняшней лекции мы познакомимся с одним из таких паттернов под названием «Адаптер».
+
+Название у него говорящее, и ты не раз встречался с адаптерами в реальной жизни. Один из самых распространенных адаптеров — кардридеры, которыми снабжены множество компьютеров и ноутбуков.
+<img data-max-width="850" alt="Паттерн проектирования «Адаптер» - 3" src="https://cdn.javarush.com/images/article/04712756-0c13-481a-906e-aa196d6e7c83/original.jpeg">Представь, что у нас есть какая-то карта памяти. В чем состоит проблема?
+
+<span class="text-bold">В том, что она не умеет взаимодействовать с компьютером. У них нет общего интерфейса.</span>
+
+У компьютера есть разъем USB, но карту памяти в него не вставить. 
+
+Карту невозможно вставить в компьютер, из-за чего мы не сможем сохранить наши фотографии, видео и другие данные.
+
+Кардридер является адаптером, решающим данную проблему. Ведь у него есть USB-кабель! В отличие от самой карты, кардридер можно вставить в компьютер. У них с компьютером есть общий интерфейс — USB.
+
+Давай посмотрим, как это будет выглядеть на примере:
+
+<pre class="lang-java line-numbers"><code>
+public interface USB {
+
+   void connectWithUsbCable();
+}
+</code></pre>
+Это наш интерфейс USB с единственным методом — вставить USB-кабель:
+
+<pre class="lang-java line-numbers"><code>
+public class MemoryCard {
+
+   public void insert() {
+       System.out.println("Карта памяти успешно вставлена!");
+   }
+
+   public void copyData() {
+       System.out.println("Данные скопированы на компьютер!");
+   }
+}
+</code></pre>
+Это наш класс, реализующий карту памяти. В нем уже есть 2 нужных нам метода, но вот беда: интерфейс USB он не реализует. Карту нельзя вставить в USB-разъем.
+
+<pre class="lang-java line-numbers"><code>
+public class CardReader implements USB {
+
+   private MemoryCard memoryCard;
+
+   public CardReader(MemoryCard memoryCard) {
+       this.memoryCard = memoryCard;
+   }
+
+   @Override
+   public void connectWithUsbCable() {
+       this.memoryCard.insert();
+       this.memoryCard.copyData();
+   }
+}
+</code></pre>
+А вот и наш адаптер!
+
+Что же делает <span class="text-bold">класс <code>CardReader</code></span> и почему, собственно, он является адаптером?
+
+Все просто. Адаптируемый класс (карта памяти) становится одним из полей адаптера. Это логично, ведь в реальной жизни мы тоже вставляем карту внутрь кардридера, и она тоже становится его частью.
+
+В отличие от карты памяти, у адаптера есть общий интерфейс с компьютером. У него есть USB-кабель, то есть он может соединяться с другими устройствами по USB.
+
+Поэтому в программе наш класс <code>CardReader</code> реализует интерфейс USB. Но что же происходит внутри этого метода?
+
+А там происходит ровно то, что нам нужно! Адаптер делегирует выполнение работы нашей карте памяти. Ведь сам-то адаптер ничего не делает, какого-то самостоятельного функционала у кардридера нет. Его задача — только связать компьютер и карту памяти, чтобы карта могла сделать свою работу и скопировать файлы!
+
+Наш адаптер позволяет ей сделать это, предоставив свой интерфейс (метод <code><span class="text-bold">connectWithUsbCable()</span></code>) для «нужд» карты памяти.
+
+Давай создадим какую-то программу-клиент, которая будет имитировать человека, желающего скопировать данные с карты памяти:
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+  
+   public static void main(String[] args) {
+
+       USB cardReader = new CardReader(new MemoryCard());
+       cardReader.connectWithUsbCable();
+
+   }
+}
+</code></pre>
+Что же у нас в результате получилось?
+
+Вывод в консоль:
+
+<pre class="lang-java line-numbers"><code>
+Карта памяти успешно вставлена!
+Данные скопированы на компьютер!
+</code></pre>
+Отлично, наша задача успешно выполнена!
+
+Вот несколько дополнительных ссылок с информацией о паттерне Адаптер:
+<ul>
+<li>Видео <a href="https://www.youtube.com/watch?v=2PKQtcJjYvc" rel="nofollow" target="_blank">Adapter Pattern – Design Patterns</a>;</li>
+<li><a href="https://habr.com/post/85095/" rel="nofollow" target="_blank">Паттерн проектирования «Адаптер» / «Adapter»</a>;</li>
+<li><a href="https://tproger.ru/translations/design-patterns-simple-words-2/" rel="nofollow" target="_blank">Шаблоны проектирования простым языком</a>.</li>
+</ul><h2>Абстрактные классы Reader и Writer</h2>Теперь мы вернемся к нашему любимому занятию: выучим парочку новых классов для работы со вводом и выводом :) Сколько мы их уже выучили, интересно?
+
+Сегодня речь пойдет о классах <code><span class="text-bold">Reader</span></code> и <code><span class="text-bold">Writer</span></code>.
+
+Почему именно о них? Потому что это будет в тему нашему предыдущему разделу — адаптерам.
+
+Давай рассмотрим их подробнее. Начнем с <code>Reader</code>’a.
+
+<span class="text-bold"><code>Reader</code> — это абстрактный класс, поэтому явно создавать его объекты у нас не получится.</span>
+
+Но на самом деле ты с ним уже знаком! Ведь хорошо знакомые тебе классы <code>BufferedReader</code> и <code>InputStreamReader</code> являются его наследниками :) 
+
+<pre class="lang-java line-numbers"><code>
+public class BufferedReader extends Reader {
+…
+}
+
+public class InputStreamReader extends Reader {
+…
+}
+</code></pre>
+Так вот, <span class="text-bold">класс <code>InputStreamReader</code> — это классический адаптер</span>.
+
+Как ты, наверное, помнишь, мы можем передать в его конструктор объект <code><span class="text-bold">InputStream</span></code>. Чаще всего мы для этого используем переменную <code><span class="text-bold">System.in</span></code>:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   InputStreamReader inputStreamReader = new InputStreamReader(System.in);
+}
+</code></pre>
+Что же делает <code>InputStreamReader</code>? <span class="text-bold">Как и всякий адаптер, он преобразует один интерфейс к другому.</span> В данном случае — интерфейс <code>InputStream</code>’a к интерфейсу <code>Reader</code>’a.
+
+Изначально у нас был класс <code>InputStream</code>. Он неплохо работает, но с его помощью можно читать только отдельные байты.
+
+Кроме того, у нас есть абстрактный класс <code>Reader</code>. У него есть отличный и очень нужный нам функционал — он умеет читать символы! Нам такая возможность, конечно, очень нужна.
+
+Но здесь мы сталкиваемся с классической проблемой, которую обычно решают адаптеры — несовместимость интерфейсов. В чем же она проявляется? 
+
+Давай заглянем прямо в документацию Oracle. Вот методы класса <code>InputStream</code>.
+<img data-max-width="850" alt="Паттерн проектирования «Адаптер» - 4" src="https://cdn.javarush.com/images/article/9ae5b72b-7236-4825-bd1f-9e475fe61c0d/original.jpeg">Совокупность методов — это и есть интерфейс. 
+
+Как видишь, метод <code><span class="text-bold">read()</span></code> у этого класса есть (даже в нескольких вариантах), но читать он может только байты: или отдельные байты, или несколько байт с использованием буфера. Нам такой вариант не подходит — мы хотим читать символы.
+
+Нужный нам функционал <span class="text-bold">уже реализован в абстрактном классе <code>Reader</code></span>. Это тоже можно увидеть в документации.
+<img data-max-width="850" alt="Паттерн проектирования «Адаптер» - 5" src="https://cdn.javarush.com/images/article/8133150e-5a9d-4b0e-b75c-403a20b1e326/original.jpeg">Однако интерфейсы <code>InputStream</code>'a и <code>Reader</code>'a несовместимы! Как видишь, во всех реализациях метода <code><span class="text-bold">read()</span></code> у них отличаются и передаваемые параметры, и возвращаемые значения.
+
+И именно здесь нам понадобится <code><span class="text-bold">InputStreamReader</span></code>! Он выступит <span class="text-bold">Адаптером</span> между нашими классами.
+
+Как и в примере с кардридером, который мы рассмотрели выше, мы передаем объект «адаптируемого» класса «внутрь», то есть в конструктор класса-адаптера.
+
+В прошлом примере мы передавали объект <code><span class="text-bold">MemoryCard</span></code> внутрь <code><span class="text-bold">CardReader</span></code>. А теперь передаем объект <code>InputStream</code> в конструктор <code>InputStreamReader</code>!
+
+В качестве <code>InputStream</code> мы используем уже ставшую привычной переменную <code><span class="text-bold">System.in</span></code>:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   InputStreamReader inputStreamReader = new InputStreamReader(System.in);
+}
+</code></pre>
+И действительно: заглянув в документацию <code>InputStreamReader</code>'a мы увидим, что «адаптация» прошла успешно :) Теперь в нашем распоряжении есть методы, которые позволяют нам читать символы.
+<img data-max-width="850" alt="Паттерн проектирования «Адаптер» - 6" src="https://cdn.javarush.com/images/article/d3750d9a-5dea-4727-8a18-8cd4954ad16f/original.jpeg">И хотя изначально наш объект <code>System.in</code> (поток, привязанный к клавиатуре) не позволял этого делать, создав паттерн <span class="text-bold">Адаптер</span> создатели языка решили эту проблему.
+
+У абстрактного класса <code>Reader</code>, как и у большинства I/O-классов, есть брат-близнец — <code><span class="text-bold">Writer</span></code>. Он имеет тот же большой плюс, что и <code>Reader</code> — предоставляет удобный интерфейс для работы с символами.
+
+С выходными потоками проблема и ее решение выглядят так же, как и в случае со входными. 
+
+Есть класс <code><span class="text-bold">OutputStream</span></code>, который умеет записывать только байты; есть абстрактный класс <code><span class="text-bold">Writer</span></code>, который умеет работать с символами, и есть два несовместимых интерфейса.
+
+Эту проблему вновь успешно решает паттерн Адаптер. При помощи класса <code><span class="text-bold">OutputStreamWriter</span></code> мы легко «адаптируем» два интерфейса классов <code><span class="text-bold">Writer</span></code> и <code><span class="text-bold">OutputStream</span></code> друг другу. И, получив байтовый поток <code>OutputStream</code> в конструктор, с помощью <code>OutputStreamWriter</code> мы, тем не менее, можем записывать символы, а не байты!
+
+<pre class="lang-java line-numbers"><code>
+import java.io.*;
+
+public class Main {
+
+   public static void main(String[] args) throws IOException {
+
+       OutputStreamWriter streamWriter = new OutputStreamWriter(new FileOutputStream("C:\\Users\\Username\\Desktop\\test.txt"));
+       streamWriter.write(32144);
+       streamWriter.close();
+   }
+}
+</code></pre>
+Мы записали в наш файл символ с кодом 32144 — 綐, таким образом избавившись от необходимости работать с байтами :)
+
+На этом на сегодня все, до встречи на следующих лекциях! :)

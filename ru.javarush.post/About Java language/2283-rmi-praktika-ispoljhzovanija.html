@@ -1,0 +1,214 @@
+RMI: практика использования
+<p>----------------------------------------</p>
+Привет! Сегодня мы рассмотрим довольно интересную тему — RMI. Это расшифровывается как Remote Method Invocation — удаленный вызов методов.
+При помощи RMI ты можешь научить две программы общаться между собой, даже если они находятся на разных компьютерах...
+<p>----------------------------------------</p>
+Привет!
+
+Сегодня мы рассмотрим довольно интересную тему — <strong>RMI</strong>. Это расшифровывается как <strong>Remote Method Invocation</strong> — удаленный вызов методов.
+<img data-id="dd36e51a-c6bf-4d6c-bebc-fb3b6f0af6de" data-max-width="850" alt="RMI: практика использования - 1" src="https://cdn.javarush.com/images/article/dd36e51a-c6bf-4d6c-bebc-fb3b6f0af6de/1024.jpeg">При помощи RMI ты можешь научить две программы общаться между собой, даже если они находятся на разных компьютерах.
+
+Звучит круто? :) А ведь это не так уж и сложно сделать!
+
+В сегодняшней лекции мы разберемся, из каких частей состоит RMI-взаимодействие и как его настроить.
+
+Первое, что нам понадобится — это <strong>клиент</strong> и <strong>сервер</strong>.
+
+Можешь особо не углубляться в компьютерную терминологию. В случае с RMI это просто две программы. Одна из них будет содержать какой-то объект, а вторая — вызывать методы этого объекта.
+
+Вызвать в одной программе методы объекта, который находится в другой программе — такого мы еще не делали! Самое время попробовать! :)
+
+Чтобы не утонуть в дебрях, пусть наша программа будет простой. 
+
+Вообще, на серверах обычно происходят какие-то вычисления, которые запрашивает клиент. Так будет и у нас.
+
+В роли сервера у нас будет простая программа-калькулятор. У нее будет всего один метод — <code><strong>multiply()</strong></code>. Он будет умножать два числа, которые ему отправила программа-клиент, и возвращать результат.
+
+Прежде всего нам понадобится интерфейс:
+
+<pre class="lang-java line-numbers"><code>
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+
+public interface Calculator extends Remote {
+
+   int multiply(int x, int y) throws RemoteException;
+}
+</code></pre>
+Зачем нам интерфейс?
+
+Дело в том, что работа RMI основана на создании прокси, которые ты изучал в одной из <a href="https://javarush.com/groups/posts/2281-dinamicheskie-proksi" target="_blank">прошлых лекций</a>.
+
+А работа с прокси, как ты, наверное, помнишь, ведется именно на уровне интерфейсов, а не классов.
+
+К нашему интерфейсу есть 2 важных требования!
+<ol>
+<li>Он должен наследовать интерфейс-маркер Remote.</li>
+<li>Все его методы должны выбрасывать RemoteException (это не делается в IDE автоматически, надо написать руками!).</li>
+</ol>Теперь нам надо создать класс-сервер, который будет реализовывать наш интерфейс <code><strong>Calculator</strong></code>.
+<img data-id="f8699f2b-2beb-47c7-a12e-99cea00f396c" data-max-width="850" alt="RMI: практика использования - 2" src="https://cdn.javarush.com/images/article/f8699f2b-2beb-47c7-a12e-99cea00f396c/1024.jpeg">Тут тоже все довольно просто:
+
+<pre class="lang-java line-numbers"><code>
+import java.rmi.RemoteException;
+
+public class RemoteCalculationServer implements Calculator {
+
+   @Override
+   public int multiply(int x, int y) throws RemoteException {
+       return x*y;
+   }
+
+}
+</code></pre>
+Здесь даже комментировать особо нечего :)
+
+Теперь нам нужно написать программу-сервер, которая будет настраивать и запускать наш серверный класс-калькулятор.
+
+Она будет выглядеть вот так:
+
+<pre class="lang-java line-numbers"><code>
+import java.rmi.AlreadyBoundException;
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
+
+public class ServerMain {
+
+   public static final String UNIQUE_BINDING_NAME = "server.calculator";
+
+   public static void main(String[] args) throws RemoteException, AlreadyBoundException, InterruptedException {
+
+       final RemoteCalculationServer server = new RemoteCalculationServer();
+
+       final Registry registry = LocateRegistry.createRegistry(2732);
+
+       Remote stub = UnicastRemoteObject.exportObject(server, 0);
+       registry.bind(UNIQUE_BINDING_NAME, stub);
+
+       Thread.sleep(Integer.MAX_VALUE);
+
+   }
+}
+</code></pre>
+Давай разбираться :)
+
+В первой строке мы создаем какую-то строковую переменную:
+
+<pre class="lang-java line-numbers"><code>
+public static final String UNIQUE_BINDING_NAME = "server.calculator";
+</code></pre>
+Эта строка — <strong>уникальное имя удаленного объекта</strong>. По этому имени программа-клиент сможет найти наш сервер: ты увидишь это позже.
+
+Далее мы создаем наш объект-калькулятор:
+
+<pre class="lang-java line-numbers"><code>
+final RemoteCalculationServer server = new RemoteCalculationServer();
+</code></pre>
+Тут все понятно. Далее уже поинтереснее:
+
+<pre class="lang-java line-numbers"><code>
+final Registry registry = LocateRegistry.createRegistry(2732);
+</code></pre>
+Эта штука под названием Registry — <strong>реестр удаленных объектов</strong>. «Удаленных» не в том смысле, что мы их удалили с компа, а в том, что к объектам из этого регистра возможен удаленный доступ из других программ :)
+
+В метод <code><strong>LocateRegistry.createRegistry()</strong></code> мы передали число 2732. Это номер порта. Если не знаешь, что такое порт — можно почитать <a href="https://tcinet.ru/press-centre/glossary/article.php?ELEMENT_ID=5193" rel="nofollow" target="_blank">вот тут</a>, но сейчас тебе достаточно запомнить, что это уникальный номер, по которому другие программы смогут найти наш реестр объектов (это ты тоже увидишь ниже).
+
+Едем дальше. Посмотрим, что у нас происходит в следующей строке:
+
+<pre class="lang-java line-numbers"><code>
+Remote stub = UnicastRemoteObject.exportObject(server, 0);
+</code></pre>
+В этой строке мы создаем <strong>заглушку</strong>.
+
+<strong>Заглушка (stub)</strong> инкапсулирует внутри себя весь процесс удаленного вызова. Можно сказать, что это <strong>самый важный элемент</strong> RMI.
+
+Что же она делает?
+<ol>
+<li>Принимает всю информацию об удаленном вызове какого-то метода.</li>
+<li><strong>Если у метода есть параметры, заглушка десериализует их.</strong> Обрати внимание на этот пункт! Параметры, которые ты передаешь методам для удаленного вызова, должны быть сериализуемыми (ведь они будут передаваться по сети). У нас такой проблемы нет — мы передаем просто числа. Но если ты будешь передавать объекты, не забудь об этом!</li>
+<li>После этого она вызывает нужный метод.</li>
+</ol>Мы передаем в метод <code><strong>UnicastRemoteObject.exportObject()</strong></code> наш объект-калькулятор server. Таким образом мы делаем возможным удаленный вызов его методов.
+
+Нам осталось сделать только одно:
+
+<pre class="lang-java line-numbers"><code>
+registry.bind(UNIQUE_BINDING_NAME, stub);
+</code></pre>
+Мы «регистрируем» нашу заглушку в реестре удаленных объектов под тем именем, которое придумали в самом начале. Теперь клиент сможет ее найти!
+
+Возможно, ты обратил внимание, что в конце мы усыпили главный поток программы:
+
+<pre class="lang-java line-numbers"><code>
+Thread.sleep(Integer.MAX_VALUE);
+</code></pre>
+Нам просто нужно, чтобы сервер работал долгое время. Мы ведь будем запускать в IDEa сразу два метода <code>main()</code>: сначала серверный (в классе <code><strong>ServerMain</strong></code>, который мы уже написали), а потом — клиентский (в классе <code><strong>ClientMain</strong></code>, который мы напишем ниже). Важно, чтобы программа-сервер не вырубилась, пока мы будем запускать клиент, поэтому мы ее просто усыпили на долгое время. Работать она все равно будет :)
+
+Теперь мы можем запустить метод <code>main()</code> нашего сервера. Пусть он работает и ждет, когда программа-клиент вызовет какой-нибудь метод :)
+
+Теперь давай напишем программу-клиент! Она будет отправлять нашему серверу числа для умножения.
+
+<pre class="lang-java line-numbers"><code>
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+
+public class ClientMain {
+
+   public static final String UNIQUE_BINDING_NAME = "server.calculator";
+
+   public static void main(String[] args) throws RemoteException, NotBoundException {
+
+       final Registry registry = LocateRegistry.getRegistry(2732);
+
+       Calculator calculator = (Calculator) registry.lookup(UNIQUE_BINDING_NAME);
+
+       int multiplyResult = calculator.multiply(20, 30);
+
+       System.out.println(multiplyResult);
+   }
+}
+</code></pre>
+Она выглядит несложно. Что же здесь происходит?
+
+Во-первых, клиент должен быть в курсе уникального имени объекта, методы которого он будет вызывать удаленно. Поэтому в программе-клиенте мы тоже создали переменную <code>public static final String UNIQUE_BINDING_NAME = "server.calculator";</code>
+
+Далее, в методе <code>main()</code> мы получаем доступ к регистру удаленных объектов.
+
+Для этого нам нужно вызвать метод <code><strong>LocateRegistry.getRegistry()</strong></code> и передать туда номер порта, на котором создавали наш регистр в программе ServerMain — порт 2732 (этот номер был выбран для примера, ты можешь попробовать использовать другой):
+
+<pre class="lang-java line-numbers"><code>
+final Registry registry = LocateRegistry.getRegistry(2732);
+</code></pre>
+Теперь нам осталось только получить из регистра нужный объект! Это легко, ведь мы знаем его уникальное имя!
+
+<pre class="lang-java line-numbers"><code>
+Calculator calculator = (Calculator) registry.lookup(UNIQUE_BINDING_NAME);
+</code></pre>
+Обрати внимание на приведение типов. Мы приводим полученный объект к <strong>интерфейсу <code>Calculator</code>, а не к конкретному классу</strong> <code>RemoteCalculationServer</code>. Как мы и говорили в начале лекции, работа RMI основана на использовании прокси, поэтому удаленный вызов доступен только для методов интерфейсов, а не классов.
+
+В конце мы удаленно вызываем метод <code>multiply()</code> у нашего объекта и выводим результат в консоль.
+
+<pre class="lang-java line-numbers"><code>
+int multiplyResult = calculator.multiply(20, 30);
+System.out.println(multiplyResult);
+</code></pre>
+Метод <code>main()</code> в классе <code>ServerMain</code> мы уже давно запустили, самое время запустить метод <code>main()</code> в программе-клиенте <code>ClientMain</code>!
+
+<strong>Вывод в консоль:
+
+<em>600</em></strong>
+
+Вот и все! Наша программа (даже две!) успешно выполнила свою функцию :)
+
+Если у тебя есть время и желание, можешь немного разнообразить ее. Например, сделать так, чтобы калькулятор поддерживал все четыре стандартные операции, а в качестве параметров передавались не числа, а объект <code><strong>CalculationInstance</strong>(int x, int y)</code>.
+
+В качестве дополнительного материала можешь посмотреть статьи и примеры — вот здесь:
+<ul>
+<li><a href="http://www.intuit.ru/studies/courses/633/489/lecture/11079?page=1" rel="nofollow" target="_blank">Использование Java RMI</a></li>
+<li><a href="https://javatalks.ru/topics/8059" rel="nofollow" target="_blank">RMI: Основы на примере</a></li>
+<li><a href="http://fkn.ktu10.com/?q=node/4146" rel="nofollow" target="_blank">RMI что это</a></li>
+</ul>
+Увидимся на следующих занятиях! :)

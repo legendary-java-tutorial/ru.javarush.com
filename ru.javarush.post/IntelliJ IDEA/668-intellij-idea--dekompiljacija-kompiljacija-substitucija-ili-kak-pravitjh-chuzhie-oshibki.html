@@ -1,0 +1,187 @@
+IntelliJ Idea : Декомпиляция, Компиляция, Субституция (или как править чужие ошибки)
+<p>----------------------------------------</p>
+"Да не изобрети ты велосипед" - одно из главных правил успешной и эффективной работы. Но что делать, когда свой велосипед изобретать не хочется, а у чужого руль оказался кривой, а колёса квадратными?
+<p>----------------------------------------</p>
+"Да не изобрети ты велосипед" - одно из главных правил успешной и эффективной работы. Но что делать, когда свой велосипед изобретать не хочется, а у чужого руль оказался кривой, а колёса квадратными? Данный обзор предназначен для по возможности краткого ознакомления с приёмом исправления в чужих библиотеках "на крайний случай" и о том, как это дело распространить дальше своего компьютера.
+
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="f7fba6bb-26a5-4b4f-a85d-06de721af53d" data-max-width="710" alt="IntelliJ Idea : Декомпиляция, Компиляция, Субституция (или как править чужие ошибки) - 1" src="https://cdn.javarush.com/images/article/f7fba6bb-26a5-4b4f-a85d-06de721af53d/1024.jpeg"></div></div><h2>Введение</h2>Все мы пользуемся теми или иными инструментами. Но иногда инструменты подходят не до конца или имеют в себе ошибки. Благодаря особенностям языка Java мы можем исправить поведение инструментов там, где нам это нужно. Хорошо, когда мы вносим свой вклад проекты и отсылаем пулл реквесты (подробнее можно прочитать тут:  «<a href="https://git-scm.com/book/ru/v2/GitHub-Внесение-собственного-вклада-в-проекты" target="_blank" rel="nofollow">GitHub - Внесение собственного вклада в проекты</a>»). Но принимать их могут не сразу, а могут даже и не принять. Но для нужд проекта нужно вот сейчас. И тут, надеюсь, данная статья покажет доступные нам, как разработчику, средства.
+
+Нам понадобится выполнить следующие действия, о которых мы будем говорить:
+<ul>
+<li>Подготовить испытуемое приложение для примера (на примере Hibernate проекта)</li>
+<li>Поиск изменяемого места</li>
+<li>Выполнение изменения</li>
+<li>Разворачивание репозитория</li>
+</ul>
+Все ниже указанные действия приведены для ОС Windows, но имеют аналоги под nix системы. Так что при необходимости вы сможете их повторить.
+
+<h2>Подготовка испытуемого</h2>Итак, нам нужен подопытный проект. Нам идеально подойдёт Hibernate, т.к. это "стильно, модно, современно". Не буду особо вдаваться в детали, т.к. статья не про Hibernate. Будем делать всё быстро и по делу. И будем, как правильные разработчики , использовать систему сборки. Например, нам так же подойдёт Gradle, который для данной статьи должен быть установлен (<a href="https://gradle.org/install/" target="_blank" rel="nofollow">https://gradle.org/install/</a>).
+
+Сначала, нам нужно создать проект. У Maven’а для этого есть <a href="https://maven.apache.org/guides/introduction/introduction-to-archetypes.html" target="_blank" rel="nofollow">архетипы</a>, а у Gradle для этого есть особенный плагин: <a href="https://docs.gradle.org/current/userguide/build_init_plugin.html" target="_blank" rel="nofollow">Gradle Init</a>. 
+Итак, открываем командную строку любым известным вам способом. Создаём каталог для проекта, переходим в него и выполняем комманду:
+
+<pre>
+<code>
+mkdir javarush 
+cd javarush 
+gradle init --type java-application
+</code>
+</pre>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="a495cc11-dc52-48c4-bb6a-a3ba03e202ae" data-max-width="710" alt="IntelliJ Idea : Декомпиляция, Компиляция, Субституция (или как править чужие ошибки) - 2" src="https://cdn.javarush.com/images/article/a495cc11-dc52-48c4-bb6a-a3ba03e202ae/1024.jpeg"></div></div>Прежде чем выполнять импорт проекта внесём некоторые изменения в файл, описывающий, каким образом нужно выполнять сборку. Этот файл называется <a href="https://docs.gradle.org/current/userguide/tutorial_using_tasks.html" target="_blank" rel="nofollow">build script</a>’ом и имеет имя build.gradle. Находится он в том каталоге, в котором мы выполнили gradle init. Поэтому, просто открываем его (например, в windows командой start build.gradle).
+
+Находим там блок «<a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html" target="_blank" rel="nofollow">dependencies</a>», т.е. зависимости. Тут описываются все сторонние jar, которые мы будем использовать. Теперь надо понять, что тут описывать. 
+
+Перейдём на сайт Hibernate (<a href="http://hibernate.org/" target="_blank" rel="nofollow">http://hibernate.org/</a>).  Нас интересует <a href="http://hibernate.org/orm/" target="_blank" rel="nofollow">Hibernate ORM</a>. Нам нужен последний релиз. В меню слева есть подраздел «Releases». Выбираем «latest stable». Проматываем вниз и находим «Core implementation (includes JPA)». Раньше нужно было поддержку JPA подключать отдельно, но теперь всё стало проще и достаточно только одной зависимости.
+
+Также нам понадобится при помощи Hibernate работать с базой данных. Для этого возьмём самый простой вариант – <a href="http://www.h2database.com/html/cheatSheet.html" target="_blank" rel="nofollow">H2 Database</a>. Выбор сделан, вот наши зависимости:
+
+<pre>
+<code>
+dependencies {
+    // Базовая зависимость для Hibernate (новые версии включают и JPA)
+    compile 'org.hibernate:hibernate-core:5.2.17.Final'
+    // База данных, к которой мы будем подключаться
+    compile 'com.h2database:h2:1.4.197'
+    // Use JUnit test framework
+    testCompile 'junit:junit:4.12'
+}
+</code>
+</pre>
+Отлично, что дальше? Надо настроить Hibernate. У Hibernate есть «<a href="http://docs.jboss.org/hibernate/orm/5.2/quickstart/html_single/" target="_blank" rel="nofollow">Getting Started Guide</a>», но он дурацкий и больше мешает, чем помогает. Поэтому пойдём как правильные люди сразу в «<a href="http://docs.jboss.org/hibernate/orm/5.2/userguide/html_single/Hibernate_User_Guide.html" target="_blank" rel="nofollow">User Guide</a>».
+
+В оглавлении видим раздел «<a href="http://docs.jboss.org/hibernate/orm/5.2/userguide/html_single/Hibernate_User_Guide.html#bootstrap" target="_blank" rel="nofollow">Bootstrap</a>», что переводится как «Начальная загрузка». То что надо. Там написано много умных слов, но смысл в том, что на classpath должен быть каталог META-INF, а там файл persistence.xml. На classpath по стандарту попадает каталог «resources». Поэтому создаём указанный каталог: <code>mkdir src\main\resources\META-INF</code>
+
+Создаём там файл persistence.xml и открываем его.
+
+Там же в документации есть пример «Example 268. META-INF/persistence.xml configuration file» из которого мы возьмём содержимое и вставим в файл persistence.xml. 
+
+Далее запускаем IDE и импортируем в неё наш созданный проект.
+
+Теперь нам нужно что-то сохранять в базу. Это что-то называется сущности. Сущности представляют что-то из так называемой доменной модели. И в оглавлении, о чудо, видим «<a href="http://docs.jboss.org/hibernate/orm/5.2/userguide/html_single/Hibernate_User_Guide.html#domain-model" target="_blank" rel="nofollow">2. Domain Model</a>». Спускаемся ниже по тексту и видим в главе  "2.1. Mapping types" простой пример сущности. Забираем его к себе, чуть сократив:
+
+<pre class="lang-java line-numbers">
+<code>
+package entity;
+
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+
+@Entity(name = "Contact")
+public class Contact {
+
+    @Id
+    @GeneratedValue
+    private Integer id;
+
+    private String name;
+
+    public Contact(String name) {
+        this.name = name;
+    }
+}
+</code>
+</pre>
+Теперь у нас появился класс, представляющий сущность. Вернёмся в persistence.xml и поправим там одно место: Там где указан <code>class</code> укажем свой класс <code>entity.Contact</code>.
+
+Отлично, осталось запуститься.
+
+Возвращаемся в главу «<a href="http://docs.jboss.org/hibernate/orm/5.2/userguide/html_single/Hibernate_User_Guide.html#bootstrap" target="_blank" rel="nofollow">Bootstrap</a>». Так как у нас нет сервера приложений, который нам предоставит особое EE окружение (т.е. окружение, которое реализует для нас определённое поведение системы), то мы работаем в SE окружении.  Для него нам подойдёт только пример «Example 269. Application bootstrapped EntityManagerFactory». Например, сделаем так: 
+
+<pre class="lang-java line-numbers">
+<code>
+public class App {
+    public static void main(String[] args) {
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("CRM");
+        EntityManager em = emf.createEntityManager();
+        em.getTransaction().begin();
+        Contact contact = new Contact("Vasya");
+        em.persist(contact);
+        em.getTransaction().commit();
+        Query sqlQuery = em.createNativeQuery("select count(*) from contact");
+        BigInteger count = (BigInteger) sqlQuery.getSingleResult();
+        emf.close();
+        System.out.println("Entiries count: " + count);
+    }
+}
+</code>
+</pre>
+Ура, наш испытуемый готов. Эту часть <u>я не хотел опускать</u>, т.к. для следующих глав желательно понимать то, как появился наш испытуемый.
+
+<h2>Поиск изменяемого поведения</h2>Давайте встанем на место инициализации поля count типа BigInteger и поставим там точки останова (<a href="https://www.jetbrains.com/help/idea/creating-line-breakpoints.html" target="_blank" rel="nofollow">BreakPoint</a>). Встав на нужной строке это можно сделать при помощи Ctrl+F8 или через меню Run -&gt; Toggle Line Breakpoint. После чего запускаем наш main метод в дебаге (Run -&gt; Debug):
+
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="9f19143f-f830-46f4-9b69-d2689109d276" data-max-width="710" alt="IntelliJ Idea : Декомпиляция, Компиляция, Субституция (или как править чужие ошибки) - 3" src="https://cdn.javarush.com/images/article/9f19143f-f830-46f4-9b69-d2689109d276/1024.jpeg"></div></div>Немного неуклижий пример, но, допустим, мы хотим изменить количество query spaces при старте. Как мы видим, наш sqlQuery это NativeQueryImpl. Нажимаем <code>Ctrl+N</code>, пишем название класса, переходим в него. Чтоб при переход в класс нас перебрасывало на то место, где лежит этот класс включил автоскрол:
+
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="5050b2a9-bc41-4424-82c0-f75846c7c11d" data-max-width="710" alt="IntelliJ Idea : Декомпиляция, Компиляция, Субституция (или как править чужие ошибки) - 4" src="https://cdn.javarush.com/images/article/5050b2a9-bc41-4424-82c0-f75846c7c11d/1024.jpeg"></div></div>Сразу заметим, что Idea не знает сейчас, где можно найти исходный код программы (исходники, то есть). Поэтому она милостиво декомпилировала для нас из class файла содержимое:
+
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="e2897b66-211f-4163-820a-16db96fc531b" data-max-width="710" alt="IntelliJ Idea : Декомпиляция, Компиляция, Субституция (или как править чужие ошибки) - 5" src="https://cdn.javarush.com/images/article/e2897b66-211f-4163-820a-16db96fc531b/1024.jpeg"></div></div>Заметим так же, что в заголовке окна IntelliJ Idea пишется, где Gradle сохраняет для нас артефакт.
+
+Теперь, получим в Idea путь, где лежит наш артефакт:
+
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="fbb360dc-8a64-45fa-a510-29d379708fcb" data-max-width="710" alt="IntelliJ Idea : Декомпиляция, Компиляция, Субституция (или как править чужие ошибки) - 6" src="https://cdn.javarush.com/images/article/fbb360dc-8a64-45fa-a510-29d379708fcb/1024.jpeg"></div></div>Перейдём в этот каталог в командной строке при помощи команды <code>cd путь к каталогу</code>. Сразу сделаю замечание: если есть возможность собрать проект из исходников, лучше собирать из исходников. Например, исходный код Hibernate доступен на официальном сайте. Лучше забрать его для нужной версии и сделать все изменения там и собраться при помощи скриптов сборки, которые указаны в проекте. Я же привожу в статье самый ужасный вариант – есть jar, а исходного кода нет. И замечание номер 2: Gradle может получить исходный код при помощи плагинов. Подробнее см. «<a href="https://stackoverflow.com/questions/28404149/how-to-download-javadocs-and-sources-for-jar-using-gradle-2-0" target="_blank" rel="nofollow">How to download javadocs and sources for jar using Gradle</a>.
+
+<h2>Выполнение изменения</h2>Нам нужно воссоздать структуру каталогов в соответствии с тем, в каком пакете лежит изменяемый нами класс. В данном случае: <code>mkdir org\hibernate\query\internal</code>, после чего создаём в этом каталоге файл <code>NativeQueryImpl.java</code>.
+
+Теперь открываем данный файл и копируем туда всё содержимое класса из IDE (то самое, которое для нас декомпилировала Idea). Изменяем нужные строки. Например:
+
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="89564767-c36f-4eee-9dc3-c61de557a0ac" data-max-width="710" alt="IntelliJ Idea : Декомпиляция, Компиляция, Субституция (или как править чужие ошибки) - 7" src="https://cdn.javarush.com/images/article/89564767-c36f-4eee-9dc3-c61de557a0ac/1024.jpeg"></div></div>
+Теперь, компилируем файл. Выполняем: <code>javac org\hibernate\query\internal\NativeQueryImpl.java</code>.
+
+Надо же, нельзя просто взять и скомпилировать без ошибок. Получили кучу ошибок Cannot Find Symbol, т.к. изменяемый класс завязан на другие классы, которые обычно IntelliJ Idea за нас добавляет в classpath. Ощущаете всю полезность наших IDE? =) Чтож, давайте добавим сами, мы тоже можем.
+Скопируем отдельно в блокнот пути для:
+<ul>
+<li>[1] - hibernate-core-5.2.17.Final.jar </li>
+<li>[2] - hibernate-jpa-2.1-api-1.0.0.Final.jar</li>
+</ul>
+Так же как мы делали: В виде "Project" в "External libraries" находим нужный jar и нажимаем <code>Ctrl+Shift+C</code>.
+
+Теперь сформируем и выполним такую комманду:
+
+<code>javac -cp [1];[2] org\hibernate\query\internal\NativeQueryImpl.java</code>
+
+В результате рядом с java файлом появятся новые class файлы, которые нужно обновить в jar файле:
+
+ <div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="243" alt="IntelliJ Idea : Декомпиляция, Компиляция, Субституция (или как править чужие ошибки) - 8" src="https://cdn.javarush.com/images/article/d1add0b9-bec5-452b-a889-563b8c0b3967/original.jpeg"></div></div>
+Ура, теперь можно выполнить jar update. Можем руководствоваться <a href="https://docs.oracle.com/javase/tutorial/deployment/jar/update.html" target="_blank" rel="nofollow">официальными материалами</a>: <code>jar uf hibernate-core-5.2.17.Final.jar org\hibernate\query\internal\*.class</code>
+
+Открытая IntelliJ Idea, скорей всего, не даст изменять файлы. Поэтому до выполнения jar update, скорей всего, придётся закрыть Idea, а после обновления - открыть. После этого можно заново открываем IDE, опять выполняем dubug. Break Points не сбрасываются между перезапусками IDE. Поэтому, выполнение программы остановится там, где и раньше. Вуаля, мы видим как работают наши изменения:
+
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="537777fa-5261-496a-8209-18680e205215" data-max-width="710" alt="IntelliJ Idea : Декомпиляция, Компиляция, Субституция (или как править чужие ошибки) - 9" src="https://cdn.javarush.com/images/article/537777fa-5261-496a-8209-18680e205215/1024.jpeg"></div></div>
+ Отлично. Но тут возникает вопрос – благодаря чему? Просто благодаря тому, что когда gradle собирает проект, он анализирует блок dependencies и repositories. У грэдла есть некий build cache, который лежит в определённом месте (см. «<a href="https://stackoverflow.com/questions/28838699/how-to-set-gradle-cache-location" target="_blank" rel="nofollow">How to set gradle cache location?</a>». Если в кэше нет зависимости, то Gradle её скачает из репозитория. Т.к. мы меняли jar в самом кэше, то Gradle думает, что в кэше библиотека есть и ничего не выкачивает. Но любая очистка кэша приведёт к тому, что наши изменения пропадут. Плюс, никто кроме нас не может просто взять и получить их. Сколько неудобств, не правда ли? Что же делать. Хм, скачивает из репозитория? Значит, нам нужен наш репозиторий, с преферансом и поэтессами.  Об этом следующий этап.
+
+<h2>Разворачивание репозитория</h2>Для разворачивания своего репозитория существуют разные бесплатные решения: одно из них <a href="https://jfrog.com/open-source/" target="_blank" rel="nofollow">Artifactory</a>, а другое - <a href="http://archiva.apache.org/download.cgi" target="_blank" rel="nofollow">Apache Archive</a>. Артифактори выглядит модно, стильно, современно, но с ним у меня возникли трудности, никаких не хотел правильно размещать артефакты и генерировал ошибочные мавен метаданные. Поэтому, неожиданно для себя, у меня заработал апачевский вариант. Он оказался не такой красивый, зато работает надёжно.
+
+На странице <a href="http://archiva.apache.org/download.cgi" target="_blank" rel="nofollow">загрузки</a> ищем Standalone версию, распаковываем. У них есть свой "<a href="http://archiva.apache.org/docs/2.2.3/quick-start.html" target="_blank" rel="nofollow">Quick Start</a>". После запуска надо дождаться, когда по адресу <code>http://127.0.0.1:8080/#repositorylist</code>. После этого выбираем "Upload Artifact":
+
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="8edcee3e-2eeb-4ce7-9d04-7e3293a430e9" data-max-width="710" alt="IntelliJ Idea : Декомпиляция, Компиляция, Субституция (или как править чужие ошибки) - 10" src="https://cdn.javarush.com/images/article/8edcee3e-2eeb-4ce7-9d04-7e3293a430e9/1024.jpeg"></div></div>
+Нажимаем "Start Upload", а после "Save Files". После этого появится зелёное сообщение об успешности и артефакт станет доступен в разделе "Browse".
+
+Так надо сделать для jar и для pom файлов:
+
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="5f4cba5a-e63f-4804-bfee-73128f897f58" data-max-width="710" alt="IntelliJ Idea : Декомпиляция, Компиляция, Субституция (или как править чужие ошибки) - 11" src="https://cdn.javarush.com/images/article/5f4cba5a-e63f-4804-bfee-73128f897f58/1024.jpeg"></div></div>
+Это связано с тем, что в pom файле прописаны дополнительные зависимости хибернейта.
+
+А нам осталось только 1 шаг - указать репозиторий в нашем билд скрипте:
+<pre>
+<code>
+repositories {
+    jcenter()
+    maven {
+        url "http://127.0.0.1:8080/repository/internal/"
+    }
+}
+</code>
+</pre>
+И, соответственно, версия нашего хибернейта станет: <code>compile 'org.hibernate:hibernate-core:5.2.17.Final-JAVARUSH'</code>.
+
+Вот и всё, теперь наш проект использует исправленный нами вариант, а не изначальный.
+
+<h2>Заключение</h2>Вот вроде и ознакомились. Надеюсь, было интересно. Подобные "трюки" делаются редко, но если вдруг ваши бизнес требования поставят условия, которые не могут удовлетворить используемые Вами библиотеки - вы знаете что делать.
+
+И да, вот пару примеров, что может так исправляться:
+<ul>
+<li>Есть такой веб-сервер Undertow. До некоторого времени был баг, который при использовании прокси не давал узнать IP конечного пользователя.</li>
+<li>До поры до времени WildFly JPA определённым образом обрабатывал один не учтённый спефицикацией момент, из-за этого сыпались Exception. И это не настраивалось.</li>
+</ul>
+
+#Viacheslav

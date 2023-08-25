@@ -1,0 +1,216 @@
+Наследование против композиции в Java
+<p>----------------------------------------</p>
+Эта статья иллюстрирует концепции наследования и композиции в Java. Первый пример демонстрирует  наследование, а затем показывается как улучшить дизайн наследования с использованием композиции. О том как выбрать между ними, мы подытожим в конце ...
+<p>----------------------------------------</p>
+Эта статья иллюстрирует концепции наследования и композиции в Java. Первый пример демонстрирует  наследование, а затем показывается как улучшить дизайн наследования с использованием композиции. О том как выбрать между ними, мы подытожим в конце.
+
+<img data-id="057d4198-2872-4126-88ae-d14e92a0c66d" data-max-width="850" alt="Наследование против композиции в Java - 1" src="https://cdn.javarush.com/images/article/057d4198-2872-4126-88ae-d14e92a0c66d/1024.jpeg"><h2>1. Наследование</h2>Давайте предположим, что у нас есть класс <code>Insect</code> (англ насекомое)
+
+Этот класс содержит два метода: 1. <code>move()</code> (с англ. передвигаться) и 2. <code>attack()</code> (с англ. атаковать)
+
+<pre class='lang-java line-numbers'><code>
+class Insect {
+	private int size;
+	private String color;
+ 
+	public Insect(int size, String color) {
+		this.size = size;
+		this.color = color;
+	}
+ 
+	public int getSize() {
+		return size;
+	}
+ 
+	public void setSize(int size) {
+		this.size = size;
+	}
+ 
+	public String getColor() {
+		return color;
+	}
+ 
+	public void setColor(String color) {
+		this.color = color;
+	}
+ 
+	public void move() {
+		System.out.println("Move");
+	}
+ 
+	public void attack() {
+		move(); //assuming an insect needs to move before attacking
+		System.out.println("Attack");
+	}
+}
+</code></pre>
+Теперь вы хотите определить класс <code>Bee</code>(англ  пчела), который является одним из видов <code>Insect</code>, но имеет различные реализации <code>attack()</code> and <code>move()</code>. Это может быть оформленно с помощью наследования:
+
+<pre class='lang-java line-numbers'><code>
+class Bee extends Insect {
+	public Bee(int size, String color) {
+		super(size, color);
+	}
+ 
+	public void move() {
+		System.out.println("Fly");
+	}
+ 
+	public void attack() {
+		move();
+		super.attack();
+	}
+}
+</code></pre>
+<pre class='lang-java line-numbers'><code>
+public class InheritanceVSComposition {
+	public static void main(String[] args) {
+		Insect i = new Bee(1, "red");
+		i.attack();
+	}
+}
+
+</code></pre>
+Диаграмма иерархии классов довольно проста:
+<img data-id="93855eea-c042-48dc-96be-b554737231ab" data-max-width="376" alt="Наследование против композиции в Java - 2" src="https://cdn.javarush.com/images/article/93855eea-c042-48dc-96be-b554737231ab/1024.jpeg">Результат выполнения:
+
+<pre class='lang-java line-numbers'><code>
+Fly
+Fly
+Attack
+</code></pre>
+"Fly" напечатано дважды, следовательно метод <code>move()</code> вызывается два раза. Но он должен вызываться только один раз. 
+
+Проблема вызвана методом <code>super.attack()</code>. Метод <code>attack ()</code> вызывает метод <code>move()</code> класса <code>Insect</code>. Когда подкласс вызывает <code>super.attack ()</code>, он также вызывает переопределенный метод <code>move()</code>.
+
+Что бы исправить проблему мы можем:
+<ol>
+<li> Устранить метод <code>attack()</code> подкласса. Это сделает подкласс зависимым от реализации метода <code>attack()</code> суперкласса. Если <code>attack()</code. метод в суперклассе позже изменяется (что вне вашего контроля), например, метод <code>attack()</code> суперкласса начнет использовать другой метод для перемещения, подкласс нужно будет тоже изменить. Это плохо инкапсуляции.</li> 
+<li><p>Переписать метод <code>attack()</code> следующим образом:</p>
+<pre class='lang-java line-numbers'><code>
+public void attack() {
+	move();
+	System.out.println("Attack");
+}
+</code></pre></li>
+<li><p>Это гарантирует правильный результат, потому что подкласс больше не зависит от суперкласса. Однако код является дубликатом суперкласса. ( метод <code>attack()</code> делает более сложные вещи, чем просто вывод строки). Это не соответствует правильному конструированию программного обеспечения, повторяющегося кода не должно быть.</p></li></ol>Эта конструкция наследования плоха тем что подкласс зависит от деталей реализации своего суперкласса. Если изменится суперкласс, подкласс не будет верно работать.
+<h2>2. Композиция</h2>Вместо наследования можно использовать композицию. Давайте посмотрим на решение с ее помощью. Функция <code>attack()</code> абстрагируется как интерфейс.
+
+<pre class='lang-java line-numbers'><code>
+interface Attack {
+	public void move();
+	public void attack();
+}
+</code></pre>
+Различные виды атаки могут быть определены путем реализации интерфейса Attack.
+
+<pre class='lang-java line-numbers'><code>
+class AttackImpl implements Attack {
+	private String move;
+	private String attack;
+ 
+	public AttackImpl(String move, String attack) {
+		this.move = move;
+		this.attack = attack;
+	}
+ 
+	@Override
+	public void move() {
+		System.out.println(move);
+	}
+ 
+	@Override
+	public void attack() {
+		move();
+		System.out.println(attack);
+	}
+}
+</code></pre>
+Поскольку функция атаки внешняя, класс <code>Insect</code> ее больше не содержит.
+
+<pre class='lang-java line-numbers'><code>
+class Insect {
+	private int size;
+	private String color;
+ 
+	public Insect(int size, String color) {
+		this.size = size;
+		this.color = color;
+	}
+ 
+	public int getSize() {
+		return size;
+	}
+ 
+	public void setSize(int size) {
+		this.size = size;
+	}
+ 
+	public String getColor() {
+		return color;
+	}
+ 
+	public void setColor(String color) {
+		this.color = color;
+	}
+}
+</code></pre>
+Класс <code>Bee</code>(c англ Пчела), как тип <code>Insect</code> может атаковать.
+
+<pre class='lang-java line-numbers'><code>
+// This wrapper class wrap an Attack object
+class Bee extends Insect implements Attack {
+	private Attack attack;
+ 
+	public Bee(int size, String color, Attack attack) {
+		super(size, color);
+		this.attack = attack;
+	}
+ 
+	public void move() {
+		attack.move();
+	}
+ 
+	public void attack() {
+		attack.attack();
+	}
+}
+</code></pre>
+Диаграмма классов:
+
+<img data-id="ee8534f7-f5a3-4c66-8119-7ce891c14bb6" data-max-width="570" alt="Наследование против композиции в Java - 3" src="https://cdn.javarush.com/images/article/ee8534f7-f5a3-4c66-8119-7ce891c14bb6/1024.jpeg">
+<pre class='lang-java line-numbers'><code>
+public class InheritanceVSComposition2 {
+	public static void main(String[] args) {
+		Bee a = new Bee(1, "black", new AttackImpl("fly", "move"));
+		a.attack();
+ 
+		// if you need another implementation of move()
+		// there is no need to change Insect, we can quickly use new method to attack
+ 
+		Bee b = new Bee(1, "black", new AttackImpl("fly", "sting"));
+		b.attack();
+	}
+}
+</code></pre>
+Результат выполнения:
+
+<pre class='lang-java line-numbers'><code>
+fly
+move
+fly
+sting
+</code></pre>
+<h2>3. Когда использовать эти подходы?</h2>Следующие 2 пункта могут помочь выбрать между наследованием и композицией:
+<ol>
+<li> если имеете дело с отношением между классами вида "ЯВЛЯЕТСЯ" и класс хочет предоставить все свои интерфейсы другому классу, то наследование предпочтительнее.</li>
+<li> если отношение "ИМЕЕТ", то предпочтительнее композиция.</li>
+</ol>Таким образом, наследование и композиция имеют свои области применения и стоит разобраться в их достоинствах.
+
+Ссылки:
+<ol>
+<li>Bloch, Joshua. Effective java. Pearson Education India, 2008</li>
+<li><a href='https://stackoverflow.com/questions/49002/prefer-composition-over-inheritance' rel='nofollow' target='_blank'>https://stackoverflow.com/questions/49002/prefer-composition-over-inheritance</a></li>
+<li><a href='https://www.javaworld.com/article/2076814/core-java/inheritance-versus-composition--which-one-should-you-choose-.html' rel='nofollow' target='_blank'>https://www.javaworld.com/article/2076814/core-java/inheritance-versus-composition--which-one-should...</a></li>
+</ol><a href="http://www.programcreek.com/2014/05/inheritance-vs-composition-in-java/" rel="nofollow" >Ссылка на оригинал статьи</a>
+Перевел <ls user="dio" />

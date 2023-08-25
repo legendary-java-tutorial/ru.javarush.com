@@ -1,0 +1,95 @@
+Code Coverage
+<p>----------------------------------------</p>
+Code Coverage или как покрыть вашего КоТэ. Сегодня мы поговорим о Code Coverage, разберемся что это, зачем он нужен и как прокачать свой open-source project предоставив статистику Code Coverage. Эта статья является лаконическим продолжением предыдущей об Continuous Integration ...
+<p>----------------------------------------</p>
+Приветствую, друзья, коллеги и... пингвины!
+
+<img data-id="5c258f3a-bf2c-4b43-9fc2-a8ccf92836bd" data-max-width="850" alt="Code Coverage - 1" src="https://cdn.javarush.com/images/article/5c258f3a-bf2c-4b43-9fc2-a8ccf92836bd/1024.jpeg">Сегодня мы поговорим о <strong>Code Coverage</strong>, разберемся что это, зачем он нужен и как прокачать свой open-source project предоставив статистику Code Coverage. Эта статья является лаконическим продолжением предыдущей об <a href="https://javarush.com/groups/posts/594-continuous-integration" target="_blank" rel="nofollow">Continuous Integration</a>. Здесь мы узнаем еще одно сильное преимущество CI в сочетании с... а скоро узнаете с чем сами! Подчеркну лишь то, что здесь не будет указаний как правильно писать тесты для своих программ, и как добиваться максимально возможного полезного покрытия, этот весь грех останется лишь на ваших плечах. Итак, погнали!
+<h2>Что такое Code Coverage?</h2><em><a href="https://en.wikipedia.org/wiki/Code_coverage" target="_blank" rel="nofollow">Code Coverage</a> (покрытие кода) - это некая величина, показывающая нам процент выполненного исходного кода, во время тестирования.</em> 
+
+Окей, тут вроде бы всё ясно. Процент Code Coverage (покрытие кода, дальше просто CC) может колебаться от 0 до 100, и может возникнуть вопрос, нужно ли стремиться к максимальному проценту CC? Мой ответ таков: и да и нет. Почему так? Допустим вы создаете проект который будет использоваться некими другими проектами, в нем полно функционала, и среди всего ужаса есть геттеры и сеттеры, и их не мало. При покрытии функционала покрылись не все, допустим, геттеры, но вы точно знаете, что те, которые не покрылись, и не вызываются в вашем проекте, но геттеры не всегда пишутся "для себя", поэтому они нужны для "клиента". Что же делать? Покрыть каждый геттер отдельно? Это будет не эффективное тестирование. Но если не покрыть их, мы не добьемся максимального процента CC. Здесь возникает палка двух концов.
+<h2>Зачем нам нужно Code Coverage?</h2>Я думаю на этот вопрос ответ будет очень прост: Любой код нуждается в тестировании, дабы при рефакторинге либо при добавлении/изменении функционала не возникли "невидимые" баги, и мы их могли отследить. Не будем же мы бегать по фреймворкам с breakpoint и дебаггером и ловить этого подлого БаГа. Жизнь слишком коротка.
+
+<strong>Пример</strong>
+
+Итак, самое интересное. Задача такова:
+
+<strong><em>Внедрить в наш <a href="https://github.com/qThegamEp/ForJavaRushPublication.git" target="_blank" rel="nofollow">open-source project</a>, который мы написали на <a href="https://javarush.com/groups/posts/594-continuous-integration" target="_blank" rel="nofollow">предыдущей статье</a>, технологию, которая будет собирать информацию о CC, обрабатывать где-то ее, и будет возможность поместить эту информацию у себя на GitHub в форме бейджика, например.</em></strong>
+
+Все исходные кода будут выложены на моем <a href="https://github.com/qThegamEp" target="_blank" rel="nofollow">GitHub</a>.
+<ol>
+<li><p>Начнем с выбора <a href="https://en.wikipedia.org/wiki/Java_Code_Coverage_Tools" target="_blank" rel="nofollow">плагина</a> для сборки информации о покрытии кода в одну кучу. Я лично для себя выбрал <a href="http://www.eclemma.org/jacoco/" target="_blank" rel="nofollow">JaCoCo</a>, который как раз таки собирает информацию о покрытии кода. Но есть и <a href="https://confluence.atlassian.com/clover/comparison-of-code-coverage-tools-681706101.html" target="_blank" rel="nofollow">альтернативы</a>.</p>
+
+<p>Сайт <a href="http://www.eclemma.org/jacoco/" target="_blank" rel="nofollow">JaCoCo</a> предлагает нам скачать плагин, но качать мы нечего не будем, ведь мы используем Build System Maven. Заходим в <a href="https://mvnrepository.com/" target="_blank" rel="nofollow">Maven Repository</a> и ищем <a href="https://mvnrepository.com/artifact/org.jacoco/jacoco-maven-plugin" target="_blank" rel="nofollow">JaCoCo Plugin</a>. Берем последнюю версию, и вставляем в наш pom.xml зависимость.</p>
+
+<p>Но через dependencies я делать <em>не рекомендую</em>, ведь есть более хороший, более функциональный альтернативный вариант, и даже не один.</p><ol>
+<li><p>Заходим <a href="https://docs.codecov.io/docs/supported-languages" target="_blank" rel="nofollow">CodeCov Setup</a> выбираем язык Java и выбираем <a href="https://github.com/codecov/example-java" target="_blank" rel="nofollow">Using JaCoCo</a> плагин, и ставим по инструкции.</p></li>
+<li><p>По той же <a href="https://docs.codecov.io/docs/supported-languages" target="_blank" rel="nofollow">ссылке</a> выбираем <a href="https://github.com/codecov/example-java-maven" target="_blank" rel="nofollow">Using Maven</a>. Этот вариант будет даже лучше. Cobertura будет извлекать информацию из CI тестов, но увы и тут есть подвох. Все что выше JDK 7 (А на данный момент уже 10 есть) <a href="https://github.com/cobertura/cobertura/issues/271" target="_blank" rel="nofollow">не подойдет</a>. Поэтому мы остановимся на 1 варианте.</p></li>
+</ol><p>В результате в нашем pom.xml должно было появиться что то вроде того: </p>
+<pre class="lang-xml line-numbers"><code>
+            &lt;!-- JaCoCo plugin --&gt;
+            &lt;plugin&gt;
+                &lt;groupId&gt;org.jacoco&lt;/groupId&gt;
+                &lt;artifactId&gt;jacoco-maven-plugin&lt;/artifactId&gt;
+                &lt;version&gt;0.8.1&lt;/version&gt;
+                &lt;executions&gt;
+                    &lt;execution&gt;
+                        &lt;goals&gt;
+                            &lt;goal&gt;prepare-agent&lt;/goal&gt;
+                        &lt;/goals&gt;
+                    &lt;/execution&gt;
+                    &lt;execution&gt;
+                        &lt;id&gt;report&lt;/id&gt;
+                        &lt;phase&gt;test&lt;/phase&gt;
+                        &lt;goals&gt;
+                            &lt;goal&gt;report&lt;/goal&gt;
+                        &lt;/goals&gt;
+                    &lt;/execution&gt;
+                &lt;/executions&gt;
+            &lt;/plugin&gt;
+</code></pre>
+<p>И в Maven Projects в списке плагинов появится JaCoCo Plugin:</p>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="cdae7117-f0c3-428d-8f2d-26dd8e68218b" data-max-width="469" alt="Code Coverage - 2" src="https://cdn.javarush.com/images/article/cdae7117-f0c3-428d-8f2d-26dd8e68218b/1024.jpeg"></div></div></li>
+<li><p>Плагин стоит. Все вроде бы замечательно. Но если вы внимательно читали инструкцию по установке JaCoCo плагина, там было указание, добавить в .travis.yml строчку, отвечающую за отправку отчёта плагина на сайт <a href="https://codecov.io/gh" target="_blank" rel="nofollow">Codecov</a>.</p>
+<p>Итак, исходя из <a href="https://github.com/codecov/example-java" target="_blank" rel="nofollow">Using JaCoCo</a>, нам нужно вписать в наш файл:</p>
+<pre class="lang-yml line-numbers"><code>
+after_success:
+  - bash &lt;(curl -s https://codecov.io/bash)
+</code></pre>
+<p>Вписали. Отлично.</p></li>
+<li><p>Все вроде готово, и остались финальные штрихи. Во-первых давайте скомпилируем наш код, и запустим все тесты, причем сделаем это через Lifecycle Maven:</p>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="bef4bb10-97f2-4433-a283-8640465e1ebb" data-max-width="292" alt="Code Coverage - 3" src="https://cdn.javarush.com/images/article/bef4bb10-97f2-4433-a283-8640465e1ebb/1024.jpeg"></div></div>
+<p>Так как у нас в плагине JaCoCo стоит фаза выполнения test, то должен был появится отчет после выполнения цикла тестов Maven в папке target:</p>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="ec520b80-2a7a-4a95-87df-775f176ddfa7" data-max-width="480" alt="Code Coverage - 4" src="https://cdn.javarush.com/images/article/ec520b80-2a7a-4a95-87df-775f176ddfa7/1024.jpeg"></div></div></li>
+<li><p>Подходим к завершению. Мы видим что все работает прекрасно, осталось лишь убедится что это "все прекрасно" также будет работать на внешних источниках. Настала пора собрать все в кучу. Собираем проект и делаем push на GitHub, перед этим открыв <a href="https://travis-ci.org/" target="_blank" rel="nofollow">Travis CI</a> и <a href="https://codecov.io/gh" target="_blank" rel="nofollow">Codecov</a> для мониторинга происходящего.</p>
+<p>После push мы видим что сборка успешная:</p>
+<img data-id="ca73f3f5-ee73-4bca-b9b5-c460ac1165d1" data-max-width="1513" alt="Code Coverage - 5" src="https://cdn.javarush.com/images/article/ca73f3f5-ee73-4bca-b9b5-c460ac1165d1/1024.jpeg"><p>И результат JaCoCo плагина о покрытии кода:</p>
+<img data-id="a03c3d78-ce89-4d71-acc8-a24d940c268c" data-max-width="1173" alt="Code Coverage - 6" src="https://cdn.javarush.com/images/article/a03c3d78-ce89-4d71-acc8-a24d940c268c/1024.jpeg"></li>
+<li><p>Помните нашу задачу? Да, да, мы забыл про бейджик. Я хотел вынести тему "Украшение" open-source project'ов в отдельную статью, но маленькую часть все же оставлю здесь.</p>
+<p>Итак, пошаговая инструкция что бы не заблудится:</p>
+<ol>
+<li><p>Переходим на сайт <a href="https://codecov.io/gh" target="_blank" rel="nofollow">Codecov</a>;</p></li>
+<li><p>Выбираем проект, который вам нужно;</p></li>
+<li><p>Выбираем Setting:</p>
+<img data-id="2d93c397-10b5-4a17-8914-5268a9e73b3a" data-max-width="1288" alt="Code Coverage - 7" src="https://cdn.javarush.com/images/article/2d93c397-10b5-4a17-8914-5268a9e73b3a/1024.jpeg"></li>
+<li><p>Выбираем Badge и видим ссылки на ваш бейджик в несколько различных формах представления:</p>
+<p>Первые это стандартные бейджики, их можно вставить, например, в ваш README.md:</p>
+<img data-id="487823cf-d325-45a3-8253-f482dc886c34" data-max-width="1152" alt="Code Coverage - 8" src="https://cdn.javarush.com/images/article/487823cf-d325-45a3-8253-f482dc886c34/1024.jpeg">
+<p>Их особенность в том что при кликании на них вас будет перенаправлять на страницу с отчетом о CC;</p>
+<p>Вторые это графы, таблицы и тому подобные штуки:</p>
+<img data-id="0ce4f6c5-1299-431d-8fb0-480dde13eecf" data-max-width="1020" alt="Code Coverage - 9" src="https://cdn.javarush.com/images/article/0ce4f6c5-1299-431d-8fb0-480dde13eecf/1024.jpeg"></li>
+</ol></ol><strong>Полезные ссылки</strong>
+<ul>
+<li><a href="https://github.com/qThegamEp/ForJavaRushPublication/tree/JaCoCo" target="_blank" rel="nofollow">Мой тестовый проект</a>, который вы можете скачать, посмотреть, оценить. Все по этой статье находится в branch: JaCoCo;</li>
+<li><a href="https://en.wikipedia.org/wiki/Java_Code_Coverage_Tools" target="_blank" rel="nofollow">Java Code Coverage Tools</a>;</li>
+<li><a href="https://confluence.atlassian.com/clover/comparison-of-code-coverage-tools-681706101.html" target="_blank" rel="nofollow">Альтернативы </a>JaCoCo;</li>
+<li><a href="http://www.eclemma.org/jacoco/" target="_blank" rel="nofollow">JaCoCo Library</a>;</li>
+<li>JaCoCo Maven Plugin <a href="https://mvnrepository.com/artifact/org.jacoco/jacoco-maven-plugin" target="_blank" rel="nofollow">Dependency</a>;</li>
+<li>Codecov <a href="https://docs.codecov.io/docs/supported-languages" target="_blank" rel="nofollow">туториал</a> по настройке;</li>
+<li>Собственно настройка самого <a href="https://github.com/codecov/example-java" target="_blank" rel="nofollow">JaCoCo</a>;</li>
+<li>Настройка <a href="https://github.com/codecov/example-java-maven" target="_blank" rel="nofollow">Cobertura</a>;</li>
+</ul><ul>
+<li><a href="https://javarush.com/groups/posts/612-markdown" target="_blank" rel="nofollow">Следующая статья (Markdown)</a></li>
+<li><a href="https://javarush.com/groups/posts/594-continuous-integration" target="_blank" rel="nofollow">Предыдущая статья (Continuous Integration)</a></li>
+</ul>Могут быть ошибки, ОтЧиПяТкИ в тексте.
+Всем спасибо за внимание! 

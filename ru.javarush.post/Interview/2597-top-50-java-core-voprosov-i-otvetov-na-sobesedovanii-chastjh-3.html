@@ -1,0 +1,598 @@
+Топ-50 Java Core вопросов и ответов на собеседовании. Часть 3
+<p>----------------------------------------</p>
+Как создать в Java новый тред (поток)? Так или иначе создание происходит через использование класса Thread. Но здесь могут быть варианты: наследуемся от java.lang.Thread, имплементируем интерфейс...
+<p>----------------------------------------</p>
+<a href="https://javarush.com/groups/posts/2590-top-50-java-core-voprosov-i-otvetov-na-sobesedovanii-chastjh-1" target="_blank">Топ-50 Java Core вопросов и ответов на собеседовании. Часть 1</a>
+<a href="https://javarush.com/groups/posts/2592-top-50-java-core-voprosov-iotvetov-na-sobesedovanii-chastjh-2" target="_blank">Топ-50 Java Core вопросов и ответов на собеседовании. Часть 2</a>
+<h2>Multithreading</h2><h3>37. Как создать в Java новый тред (поток)?</h3>Так или иначе создание происходит через использование класса Thread. Но здесь могут быть варианты…
+<ol>
+<li>Наследуемся от <code>java.lang.Thread</code></li>
+<li>Имплементируем интерфейс <code>java.lang.Runnable</code>, объект которого принимает к себе к конструктор <code>Thread</code> класс</li>
+</ol>Поговорим о каждом из них.
+<h4>Наследуемся от Thread класса</h4>Чтобы это заработало, в нашем классе наследуемся от <code>java.lang.Thread</code>. В нем есть метом <code>run()</code>, он как раз нам и нужен. Вся жизнь и логика нового потока будет в этом методе. Это своего рода <code>main</code> метод для нового потока.
+
+После этого останется только создать объект нашего класса и выполнить метод <code>start()</code>, который создаст новый поток и запустит записанную в нем логику. Смотрим:
+
+<pre class="lang-java line-numbers"><code>
+/**
+* Пример того, как создавать треды путем наследования {@link Thread} класса.
+*/
+class ThreadInheritance extends Thread {
+
+   @Override
+   public void run() {
+       System.out.println(Thread.currentThread().getName());
+   }
+
+   public static void main(String[] args) {
+       ThreadInheritance threadInheritance1 = new ThreadInheritance();
+       ThreadInheritance threadInheritance2 = new ThreadInheritance();
+       ThreadInheritance threadInheritance3 = new ThreadInheritance();
+       threadInheritance1.start();
+       threadInheritance2.start();
+       threadInheritance3.start();
+   }
+}
+</code></pre>
+Вывод в консоль будет такой:
+
+<pre><code>
+Thread-1
+Thread-0
+Thread-2
+</code></pre>
+То есть даже здесь мы видим, что выполняются потоки не по очереди, а как JVM рассудила)
+<h3>Реализуем интерфейс Runnable</h3>Если вы противник наследований и/или уже наследуете какой-то из других классов, можно воспользоваться интерфейсом <code>java.lang.Runnable</code>. 
+
+Здесь мы в нашем классе реализуем этот интерфейс и имплементируем метод <code>run()</code>, как это было и в том примере. Только нужно будет еще создать объекты <code>Thread</code>. Казалось бы, больше строк и это хуже. Но мы то знаем как пагубно наследование и что его лучше избегать всеми способами ;)
+
+Смотрим:
+
+<pre class="lang-java line-numbers"><code>
+/**
+* Пример того, как создавать треды из интерфейса {@link Runnable}.
+* Здесь проще простого - реализуем этот интерфейс и потом передаем в конструктор
+* экземпляр реализуемого объекта.
+*/
+class ThreadInheritance implements Runnable {
+
+   @Override
+   public void run() {
+       System.out.println(Thread.currentThread().getName());
+   }
+
+   public static void main(String[] args) {
+       ThreadInheritance runnable1 = new ThreadInheritance();
+       ThreadInheritance runnable2 = new ThreadInheritance();
+       ThreadInheritance runnable3 = new ThreadInheritance();
+
+       Thread threadRunnable1 = new Thread(runnable1);
+       Thread threadRunnable2 = new Thread(runnable2);
+       Thread threadRunnable3 = new Thread(runnable3);
+
+       threadRunnable1.start();
+       threadRunnable2.start();
+       threadRunnable3.start();
+   }
+}
+</code></pre>
+И результат выполнения:
+
+<pre><code>
+Thread-0
+Thread-1
+Thread-2
+</code></pre><h3>38. Какая разница между процессом и потоком?</h3><img data-max-width="1024" src="/images/article/c71a3d2c-5d18-42f3-a81d-074375cec3ca/original.jpeg" class="img-fluid" alt="Топ-50 Java Core вопросов и ответов на собеседовании. Часть 3 - 1">Существуют следующие различия между процессом и потоком:
+<ol>
+<li>Программа в исполнении называется процессом, тогда как Поток является подмножеством процесса.</li>
+<li>Процессы независимы, тогда как потоки являются подмножеством процесса.</li>
+<li>Процессы имеют различное адресное пространство в памяти, в то время как потоки содержат общее адресное пространство.</li>
+<li>Переключение контекста происходит быстрее между потоками по сравнению с процессами.</li>
+<li>Межпроцессное взаимодействие медленнее и дороже, чем межпотоковое взаимодействие.</li>
+<li>Любые изменения в родительском процессе не влияют на дочерний процесс, тогда как изменения в родительском потоке могут влиять на дочерний поток.</li></ol><h3>39. Какие преимущества есть у многопоточности?</h3><img data-max-width="512" src="/images/article/e393b97b-b803-4742-8fcf-b94bac5cf0e8/original.jpeg" class="img-fluid" alt="Топ-50 Java Core вопросов и ответов на собеседовании. Часть 3 - 2"><ol>
+<li>Многопоточность позволяет приложению / программе всегда реагировать на ввод, даже если она уже выполняется с некоторыми фоновыми задачами;</li>
+<li>Многопоточность позволяет быстрее выполнять задачи, поскольку потоки выполняются независимо;</li>
+<li>Многопоточность обеспечивает лучшее использование кэш-памяти, поскольку потоки разделяют общие ресурсы памяти;</li>
+<li>Многопоточность уменьшает количество требуемого сервера, поскольку один сервер может одновременно выполнять несколько потоков.</li>
+</ol><h3>40. Каковы состояния в жизненном цикле потока?</h3><img data-max-width="800" src="/images/article/4c72b03a-d3fa-40a3-b24f-75bcaa9df383/original.jpeg" class="img-fluid" alt="Топ-50 Java Core вопросов и ответов на собеседовании. Часть 3 - 3"><ol>
+<li><span class="text-bold">New:</span> В этом состоянии объект класса <code>Thread</code> создается с использованием оператора new, но поток не существует. Поток не запускается, пока мы не вызовем метод <code>start()</code>.</li>
+<li><span class="text-bold">Runnable:</span> В этом состоянии поток готов к запуску после вызова метода <cde>start(). Однако он еще не выбран планировщиком потока.</cde></li>
+<li><span class="text-bold">Running:</span> В этом состоянии планировщик потока выбирает поток из состояния готовности, и тот работает.</li>
+<li><span class="text-bold">Waiting/Blocked:</span> в этом состоянии поток не работает, но все еще жив или ожидает завершения другого потока.</li>
+<li><span class="text-bold">Dead/Terminated:</span> при выходе из метода <code>run()</code> поток находится в завершенном или мертвом состоянии.</li>
+</ol><h3>41. Можно ли запустить тред дважды?</h3>Нет, мы не можем перезапустить поток, так как после запуска и выполнения потока он переходит в состояние Dead. 
+
+Поэтому, если мы попытаемся запустить поток дважды, он выдаст исключение runtimeException "<em>java.lang.IllegalThreadStateException</em>". 
+
+Смотрим:
+
+<pre class="lang-java line-numbers"><code>
+class DoubleStartThreadExample extends Thread {
+
+   /**
+    * Имитируем работу треда
+    */
+   public void run() {
+	// что-то происходит. Для нас не существенно на этом этапе
+   }
+
+   /**
+    * Запускаем тред дважды
+    */
+   public static void main(String[] args) {
+       DoubleStartThreadExample doubleStartThreadExample = new DoubleStartThreadExample();
+       doubleStartThreadExample.start();
+       doubleStartThreadExample.start();
+   }
+}
+</code></pre>
+Как только работа дойдет до выполнения второго старта одного и того же треда - тогда и будет исключение. Попробуйте сами ;) лучше один раз увидеть, чем сто раз услышать.
+<h3>42. Что если вызвать напрямую метод run(), не вызывая метод start()?</h3>Да, вызвать метод <code>run()</code> конечно можно, но это никак не создаст новый поток и не выполнит его как отдельный. В этом случае, это простой объект, который вызывает простой метод.
+
+Если мы говорим о методе <code>start()</code>, то там другое дело. Запуская этот метод, <code>runtime</code> запускает новый потом и он уже, в свою очередь, дергает наш метод ;) 
+
+Не верите — вот, попробуйте:
+
+<pre class="lang-java line-numbers"><code>
+class ThreadCallRunExample extends Thread {
+
+   public void run() {
+       for (int i = 0; i &lt; 5; i++) {
+           System.out.print(i);
+       }
+   }
+
+   public static void main(String args[]) {
+       ThreadCallRunExample runExample1 = new ThreadCallRunExample();
+       ThreadCallRunExample runExample2 = new ThreadCallRunExample();
+
+       // просто будут вызваны в потоке main два метода, один за другим.
+       runExample1.run();
+       runExample2.run();
+   }
+}
+</code></pre>
+И вывод в консоль будет такой:
+
+<pre><code>
+0123401234
+</code></pre>
+Видно, что никакой нити не было создано. Все сработало как обычный класс. Вначале отработал метод первого класса, затем второй.
+<h3>43. Что такое daemon тред?</h3><img data-max-width="512" src="/images/article/91a04dd1-8e9a-4696-a7e2-135b7aa90149/original.jpeg" class="img-fluid" alt="Топ-50 Java Core вопросов и ответов на собеседовании. Часть 3 - 4"><span class="text-bold">Daemon thread</span> (далее — демон-тред) — это тред, который выполняет задачи в фоне по отношению к другому потоку. То есть, его работа заключается в том, чтоб выполнять задачи вспомогательные, которые нужно делать только в привязке другому (основному) потоку. 
+
+Есть много потоков демонов, работающих автоматически, например Garbage Collector, finalizer и т. д.
+<h4>Почему Java закрывает демон-поток?</h4>Единственная цель потока демона состоит в том, что он предоставляет сервисы потоку пользователя для фоновой задачи поддержки. Поэтому если основной поток завершился, то runtime закрывает автоматически и все его демон-потоки.
+<h4>Методы для работы в Thread классе</h4>Класс <code>java.lang.Thread</code> предоставляет два метода для работы с демоном-потоком:
+<ol>
+<li><code>public void setDaemon(boolean status)</code> — указывает, что это будет демон-поток. По умолчанию стоит <code>false</code>, что значит, что будут создаваться не демон-потоки, если не указать это отдельно.</li>
+<li><code>public boolean isDaemon()</code> — по сути это геттер для переменной <code>daemon</code>, который мы устанавливаем предыдущим методом.</li>
+</ol>Пример:
+
+<pre class="lang-java line-numbers"><code>
+class DaemonThreadExample extends Thread {
+
+   public void run() {
+       // Проверяет, демон ли этот поток или нет
+       if (Thread.currentThread().isDaemon()) {
+           System.out.println("daemon thread");
+       } else {
+           System.out.println("user thread");
+       }
+   }
+
+   public static void main(String[] args) {
+       DaemonThreadExample thread1 = new DaemonThreadExample();
+       DaemonThreadExample thread2 = new DaemonThreadExample();
+       DaemonThreadExample thread3 = new DaemonThreadExample();
+
+       // теперь thread1 - поток-демон.
+       thread1.setDaemon(true);
+
+       System.out.println("демон?.. " + thread1.isDaemon());
+       System.out.println("демон?.. " + thread2.isDaemon());
+       System.out.println("демон?.. " + thread3.isDaemon());
+
+       thread1.start();
+       thread2.start();
+       thread3.start();
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+демон?.. true
+демон?.. false
+демон?.. false
+daemon thread
+user thread
+user thread
+</code></pre>
+Из вывода мы видим, что внутри самого потока при помощи статического <code>currentThread()</code> метода можно узнать какой это поток с одной стороны, с другой стороны, если у нас есть ссылка на объект этого потока, мы можем узнать и непосредственно у него. 
+
+Это дает ту необходимую гибкость в настройке.
+<h3>44. Можно ли сделать поток демоном уже после его создания?</h3>Нет. Если вы сделаете это, он выдаст исключение <code>IllegalThreadStateException</code>. 
+
+Следовательно, мы можем создать поток демона только до его запуска.
+
+Пример:
+
+<pre class="lang-java line-numbers"><code>
+class SetDaemonAfterStartExample extends Thread {
+
+   public void run() {
+       System.out.println("Working...");
+   }
+
+   public static void main(String[] args) {
+       SetDaemonAfterStartExample afterStartExample = new SetDaemonAfterStartExample();
+       afterStartExample.start();
+      
+       // здесь будет выброшено исключение
+       afterStartExample.setDaemon(true);
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+Working...
+Exception in thread "main" java.lang.IllegalThreadStateException
+	at java.lang.Thread.setDaemon(Thread.java:1359)
+	at SetDaemonAfterStartExample.main(SetDaemonAfterStartExample.java:14)
+</code></pre><h3>45. Что такое shutdownhook?</h3><span class="text-bold">Shutdownhook</span> — это поток, который неявно вызывается до завершения работы JVM(виртуальная машина Java). Таким образом, мы можем использовать его для очистки ресурса или сохранения состояния, когда виртуальная машина Java выключается нормально или внезапно. 
+
+Мы можем добавить <code>shutdown hook</code>, используя следующий метод:
+
+<pre class="lang-java line-numbers"><code>
+Runtime.getRuntime().addShutdownHook(new ShutdownHookThreadExample());
+</code></pre>
+Как показано в примере:
+
+<pre class="lang-java line-numbers"><code>
+/**
+* Программа, которая показывает как запустить shutdown hook тред,
+* который выполнится аккурат до окончания работы JVM
+*/
+class ShutdownHookThreadExample extends Thread {
+
+   public void run() {
+       System.out.println("shutdown hook задачу выполнил");
+   }
+
+   public static void main(String[] args) {
+
+       Runtime.getRuntime().addShutdownHook(new ShutdownHookThreadExample());
+
+       System.out.println("Теперь программа засыпает, нажмите ctrl+c чтоб завершить ее.");
+       try {
+           Thread.sleep(60000);
+       } catch (InterruptedException e) {
+           e.printStackTrace();
+       }
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+Теперь программа засыпает, нажмите ctrl+c чтоб завершить ее.
+shutdown hook задачу выполнил
+</code></pre><h3>46. Что такое синхронизация (synchronization)?</h3>Синхронизация (Synchronization) в Java — это возможность контролировать доступ нескольких потоков к любому общему ресурсу.
+
+Когда несколько потоков пытаются выполнить одну и ту же задачу, существует вероятность ошибочного результата, поэтому для устранения этой проблемы Java использует синхронизацию, благодаря которой будет только один тред сможет работать в один момент.
+
+Синхронизация может быть достигнута тремя способами:
+<ul>
+<li>Синхронизируя метод</li>
+<li>Синхронизируя определенный блок</li>
+<li>Статической синхронизацией</li>
+</ul><h4>Синхронизация метода</h4>Синхронизированный метод используется для блокировки объекта для любого общего ресурса. Когда поток вызывает синхронизированный метод, он автоматически получает блокировку для этого объекта и снимает ее, когда поток завершает свою задачу.
+
+Чтоб заработало, нужно добавить ключевое слово <span class="text-bold>">synchronized</span>. 
+
+На примере увидим, как это работает:
+
+<pre class="lang-java line-numbers"><code>
+/**
+* Пример, где мы синхронизируем метод. То есть добавляем ему слово synchronized.
+* Есть два писателя, которые хотят использовать один принтер. Они подготовили свои поэмы
+* И конечно же не хотят, чтоб их поэмы перемешались, а хотят, чтоб работа была сделана по * * * очереди для каждого из них
+*/
+class Printer {
+
+   synchronized void print(List&lt;String&gt; wordsToPrint) {
+       wordsToPrint.forEach(System.out::print);
+       System.out.println();
+   }
+
+   public static void main(String args[]) {
+       // один объект для двух тредов
+       Printer printer  = new Printer();
+
+       // создаем два треда
+       Writer1 writer1 = new Writer1(printer);
+       Writer2 writer2 = new Writer2(printer);
+
+       // запускаем их
+       writer1.start();
+       writer2.start();
+   }
+}
+
+/**
+* Писатель номер 1, который пишет свою поэму.
+*/
+class Writer1 extends Thread {
+   Printer printer;
+
+   Writer1(Printer printer) {
+       this.printer = printer;
+   }
+
+   public void run() {
+       List&lt;string&gt; poem = Arrays.asList("Я ", this.getName(), " Пишу", " Письмо");
+       printer.print(poem);
+   }
+
+}
+
+/**
+* Писатель номер 2, который пишет свою поэму.
+*/
+class Writer2 extends Thread {
+   Printer printer;
+
+   Writer2(Printer printer) {
+       this.printer = printer;
+   }
+
+   public void run() {
+       List&lt;String&gt; poem = Arrays.asList("Не Я ", this.getName(), " Не пишу", " Не Письмо");
+       printer.print(poem);
+   }
+}
+</code></pre>
+И вывод в консоль:
+
+<pre><code>
+Я Thread-0 Пишу Письмо
+Не Я Thread-1 Не пишу Не Письмо
+</code></pre><h4>Блок синхронизации</h4>Синхронизированный блок может быть использован для выполнения синхронизации на любом конкретном ресурсе метода. 
+
+Допустим, что в большом методе(да да, такие писать нельзя, но иногда бывает) нужно синхронизировать только небольшую часть, по каким-то причинам.
+
+Если вы поместите все коды метода в синхронизированный блок, он будет работать так же, как синхронизированный метод. 
+
+Синтаксис выглядит так:
+
+<pre class="lang-java line-numbers"><code>
+synchronized (“объект для блокировки”) {
+   // сам код, который нужно защитить
+}
+</code></pre>
+Для того, чтоб не повторять пример предыдущий, создадим треды через анонимные классы - то есть сразу реализуя Runnable интерфейс.
+
+<pre class="lang-java line-numbers"><code>
+/**
+* Вот как добавляется блок синхронизации.
+* Внутри нужно указать у кого будет взят мьютекс для блокировки.
+*/
+class Printer {
+
+   void print(List&lt;String&gt; wordsToPrint) {
+       synchronized (this) {
+           wordsToPrint.forEach(System.out::print);
+       }
+       System.out.println();
+   }
+
+   public static void main(String args[]) {
+       // один объект для двух тредов
+       Printer printer = new Printer();
+
+       // создаем два треда
+       Thread writer1 = new Thread(new Runnable() {
+           @Override
+           public void run() {
+               List&lt;String&gt; poem = Arrays.asList("Я ", "Writer1", " Пишу", " Письмо");
+               printer.print(poem);
+           }
+       });
+       Thread writer2 = new Thread(new Runnable() {
+           @Override
+           public void run() {
+               List&lt;String&gt; poem = Arrays.asList("Не Я ", "Writer2", " Не пишу", " Не Письмо");
+               printer.print(poem);
+           }
+       });
+
+       // запускаем их
+       writer1.start();
+       writer2.start();
+   }
+}
+
+}
+</code></pre>
+и вывод в консоль
+
+<pre><code>
+Я Writer1 Пишу Письмо
+Не Я Writer2 Не пишу Не Письмо
+</code></pre><h4>Статическая синхронизация</h4>Если сделать статический метод синхронизированным, то блокировка будет на классе, а не на объекте.
+
+В этом примере мы применяем ключевое слово synchronized к статическому методу для выполнения статической синхронизации:
+
+<pre class="lang-java line-numbers"><code>
+/**
+* Вот как добавляется блок синхронизации.
+* Внутри нужно указать у кого будет взят мьютекс для блокировки.
+*/
+class Printer {
+
+   static synchronized void print(List&lt;String&gt; wordsToPrint) {
+       wordsToPrint.forEach(System.out::print);
+       System.out.println();
+   }
+
+   public static void main(String args[]) {
+
+       // создаем два треда
+       Thread writer1 = new Thread(new Runnable() {
+           @Override
+           public void run() {
+               List&lt;String&gt; poem = Arrays.asList("Я ", "Writer1", " Пишу", " Письмо");
+               Printer.print(poem);
+           }
+       });
+       Thread writer2 = new Thread(new Runnable() {
+           @Override
+           public void run() {
+               List&lt;String&gt; poem = Arrays.asList("Не Я ", "Writer2", " Не пишу", " Не Письмо");
+               Printer.print(poem);
+           }
+       });
+
+       // запускаем их
+       writer1.start();
+       writer2.start();
+   }
+}
+</code></pre>
+и вывод в консоль:
+
+<pre><code>
+Не Я Writer2 Не пишу Не Письмо
+Я Writer1 Пишу Письмо
+</code></pre><h3>47. Что такое volatile переменная?</h3>Ключевое слово <code>volatile</code> используется в многопоточном программировании для обеспечения безопасности потока, поскольку модификация одной изменяемой переменной видна всем другим потокам, поэтому одна переменная может использоваться одним потоком за раз.
+
+При помощи ключевого слова <code>volatile</code> можно гарантировать, что переменная будет потокобезопасна и будет храниться в общей памяти, и потоки не будут ее брать себе в свой кеш.
+
+Как это выглядит?
+
+<pre class="lang-java line-numbers"><code>
+private volatile AtomicInteger count;
+</code></pre>
+Просто добавляем к переменной <code>volatile</code>.
+
+Но это не говорит о полной потокобезопасности… Ведь операции могут быть не атомарны над переменной. Но можно использовать <code>Atomic</code> классы, которые делают операцию атомарно, то есть за одно выполнение процессором. 
+
+Таких классов много можно найти в пакете <code>java.util.concurrent.atomic</code>. 
+<h3>48. Что такое deadlock</h3>Deadlock в Java является частью многопоточности. Взаимная блокировка может возникнуть в ситуации, когда поток ожидает блокировки объекта, полученной другим потоком, а второй поток ожидает блокировки объекта, полученной первым потоком. 
+
+Таким образом эти два потока ждут друг друга и не будут дальше выполнять свой код.
+<img data-max-width="512" src="/images/article/7c387726-2209-49ef-aa3b-f6c8bfc4fd1f/original.jpeg" class="img-fluid" alt="Топ-50 Java Core вопросов и ответов на собеседовании. Часть 3 - 5">Рассмотрим Пример, в котором есть класс имплементирующий Runnable. Принимает в конструкторе он два ресурса. Внутри метода run() он по-очереди берет блокировку для них, так вот если создать два объекта этого класса, а ресурсы передать в разном порядке, то легко можно нарваться на блокировку:
+
+<pre class="lang-java line-numbers"><code>
+class DeadLock {
+
+   public static void main(String[] args) {
+       final Integer r1 = 10;
+       final Integer r2 = 15;
+
+       DeadlockThread threadR1R2 = new DeadlockThread(r1, r2);
+       DeadlockThread threadR2R1 = new DeadlockThread(r2, r1);
+
+       new Thread(threadR1R2).start();
+       new Thread(threadR2R1).start();
+   }
+}
+
+/**
+* Класс, который принимает два ресурса.
+*/
+class DeadlockThread implements Runnable {
+
+   private final Integer r1;
+   private final Integer r2;
+
+   public DeadlockThread(Integer r1, Integer r2) {
+       this.r1 = r1;
+       this.r2 = r2;
+   }
+
+   @Override
+   public void run() {
+       synchronized (r1) {
+           System.out.println(Thread.currentThread().getName() + " захватил ресурс: " + r1);
+
+           try {
+               Thread.sleep(1000);
+           } catch (InterruptedException e) {
+               e.printStackTrace();
+           }
+
+           synchronized (r2) {
+               System.out.println(Thread.currentThread().getName() + " захватил ресурс: " + r2);
+           }
+       }
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+Первый тред захватил первый ресурс
+Второй тред захватывает второй ресурс
+</code></pre><h3>49. Как избежать deadlock?</h3>Исходя из того, что мы знаем как дедлок возникает, то можно сделать некоторые выводы…
+<ul>
+<li>Как показано в примере выше, дедлок был из-за того, что была вложенность блокировок. То есть внутри одной блокировки находится еще одна или более. 
+Избежать это можно следующим образом - вместо вложенности нужно добавить новую абстракцию поверх и дать блокировку на более высокий уровень, а вложенные блокировки убрать.</li>
+<li>Чем больше блокировок, тем больше шансов, что будет дедлок. Поэтому каждый раз добавляя блокировку нужно думать, а точно ли она нужна и можно ли избежать добавление новой.</li>
+<li>Использования <code>Thread.join()</code>. Дедлок можно сделать также при ожидании одного треда другим. Чтобы избежать этой проблемы, можно подумать над тем, чтобы выставлять ограниченное время на <code>join()</code> метод.</li>
+<li>Если у нас один поток - дедлока не будет ;)</li>
+</ul><h3>50. Что такое состояние гонки?</h3>Если в реальных гонках выступают машины, то в гонках терминологии многопоточности в гонках выступают треды. 
+
+Но почему? Есть же два треда, которые работают и которые могут иметь доступ к одному и тому же объекту. И они могут попытаться обновить состояние в одно и тоже время. Пока все ясно, да?
+
+Так работа тредов происходит или реально параллельно(если есть больше одного ядра в процессоре) или условно параллельно, когда процессор выделяет по небольшому промежутку времени. 
+
+И управлять этими процессами мы не можем, поэтому мы не можем гарантировать, что когда один тред прочитает данные из объекта, он успеет их изменить ДО того, как это сделает какой-то другой тред.
+
+Такие проблемы бывают, когда проходит такая комбинация “проверь-и-действуй”.
+
+Что это значит? Например у нас есть <code>if</code> выражение, в теле которого изменяется само условие, то есть:
+
+<pre class="lang-java line-numbers"><code>
+int z = 0;
+
+// проверь
+if (z &lt; 5) {
+//действуй
+   z = z + 5;
+}
+</code></pre>
+Так вот может быть ситуация, когда два треда одновременно зайдут в этот блок кода в момент, когда z еще равно нулю и в двоем изменят это значение.
+
+И в итоге мы получим не ожидаемое значение 5, а уже 10.
+
+Как это избежать? Нужно поставить блокировку до начала выполнения и после. То есть, чтобы первый тред зашел в блок <code>if</code>, выполнил все действия, изменил <code>z</code> и уже потом дал возможность сделать это следующему треду. 
+
+А вот уже следующий тред не зайдет в блок <code>if</code>, так как <code>z</code> уже будет равно 5:
+
+<pre class="lang-java line-numbers"><code>
+// получить блокировку для z
+if (z &lt; 5) {
+   z = z + 5;
+}
+// выпустить из блокировки z
+===================================================
+</code></pre><h2>Вместо вывода</h2>Хочу сказать спасибо всем тем, кто дочитал до конца. Это был длинный путь и вы его осилили!
+
+Может быть понятно не всё. Это нормально. Я как только начинал изучать джаву, мне никак в голове не умещалось что такое статическая переменная. Но ничего, переспал с этой мыслью, почитал еще несколько источников и таки понял.
+
+Подготовка к собеседованию - это скорее академический вопрос, чем практический. Поэтому перед каждым собеседованием нужно повторять и освежать в памяти то, что может не так уж и часто используешь.
+
+<div class="email-subscription"><iframe frameborder="0" src="https://secure.esputnik.com.ua/4Q0Ef6d2SOs" width="100%" height="200" scrolling="no"></iframe></div><h2>И как всегда, полезные ссылки:</h2><ul>
+<li><a href="https://www.geeksforgeeks.org/exceptions-in-java/" rel="nofollow" target="_blank">Exceptions in Java</a></li>
+<li><a href="https://www.jrebel.com/blog/using-default-methods-in-java-8" rel="nofollow" target="_blank">Default methods in java</a></li>
+<li><a href="https://javarush.com/groups/posts/2472-podrobnihy-razbor-klassa-arraylist" target="_blank">Подробный разбор класса ArrayList</a></li>
+<li>Подписывайтесь на <a href="https://github.com/romankh3" rel="nofollow" target="_blank">мой GitHub аккаунт</a>. Я туда выкладываю все то, чем занимаюсь. Все, что учу. Например, недавно разбирался с <a href="https://github.com/romankh3/drools-springboot-example" rel="nofollow" target="_blank">Drools RuleEngine</a>.</li>
+<li><a href="https://www.geeksforgeeks.org/checked-vs-unchecked-exceptions-in-java/" rel="nofollow" target="_blank">Checked Unchecked exceptions</a></li>
+<li><a href="https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html" rel="nofollow" target="_blank">try-with-resources</a></li>
+<li><a href="https://www.journaldev.com/33236/java-final-keyword-examples" rel="nofollow" target="_blank">final keyword</a></li>
+<li>Пока готовил материал, мне очень понравился сайт <a href="https://www.geeksforgeeks.org" rel="nofollow" target="_blank">https://www.geeksforgeeks.org</a>. Вот там реально много крутой информации.</li>
+</ul>Всем спасибо за прочтение, 
+До скорых встреч)
+<a href="https://github.com/romankh3" rel="nofollow" target="_blank">Мой профиль на GitHub</a>

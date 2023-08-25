@@ -1,0 +1,381 @@
+Основы XML для Java программиста. Часть 2 из 3
+<p>----------------------------------------</p>
+Продолжение цикла по XML. В данной статье рассказывается про XML Namespace и XML Schema. Как минимум, данная статья познакомит вас с этими вещами, а более подробный и глубокие знания вы можете получить, исследуя ссылки, указанные в конце статьи.
+<p>----------------------------------------</p>
+<h2>Вступление</h2>Здравствуйте, дорогие читатели моей статьи. Это уже вторая статья из цикла про XML, и в данной статье будет рассказывать про XML Namespace и XML Schema.
+<div class='row justify-content-center jr-image-wrap'><div class='col-12 col-sm-10 col-md-8'><img data-id="050eb396-6910-4076-90eb-d4b2e5c7142f" data-max-width="710" alt="Основы XML" src="https://cdn.javarush.com/images/article/050eb396-6910-4076-90eb-d4b2e5c7142f/1024.jpeg"></div></div>Буквально недавно, мне самому ничего про это известно не было, однако я осилил немало материала и буду пытаться объяснить простыми словами эти две важные темы. 
+
+Сразу хочу сказать, что схемы – очень продвинутый механизм валидации XML документов и значительно более функциональный, чем DTD, потому полного его изучения от и до тут не будет. Давайте приступать :)
+<h2>XML Namespace</h2>Namespace значит «пространство имён», однако в этой статье я буду часто подменивать русское выражение на просто namespace, ибо это короче и комфортнее для понимания.
+
+XML Namespace – это технология, основная цель которой - сделать так, чтобы все элементы были уникальными в XML файле и не было путаницы. И так, как это Java курсы, то такая же технология есть и в Java – пакеты. 
+
+Если бы можно было поместить два класса с одинаковым именем рядом и использовать их, то как мы бы определили, какой класс нам нужен? Эта проблема решена пакетами – мы можем просто разместить классы в разные пакеты и импортировать их оттуда, точно указав имя нужного пакета и путь к нему, или просто указав полный путь к нужному классу.
+<img data-max-width="253" alt="Основы XML для Java программиста. Часть 2 из 3 - 1" src="https://cdn.javarush.com/images/article/20ee6624-9d43-4f7c-8f4e-faed722986de/original.jpeg">Теперь, мы можем сделать так:
+
+<pre class="lang-java line-numbers"><code>
+public class ExampleInvocation {
+    public static void main(String[] args) {
+        // Создание экземпляра класса из первого пакета.
+        example_package_1.Example example1 = new example_package_1.Example();
+        
+        // Создание экземпляра класса из второго пакета.
+        example_package_2.Example example2 = new example_package_2.Example();
+        
+        // Создание экземпляра класса из третьего пакета.
+        example_package_3.Example example3 = new example_package_3.Example();
+    }
+}
+</code></pre>
+В XML Namespace все примерно так же, только немного по-другому. Суть такая же: если элементы одинаковые (как классы), то мы просто должны использовать их в разных namespace’ах (указывать пакеты), тогда даже если имена элементов (классов) станут совпадать, мы все равно будем обращаться к конкретному элементу из пространства (пакета).
+
+Для примера: у нас в XML есть два элемента – предсказание (oracle) и БД Oracle.
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;root&gt;
+    &lt;oracle&gt;
+        &lt;connection value="jdbc:oracle:thin:@10.220.140.48:1521:test1" /&gt;
+        &lt;user value="root" /&gt;
+        &lt;password value="111" /&gt;
+    &lt;/oracle&gt;
+    
+    &lt;oracle&gt;
+        Сегодня вы будете заняты весь день.
+    &lt;/oracle&gt;
+&lt;/root&gt;
+</code></pre>
+И когда мы будем обрабатывать данный XML файл, мы будем серьезно запутаны, если вместо базы данных нам придет предсказание, и обратно тоже.
+
+Для того, чтобы разрешить коллизию элементов, мы можем каждому из них выделить своё собственное пространство, чтобы различать их. Для этого есть специальный атрибут – xmlns:префикс= «уникальное значение для namespace”. После чего, мы можем использовать префикс перед элементами, чтобы указывать, что он является частью этого namespace (по сути, мы должны создать путь к пакету - namespace, а потом перед каждым элементом указывать префиксом, к какому пакету он принадлежит).
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;root&gt;
+    &lt;database:oracle xmlns:database="Unique ID #1"&gt;
+        &lt;connection value="jdbc:oracle:thin:@10.220.140.48:1521:test1" /&gt;
+        &lt;user value="root" /&gt;
+        &lt;password value="111" /&gt;
+    &lt;/database:oracle&gt;
+
+    &lt;oracle:oracle xmlns:oracle="Unique ID #2"&gt;
+        Сегодня вы будете заняты весь день.
+    &lt;/oracle:oracle&gt;
+&lt;/root&gt;
+</code></pre>
+В данном примере мы объявили два пространства имён: database и oracle. Теперь перед элементами можно использовать префиксы namespace’ов.
+
+Не нужно пугаться, если сейчас что-то неясно. На самом деле – это очень просто. Сначала, я хотел написать эту часть статьи более быстро, однако после среды я решил, что нужно уделить больше внимания данной теме, так как тут легко запутаться или в чем-то не разобраться. Сейчас будет очень много внимания уделено атрибуту xmlns. И так, еще пример:
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;root xmlns="https://www.standart-namespace.com/" xmlns:gun="https://www.gun-shop.com/" xmlns:fish="https://www.fish-shop.com/"&gt;
+    &lt;gun:shop&gt;
+        &lt;gun:guns&gt;
+            &lt;gun:gun name="Revolver" price="1250$" max_ammo="7" /&gt;
+            &lt;gun:gun name="M4A1" price="3250$" max_ammo="30" /&gt;
+            &lt;gun:gun name="9mm Pistol" price="450$" max_ammo="12" /&gt;
+        &lt;/gun:guns&gt;
+    &lt;/gun:shop&gt;
+
+    &lt;fish:shop&gt;
+        &lt;fish:fishes&gt;
+            &lt;fish:fish name="Shark" price="1000$" /&gt;
+            &lt;fish:fish name="Tuna" price="5$" /&gt;
+            &lt;fish:fish name="Capelin" price="1$" /&gt;
+        &lt;/fish:fishes&gt;
+    &lt;/fish:shop&gt;
+&lt;/root&gt;
+</code></pre>
+Вы можете видеть обычный XML, где используются пространства gun для уникальных элементов оружейного магазина и fish для уникальных элементов рыболовного магазина. Можно увидеть, что создав пространства, мы использовали один элемент shop сразу к двум разным вещам – магазину оружия и магазину рыбы, и нам точно известно, что это за магазин, благодаря тому, что объявили пространства. Самое интересно начнется в схемах, когда мы сможем таким образом еще валидировать разные структуры с одними элементами.
+
+xmlns – атрибут для объявления namespace’а, указывать его можно в любом элементе. Пример объявления namespace’а:
+
+<pre class="lang-java line-numbers"><code>
+xmlns:shop= «https://barber-shop.com/»
+</code></pre>
+После двоеточия находится префикс – это ссылка на пространство, которая потом может использоваться перед элементами, чтобы указывать, что они родом из этого пространства.
+
+Значение xmlns должно быть УНИКАЛЬНОЙ СТРОКОЙ. Это крайне важно понимать: очень часто используются ссылки на сайты или URI, чтобы объявить namespace. Это правило является стандартом, так как URI или URL ссылки являются уникальными, НО именно данный момент очень запутывает. Просто запомните: значением может быть ЛЮБАЯ строка, какая вы захотите, но для точной уникальности и стандарта нужно использовать URL или URI адреса. То, что можно использовать любые строки, показано в примере в oracle:
+
+<pre class="lang-java line-numbers"><code>
+xmlns:oracle="Unique ID #2"
+xmlns:database="Unique ID #1"
+</code></pre>
+Когда вы объявляете namespace, вы можете его использовать в самом элементе и во всех элементах внутри него, потому объявленные в root элементе namespace’ы можно использовать во всех элементах. Это можно видеть в последнем примере, и вот более конкретный пример:
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;root&gt;
+    &lt;el1:element1 xmlns:el1="Element#1 Unique String"&gt;
+        &lt;el1:innerElement&gt;
+
+        &lt;/el1:innerElement&gt;
+    &lt;/el1:element1&gt;
+
+
+    &lt;el2:element2 xmlns:el2="Element#2 Unique String"&gt;
+        &lt;el2:innerElement&gt;
+
+        &lt;/el2:innerElement&gt;
+    &lt;/el2:element2&gt;
+
+
+    &lt;el3:element3 xmlns:el3="Element#3 Unique String"&gt;
+        &lt;el3:innerElement&gt;
+            &lt;el1:innerInnerElement&gt; &lt;!-- Так нельзя, потому что пространство el1 объявлено только в первом элементе, потому может использовать только внутри первого элемента и его внутренних элементов. --&gt;
+                
+            &lt;/el1:innerInnerElement&gt;
+        &lt;/el3:innerElement&gt;
+    &lt;/el3:element3&gt;
+&lt;/root&gt;
+</code></pre>
+Тут важная деталь: существует так же стандартный namespace в root элементе. Если вы объявили другие namespace’ы, вы стираете стандартное и не можете его использовать. Тогда перед root элементом нужно поставить какой-то префикс пространства, любой, который вы объявили ранее.
+
+Однако, это можно так же обхитрить: вы можете объявить стандартное пространство явно. Достаточно просто не использовать префикс после xmlns, а сразу записать какое-то значение, и все ваши элементы без префикса станут принадлежать именно этому namespace’у. В последнем примере это было использовано:
+
+<pre class="lang-java line-numbers"><code>
+&lt;root xmlns="https://www.standart-namespace.com/" xmlns:gun="https://www.gun-shop.com/" xmlns:fish="https://www.fish-shop.com/"&gt;
+</code></pre>
+Мы объявили стандартное пространство явно, чтобы избежать необходимости использовать gun или fish, так как рут элемент не является сущностью ни рыболовного магазина, ни оружейного, потому использование любого пространства было бы уже логически неправильным.
+
+Далее: если вы создали xmlns:a и xmlns:b, но у них одно значение, то это одинаковое пространство и они не уникальные. Потому и нужно использовать всегда уникальные значения, ведь нарушение этого правила может создать большое количество ошибок. Например, если бы у нас было так объявлены пространства:
+
+<pre class="lang-java line-numbers"><code>
+xmlns="https://www.standart-namespace.com/" xmlns:gun="https://www.gun-shop.com/" xmlns:fish="https://www.gun-shop.com/"
+</code></pre>
+То наш рыболовный магазин стал бы оружейным, а префикс был бы все еще рыбного магазинчика.
+
+Это все основные моменты пространств. Я довольно много времени потратил на то, чтобы собрать их все и сократить, а потом ясно выразить, так как информация по пространствам в Интернете очень огромная и часто одна вода, потому большая часть всего, что тут есть – я узнал это сам пробами и ошибками. Если у вас остались вопросы, то можете попробовать ознакомиться с материалами по ссылкам в конце статьи.
+<h2>XML Schema</h2>Сразу хочу сказать, что в данной статье будет только верхушка айсберга, так как тема очень обширная. Если вы захотите ознакомиться более подробно со схемами и научиться писать их самому любой сложности, то в конце статьи будет ссылка, где будет все про разные типы, ограничения, расширения и так далее. Начать хочу с теории. 
+
+Схемы обладают форматом .xsd (xml scheme definition) и являются более продвинутой и популярной альтернативой DTD: они способны так же создавать элементы, описывать их и так далее. Однако, добавлено очень много бонусов: проверка типов, поддержка нэймспэйсов и более широкий функционал. 
+
+Помните, когда мы говорили про DTD, там был минус, что он не поддерживает пространства? Теперь, когда мы это изучили, объясняю: если бы можно было импортировать две и более схемы с DTD, где были бы одинаковые элементы, у нас были бы коллизии (совпадения) и нельзя было бы их использовать вообще, ведь неясно, какой элемент нам нужен.
+
+В XSD данная проблема решена, ведь вы можете импортировать схемы в одно конкретное пространство и использовать его.
+
+По сути, у каждой XSD схемы есть целевое пространство, которое означает, в какое пространство должна быть записана схема в XML файле. Таким образом, в самом XML файле нам нужно просто создать эти заранее определенные в схемах пространства и назначить префиксы для них, а потом подключить в каждое из них нужные схемы, после чего мы можем спокойно использовать элементы из схемы, подставляя префиксы из того пространства, куда мы импортировали схемы.
+
+И так, у нас есть пример:
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;house&gt;
+    &lt;address&gt;ул. Есенина, дом №5&lt;/address&gt;
+    &lt;owner name="Ivan"&gt;
+        &lt;telephone&gt;+38-094-521-77-35&lt;/telephone&gt;
+    &lt;/owner&gt;
+&lt;/house&gt;
+</code></pre>
+Мы хотим валидировать его с помощью схемы. Для начала, нам нужна схема:
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0"?&gt;
+&lt;schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="https://www.nedvigimost.com/"&gt;
+    &lt;element name="house"&gt;
+        &lt;complexType&gt;
+            &lt;sequence&gt;
+                &lt;element name="address" type="string" maxOccurs="unbounded" minOccurs="0" /&gt;
+                &lt;element name="owner" maxOccurs="unbounded" minOccurs="0" &gt;
+                    &lt;complexType&gt;
+                        &lt;sequence&gt;
+                            &lt;element name="telephone" type="string" /&gt;
+                        &lt;/sequence&gt;
+                        &lt;attribute name="name" type="string" use="required"/&gt;
+                    &lt;/complexType&gt;
+                &lt;/element&gt;
+            &lt;/sequence&gt;
+        &lt;/complexType&gt;
+    &lt;/element&gt;
+&lt;/schema&gt;
+</code></pre>
+Как вы видите, схемы – это тоже XML файлы. Вы прямо на XML языке расписываете то, что вам нужно. Данная схема способна валидировать XML файл из примера выше. Например: если у овнера не будет имени, то схема это увидит. Так же, благодаря элементу sequence, всегда должен идти сначала адрес, а потом владелец дома.
+
+Есть элементы обычные и комплексные. Обычные элементы – это элементы, которые хранят в себя только какой-то тип данных. Пример:
+
+<pre class="lang-java line-numbers"><code>
+&lt;element name="telephone" type="string" /&gt;
+</code></pre>
+Так мы объявляем элемент, который хранит в себе строку. Других элементов быть внутри этого элемента не должно.
+
+Так же есть комплексные элементы. Комплексные элементы способны хранить внутри себя другие элементы, атрибуты. Тогда тип указывать не нужно, а достаточно внутри элемента начать писать комплексный тип.
+
+<pre class="lang-java line-numbers"><code>
+&lt;complexType&gt;
+    &lt;sequence&gt;
+        &lt;element name="address" type="string" maxOccurs="unbounded" minOccurs="0" /&gt;
+        &lt;element name="owner" maxOccurs="unbounded" minOccurs="0" &gt;
+            &lt;complexType&gt;
+                &lt;sequence&gt;
+                    &lt;element name="telephone" type="string" /&gt;
+                &lt;/sequence&gt;
+                &lt;attribute name="name" type="string" use="required"/&gt;
+            &lt;/complexType&gt;
+        &lt;/element&gt;
+    &lt;/sequence&gt;
+&lt;/complexType&gt;
+</code></pre>
+Так же можно было поступить по-другому: можно было создать комплексный тип отдельно, а потом подставлять его в type. Только во время написания этого примера, почему-то нужно было объявить пространство под каким-то префиксом, а не использовать стандартное. В общем, получилось вот так вот:
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0"?&gt;
+&lt;xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="https://www.nedvigimost.com/"&gt;
+    &lt;xs:element name="house" type="content" /&gt;
+
+    &lt;xs:complexType name="content"&gt;
+        &lt;xs:sequence&gt;
+            &lt;xs:element name="address" type="xs:string" maxOccurs="unbounded" minOccurs="0" /&gt;
+            &lt;xs:element name="owner" maxOccurs="unbounded" minOccurs="0" &gt;
+                &lt;xs:complexType&gt;
+                    &lt;xs:sequence&gt;
+                        &lt;xs:element name="telephone" type="xs:string" /&gt;
+                    &lt;/xs:sequence&gt;
+                    &lt;xs:attribute name="name" type="xs:string" use="required"/&gt;
+                &lt;/xs:complexType&gt;
+            &lt;/xs:element&gt;
+        &lt;/xs:sequence&gt;
+    &lt;/xs:complexType&gt;
+&lt;/xs:schema&gt;
+</code></pre>
+Таким образом, мы можем создавать наши собственные типы отдельно, а потом подставлять их куда-либо в атрибут type. Это очень удобно, так как позволяет использовать один тип в разных местах.
+
+Хотелось бы еще поговорить про подключение схем и закончить на этом. Есть два способа подключить схему: в конкретное пространство и просто подключить.
+<h3>Первый способ подключения схемы</h3>Первый способ подразумевает, что у схемы есть конкретное целевое пространство. Оно указывается с помощью атрибута targetNamespace у элемента scheme. Тогда достаточно создать ЭТО САМОЕ пространство в XML файле, после чего «загрузить» туда схему:
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;nedvig:house xmlns:nedvig="https://www.nedvigimost.com/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://www.nedvigimost.com/ example_schema1.xsd"&gt;
+    &lt;address&gt;ул. Есенина, дом №5&lt;/address&gt;
+    &lt;owner name="Ivan"&gt;
+        &lt;telephone&gt;+38-094-521-77-35&lt;/telephone&gt;
+    &lt;/owner&gt;
+&lt;/nedvig:house&gt;
+</code></pre>
+Важно понимать две строчки:
+
+<pre class="lang-java line-numbers"><code>
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemeLocation="https://www.nedvigimost.com/ example_schema1.xsd"
+</code></pre>
+<em>Первая строчка</em> – просто запомните её. Считайте, что это объект, который помогает загружать схемы туда, куда надо.
+
+<em>Вторая строчка</em> – уже конкретная загрузка. schemaLocation принимает <strong>список</strong> значений вида «значение – значение», разделенные пробелом.
+
+Первый аргумент – пространство имён, которое должно соответствовать целевому пространству имён в схеме (значению targetNamespace). Второй аргумент – относительно или абсолютный путь к схеме.
+
+И так, как это СПИСОК значение, то вы можете после схемы в примере поставить пробел, и снова ввести целевое пространство и имя другой схемы, и так сколько захотите.
+
+<mark>Важно:</mark> чтобы схема потом валидировала что-либо, вам нужно объявить это пространство и с префиксом использовать. Посмотрите внимательно последний пример:
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;nedvig:house xmlns:nedvig="https://www.nedvigimost.com/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://www.nedvigimost.com/ example_schema1.xsd"&gt;
+    &lt;address&gt;ул. Есенина, дом №5&lt;/address&gt;
+    &lt;owner name="Ivan"&gt;
+        &lt;telephone&gt;+38-094-521-77-35&lt;/telephone&gt;
+    &lt;/owner&gt;
+&lt;/nedvig:house&gt;
+</code></pre>
+Мы создали это целевое пространство на префиксе nedvig, а потом использовали его. Таким образом, наши элементы начали валидироваться, так как мы начали использовать пространство, куда ссылается целевое пространство схемы.
+<h3>Второй способ подключения схемы</h3>Второй способ подключения схемы подразумевает, что у схемы нет конкретного целевого пространства. Тогда вы можете просто подключить её к XML файлу и она будет валидировать его.
+
+Делается почти так же, только вы можете не объявлять пространства вообще в XML файле, а просто подключить схему.
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;house xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="example_schema1.xsd"&gt;
+    &lt;address&gt;ул. Есенина, дом №5&lt;/address&gt;
+    &lt;owner name="Ivan"&gt;
+        &lt;telephone&gt;+38-094-521-77-35&lt;/telephone&gt;
+    &lt;/owner&gt;
+&lt;/house&gt;
+</code></pre>
+Как вы видите, делается это с помощью noNamespaceSchemaLocation и указанием пути к схеме. Даже если у схемы нет целевого пространства, документ будет валидироваться.
+
+И последний штрих: мы можем импортировать в схемы другие схемы, после чего использовать элементы из одной схемы в другой. Таким образом, мы можем использовать в одних схемах элементы, которые есть уже в других. Пример:
+<h3>Схема, где объявляется тип owner:</h3>
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8" ?&gt;
+&lt;schema targetNamespace="bonus" xmlns="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified"&gt;
+        &lt;complexType name="owner"&gt;
+            &lt;all&gt;
+                &lt;element name="telephone" type="string" /&gt;
+            &lt;/all&gt;
+            &lt;attribute name="name" type="string" /&gt;
+        &lt;/complexType&gt;
+&lt;/schema&gt;
+</code></pre>
+<h3>Вторая схема, где используется тип owner из первой схемы:</h3>
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;schema targetNamespace="main" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:bonus="bonus" elementFormDefault="qualified"&gt;
+    &lt;import namespace="bonus" schemaLocation="xsd2.xsd" /&gt;
+    &lt;element name="house"&gt;
+        &lt;complexType&gt;
+            &lt;all&gt;
+              &lt;element name="address" type="string" /&gt;
+                &lt;element name="owner" type="bonus:owner" /&gt;
+            &lt;/all&gt;
+        &lt;/complexType&gt;
+    &lt;/element&gt;
+&lt;/schema&gt;
+</code></pre>
+Во второй схеме используется конструкция:
+
+<pre class="lang-java line-numbers"><code>
+&lt;import namespace="bonus" schemaLocation="xsd2.xsd" /&gt;
+</code></pre>
+С помощью неё мы импортировали типы и элементы из одной схемы в другую в пространство bonus. Таким образом, мы получили доступ к типу bonus:owner. А в следующей строчке мы его использовали:
+
+<pre class="lang-java line-numbers"><code>
+&lt;element name="owner" type="bonus:owner" /&gt;
+</code></pre>
+Так же небольшое внимание следующей строчке:
+
+<pre class="lang-java line-numbers"><code>
+elementFormDefault="qualified"
+</code></pre>
+Этот атрибут объявляется в schema и означает, что в XML файлах каждый элемент должен объявляться с явным префиксом перед ним. Если его нет, то нам достаточно объявить внешний элемент с префиксом, а так нужно выставлять префиксы и во всех элементах внутри, явно указывая, что мы используем именно элементы этой схемы.
+
+И вот, собственно, пример XML файла, валидируемого схемой, которая импортировала другую схему:
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;nedvig:house xmlns:nedvig="main" xmlns:bonus="bonus" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="main xsd.xsd"&gt;
+    &lt;nedvig:address&gt;ул. Есенина, дом №5&lt;/nedvig:address&gt;
+    &lt;nedvig:owner name="Ivan"&gt;
+        &lt;bonus:telephone&gt;+38-094-521-77-35&lt;/bonus:telephone&gt;
+    &lt;/nedvig:owner&gt;
+&lt;/nedvig:house&gt;
+</code></pre>
+В строчке:
+
+<pre class="lang-java line-numbers"><code>
+&lt;bonus:telephone&gt;+38-094-521-77-35&lt;/bonus:telephone&gt;
+</code></pre>
+Нам нужно явно объявлять пространство имён bonus, указывающее на целевое пространство первой схемы, так как elementFormDefault у нас в qualified (проверять), потому все элементы должны явно указывать свое пространство.
+<h2>Конец статьи</h2>Следующая статья будет последней в цикле и там уже будет про обработку XML файлов средствами Java. Мы будем обучаться доставать информацию разными способами и так далее. Надеюсь, что эта статья была полезной и, даже если тут есть где-то ошибки, научит вас чему-то полезному и новому, а может просто даст возможность лучше понимать XML файлы.
+
+<strong>Для тех, кто хотел бы изучить это более подробно, я решил собрать небольшой набор ссылок:</strong>
+<ul>
+<li><p><a href="https://www.w3schools.com/xml/schema_simple.asp" target="_blank" rel="nofollow">XSD Simple Elements</a> — начиная с этой статьи начинайте читать и идите вперед, там собрана вся информация по схемам и рассказывается более-менее понятно, только на английском. Можете использовать переводчик.</p></li>
+<li><p>видео по пространствам имён, всегда полезно послушать другую точку зрения на что-либо, если первая не ясна.</p>
+<div class="row">
+<div class="col col-md-10 col-lg-8">
+<div class="embed-responsive embed-responsive-16by9">
+<iframe width="560" height="315" src="https://www.youtube.com/embed/ALDDHCldaoA" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+</div>
+</div>
+</div></li>
+<li><p><a href="https://msiter.ru/tutorials/uchebnik-xml-dlya-nachinayushchih/xml-prostranstva-imen" target="_blank" rel="nofollow">XML пространства имен</a> - хороший пример использования пространств имён и довольно укомплектованная информация.</p></li>
+
+<li><p><a href="http://dmitriydenisov.com/prostranstva-imen-xml/" target="_blank" rel="nofollow">Основы XML — пространства имен</a> - еще одна небольшая статья по пространствам имён.</p></li>
+
+<li><p><a href="http://iso.ru/ru/press-center/journal/1725.phtml" target="_blank" rel="nofollow">Основы использования XML Schema для определения элементов</a> — тоже крайне полезная ссылка по схемам, только читать нужно медленно и внимательно, вникая в материал.</p></li></ul>На этом уже точно всё, буду надеяться, что если вы захотите узнать что-либо глубже из этого, то ссылки вам помогут. Я сам шастал по всем этим источникам, изучая весь материал, и, в целом, это были самые полезные из всех источников, что я смотрел, так как каждый из них или улучшал понимание того, что я уже прочел где-то в другом месте, или давал узнать что-то новое, однако много было сделано как раз во время практики. Так что, тем, кто реально хочет разобраться во всем этом довольно хорошо, мой совет: изучите пространства имён, после чего то, как просто подключать схемы к XML файлам, а потом уже то, как прописывать структуру документа в схемах. А главное - практикуйтесь.
+
+Всем спасибо за внимание и успехов в программировании :)
+
+Предыдущая статья: <a href="https://javarush.com/groups/posts/620-konkurs-osnovih-xml-dlja-java-programmista---chastjh-1-iz-3" target="_blank" rel="nofollow">[Конкурс] Основы XML для Java программиста - Часть 1 из 3</a>
+Следующая статья: <a href="https://javarush.com/groups/posts/650-konkurs-osnovih-xml-dlja-java-programmista---chastjh-31-iz-3---sax" target="_blank" rel="nofollow">[Конкурс] Основы XML для Java программиста - Часть 3.1 из 3 - SAX</a>

@@ -1,0 +1,153 @@
+Java 8. Руководство. 2 часть.
+<p>----------------------------------------</p>
+Date API
+Java 8 содержит совершенно новые API даты и времени в пакете java.time. Новый Date API сравним с библиотекой Joda-Time, однако это не то же самое. Сле
+<p>----------------------------------------</p>
+<h4>Date API</h4>
+Java 8 содержит совершенно новые API даты и времени в пакете java.time. Новый Date API сравним с библиотекой <em>Joda-Time</em>, однако это не то же самое. Следующие примеры охватят наиболее важные части нового API.
+<cut>
+<h6>Clock</h6>
+Clock дает доступ к текущим дате и времени. Clocks знают о часовых поясах и потому могут быть использованы вместо <em>System.currentTimeMillis()</em> для возврата текущего времени в милисекундах. Такую точность во времени также представляет класс <em>Instant</em>. <em>Instants</em> могут быть использованы для создания унаследованных объектов <em>java.util.Date</em>.
+<code>Clock clock = Clock.systemDefaultZone();
+long millis = clock.millis();
+
+Instant instant = clock.instant();
+Date legacyDate = Date.from(instant);   // legacy java.util.Date
+</code>
+<h6>Timezones</h6>
+Timezones представлены абстрактным классом <em>ZoneId</em>. Они легко могут быть доступны с помощью статистических методов-фабрик. Timezones определяют смещения, которые важны для преобразования между мгновенными и локальными датой и временем.
+<code>System.out.println(ZoneId.getAvailableZoneIds());
+// prints all available timezone ids
+
+ZoneId zone1 = ZoneId.of("Europe/Berlin");
+ZoneId zone2 = ZoneId.of("Brazil/East");
+System.out.println(zone1.getRules());
+System.out.println(zone2.getRules());
+
+// ZoneRules[currentStandardOffset=+01:00]
+// ZoneRules[currentStandardOffset=-03:00]
+</code>
+<h6>LocalTime</h6>
+LocalTime отображает время без временной зоны, например 17:30:15. В следующем примере создаются два объекта локального времени для временных зон, определенных выше. Затем мы сравниваем эти два объекта и вычисляем между ними разность в часах и минутах.
+<code>LocalTime now1 = LocalTime.now(zone1);
+LocalTime now2 = LocalTime.now(zone2);
+
+System.out.println(now1.isBefore(now2));  // false
+
+long hoursBetween = ChronoUnit.HOURS.between(now1, now2);
+long minutesBetween = ChronoUnit.MINUTES.between(now1, now2);
+
+System.out.println(hoursBetween);       // -3
+System.out.println(minutesBetween);     // -239
+</code>
+LocalTime поставляется с различными методами-фабриками для упрощения создания экземпляров, включая парсинг строк.
+<code>LocalTime late = LocalTime.of(23, 59, 59);
+System.out.println(late);       // 23:59:59
+
+DateTimeFormatter germanFormatter =
+    DateTimeFormatter
+        .ofLocalizedTime(FormatStyle.SHORT)
+        .withLocale(Locale.GERMAN);
+
+LocalTime leetTime = LocalTime.parse("13:37", germanFormatter);
+System.out.println(leetTime);   // 13:37
+</code>
+
+<h6>LocalDate</h6>
+LocalDate отображает конкретную дату, например 2014-03-11. Экземпляры являются неизменными и работают аналогично LocalTime. Пример демонстрирует как расчитать новую дату, путем добавления или вычитания дней, месяцев или лет. Имейте в виду, что каждая операция над объектом, возвращает новый объект.
+<code>LocalDate today = LocalDate.now();
+LocalDate tomorrow = today.plus(1, ChronoUnit.DAYS);
+LocalDate yesterday = tomorrow.minusDays(2);
+
+LocalDate independenceDay = LocalDate.of(2014, Month.JULY, 4);
+DayOfWeek dayOfWeek = independenceDay.getDayOfWeek();
+System.out.println(dayOfWeek);    // FRIDAY
+</code>
+Парсинг LocalDate из строки такой же простой как и парсинг LocalTime:
+<code>DateTimeFormatter germanFormatter =
+    DateTimeFormatter
+        .ofLocalizedDate(FormatStyle.MEDIUM)
+        .withLocale(Locale.GERMAN);
+
+LocalDate xmas = LocalDate.parse("24.12.2014", germanFormatter);
+System.out.println(xmas);   // 2014-12-24
+</code>
+<h6>LocalDateTime</h6>
+LocalDateTime отображает дату-время. Это комбинация даты и времени приведенных выше, в одном экземпляре. Экземпляры LocalDateTime неизменны и работают аналогично LocalTime и LocalDate. Мы можем использовать методы для извлечения нужных нам значений свойств экземпляров:
+<code>LocalDateTime sylvester = LocalDateTime.of(2014, Month.DECEMBER, 31, 23, 59, 59);
+
+DayOfWeek dayOfWeek = sylvester.getDayOfWeek();
+System.out.println(dayOfWeek);      // WEDNESDAY
+
+Month month = sylvester.getMonth();
+System.out.println(month);          // DECEMBER
+
+long minuteOfDay = sylvester.getLong(ChronoField.MINUTE_OF_DAY);
+System.out.println(minuteOfDay);    // 1439
+</code>
+Вместе с дополнительной информацией о временной зоне, экземпляр может быть конвертирован в instant. Instants могут быть легко конвертированы в старые типы наследуемые от java.util.Date.
+<code>Instant instant = sylvester
+        .atZone(ZoneId.systemDefault())
+        .toInstant();
+
+Date legacyDate = Date.from(instant);
+System.out.println(legacyDate);     // Wed Dec 31 23:59:59 CET 2014
+</code>
+Форматирование даты-время работает также как и форматирование даты или времени. Вместо использования заранее определенных форматов даты, мы можем использовать форматы определенные вручную.
+<code>DateTimeFormatter formatter =
+    DateTimeFormatter
+        .ofPattern("MMM dd, yyyy - HH:mm");
+
+LocalDateTime parsed = LocalDateTime.parse("Nov 03, 2014 - 07:13", formatter);
+String string = formatter.format(parsed);
+System.out.println(string);     // Nov 03, 2014 - 07:13
+</code>
+В отличии от java.text.NumberFormat, новый DateTimeFormatter неизменяемый и потокобезопасен.
+
+Для большей информации о синтаксисе написания форматов, читать <a href="http://download.java.net/jdk8/docs/api/java/time/format/DateTimeFormatter.html" rel="nofollow" >здесь</a>.
+
+<h4>Аннотации</h4>
+Аннотации в Java 8 могут быть повторяемыми. Давайте посмотрим на пример, чтобы представить как это.
+
+Для начала мы определим обертку для аннотаций, которая хранит массив действующих аннотаций:
+<code>@interface Hints {
+    Hint[] value();
+}
+
+@Repeatable(Hints.class)
+@interface Hint {
+    String value();
+}
+</code>
+Java 8 enables us to use multiple annotations of the same type by declaring the annotation @Repeatable.
+Variant 1: Using the container annotation (old school)
+(Java 8 позволяет нам использовать множественную аннотацию того же типа, объявляя аннотацию <em>@Repeatable</em>.)
+
+Вариант 1: Использование контейнера аннотаций(старая возможность)
+<code>@Hints({@Hint("hint1"), @Hint("hint2")})
+class Person {}
+</code>
+Вариант 2: использование повторяемых аннотаций (новая возможность)
+<code>@Hint("hint1")
+@Hint("hint2")
+class Person {}
+</code>
+Используя вариант два, компилятор java неявно устанавливает аннотацию @Hint. Это важно для чтения информации об аннотации посредством отражения.
+<code>Hint hint = Person.class.getAnnotation(Hint.class);
+System.out.println(hint);                   // null
+
+Hints hints1 = Person.class.getAnnotation(Hints.class);
+System.out.println(hints1.value().length);  // 2
+
+Hint[] hints2 = Person.class.getAnnotationsByType(Hint.class);
+System.out.println(hints2.length);          // 2
+</code>
+Хотя мы не объявляли аннотацию <em>@Hints</em> для класса <em>Person</em>, ее можно прочитать с помощью метода <em>getAnnotation(Hints.class)</em>. Однако более удобным методом является <em>getAnnotationsByType</em>, который предоставляет доступ ко всем аннотированным с помощью аннотации <em>@Hint</em>.
+
+К тому ж использование аннотаций в Java 8 расширяется до двух целей:
+<code>@Target({ElementType.TYPE_PARAMETER, ElementType.TYPE_USE})
+@interface MyAnnotation {}
+</code>
+
+<h4>Это все</h4>
+Мое руководство по программированию в Java 8 завершилось. Если вы хотите узнать больше о всех новых классих и возможностях API JDK 8, просто прочтите мою следующую статью. Это поможет вам разобраться во всех новых классах и скрытых возможностях JDK 8, таким как <em>Arrays.parallelSort</em>, <em>StampedLock</em> и <em>CompletableFuture</em>.

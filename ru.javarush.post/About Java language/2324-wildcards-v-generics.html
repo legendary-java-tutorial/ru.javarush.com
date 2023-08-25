@@ -1,0 +1,279 @@
+Wildcards в Java Generics
+<p>----------------------------------------</p>
+Привет! Продолжаем изучать тему дженериков. Ты уже обладаешь солидным багажом знаний о них из предыдущих лекций (об использовании varargs при работе с дженериками и о стирании типов), но одну важную тему мы пока не рассматривали — wildcards...
+<p>----------------------------------------</p>
+Привет! Продолжаем изучать тему дженериков.
+
+Ты уже обладаешь солидным багажом знаний о них из предыдущих лекций (об <a href="https://javarush.com/groups/posts/2313-ispoljhzovanie-varargs-pri-rabote-s-dzhenerikami" target="_blank">использовании varargs при работе с дженериками</a> и о <a href="https://javarush.com/groups/posts/2315-stiranie-tipov" target="_blank">стирании типов</a>), но одну важную тему мы пока не рассматривали — <span class="text-bold">wildcards</span>.
+
+Это очень важная фишка дженериков. Настолько, что мы выделили для нее отдельную лекцию! Впрочем, ничего сложного в wildcards нет, в этом ты сейчас убедишься :)<img data-max-width="800" data-id="7490e2df-92ff-428e-91e0-cf3ac5e75158" src="/images/article/7490e2df-92ff-428e-91e0-cf3ac5e75158/800.jpeg" class="img-fluid" alt="Wildcards в generics - 1">Давай рассмотрим пример:
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) {
+      
+       String str = new String("Test!");
+       // никаких проблем
+       Object obj = str;
+      
+       List&lt;String&gt; strings = new ArrayList&lt;String&gt;();
+       // ошибка компиляции!
+       List&lt;Object&gt; objects = strings;
+   }
+}
+</code></pre>
+Что же тут происходит?
+
+Мы видим две очень похожие ситуации. В первой из них мы пытаемся привести объект <code>String</code> к типу <code>Object</code>. Никаких проблем с этим не возникает, все работает как надо.
+
+Но вот во второй ситуации компилятор выдает ошибку. Хотя, казалось бы, мы делаем то же самое. Просто теперь мы используем коллекцию из нескольких объектов.
+
+Но почему возникает ошибка? Какая, по сути, разница — приводим мы один объект <code>String</code> к типу <code>Object</code> или 20 объектов?
+
+Между <span class="text-bold">объектом</span> и <span class="text-bold">коллекцией объектов есть важное различие</span>.
+
+<span class="text-bold">Если класс <code>B</code> является наследником класса <code>А</code>, то <code>Collection&lt;B&gt;</code> при этом — не наследник <code>Collection&lt;A&gt;</code>.</span>
+
+Именно по этой причине мы не смогли привести наш <code>List&lt;String&gt;</code> к <code>List&lt;Object&gt;</code>. <span class="text-bold"><code>String</code> является наследником <code>Object</code>, но <code>List&lt;String&gt;</code> не является наследником <code>List&lt;Object&gt;</code>.</span>
+
+Интуитивно это выглядит не очень логично. Почему именно таким принципом руководствовались создатели языка?
+
+Давай представим, что здесь компилятор не выдавал бы нам ошибку:
+
+<pre class="lang-java line-numbers"><code>
+List&lt;String&gt; strings = new ArrayList&lt;String&gt;();
+List&lt;Object&gt; objects = strings;
+</code></pre>
+В этом случае, мы бы могли, например, сделать следующее:
+
+<pre class="lang-java line-numbers"><code>
+objects.add(new Object());
+String s = strings.get(0);
+</code></pre>
+Поскольку компилятор не выдал нам ошибок и позволил создать ссылку <code>List&lt;Object&gt; object</code> на коллекцию строк <code>strings</code>, можем добавить в <code>strings</code> не строку, а просто любой объект <code>Object</code>!
+
+Таким образом, <span class="text-bold">мы лишились гарантии того, что в нашей коллекции находятся только указанные в дженерике объекты <code>String</code></span>. То есть, мы потеряли главное преимущество дженериков — типобезопасность.
+
+И раз компилятор позволил нам все это сделать, значит, мы получим ошибку только во время исполнения программы, что всегда намного хуже, чем ошибка компиляции.
+
+Чтобы предотвратить такие ситуации, компилятор выдает нам ошибку:
+
+<pre class="lang-java line-numbers"><code>
+// ошибка компиляции
+List&lt;Object&gt; objects = strings;
+</code></pre>
+...и напоминает, что <code>List&lt;String&gt;</code> — не наследник <code>List&lt;Object&gt;</code>.
+
+Это железное правило работы дженериков, и его нужно обязательно помнить при их использовании.
+
+Поехали дальше.
+
+Допустим, у нас есть небольшая иерархия классов:
+
+<pre class="lang-java line-numbers"><code>
+public class Animal {
+
+   public void feed() {
+
+       System.out.println("Animal.feed()");
+   }
+}
+
+public class Pet extends Animal {
+
+   public void call() {
+
+       System.out.println("Pet.call()");
+   }
+}
+
+public class Cat extends Pet {
+
+   public void meow() {
+
+       System.out.println("Cat.meow()");
+   }
+}
+</code></pre>
+Во главе иерархии стоят просто Животные: от них наследуются Домашние Животные. Домашние Животные делятся на 2 типа — Собаки и Кошки.
+
+А теперь представь, что нам нужно создать простой метод <code>iterateAnimals()</code>. Метод должен принимать коллекцию любых животных (<code>Animal</code>, <code>Pet</code>, <code>Cat</code>, <code>Dog</code>), перебирать все элементы, и каждый раз выводить что-нибудь в консоль.
+
+Давай попробуем написать такой метод:
+
+<pre class="lang-java line-numbers"><code>
+public static void iterateAnimals(Collection&lt;Animal&gt; animals) {
+
+   for(Animal animal: animals) {
+
+       System.out.println("Еще один шаг в цикле пройден!");
+   }
+}
+</code></pre>
+Казалось бы, задача решена!
+
+Однако, как мы недавно выяснили, <code>List&lt;Cat&gt;</code>, <code>List&lt;Dog&gt;</code> или <code>List&lt;Pet&gt;</code> не являются наследниками <code>List&lt;Animal&gt;</code>!
+
+Поэтому при попытке вызвать метод <code>iterateAnimals()</code> со списком котиков мы получим ошибку компилятора:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.*;
+
+public class Main3 {
+
+
+   public static void iterateAnimals(Collection&lt;Animal&gt; animals) {
+
+       for(Animal animal: animals) {
+
+           System.out.println("Еще один шаг в цикле пройден!");
+       }
+   }
+
+   public static void main(String[] args) {
+
+
+       List&lt;Cat&gt; cats = new ArrayList&lt;&gt;();
+       cats.add(new Cat());
+       cats.add(new Cat());
+       cats.add(new Cat());
+       cats.add(new Cat());
+
+       //ошибка компилятора!
+       iterateAnimals(cats);
+   }
+}
+</code></pre>
+Ситуация выглядит не очень хорошо для нас! Получается, нам придется писать отдельные методы для перебора всех видов животных? 
+
+На самом деле нет, не придется :) И в этом нам как раз помогут <span class="text-bold">wildcards</span>!
+
+Мы решим задачу в рамках одного простого метода, используя вот такую конструкцию:
+
+<pre class="lang-java line-numbers"><code>
+public static void iterateAnimals(Collection&lt;? extends Animal&gt; animals) {
+
+   for(Animal animal: animals) {
+
+       System.out.println("Еще один шаг в цикле пройден!");
+   }
+}
+</code></pre>
+Это и есть wildcard. Точнее, это первый из нескольких типов wildcard — “<span class="text-bold">extends</span>” (другое название — <span class="text-bold">Upper Bounded Wildcards</span>).
+
+О чем нам говорит эта конструкция? Это значит, что метод принимает на вход коллекцию объектов класса <code>Animal</code> либо объектов любого класса-наследника <code>Animal (? extends Animal)</code>.
+
+Иными словами, метод может принять на вход коллекцию <code>Animal</code>, <code>Pet</code>, <code>Dog</code> или <code>Cat</code> — без разницы.
+
+Давай убедимся что это работает:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   List&lt;Animal&gt; animals = new ArrayList&lt;&gt;();
+   animals.add(new Animal());
+   animals.add(new Animal());
+
+   List&lt;Pet&gt; pets = new ArrayList&lt;&gt;();
+   pets.add(new Pet());
+   pets.add(new Pet());
+
+   List&lt;Cat&gt; cats = new ArrayList&lt;&gt;();
+   cats.add(new Cat());
+   cats.add(new Cat());
+
+   List&lt;Dog&gt; dogs = new ArrayList&lt;&gt;();
+   dogs.add(new Dog());
+   dogs.add(new Dog());
+
+   iterateAnimals(animals);
+   iterateAnimals(pets);
+   iterateAnimals(cats);
+   iterateAnimals(dogs);
+}
+</code></pre>
+<span class="text-bold">Вывод в консоль:</span>
+
+<pre><code>
+Еще один шаг в цикле пройден!
+Еще один шаг в цикле пройден!
+Еще один шаг в цикле пройден!
+Еще один шаг в цикле пройден!
+Еще один шаг в цикле пройден!
+Еще один шаг в цикле пройден!
+Еще один шаг в цикле пройден!
+Еще один шаг в цикле пройден!
+</code></pre>
+Мы создали в общей сложности 4 коллекции и 8 объектов, и в консоли ровно 8 записей. Все отлично работает! :)
+
+Wildcard позволил нам легко уместить нужную логику с привязкой к конкретным типам в один метод. Мы избавились от необходимости писать отдельный метод для каждого вида животных. Представь, сколько методов у нас было бы, если бы наше приложение использовалось в зоопарке или ветеринарной клинике :)
+А теперь давай рассмотрим другую ситуацию.
+
+Наша иерархия наследования останется неизменной: класс верхнего уровня <code>Animal</code>, чуть ниже — класс домашних животных <code>Pet</code>, а на следующем уровне — <code>Cat</code> и <code>Dog</code>.
+
+Теперь тебе нужно переписать метод <code>iretateAnimals()</code> таким образом, чтобы он мог работать с любым типом животных, <span class="text-bold">кроме собак</span>.
+
+То есть он должен принимать на вход <code>Collection&lt;Animal&gt;</code>, <code>Collection&lt;Pet&gt;</code> или <code>Collection&lt;Cat&gt;</code>, но не должен работать с <code>Collection&lt;Dog&gt;</code>.
+
+Как мы можем этого добиться?
+
+Кажется, перед нами опять замаячила перспектива писать отдельный метод для каждого типа :/
+
+Как иначе объяснить компилятору нашу логику?
+
+А сделать это можно очень просто! Здесь нам снова придут на помощь wildcards. Но на этот раз мы воспользуемся другим типом — “<span class="text-bold">super</span>” (другое название — <span class="text-bold">Lower Bounded Wildcards</span>).
+
+<pre class="lang-java line-numbers"><code>
+public static void iterateAnimals(Collection&lt;? super Cat&gt; animals) {
+
+   for(int i = 0; i &lt; animals.size(); i++) {
+
+       System.out.println("Еще один шаг в цикле пройден!");
+   }
+}
+</code></pre>
+Здесь принцип похож.
+
+Конструкция <code>&lt;? super Cat&gt;</code> говорит компилятору, что метод <code>iterateAnimals()</code> может принимать на вход коллекцию объектов класса <code>Cat</code> либо любого другого класса-предка <code>Cat</code>. 
+
+Под это описание в нашем случае подходят сам класс <code>Cat</code>, его предок — <code>Pets</code>, и предок предка — <code>Animal</code>.
+
+Класс <code>Dog</code> не вписывается в это ограничение, и поэтому попытка использовать метод со списком <code>List&lt;Dog&gt;</code> приведет к ошибке компиляции:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   List&lt;Animal&gt; animals = new ArrayList&lt;&gt;();
+   animals.add(new Animal());
+   animals.add(new Animal());
+
+   List&lt;Pet&gt; pets = new ArrayList&lt;&gt;();
+   pets.add(new Pet());
+   pets.add(new Pet());
+
+   List&lt;Cat&gt; cats = new ArrayList&lt;&gt;();
+   cats.add(new Cat());
+   cats.add(new Cat());
+
+   List&lt;Dog&gt; dogs = new ArrayList&lt;&gt;();
+   dogs.add(new Dog());
+   dogs.add(new Dog());
+
+   iterateAnimals(animals);
+   iterateAnimals(pets);
+   iterateAnimals(cats);
+  
+   //ошибка компиляции!
+   iterateAnimals(dogs);
+}
+</code></pre>
+Наша задача решена, и снова wildcards оказались крайне полезными :)
+
+На этом лекция подошла к концу.
+
+Теперь ты видишь, насколько важная тема дженериков при изучении джава — у нас ушло на нее целых 4 лекции! Зато теперь ты неплохо ориентируешься в теме и сможешь проявить себя на собеседовании :)
+
+А сейчас — самое время вернуться к задачам!
+
+Успехов в обучении! :)

@@ -1,0 +1,181 @@
+World of Bytes 1.  Работа с изображениями.
+<p>----------------------------------------</p>
+Special for 
+
+До этого я пояснял на сухих примерах. Попросили работу с изображениями - ловите.
+
+Постановка учебной задачи.
+Дан графический файл (jpeg, png 
+<p>----------------------------------------</p>
+Special for <ls user="Spiker" />
+
+До этого я пояснял на сухих примерах. Попросили работу с изображениями - ловите.
+
+<h5>Постановка учебной задачи.</h5>
+Дан графический файл (jpeg, png ...).
+Необходимо сделать с ним некие манипуляции и записать результат в другой файл.
+Для упрощения рассмотрим три задачи:
+- получить негатив изображения
+- получить черно-белый вариант изображения (сбросить цветность)
+- изменить насыщенность зеленого цвета в изображении.
+
+Заметим, что аналогичным способом мы можем, добавляя новые методы реализовывать и другие задачи:
+- увеличить резкость или размытие
+- изменить размеры
+- повернуть по/против часовой.
+- и другие возможность Фотошопа :)
+вообщем реализовать любой алгоритм над изображением, насколько у нас хватит фантазии и знания матана (например, распознать количество возможных котиков на картинке).
+
+<h5>Немного сухой теории.</h5>
+Мы рассматриваем растровые изображения (есть еще векторные и другие). То есть, когда файл, помимо собственно заголовка со служебной информацией, хранит прямоугольную матрицу точек. Аналогично экрану современного HD-телевизора у которого разрешение 1920х1080 точек и каждая точка представлена как значения трех составляющих цвета: R(ed), G(reen),  B(lue) = Красный, Зеленый и Синий. Эти цвета независимы и данная модель взята из биологии восприятия цвета. 
+В глазу у нас есть колбочки и палочки. Колбочки трех разновидностей (реагируют на соответствующий одной из трех диапазонов длин волн), палочки "обрабатывают" яркость цвета (амплитуду световой волны).
+В модели RGB палочки отвечают за значение составляющей (0 - отсутствие, 255- самый яркий свет), а колбочки - соответственно в какие из R / G / B помещать соответствующую интенсивность.
+
+Например: 
+Отсутствие света - палочки /колбочки не реагируют и RGB=(0,0,0).
+Яркий белый свет - все колбочки реагируют равномерно, палочки фигеют и RGB = (255,255,255).
+Серая мышка пробежала - все колбочки реагируют равномерно, палочки реагируют средне и RGB = (127,127,127).
+Темно-оранжевый - реагируют R и G палочки, палочки едва откликаются, RGB=(30, 30, 0)
+...
+
+<h5>Приступим к практике.</h5>
+Я писал для примера работы с байтами, поэтому код не вылизан по всем правилам и далеко не оптимален:
+мы не проверяем входные параметры, не делаем полноценную проверку ошибок и т.п.
+Писалось в лоб, без рефакторинга. Основной упор - работа с байтами-битами.
+Напишем, по аналогии задач JavaRush консольную утилиту, которая при вызове в командной строке с соответствующими аргументами модифицирует изображение.
+
+<strong>Исходное  изображение:</strong>
+<img data-id="c56526e1-533f-488e-b4e1-8927f729f6ef" data-max-width="259" alt="Котенок" src="https://cdn.javarush.com/images/article/c56526e1-533f-488e-b4e1-8927f729f6ef/1024.jpeg">
+<br>
+
+вызов с параметрами -n kitten.jpg newkitten.jpg создаст картинку:
+<img data-id="69d3f339-ca88-4069-b2c8-0237ffa986d0" data-max-width="259" alt="негатив" src="https://cdn.javarush.com/images/article/69d3f339-ca88-4069-b2c8-0237ffa986d0/1024.jpeg">
+<br>
+
+вызов с параметрами -b kitten.jpg newkitten.jpg создаст картинку:
+<img data-id="f0ed2245-a0d9-43d1-ad36-7cb83ae14add" data-max-width="259" alt="черно-белый котенок" src="https://cdn.javarush.com/images/article/f0ed2245-a0d9-43d1-ad36-7cb83ae14add/1024.jpeg">
+<br>
+
+вызов с параметрами -gr kitten.jpg newkitten.jpg создаст картинку:
+<img data-id="f347aa95-559a-43f1-831a-daef3665842e" data-max-width="259" alt="сумерки" src="https://cdn.javarush.com/images/article/f347aa95-559a-43f1-831a-daef3665842e/1024.jpeg">
+<br>
+
+<h5>Собственно ко<s>т</s>д.</h5>
+<code>package com.joysi.byteworld;
+
+import com.sun.imageio.plugins.jpeg.*;
+import com.sun.imageio.plugins.png.*;
+import javax.imageio.*;
+import javax.imageio.stream.*;
+import java.awt.image.BufferedImage;
+import java.io.*;
+
+public class image {
+    public static void main(String[] args) throws IOException {
+        CoolImage picture = new CoolImage(args[1]); // загружаем файл изображения
+        if ("-n".equals(args[0]))  picture.convertToNegative();
+        if ("-g".equals(args[0]))  picture.addColorGreenChannel(-100);
+        if ("-bw".equals(args[0])) picture.convertToBlackAndWhite();
+        picture.saveAsJpeg(args[2]);
+    }
+
+    public static class CoolImage{
+        private int     height;             // высота изображения
+        private int     width;              // ширина изображения
+        private int[]   pixels;             // собственно массив цветов точек составляющих изображение
+
+        public int getPixel(int x, int y)   { return pixels[y*width+x]; }   // получить пиксель в формате RGB
+        public int getRed(int color)        { return color >> 16; }         // получить красную составляющую цвета
+        public int getGreen(int color)      { return (color >> 8) & 0xFF; } // получить зеленую составляющую цвета
+        public int getBlue(int color)       { return color  & 0xFF;}        // получить синюю   составляющую цвета
+
+        // Конструктор - создание изображения из файла
+        public CoolImage(String fileName) throws IOException {
+            BufferedImage img = readFromFile(fileName);
+            this.height = img.getHeight();
+            this.width  = img.getWidth();
+            this.pixels = copyFromBufferedImage(img);
+        }
+
+        // Чтение изображения из файла в BufferedImage
+        private BufferedImage readFromFile(String fileName) throws IOException {
+            ImageReader     r  = new JPEGImageReader(new JPEGImageReaderSpi());
+            r.setInput(new FileImageInputStream(new File(fileName)));
+            BufferedImage  bi = r.read(0, new ImageReadParam());
+            ((FileImageInputStream) r.getInput()).close();
+            return bi;
+        }
+
+        // Формирование BufferedImage из массива pixels
+        private BufferedImage copyToBufferedImage()  {
+            BufferedImage bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+            for (int i = 0; i < height; i++)
+                for (int j = 0; j < width; j++)
+                    bi.setRGB(j, i, pixels[i*width +j]);
+            return bi;
+        }
+
+        // Формирование массива пикселей из BufferedImage
+        private int[] copyFromBufferedImage(BufferedImage bi)  {
+            int[] pict = new int[height*width];
+            for (int i = 0; i < height; i++)
+                for (int j = 0; j < width; j++)
+                    pict[i*width + j] = bi.getRGB(j, i) & 0xFFFFFF; // 0xFFFFFF: записываем только 3 младших байта RGB
+            return pict;
+        }
+
+        // Запись изображения в jpeg-формате
+        public void saveAsJpeg(String fileName) throws IOException {
+            ImageWriter writer = new JPEGImageWriter(new JPEGImageWriterSpi());
+            saveToImageFile(writer, fileName);
+        }
+
+        // Запись изображения в png-формате (другие графические форматы по аналогии)
+        public void saveAsPng(String fileName) throws IOException {
+            ImageWriter writer = new PNGImageWriter(new PNGImageWriterSpi());
+            saveToImageFile(writer, fileName);
+        }
+
+        // Собственно запись файла (общая для всех форматов часть).
+        private void saveToImageFile(ImageWriter iw, String fileName) throws IOException {
+            iw.setOutput(new FileImageOutputStream(new File(fileName)));
+            iw.write(copyToBufferedImage());
+            ((FileImageOutputStream) iw.getOutput()).close();
+        }
+
+        // конвертация изображения в негатив
+        public void  convertToNegative() {
+            for (int i = 0; i < height; i++)
+                for (int j = 0; j < width; j++)
+                    // Применяем логическое отрицание и отбрасываем старший байт
+                    pixels[i*width + j] = ~pixels[i*width + j] & 0xFFFFFF;
+        }
+
+        // конвертация изображения в черно-белый вид
+        public void convertToBlackAndWhite() {
+            for (int i = 0; i < height; i++)
+                for (int j = 0; j < width; j++) {
+                    // находим среднюю арифметическую интенсивность пикселя по всем цветам
+                    int intens = (getRed(pixels[i * width + j]) +
+                                getGreen(pixels[i * width + j]) +
+                                 getBlue(pixels[i * width + j])) / 3;
+                    // ... и записываем ее в каждый цвет за раз , сдвигая байты RGB на свои места
+                    pixels[i * width + j] = intens + (intens << 8) + (intens << 16);
+                }
+        }
+
+        // изменяем интесивность зеленого цвета
+        public void addColorGreenChannel(int delta) {
+            for (int i = 0; i < height; i++)
+                for (int j = 0; j < width; j++) {
+                    int newGreen =  getGreen(pixels[i * width + j]) + delta;
+                    if (newGreen > 255) newGreen=255;  // Отсекаем при превышении границ байта
+                    if (newGreen < 0)   newGreen=0;
+                    // В итоговом пикселе R и B цвета оставляем без изменений: & 0xFF00FF
+                    // Полученный новый G (зеленый) засунем в "серединку" RGB: | (newGreen << 8)
+                    pixels[i * width + j] = pixels[i * width + j] & 0xFF00FF | (newGreen << 8);
+                }
+        }
+    }
+}
+</code>

@@ -1,0 +1,87 @@
+Пример SynchronousQueue в Java - решение задачи Производитель Потребитель
+<p>----------------------------------------</p>
+Пример SynchronousQueue в Java - решение задачи Производитель Потребитель
+
+SynchronousQueue – это специальный тип  BlockingQueue, в котором каждая операция in
+<p>----------------------------------------</p>
+<u><h5>Пример SynchronousQueue в Java - решение задачи Производитель Потребитель</h5></u>
+
+SynchronousQueue – это специальный тип  BlockingQueue, в котором каждая операция insert должна ждать соответствующую команду remove в другой нити, и наоборот.
+Когда вы вызываете <u>метод put()</u> у SynchronousQueue, он блокируется до тех пор, пока другая нить не заберет этот элемент из него. Соответственно, если другая нить пытается удалить элемент из него, а элемента там нет, то <u>эта нить блокируется</u> до тех пор, пока другая нить не положит элемент в очередь. Можно представить  SynchronousQueue как спортсмена (<a href="http://javarevisited.blogspot.sg/2011/02/how-to-implement-thread-in-java.html" rel="nofollow" >нить</a>) бегущего с олимпийским факелом, он бежит с факелом (объектом который передается) и передает его другому спортсмену, ожидающему с другой стороны. Если вы обратите внимание на название, то поймете, что  SynchronousQueue так назван не безосновательно, он <em>передает данные синхронизированно в другую нить</em>; он ждет пока кто-то заберет данные, вместо того чтобы просто положить их и завершиться (асинхронная операция). Если вы знакомы с CSP и Ada, то вы знаете что синхронизированные  очереди похожи на встречу потоков.  Они хорошо подходят для конструкций передачи управления, в которых объект запущенный в одной нити, должен синхронизироваться с объектом в другой нити, чтобы передать ему какую-то информацию, событие или задание. В ранее изученных учебниках по много-нитиевому программированию мы изучали как решить задачу производитель-потребитель, используя методы <a href="http://java67.blogspot.sg/2012/12/producer-consumer-problem-with-wait-and-notify-example.html" rel="nofollow" >wait и notify</a>, и <a href="http://javarevisited.blogspot.sg/2012/02/producer-consumer-design-pattern-with.html" rel="nofollow" >BlockingQueue</a>. Сейчас мы узнаем <em>как применить производитель-потребитель паттерн используя  SynchronousQueue.</em> Этот класс дополнительно поддерживает честное поведение для упорядоченности ожидания нитей производителя и потребителя. По умолчанию, эта упорядоченность не гарантированена. Однако очереди, созданные с честными свойствами
+делают <em>гарантированным доступ для нитей в очередности FIFO</em> (Firs In First Out – кто Первый Пришел, тот Первый Вышел).
+<u><h5>Производитель потребитель используя SynchronousQueue в Java.</h5></u>
+<img data-id="cadfb899-3d92-40d8-9d6b-19836b3d44a3" data-max-width="372" alt="Пример SynchronousQueue в Java - решение задачи Производитель Потребитель - 1" src="https://cdn.javarush.com/images/article/cadfb899-3d92-40d8-9d6b-19836b3d44a3/1024.jpeg">
+Как я говорил выше, нет ничего лучше, чем задача производителя-потребителя  для <a href="http://javarevisited.blogspot.sg/2013/12/inter-thread-communication-in-java-wait-notify-example.html" rel="nofollow" >понимания между-нитиевого взаимодействия</a> в любом языке программирования. В этой проблеме одна нить выступает как производитель который производит события и задания, а другая нить выступает потребителем этого. Общий буфер используется для передачи данных от производителя к потребителю. Сложность решения этой задачи приходит в крайних случаях, например, когда производитель вынужден ждать т.к. буфер заполнен или потребитель вынужден ждать, т.к. буфер пуст. Это легко решалось, т.к. блокирующая очередь предоставляла не только буфер для хранения данных, но и управление потоком, блокируя нить вызывающую put() метод (Производитель) если буфер заполнен, и блокируя нить вызывающую take() метод (Потребитель) если буфер пуст. Сейчас мы решим эту же самую задачу используя SynchronousQueue, специальный вид <a href="http://javarevisited.blogspot.sg/2013/02/concurrent-collections-from-jdk-56-java-example-tutorial.html" rel="nofollow" >параллельных коллекций</a> с нулевой емкостью.
+В следующем примере у нас есть <u>две нити</u> которые называются <strong><u>PRODUCER</u></strong> и <u><strong>CONSUMER</strong></u> (всегда давайте имена нитям, это очень хороший стиль много-нитиевого программирования).Первая нить размещает счет в игре, а вторая нить его потребляет. Счет в игре ничто иное как объект типа String. Но если вы запустите программу с другим типом, вы не заметите никакой разницы. Чтобы понять как SynchronousQueue работает, и как решать задачу производитель-потребитель вам нужно: либо <a href="http://javarevisited.blogspot.sg/2011/07/java-debugging-tutorial-example-tips.html" rel="nofollow" >запустить программу на отладку (debug) в среде Eclipse</a>, либо просто запустить нить производителя закомментировав consumer.start(); если нить потребителя не запущена то нить производителя будет заблокирована на queue.put(event); если запущена, то вы не сможете видеть как производитель [PRODUCER] публикует событие :FOUR. Это происходит т.к. специфическое поведение SynchronousQueue , которое гарантирует, что нить размещающая данные будет заблокирована до тех пор пока другая нить не заберет эти данные, и наоборот. Вы можете протестировать оставшуюся часть кода закомментировав producer.start(); и запуская только нить потребителя.
+<code>
+import java.util.concurrent.SynchronousQueue; 
+/** * Java Program to solve Producer Consumer problem using SynchronousQueue. A 
+* call to put() will block until there is a corresponding thread to take() that 
+* element. 
+* * @author Javin Paul 
+*/ 
+public class SynchronousQueueDemo{ public static void main(String args[]) 
+{ 
+    final SynchronousQueue<String> queue = new SynchronousQueue<String>(); 
+    Thread producer = new Thread("PRODUCER") 
+    { 
+        public void run() { 
+            String event = "FOUR"; 
+            try 
+            { 
+                queue.put(event); // thread will block here 
+                System.out.printf("[%s] published event : %s %n", Thread .currentThread()
+                    .getName(), event); 
+           } catch (InterruptedException e) { 
+                e.printStackTrace(); 
+            } 
+        }     
+    };
+ 
+    producer.start(); // starting publisher thread 
+
+    Thread consumer = new Thread("CONSUMER") { 
+        public void run() {
+            try 
+            { 
+                String event = queue.take(); // thread will block here 
+                System.out.printf("[%s] consumed event : %s %n", Thread .currentThread()
+                    .getName(), event); 
+            } catch (InterruptedException e) { 
+                e.printStackTrace(); 
+            } 
+        }     
+    }; 
+    
+    consumer.start(); // starting consumer thread 
+
+    } 
+} 
+
+Output: 
+[CONSUMER] consumed event : FOUR 
+[PRODUCER] published event : FOUR 
+</code>
+Если вы внимательно изучите что программа выводит, то заметите что порядок вывода обратный. Выглядит как будто нить <strong>[CONSUMER]</strong>  забрала данные еще до того как нить <strong>[PRODUCER]</strong> произвела их. Это произошло из-за того, что по умолчанию SynchronousQueue  не гарантирует очередности. Но у нее есть правила честности, которые устанавливают доступ к нитям в порядке FIFO. Вы можете включать эти правила передавая true в <a href="http://javarevisited.blogspot.sg/2012/01/what-is-constructor-overloading-in-java.html" rel="nofollow" >перегруженный конструктор</a> SynchronousQueue например таким образом:
+<code> new SynchronousQueue(boolean fair).</code> 
+<u><h5>Что надо запомнить про SynchronousQueue в Java.</h5></u>
+<p>Тут несколько важных свойств этого специального типа блокирующейся очереди в Java. Очень полезно передавать данные из одной нити в другую синхронизированно. Эта очередь не имеет объемаи заблокированна до тех пор пока ее не освободит другая нить.</p>
+<ol>
+    <li>SynchronousQueue блокируется, и до тех пор пока одна нить не будет готова взять данные, другая будет пытаться положить данные.</li>
+
+    <li>SynchronousQueue не имеет объема. То есть в ней не содержатся данные.</li>
+
+    <li>SynchronousQueue используется для реализации стратегии очередности прямой передачи управления, где нить передает управление ожидающей нити, или создает новую если это разрешено, иначе управление не передается.</li>
+
+    <li>Эта очередь не пропускает null-данные. Попытка добавить null элемент кинет <a href="http://javarevisited.blogspot.sg/2012/06/common-cause-of-javalangnullpointerexce.html" rel="nofollow" >NullPointerException</a>.</li> 
+
+    <li>Если использовать другие методы из Collection (например contains), SynchronousQueue  ведет себя как пустая коллекция.</li>
+
+    <li>Вы не сможете использовать метод peek у SynchronousQueue, потому что элемент существует только тогда когда вы пытаетесь его удалить; так же вы не сможете вставлять элементы (используя любой метод) пока другая нить не пытается его удалить.</li>
+
+    <li>Вы не сможете использовать iterator для SynchronousQueue, т.к. в ней нет элементов.</li>
+
+    <li>SynchronousQueue может создаваться с честными правилами, когда гарантируется доступ к нитям в порядке FIFO.</li>
+
+</ol>  
+Пожалуй это все о <strong>SynchronousQueue в Java.</strong> Мы рассмотрели некоторые особенные возможности этой много-нитиевой коллекции, и научились решать классическую задачу производитель-потребитель используя  SynchronousQueue в Java. Между прочим называть ее Очередью не совсем верно, т.к. у она не содержит элементов. Вызов метода put() не завершится до тех пор пока другая нить не вызовет метод take(). Правильнее представлять ее как место встречи нитей, где они делятся объектом. Другими словами, это утилита по синхронизированной передаче объектов в Java, возможно более безопасная альтернатива методу с использованием <a href="http://java67.blogspot.sg/2013/03/difference-between-wait-vs-notify-vs-notifyAll-java-thread.html" rel="nofollow" >wait и notify</a>.

@@ -1,0 +1,230 @@
+Добавляем Spring Scheduler - "Java-проект от А до Я"
+<p>----------------------------------------</p>
+Привет всем, мои дорогие друзья. В предыдущей статье мы подготовили клиент для работы с JavaRush API для статей. Теперь можно писать логику для работы нашей джобы, которая будет выполняться каждые 15 минут. Вот ровно так, как показано на этой схеме...
+<p>----------------------------------------</p>
+Привет всем, мои дорогие друзья.
+
+В <a href="https://javarush.com/groups/posts/3355-java-proekt-ot-a-do-ja-dobavljaem-klienta-k-statjhjam" target="_blank">предыдущей статье</a> мы подготовили клиент для работы с JavaRush API для статей. Теперь можно писать логику для работы нашей джобы, которая будет выполняться каждые 15 минут. 
+
+Вот ровно так, как показано на этой схеме:
+
+<img data-max-width="1080" data-id="5e716b48-101a-47f8-8eb0-a637eff3702c" src="https://cdn.javarush.com/images/article/5e716b48-101a-47f8-8eb0-a637eff3702c/1080.jpeg" alt="“Java-проект от А до Я”: Добавляем Spring Scheduler - 1">Каждые 15 минут будет запускаться джоба (по нашему — просто метод в определенном классе), который выполняется на фоне работы основного приложения и делает следующее:<ol>
+
+<li><p>Находит во всех группах, которые есть в нашей БД, новые статьи, вышедшие после предыдущего выполнения.</p>
+<table><tbody>
+<tr><td>В этой схеме указано меньшее количество групп — только с активными пользователями. На тот момент мне это показалось логичным, но сейчас я понимаю, что независимо от того, есть активные пользователи, подписанные на конкретную группу или нет, все равно нужно держать актуальным последнюю статью, что бот обработал. Может возникнуть ситуация, когда новому пользователю придет сразу все количество статей, вышедшее с момента деактивации этой группы. А это не ожидаемое поведение, и чтобы его избежать, нужно держать актуальным и те группы из нашей БД, что на данный момент не имеют активных пользователей.</td></tr>
+</tbody></table>
+</li><li><p>Если новые статьи есть, сформировать сообщения для всех пользователей, которые активно подписаны на эту группу. Если новых статей нет, просто завершаем работу.</p></li>
+
+</ol>К слову, я уже <a href="https://t.me/romankh3/56" rel="nofollow" target="_blank">упоминал</a> в своем ТГ-канале, бот уже работает и отправляет новые статьи по подпискам. 
+
+Начнем писать <span class="code">FindNewArtcileService</span>. В нем будет происходить вся работа по поиску и отправке сообщений, а джоба будет только запускать метод этого сервиса:<h4>FindNewArticleService:</h4><pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.service;
+
+/**
+* Service for finding new articles.
+*/
+public interface FindNewArticleService {
+
+   /**
+    * Find new articles and notify subscribers about it.
+    */
+   void findNewArticles();
+}
+</code></pre>
+Очень простой, правда? В этом его и суть, а вся сложность будет в реализации:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.service;
+
+import com.github.javarushcommunity.jrtb.javarushclient.JavaRushPostClient;
+import com.github.javarushcommunity.jrtb.javarushclient.dto.PostInfo;
+import com.github.javarushcommunity.jrtb.repository.entity.GroupSub;
+import com.github.javarushcommunity.jrtb.repository.entity.TelegramUser;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class FindNewArticleServiceImpl implements FindNewArticleService {
+
+   public static final String JAVARUSH_WEB_POST_FORMAT = "https://javarush.com/groups/posts/%s";
+
+   private final GroupSubService groupSubService;
+   private final JavaRushPostClient javaRushPostClient;
+   private final SendBotMessageService sendMessageService;
+
+   @Autowired
+   public FindNewArticleServiceImpl(GroupSubService groupSubService,
+                                    JavaRushPostClient javaRushPostClient,
+                                    SendBotMessageService sendMessageService) {
+       this.groupSubService = groupSubService;
+       this.javaRushPostClient = javaRushPostClient;
+       this.sendMessageService = sendMessageService;
+   }
+
+
+   @Override
+   public void findNewArticles() {
+       groupSubService.findAll().forEach(gSub -&gt; {
+           List&lt;PostInfo&gt; newPosts = javaRushPostClient.findNewPosts(gSub.getId(), gSub.getLastArticleId());
+
+           setNewLastArticleId(gSub, newPosts);
+
+           notifySubscribersAboutNewArticles(gSub, newPosts);
+       });
+   }
+
+   private void notifySubscribersAboutNewArticles(GroupSub gSub, List&lt;PostInfo&gt; newPosts) {
+       Collections.reverse(newPosts);
+       List&lt;String&gt; messagesWithNewArticles = newPosts.stream()
+               .map(post -&gt; String.format("✨Вышла новая статья &lt;b&gt;%s&lt;/b&gt; в группе &lt;b&gt;%s&lt;/b&gt;.✨\n\n" +
+                               "&lt;b&gt;Описание:&lt;/b&gt; %s\n\n" +
+                               "&lt;b&gt;Ссылка:&lt;/b&gt; %s\n",
+                       post.getTitle(), gSub.getTitle(), post.getDescription(), getPostUrl(post.getKey())))
+               .collect(Collectors.toList());
+
+       gSub.getUsers().stream()
+               .filter(TelegramUser::isActive)
+               .forEach(it -&gt; sendMessageService.sendMessage(it.getChatId(), messagesWithNewArticles));
+   }
+
+   private void setNewLastArticleId(GroupSub gSub, List&lt;PostInfo&gt; newPosts) {
+       newPosts.stream().mapToInt(PostInfo::getId).max()
+               .ifPresent(id -&gt; {
+                   gSub.setLastArticleId(id);
+                   groupSubService.save(gSub);
+               });
+   }
+
+   private String getPostUrl(String key) {
+       return String.format(JAVARUSH_WEB_POST_FORMAT, key);
+   }
+}
+</code></pre>
+Здесь разберемся со всем по порядку:<ol>
+
+<li><p>При помощи <span class="code">groupService</span> мы находим все группы, которые есть в БД.</p></li>
+<li><p>Потом разбегаемся по всем группам и для каждой вызываем созданный в прошлой статье клиент — <span class="code">javaRushPostClient.findNewPosts</span>.</p></li>
+<li><p>Далее при помощи метода <span class="code">setNewArticleId</span> мы обновляем ID шник нашей последней новой статьи, чтобы наша база данных знала, что мы уже обработали новые.</p></li>
+<li><p>И при помощи того, что у GroupSub есть коллекция пользователей, пробегаем по активным и отсылаем уведомления о новых статьях.</p></li>
+
+</ol>Какое там сообщение — сейчас обсуждать не будем, для нас это не сильно важно. Главное, что метод работает. 
+
+Логика по поиску новых статей и отправке уведомлений готова, поэтому можно перейти к созданию джобы.<h2>Создаем FindNewArticleJob</h2>Мы уже говорили о том, что такое SpringScheduler, но повторим еще раз быстро: это механизм в Spring фреймворке для создания фонового процесса, который будет выполняться в определенное время, задаваемого нами.
+
+Что нужно для этого?
+
+Первый этап — добавить аннотацию <span class="code">@EnableScheduling</span> к нашему входному классу для спринга:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
+
+@EnableScheduling
+@SpringBootApplication
+public class JavarushTelegramBotApplication {
+
+   public static void main(String[] args) {
+       SpringApplication.run(JavarushTelegramBotApplication.class, args);
+   }
+
+}
+</code></pre>
+Второй этап — создать класс, добавить его в <span class="code">ApplicationContext</span> и создать в нем метод, который будет запускаться периодически.
+
+Создаем пакет job на одном уровне с repository, service и так далее и там создаем класс <span class="code">FindNewArticleJob</span>:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.job;
+
+import com.github.javarushcommunity.jrtb.service.FindNewArticleService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+
+/**
+* Job for finding new articles.
+*/
+@Slf4j
+@Component
+public class FindNewArticlesJob {
+
+   private final FindNewArticleService findNewArticleService;
+
+   @Autowired
+   public FindNewArticlesJob(FindNewArticleService findNewArticleService) {
+       this.findNewArticleService = findNewArticleService;
+   }
+
+   @Scheduled(fixedRateString = "${bot.recountNewArticleFixedRate}")
+   public void findNewArticles() {
+       LocalDateTime start = LocalDateTime.now();
+
+       log.info("Find new article job started.");
+
+       findNewArticleService.findNewArticles();
+
+       LocalDateTime end = LocalDateTime.now();
+
+       log.info("Find new articles job finished. Took seconds: {}",
+               end.toEpochSecond(ZoneOffset.UTC) - start.toEpochSecond(ZoneOffset.UTC));
+   }
+}
+</code></pre>
+Чтобы добавить этот класс в <span class="code">Application Context</span>, я использовал аннотацию <span class="code">@Component</span>.
+
+А чтобы метод внутри класса знал, что ему нужно запускаться периодически, я добавил к методу аннотацию: <span class="code">@Scheduled(fixedRateString = "${bot.recountNewArticleFixedRate}")</span>. 
+
+А вот какое значение будет — его мы задаем уже в application.properties файле:
+
+<pre class="language-java line-numbers"><code>
+bot.recountNewArticleFixedRate = 900000
+</code></pre>
+Здесь значение указано в миллисекундах. Это будет 15 минут. 
+
+В этом методе все просто: я для себя в логах добавил супер простую метрику для подсчета поиска новых статей, чтобы хоть примерно представлять насколько быстро работает.<h2>Тестируем новый функционал</h2>Теперь будем тестировать на нашем тестовом боте. Но как? Не буду же я удалять каждый раз статьи, чтобы показать, что уведомления пришли? Нет, конечно. Просто будем править данные в БД и запускать приложение.
+
+Тестировать я буду на своем тестовом енве.
+
+Для этого подпишемся на какую-то группу. Когда подписка будет оформлена, группе будет поставлен актуальный ID последней статьи. Пойдем в базу и поменяем значение на две статьи назад. В итоге ожидаем, что будет столько статей, на сколько раньше поставим <span class="code">lastArticleId</span>.<img data-max-width="512" data-id="45e1848f-2d41-44a9-88dd-39a7d5aab70a" src="https://cdn.javarush.com/images/article/45e1848f-2d41-44a9-88dd-39a7d5aab70a/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем Spring Scheduler - 2">Далее идем на сайт, сортируем статьи в группе Java-проекты — <span class="text-bold">сначала новые</span> — и заходим в третью статью из списка:<img data-max-width="800" data-id="9cc45e77-7594-40f1-949e-83b57aceada3" src="https://cdn.javarush.com/images/article/9cc45e77-7594-40f1-949e-83b57aceada3/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем Spring Scheduler - 3">Зайдем в нижнюю статью и из адресной строки получим article Id — 3313:<img data-max-width="1080" data-id="af5c3554-cb74-478f-9a2d-65ff3354153c" src="https://cdn.javarush.com/images/article/af5c3554-cb74-478f-9a2d-65ff3354153c/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем Spring Scheduler - 4">Далее идем в MySQL Workbench и меняем значение <span class="code">lastArticleId</span> на 3313. Посмотрим, что такая группа есть в базе:<img data-max-width="512" data-id="51820eac-8ccc-4e71-88e7-a8bc35ea8ce2" src="https://cdn.javarush.com/images/article/51820eac-8ccc-4e71-88e7-a8bc35ea8ce2/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем Spring Scheduler - 5">И для нее выполним команду:<img data-max-width="800" data-id="0a5cc05d-901a-4ae3-92d8-02708dde7a9f" src="https://cdn.javarush.com/images/article/0a5cc05d-901a-4ae3-92d8-02708dde7a9f/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем Spring Scheduler - 6">И все, теперь нужно подождать до следующего запуска джобы по поиску новых статей. Ожидаем, что придет два сообщения о новой статье из группы Java-проекты. Как говорится, результат не заставил себя ждать:<img data-max-width="512" data-id="506580dc-3c19-45ee-a725-b10c9d864429" src="https://cdn.javarush.com/images/article/506580dc-3c19-45ee-a725-b10c9d864429/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем Spring Scheduler - 7">Получается, что бот отработал так, как мы и ожидали.<h2>Окончание</h2>Как и всегда — обновляем версию в pom.xml и добавляем запись в RELEASE_NOTES, чтобы история работы сохранилась и всегда можно было вернуться и понять, что изменилось. 
+
+Поэтому инкрементируем на одну единицу версию:
+
+<pre class="language-java line-numbers"><code>
+&lt;version&gt;0.7.0-SNAPSHOT&lt;/version&gt;
+</code></pre>
+И обновляем RELEASE_NOTES:
+
+<div class="terminal">## 0.7.0-SNAPSHOT
+
+*   JRTB-4: added ability to send notifications about new articles
+*   JRTB-8: added ability to set inactive telegram user
+*   JRTB-9: added ability to set active user and/or start using it.</div>
+Теперь уж можно создавать пулл-реквест и заливать новые изменения.
+
+Вот пулл-реквест со всеми изменениями за две части: <a href="https://github.com/javarushcommunity/javarush-telegrambot/pull/25" rel="nofollow" target="_blank">STEP_8</a>.
+
+Что дальше? Уже казалось бы все готово и, как говорят у нас, может выходить в продакшен, но есть еще некоторые вещи, которые хочется сделать. Например, настроить работу админов у бота, добавить их и добавить возможность задавать их. 
+
+Также перед окончанием хорошо бы пройтись по коду и посмотреть, нет ли вещей, которые можно отрефакторить. Я вот уже вижу рассинхрон в именовании article/post. 
+
+В самом конце сделаем ретроспективу того, что мы планировали и что получили. И что хочется сделать в будущем. 
+
+Сейчас поделюсь с вами достаточно сырой идеей, которая может и увидит свет: сделать springboot starter, который имел бы всю функциональность по работе с телеграм-ботом и поиском статей. Это даст возможность унифицировать подход и использовать его для других телеграм-ботов. Таким образом этот проект станет более доступным для других и сможет принести пользу большему числу людей.
+
+Это одна из идей. Другая идея — идти в глубь разработки нотификаций. Но об этом мы поговорим несколько позже.
+
+<em>Всем спасибо за внимание, с вас как обычно: <s>лайк - подписка - колокольчик</s>, звезду <a href="https://github.com/javarushcommunity/javarush-telegrambot" rel="nofollow" target="_blank">нашему проекту</a>, комментарий и оценить статью!</em>
+
+Всем спасибо за прочтение.<h4><a href="https://javarush.com/groups/posts/2935-java-proekt-ot-a-do-ja-pishem-realjhnihy-proekt-dlja-portfolio#articles" target="_blank">Список всех материалов серии в начале этой статьи.</a></h4>

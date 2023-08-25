@@ -1,0 +1,172 @@
+Округление чисел в Java
+<p>----------------------------------------</p>
+Числа с плавающей точкой (float, double) применяются при вычислении выражений, в которых требуется точность до десятичного знака. Высокая точность часто нужна в бухгалтерских и других вычислительных операциях. Но всегда ли нам нужен длинный “хвост” чисел после запятой?
+<p>----------------------------------------</p>
+Числа с плавающей точкой (float, double) применяются при вычислении выражений, в которых требуется точность до десятичного знака. Высокая точность часто нужна в бухгалтерских и других вычислительных операциях.
+
+<img data-max-width="800" data-id="1dfeffa5-d995-4370-8015-6431e4f884f1" src="/images/article/1dfeffa5-d995-4370-8015-6431e4f884f1/800.jpeg" class="img-fluid" alt="Округление чисел в Java - 1">Но всегда ли нам нужен длинный “хвост” чисел после запятой? Может нам достаточно точности в три знака вещественной части? И есть нас такой вариант устраивает, как правильно выполнить округление?
+
+Именно об этом мы сегодня и поговорим: рассмотрим <span class="text-bold">способы округления чисел в Java</span>.
+<h2>String format</h2>В качестве первого способа мы рассмотрим округление double:
+
+<pre class="lang-java line-numbers"><code>
+double value = 34.766674;
+String result = String.format("%.3f",value);
+System.out.print(result);//  34,767
+</code></pre>
+В результате мы отформатируем наше число с плавающей запятой 34766674 с точностью до <span class="text-bold">3 десятичных разрядов</span>, так как в инструкции для форматирования мы указали три знака после запятой "%.3f.
+
+В свою очередь %f при форматировании строки обозначает тип чисел с плавающей запятой, которое включает в себя тип данных <span class="text-bold">double</span> и <span class="text-bold">float</span> в Java.
+
+В примере выше мы выводили полученное значение в консоль. Теперь вопрос: как бы можно было это сократить? Все просто: нужно использовать printf, который в свою очередь является format + print. В итоге предыдущий пример у нас сократился бы до:
+
+<pre class="lang-java line-numbers"><code>
+double value = 34.766674;
+System.out.printf("%.3f",value);
+</code></pre>
+У экземпляра out класса <a href="https://docs.oracle.com/javase/8/docs/api/java/io/PrintStream.html" rel="nofollow" target="_blank">PrintStream</a> помимо этого метода есть ещё метод format, который работает аналогично:
+
+<pre class="lang-java line-numbers"><code>
+double value = 34.766674;
+System.out.format("%.3f",value);
+</code></pre>
+Округление происходит по режиму <span class="text-bold">HALF_UP</span> — в сторону числа, которое ближе к обрезаемому (к 0 или 10). Если же эти числа равноудалены (в случае с 5), то округление выполняется в большую сторону.
+
+Пример:
+
+<pre class="lang-java line-numbers"><code>
+String firstResult = String.format("%.3f",7.0004);// 7,000
+String secondResult = String.format("%.3f",7.0005);// 7,001
+String thirdResult = String.format("%.3f",7.0006);// 7,001
+</code></pre>
+Более подробно режимы округления мы разберем чуть ниже.
+<img data-max-width="512" data-id="48ce1c96-a2eb-4e82-8de0-ed0d942248e8" src="/images/article/48ce1c96-a2eb-4e82-8de0-ed0d942248e8/512.jpeg" class="img-fluid" alt="Округление чисел в Java - 2"><h2>DecimalFormat</h2>Еще один вариант — использовать класс <a href="https://docs.oracle.com/javase/8/docs/api/java/text/DecimalFormat.html" rel="nofollow" target="_blank">DecimalFormat</a>. Он предназначен для форматирования любого числа в Java, будь это целое число или число с плавающей запятой.
+
+При создании экземпляра <span class="text-bold">DecimalFormat</span> мы можем передать ему строку форматирования. Она укажет, сколько десятичных разрядов нужно отформатировать для ввода. 
+
+Как будет выглядеть наш пример с использованием <span class="text-bold">DecimalFormat</span>:
+
+<pre class="lang-java line-numbers"><code>
+double value = 34.766674;
+DecimalFormat decimalFormat = new DecimalFormat( "#.###" );
+String result = decimalFormat.format(value);
+System.out.print(result);//34,767
+</code></pre>
+Строка <span class="text-bold">#.###</span> — это шаблон, который указывает, что мы форматируем передаваемое значение до 3 десятичных знаков.
+
+Чтобы изменить шаблон после создания объекта DecimalFormat, можно использовать его методы <span class="text-bold">applyPattern</span> и <span class="text-bold">applyLocalizedPattern</span>:
+
+<pre class="lang-java line-numbers"><code>
+DecimalFormat decimalFormat = new DecimalFormat("#.###");
+decimalFormat.applyPattern("#.#");
+decimalFormat.applyLocalizedPattern("#.#####");
+</code></pre>
+Но мы сегодня говорим про округление, не правда ли? При обрезании числа с знаками после запятой, выходящими за заданный шаблон, <span class="text-bold">DecimalFormat</span> округляет число в большую сторону, если последний обрезаемое число больше 5. Но что если число — 5? Получается, что оно ровно посередине между ближайшими целыми. Что тогда?
+
+В этом случае учитывается предыдущее число.
+
+Если оно чётное, округление производится:
+
+<pre class="lang-java line-numbers"><code>
+DecimalFormat decimalFormat = new DecimalFormat("#.###");
+String result = decimalFormat.format(7.4565);
+System.out.println((result));// 7,457
+</code></pre>
+Если нечётное — не производится:
+
+<pre class="lang-java line-numbers"><code>
+DecimalFormat decimalFormat = new DecimalFormat("#.###");
+String result = decimalFormat.format(7.4575);
+System.out.println((result));// 7,457
+</code></pre>
+Есть небольшая разница между форматированием чисел с плавающей запятой с использованием String.format() и DecimalFormat.format(). Первый всегда будет печатать конечные нули, даже если нет дробной части.
+
+ К примеру:
+
+<pre class="lang-java line-numbers"><code>
+String firstResult = String.format("%.3f", 7.000132);
+System.out.println((firstResult)); // 7.000
+
+DecimalFormat decimalFormat = new DecimalFormat("#.###");
+String secondResult = decimalFormat.format(7.000132);
+System.out.println((secondResult));  // 7
+</code></pre>
+Как мы видим, при форматировании числа 7.000132 с точностью до трёх десятичных разрядов, метод format() у String выводит 7.000, в то время как у DecimalFormat  метод format() выведет 7.
+
+То есть вы можете выбирать <span class="text-bold">String.format()</span> или <span class="text-bold">DecimalFormat.format()</span> в зависимости от того, нужны ли вам конечные нули или нет.
+
+Применяя вышеописанные способы, мы получали результат в виде строки. Давайте же рассмотрим способы, как можно получить обратно именно числовые значения.
+<h2>Math</h2>Нельзя не упомянуть специальный класс, заточенный под разные арифметические операции с числами — <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Math.html" rel="nofollow" target="_blank">Math</a>.
+<img data-max-width="512" data-id="eec5cda9-2efb-4184-8ef6-0792a00616e2" src="/images/article/eec5cda9-2efb-4184-8ef6-0792a00616e2/512.jpeg" class="img-fluid" alt="Округление чисел в Java - 3">В этом классе есть и методы для округления, но в отличие от уже описанных, они не позволяют задать определенное число знаков после запятой, а округляют до целого числа:
+<ul>
+<li><p><span class="text-bold">Math.ceil()</span> округляет до ближайшего целого числа вверх, но отдаёт не целочисленный тип, а double:</p>
+<pre class="lang-java line-numbers"><code>
+double value = 34.777774;
+double result = Math.ceil(value);
+System.out.println((result)); //35.0
+</code></pre>
+<p>Даже если у нас будет 34.0000000, все равно после использования <span class="text-bold">Math.ceil</span> мы получим 35,0.</p>
+Math.floor() округляет до ближайшего целого вниз, также результатом отдаёт double:<p></p>
+<pre class="lang-java line-numbers"><code>
+double value = 34.777774;
+double result = Math.floor(value);
+System.out.println((result)); //34.0
+</code></pre>
+<p>Опять же, даже если у нас будет значение 34.999999999, то после использования <span class="text-bold">Math.floor</span> мы получим 34,0.</p></li>
+<li><p><span class="text-bold">Math.round ()</span> — округляет до ближайшего целого числа, как результат отдаёт int:</p>
+<pre class="lang-java line-numbers"><code>
+double value = 34.777774;
+int result = Math.round(value);
+System.out.println((result)); //35
+</code></pre>
+<p>Если у нас число 34.5, округление выполняется до 35, если же чуть чуть меньше 34.499, число обрезается до 34.</p>
+<p>Чтобы не просто обрезать всю вещественную часть, а регулировать этот процесс до определенного количества знаков и при этом округлять, число умножают на 10^n (10 в степени n), где n равно количеству необходимых знаков после запятой. После этого применяют какой-нибудь метод класса <span class="text-bold">Math</span> для округления, ну а затем снова делят на 10^n:</p>
+<pre class="lang-java line-numbers"><code>
+double value = 34.777774;
+double scale = Math.pow(10, 3);
+double result = Math.ceil(value * scale) / scale;
+System.out.println((result)); //34.778
+</code></pre>
+<p><span class="text-bold">Math.pow</span> — принимает два аргумента. Первый — число, второй — степень, в которую его нужно возвести.</p></li></ul><h2>Округление с BigDecimal</h2><span class="text-bold">BigDecimal</span> — это класс, который позволяет работать с числами с плавающей запятой. В частности, его основной фишкой является то, что в нём можно хранить дробные числа произвольной длины (то есть нет ограничения в диапазоне числа). 
+Помимо этого, этот класс хранит различные методы для арифметической обработки, включая округление.
+
+Класс данного объекта можно создать, задав в конструктор double, string отображение числа с плавающей запятой, double и <a href="https://docs.oracle.com/javase/8/docs/api/java/math/MathContext.html#getRoundingMode--" rel="nofollow" target="_blank">MathContext</a> и так далее.
+
+<span class="text-bold">MathContext</span> — комбинация правила округления <a href="https://docs.oracle.com/javase/8/docs/api/java/math/RoundingMode.html" rel="nofollow" target="_blank">RoundingMode</a> и числа, описывающая общее количество цифр в искомом значении.
+
+Правила округления RoundingMode:
+
+<span class="text-bold">DOWN</span> — округление в сторону до нуля.
+<span class="text-bold">UP</span> — режим округления от нуля.
+<span class="text-bold">CEILING</span> — округление в сторону положительной бесконечности.
+<span class="text-bold">FLOOR</span> — округление в сторону к отрицательной бесконечности.
+<span class="text-bold">HALF_UP</span> — округление до «ближайшего соседа», если оба соседа не равноудалены (то есть когда округляемое число — 5). В этом случае выполняется округление вверх.
+<span class="text-bold">HALF_DOWN</span> — округление в сторону «ближайшего соседа». Если оба соседа не равноудалены, в этом случае округление вниз.
+<span class="text-bold">HALF_EVEN</span> — округление до «ближайшего соседа», если оба соседа не равноудалены. В этом случае округляются до четного соседа (как в описанном выше DecimalFormat).
+<span class="text-bold">UNNECESSARY</span> — используется для подтверждения того, что запрошенная операция имеет точный результат. Следовательно, округление не требуется.
+
+Пример:
+
+<pre class="lang-java line-numbers"><code>
+MathContext context = new MathContext(5, RoundingMode.HALF_UP);
+double value = 34.777554;
+BigDecimal result = new BigDecimal(value, context);
+System.out.println(result); //34.778
+</code></pre>
+Помимо возможности задавать правило округления в конструкторе, <span class="text-bold">BigDecimal</span> позволяет задать режим округления уже после создания экземпляра. Для этого используется метод <span class="text-bold">setScale</span>, в который нужно задать количество знаков после запятой и правила округления:
+
+<pre class="lang-java line-numbers"><code>
+double value = 34.777554;
+BigDecimal result = new BigDecimal(value);
+result = result.setScale(3, RoundingMode.DOWN);
+System.out.println(result); //34.777
+</code></pre>
+Также у <span class="text-bold">BigDecimal</span> есть внутренние <span class="text-bold">int</span> переменные, предназначенные для задания режима округления (<span class="text-bold">ROUND_DOWN</span>, <span class="text-bold">ROUND_CEILING</span>, <span class="text-bold">ROUND_FLOOR</span>...)
+
+Представляют собой правила округления, аналогичные представленным в классе <span class="text-bold">RoundingMode</span> и аналогично используются в <span class="text-bold">setScale</span>:
+
+<pre class="lang-java line-numbers"><code>
+BigDecimal result = new BigDecimal(value);
+result = result.setScale(3, BigDecimal.ROUND_DOWN);
+</code></pre>
+Подробнее о классе BigDecimal — в <a href="https://javarush.com/groups/posts/2709-biginteger-i-bigdecimal" target="_blank">этой статье</a>.

@@ -1,0 +1,547 @@
+Reflection в Java - Примеры использования 
+<p>----------------------------------------</p>
+Понятие «рефлексия» ты мог встречать в обычной жизни. Обычно этим словом называют процесс изучения себя. В программировании оно имеет похожий смысл — это механизм исследования данных о программе, а также изменения структуры и поведения программы во время ее выполнения ...
+<p>----------------------------------------</p>
+Понятие «рефлексия» ты мог встречать в обычной жизни. Обычно этим словом называют процесс изучения себя.
+
+В программировании оно имеет похожий смысл — это механизм исследования данных о программе, а также изменения структуры и поведения программы во время ее выполнения. Здесь важно: именно во время выполнения, а не во время компиляции.
+
+Но зачем исследовать код во время выполнения? Ты же и так видишь его :/<img data-id="4b2f3e75-7364-4ac6-b93a-b6e8fa7c1ce1" data-max-width="850" alt="Примеры использования Reflection - 1" src="https://cdn.javarush.com/images/article/4b2f3e75-7364-4ac6-b93a-b6e8fa7c1ce1/1024.jpeg">Идея рефлексии может быть не сразу понятна по одной причине: до этого момента ты всегда знал классы, с которыми работаешь.
+
+Ну, например, ты мог написать класс <code>Cat</code>:
+
+<pre class="lang-java line-numbers"><code>
+package learn.javarush;
+
+public class Cat {
+
+   private String name;
+   private int age;
+
+   public Cat(String name, int age) {
+       this.name = name;
+       this.age = age;
+   }
+
+   public void sayMeow() {
+
+       System.out.println("Meow!");
+   }
+
+   public void jump() {
+
+       System.out.println("Jump!");
+   }
+
+   public String getName() {
+       return name;
+   }
+
+   public void setName(String name) {
+       this.name = name;
+   }
+
+   public int getAge() {
+       return age;
+   }
+
+   public void setAge(int age) {
+       this.age = age;
+   }
+
+@Override
+public String toString() {
+   return "Cat{" +
+           "name='" + name + '\'' +
+           ", age=" + age +
+           '}';
+}
+
+}
+</code></pre>
+Ты все знаешь о нем, видишь, какие у него есть поля и методы. Наверняка сможешь создать для удобства систему наследования с общим классом <code>Animal</code>, если вдруг в программе нужны будут другие классы животных.
+
+Ранее мы даже создавали класс ветеринарной клиники, в который можно было передать объект-родитель <code>Animal</code>, а программа лечила животное в зависимости от того, собака это или кошка.
+
+Несмотря на то, что эти задачи не очень-то простые, программа узнает всю необходимую ей информацию о классах во время компиляции.
+
+Поэтому когда ты в методе <code>main()</code> передаешь объект <code>Cat</code> в методы класса ветеринарной клиники, программа уже знает, что это кошка, а не собака.
+
+А теперь давай представим, что перед нами стоит другая задача.
+
+Наша цель — написать анализатор кода.
+
+Нам нужно создать класс <code>CodeAnalyzer</code> с единственным методом — <code>void analyzeClass(Object o)</code>.
+
+Этот метод должен:
+<ul>
+<li>определить, какого класса объект ему передали и вывести название класса в консоль;</li>
+<li>определить названия всех полей этого класса, включая приватные, и вывести их в консоль;</li>
+<li>определить названия всех методов этого класса, включая приватные, и вывести их в консоль.</li>
+</ul>Выглядеть это будет примерно так:
+
+<pre class="lang-java line-numbers"><code>
+public class CodeAnalyzer {
+
+   public static void analyzeClass(Object o) {
+      
+       //Вывести название класса, к которому принадлежит объект o
+       //Вывести названия всех переменных этого класса
+       //Вывести названия всех методов этого класса
+   }
+  
+}
+</code></pre>
+Теперь разница между этой задачей и остальными задачами, которые ты решал до этого, видна.
+
+В данном случае сложность заключается в том, что ни ты, ни программа не знаете, что именно передастся в метод <code>analyzeClass()</code>. 
+
+Ты напишешь программу, ею начнут пользоваться другие программисты, которые могут передать в этот метод вообще что угодно — любой стандартный Java-класс или любой написанный ими класс. У этого класса может быть сколько угодно переменных и методов.
+
+Иными словами, в данном случае мы (и наша программа) не имеем ни малейшего представления о том, с какими классами мы будем работать.
+
+И тем не менее, мы должны решить эту задачу.
+
+И здесь нам на помощь приходит стандартная библиотека Java — Java Reflection API.
+
+Reflection API — мощное средство языка. В официальной документации Oracle написано, что этот механизм рекомендуют использовать только опытным программистам, которые очень хорошо понимают, что делают.
+
+Скоро ты поймешь, с чего вдруг нам заранее дают такие предостережения :)
+
+Вот список того, что можно сделать при помощи Reflection API:
+<ol>
+<li>Узнать / определить класс объекта.</li>
+<li>Получить информацию о модификаторах класса, полях, методах, константах, конструкторах и суперклассах.</li>
+<li>Выяснить, какие методы принадлежат реализуемому интерфейсу / интерфейсам.</li>
+<li>Создать экземпляр класса, когда имя класса неизвестно до момента выполнения программы.</li>
+<li>Получить и установить значение поля объекта по имени.</li>
+<li>Вызвать метод объекта по имени.</li>
+</ol>Впечатляющий список, да? :)
+
+<mark>Обрати внимание:</mark> все это механизм рефлексии способен делать «на ходу» независимо от того, объект какого класса мы передадим в наш анализатор кода!
+
+Давай рассмотрим возможности Reflection API на примерах.
+<h2>Как узнать / определить класс объекта</h2>Начнем с основ. Входная точка в механизм рефлексии Java — класс <code>Class</code>. Да, выглядит действительно забавно, но на то она и рефлексия :)
+
+С помощью класса <code>Class</code> мы, прежде всего, определяем класс любого объекта, переданного в наш метод. 
+
+Давай попробуем это сделать:
+
+<pre class="lang-java line-numbers"><code>
+import learn.javarush.Cat;
+
+public class CodeAnalyzer {
+
+   public static void analyzeClass(Object o) {
+       Class clazz = o.getClass();
+       System.out.println(clazz);
+   }
+
+   public static void main(String[] args) {
+
+       analyzeClass(new Cat("Barsik", 6));
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+class learn.javarush.Cat
+</code></pre>
+Обрати внимание на две вещи.
+
+Во-первых, мы специально положили класс <code>Cat</code> в отдельный пакет <code>learn.javarush;</code> теперь ты видишь, что <code>getClass()</code> возвращает полное имя класса.
+
+Во-вторых, мы назвали нашу переменную <code>clazz</code>. Выглядит немного странно. Ее, конечно, стоило бы назвать «class», но «class» — зарезервированное слово в языке Java, и компилятор не позволит так называть переменные. Пришлось выкручиваться :)
+
+Что ж, для начала неплохо! Что у нас там было еще в списке возможностей?
+<h2>Как получить информацию о модификаторах класса, полях, методах, константах, конструкторах и суперклассах</h2>Это уже поинтереснее! В текущем классе у нас нет констант и родительского класса. Давай добавим их для полноты картины.
+
+Создадим самый простой родительский класс <code>Animal</code>:
+
+<pre class="lang-java line-numbers"><code>
+package learn.javarush;
+public class Animal {
+
+   private String name;
+   private int age;
+}
+</code></pre>
+И добавим в наш класс <code>Cat</code> наследование от <code>Animal</code> и одну константу:
+
+<pre class="lang-java line-numbers"><code>
+package learn.javarush;
+
+public class Cat extends Animal {
+
+   private static final String ANIMAL_FAMILY = "Семейство кошачьих";
+
+   private String name;
+   private int age;
+
+   //...остальная часть класса
+}
+</code></pre>
+Теперь у нас полный набор!
+Давай испытаем возможности рефлексии :)
+
+<pre class="lang-java line-numbers"><code>
+import learn.javarush.Cat;
+
+import java.util.Arrays;
+
+public class CodeAnalyzer {
+
+   public static void analyzeClass(Object o) {
+       Class clazz = o.getClass();
+       System.out.println("Имя класса: " + clazz);
+       System.out.println("Поля класса: " + Arrays.toString(clazz.getDeclaredFields()));
+       System.out.println("Родительский класс: " + clazz.getSuperclass());
+       System.out.println("Методы класса: " +  Arrays.toString(clazz.getDeclaredMethods()));
+       System.out.println("Конструкторы класса: " + Arrays.toString(clazz.getConstructors()));
+   }
+
+   public static void main(String[] args) {
+
+       analyzeClass(new Cat("Barsik", 6));
+   }
+}
+</code></pre>
+Вот что мы получим в консоли:
+
+<pre><code>
+<span class="text-green">Имя класса:</span> class learn.javarush.Cat
+<span class="text-green">Поля класса:</span> [private static final java.lang.String learn.javarush.Cat.ANIMAL_FAMILY, private java.lang.String learn.javarush.Cat.name, private int learn.javarush.Cat.age]
+<span class="text-green">Родительский класс:</span> class learn.javarush.Animal
+<span class="text-green">Методы класса:</span> [public java.lang.String learn.javarush.Cat.getName(), public void learn.javarush.Cat.setName(java.lang.String), public void learn.javarush.Cat.sayMeow(), public void learn.javarush.Cat.setAge(int), public void learn.javarush.Cat.jump(), public int learn.javarush.Cat.getAge()]
+<span class="text-green">Конструкторы класса:</span> [public learn.javarush.Cat(java.lang.String,int)]
+</code></pre>
+Как много подробной информации о классе мы получили! Причем не только о публичных, но и о приватных частях. 
+
+<mark>Обрати внимание:</mark> <code>private</code>-переменные тоже отображены в списке.
+
+Собственно, «анализ» класса можно на этом считать завершенным: теперь с помощью метода <code>analyzeClass()</code> мы узнаем все, что только можно. Но это не все возможности, которые у нас есть при работе с рефлексией.
+
+Не будем ограничиваться простым наблюдением и перейдем к активным действиям! :)
+<h2>Как создать экземпляр класса, если имя класса неизвестно до выполнения программы</h2>Начнем с конструктора по умолчанию. Его пока нет в нашем классе <code>Cat</code>, поэтому давай добавим его:
+
+<pre class="lang-java line-numbers"><code>
+public Cat() {
+  
+}
+</code></pre> 
+Вот как будет выглядеть код для создания объекта <code>Cat</code> с помощью рефлексии (метод <code>createCat()</code>):
+
+<pre class="lang-java line-numbers"><code>
+import learn.javarush.Cat;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
+public class Main {
+
+   public static Cat createCat() throws IOException, IllegalAccessException, InstantiationException, ClassNotFoundException {
+
+       BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+       String className = reader.readLine();
+
+       Class clazz = Class.forName(className);
+       Cat cat = (Cat) clazz.newInstance();
+
+       return cat;
+   }
+
+public static Object createObject() throws Exception {
+
+   BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+   String className = reader.readLine();
+
+   Class clazz = Class.forName(className);
+   Object result = clazz.newInstance();
+
+   return result;
+}
+
+   public static void main(String[] args) throws IOException, IllegalAccessException, ClassNotFoundException, InstantiationException {
+       System.out.println(createCat());
+   }
+}
+</code></pre>
+Вводим в консоль:
+
+<pre><code>
+learn.javarush.Cat
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+Cat{name='null', age=0}
+</code></pre>
+Это не ошибка: значения <code>name</code> и <code>age</code> отображаются в консоли из-за того, что мы запрограммировали их вывод в методе <code>toString()</code> класса <code>Cat</code>.
+
+Здесь мы считываем имя класса, объект которого будем создавать, с консоли. Запущенная программа узнает имя класса, объект которого ей предстоит создать.
+<img data-id="6de653f0-53c6-4b5f-a701-9a66b977f0cb" data-max-width="850" alt="Примеры использования Reflection - 3" src="https://cdn.javarush.com/images/article/6de653f0-53c6-4b5f-a701-9a66b977f0cb/1024.jpeg">Для краткости мы опустили код правильной обработки исключений, чтобы он не занял больше места, чем сам пример. В реальной программе, конечно, обязательно стоит обработать ситуации ввода некорректных имен и т.д.
+
+Конструктор по умолчанию — штука довольно простая, поэтому и создать экземпляр класса с его помощью, как видишь, несложно :) А с помощью метода <code>newInstance()</code> мы создаем новый объект этого класса.
+
+Другое дело, если конструктор класса <code>Cat</code> будет принимать на вход параметры.
+
+Удалим дефолтный конструктор из класса и попробуем запустить наш код снова.
+
+<pre><code>
+null
+java.lang.InstantiationException: learn.javarush.Cat
+  at java.lang.Class.newInstance(Class.java:427)
+</code></pre>
+Что-то пошло не так!
+
+Мы получили ошибку, потому что вызвали метод для создания объекта через конструктор по умолчанию. А ведь такого конструктора у нас теперь нет.
+
+Значит при работе метода <code>newInstance()</code> механизм рефлексии будет использовать наш старый конструктор с двумя параметрами:
+
+<pre class="lang-java line-numbers"><code>
+public Cat(String name, int age) {
+   this.name = name;
+   this.age = age;
+}
+</code></pre>
+А с параметрами-то мы ничего не сделали, как будто вообще забыли о них! Чтобы передать их в конструктор с помощью рефлексии, придется немного «похимичить»:
+
+<pre class="lang-java line-numbers"><code>
+import learn.javarush.Cat;
+
+import java.lang.reflect.InvocationTargetException;
+
+public class Main {
+
+   public static Cat createCat()  {
+
+       Class clazz = null;
+       Cat cat = null;
+
+       try {
+           clazz = Class.forName("learn.javarush.Cat");
+           Class[] catClassParams = {String.class, int.class};
+           cat = (Cat) clazz.getConstructor(catClassParams).newInstance("Barsik", 6);
+       } catch (ClassNotFoundException e) {
+           e.printStackTrace();
+       } catch (InstantiationException e) {
+           e.printStackTrace();
+       } catch (IllegalAccessException e) {
+           e.printStackTrace();
+       } catch (NoSuchMethodException e) {
+           e.printStackTrace();
+       } catch (InvocationTargetException e) {
+           e.printStackTrace();
+       }
+
+       return cat;
+   }
+
+   public static void main(String[] args) {
+       System.out.println(createCat());
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+Cat{name='Barsik', age=6}
+</code></pre>
+Давай рассмотрим подробнее, что в нашей программе происходит.
+
+Мы создали массив объектов <code>Class</code>. 
+
+<pre class="lang-java line-numbers"><code>
+Class[] catClassParams = {String.class, int.class};
+</code></pre>
+Они соответствуют параметрам нашего конструктора (у нас там как раз параметры <code>String</code> и <code>int</code>).
+
+Мы передаем их в метод <code>clazz.getConstructor()</code> и получаем доступ к нужному конструктору. После этого остается только вызвать метод <code>newInstance()</code> с нужными параметрами и не забыть явно привести объект к нужному нам классу — <code>Cat</code>.
+
+<pre class="lang-java line-numbers"><code>
+cat = (Cat) clazz.getConstructor(catClassParams).newInstance("Barsik", 6);
+</code></pre>
+В результате наш объект успешно создастся!
+
+Вывод в консоль:
+
+<pre><code>
+Cat{name='Barsik', age=6}
+</code></pre>
+Едем дальше :)
+<h2>Как получить и установить значение поля объекта по имени</h2>Представь, что ты используешь класс, написанный другим программистом. При этом у тебя нет возможности его редактировать. Например, готовую библиотеку классов, упакованную в JAR. Прочитать код классов ты можешь, а вот поменять — нет.
+
+Программист, создавший класс в этой библиотеке (пусть это будет наш старый класс <code>Cat</code>) не выспался перед финальным проектированием и удалил геттеры и сеттеры для поля <code>age</code>.
+
+Теперь этот класс попал к тебе. Он полностью соответствует твоим запросам, ведь тебе как раз нужны в программе объекты <code>Cat</code>. Но они нужны тебе с тем самым полем <code>age</code>!
+
+Это проблема: достучаться до поля мы не можем, ведь оно имеет модификатор <code>private</code>, а геттеры и сеттеры удалил горе-разработчик этого класса :/
+
+Что ж, рефлексия способна помочь нам и в этой ситуации!
+
+Доступ к коду класса <code>Cat</code> у нас есть: мы можем хотя бы узнать, какие у него есть поля и как они называются. Вооружившись этой информацией, решаем нашу проблему:
+
+<pre class="lang-java line-numbers"><code>
+import learn.javarush.Cat;
+
+import java.lang.reflect.Field;
+
+public class Main {
+
+   public static Cat createCat()  {
+
+       Class clazz = null;
+       Cat cat = null;
+       try {
+           clazz = Class.forName("learn.javarush.Cat");
+           cat = (Cat) clazz.newInstance();
+
+           //с полем name нам повезло - для него в классе есть setter
+           cat.setName("Barsik");
+
+           Field age = clazz.getDeclaredField("age");
+          
+           age.setAccessible(true);
+
+           age.set(cat, 6);
+
+       } catch (IllegalAccessException e) {
+           e.printStackTrace();
+       } catch (InstantiationException e) {
+           e.printStackTrace();
+       } catch (ClassNotFoundException e) {
+           e.printStackTrace();
+       } catch (NoSuchFieldException e) {
+           e.printStackTrace();
+       }
+
+       return cat;
+   }
+
+   public static void main(String[] args) {
+       System.out.println(createCat());
+   }
+}
+</code></pre>
+Как и сказано в комментарии, с полем <code>name</code> все просто: для него разработчики класса предоставили сеттер. Создавать объекты из конструкторов по умолчанию ты тоже уже умеешь: для этого есть метод <code>newInstance()</code>.
+
+А вот со вторым полем придется повозиться. Давай разбираться, что у нас тут происходит :)
+
+<pre class="lang-java line-numbers"><code>
+Field age = clazz.getDeclaredField("age");
+</code></pre>
+Здесь мы, используя наш объект <code>Class clazz</code>, получаем доступ к полю <code>age</code> с помощью метода <code>getDeclaredField()</code>. Он дает нам возможность получить поле age в виде объекта <code>Field age</code>.
+
+Но этого пока недостаточно, ведь <code>private</code>-полям нельзя просто так присваивать значения. Для этого нужно сделать поле «доступным» с помощью метода <code>setAccessible()</code>:
+
+<pre class="lang-java line-numbers"><code>
+age.setAccessible(true);
+</code></pre>
+Тем полям, для которых это сделано, можно присваивать значения:
+
+<pre class="lang-java line-numbers"><code>
+age.set(cat, 6);
+</code></pre>
+Как видишь, у нас получился эдакий перевернутый с ног на голову сеттер: мы присваиваем полю <code>Field age</code> его значение, а также передаем ему объект, в который это поле должно быть присвоено.
+
+Запустим наш метод <code>main()</code> и увидим:
+
+<pre><code>
+Cat{name='Barsik', age=6}
+</code></pre>
+Отлично, у нас все получилось! :)
+
+Посмотрим, какие еще возможности у нас есть…
+<h2>Как вызвать метод объекта по имени</h2>Немного изменим ситуацию из предыдущего примера. Допустим, разработчик класса <code>Cat</code> не ошибся с полями — оба доступны, для них есть геттеры и сеттеры, все ок.
+
+Проблема в другом: он сделал приватным метод, который нам обязательно нужен:
+
+<pre class="lang-java line-numbers"><code>
+private void sayMeow() {
+
+   System.out.println("Meow!");
+}
+</code></pre>
+В результате мы будем создавать объекты <code>Cat</code> в нашей программе, но не сможем вызвать у них метод <code>sayMeow()</code>. У нас будут кошки, которые не мяукают? Довольно странно :/ Как бы это исправить? 
+
+И снова Reflection API выручает нас! Название нужного метода мы знаем. Остальное — дело техники:
+
+<pre class="lang-java line-numbers"><code>
+import learn.javarush.Cat;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
+public class Main {
+
+   public static void invokeSayMeowMethod()  {
+
+       Class clazz = null;
+       Cat cat = null;
+       try {
+
+           cat = new Cat("Barsik", 6);
+          
+           clazz = Class.forName(Cat.class.getName());
+          
+           Method sayMeow = clazz.getDeclaredMethod("sayMeow");
+          
+           sayMeow.setAccessible(true);
+          
+           sayMeow.invoke(cat);
+          
+       } catch (ClassNotFoundException e) {
+           e.printStackTrace();
+       } catch (NoSuchMethodException e) {
+           e.printStackTrace();
+       } catch (IllegalAccessException e) {
+           e.printStackTrace();
+       } catch (InvocationTargetException e) {
+           e.printStackTrace();
+       }
+   }
+
+   public static void main(String[] args) {
+       invokeSayMeowMethod();
+   }
+}
+</code></pre>
+Здесь мы действуем примерно так же, как в ситуации с доступом к приватному полю. Сначала мы получаем нужный нам метод, который инкапсулирован в объекте класса <code>Method</code>:
+
+<pre class="lang-java line-numbers"><code>
+Method sayMeow = clazz.getDeclaredMethod("sayMeow");
+</code></pre>
+При помощи <code>getDeclaredMethod()</code> можно «достучаться» в том числе и до приватных методов. Далее мы делаем метод доступным для вызова:
+
+<pre class="lang-java line-numbers"><code>
+sayMeow.setAccessible(true);
+</code></pre>
+И, наконец, вызываем метод у нужного объекта:
+
+<pre class="lang-java line-numbers"><code>
+sayMeow.invoke(cat);
+</code></pre>
+Вызов метода у нас тоже выглядит «вызовом наоборот»: мы привыкли указывать объекту на нужным метод с помощью точки (<code>cat.sayMeow()</code>), а при работе с рефлексией передаем методу тот объект, у которого его нужно вызвать.
+
+Что же у нас в консоли?
+
+<pre><code>
+Meow!
+</code></pre>
+Все получилось! :)
+
+Теперь ты видишь, какие обширные возможности нам дает механизм рефлексии в Java. В сложных и неожиданных ситуациях (как в примерах с классом из закрытой библиотеки) она действительно может нас сильно выручить.
+
+Однако, как и всякая большая сила, она подразумевает и большую ответственность.
+
+О недостатках рефлексии написано в <a href="https://docs.oracle.com/javase/tutorial/reflect/index.html" rel="nofollow" target="_blank">специальном разделе</a> на сайте Oracle. 
+
+Можно выделить три главных минуса:
+<ol>
+<li><p>Производительность снижается. У методов, которые вызываются с помощью рефлексии, меньшая производительность по сравнению с методами, которые вызываются обычным способом.</p></li>
+<li><p>Есть ограничения по безопасности. Механизм рефлексии позволяет менять поведение программы во время выполнения (runtime). Но в твоем рабочем окружении на реальном проекте могут быть ограничения, не позволяющие этого делать.</p></li>
+<li><p>Риск раскрытия внутренней информации. Важно понимать, что использование рефлексии напрямую нарушает принцип инкапсуляции: позволяет нам получить доступ к приватным полям, методам и т.д. Думаю, не стоит объяснять, что к прямому и грубому нарушению принципов ООП стоит прибегать только в самых крайних случаях, когда иных способов решить задачу не существует по не зависящим от тебя причинам.</p></li></ol>Используй механизм рефлексии с умом и только в тех ситуациях, когда этого не избежать, и не забывай о его недостатках.
+
+На этом наша лекция подошла к концу! Она получилась довольно большой, но сегодня ты узнал много нового :)

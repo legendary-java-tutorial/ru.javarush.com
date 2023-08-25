@@ -1,0 +1,135 @@
+3 примера как разобрать HTML-файл в Java используя Jsoup
+<p>----------------------------------------</p>
+HTML это ядро WEB, все интернет-страницы которые Вы видите, являются ли они динамически сгенерированы средствами JavaScript, JSP, PHP, ASP или другими веб-технологиями, основаны на HTML. На самом деле,Ваш браузер разбирает HTML и отображает...
+<p>----------------------------------------</p>
+
+<img data-id="deabcbb8-4bda-4f3a-b54a-0b5ba56d35d8" data-max-width="850" alt="3 примера как разобрать HTML-файл в Java используя Jsoup - 1" src="https://cdn.javarush.com/images/article/deabcbb8-4bda-4f3a-b54a-0b5ba56d35d8/1024.jpeg">HTML это ядро WEB, все интернет-страницы которые Вы видите, являются ли они динамически сгенерированы средствами JavaScript, JSP, PHP, ASP или другими веб-технологиями, основаны на HTML. На самом деле, Ваш браузер разбирает HTML и отображает его в удобном для Вас виде. Но что делать если Вам нужно разобрать HTML-документ и найти в нем некоторый элемент, тэг, атрибут или проверить существует или нет конкретный элемент при помощи программы на Java.
+
+Если бы Вы были Java программистом уже несколько лет, я уверен, Вы бы сделали XML разбор используя парсеры вроде DOM или SAX. Но, по иронии судьбы, бывают случаи, когда Вам необходимо разобрать HTML-документ из базового Java приложения, которое не содержит Servlet и другие Java веб-технологии. Более того, Core JDK также не содержит HTTP или HTML библиотек. Вот почему, когда дело доходит до разбора HTML файла, многие Java программисты спрашивают у Google, как получить значение HTML-тэга в Java.
+
+Когда я столкнулся с этим, я был уверен что решением будет open-source библиотека, осуществляющая нужную мне функциональность, но я не знал, что она будет такой замечательной и многофункциональной как Jsoup. Она не только обеспечивает поддержку чтения и разбора HTML файлов, атрибутов, CSS классов в стиле JQuery, но и в то же время, позволяет модифицировать их. Используя Jsoup Вы можете сделать с HTML документом все что угодно.
+
+В этой статье мы будем разбирать HTML файл и находить названия и атрибуты тэгов. Также мы разберем примеры скачивания и разбора HTML из файла и любого URL-адреса, например домашнюю страницу Google.
+<h2>Что такое Jsoup</h2>Jsoup это open-source Java библиотека для работы с реальным HTML. Она обеспечивает очень удобный API для извлечения и манипулирования данными, используя лучшие DOM, CSS, и JQuery-подобные методы. Jsoup реализует WHATWG HTML5 спецификацию, и разбирает HTML в ту же модель DOM, как это делают современные браузер вроде Chrome и Firefox.
+Вот некоторые из полезных функций Jsoup библиотеки:
+<ul>
+    <li>Jsoup может очистить и разобрать HTML из URL, файла или строки.</li>
+    <li>Jsoup может найти и извлечь данные используя обход DOM или CSS селекторы.</li>
+    <li>Jsoup позволяет манипулировать HTML элементами, атрибутами и текстом.</li>
+    <li>Jsoup обеспечивает очистку предоставленной пользователем информации по white-list, для предотвращения XSS атак.</li>
+    <li>Также Jsoup выдает "аккуратный" HTML.</li>
+</ul>Jsoup предназначен для работы с различными видами HTML существующими в реальном мире, включая должным образом подтвержденный HTML c неполным неподтвержденным набором тэгов. Одно из основных преимуществ Jsoup это его надежность.
+<h2>Разбор HTML в Java используя Jsoup</h2>В этом учебнике мы увидим три различных примера разбора и обхода HTML-документа в Java используя Jsoup. В первом примере, мы будем разбирать HTML строку, содержащую тэги, в форме строкового литерала Java. Во втором примере, мы скачаем наш HTML-документ из интернет, и в третьем примере, мы загрузим для разбора наш собственный образец HTML файла login.html. Этот файл — образец HTML документа, который состоит из тэга "title" и тэга "div" в секции "body", который содержит HTML форму. В форме находятся поля для ввода имени пользователя и пароля, а также кнопки сброса и подтверждения для дальнейших действий. Это "правильный" HTML, который может пройти проверку на «валидность», то есть все тэги и атрибуты правильно закрыты. Вот как выглядит наш HTML файл:
+
+<pre class="lang-java line-numbers"><code>
+&lt;!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd"&gt;
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"&gt;
+        &lt;title&gt;Login Page&lt;/title&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+        &lt;div id="login" class="simple" &gt;
+            &lt;form action="login.do"&gt;
+                Username : &lt;input id="username" type="text" /&gt;&lt;br&gt;
+                Password : &lt;input id="password" type="password" /&gt;&lt;br&gt;
+                &lt;input id="submit" type="submit" /&gt;
+                &lt;input id="reset" type="reset" /&gt;
+            &lt;/form&gt;
+        &lt;/div&gt;
+    &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+С помощью Jsoup очень просто разобрать HTML, все что Вам нужно это вызвать статический метод <code>Jsoup.parse()</code> и передать в него Вашу HTML строку. Jsoup предоставляет несколько перегруженных методов <code>parse()</code> для чтения HTML из строки, файла, из базового URI, из URL и из <code>InputStream</code>. Вы также можете указать кодировку, для корректного чтения HTML файла, в случае если он не в формате "UTF-8".
+
+Метод <code>parse(String html)</code> разбирает входящий HTML в новый объект <code>Document</code>. В Jsoup класс <code>Document</code> наследует класс <code>Element</code>, который расширяет класс <code>Node</code>. Также от класса <code>Node</code> наследуется класс <code>TextNode</code>. До тех пор, пока Вы передаете в метод строку отличную от null, Вы гарантированно имеете успешный, осмысленный разбор, объект <code>Document</code> содержащий (по крайней мере) элементы "head" и "body". Если у Вас есть объект <code>Document</code>, Вы можете получить желаемые данные вызвав соответствующие методы класса <code>Document</code> и его родителей <code>Element</code> и <code>Node</code>.
+
+<div class="email-subscription"><iframe frameborder="0" src="https://secure.esputnik.com.ua/4Q0Ef6d2SOs" width="100%" height="200" scrolling="no"></iframe></div><h2>Java программа для разбора HTML документа</h2>Вот наша полная программа для разбора HTML-строки, HTML-файла, скачанного из интернет и локального HTML файла. Для ее запуска Вы можете использовать IDE (Eclipse или любую другую) или командную строку. В Eclipse это очень легко, просто скопируйте этот код, создайте новый Java проект, щелкните правой кнопкой мыши по папке "src" и вставьте скопированный код (paste). Eclipse позаботится о создании надлежащего пакета и файла исходного кода с соответствующим именем, так гораздо меньше работы. Если у Вас уже есть Java проект, тогда это всего один шаг. Расположенная ниже программа иллюстрирует три примера разбора и обхода HTML файла. В первом примере, мы непосредственно разбираем строку, содержащую HTML, во втором HTML-файл скачанный из URL, в третьем мы загружаем и разбираем HTML-документ из локальной файловой системы.
+
+<pre class="lang-java line-numbers"><code>
+import java.io.File;
+import java.io.IOException;
+  
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+  
+/**
+* Java Program to parse/read HTML documents from File using Jsoup library.
+* Jsoup is an open source library which allows Java developer to parse HTML
+* files and extract elements, manipulate data, change style using DOM, CSS and
+* JQuery like method.
+*
+* @author Javin Paul
+*/
+public class HTMLParser{
+  
+    public static void main(String args[]) {
+  
+        // Parse HTML String using JSoup library
+        String HTMLSTring = "&lt;!DOCTYPE html&gt;"
+                + "&lt;html&gt;"
+                + "&lt;head&gt;"
+                + "&lt;title&gt;JSoup Example&lt;/title&gt;"
+                + "&lt;/head&gt;"
+                + "&lt;body&gt;"
+                + "&lt;table&gt;&lt;tr&gt;&lt;td&gt;&lt;h1&gt;HelloWorld&lt;/h1&gt;&lt;/tr&gt;"
+                + "&lt;/table&gt;"
+                + "&lt;/body&gt;"
+                + "&lt;/html&gt;";
+
+        Document html = Jsoup.parse(HTMLSTring);
+        String title = html.title();
+        String h1 = html.body().getElementsByTag("h1").text();
+  
+        System.out.println("Input HTML String to JSoup :" + HTMLSTring);
+        System.out.println("After parsing, Title : " + title);
+        System.out.println("Afte parsing, Heading : " + h1);
+  
+        // JSoup Example 2 - Reading HTML page from URL
+        Document doc;
+        try {
+            doc = Jsoup.connect("http://google.com/").get();
+            title = doc.title();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+  
+        System.out.println("Jsoup Can read HTML page from URL, title : " + title);
+  
+        // JSoup Example 3 - Parsing an HTML file in Java
+        //Document htmlFile = Jsoup.parse("login.html", "ISO-8859-1"); // wrong
+        Document htmlFile = null;
+        try {
+            htmlFile = Jsoup.parse(new File("login.html"), "ISO-8859-1");
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } // right
+        title = htmlFile.title();
+        Element div = htmlFile.getElementById("login");
+        String cssClass = div.className(); // getting class form HTML element
+
+        System.out.println("Jsoup can also parse HTML file directly");
+        System.out.println("title : " + title);
+        System.out.println("class of div tag : " + cssClass);
+    }
+}
+</code></pre>
+<strong>Output:</strong>
+
+<pre class="lang-java line-numbers"><code>
+Input HTML String to JSoup :&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;&lt;title&gt;JSoup Example&lt;/title&gt;&lt;/head&gt;&lt;body&gt;&lt;table&gt;&lt;tr&gt;&lt;td&gt;&lt;h1&gt;HelloWorld&lt;/h1&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/body&gt;&lt;/html&gt;
+After parsing, Title : JSoup Example
+Afte parsing, Heading : HelloWorld
+Jsoup Can read HTML page from URL, title : Google
+Jsoup can also parse HTML file directly
+title : Login Page
+class of div tag : simple
+</code></pre>
+Jsoup HTML парсер будет прилагать все усилия, для создания "чистого" разбора, предоставленного Вами HTML, независимо от того, правильно он сформирован или нет. Он может обрабатывать следующие ошибки:
+<ul>
+    <li>незакрытые тэги. Например, <code>&lt;p&gt;Java &lt;p&gt;Scala to &lt;p&gt;Java&lt;/p&gt; &lt;p&gt;Scala&lt;/p&gt;</code></li>
+    <li>подразумеваемые тэги. Например, открытые <code>&lt;td&gt;Java is Great&lt;/td&gt;</code> будут обернуты в <code>&lt;table&gt;&lt;tr&gt;&lt;td&gt;</code></li>
+    <li>Jsoup создает надежные структуры документа (HTML содержит head и body, при этом в body только соответствующие элементы)</li>
+</ul>Jsoup является отличной и надежной open-source библиотекой, которая делает чтение html документа, фрагментов body, html строк и непосредственный разбор html содержимого веб, очень простым.

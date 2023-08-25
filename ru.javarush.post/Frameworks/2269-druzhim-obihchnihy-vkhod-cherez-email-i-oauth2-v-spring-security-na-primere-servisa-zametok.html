@@ -1,0 +1,531 @@
+Дружим обычный вход через email и OAuth2 в Spring Security на примере сервиса заметок
+<p>----------------------------------------</p>
+Во время написания своего приложения столкнулась с отсутствием внятных статей, как сделать так, чтобы пользователь регистрировался и через email, и через социальные сети. Были хорошие туториалы по настройке...
+<p>----------------------------------------</p>
+Во время написания своего приложения столкнулась с отсутствием внятных статей, как сделать так, чтобы пользователь регистрировался и через email, и через социальные сети. Были хорошие туториалы по настройке классической формы входа. Были хорошие туториалы по <a href="https://habr.com/ru/company/mailru/blog/115163/" target="_blank" rel="nofollow">OAuth2</a>. Как подружить два способа, информации было преступно мало. В процессе поисков удалось вывести работоспособное решение. Оно не претендует на истину в последней инстанции, однако свою функцию выполняет. В этой статье я покажу, как с нуля реализовать сервис для хранения заметок с подобной конфигурацией Spring Security.
+<img data-id="577d43a9-09fe-4e7a-8da2-82d0c2bf9f7f" data-max-width="850" alt="Дружим обычный вход через email и OAuth2 в Spring Security на примере сервиса заметок - 1" src="https://cdn.javarush.com/images/article/577d43a9-09fe-4e7a-8da2-82d0c2bf9f7f/1024.jpeg"><strong>Примечание:</strong> хорошо, если читатель прошел хотя бы пару туториалов по Spring, потому что внимание будет акцентироваться только на Spring Security, без детальных объяснений репозиториев, контроллеров и т. п. Иначе и так немаленькая статья получилась бы гигантской.
+
+<strong>Содержание</strong>
+<ol>
+<li><a href="#Создание-проекта">Создание проекта</a></li>
+<li><a href="#Создание-сущностей-и-логики-приложения">Создание сущностей и логики приложения</a></li>
+<ol>
+<li><a href="#Сущности">Сущности</a></li>
+<li><a href="#Репозитории">Репозитории</a></li>
+<li><a href="#Контроллеры">Контроллеры</a></li>
+<li><a href="#Страницы">Страницы</a></li>
+</ol>
+<li><a href="#Настройка-Spring-Security-для-классического-входа">Настройка Spring Security для классического входа</a></li>
+<ol>
+<li><a href="#Основная-конфигурация-SecurityConfig">Основная конфигурация SecurityConfig</a></li>
+<li><a href="#Кастомный-вход-пользователя">Кастомный вход пользователя</a></li>
+<li><a href="#Усовершенствуем-контроллер">Усовершенствуем контроллер</a></li>
+<li><a href="#Запуск">Запуск</a></li>
+</ol>
+<li><a href="#Настройка-OAuth2-на-примере-Google-в-Spring-Security">Настройка OAuth2 на примере Google в Spring Security</a></li>
+<ol>
+<li><a href="#Конфигурация-фильтра-и-application-properties">Конфигурация фильтра и application.properties</a><a></a></li><a>
+</a><li><a></a><a href="#Основные-моменты-регистрации-приложения-в-Google-Cloud-Platform">Основные моменты регистрации приложения в Google Cloud Platform</a></li>
+<li><a href="#CustomUserInfoTokenServices">CustomUserInfoTokenServices</a></li>
+</ol>
+<li><a href="#Итоговый-запуск-проекта">Итоговый запуск проекта</a></li>
+</ol><h2 id="Создание-проекта">Создание проекта</h2>Идем на <a href="https://start.spring.io" target="_blank" rel="nofollow">start.spring.io</a> и формируем основу проекта:
+<ul>
+<li>Web — запуск приложения на встроенном Tomcat, url-сопоставления и тому подобное;</li>
+<li>JPA — связь с базой данных;</li>
+<li>Mustache — шаблонизатор, используется для генерации веб-страниц;</li>
+<li>Security — защита приложения. То, ради чего эта статья и создавалась.</li>
+</ul>Скачиваем получившийся архив и распаковываем в нужной вам папке. Запускаем его в IDE.
+
+Вы можете выбирать БД на свое усмотрение. В качестве базы данных для проекта я использую MySQL, поэтому в файл pom.xml в блок &lt;dependencies&gt; добавляю следующую зависимость:
+
+<pre class="lang-java line-numbers"><code>
+&lt;dependency&gt;
+     &lt;groupId&gt;mysql&lt;/groupId&gt;
+     &lt;artifactId&gt;mysql-connector-java&lt;/artifactId&gt;
+     &lt;version&gt;5.1.34&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+Конфигурация application.properties на данный момент следующая:
+
+<pre class="lang-java line-numbers"><code>
+spring.datasource.url=jdbc:mysql://localhost:3306/springsectut?createDatabaseIfNotExist=true&amp;useSSL=false&amp;autoReconnect=true&amp;useLegacyDatetimeCode=false&amp;serverTimezone=UTC&amp;useUnicode=yes&amp;characterEncoding=UTF-8
+spring.datasource.driver-class-name=com.mysql.jdbc.Driver
+spring.datasource.username=yourUsername
+spring.datasource.password=yourPassword
+
+spring.jpa.generate-ddl=true
+spring.jpa.hibernate.ddl-auto=update
+
+spring.jpa.properties.connection.characterEncoding=utf-8
+spring.jpa.properties.connection.CharSet=utf-8
+spring.jpa.properties.connection.useUnicode=true
+
+spring.mustache.expose-request-attributes=true
+</code></pre><h2 id="Создание-сущностей-и-логики-приложения">Создание сущностей и логики приложения</h2><h3 id="Сущности">Сущности</h3>Создадим пакет <code>entities</code>, в который поместим сущности базы данных. Пользователь будет описываться классом <code>User</code>, реализующим интерфейс <code>UserDetails</code>, что понадобится для конфигурации Spring Security. У пользователя будет id, username (в качестве него выступает email), пароль, имя, роль, флаг активности, имя и email аккаунта Google (<code>googleName</code> и <code>googleUsername</code>).
+
+<pre class="lang-java line-numbers"><code>
+@Entity
+@Table(name = "user")
+public class User implements UserDetails
+{
+  @Id
+  @GeneratedValue(strategy = GenerationType.AUTO)
+  private Long id;
+
+  private String username;
+  private String password;
+  private String name;
+  private boolean active;
+  private String googleName;
+  private String googleUsername;
+
+  @ElementCollection(targetClass = Role.class, fetch = FetchType.EAGER)
+  @CollectionTable(name = "user_role", joinColumns = @JoinColumn(name = "user_id"))
+  @Enumerated(EnumType.STRING)
+  private Set&lt;Role&gt; roles;
+
+    //Геттеры, сеттеры, toString(), equals(), hashcode(), имплементация UserDetails
+}
+</code></pre>
+Роли пользователя используются для регуляции доступа в Spring Security. Наше приложение будет использовать только одну роль:
+
+<pre class="lang-java line-numbers"><code>
+public enum Role implements GrantedAuthority
+{
+  USER;
+
+  @Override
+  public String getAuthority()
+  {
+     return name();
+  }
+}
+</code></pre>
+Создадим класс заметки с id, заголовком заметки, телом заметки и id пользователя, которому она принадлежит:
+
+<pre class="lang-java line-numbers"><code>
+@Entity
+@Table(name = "note")
+public class Note
+{
+  @Id
+  @GeneratedValue(strategy = GenerationType.AUTO)
+  private Long id;
+
+  private String title;
+  private String note;
+  private Long userId;
+
+    //Геттеры, сеттеры, toString(), equals(), hashcode()
+}
+</code></pre><h3 id="Репозитории">Репозитории</h3>Для сохранения сущностей в базу данных нам понадобятся репозитории, которые сделают всю грязную работу за нас. Создадим пакет <code>repos</code>, в нем создадим интерфейсы <code>UserRepo</code>, <code>NoteRepo</code>, унаследованные от интерфейса <code>JpaRepository&lt;Entity, Id&gt;</code>.
+
+<pre class="lang-java line-numbers"><code>
+@Service
+@Repository
+public interface UserRepo extends JpaRepository&lt;User, Long&gt;
+{}
+
+@Service
+@Repository
+public interface NoteRepo extends JpaRepository&lt;Note, Long&gt;
+{
+  List&lt;Note&gt; findByUserId(Long userId);
+}
+</code></pre><h3 id="Контроллеры">Контроллеры</h3>В нашем сервисе заметок будут следующие страницы:
+<ul>
+<li>Главная;</li>
+<li>Регистрация;</li>
+<li>Вход;</li>
+<li>Список заметок пользователя.</li>
+</ul>К списку заметок должен быть доступ только у авторизованного пользователя. Остальные страницы являются общедоступными.
+
+Создадим пакет <code>controllers</code>, в нем класс <code>IndexController</code>, содержащий обычный get-mapping главной страницы.
+
+Класс <code>RegistrationController</code> отвечает за регистрацию пользователя. Post-mapping принимает данные из формы, сохраняет пользователя в базу данных и переадресовывает на страницу входа. <code>PasswordEncoder</code> будет описан позднее. Он используется для шифрования паролей.
+
+<pre class="lang-java line-numbers"><code>
+@Controller
+public class RegistrationController
+{
+  @Autowired
+  private UserRepo userRepo;
+
+  @Autowired
+  private PasswordEncoder passwordEncoder;
+
+  @GetMapping("/registration")
+  public String registration()
+  {
+     return "registration";
+  }
+
+  @PostMapping("/registration")
+  public String addUser(String name, String username, String password)
+  {
+     User user = new User();
+     user.setName(name);
+     user.setUsername(username);
+     user.setPassword(passwordEncoder.encode(password));
+     user.setActive(true);
+     user.setRoles(Collections.singleton(Role.USER));
+
+     userRepo.save(user);
+
+     return "redirect:/login";
+  }
+</code></pre>
+Контроллер, отвечающий за страницу списка заметок, пока что содержит упрощенный функционал, который усложнится после внедрения Spring Security.
+
+<pre class="lang-java line-numbers"><code>
+@Controller
+public class NoteController
+{
+  @Autowired
+  private NoteRepo noteRepo;
+ 
+  @GetMapping("/notes")
+  public String notes(Model model)
+  {
+     List&lt;Note&gt; notes = noteRepo.findAll();
+     model.addAttribute("notes", notes);
+    
+     return "notes";
+  }
+ 
+  @PostMapping("/addnote")
+  public String addNote(String title, String note)
+  {
+     Note newNote = new Note();
+     newNote.setTitle(title);
+     newNote.setNote(note);
+    
+     noteRepo.save(newNote);
+    
+     return "redirect:/notes";
+  }
+}
+</code></pre>
+Для страницы входа мы не будем прописывать контроллер, потому что она задействована в Spring Security. Вместо этого нам понадобится специальная конфигурация. Привычно создадим очередной пакет, назовем его <code>config</code>, поместим туда класс <code>MvcConfig</code>. Когда мы напишем конфигурацию Spring Security, она будет знать, какую страницу мы имеем в виду при использовании "/login".
+
+<pre class="lang-java line-numbers"><code>
+@Configuration
+public class MvcConfig implements WebMvcConfigurer
+{
+  public void addViewControllers(ViewControllerRegistry registry)
+  {
+     registry.addViewController("/login").setViewName("login");
+     registry.setOrder(Ordered.HIGHEST_PRECEDENCE);
+  }
+}
+</code></pre><h3 id="Страницы">Страницы</h3>Для создания страниц я использую <a href="http://mustache.github.io" target="_blank" rel="nofollow">шаблонизатор Mustache</a>. Вы можете внедрить и другой, не принципиально. Для мета-информации, которая используется на всех страницах, создан файл meta.mustache. В нем же подключен Bootstrap, чтобы страницы нашего проекта выглядели симпатичней. Страницы создаются в директории "src/main/resources/templates". Файлы имеют расширение mustache. Размещение html-кода непосредственно в статье сделает ее слишком большой, поэтому вот <a href="https://github.com/Dzeru/spring-login-form-and-oauth2-tutorial/tree/master/src/main/resources/templates" target="_blank" rel="nofollow">ссылка на папку с шаблонами в репозитории проекта на GitHub</a>.
+<h2 id="Настройка-Spring-Security-для-классического-входа">Настройка Spring Security для классического входа</h2>Spring Security помогает нам защищать приложение и его ресурсы от несанкционированного доступа. Мы создадим лаконичную рабочую конфигурацию в классе <code>SecurityConfig</code>, унаследованный от <code>WebSecurityConfigurerAdapter</code>, который поместим в пакет <code>config</code>. Пометим его аннотацией @EnableWebSecurity, которая включит поддержку Spring Security, и аннотацией @Configuration, которая указывает, что этот класс содержит некую конфигурацию.
+
+<strong>Примечание:</strong> в автоматически сконфигурированном pom.xml стояла версия родительского компонента Spring Boot 2.1.4.RELEASE, что мешало внедрить Security устоявшимся способом. Во избежание конфликтов в проекте рекомендуется изменить версию на 2.0.1.RELEASE.
+<h3 id="Основная-конфигурация-SecurityConfig">Основная конфигурация SecurityConfig</h3>Наша конфигурация будет уметь:
+<ol>
+<li><p>Шифровать пароли с помощью <code>BCryptPasswordEncoder</code>:</p>
+<pre class="lang-java line-numbers"><code>
+@Autowired
+private PasswordEncoder passwordEncoder;
+
+@Bean
+PasswordEncoder passwordEncoder()
+{
+  PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+  return passwordEncoder;
+}
+</code></pre></li>
+<li><p>Осуществлять вход по специально написанному провайдеру аутентификации:</p>
+<pre class="lang-java line-numbers"><code>
+@Autowired
+private AuthProvider authProvider;
+
+@Override
+protected void configure(AuthenticationManagerBuilder auth)
+{
+  auth.authenticationProvider(authProvider);
+}
+</code></pre></li>
+<li><p>Разрешать доступ анонимным пользователям к главной странице, страницам регистрации и входа. Все остальные запросы должны выполняться вошедшими в систему пользователями. Страницей входа назначим ранее описанную "/login". При успешном входе пользователь попадет на страницу со списком заметок, при ошибке — останется на странице входа. При успешном выходе пользователь попадет на главную страницу.</p>
+<pre class="lang-java line-numbers"><code>
+@Override
+protected void configure(HttpSecurity http) throws Exception
+{
+  http
+        .authorizeRequests()
+        .antMatchers("/resources/**", "/", "/login**", "/registration").permitAll()
+        .anyRequest().authenticated()
+        .and().formLogin().loginPage("/login")       
+        .defaultSuccessUrl("/notes").failureUrl("/login?error").permitAll()
+        .and().logout().logoutSuccessUrl("/").permitAll();
+}
+</code></pre></li></ol><h3 id="Кастомный-вход-пользователя">Кастомный вход пользователя</h3>Самостоятельно написанный <code>AuthProvider</code> позволит пользователю входить не только по email, но и по имени пользователя.
+
+<pre class="lang-java line-numbers"><code>
+@Component
+public class AuthProvider implements AuthenticationProvider
+{
+  @Autowired
+  private UserService userService;
+
+  @Autowired
+  private PasswordEncoder passwordEncoder;
+
+  public Authentication authenticate(Authentication authentication) throws AuthenticationException
+  {
+     String username = authentication.getName();
+     String password = (String) authentication.getCredentials();
+
+     User user = (User) userService.loadUserByUsername(username);
+
+     if(user != null &amp;&amp; (user.getUsername().equals(username) || user.getName().equals(username)))
+     {
+        if(!passwordEncoder.matches(password, user.getPassword()))
+        {
+           throw new BadCredentialsException("Wrong password");
+        }
+
+        Collection&lt;? extends GrantedAuthority&gt; authorities = user.getAuthorities();
+
+        return new UsernamePasswordAuthenticationToken(user, password, authorities);
+     }
+     else
+        throw new BadCredentialsException("Username not found");
+  }
+
+  public boolean supports(Class&lt;?&gt; arg)
+  {
+     return true;
+  }
+}
+</code></pre>
+Как вы могли заметить, за подгрузку пользователя отвечает класс <code>UserService</code>, лежащий в пакете <code>services</code>. В нашем случае он ищет пользователя не только по полю <code>username</code>, как встроенная реализация, но еще и по имени пользователя, имени Google аккаунта и email Google аккаунта. Последние два способа пригодятся нам при реализации входа через OAuth2. Здесь класс приведен в сокращенном варианте.
+
+<pre class="lang-java line-numbers"><code>
+@Service
+public class UserService implements UserDetailsService
+{
+  @Autowired
+  private UserRepo userRepo;
+
+  @Override
+  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException
+  {
+     User userFindByUsername = userRepo.findByUsername(username);
+     //Остальные поиски
+
+     if(userFindByUsername != null)
+     {
+        return userFindByUsername;
+     }
+     //Остальные проверки
+     return null;
+  }
+}
+</code></pre>
+<strong>Примечание:</strong> не забудьте прописать нужные методы в <code>UserRepo</code>!
+<h3 id="Усовершенствуем-контроллер">Усовершенствуем контроллер</h3>Мы настроили Spring Security. Самое время воспользоваться этим в контроллере заметок. Теперь каждый mapping будет принимать дополнительный параметр Principal, по которому постарается найти пользователя. Почему нельзя напрямую внедрить класс <code>User</code>? Тогда произойдет конфликт из-за несовпадения типов пользователей, когда мы напишем вход через социальные сети. Мы заранее обеспечиваем необходимую гибкость.
+
+Теперь наш код контроллера заметок выглядит так:
+
+<pre class="lang-java line-numbers"><code>
+@GetMapping("/notes")
+public String notes(Principal principal, Model model)
+{
+  User user = (User) userService.loadUserByUsername(principal.getName());
+  List&lt;Note&gt; notes = noteRepo.findByUserId(user.getId());
+  model.addAttribute("notes", notes);
+  model.addAttribute("user", user);
+
+  return "notes";
+}
+
+@PostMapping("/addnote")
+public String addNote(Principal principal, String title, String note)
+{
+  User user = (User) userService.loadUserByUsername(principal.getName());
+
+  Note newNote = new Note();
+  newNote.setTitle(title);
+  newNote.setNote(note);
+  newNote.setUserId(user.getId());
+
+  noteRepo.save(newNote);
+
+  return "redirect:/notes";
+}
+</code></pre>
+<strong>Примечание:</strong> в проекте по умолчанию включена защита <a href="https://ru.wikipedia.org/wiki/Межсайтовая_подделка_запроса" target="_blank" rel="nofollow">CSRF</a>, поэтому либо отключите ее для себя (http.csrf().disable()), либо не забывайте, как автор статьи, добавлять во все post-запросы скрытое поле с csrf-токеном.
+<h3 id="Запуск">Запуск</h3>Пробуем запустить проект.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="c41bacef-d4a5-494a-8bec-a2fcf444b7ca" data-max-width="1024" alt="Дружим обычный вход через email и OAuth2 в Spring Security на примере сервиса заметок - 1" src="https://cdn.javarush.com/images/article/c41bacef-d4a5-494a-8bec-a2fcf444b7ca/1024.jpeg"></div></div><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="2f2ab9ff-87b2-438f-b0e6-555dac4a684e" data-max-width="1024" alt="Дружим обычный вход через email и OAuth2 в Spring Security на примере сервиса заметок - 2" src="https://cdn.javarush.com/images/article/2f2ab9ff-87b2-438f-b0e6-555dac4a684e/1024.jpeg"></div></div>Видим, что новый пользователь появился в базе данных. Пароль зашифрован.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="dc4aa875-1d86-433d-93ad-b535b53f7c37" data-max-width="1024" alt="Дружим обычный вход через email и OAuth2 в Spring Security на примере сервиса заметок - 3" src="https://cdn.javarush.com/images/article/dc4aa875-1d86-433d-93ad-b535b53f7c37/1024.jpeg"></div></div><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="ffc5ea74-5617-44ed-a1b4-4bed49688143" data-max-width="1024" alt="Дружим обычный вход через email и OAuth2 в Spring Security на примере сервиса заметок - 4" src="https://cdn.javarush.com/images/article/ffc5ea74-5617-44ed-a1b4-4bed49688143/1024.jpeg"></div></div><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="1347d26b-8ff7-4f4b-8a4d-7127408b3dc0" data-max-width="1024" alt="Дружим обычный вход через email и OAuth2 в Spring Security на примере сервиса заметок - 5" src="https://cdn.javarush.com/images/article/1347d26b-8ff7-4f4b-8a4d-7127408b3dc0/1024.jpeg"></div></div><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="bc51f528-4a87-4109-a19c-b5a7efd4c559" data-max-width="1024" alt="Дружим обычный вход через email и OAuth2 в Spring Security на примере сервиса заметок - 6" src="https://cdn.javarush.com/images/article/bc51f528-4a87-4109-a19c-b5a7efd4c559/1024.jpeg"></div></div>
+
+Заметки сохранились в базу данных.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="36a0e46f-8935-4cbd-a5f9-4aeca8d48b87" data-max-width="1024" alt="Дружим обычный вход через email и OAuth2 в Spring Security на примере сервиса заметок - 7" src="https://cdn.javarush.com/images/article/36a0e46f-8935-4cbd-a5f9-4aeca8d48b87/1024.jpeg"></div></div>Видим, что проект успешно запускается и работает. Для полного счастья нам не хватает только возможности входа через социальные сети. Что ж, приступим!
+<h2 id="Настройка-OAuth2-на-примере-Google-в-Spring-Security">Настройка OAuth2 на примере Google в Spring Security<a></a></h2><a>При внедрении OAuth2 я опиралась на </a><a href="https://spring.io/guides/tutorials/spring-boot-oauth2/" target="_blank" rel="nofollow">этот официальный туториал от Spring</a>. Для поддержки OAuth2 добавим в pom.xml следующую библиотеку:
+
+<pre class="lang-java line-numbers"><code>
+&lt;dependency&gt;
+  &lt;groupId&gt;org.springframework.security.oauth.boot&lt;/groupId&gt;
+  &lt;artifactId&gt;spring-security-oauth2-autoconfigure&lt;/artifactId&gt;
+  &lt;version&gt;2.0.0.RELEASE&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+Модифицируем нашу конфигурацию Spring Security в классе <code>SecurityConfig</code>. Для начала добавим аннотацию @EnableOAuth2Client. Она автоматически подтянет нужное для логина через соцсети.
+<h3 id="Конфигурация-фильтра-и-application-properties">Конфигурация фильтра и application.properties</h3>Внедрим инъекцию OAuth2ClientContext, чтобы использовать ее в нашей конфигурации безопасности.
+
+<pre class="lang-java line-numbers"><code>
+@Autowired
+private OAuth2ClientContext oAuth2ClientContext;
+</code></pre>
+OAuth2ClientContext используется при создании фильтра, который проверяет пользовательский запрос на вход через соцсеть. Фильтр доступен благодаря аннотации @EnableOAuth2Client. Все, что нам нужно, вызвать его в правильном порядке, <strong>до</strong> основного фильтра Spring Security. Только в таком случае мы сможем поймать перенаправления в процессе входа с OAuth2. Для этого используем <code>FilterRegistrationBean</code>, в котором выставляем приоритет нашего фильтра на -100.
+
+<pre class="lang-java line-numbers"><code>
+@Bean
+public FilterRegistrationBean oAuth2ClientFilterRegistration(OAuth2ClientContextFilter oAuth2ClientContextFilter)
+{
+  FilterRegistrationBean registration = new FilterRegistrationBean();
+  registration.setFilter(oAuth2ClientContextFilter);
+  registration.setOrder(-100);
+  return registration;
+}
+
+private Filter ssoFilter()
+{
+  OAuth2ClientAuthenticationProcessingFilter googleFilter = new OAuth2ClientAuthenticationProcessingFilter("/login/google");
+  OAuth2RestTemplate googleTemplate = new OAuth2RestTemplate(google(), oAuth2ClientContext);
+  googleFilter.setRestTemplate(googleTemplate);
+  CustomUserInfoTokenServices tokenServices = new CustomUserInfoTokenServices(googleResource().getUserInfoUri(), google().getClientId());
+  tokenServices.setRestTemplate(googleTemplate);
+  googleFilter.setTokenServices(tokenServices);
+  tokenServices.setUserRepo(userRepo);
+  tokenServices.setPasswordEncoder(passwordEncoder);
+  return googleFilter;
+}
+</code></pre>
+Также необходимо добавить новый фильтр в функцию configure(HttpSecurity http):
+
+<pre class="lang-java line-numbers"><code>
+http.addFilterBefore(ssoFilter(), UsernamePasswordAuthenticationFilter.class);
+</code></pre>
+Фильтру также необходимо знать о регистрации клиента через Google. Аннотация @ConfigurationProperties указывает, на какие свойства конфигурации следует обратить внимание в application.properties.
+
+<pre class="lang-java line-numbers"><code>
+@Bean
+@ConfigurationProperties("google.client")
+public AuthorizationCodeResourceDetails google()
+{
+  return new AuthorizationCodeResourceDetails();
+}
+</code></pre>
+Чтобы завершить аутентификацию, нужно указать конечную точку пользовательской информации Google:
+
+<pre class="lang-java line-numbers"><code>
+@Bean
+@ConfigurationProperties("google.resource")
+public ResourceServerProperties googleResource()
+{
+  return new ResourceServerProperties();
+}
+</code></pre>
+Зарегистрировав наше приложение в <a href="https://console.cloud.google.com/" target="_blank" rel="nofollow">Google Cloud Platform</a>, в application.properties добавим свойства с соответствующими префиксами:
+
+<pre class="lang-java line-numbers"><code>
+google.client.clientId=yourClientId
+google.client.clientSecret=yourClientSecret
+google.client.accessTokenUri=https://www.googleapis.com/oauth2/v4/token
+google.client.userAuthorizationUri=https://accounts.google.com/o/oauth2/v2/auth
+google.client.clientAuthenticationScheme=form
+google.client.scope=openid,email,profile
+google.resource.userInfoUri=https://www.googleapis.com/oauth2/v3/userinfo
+google.resource.preferTokenInfo=true
+</code></pre>
+<h3 id="Основные-моменты-регистрации-приложения-в-Google-Cloud-Platform">Основные моменты регистрации приложения в <a href="https://console.cloud.google.com/" target="_blank" rel="nofollow">Google Cloud Platform</a></h3>Путь: API и сервисы -&gt; Учетные данные
+
+Окно запроса доступа OAuth:
+<ul>
+  <li><em>Название приложения:</em> Spring login form and OAuth2 tutorial</li>
+  <li><em>Адрес электронной почты службы поддержки:</em> ваш email</li>
+  <li><em>Область действия для API Google:</em> email, profile, openid</li>
+  <li><em>Авторизованные домены:</em> me.org</li>
+  <li><em>Ссылка на главную страницу приложения:</em> http://me.org:8080</li>
+  <li><em>Ссылка на политику конфиденциальности приложения:</em> http://me.org:8080</li>
+  <li><em>Ссылка на условия использования приложения:</em> http://me.org:8080</li>
+</ul>Учетные данные:
+<ul>
+  <li><em>Тип:</em> Веб-приложение</li>
+  <li><em>Название:</em> Spring login form and OAuth2 tutorial</li>
+  <li><em>Разрешенные источники JavaScript:</em> http://me.org, http://me.org:8080</li>
+  <li><em>Разрешенные URI перенаправления:</em> http://me.org:8080/login, http://me.org:8080/login/google</li>
+</ul><strong>Примечание:</strong> так как с адресом localhost:8080 Google работать не хочет, внесите в файл C:\Windows\System32\drivers\etc\hosts в конце строчку “127.0.0.1 me.org” или подобную ей. Главное, чтобы домен был в классическом виде.
+<h3 id="CustomUserInfoTokenServices">CustomUserInfoTokenServices</h3>Вы заметили слово Custom в функции-описании фильтра? Класс <code>CustomUserInfoTokenServices</code>. Да, мы создадим свой класс с блэкджеком и возможностью сохранить пользователя в БД! С помощью сочетания клавиш Ctrl-N в IntelliJ IDEA можно найти и посмотреть, как реализован <code>UserInfoTokenServices</code>, используемый по умолчанию. Скопируем его код в свежесозданный класс <code>CustomUserInfoTokenServices</code>. Большую часть можно оставить без изменений. Прежде, чем изменять логику функций, допишем в качестве приватных полей класса <code>UserRepo</code> и <code>PasswordEncoder</code>. Создадим для них сеттеры.
+
+Внесем в класс SecurityConfig @Autowired UserRepo userRepo. Смотрим, как исчезает указатель на ошибку в методе создания фильтра, радуемся.
+
+Почему нельзя было применить @Autowired непосредственно в CustomUserInfoTokenServices? Потому что этот класс не подтянет зависимость, так как сам не помечен какой-либо аннотацией Spring, к тому же его конструктор создается явно при объявлении фильтра. Соответственно, механизм DI Spring о нем не знает. Если мы аннотируем @Autowired что-либо в этом классе, то при использовании получим NullPointerException. А вот через явные сеттеры все очень даже работает.
+
+После внедрения нужных компонентов главным объектом интереса становится функция loadAuthentication, в которой извлекается Map&lt;String, Object&gt; с информацией о пользователе. Именно в ней в своем и этом проекте я реализовала сохранение в базу данных вошедшего через соцсеть пользователя.
+
+Так как в качестве провайдера OAuth2 мы используем Google аккаунт, то проверяем, содержит ли map характерное для Google поле “sub”. Если оно присутствует, значит, информация о пользователе дошла верно. Создаем нового пользователя и сохраняем его в базу данных.
+
+<pre class="lang-java line-numbers"><code>
+@Override
+public OAuth2Authentication loadAuthentication(String accessToken)
+     throws AuthenticationException, InvalidTokenException
+{
+  Map&lt;String, Object&gt; map = getMap(this.userInfoEndpointUrl, accessToken);
+
+  if(map.containsKey("sub"))
+  {
+     String googleName = (String) map.get("name");
+     String googleUsername = (String) map.get("email");
+
+     User user = userRepo.findByGoogleUsername(googleUsername);
+
+     if(user == null)
+     {
+        user = new User();
+        user.setActive(true);
+        user.setRoles(Collections.singleton(Role.USER));
+     }
+
+     user.setName(googleName);
+     user.setUsername(googleUsername);
+     user.setGoogleName(googleName);
+     user.setGoogleUsername(googleUsername);
+     user.setPassword(passwordEncoder.encode("oauth2user"));
+
+     userRepo.save(user);
+  }
+
+  if (map.containsKey("error"))
+  {
+     this.logger.debug("userinfo returned error: " + map.get("error"));
+     throw new InvalidTokenException(accessToken);
+  }
+  return extractAuthentication(map);
+}
+</code></pre>
+При использовании нескольких провайдеров можно и указывать разные варианты в одном CustomUserInfoTokenServices, и прописывать разные классы подобных сервисов в методе объявления фильтра.
+
+<div class="email-subscription"><iframe frameborder="0" src="https://secure.esputnik.com.ua/4Q0Ef6d2SOs" width="100%" height="200" scrolling="no"></iframe></div>
+Теперь в качестве Principal у нас может выступать и User, и OAuth2Authentication. Так как мы заблаговременно учли в UserService подгрузку пользователя через данные Google, приложение будет работать для обоих видов пользователей.
+
+Модифицируем контроллер главной страницы проекта, чтобы он перенаправлял вошедших с помощью OAuth2 пользователей на страницу заметок.
+
+<pre class="lang-java line-numbers"><code>
+@GetMapping("/")
+public String index(Principal principal)
+{
+  if(principal != null)
+  {
+     return "redirect:/notes";
+  }
+  return "index";
+}
+</code></pre><h2 id="Итоговый-запуск-проекта">Итоговый запуск проекта</h2>После небольших косметических изменений и добавления кнопки выхода, проводим итоговый запуск проекта.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="1d5f58a8-ab2a-48c6-812a-4466ebd32299" data-max-width="1024" alt="Дружим обычный вход через email и OAuth2 в Spring Security на примере сервиса заметок - 8" src="https://cdn.javarush.com/images/article/1d5f58a8-ab2a-48c6-812a-4466ebd32299/1024.jpeg"></div></div><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="f8f4a146-f129-4ebc-bcab-ec25bb081e87" data-max-width="1024" alt="Дружим обычный вход через email и OAuth2 в Spring Security на примере сервиса заметок - 9" src="https://cdn.javarush.com/images/article/f8f4a146-f129-4ebc-bcab-ec25bb081e87/1024.jpeg"></div></div><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="d752dcaf-375e-4424-a051-9d70b241634d" data-max-width="1024" alt="Дружим обычный вход через email и OAuth2 в Spring Security на примере сервиса заметок - 10" src="https://cdn.javarush.com/images/article/d752dcaf-375e-4424-a051-9d70b241634d/1024.jpeg"></div></div><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="bd9df032-a3ed-4440-b89a-319d00c22585" data-max-width="1024" alt="Дружим обычный вход через email и OAuth2 в Spring Security на примере сервиса заметок - 11" src="https://cdn.javarush.com/images/article/bd9df032-a3ed-4440-b89a-319d00c22585/1024.jpeg"></div></div><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="f1e254ca-918b-4380-a4b3-3ed012c704c3" data-max-width="1024" alt="Дружим обычный вход через email и OAuth2 в Spring Security на примере сервиса заметок - 12" src="https://cdn.javarush.com/images/article/f1e254ca-918b-4380-a4b3-3ed012c704c3/1024.jpeg"></div></div><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="dc16291a-efed-48c8-a186-54b9cd38f33f" data-max-width="1024" alt="Дружим обычный вход через email и OAuth2 в Spring Security на примере сервиса заметок - 13" src="https://cdn.javarush.com/images/article/dc16291a-efed-48c8-a186-54b9cd38f33f/1024.jpeg"></div></div><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="09fb6590-e627-4075-a278-742f4c9c80c7" data-max-width="1024" alt="Дружим обычный вход через email и OAuth2 в Spring Security на примере сервиса заметок - 14" src="https://cdn.javarush.com/images/article/09fb6590-e627-4075-a278-742f4c9c80c7/1024.jpeg"></div></div><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="01828301-c319-4cbe-9bd8-f2f0775da686" data-max-width="1024" alt="Дружим обычный вход через email и OAuth2 в Spring Security на примере сервиса заметок - 15" src="https://cdn.javarush.com/images/article/01828301-c319-4cbe-9bd8-f2f0775da686/1024.jpeg"></div></div>Пользователь успешно входит и через обычную форму, и через Google аккаунт. Этого мы и добивались!
+
+Надеюсь, эта статья прояснила определенные моменты в создании веб-приложения, его защите с помощью Spring Security и комбинировании разных способов входа. C полным кодом проекта вы можете <a href="https://github.com/Dzeru/spring-login-form

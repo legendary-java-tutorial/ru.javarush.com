@@ -1,0 +1,50 @@
+Отличия между слабыми, мягкими, фантомными и обычными ссылками в Java
+<p>----------------------------------------</p>
+«Слабые» ссылки и «мягкие» ссылки (WeakReference, SoftReference) были добавлены в Java API давно, но не каждый программист знаком с ними. Это свидетельствует о пробеле в понимании где и как их использовать...
+<p>----------------------------------------</p>
+«Слабые» ссылки и «мягкие» ссылки (WeakReference, SoftReference) были добавлены в <em>Java</em> API давно, но не каждый программист знаком с ними. Это свидетельствует о пробеле в понимании где и как их использовать. Ссылочные классы особенно важны в контексте <a href = "http://javarevisited.blogspot.sg/2011/04/garbage-collection-in-java.html" rel="nofollow" >сборки мусора </a>. Как все мы знаем сборщик мусора сам освобождает память занимаемую объектами, но не все программисты знают что решение об освобождении памяти он принимает исходя из типа имеющихся на объект ссылок. 
+<img data-id="3506eaac-ad59-4fd4-ab17-a3b1eb72725a" data-max-width="850" alt="Отличия между слабыми, мягкими, фантомными и обычными ссылками в Java - 1" src="https://cdn.javarush.com/images/article/3506eaac-ad59-4fd4-ab17-a3b1eb72725a/1024.jpeg">Главное отличие <em>SoftReference</em> от <em>WeakReference</em> в том как сборщик с ними будет работать. Он может удалить объект в любой момент если на него указывают только weak ссылки, с другой стороны объекты с soft ссылкой будут собраны только когда <em>JVM</em> очень нужна память. Благодаря таким особенностям ссылочных классов каждый из них имеет свое применение. <em>SoftReference</em> можно использовать для реализации кэшей и когда <em>JVM</em> понадобится память она освободит ее за счет удаления таких объектов. А <em>WeakReference</em> отлично подойдут для хранения метаданных, например для хранения ссылки на ClassLoader. Если нет классов для загрузки то нет смысла хранить ссылку на <a href = "http://javarevisited.blogspot.sg/2012/12/how-classloader-works-in-java.html" rel="nofollow" >ClassLoader</a>, слабая ссылка делает ClassLoader доступным для удаления как только мы назначим ее вместо крепкой ссылки (Strong reference). В этой статье мы рассмотрим отличия типов ссылок в том числе <em>Strong reference</em> и <em>Phantom reference</em> (фантомная ссылка).
+<h2>WeakReference vs SoftReference в Java</h2>Для тех кто не знает есть 4 вида ссылок:
+<ol><li>Strong reference</li>
+<li>Weak Reference</li>
+<li>Soft Reference</li>
+<li>Phantom Reference</li>
+</ol>
+Strong ссылка самая простая, так как мы используем ее в программировании изо дня в день, например в коде вида <em>String s = “abc”</em> переменная <em>s</em> это и есть strong ссылка.
+
+Любой объект что имеет strong ссылку запрещен для удаления сборщиком мусора. Разумеется что это объекты которые нужны <em>Java</em> программе. Слабые ссылки представлены классом <em>java.lang.ref.WeakReference</em>, вы можете определить слабую ссылку так:
+
+<pre class='lang-java line-numbers'><code>
+Counter counter = new Counter(); // strong reference
+WeakReference<Counter> weakCounter = new WeakReference<Counter>(counter); //weak reference
+counter = null; // now Counter object is eligible for garbage collection
+</code></pre>
+Теперь, как только вы присвоили strong ссылке counter значение null (counter = null), тот объект что создан в первой строке становится доступным для удаления сборщиком мусора, потому что он больше не имеет strong ссылки. Cозданная Weak ссылка weakCounter не может предотвратить удаление сборщиком объекта Counter. С другой стороны если бы это была Soft ссылка, объект типа Counter не был бы удален до тех пор пока <em>JVM</em> не нуждалась бы в памяти особенно сильно. Soft ссылки в <em>Java</em> представлены классом <em>java.lang.ref.SoftReference</em>. Пример создания SoftReference в <em>Java</em>
+
+<pre class='lang-java line-numbers'><code>
+Counter prime = new Counter();  // prime holds a strong reference 
+SoftReference<Counter> soft = new SoftReference<Counter>(prime) ; //soft reference variable has SoftReference to Counter Object
+prime = null;  // now Counter object is eligible for garbage collection but only be collected when JVM absolutely needs memory
+</code></pre>
+После обнуления strong ссылки (в 3-ей строке) на объект Counter останется только 1 мягкая ссылка которая не сможет предотвратить удаление этого объекта сборщиком мусора, но в отличие от weak ссылки сможет отложить этот процесс до тех пор пока не появится острая нехватка памяти. Учитывая это отличие soft ссылки от weak, первая больше подходит для кэшей, а weak для метаданных. Хорошим примером служит класс WeakHashMap который является наследником интерфейса Map как и классы <a href = "http://java67.blogspot.sg/2013/08/best-way-to-iterate-over-each-entry-in.html" rel="nofollow" >HashMap</a> или <a href = "http://javarevisited.blogspot.sg/2011/12/treemap-java-tutorial-example-program.html" rel="nofollow" >TreeMap</a>, но с одной отличительной особенностью. <em>WeakHashMap</em> оборачивает ключи как weak ссылки, что означает что как только не осталось strong ссылок на объект, weak ссылки которые расположены внутри <em>WeakHashMap</em> не спасут от сборщика мусора. 
+
+Фантомные ссылки - третий тип ссылок, доступных в пакете java.lang.ref. Phantom ссылки представлены классом <em>java.lang.ref.PhantomReference</em>. Объект на который указывают только phantom ссылки может быть удален сборщиком в любой момент. <em>Phantom</em> ссылка создается точно так же как weak или soft.
+
+<pre class='lang-java line-numbers'><code>
+DigitalCounter digit = new DigitalCounter(); // digit reference variable has strong reference
+PhantomReference<DigitalCounter> phantom = new PhantomReference<DigitalCounter>(digit); // phantom reference
+digit = null;
+</code></pre>
+Как только вы обнулите strong ссылки на объект DigitalCounter, сборщик мусора удалит его в любой момент, так как теперь на него ведут только phantom ссылки. 
+
+Кроме классов WeakReference, SoftReference, PhantomReference, WeakHashMap, полезно знать о классе <em>ReferenceQueue</em>. Вы можете воспользоваться этим классом при создании объекта класса WeakReference, SoftReference или PhantomReference:
+
+<pre class='lang-java line-numbers'><code>
+ReferenceQueue refQueue = new ReferenceQueue(); //reference will be stored in this queue for cleanup
+DigitalCounter digit = new DigitalCounter();
+PhantomReference<DigitalCounter> phantom = new PhantomReference<DigitalCounter>(digit, refQueue);
+</code></pre>
+Ссылка на объект будет добавлена в <em>ReferenceQueue</em> и вы сможете контролировать состояние ссылок путем опроса ReferenceQueue. Жизненный цикл Object хорошо представлен на этой диаграмме:
+<img data-id="accd1b65-d122-4f9e-aae0-b76f9916bd79" data-max-width="570" alt="Отличия между слабыми, мягкими, фантомными и обычными ссылками в Java - 2" src="https://cdn.javarush.com/images/article/accd1b65-d122-4f9e-aae0-b76f9916bd79/1024.jpeg">Вот и все отличия между weak и soft ссылками в <em>Java</em>. Так же мы познакомились с phantom ссылками, классом <em>WeakHashMap</em> и <em>ReferenceQueue</em>. Правильное использование ссылок поможет при сборке мусора и в результате мы получим более гибкое управление памятью в <em>Java</em>.
+
+<a href = "http://www.javacodegeeks.com/2014/03/difference-between-weakreference-vs-softreference-vs-phantomreference-vs-strong-reference-in-java.html" rel="nofollow" >Оригинал статьи</a>

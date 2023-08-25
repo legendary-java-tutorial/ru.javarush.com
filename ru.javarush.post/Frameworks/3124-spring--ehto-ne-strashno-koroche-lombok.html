@@ -1,0 +1,173 @@
+Spring – это не страшно, короче: Lombok
+<p>----------------------------------------</p>
+Как сделать проект лаконичным с помощью Lombok. Немного Википедии: Ломбо́к (Lombok с индон. — «перец чили») — остров в Малайском архипелаге, в группе Малых Зондских островов в составе Индонезии. Lombok названа популярная библиотека...
+<p>----------------------------------------</p>
+<a href="https://javarush.com/groups/posts/3092-spring-ehto-nestrashno" target="_blank" rel="nofollow"><strong>СОДЕРЖАНИЕ ЦИКЛА СТАТЕЙ</strong></a>
+
+Немного Википедии:
+Ломбо́к (Lombok с индон. — «перец чили») — остров в Малайском архипелаге, в группе Малых Зондских островов, в составе Индонезии.
+Lombok  названа популярная библиотека для языка программирования Java. Выбор названия связан с тем, что остров Ломбок находится не так далеко от острова Ява, а также, видимо, со значением его названия "перец чили", поскольку библиотека предоставляет полезные "приправы" для языка.
+
+Лучше и не скажешь, да и к чему слова, давайте посмотрим его в деле:
+
+<a href="https://russianblogs.com/article/70181221668/" target="_blank" rel="nofollow">Установите плагин.</a>
+
+В блок &lt;dependencies&gt; pom файла добавляем зависимость:
+<pre class="language-java line-numbers"><code>
+&lt;dependency&gt;
+    &lt;groupId&gt;org.projectlombok&lt;/groupId&gt;
+    &lt;artifactId&gt;lombok&lt;/artifactId&gt;
+&lt;/dependency&gt;
+</code></pre>
+Понеслась:
+Откройте проект из прошлой <a href="https://javarush.com/groups/posts/3094-spring-ehto-nestrashno-ili-kak-napolnitjh-h2-bazu-dannihkh-i-nemnogo-hibernate" target="_blank" rel="nofollow">статьи</a>, откройте <em>class FruitEntity</em>.
+<pre class="language-java line-numbers"><code>
+package ru.java.rush.entities;
+import org.hibernate.annotations.GenericGenerator;
+
+import javax.persistence.*;
+
+@Entity
+@Table(name = "fruit_table")
+public class FruitEntity {
+
+    @Id
+    @Column(name = "id_fruit")
+    @GenericGenerator(name = "generator", strategy = "increment")
+    @GeneratedValue(generator = "generator")
+    private Integer id;
+
+    @Column(name = "fruit_name")
+    private String fruitName;
+
+    @Column(name = "provider_code")
+    private Integer providerCode;
+
+//чтобы с классом можно было совершать манипуляции создается
+//пустой конструктор, геттеры, сеттеры, конструктор и переопределяется метод toString()
+
+public FruitEntity(){
+
+}
+
+
+public Integer getId() {
+    return id;
+}
+
+public FruitEntity setId(Integer id) {
+    this.id = id;
+    return this;
+}
+
+public String getFruitName() {
+    return fruitName;
+}
+
+public FruitEntity setFruitName(String fruitName) {
+    this.fruitName = fruitName;
+    return this;
+}
+
+public Integer getProviderCode() {
+    return providerCode;
+}
+
+public FruitEntity setProviderCode(Integer providerCode) {
+    this.providerCode = providerCode;
+    return this;
+}
+
+@Override
+public String toString() {
+    return "FruitEntity{" +
+            "id=" + id +
+            ", fruitName='" + fruitName + '\'' +
+            ", providerCode=" + providerCode +
+            '}';
+}
+</code></pre>
+Длинноват, не правда ли? Повесим на класс аннотацию @Data от Ломбока и посмотрим как это сократит код.
+<pre class="language-java line-numbers"><code>
+package ru.java.rush.entities;
+
+import lombok.Data;
+import org.hibernate.annotations.GenericGenerator;
+
+import javax.persistence.*;
+
+@Data//аннотация сгенирует при компиляции необходимый код
+@Entity
+@Table(name = "fruit_table")
+public class FruitEntity {
+
+    @Id
+    @Column(name = "id_fruit")
+    @GenericGenerator(name = "generator", strategy = "increment")
+    @GeneratedValue(generator = "generator")
+    private Integer id;
+
+    @Column(name = "fruit_name")
+    private String fruitName;
+
+    @Column(name = "provider_code")
+    private Integer providerCode;
+
+//и все! Весь остальной код будет сгенирован Ломбоком
+</code></pre>
+
+Запустите проект, проверьте что все работает.
+
+Теперь по смотрим как с помощью Lombok    можно внедрять зависимость. Откроем для примера <em>class FruitService</em>, повесим на класс  @RequiredArgsConstructor и удалим конструктор из класса, он нам больше не нужен.
+<pre class="language-java line-numbers"><code>
+package ru.java.rush.services;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import ru.java.rush.entities.FruitEntity;
+import ru.java.rush.repositories.FruitRepository;
+
+import java.util.List;
+
+
+@Service
+@RequiredArgsConstructor//аннотация от Ломбок
+public class FruitService {
+
+    private final FruitRepository fruitRepository;
+
+//здесь когда то был конструктор
+
+    public Optional&lt;FruitEntity&gt; getById(Integer id) {
+        return fruitRepository.findById(id);
+    }
+
+    public void delById(Integer id) {
+        fruitRepository.deleteById(id);
+    }
+
+    public Boolean exist(Example&lt;? extends FruitEntity&gt; example) {
+        return fruitRepository.exists(example);
+    }
+
+    public void save(FruitEntity fruitEntity) {
+        fruitRepository.save(fruitEntity);
+    }
+
+    public List&lt;FruitEntity&gt; getAll() {
+        return fruitRepository.findAll();
+    }
+
+    public void saveAll(List&lt;FruitEntity&gt; fruits) {
+        fruitRepository.saveAll(fruits);
+    }
+</code></pre>
+Теперь тем же способом избавьтесь от лишнего кода в классе InitiateUtils. Проверьте что все работает. По ходу этого проекта, мы используем еще несколько новых аннотаций Ломбока. 
+
+UPD: Хороший комментарий от Denis Ryabchikov
+"Для entity лучше не использовать @Data, а заменять ее на @Setter и @Getter, т.к. @Data также переопределяет toString() и hashCode(), и с хеш-кодом могут возникнуть проблемы, если entity будет иметь коллекции и связи с другими entity."
+
+В принципе и все, вот <a href="https://urvanov.ru/2015/09/22/project-lombok/ " target="_blank" rel="nofollow">статья по Ломбоку </a> в ней посмотрите описание аннотаций: @Data, @Value, @RequiredArgsConstructor и @Builder.
+В этой <a href="https://www.baeldung.com/lombok-accessors" target="_blank" rel="nofollow">статье почитайте про @ Accessors</a>, статья на английском, но переводчик страницы хорошо с этим справиться, понять смысл можно.
+
+<a href="https://javarush.com/groups/posts/3095-spring-ehto-ne-strashno-prodolzhaem-napolnjatjh-bd" target="_blank" rel="nofollow">В следующей статье продолжим наполнять базу.</a>

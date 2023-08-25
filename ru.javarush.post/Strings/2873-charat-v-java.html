@@ -1,0 +1,144 @@
+Метод charAt() в Java
+<p>----------------------------------------</p>
+Есть множество базовых методов, которые мы регулярно используем, даже не задумываясь. Ну а что, если задуматься и посмотреть, каким образом реализованы некоторые простые, на первый взгляд, методы?
+Думаю, это поможет нам стать на шаг ближе к Java)
+<p>----------------------------------------</p>
+Есть множество базовых методов, которые мы регулярно используем, даже не задумываясь. Ну а что, если задуматься и посмотреть, каким образом реализованы некоторые простые, на первый взгляд, методы?
+
+Думаю, это поможет нам стать на шаг ближе к Java)
+
+<img data-max-width="800" data-id="76da1247-e7d7-4925-94df-d8814c82f25f" src="/images/article/76da1247-e7d7-4925-94df-d8814c82f25f/800.jpeg" alt="charAt() в Java - 1">Представим ситуацию, в которой нам нужно вытащить определенный символ в какой-то строке. Как мы это можем сделать в Java? Например, с помощью вызова метода <code>Java String charAt</code>.
+
+О методе <code>charAt()</code> мы и поговорим в сегодняшней статье.<h2>Синтаксис</h2><code>char charAt(int index)</code> возвращает значение char по указанному индексу. Индекс колеблется от 0 до <code>length()-1</code>.
+
+То есть, первое <code>char</code> значение последовательности находится в <code>index 0</code>, следующее — в <code>index 1</code> и т.д., как и в случае с индексацией массива.<h2>Пример</h2><pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+   System.out.print("JavaRush".charAt(0));
+   System.out.print("JavaRush".charAt(1));
+   System.out.print("JavaRush".charAt(2));
+   System.out.print("JavaRush".charAt(3));
+}
+</code></pre>
+В первой строке берется первый символ, во второй — второй, и так далее.
+Так как здесь используется не <code>println</code>, а <code>print</code>, без перехода на новую строку, мы получим вывод в консоль:
+
+<pre><code>
+Java
+</code></pre>
+Если <code>char</code> под заданным индексом представлен в виде юникода, результатом работы метода <code>java charAt()</code> будет символ, который представляет данный юникод:
+
+<pre class="lang-java line-numbers"><code>
+System.out.println("J\u0061vaRush".charAt(1));
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+a
+</code></pre><h2>Что “под капотом”</h2>Как же оно работает, спросите вы?<img data-max-width="800" data-id="e26764e1-d351-4310-9c90-aa1deeb23839" src="/images/article/e26764e1-d351-4310-9c90-aa1deeb23839/800.jpeg" alt="charAt() в Java - 2">Дело в том, что в каждом объекте <code>String</code> есть массив <code>byte</code> с байтами элементов данной строки:
+
+<pre class="lang-java line-numbers"><code>
+private final byte[] value;
+</code></pre>
+А вот и сам метод <code>chatAt</code>:
+
+<pre class="lang-java line-numbers"><code>
+public char charAt(int index) {
+   if (isLatin1()) {
+       return StringLatin1.charAt(value, index);
+   } else {
+       return StringUTF16.charAt(value, index);
+   }
+}
+</code></pre>
+<code>isLatin1</code> — флаг, указывающий на то, есть ли в нашей строке только латинские символы или нет. От это зависит, какой метод будет вызываться далее.<h3>isLatin1 = true</h3>Если в строке есть только латинские символы, вызывается статический метод <code>charAt</code> класса <code>StringLatin1</code>:
+
+<pre class="lang-java line-numbers"><code>
+public static char charAt(byte[] value, int index) {
+   if (index &lt; 0 || index &gt;= value.length) {
+       throw new StringIndexOutOfBoundsException(index);
+   }
+   return (char)(value[index] &amp; 0xff);
+}
+</code></pre>
+Первым делом проверяется, что пришедший индекс больше либо равен 0, и что он не выходит за пределы внутреннего массива байт, и если это не так, то кидается исключение — <code>new StringIndexOutOfBoundsException(index)</code>.
+
+Если же проверки пройдены, далее берется нужный нам элемент. 
+
+В конце мы видим:<ul><li><code>&amp;</code> расширяет для двоичной операции для <code>byte</code> побитово</li>
+<li><code>0xff</code> ничего не делает, но <code>&amp;</code> требует аргумент</li>
+<li><code>(char)</code> приводит данные по таблице ASCII к <code>char</code></li></ul><h3>isLatin1 = false</h3>Если  же у нас присутствовали не только латинские символы, будет использоваться класс <code>StringUTF16</code> и вызываться его статический метод:
+
+<pre class="lang-java line-numbers"><code>
+public static char charAt(byte[] value, int index) {
+   checkIndex(index, value);
+   return getChar(value, index);
+}
+</code></pre>
+Который в свою очередь вызывает:
+
+<pre class="lang-java line-numbers"><code>
+public static void checkIndex(int off, byte[] val) {
+   String.checkIndex(off, length(val));
+}
+</code></pre>
+А он делегирует статическому методу <code>String</code>:
+
+<pre class="lang-java line-numbers"><code>
+static void checkIndex(int index, int length) {
+   if (index &lt; 0 || index &gt;= length) {
+       throw new StringIndexOutOfBoundsException("index " + index +
+                                                 ", length " + length);
+   }
+}
+</code></pre>
+Здесь, собственно, происходит проверка на допустимость индекса: опять же, положительный ли он либо ноль, и не выходил ли он за пределы массива.
+
+Но в классе <code>StringUTF16</code> в методе <code>charAt</code> более интересным будет вызов второго метода:
+
+<pre class="lang-java line-numbers"><code>
+static char getChar(byte[] val, int index) {
+   assert index &gt;= 0 &amp;&amp; index &lt; length(val) : "Trusted caller missed bounds check";
+   index &lt;&lt;= 1;
+   return (char)(((val[index++] &amp; 0xff) &lt;&lt; HI_BYTE_SHIFT) |
+                 ((val[index]   &amp; 0xff) &lt;&lt; LO_BYTE_SHIFT));
+}
+<a href="https://javarush.com/welcome" target="_blank"></a></code></pre><a href="https://javarush.com/welcome" target="_blank"><img id="click_banner2_3_articles" data-max-width="1080" data-id="919fcdc6-5613-4636-94be-582bb971a45c" src="/images/article/919fcdc6-5613-4636-94be-582bb971a45c/1080.jpeg" alt="charAt() в Java - 3"></a>Приступим же к разбору, что тут собственно происходит.
+
+Первым делом в начале метода идёт ещё одна проверка допустимости индекса.
+
+Чтобы понять происходящее далее, нужно уяснить: когда не латинский символ попадает в массив <code>value</code>, его представляют два байта (две ячейки массива).
+
+Если у нас есть строка из двух кириллических символов — “ав”, то:
+<ul><li>для ‘а’ это пара байтов — 48 и 4;</li>
+<li>для ‘в’ — 50 и 4.</li></ul>То есть, если мы создадим строку “ав”, у нее будет массив <code>value</code> — {48, 4, 50, 4}  
+
+Собственно, в этом методе и идёт работа с двумя ячейками массива <code>value</code>.
+
+Поэтому дальше идёт сдвиг <code>index &lt;&lt;= 1;</code>, чтобы попасть непосредственно на индекс первого байта искомого символа в массиве <code>value</code>.
+
+А теперь допустим, что у нас есть строка <code>"абвг"</code>.
+
+Тогда массив value будет выглядет так: {48, 4, 49, 4, 50, 4, 51, 4}.
+
+Мы запрашиваем третий элемент строки, и тогда двоичное представление — 00000000 00000011.
+
+При сдвиге на 1, мы получим 00000000 00000110, то есть <code>index = 6</code>.
+
+Чтобы освежить знания по побитовым операциям, можешь почитать вот <a href="https://javarush.com/groups/posts/1925-pobitovihe-operacii" target="_blank">эту статью</a>.<img data-max-width="800" data-id="a38d6a49-aaac-4654-b7d5-c64564d4fa93" src="/images/article/a38d6a49-aaac-4654-b7d5-c64564d4fa93/800.jpeg" alt="charAt() в Java - 4">Также мы видим некоторые переменные:
+
+<code>HI_BYTE_SHIFT</code>  в данном случае равно 0.
+
+<code>LO_BYTE_SHIFT</code> в данном случае равно 8.
+
+В последней строке данного метода:
+<ol><li>Берется элемент из массива value и побитово сдвигается на <code>HI_BYTE_SHIFT</code>, то есть 0, при этом увеличивая <code>index +1</code>.
+
+<p>В примере с строкой <code>"абвг"</code>, шестой байт — 51 — так бы и остался, но при этом увеличивается индекс до 7.</p></li>
+<li>После этого берется следующий элемент массива и так же побитово сдвигается, но на LO_BYTE_SHIFT , то есть на 8 битов.
+
+<p>И если у нас это был байт 4, который имеет двоичное представление — 00000000 00000100, то после сдвига на 8 битов у нас будет 00000100 00000000. Если целым числом — 1024.</p></li>
+
+<li>Далее для этих двух значений следует операция <code>| (OR)</code>.
+<p>И если у нас были байты 51 и 1024, которые в двоичном представлении выглядели как 00000000 00110011 и 00000100 00000000, то после операции <code>OR</code> мы получим 00000100 00110011, что значит число 1075 в десятичной системе.</p><p>
+
+Ну и в конце концов, переводится число 1075 в тип char, а при переводе int -&gt; char используется таблица ASCII, и в ней под номером 1075 стоит символ ‘г’.</p></li></ol>Собственно, таким образом мы и получим ‘г’ как результат работы метода <code>charAt()</code> в Java-программировании.

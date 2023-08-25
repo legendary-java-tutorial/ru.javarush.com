@@ -1,0 +1,57 @@
+Java functional interfaces
+<p>----------------------------------------</p>
+Вообще-то, незначительные детали обычно важнее всего.(с) #Конкурс #Внимание к деталям. Функциональный интерфейс в Java – это интерфейс, который содержит только 1 абстрактный метод. Основное назначение – использование в лямбда выражениях и method reference ...
+<p>----------------------------------------</p>
+Функциональный интерфейс в Java – это интерфейс, который содержит только 1 абстрактный метод. Основное назначение – использование в лямбда выражениях и method reference.
+<div class='row justify-content-center jr-image-wrap'><div class='col-12 col-sm-10 col-md-8'><img data-id="e72374cf-5e1c-4937-9370-77d60d2991db" data-max-width="710" alt="Java functional interfaces - 1" src="https://cdn.javarush.com/images/article/e72374cf-5e1c-4937-9370-77d60d2991db/1024.jpeg"></div></div>Наличие 1 абстрактного метода - это единственное условие, таким образом функциональный интерфейс может содержать так же <code>default</code> и <code>static</code> методы.
+
+К функциональному интерфейсу можно добавить аннотацию @FunctionalInterface. Это не обязательно, но при наличии данной аннотации код не скомпилируется, если будет больше или меньше, чем 1 абстрактный метод.
+
+Рекомендуется добавлять @FunctionalInterface. Это позволит использовать интерфейс в лямбда выражениях, не остерегаясь того, что кто-то добавит в интерфейс новый абстрактный метод и он перестанет быть функциональным.
+
+В Java есть встроенные функциональные интерфейсы, размещенные в пакете <code>java.util.function</code>.
+<table>
+<tr>
+<th>Что еще почитать:</th>
+</tr>
+<tr>
+<td>
+<p><a href='https://javarush.com/groups/info.javarush.ru' target='_blank'><em><strong>Архив info.javarush.ru:</strong></em></a></p><ul>
+<li><p><a href='https://javarush.com/groups/posts/1083-vvedenie-v-funkcionaljhnihe-interfeysih' target='_blank'>Введение в функциональные интерфейсы</a></p></li></ul>
+</td>
+</tr>
+</table>Не буду останавливаться на них подробно. Отмечу, что наиболее часто используются: <strong>Consumer&lt;T&gt;</strong>, <strong>Function&lt;T,R&gt;</strong>, <strong>Predicate&lt;T&gt;</strong>, <strong>Supplier&lt;T&gt;</strong>, <strong>UnaryOperator&lt;T&gt;</strong> и их <strong>Bi </strong>– формы. Подробнее можно посмотреть на странице документации: <a href="https://docs.oracle.com/javase/10/docs/api/java/util/function/package-summary.html" target="_blank" rel="nofollow">Package java.util.function</a> 
+
+<pre class="lang-java line-numbers"><code>
+import java.util.function.Predicate;
+
+//Определяем свой функциональный интерфейс
+@FunctionalInterface
+interface MyPredicate {
+    boolean test(Integer value);
+}
+
+public class Tester {
+    public static void main(String[] args) throws Exception {
+        MyPredicate myPredicate = x -&gt; x &gt; 0;
+        System.out.println(myPredicate.test(10));   //true
+
+        //Аналогично, но используется встроенный функциональный интерфейс java.util.function.Predicate
+        Predicate&lt;Integer&gt; predicate = x -&gt; x &gt; 0;
+        System.out.println(predicate.test(-10));    //false
+    }
+}
+</code></pre>
+Но оказывается есть один тонкий момент, описанный в Java Language Specification: “interfaces do not inherit from Object, but rather implicitly declare many of the same methods as Object.”
+
+Это означает, что функциональные интерфейсы могут содержать дополнительно абстрактные методы, определенные в классе <code>Object</code>. Код ниже валиден, ошибок компиляции и времени выполнения не будет:
+
+<pre class="lang-java line-numbers"><code>
+@FunctionalInterface
+public interface Comparator&lt;T&gt; {
+   int compare(T o1, T o2);
+   boolean equals(Object obj);
+   // другие default или static методы
+}
+</code></pre>
+Будьте внимательны на собеседовании! Удачи!

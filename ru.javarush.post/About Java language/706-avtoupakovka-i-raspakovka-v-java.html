@@ -1,0 +1,215 @@
+Автоупаковка и распаковка в Java
+<p>----------------------------------------</p>
+В этой статье мы рассмотрим такую функцию в Java как автоупаковка/распаковка. Автоупаковка и распаковка это функция преобразования примитивных типов в объектные и наоборот. Весь процесс выполняется автоматически средой выполнения ...
+<p>----------------------------------------</p>
+В этой статье мы рассмотрим такую функцию в Java как <em><strong>автоупаковка/распаковка</strong></em>. Автоупаковка и распаковка это функция преобразования примитивных типов в объектные и наоборот.
+<img data-id="eb602f3a-f575-40ef-8ae1-87104c3f1f69" data-max-width="850" alt="Автоупаковка и распаковка в Java - 1" src="https://cdn.javarush.com/images/article/eb602f3a-f575-40ef-8ae1-87104c3f1f69/1024.jpeg">Весь процесс выполняется автоматически средой выполнения Java (JRE). Но следует быть осторожным при реализации этой функции, т.к. Она может влиять на производительность вашей программы.
+<h2>Введение</h2>В версиях ниже JDK 1.5 было не легко преобразовывать примитивные типы данных, такие как <code>int</code>, <code>char</code>, <code>float</code>, <code>double</code> в их классы оболочки Integer, Character, Float, Double. Начиная с версии JDK 5 эта функция, преобразования примитивных типов в эквивалентные объекты, реализована автоматически.
+
+Это свойство известно как <strong>Автоупаковка</strong> (Autoboxing). Обратный процесс соответственно – <strong>Распаковка</strong> (Unboxing) т.е. процесс преобразования объектов в соответствующие им примитивные типы.
+
+Пример кода для автоупаковки и распаковки представлен ниже:
+
+<strong>Автоупаковка</strong>
+
+<pre class='lang-java line-numbers'><code>
+Integer integer = 9;
+</code></pre>
+<strong>Распаковка</strong>
+
+<pre class='lang-java line-numbers'><code>
+int in = 0;
+in = new Integer(9);
+</code></pre>
+<strong>Когда используется автоупаковка и распаковка?</strong>
+
+Автоупаковка применяется компилятором  Java в следующих условиях:
+<ul>
+<li>Когда значение примитивного типа передается в метод в качестве параметра метода, который ожидает объект соответствующего класса-оболочки.</li>
+<li>Когда значение примитивного типа присваивается переменной, соответствующего класса оболочки.</li>
+</ul>Рассмотрим следующий пример:
+
+<strong>Листинг 1:</strong> Простой код, показывающий автоупаковку
+
+<pre class='lang-java line-numbers'><code>
+public int sumEvenNumbers(List&lt;Integer&gt; intList ) {
+int sum = 0;
+for (Integer i: intList )
+if ( i % 2 == 0 )
+sum += i;
+return sum;
+}
+</code></pre>
+До версии jdk 1.5 приведенный выше код вызвал бы ошибку компиляции, так как оператор получения остатка % и унарный плюс += не могли применяться к классу-оболочке. Но в  jdk 1.5 и выше этот код компилируется без ошибок, преобразовывая Integer в <code>int</code> .
+
+Распаковка применяется компилятором Java в следующих условиях:
+<ul>
+<li>Когда объект передается в качестве параметра методу, который ожидает соответствующий примитивный тип.</li>
+<li>Когда объект присваивается переменной соответствующего примитивного типа.</li>
+</ul>Рассмотрим следующий пример:
+
+<strong>Листинг 2:</strong> Простой код, показывающий распаковку
+
+<pre class='lang-java line-numbers'><code>
+import java.util.ArrayList;
+import java.util.List;
+
+public class UnboxingCheck {
+
+public static void main(String[] args) {
+Integer in = new Integer(-8);
+
+// 1. Распаковка через вызов метода
+int absVal = absoluteValue(in);
+System.out.println("absolute value of " + in + " = " + absVal);
+
+List&lt;Double&gt; doubleList = new ArrayList&lt;Double&gt;();
+
+// Автоупаковка через вызов метода
+doubleList.add(3.1416);
+
+// 2. Распаковка через присвоение
+double phi = doubleList.get(0);
+System.out.println("phi = " + phi);
+}
+
+public static int absoluteValue(int i) {
+return (i < 0) ? -i : i;
+}
+}
+</code></pre>
+Автоупаковка и распаковка позволяют разработчику писать код, который легко читается и понятен. Следующая таблица показывает примитивные типы данных и их соответствующие объекты оболочки.
+<table border="1">
+<tr><th>Примитивные типы</th>	<th>Классы оболочки</th></tr>
+<tr><td>boolean</td>	<td>Boolean</td></tr>
+<tr><td>byte</td>	<td>Byte</td></tr>
+<tr><td>char</td>	<td>Character</td></tr>
+<tr><td>float</td>	<td>Float</td></tr>
+<tr><td>int</td>	<td>Integer</td></tr>
+<tr><td>long</td>	<td>Long</td></tr>
+<tr><td>short</td>     <td>Short</td></tr>
+</table><strong>Таблица 1:</strong> Примитивные типы и эквивалентные им классы оболочки c операторами сравнения
+
+Автоупаковка и распаковка могут использоваться с операторами сравнения. Следующий фрагмент кода иллюстрирует, как это происходит:
+
+<strong>Листинг 3:</strong> Пример кода, показывающий автоупаковку и распаковку с оператором сравнения
+
+<pre class='lang-java line-numbers'><code>
+  public class BoxedComparator {
+    public static void main(String[] args) {
+        Integer in = new Integer(25);
+        if (in < 35)
+            System.out.println("Value of int = " + in);
+    }
+  }
+</code></pre>
+Автоупаковка и распаковка при перегрузке метода
+
+Автоупаковка и распаковка выполняется при перегрузке метода на основании следующих правил:
+
+<ul><li>Расширение "побеждает" упаковку в ситуации, когда становится выбор между расширением и упаковкой, расширение предпочтительней.</li></ul>
+<strong>Листинг 4:</strong> Пример кода, показывающий преимущество перегрузки
+
+<pre class='lang-java line-numbers'><code>
+  public class WideBoxed {
+    public class WideBoxed {
+    static void methodWide(int i) {
+         System.out.println("int");
+     }
+ 
+    static void methodWide( Integer i ) {
+        System.out.println("Integer");
+    }
+
+    public static void main(String[] args) {
+        short shVal = 25;
+        methodWide(shVal);
+    }
+   }
+  }
+</code></pre>
+Вывод программы — тип <code>int</code>
+
+<ul><li>Расширение побеждает переменное количество аргументов в ситуации, когда становится выбор между расширением и переменным количеством аргументов, расширение предпочтительней.</li></ul><strong>Листинг 5:</strong> Пример кода, показывающий преимущество перегрузки
+
+<pre class='lang-java line-numbers'><code>
+public class WideVarArgs {
+
+    static void methodWideVar(int i1, int i2) {
+      System.out.println("int int");
+    }
+
+    static void methodWideVar(Integer... i) {
+       System.out.println("Integers");
+    }
+
+   public static void main( String[] args) {
+       short shVal1 = 25;
+      short shVal2 = 35;
+     methodWideVar( shVal1, shVal2);
+   }
+  }
+</code></pre><ul><li>Упаковка побеждает переменное количество аргументов в ситуации, когда становится выбор между упаковкой и переменным количеством  аргументов, упаковка предпочтительней.</li></ul><strong>Листинг 6:</strong> Пример кода, показывающий преимущество перегрузки
+
+<pre class='lang-java line-numbers'><code>
+  public class BoxVarargs {
+      static void methodBoxVar(Integer in) {
+          System.out.println("Integer");
+      }
+     
+      static void methodBoxVar(Integer... i) {
+          System.out.println("Integers");
+      }     
+      public static void main(String[] args) {
+          int intVal1 = 25;
+          methodBoxVar(intVal1);
+     }
+ }
+</code></pre>
+Вы должны помнить о следующих вещах, используя Автоупаковку:
+
+Как мы знаем, любая хорошая функция имеет недостаток. Автоупаковка не является исключением в этом отношении. Некоторый важные замечания, которые должен учитывать разработчик при использовании этой функции:
+<ul>
+<li>Сравнивая объекты оператором ‘<code>==</code>’ может возникнуть путаница, так как он может применяться к примитивным типам и объектам. Когда этот оператор  применяется к объектам,он фактически сравнивает ссылки на объекты а не сами объекты.</li></ul><strong>Листинг 7:</strong> Пример кода, показывающий сравнение.
+
+<pre class='lang-java line-numbers'><code>
+   public class Comparator {
+      public static void main(String[] args) {
+        Integer istInt = new Integer(1);
+          Integer secondInt = new Integer(1);
+
+          if (istInt == secondInt) {
+            System.out.println("both one are equal");
+ 
+          } else {
+             System.out.println("Both one are not equal");
+         }
+      }
+   }
+</code></pre><ul><li>Смешивание объектов и примитивных типов с оператором равенства и отношения. Если мы сравниваем примитивный тип с объектом, то происходит распаковывание объекта, который может бросить <code>NullPointerException</code> если объект <code>null</code>.</li>
+<li>Кэширование объектов. Метод <code>valueOf()</code> создает контейнер примитивных объектов, которые он кэширует. Поскольку значения кэшируются в диапазоне от -128 до 127 включительно , эти кэшируемые объекты могут себя вести по-разному.</li>
+<li>Ухудшение производительности. Автоупаковка или распаковка ухудшают производительность приложения, поскольку это создает нежелательный объект, из-за которого сборщику мусора приходится работать чаще.</li></ul><strong>Недостатки Автоупаковки</strong>
+
+Хотя Автоупаковка имеет ряд преимуществ, она имеет следующие недостатки:
+
+<strong>Листинг 8:</strong> Пример кода, показывающий проблему производительности.
+
+<pre class='lang-java line-numbers'><code>
+  public int sumEvenNumbers(List<Integer> intList) {
+          int sum = 0;
+          for (Integer i : intList) {
+              if (i % 2 == 0) {
+                  sum += i;
+              }
+          }
+         return sum;
+   }
+</code></pre>
+В этом участке кода, <code>sum +=i</code>  будет расширен на <code>sum = sum + i</code>. Начиная с оператора ‘<code>+</code>’ JVM запускает распаковку, так как оператор ‘<code>+</code>’ не может применяться к объекту Integer. А затем результат автоупаковывается обратно.
+
+До версии JDK 1.5 типы данных <code>int</code> и Integer различались. В случае перегрузки метода эти два типа использовались без проблем. С появление автоматической упаковки/распаковки это стало сложней.
+
+Примером этого является перегруженный метод <code>remove()</code> в <code>ArrayList</code>. Класс <code>ArrayList</code> имеет два метода удаления — <code>remove(index)</code> и <code>remove(object)</code>. В этом случае перегрузка методов не произойдет и соответствующий метод будет вызываться с соответствующими параметрами.
+<h2>Заключение</h2>Автоупаковка является механизмом для скрытого преобразования примитивных типов данных в соответствующие классы-оболочки(объекты). Компилятор использует метод <code>valueOf()</code> чтобы преобразовать примитивные типы в объекты, а методы <code>IntValue()</code>, <code>doubleValue()</code> и т.д., чтобы получить примитивные типы объекта. Автоупаковка преобразует логический тип <code>boolean</code> в Boolean, <code>byte</code> в Byte, <code>char</code> в Character,  <code>float</code> в Float, <code>int</code> в Integer, <code>long</code> в Long, <code>short</code> в Short. Распаковка происходит в обратном направлении.
+
+<a href="http://mrbool.com/autoboxing-and-unboxing-in-java/28238" target="_blank" rel="nofollow" >Оригинал статьи</a>

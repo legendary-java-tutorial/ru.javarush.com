@@ -1,0 +1,370 @@
+Обновляем статистику для админа - "Java-проект от А до Я"
+<p>----------------------------------------</p>
+Всем привет, дорогие друзья. В прошлом посте мы добавляли админские команды, а сегодня поговорим о том, как расширить нашу статистику. Также, поскольку система уже по сути готова к MVP, проведем небольшой рефакторинг...
+<p>----------------------------------------</p>
+Всем привет, дорогие друзья. В <a href="https://javarush.com/groups/posts/3376-java-proekt-ot-a-do-ja-dobavljaem-vozmozhnostjh-rabotih-admina-i-statistiku-dlja-nego-chastjh-1" target="_blank">прошлом посте</a> мы добавляли админские команды, а сегодня поговорим о том, как расширить нашу статистику. Также, поскольку система уже по сути готова к MVP, проведем небольшой рефакторинг.<table><tbody>
+<tr><td>
+Хотите сразу узнавать, когда выйдет новый код проекту? Когда выходит новая статья? Присоединяйтесь к моему <a href="https://t.me/joinchat/SpqRPBFo_sM6qm05" rel="nofollow" target="_blank">телеграм-каналу</a>. Там я собираю свои статьи, свои мысли, свою open-source разработку воедино.
+</td></tr>
+</tbody></table><img data-max-width="800" data-id="362434fe-ae53-4fcb-ae4e-be1331ff63e1" src="https://cdn.javarush.com/images/article/362434fe-ae53-4fcb-ae4e-be1331ff63e1/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Обновляем статистику для админа - 1"><h2>На кого рассчитана эта статья?</h2>Статья рассчитана на тех, кто уже прочел всю серию до этого. Тем, кто здесь впервые — вот <a href="https://javarush.com/groups/posts/2935-java-proekt-ot-a-do-ja-pishem-realjhnihy-proekt-dlja-portfolio" target="_blank">начало</a>. 
+
+Кто может осилить эту серию? Да практически любой человек, который разбирается с Java Core. Все остальное (как мне кажется) я даю и так в серии статей. 
+
+Тем, кто ждал написание всего проекта, чтобы начать разбираться уже сразу и не ждать новые статьи — уже можно начинать, все практически сделано.<h2>Расширяем статистику для админа</h2>Этот этап состоит из двух шагов: планирования и реализации. Приступим.<h3>Планируем обновленную статистику бота</h3>Прежде чем взяться за функционал, стоит подумать, что мы хотим. Какая статистика была бы интересна для админа, чтобы отслеживать работу бота? 
+
+Вначале, чтобы узнать мнение людей, я создал <a href="https://t.me/romankh3/71" rel="nofollow" target="_blank">пост в телеграм-канале</a>. Предложений не поступило: единственное что предложили оставить все, как есть, потому как идея показана, а как ее реализовать — каждый решает сам. 
+
+Согласен, и свое мнение надо иметь, поэтому решил выделить те данные, которые мне интересны:<ul>
+
+<li>нужно знать количество активных пользователей бота (это уже сделано);</li>
+<li>нужно знать количество неактивных пользователей — добавим это. Думаю, это очень полезно, потому как будет понятно, какова доля пользователей, которые отказываются пользоваться ботом, сред всех пользователей;</li>
+<li>количество активных пользователей в каждой активной группе;</li>
+<li>среднее количество подписок на одного пользователя.</li>
+
+</ul>Эти данные нужно отслеживать каждый день, или каждые два дня, например. А на основе этих данных — отрисовывать статистику за неделю / месяц / квартал. Это будет отдельная джоба, которая будет выполняться раз в день.
+
+Также на основе этих данных можно отслеживать изменение активных пользователей во времени. 
+
+Вот да, такая статистика была бы полезна для админа и более понятна.<h3>Реализуем выбранную статистику</h3>Не думаю, что в рамках этой статьи мы реально успеем всё реализовать, но точно уверен, что она нам понадобится вся. 
+
+На основе идей выше сделаем DTO класс с полями, которые мы хотим получать:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.dto;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+import java.util.List;
+
+/**
+* DTO for getting bot statistics.
+*/
+@Data
+@EqualsAndHashCode
+public class StatisticDTO {
+   private final int activeUserCount;
+   private final int inactiveUserCount;
+   private final List&lt;GroupStatDTO&gt; groupStatDTOs;
+   private final double averageGroupCountByUser;
+}
+</code></pre>
+и GroupStatDto
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.dto;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+/**
+* DTO for showing group id and title without data
+*/
+@Data
+
+@EqualsAndHashCode(exclude = {"title", "activeUserCount"})
+public class GroupStatDTO {
+
+   private final Integer id;
+   private final String title;
+   private final Integer activeUserCount;
+}
+</code></pre>
+Его мы создали в в пакете <span class="text-bold">dto</span> рядом с service, bot, command и другими. 
+
+Этими DTO мы будем пользоваться, чтобы передать данные StatisticService (мы его сейчас создадим) и StatCommand. 
+
+Напишем StatisticService:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.service;
+
+import com.github.javarushcommunity.jrtb.dto.StatisticDTO;
+
+/**
+* Service for getting bot statistics.
+*/
+public interface StatisticsService {
+   StatisticDTO countBotStatistic();
+}
+</code></pre>
+И его реализацию:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.service;
+
+import com.github.javarushcommunity.jrtb.dto.GroupStatDTO;
+import com.github.javarushcommunity.jrtb.dto.StatisticDTO;
+import com.github.javarushcommunity.jrtb.repository.entity.TelegramUser;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static org.springframework.util.CollectionUtils.isEmpty;
+
+@Service
+public class StatisticsServiceImpl implements StatisticsService {
+
+   private final GroupSubService groupSubService;
+   private final TelegramUserService telegramUserService;
+
+   public StatisticsServiceImpl(GroupSubService groupSubService, TelegramUserService telegramUserService) {
+       this.groupSubService = groupSubService;
+       this.telegramUserService = telegramUserService;
+   }
+
+   @Override
+   public StatisticDTO countBotStatistic() {
+       List&lt;GroupStatDTO&gt; groupStatDTOS = groupSubService.findAll().stream()
+               .filter(it -&gt; !isEmpty(it.getUsers()))
+               .map(groupSub -&gt; new GroupStatDTO(groupSub.getId(), groupSub.getTitle(), groupSub.getUsers().size()))
+               .collect(Collectors.toList());
+       List&lt;TelegramUser&gt; allInActiveUsers = telegramUserService.findAllInActiveUsers();
+       List&lt;TelegramUser&gt; allActiveUsers = telegramUserService.findAllActiveUsers();
+
+       double groupsPerUser = getGroupsPerUser(allActiveUsers);
+       return new StatisticDTO(allActiveUsers.size(), allInActiveUsers.size(), groupStatDTOS, groupsPerUser);
+   }
+
+   private double getGroupsPerUser(List&lt;TelegramUser&gt; allActiveUsers) {
+       return (double) allActiveUsers.stream().mapToInt(it -&gt; it.getGroupSubs().size()).sum() / allActiveUsers.size();
+   }
+}
+</code></pre>
+Обратите внимание, что следуя SOLID’у на уровне сервисов, мы используем только сервисы других сущностей (GroupSubService, TelgeramUserService), а не их репозитории. На первый взгляд это может выглядеть избыточно, но нет. Таким образом мы избегаем проблем с зависимостями объектов друг с другом.
+
+В TelegramUserService не было метода <span class="code">findAllInactiveUsers</span>, поэтому создадим его в TelegramUserService:
+
+<pre class="language-java line-numbers"><code>
+/**
+* Retrieve all inactive {@link TelegramUser}
+*
+* @return the collection of the inactive {@link TelegramUser} objects.
+*/
+List&lt;TelegramUser&gt; findAllInActiveUsers();
+</code></pre>
+В TelegramUserServiceImple:
+
+<pre class="language-java line-numbers"><code>
+@Override
+public List&lt;TelegramUser&gt; findAllInActiveUsers() {
+   return telegramUserRepository.findAllByActiveFalse();
+}
+</code></pre>
+Такого метода у репозитория нет, поэтому добавим его в TelegramUserRepository:
+
+<pre class="language-java line-numbers"><code>
+List&lt;TelegramUser&gt; findAllByActiveFalse();
+</code></pre>
+Это Spring Data, поэтому реализовывать этот метод нам не нужно.
+
+Сервис написали, пришло время сделать тест на это дело. Создаем StatisticServiceTest. Здесь мы мокаем данные из других сервисов и проверяем, а на основе замоканных данных нам собирают правильный GroupStatDTO объект:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.service;
+
+import com.github.javarushcommunity.jrtb.dto.GroupStatDTO;
+import com.github.javarushcommunity.jrtb.dto.StatisticDTO;
+import com.github.javarushcommunity.jrtb.repository.entity.GroupSub;
+import com.github.javarushcommunity.jrtb.repository.entity.TelegramUser;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import static java.util.Collections.singletonList;
+
+@DisplayName("Unit-level testing for StatisticsService")
+class StatisticsServiceTest {
+
+   private GroupSubService groupSubService;
+   private TelegramUserService telegramUserService;
+
+   private StatisticsService statisticsService;
+
+   @BeforeEach
+   public void init() {
+       groupSubService = Mockito.mock(GroupSubService.class);
+       telegramUserService = Mockito.mock(TelegramUserService.class);
+       statisticsService = new StatisticsServiceImpl(groupSubService, telegramUserService);
+   }
+
+   @Test
+   public void shouldProperlySendStatDTO() {
+       //given
+       Mockito.when(telegramUserService.findAllInActiveUsers()).thenReturn(singletonList(new TelegramUser()));
+       TelegramUser activeUser = new TelegramUser();
+       activeUser.setGroupSubs(singletonList(new GroupSub()));
+       Mockito.when(telegramUserService.findAllActiveUsers()).thenReturn(singletonList(activeUser));
+       GroupSub groupSub = new GroupSub();
+       groupSub.setTitle("group");
+       groupSub.setId(1);
+       groupSub.setUsers(singletonList(new TelegramUser()));
+       Mockito.when(groupSubService.findAll()).thenReturn(singletonList(groupSub));
+
+       //when
+       StatisticDTO statisticDTO = statisticsService.countBotStatistic();
+
+       //then
+       Assertions.assertNotNull(statisticDTO);
+       Assertions.assertEquals(1, statisticDTO.getActiveUserCount());
+       Assertions.assertEquals(1, statisticDTO.getInactiveUserCount());
+       Assertions.assertEquals(1.0, statisticDTO.getAverageGroupCountByUser());
+       Assertions.assertEquals(singletonList(new GroupStatDTO(groupSub.getId(), groupSub.getTitle(), groupSub.getUsers().size())),
+               statisticDTO.getGroupStatDTOs());
+   }
+
+}
+</code></pre>
+Далее нужно обновить нашу команду StatCommand:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import com.github.javarushcommunity.jrtb.command.annotation.AdminCommand;
+import com.github.javarushcommunity.jrtb.dto.StatisticDTO;
+import com.github.javarushcommunity.jrtb.service.SendBotMessageService;
+import com.github.javarushcommunity.jrtb.service.StatisticsService;
+import com.github.javarushcommunity.jrtb.service.TelegramUserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.telegram.telegrambots.meta.api.objects.Update;
+
+import java.util.stream.Collectors;
+
+/**
+* Statistics {@link Command}.
+*/
+@AdminCommand
+public class StatCommand implements Command {
+
+   private final StatisticsService statisticsService;
+   private final SendBotMessageService sendBotMessageService;
+
+   public final static String STAT_MESSAGE = "✨&lt;b&gt;Подготовил статистику&lt;/b&gt;✨\n" +
+           "- Количество активных пользователей: %s\n" +
+           "- Количество неактивных пользователей: %s\n" +
+           "- Среднее количество групп на одного пользователя: %s\n\n" +
+           "&lt;b&gt;Информация по активным группам&lt;/b&gt;:\n" +
+           "%s";
+
+   @Autowired
+   public StatCommand(SendBotMessageService sendBotMessageService, StatisticsService statisticsService) {
+       this.sendBotMessageService = sendBotMessageService;
+       this.statisticsService = statisticsService;
+   }
+
+   @Override
+   public void execute(Update update) {
+       StatisticDTO statisticDTO = statisticsService.countBotStatistic();
+
+       String collectedGroups = statisticDTO.getGroupStatDTOs().stream()
+               .map(it -&gt; String.format("%s (id = %s) - %s подписчиков", it.getTitle(), it.getId(), it.getActiveUserCount()))
+               .collect(Collectors.joining("\n"));
+
+       sendBotMessageService.sendMessage(update.getMessage().getChatId().toString(), String.format(STAT_MESSAGE,
+                       statisticDTO.getActiveUserCount(),
+                       statisticDTO.getInactiveUserCount(),
+                       statisticDTO.getAverageGroupCountByUser(),
+                       collectedGroups));
+   }
+}
+</code></pre>
+Здесь мы просто компонуем всю информацию из GroupStatDTO в сообщение для админа.
+
+Так как теперь у нас StatCommand — не просто команда, нужно написать для нее отдельный тест. Переписываем StatCommandTest:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import com.github.javarushcommunity.jrtb.dto.GroupStatDTO;
+import com.github.javarushcommunity.jrtb.dto.StatisticDTO;
+import com.github.javarushcommunity.jrtb.service.SendBotMessageService;
+import com.github.javarushcommunity.jrtb.service.StatisticsService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+
+import java.util.Collections;
+
+import static com.github.javarushcommunity.jrtb.command.AbstractCommandTest.prepareUpdate;
+import static com.github.javarushcommunity.jrtb.command.StatCommand.STAT_MESSAGE;
+import static java.lang.String.format;
+
+@DisplayName("Unit-level testing for StatCommand")
+public class StatCommandTest {
+
+   private SendBotMessageService sendBotMessageService;
+   private StatisticsService statisticsService;
+   private Command statCommand;
+
+   @BeforeEach
+   public void init() {
+       sendBotMessageService = Mockito.mock(SendBotMessageService.class);
+       statisticsService = Mockito.mock(StatisticsService.class);
+       statCommand = new StatCommand(sendBotMessageService, statisticsService);
+   }
+
+   @Test
+   public void shouldProperlySendMessage() {
+       //given
+       Long chatId = 1234567L;
+       GroupStatDTO groupDto = new GroupStatDTO(1, "group", 1);
+       StatisticDTO statisticDTO = new StatisticDTO(1, 1, Collections.singletonList(groupDto), 2.5);
+       Mockito.when(statisticsService.countBotStatistic())
+               .thenReturn(statisticDTO);
+
+       //when
+       statCommand.execute(prepareUpdate(chatId, CommandName.STAT.getCommandName()));
+
+       //then
+       Mockito.verify(sendBotMessageService).sendMessage(chatId.toString(), format(STAT_MESSAGE,
+               statisticDTO.getActiveUserCount(),
+               statisticDTO.getInactiveUserCount(),
+               statisticDTO.getAverageGroupCountByUser(),
+               format("%s (id = %s) - %s подписчиков", groupDto.getTitle(), groupDto.getId(), groupDto.getActiveUserCount())));
+   }
+
+}
+</code></pre>
+Здесь мы проверили, что передается именно то сообщение, которое мы ожидаем.
+
+Разумеется, нужно будет обновить CommandContainer и JavaRushTelegramBot, чтобы CommandStat теперь передавал StatisticCommand. Оставлю это на вашей совести.
+
+Но как же это будет выглядеть? Запускаем на тестовом боте и пишем /stat, получаем:<img data-max-width="512" data-id="01b1d5e2-6e27-411e-9c18-cf77f484a464" src="https://cdn.javarush.com/images/article/01b1d5e2-6e27-411e-9c18-cf77f484a464/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: Обновляем статистику для админа - 2">Разумеется, это теперь видно только админам. Теперь им будет понятнее, что творится с ботом.<h2>В завершение</h2>Ставим в последний раз новую SNAPSHOT версию в pom.xml:
+
+<pre class="language-java line-numbers"><code>
+&lt;version&gt;0.8.0-SNAPSHOT&lt;/version&gt;
+</code></pre>
+Раз обновили версию, значит, нужно обновить и RELEASE_NOTES:
+
+<div class="terminal"># Release Notes
+
+## 0.8.0-SNAPSHOT
+*   JRTB-10: extended bot statistics for admins.</div>
+Казалось бы, зачем все это заполнять? Зачем писать описание, кто его читать будет? Я вам скажу, что просто написать код — это только треть (а то и четверть) дела. Потому что кто-то должен потом этот код читать, расширять, поддерживать. А документирование дает возможность сделать это быстрее и лучше.
+
+Все изменения по коду вы найдете в этом <a href="https://github.com/javarushcommunity/javarush-telegrambot/pull/26" rel="nofollow" target="_blank">пулл-реквесте</a>.
+
+Что нам осталось? Только последняя статья с небольшими правками в рефакторинге вместе с ретроспективой. Пошаманим перед релизом и проанализируем, к чему мы пришли за эти 8 месяцев.<h2>Мысли о будущем бота</h2>Пока готовил ужин, думал о будущем телеграм-бота, что еще осталось, что хочется сделать. И понял, что совсем не затронул тему сохранения состояния базы (бэкап) данных, чтобы можно было восстановить ее в случае чего. 
+
+Думаю, вот как бы я хотел это видеть? Так, чтобы максимально автоматизировать этот процесс. И на фоне этих мыслей пришел к такому выводу: хочется, чтобы бэкапы базы данных создавались время от времени и сохранялись где-то без моего участия. 
+
+Но где хранить? Определенно, это нужно делать вне docker’a, в котором развернута база. На основном сервере, где развернут докер с приложением, тоже не особо хочется, потому что с сервером может что-то произойти и все, тю-тю данным. И в результате я пришел к идее. Сразу скажу, что я не знаю, можно ли ее реализовать или нет, но она мне больше всего нравится. 
+
+Сама идея:<ol>
+<li>Бэкапы каждый день (неделю, месяц или другой промежуток времени) будет делать бэкап в специальный чат в телеграмме, доступ к которому будет админам, например. Такое распределенное хранилище данных))</li>
+<li>Добавить админускую команду моментального бэкапа для админских нужд.</li>
+<li>Добавить СУПЕР АДМИНСКУЮ команду, которая бы умела восстанавливать базу данных по предоставленному файлу.</li>
+
+</ol>Таким образом управление данными БД становится проще. Плюс работа бота станет более независимой от сервера, на котором находится, и в любой момент может быть развернута при помощи одной команды на любом другом сервере.
+
+Но тут в голову приходят мысли о том, что это не очень безопасно, потому как доступ к данным достаточно прост. Поэтому логичней будет поставить доступ только к одному супер админу к этим данным.
+
+<em>как обычно <s>лайк - подписка - колокольчик</s> ставь звезду <a href="https://github.com/javarushcommunity/javarush-telegrambot" rel="nofollow" target="_blank">нашему проекту</a>, пиши комментарии и оценивай статью!</em>
+
+Предпоследний раз в этой серии статей говорю вам до встречи!<h4><a href="https://javarush.com/groups/posts/2935-java-proekt-ot-a-do-ja-pishem-realjhnihy-proekt-dlja-portfolio#articles" target="_blank">Список всех материалов серии в начале этой статьи.</a></h4>

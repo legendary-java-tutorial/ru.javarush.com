@@ -1,0 +1,258 @@
+Добавляем возможность подписаться на группу статей. (Часть 3) - "Java-проект от А до Я"
+<p>----------------------------------------</p>
+Еще раз привет. Это заключительная статья из STEP_6, в которой мы поговорим о добавлении функциональности задачи JRTB-6. В тех двух предыдущих статьях мы уже подготовили почти все...
+<p>----------------------------------------</p>
+Еще раз привет. Это заключительная статья из STEP_6, в которой мы поговорим о добавлении функциональности задачи <a href="https://github.com/javarushcommunity/javarush-telegrambot/issues/6" rel="nofollow" target="_blank">JRTB-6</a>. 
+
+В тех двух предыдущих статьях (<a href="https://javarush.com/groups/posts/3300-java-proekt-ot-a-do-ja-dobavljaem-vozmozhnostjh-podpisatjhsja-na-gruppu-statey-chastjh-1" target="_blank">часть 1</a>, <a href="https://javarush.com/groups/posts/3313-java-proekt-ot-a-do-ja-dobavljaem-vozmozhnostjh-podpisatjhsja-na-gruppu-statey-chastjh-2" target="_blank">часть 2</a>) мы уже подготовили почти все, что нужно. В этой части — кульминация процесса.
+
+Всем, кто дочитал эту серию статей до этого момента от самого начала — большой респект. Это значит, что мотивации хватит на то, чтобы найти отличную работу. 
+
+А теперь перейдем к делу.<img data-max-width="800" data-id="3a674a8e-51d6-428e-8687-3421ec0aaec7" src="https://cdn.javarush.com/images/article/3a674a8e-51d6-428e-8687-3421ec0aaec7/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем возможность подписаться на группу статей. Часть 3 - 1"><h2>Реализуем JRTB-6</h2>В этот раз будем делать задачу со стороны телеграм-бота, потому что работа по обновлению БД вся сделана, сущности БД настроены и готовы к работе.
+
+Добавим в <span class="code">CommandName</span> новое значение — LIST_GROUP_SUB:
+
+<pre class="language-java line-numbers"><code>
+LIST_GROUP_SUB("/listGroupSub");
+</code></pre>
+Создадим команду <span class="code">ListGroupSubCommand</span>:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import com.github.javarushcommunity.jrtb.repository.entity.GroupSub;
+import com.github.javarushcommunity.jrtb.repository.entity.TelegramUser;
+import com.github.javarushcommunity.jrtb.service.SendBotMessageService;
+import com.github.javarushcommunity.jrtb.service.TelegramUserService;
+import org.telegram.telegrambots.meta.api.objects.Update;
+
+import javax.ws.rs.NotFoundException;
+import java.util.stream.Collectors;
+
+import static com.github.javarushcommunity.jrtb.command.CommandUtils.getChatId;
+
+/**
+* {@link Command} for getting list of {@link GroupSub}.
+*/
+public class ListGroupSubCommand implements Command {
+
+   private final SendBotMessageService sendBotMessageService;
+   private final TelegramUserService telegramUserService;
+
+   public ListGroupSubCommand(SendBotMessageService sendBotMessageService, TelegramUserService telegramUserService) {
+       this.sendBotMessageService = sendBotMessageService;
+       this.telegramUserService = telegramUserService;
+   }
+
+   @Override
+   public void execute(Update update) {
+       //todo add exception handling
+       TelegramUser telegramUser = telegramUserService.findByChatId(getChatId(update))
+               .orElseThrow(NotFoundException::new);
+
+       String message = "Я нашел все подписки на группы: \n\n";
+       String collectedGroups = telegramUser.getGroupSubs().stream()
+               .map(it -&gt; "Группа: " + it.getTitle() + " , ID = " + it.getId() + " \n")
+               .collect(Collectors.joining());
+
+       sendBotMessageService.sendMessage(telegramUser.getChatId(), message + collectedGroups);
+   }
+}
+</code></pre>
+Здесь все максимально просто — по имеющемуся chat_id получаем пользователя, и у него уже в объекте будут собраны все его подписки на группы. Мы это настраивали во второй части. 
+
+Опять-таки, добавил //todo, чтобы не забыть добавить обработку исключений, которые могут появиться при работе. 
+
+Следующим этапом обновляем <span class="code">CommandContainer</span>, добавляя ему новую команду:
+
+<pre class="language-java line-numbers"><code>
+put(LIST_GROUP_SUB.getCommandName(), new GroupSubListCommand(sendBotMessageService, telegramUserService))
+</code></pre>
+По сути все: теперь нужно написать еще тесты, обновить <span class="text-bold">/help</span> команду (добавить описание для новых команд) и протестировать новый функционал через Телеграм.
+
+Напишем тест для <span class="code">ListGroupSubCommand</span>. Так как логика у команды не типичная, то будем писать тест, не привязываясь к <span class="code">AbstractCommandTest</span> классу, как мы делали до этого:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import com.github.javarushcommunity.jrtb.repository.entity.GroupSub;
+import com.github.javarushcommunity.jrtb.repository.entity.TelegramUser;
+import com.github.javarushcommunity.jrtb.service.SendBotMessageService;
+import com.github.javarushcommunity.jrtb.service.TelegramUserService;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.api.objects.Update;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static com.github.javarushcommunity.jrtb.command.CommandName.LIST_GROUP_SUB;
+
+@DisplayName("Unit-level testing for ListGroupSubCommand")
+public class ListGroupSubCommandTest {
+
+   @Test
+   public void shouldProperlyShowsListGroupSub() {
+       //given
+       TelegramUser telegramUser = new TelegramUser();
+       telegramUser.setActive(true);
+       telegramUser.setChatId("1");
+
+       List&lt;GroupSub&gt; groupSubList = new ArrayList&lt;&gt;();
+       groupSubList.add(populateGroupSub(1, "gs1"));
+       groupSubList.add(populateGroupSub(2, "gs2"));
+       groupSubList.add(populateGroupSub(3, "gs3"));
+       groupSubList.add(populateGroupSub(4, "gs4"));
+
+       telegramUser.setGroupSubs(groupSubList);
+
+       SendBotMessageService sendBotMessageService = Mockito.mock(SendBotMessageService.class);
+       TelegramUserService telegramUserService = Mockito.mock(TelegramUserService.class);
+
+       Mockito.when(telegramUserService.findByChatId(telegramUser.getChatId())).thenReturn(Optional.of(telegramUser));
+
+       ListGroupSubCommand command = new ListGroupSubCommand(sendBotMessageService, telegramUserService);
+
+       Update update = new Update();
+       Message message = Mockito.mock(Message.class);
+       Mockito.when(message.getChatId()).thenReturn(Long.valueOf(telegramUser.getChatId()));
+       Mockito.when(message.getText()).thenReturn(LIST_GROUP_SUB.getCommandName());
+       update.setMessage(message);
+
+       String collectedGroups = "Я нашел все подписки на группы: \n\n" +
+               telegramUser.getGroupSubs().stream()
+                       .map(it -&gt; "Группа: " + it.getTitle() + " , ID = " + it.getId() + " \n")
+                       .collect(Collectors.joining());
+
+       //when
+       command.execute(update);
+
+       //then
+       Mockito.verify(sendBotMessageService).sendMessage(telegramUser.getChatId(), collectedGroups);
+   }
+
+   private GroupSub populateGroupSub(Integer id, String title) {
+       GroupSub gs = new GroupSub();
+       gs.setId(id);
+       gs.setTitle(title);
+       return gs;
+   }
+}
+</code></pre><h2>Обновим /help команду</h2>В нашем случае <span class="text-bold">/help</span> команда выполняет роль документации для работы с ботом, поэтому ее нужно не забывать обновлять, чтобы пользователь смог ею воспользоваться.
+
+У нас добавились две команды, поэтому обновим текст, который будет приходить:
+
+<pre class="language-java line-numbers"><code>
+public static final String HELP_MESSAGE = String.format("✨Дотупные команды✨\n\n"
+
+               + "Начать\\закончить работу с ботом:\n"
+               + "%s - начать работу со мной\n"
+               + "%s - приостановить работу со мной\n\n"
+
+               + "Работа с подписками на группы:\n"
+               + "%s - подписаться на группу статей\n"
+               + "%s - получить список групп, на которые подписан\n\n"
+
+               + "%s - получить помощь в работе со мной\n"
+               + "%s - получить мою статистику использования\n",
+       START.getCommandName(), STOP.getCommandName(), ADD_GROUP_SUB.getCommandName(),
+       LIST_GROUP_SUB.getCommandName(), HELP.getCommandName(), STAT.getCommandName());
+</code></pre>
+Также я обновил текст ответов бота: сделал так, чтобы он всегда был на “ты” с пользователем, а то там было и “ты”, и “вы”...
+
+Теперь можно будет создать хоть некую связь в работе бота.<h2>Тестируем работу обновленного бота</h2>Локально запускаем нашего бота и делаем следующее:<ol>
+
+<li>Выполняем <span class="text-bold">/start</span> команду — чтобы быть уверенным, что пользователь в тестовом случае добавлен в БД.</li>
+<li>Выполняем <span class="text-bold">/help</span> команду — проверяем, что все ок, как мы хотели.</li>
+<li>Далее выполняем <span class="text-bold">/addGroupSub</span> команду.</li>
+<li>Из предложенного списка ID-шников групп добавляем в разнобой несколько.</li>
+<li>Выполняем <span class="text-bold">/listGroupSub</span> команду, чтобы удостовериться, что группы записаны на пользователя.</li>
+
+</ol>Поехали!
+
+Запускаем БД через docker-compose-test.yml и стартуем наш SpringBoot. Далее, заходим в нашего тестового бота и выполняем /start команду, а за ней — <span class="text-bold">/help</span>:<img data-max-width="800" data-id="e056190a-d931-4e11-9764-9ba1d31423f6" src="https://cdn.javarush.com/images/article/e056190a-d931-4e11-9764-9ba1d31423f6/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем возможность подписаться на группу статей. Часть 3 - 2">Далее вводим команду <span class="text-bold">/addGroupSub</span>:<img data-max-width="800" data-id="b1687531-6eec-4041-b76e-d9f2e6327774" src="https://cdn.javarush.com/images/article/b1687531-6eec-4041-b76e-d9f2e6327774/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем возможность подписаться на группу статей. Часть 3 - 3">Выпадающий список говорит, что Java-клиент работает как нужно: у нас все группы с их ID-шниками, описание команды помогает (надеюсь) понять, что нужно дальше, поэтому добавляем несколько групп в подписку:<img data-max-width="800" data-id="da476478-849f-4f2d-adc5-7c2c2a951481" src="https://cdn.javarush.com/images/article/da476478-849f-4f2d-adc5-7c2c2a951481/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем возможность подписаться на группу статей. Часть 3 - 4">Теперь у нас есть 5 подписок, так что можно выполнить команду <span class="text-bold">/listGroupSub</span>:<img data-max-width="800" data-id="6c9673ab-6f20-4f02-8804-313a3e311ee5" src="https://cdn.javarush.com/images/article/6c9673ab-6f20-4f02-8804-313a3e311ee5/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем возможность подписаться на группу статей. Часть 3 - 5">И тут мы получаем какую-то дичь... Непонятно, почему только что показывало <span class="text-bold">title</span> без каких-либо проблем, а здесь нет. 
+
+Идем в базу данных, чтобы посмотреть что там:<img data-max-width="512" data-id="60c70419-9ef9-4046-ae4f-fe7aae50158c" src="https://cdn.javarush.com/images/article/60c70419-9ef9-4046-ae4f-fe7aae50158c/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем возможность подписаться на группу статей. Часть 3 - 6">В базе данных записаны те же вопросы, но только для тех, где кириллица. Значит какая-то проблема с кодировкой. Нужно настроить, видимо, базу данных и драйвер для соединения с БД. Нам нужно UTF-8. Но как его добавить?
+
+После нескольких минут поиска в интернетах <a href="https://stackoverflow.com/a/14603678/10219066" rel="nofollow" target="_blank">нашел</a>: для драйвера нужно обновить url переменную. И для настройки образа докера в docker-compose вообще <a href="https://stackoverflow.com/a/53398381/10219066" rel="nofollow" target="_blank">самая первая ссылка</a>, но ответ не первый))
+
+Поэтому, зная это, обновим проперти и docker-compose файлы.
+
+<pre class="language-java line-numbers"><code>
+application.properties:
+spring.datasource.url=jdbc:mysql://jrtb-db:3306/jrtb_db?characterEncoding=UTF-8
+
+application-test.properties:
+spring.datasource.url=jdbc:mysql://localhost:3306/dev_jrtb_db?characterEncoding=UTF-8
+
+docker-compose.yml (добавил последнюю строку):
+jrtb-db:
+ image: mysql:5.7
+ restart: always
+ environment:
+   MYSQL_USER: ${BOT_DB_USERNAME}
+   MYSQL_PASSWORD: ${BOT_DB_PASSWORD}
+   MYSQL_DATABASE: 'jrtb_db'
+   MYSQL_ROOT_PASSWORD: 'root'
+ ports:
+   - '3306:3306'
+ expose:
+   - '3306'
+ command: --character-set-server=utf8 --collation-server=utf8_general_ci
+
+docker-compose-test.yml (добавил последнюю строку)
+jrtb-db-dev:
+ image: mysql:5.7
+ restart: always
+ environment:
+   MYSQL_DATABASE: 'dev_jrtb_db'
+   # So you don't have to use root, but you can if you like
+   MYSQL_USER: 'dev_jrtb_db_user'
+   # You can use whatever password you like
+   MYSQL_PASSWORD: 'dev_jrtb_db_password'
+   # Password for root access
+   MYSQL_ROOT_PASSWORD: 'root'
+ ports:
+   # &lt;Port exposed&gt; : &lt; MySQL Port running inside container&gt;
+   - '3306:3306'
+ expose:
+   # Opens port 3306 on the container
+     - '3306'
+ command: --character-set-server=utf8 --collation-server=utf8_general_ci
+</code></pre>
+После этих обновлений нужно стереть все данные в БД и начать заново. Стереть очень просто: нужно выполнить команду: 
+
+<span class="text-bold">docker-compose -f docker-compose-test.yml down</span>
+
+после чего все данные и БД удаляются.
+
+И заново запустить, уже с обновленной кодировкой:
+
+<span class="text-bold">docker-compose -f docker-compose-test.uml up</span>
+
+База готова. Запускаем обновленное приложение и смотрим. Я сразу пробегусь быстро и покажу результат:<img data-max-width="800" data-id="b4325325-cce2-4928-9c5c-636255732b7b" src="https://cdn.javarush.com/images/article/b4325325-cce2-4928-9c5c-636255732b7b/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем возможность подписаться на группу статей. Часть 3 - 7">И вот теперь мы получили именно то, что и хотели. Вот это похоже уже на правду.<h2>Окончание</h2>Теперь я думаю, что можно завершать работу по этому шагу. Сделано много, действительно много.
+
+Обновим версию приложения до <span class="text-bold">0.5.0-SNAPSHOT</span> и RELEASE_NOTES.
+
+<div class="terminal"># Release Notes
+
+## 0.5.0-SNAPSHOT
+
+*   JRTB-5: added ability to subscribe on group
+*   JRTB-6: added ability to get a list of group subscriptions.</div>
+Дальше все как обычно: создаем новый коммит со всеми изменениями. Главное — для отчетности добавить описание двух задач, которые сделали за этот шаг. Поэтому вот такой будет коммент:
+
+<div class="terminal">STEP_6
+JRTB-5: added ability to subscribe on group
+JRTB-6: added ability to see the list of the group subscription.</div>
+В итоге получилось 47 измененных файлов… Это большое изменение. Хотя по описанию функциональности и не скажешь. Ведь чтобы понять всю глубину, нужно знать, что необходимо написать джава клиент к АПИ, обновить все приложение по сути. Вот такая она, работа на сервере — работы много, а видимость со стороны клиентской части небольшая…))
+
+<em>Друзья, традиционно предлагаю вам способ показать интерес к моей работе — подписаться на <a href="https://github.com/romankh3" rel="nofollow" target="_blank">гитхаб аккаунт</a>, присоединиться к <a href="https://t.me/romankh3" rel="nofollow" target="_blank">телеграм-каналу</a> и написать вопрос по статье, если что-то не понятно!</em>
+
+Вот ссылка на пулл-реквест с изменениями за этот <a href="https://github.com/javarushcommunity/javarush-telegrambot/pull/22" rel="nofollow" target="_blank">STEP_6</a>.
+
+Всем спасибо за прочтение. Дальше больше — поговорим об удалении подписки, деактивации профиля и другое. Не переключайтесь))<h4><a href="https://javarush.com/groups/posts/2935-java-proekt-ot-a-do-ja-pishem-realjhnihy-proekt-dlja-portfolio#articles" target="_blank">Список всех материалов серии в начале этой статьи.</a></h4>

@@ -1,0 +1,171 @@
+Ответы на самые популярные вопросы об интерфейсе Map
+<p>----------------------------------------</p>
+Привет! Сегодня мы дадим ответы на самые распространенные вопросы о Map, но для начала давай вспомним, что это такое. Map — это структура данных, которая содержит набор пар “ключ-значение”. По своей структуре данных напоминает словарь, поэтому ее часто так и называют...
+<p>----------------------------------------</p>
+Привет! Сегодня мы дадим ответы на самые распространенные вопросы о Map, но для начала давай вспомним, что это такое.
+
+<img data-id="073c4f09-16b7-4b63-98d6-dae7cff77e27" data-max-width="850" alt="Ответы на самые популярные вопросы об интерфейсе Map - 1" src="https://cdn.javarush.com/images/article/073c4f09-16b7-4b63-98d6-dae7cff77e27/1024.jpeg"><strong>Map</strong> — это структура данных, которая содержит набор пар “ключ-значение”. По своей структуре данных напоминает словарь, поэтому ее часто так и называют. В то же время, Map является <strong>интерфейсом</strong>, и в стандартном jdk содержит основные реализации: Hashmap, LinkedHashMap, Hashtable, TreeMap. Самая используемая реализация — Hashmap, поэтому и будем ее использовать в наших примерах. 
+
+Вот так выглядит стандартное создание и заполнение мапы:
+
+<pre class="lang-java line-numbers"><code>
+Map&lt;Integer, String&gt; map = new HashMap&lt;&gt;();
+map.put(1, "string 1");
+map.put(2, "string 2");
+map.put(3, "string 3");
+</code></pre>
+А так — получение значений по ключу:
+
+<pre class="lang-java line-numbers"><code>
+String string1 = map.get(1);
+String string2 = map.get(2);
+String string3 = map.get(3);
+</code></pre>
+Если все из вышесказанного понятно, приступим к нашим ответам на популярные вопросы!
+<h2>0. Как перебрать все значения Map</h2>Перебор значений — самая частая операция, которую вы выполняете с мапами. Все пары (ключ-значение) хранятся во внутреннем интерфейсе Map.Entry, а чтобы получить их, нужно вызвать метод <code>entrySet()</code>. Он возвращает множество (Set) пар, которые можно перебрать в цикле:
+
+<pre class="lang-java line-numbers"><code>
+for(Map.Entry&lt;Integer, String&gt; entry: map.entrySet()) {
+   // get key
+   Integer key = entry.getKey();
+   // get value
+   String value = entry.getValue();
+}
+
+Или используя итератор:
+Iterator&lt;Map.Entry&lt;Integer, String&gt;&gt; itr = map.entrySet().iterator();
+while(itr.hasNext()) {
+   Map.Entry&lt;Integer, String&gt; entry =  itr.next();
+   // get key
+   Integer key = entry.getKey();
+   // get value
+   String value = entry.getValue();
+}
+</code></pre><h2>1. Как конвертировать Map в List</h2>У интерфейса Map существует 3 метода, которые возвращают перечень элементов:
+<ul>
+<li>keySet() — возвращает множество(Set) ключей;</li>
+<li>values() — возвращает коллекцию(Collection) значений;</li>
+<li>entrySet() — возвращает множество(Set) наборов “ключ-значение”.</li>
+</ul>Если заглянуть в конструкторы класса <code>ArrayList</code>, можно заметить, что существует конструктор с аргументом типа Collection. Так как Set является наследником Collection, результаты всех вышеупомянутых методов можно передать в конструктор класса <code>ArrayList</code>. Таким образом, мы создадим новые списки и заполним их значениями из <code>Map</code>:
+
+<pre class="lang-java line-numbers"><code>
+// key list
+List&lt;Integer&gt; keyList = new ArrayList&lt;&gt;(map.keySet());
+// value list
+List&lt;String&gt; valueList = new ArrayList&lt;&gt;(map.values());
+// key-value list
+List&lt;Map.Entry&lt;Integer, String&gt;&gt; entryList = new ArrayList&lt;&gt;(map.entrySet());
+</code></pre><h2>2. Как отсортировать ключи мапы</h2>Сортировка мап — тоже довольно частая операция в программировании. Сделать это можно несколькими способами:
+<ol>
+<li><p>Поместить Map.Entry в список и отсортировать его, <a href="https://javarush.com/groups/posts/2262-comparator-v-java" target="_blank">используя Comparator</a>.</p>
+<p>В компараторе будем сравнивать исключительно ключи пар:</p>
+
+<pre class="lang-java line-numbers"><code>
+List<map.entry<integer, string="">&gt; list = new ArrayList(map.entrySet());
+Collections.sort(list, new Comparator&lt;Map.Entry&lt;Integer, String&gt;&gt;() {
+   @Override
+   public int compare(Map.Entry&lt;Integer, String&gt; o1, Map.Entry&lt;Integer, String&gt; o2) {
+       return o1.getKey() - o2.getKey();
+   }
+});
+</map.entry<integer,></code></pre>
+<p>Если разобрался с лямбдами, эту запись можно существенно сократить:</p>
+<pre class="lang-java line-numbers"><code>
+Collections.sort(list, Comparator.comparingInt(Map.Entry::getKey));
+</code></pre></li>
+<li><p>Использовать <code>SortedMap</code>, а точнее, ее реализацию — <code>TreeMap</code>, которая в конструкторе принимает Comparator. Данный компаратор будет применяться к ключам мапы, поэтому ключами должны быть классы, реализующие интерфейс <code>Comparable</code>:
+
+</p><pre class="lang-java line-numbers"><code>
+SortedMap&lt;Integer, String&gt; sortedMap = new TreeMap&lt;&gt;(new Comparator&lt;Integer&gt;() {
+   @Override
+   public int compare(Integer o1, Integer o2) {
+       return o1 - o2;
+   }
+});
+</code></pre>
+<p>И, конечно, все можно переписать, используя лямбды:</p>
+<pre class="lang-java line-numbers"><code>
+SortedMap&lt;Integer, String&gt; sortedMap = new TreeMap&lt;&gt;(Comparator.comparingInt(o -&gt; o));
+</code></pre>
+<p>В отличие от первого способа, используя SortedMap, мы всегда будем хранить данные в отсортированном виде.</p></li>
+</ol><h2>3. Как отсортировать значения мапы</h2>Здесь стоит использовать подход, аналогичный первому для ключей — получать список значений и сортировать их в списке:
+
+<pre class="lang-java line-numbers"><code>
+List &lt;Map.Entry&lt;Integer, String&gt;&gt; valuesList = new ArrayList(map.entrySet());
+Collections.sort(list, new Comparator&lt;Map.Entry&lt;Integer, String&gt;&gt;() {
+   @Override
+   public int compare(Map.Entry&lt;Integer, String&gt; o1, Map.Entry&lt;Integer, String&gt; o2) {
+       return o1.getValue().compareTo(o2.getValue());
+   }
+});
+</code></pre>
+И лямбда для этого выглядит так:
+
+<pre class="lang-java line-numbers"><code>
+Collections.sort(list, Comparator.comparing(Map.Entry::getValue));
+</code></pre><h2>4. В чем разница между HashMap, TreeMap, и Hashtable</h2>Как упоминалось ранее, существуют 3 основные реализации интерфейса Map. У каждой из них есть свои особенности:
+<ol><li><p><strong>Порядок элементов.</strong> <code>HashMap</code> и <code>Hashtable</code> не гарантируют, что элементы будут храниться в порядке добавления. Кроме того, они не гарантируют, что порядок элементов не будет меняться со временем. В свою очередь, <code>TreeMap</code> гарантирует хранение элементов в порядке добавления или же в соответствии с заданным компаратором.</p></li>
+<li><p><strong>Допустимые значения.</strong> <code>HashMap</code> позволяет иметь ключ и значение null, <code>HashTable</code> — нет. TreeMap может использовать значения null только если это позволяет компаратор. Без использования компаратора (при хранении пар в порядке добавления) значение null не допускается.</p></li>
+<li><p><strong>Синхронизация.</strong> Только <code>HashTable</code> синхронизирована, остальные — нет. Если к мапе не будут обращаться разные потоки, рекомендуется использовать HashMap вместо HashTable.</p></li>
+</ol><span class="text-bold">И общее сравнение реализаций:</span>
+<table>
+<tbody><tr>
+<th></th>
+<th>HashMap</th>
+<th>HashTable</th>
+<th>TreeMap</th>
+</tr>
+<tr>
+<td>Упорядоченность элементов</td>
+<td>нет</td>
+<td>нет</td>
+<td>да</td>
+</tr>
+<tr>
+<td>null в качестве значения</td>
+<td>да</td>
+<td>нет</td>
+<td>да/нет</td>
+</tr>
+<tr><td>Потокобезопасность</td>
+<td>нет</td>
+<td>да</td>
+<td>нет</td>
+</tr>
+<tr>
+<td>Алгоритмическая сложность поиска элементов</td>
+<td>O(1)</td>
+<td>O(1)</td>
+<td>O(log n)</td>
+</tr>
+<tr>
+<td>Структура данных под капотом</td>
+<td>хэш-таблица</td>
+<td>хэш-таблица</td>
+<td>красно-чёрное дерево</td>
+</tr>
+</tbody></table><h2>5. Как создать двунаправленную мапу</h2>Иногда появляется необходимость использовать структуру данных, в которой и ключи, и значения будут уникальными, то есть мапа будет содержать пары “ключ-ключ”.
+
+Такая структура данных позволяет создать "инвертированный просмотр/поиск" по мапе. То есть, мы можем найти ключ по его значению.Эту структуру данных называют двунаправленной мапой, которая, к сожалению, не поддерживается JDK. Но, к счастью, ее реализацию можно найти в библиотеках Apache Common Collections или Guava. Там она называется BidiMap и BiMap соответственно. Эти реализации вводят ограничения на уникальность ключей и значений. Таким образом получаются отношения one-to-one.
+<h2>6. Как создать пустую Map</h2>Создать пустую мапу можно двумя способами:<ol>
+<li><p>Обычная инициализация объекта:</p>
+<pre class="lang-java line-numbers"><code>
+Map&lt;Integer, String&gt; emptyMap = new HashMap&lt;&gt;();
+</code></pre></li>
+<li><p>Создание неизменяемой (immutable) пустой мапы:</p>
+<pre class="lang-java line-numbers"><code>
+Map&lt;Integer, String&gt; emptyMap =  Collections.emptyMap();
+</code></pre></li></ol>При попытке добавления данных в такую мапу мы получим:
+
+<code>UnsupportedOperationException</code> исключение.
+
+В этой статье мы рассмотрели самые частые вопросы, которые могли возникнуть у тебя при использовании интерфейса Map. 
+<table>
+<tbody><tr>
+<th>Что еще почитать:</th>
+</tr>
+<tr>
+<td><ul>
+<li><a href="https://javarush.com/groups/posts/1981-dlja-chego-v-java-nuzhnih-interfeysih" target="_blank">Для чего в Java нужны интерфейсы</a></li>
+<li><a href="https://javarush.com/groups/posts/1940-klass-hashmap-" target="_blank">HashMap — что за карта такая?</a></li>
+</ul></td></tr></tbody></table>

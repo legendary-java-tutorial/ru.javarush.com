@@ -1,0 +1,234 @@
+Популярно о лямбда-выражениях в Java. С примерами и задачами. Часть 2
+<p>----------------------------------------</p>
+Для кого предназначена эта статья? Для тех, кто читал первую часть этой статьи, для тех, кто считает, что уже неплохо знает Java Core, но понятия не имеет о лямбда-выражениях в Java. Или, возможно, что-то ...
+
+<p>----------------------------------------</p>
+<em><strong>Для кого предназначена эта статья?</strong></em>
+
+<ul>
+<li>Для тех, кто читал <a href="https://javarush.com/groups/posts/264-populjarno-o-ljambda-vihrazhenijakh-v-java-s-primerami-i-zadachami-chastjh-1-" target="_blank">первую часть</a> этой статьи;</li><br>
+<li>для тех, кто считает, что уже неплохо знает Java Core, но понятия не имеет о лямбда-выражениях в Java. Или, возможно, что-то уже слышал про лямбды, но без подробностей.</li><br>
+<li>для тех, у кого есть какое-то понимание лямбда-выражений, но использовать их до сих пор боязно и непривычно.</li>
+</ul><h3>Доступ к внешним переменным</h3>Скомпилируется ли такой код с анонимным классом?
+
+<pre class="lang-java line-numbers"><code>
+int counter = 0;
+Runnable r = new Runnable() {
+    @Override
+    public void run() {
+        counter++;
+    }
+};
+</code></pre>
+Нет. Переменная <code>counter</code> должна быть <code>final</code>. Или не обязательно <code>final</code>, но в любом случае изменять свое значение она не может.
+
+Тот же принцип используется и в лямбда-выражениях. Они имеют доступ ко всем переменным, которые им «видны» из того места, где они объявлены. Но лямбда не должна их изменять (присваивать новое значение).
+
+Правда, есть вариант обхода этого ограничения в анонимных классах. Достаточно лишь создать переменную ссылочного типа и менять внутреннее состояние объекта. При этом сама переменная будет указывать на тот же объект, и в таком случае можно смело указывать её как <code>final</code>.
+
+<pre class="lang-java line-numbers"><code>
+final AtomicInteger counter = new AtomicInteger(0);
+Runnable r = new Runnable() {
+    @Override
+    public void run() {
+        counter.incrementAndGet();
+    }
+};
+</code></pre>
+Здесь у нас переменная <code>counter</code> является ссылкой на объект типа <code>AtomicInteger</code>. А для изменения состояния этого объекта используется метод <code>incrementAndGet()</code>. Значение самой переменной во время работы программы не меняется и всегда указывает на один и тот же объект, что позволяет нам объявить переменную сразу с ключевым словом <code>final</code>.
+
+Эти же примеры, но с лямбда-выражениями:
+
+<pre class="lang-java line-numbers"><code>
+int counter = 0;
+Runnable r = () -&gt; counter++;
+</code></pre>
+Не скомпилируется по той же причине, что и вариант с анонимным классом: <code>counter</code> не должна меняться во время работы программы.
+
+Зато вот так — все нормально:
+
+<pre class="lang-java line-numbers"><code>
+final AtomicInteger counter = new AtomicInteger(0);
+Runnable r = () -&gt; counter.incrementAndGet();
+</code></pre>
+Это касается и вызова методов. Изнутри лямбда-выражения можно не только обращаться ко всем «видимым» переменным, но и вызывать те методы, к которым есть доступ.
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+    public static void main(String[] args) {
+        Runnable runnable = () -&gt; staticMethod();
+        new Thread(runnable).start();
+    }
+
+    private static void staticMethod() {
+        System.out.println("Я - метод staticMethod(), и меня только-что кто-то вызвал!");
+    }
+}
+</code></pre>
+Хотя метод <code>staticMethod()</code> и приватный, но он «доступен» для вызова внутри метода <code>main()</code>, поэтому точно так же доступен для вызова изнутри лямбды, которая создана в методе <code>main</code>.
+<h3>Момент выполнения кода лямбда-выражения</h3>Возможно, вам этот вопрос покажется слишком простым, но его всё следует задать: когда выполнится код внутри лямбда-выражения? В момент создания? Или же в тот момент, когда (еще и неизвестно где) оно будет вызвано? Проверить довольно просто.
+
+<pre class="lang-java line-numbers"><code>
+System.out.println("Запуск программы");
+
+// много всякого разного кода
+// ...
+
+System.out.println("Перед объявлением лямбды");
+
+Runnable runnable = () -&gt; System.out.println("Я - лямбда!");
+
+System.out.println("После объявления лямбды");
+
+// много всякого другого кода
+// ...
+
+System.out.println("Перед передачей лямбды в тред");
+new Thread(runnable).start();
+
+
+</code></pre>
+Вывод на экран:
+
+<pre class="lang-java line-numbers"><code>
+Запуск программы
+Перед объявлением лямбды
+После объявления лямбды
+Перед передачей лямбды в тред
+Я - лямбда!
+</code></pre>
+Видно, что код лямбда-выражения выполнился в самом конце, после того, как был создан тред и лишь когда процесс выполнения программы дошел до фактического выполнения метода <code>run()</code>. А вовсе не в момент его объявления. Объявив лямбда-выражение, мы лишь создали объект типа <code>Runnable</code> и описали поведение его метода <code>run()</code>. Сам же метод был запущен значительно позже.
+<h3>Method References (Ссылки на методы)?</h3>Не имеет прямого отношения к самим лямбдам, но я считаю, что будет логично сказать об этом пару слов в этой статье.
+
+Допустим, у нас есть лямбда-выражение, которое не делает ничего особенного, а просто вызывает какой-то метод.
+
+<pre class="lang-java line-numbers"><code>
+x -&gt; System.out.println(x)
+
+</code></pre>
+Ему передали некий <code>х</code>, а оно — просто вызвало <code>System.out.println()</code> и передало туда <code>х</code>.
+В таком случае, мы можем заменить его на ссылку на нужный нам метод. Вот так:
+
+<pre class="lang-java line-numbers"><code>
+System.out::println
+</code></pre>
+Да, без скобок в конце! Более полный пример:
+
+<pre class="lang-java line-numbers"><code>
+List&lt;String&gt; strings = new LinkedList&lt;&gt;();
+strings.add("мама");
+strings.add("мыла");
+strings.add("раму");
+        
+strings.forEach(x -&gt; System.out.println(x));
+</code></pre>
+В последней строке мы используем метод <code>forEach()</code>, который принимает объект интерфейса <code>Consumer</code>. Это снова же функциональный интерфейс, у которого только один метод <code>void accept(T t)</code>. Соответственно, мы пишем лямбда-выражение, которое принимает один параметр (поскольку он типизирован в самом интерфейсе, тип параметра мы не указываем, а указываем, что называться он у нас будет <code>х)</code>. В теле лямбда-выражения пишем код, который будет выполняться при вызове метода <code>accept()</code>. 
+
+Здесь мы просто выводим на экран то, что попало в переменную <code>х</code>. Сам же метод <code>forEach()</code> проходит по всем элементам коллекции, вызывает у переданного ему объекта интерфейса <code>Consumer</code> (нашей лямбды) метод <code>accept()</code>, куда и передает каждый элемент из коллекции.
+
+Как я уже сказал, такое лямбда-выражение (просто вызывающее другой метод) мы можем заменить ссылкой на нужный нам метод. Тогда наш код будет выглядеть так:
+
+<pre class="lang-java line-numbers"><code>
+List&lt;String&gt; strings = new LinkedList&lt;&gt;();
+strings.add("мама");
+strings.add("мыла");
+strings.add("раму");
+
+strings.forEach(System.out::println);
+</code></pre>
+Главное, чтобы совпадали принимаемые параметры методов <code>(println()</code> и <code>accept())</code>. Поскольку метод <code>println()</code> может принимать что угодно (он перегружен для всех примитивов и для любых объектов, мы можем вместо лямбда-выражения передать в <code>forEach()</code> просто ссылку на метод <code>println()</code>. Тогда <code>forEach()</code> будет брать каждый элемент коллекции и передавать его напрямую в метод <code>println()</code>. 
+
+Кто сталкивается с этим впервые, обратите внимание, что мы не вызываем метод <code>System.out.println()</code> (с точками между словами и со скобочками в конце), а именно передаем саму ссылку на этот метод.
+
+При такой записи
+
+<pre class="lang-java line-numbers"><code>
+strings.forEach(System.out.println());
+</code></pre>
+у нас будет ошибка компиляции. Поскольку перед вызовом <code>forEach()</code> Java увидит, что вызывается <code>System.out.println()</code>, поймет, что возвращается <code>void</code> и будет пытаться этот <code>void</code> передать в <code>forEach()</code>, который там ждет объект типа <code>Consumer</code>.
+<h3>Синтаксис использования Method References</h3>Он довольно прост:
+<ol>
+<li><p>Передаем ссылку на статический метод <code>ИмяКласса:: имяСтатическогоМетода?</code></p>
+<pre class="lang-java line-numbers"><code>
+public class Main {
+    public static void main(String[] args) {
+        List&lt;String&gt; strings = new LinkedList&lt;&gt;();
+        strings.add("мама");
+        strings.add("мыла");
+        strings.add("раму");
+
+        strings.forEach(Main::staticMethod);
+    }
+
+    private static void staticMethod(String s) {
+        // do something
+    }
+}
+</code></pre></li>
+<li><p>Передаем ссылку на не статический метод используя существующий объект <code>имяПеременнойСОбъектом:: имяМетода</code></p>
+<pre class="lang-java line-numbers"><code>
+public class Main {
+    public static void main(String[] args) {
+        List&lt;String&gt; strings = new LinkedList&lt;&gt;();
+        strings.add("мама");
+        strings.add("мыла");
+        strings.add("раму");
+
+        Main instance = new Main();
+        strings.forEach(instance::nonStaticMethod);
+    }
+
+    private void nonStaticMethod(String s) {
+        // do something
+    }
+}
+</code></pre></li>
+<li><p>Передаем ссылку на не статический метод используя класс, в котором реализован такой метод <code>ИмяКласса:: имяМетода</code></p>
+<pre class="lang-java line-numbers"><code>
+public class Main {
+    public static void main(String[] args) {
+        List&lt;User&gt; users = new LinkedList&lt;&gt;();
+        users.add(new User("Вася"));
+        users.add(new User("Коля"));
+        users.add(new User("Петя"));
+
+        users.forEach(User::print);
+    }
+
+    private static class User {
+        private String name;
+
+        private User(String name) {
+            this.name = name;
+        }
+
+        private void print() {
+            System.out.println(name);
+        }
+    }
+}
+</code></pre></li>
+<li><p>Передаем ссылку на конструктор <code>ИмяКласса::new</code><br>
+Использование ссылок на методы очень удобно, когда есть готовый метод , который вас полностью устраивает, и вы бы хотели использовать его в качестве callback-а. В таком случае, вместо того чтобы писать лямбда-выражение с кодом того метода, или же лямбда-выражение, где мы просто вызываем этот метод, мы просто передаем ссылку на него. И всё.</p></li></ol><h3>Интересное различие между анонимным классом и лямбда-выражением</h3>В анонимном классе ключевое слово <code>this</code> указывает на объект этого анонимного класса. А если использовать <code>this</code> внутри лямбды, мы получим доступ к объекту обрамляющего класса. Того, где мы это выражение, собственно, и написали. Так происходит потому, что лямбда-выражения при компиляции превращаются в приватный метод того класса, где они написаны.
+
+Использовать эту «фичу» я бы не рекомендовал, поскольку у неё есть побочный эффект (side effect), что противоречит принципам функционального программирования. Зато такой подход вполне соответствует ООП. ;)
+<h2>Откуда я брал информацию или что почитать еще</h2><ul>
+<li><a href="https://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html" target="_blank">Туториал на официальном сайте Oracle</a>. Много, детально, с примерами, но на английском.</li><br>
+<li><a href="https://docs.oracle.com/javase/tutorial/java/javaOO/methodreferences.html" target="_blank">Тот же "ораклавский" туториал</a>, но глава именно про Method References.</li><br>
+<li><a href="https://habrahabr.ru/post/142351/" target="_blank">Статья на хабре</a> про функциональное программирование (перевод другой статьи). Многобуков и про лямбды очень мало, так как там о функциональном программировании в общем.</li><br>
+<li>Любителям позалипать на <a href="https://ru.wikipedia.org/wiki/%D0%9B%D1%8F%D0%BC%D0%B1%D0%B4%D0%B0-%D0%B8%D1%81%D1%87%D0%B8%D1%81%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5" target="_blank">википедии</a>.</li><br>
+<li>Ну и, конечно же, кучу всего находил <a href="https://www.google.com/search?q=java+lambdas" target="_blank">в гугле</a> :)</li>
+</ul><table>
+<tbody><tr>
+<th><p>Что еще почитать:
+</p>
+</th>
+</tr>
+<tr>
+<td>
+<p><a href="https://javarush.com/groups/posts/136-reguljarnihe-vihrazhenija-v-java-chastjh-1" target="_blank">Регулярные выражения в Java, часть 1</a></p>
+<p><a href="https://javarush.com/groups/posts/234-luchshie-knigi-dlja-podgotovki-k-ehkzamenu-ocajp8-1z0-808-po-java-8" target="_blank">Лучшие книги для подготовки к экзамену OCAJP8 (1Z0-808) по Java 8</a></p>
+<p><a href="https://javarush.com/groups/posts/38-adskaja-zadachka-pristupaem-k-refaktoringu-unasledovannogo-koda-" target="_blank">Адская задачка: приступаем к рефакторингу унаследованного кода</a></p>
+</td>
+</tr>
+</tbody></table>

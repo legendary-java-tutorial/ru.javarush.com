@@ -1,0 +1,241 @@
+Преобразование Enum в String
+<p>----------------------------------------</p>
+Сегодня поговорим о работе со строковыми перечислениями, а конкретнее — с enum классами, в которых организовано взаимодействие со строковыми константами. Использование строковых перечисленийВо время разработки приложения периодически нужно оперировать...
+<p>----------------------------------------</p>
+Сегодня поговорим о работе со строковыми перечислениями, а конкретнее — с <code>enum</code> классами, в которых организовано взаимодействие со строковыми константами.
+<img data-id="f76b9281-f340-4ab1-986e-3cbc231247f8" data-max-width="850" alt="Преобразование Enum в String - 1" src="https://cdn.javarush.com/images/article/f76b9281-f340-4ab1-986e-3cbc231247f8/1024.jpeg"><h2>Использование строковых перечислений</h2>Во время разработки приложения периодически нужно оперировать фиксированным набором строковых значений. Это может быть что угодно. Например, список цветовых кодов, поддерживаемых приложением, или список устройств с которыми способно взаимодействовать наше приложение, времена года и т.д. 
+
+Все это — предопределенный набор строковых констант с общей структурой, с которыми необходимо наладить программное взаимодействие на уровне Java кода. 
+
+Когда необходимо взаимодействовать с предопределенным набором строковых (и не только) констант, лучшее решение — написать свой <code>enum</code> класс. Ниже рассмотрим примеры преобразования <code>enum</code> в <code>string</code>. 
+<h2>Создание строковых перечислений</h2>Создадим <code>enum</code> класс, в котором хранится список различных окружений для развертывания приложения, а также URL каждого окружения: 
+
+<pre class="lang-java line-numbers"><code>
+public enum Environment {
+    PROD("https://release.application.com/"),
+    TEST("https://test.application.com/"),
+    AUTO_TEST("https://autotest.application.com/"),
+    DEV("http://localhost:8080");
+
+    private final String url;
+
+    Environment(String url) {
+        this.url = url;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+}
+</code></pre>
+В данном классе мы определили 4 окружения: 
+<ul>
+<li><code>PROD</code> — релизное</li>
+<li><code>TEST</code> — для ручного тестирования</li>
+<li><code>AUTO_TEST</code> — окружение для автотестов</li>
+<li><code>DEV</code> — локальное для разработки и дебага</li>
+</ul>А также 4 URL, для каждого из этих окружений. 
+
+Давайте обратим внимание на некоторые важные моменты.
+<ol>
+<li>Каждый URL — это строковая константа нашего перечисления: они определяются в скобках у каждой <code>enum</code> константы.</li>
+<li>Обязательно наличие конструктора, принимающего аргумент того же типа, что и каждая <code>enum</code> константа. </li>
+<li>Область видимости конструктора — <code>private</code> либо <code>package private</code>.</li>
+<li>Необходимо определить переменную — поле класса, которое будет хранить определенные нами строковые константы. Для этого поля необходимо создать метод геттер, чтобы использовать значения строковых констант извне.</li>
+</ol><h2>Перебор строковых перечислений</h2>На данном этапе мы уже можем перебрать все доступные <code>enum</code> значения, а также получить привязанные к ним строковые константы. Чтобы получить все значения любого <code>enum</code> класса, необходимо использовать метод <code>values()</code>:
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+    public static void main(String[] args) {
+        for (Environment env : Environment.values()) {
+            System.out.println(env + " : " + env.getUrl());
+        }
+    }
+}
+</code></pre>
+<strong>Вывод:</strong>
+
+<pre><code>
+PROD : https://release.application.com/
+TEST : https://test.application.com/
+AUTO_TEST : https://autotest.application.com/
+DEV : http://localhost:8080
+</code></pre>
+Как видно из примера, для вывода на печать имени <code>enum</code> константы мы передали ее в метод <code>System.out.println</code>, а для вывода на печать привязанного к данной константе url мы использовали определенный нами геттер.
+<h2>Получение строковой константы из enum</h2>Для получения значения любой строковой константы мы также можем вызывать геттер у любой <code>enum</code> константы: 
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+    public static void main(String[] args) {
+
+        String prodUrl = Environment.PROD.getUrl();
+        String devUrl = Environment.DEV.getUrl();
+
+        System.out.println("Production url is: " + prodUrl);
+        System.out.println("Development url is: " + devUrl);
+
+    }
+}
+</code></pre>
+<strong>Вывод:</strong>
+
+<pre><code>
+Production url is: https://release.application.com/
+Development url is: http://localhost:8080
+</code></pre><h2>Получение enum константы по имени</h2>Порой бывает необходимо получить <code>enum</code> константу по ее строковому наименованию. Делается это с помощью метода <code>valueOf(String)</code>, который возвращает константу по ее имени:
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+    public static void main(String[] args) {
+
+        Environment prod = Environment.valueOf("PROD");
+        Environment dev = Environment.valueOf("DEV");
+
+        System.out.println("Production url is: " + prod.getUrl());
+        System.out.println("Development url is: " + dev.getUrl());
+
+    }
+}
+</code></pre>
+<strong>Вывод:</strong>
+
+<pre><code>
+Production url is: https://release.application.com/
+Development url is: http://localhost:8080
+</code></pre>
+Но тут нужна осторожность. Если метод не найдет <code>enum</code> константу с указанным именем, будет брошено исключение <code>java.lang.IllegalArgumentException</code>. 
+<h2>Преобразование String в Enum</h2>Иногда возникает обратная потребность. Зная значение <code>enum</code>, получить саму <code>enum</code> константу. Т.е. в нашем примере, зная определенный адрес, нужно получить соответствующую ему <code>Environment</code> константу.
+
+Есть несколько вариантов сделать это. И все они требуют доработки в самом <code>enum</code> классе. 
+
+Вариант 1. Перебор внутри класса.
+
+Необходимо создать метод, который будет принимать строку, и сравнивать ее со всеми значениями <code>enum</code> класса. При совпадении метод будет возвращать нужное перечисление. 
+
+Для нашего примера необходимо внутри класса <code>Environment</code> создать следующий метод:
+
+<pre class="lang-java line-numbers"><code>
+    public static Environment getEnvByUrl(String url) {
+        for (Environment env : values()) {
+            // либо equalsIgnoreCase, на ваше усмотрение
+            if (env.getUrl().equals(url)) {
+                return env;
+            }
+        }
+
+        // Либо просто вернуть null
+        throw new IllegalArgumentException("No enum found with url: [" + url + "]");
+    }
+</code></pre>
+Тогда мы сможем получать <code>enum</code> из строки таким образом: 
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+    public static void main(String[] args) {
+        String url = "http://localhost:8080";
+        Environment env = Environment.getEnvByUrl(url);
+
+        System.out.println("Environment name for url=[" + url + "] is: " + env);
+    }
+}
+</code></pre>
+Вывод:
+
+<pre><code>
+Environment name for url=[http://localhost:8080] is: DEV
+</code></pre>
+У этого подхода есть свои минусы. Каждый раз для получения <code>enum</code> константы придется перебирать все значения и производить некоторое количество сравнений. Ущерб производительности в таком случае будет определяться количеством констант и количеством подобных операций. 
+
+У второго способа решения этой задачи такой проблемы нет.
+
+Полный код <code>Enum</code> класса: 
+
+<pre class="lang-java line-numbers"><code>
+public enum Environment {
+
+    PROD("https://release.application.com/"),
+    TEST("https://test.application.com/"),
+    AUTO_TEST("https://autotest.application.com/"),
+    DEV("http://localhost:8080");
+
+    private final String url;
+
+    Environment(String url) {
+        this.url = url;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public static Environment getEnvByUrl(String url) {
+        for (Environment env : values()) {
+            if (env.getUrl().equals(url)) {
+                return env;
+            }
+        }
+        throw new IllegalArgumentException("No enum found with url: [" + url + "]");
+    }
+}
+</code></pre>
+Вариант 2. Использование <code>HashMap</code>
+
+В этом случае мы создаем карту внутри нашего перечисления и заполняем ее один раз на этапе компиляции, а затем берем из нее значения: 
+
+<pre class="lang-java line-numbers"><code>
+public enum Environment {
+
+    PROD("https://release.application.com/"),
+    TEST("https://test.application.com/"),
+    AUTO_TEST("https://autotest.application.com/"),
+    DEV("http://localhost:8080");
+
+    private final String url;
+
+    Environment(String url) {
+        this.url = url;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    // Создаем static final карту
+    private static final Map&lt;String, Environment&gt; LOOKUP_MAP = new HashMap&lt;&gt;();
+
+    // Заполняем её всеми значениями
+    static {
+        for (Environment env : values()) {
+            LOOKUP_MAP.put(env.getUrl(), env);
+        }
+    }
+
+    // Возвращаем Environment по строковому url
+    public static Environment getEnvByUrl(String url) {
+        return LOOKUP_MAP.get(url);
+    }
+}
+</code></pre>
+В плане использования оба варианта идентичны: 
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+    public static void main(String[] args) {
+        String url = "http://localhost:8080";
+        Environment env = Environment.getEnvByUrl(url);
+
+        System.out.println("Environment name for url=[" + url + "] is: " + env);
+    }
+}
+</code></pre>
+Вывод:
+
+<pre><code>
+Environment name for url=[http://localhost:8080] is: DEV
+</code></pre>
+Но и у этого способа есть недостатки. Во-первых, кода стало значительно больше. А во-вторых, <code>HashMap</code> со всеми <code>enum</code> значениями будет храниться в памяти приложения постоянно. 
+
+Как видим, у всего есть плюсы и минусы. Но учитывая то, что в <code>enum</code> классах обычно хранится не так уж много значений, минусы будут практически незаметны. Есть нюанс: если подобная операция (получение в Java Enum по String значению) выполняется часто, лучше использовать второй вариант. 
+
+Подробнее с данной темой и <code>Enum</code> классами вообще можно познакомиться на курсе JavaRush. Студенты JavaRush изучают <code>Enum</code> уже на <a href="https://javarush.com/quests/lectures/questmultithreading.level05.lecture01" target="_blank">первой лекции пятого уровня</a>.
+<a href="https://javarush.com/" target="_blank"><img data-id="9157d915-b78b-48a1-bf15-48c323a67782" data-max-width="350" alt="Преобразование Enum в String - 2" src="https://cdn.javarush.com/images/article/9157d915-b78b-48a1-bf15-48c323a67782/1024.jpeg"></a>

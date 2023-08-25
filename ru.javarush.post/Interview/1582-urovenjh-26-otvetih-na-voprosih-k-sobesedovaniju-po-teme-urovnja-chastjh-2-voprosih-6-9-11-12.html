@@ -1,0 +1,202 @@
+Уровень 26. Ответы на вопросы к собеседованию по теме уровня. Часть 2. Вопросы 6-9, 11-12
+<p>----------------------------------------</p>
+Concurrency – это библиотека классов в Java, в которой собрали специальные классы, оптимизированные для работы из нескольких нитей. Эти классы собраны в пакете java.util.concurrent...
+<p>----------------------------------------</p>
+
+<img data-id="f958617a-0110-40d9-9a2b-656c1e3a98dd" data-max-width="850" alt="Уровень 26. Ответы на вопросы к собеседованию по теме уровня. Часть 2. Вопросы 6-9, 11-12 - 1" src="https://cdn.javarush.com/images/article/f958617a-0110-40d9-9a2b-656c1e3a98dd/1024.jpeg"><h2>6. Что такое канкаренси?</h2><strong>Concurrency</strong> – это библиотека классов в Java, в которой собрали специальные классы, оптимизированные для работы из нескольких нитей. Эти классы собраны в пакете <code>java.util.concurrent</code>. Их можно схематично поделить по функциональному признаку следующим образом:
+<img data-id="05dea82f-9363-43db-850d-59271569e951" data-max-width="740" alt="Уровень 26. Ответы на вопросы к собеседованию по теме уровня. Часть 2. Вопросы 6-9, 11-12 - 2" src="https://cdn.javarush.com/images/article/05dea82f-9363-43db-850d-59271569e951/1024.jpeg"><strong>Concurrent Collections</strong> — набор коллекций, более эффективно работающие в многопоточной среде нежели стандартные универсальные коллекции из <code>java.util</code> пакета. Вместо базового враппера <code>Collections.synchronizedList</code> с блокированием доступа ко всей коллекции используются блокировки по сегментам данных или же оптимизируется работа для параллельного чтения данных по wait-free алгоритмам.
+
+<strong>Queues</strong> — неблокирующие и блокирующие очереди с поддержкой многопоточности. Неблокирующие очереди заточены на скорость и работу без блокирования потоков. Блокирующие очереди используются, когда нужно «притормозить» потоки «Producer» или «Consumer», если не выполнены какие-либо условия, например, очередь пуста или перепонена, или же нет свободного «Consumer»'a.
+
+<strong>Synchronizers</strong> — вспомогательные утилиты для синхронизации потоков. Представляют собой мощное оружие в «параллельных» вычислениях.
+
+<strong>Executors</strong> — содержит в себе отличные фрейморки для создания пулов потоков, планирования работы асинхронных задач с получением результатов. 
+
+<strong>Locks</strong> — представляет собой альтернативные и более гибкие механизмы синхронизации потоков по сравнению с базовыми <code>synchronized</code>, <code>wait</code>, <code>notify</code>, <code>notifyAll</code>.
+
+<strong>Atomics</strong> — классы с поддержкой атомарных операций над примитивами и ссылками.
+
+<strong>Источник:</strong>
+<ul>
+<li><a href='https://habr.com/company/luxoft/blog/157273/' rel='nofollow' target='_blank'>Обзор java.util.concurrent.*</a></li>
+</ul><h2>7. Какие классы из «канкаренси» ты знаешь?</h2>Ответ на этот вопрос отлично изложен в <a href='https://habr.com/company/luxoft/blog/157273/' rel='nofollow' target='_blank'>этой статье</a>. Смыла перепечатывать всю её сюда я не вижу, поэтому приведу описания только тех классов, с которыми имел честь вскользь ознакомиться. 
+
+<strong>ConcurrentHashMap&lt;K, V&gt;</strong>  — В отличие от <code>Hashtable</code> и блоков <code>synhronized</code> на <code>HashMap</code>, данные представлены в виде сегментов, разбитых по hash'ам ключей. В результате, для доступа к данным лочится по сегментам, а не по одному объекту. В дополнение, итераторы представляют данные на определенный срез времени и не кидают <code>ConcurrentModificationException</code>. 
+
+<strong>AtomicBoolean, AtomicInteger, AtomicLong, AtomicIntegerArray, AtomicLongArray</strong>  — Что если в классе нужно синхронизировать доступ к одной простой переменной типа <code>int</code>? Можно использовать конструкции с <code>synchronized</code>, а при использовании атомарных операций <code>set/get</code>, подойдет также и <code>volatile</code>. Но можно поступить еще лучше, использовав новые классы <code>Atomic*</code>. За счет использования CAS, операции с этими классами работают быстрее, чем если синхронизироваться через <code>synchronized/volatile</code>. Плюс существуют методы для атомарного добавления на заданную величину, а также инкремент/декремент.
+<h2>8. Как устроен класс ConcurrentHashMap?</h2>К моменту появления <code>ConcurrentHashMap</code> Java-разработчики нуждались в следующей реализации хэш-карты:
+<ul>
+    <li>Потокобезопасность</li>
+    <li>Отсутствие блокировок всей таблицы на время доступа к ней</li>
+    <li>Желательно, чтобы отсутствовали блокировки таблицы при выполнении операции чтения</li>
+</ul>Основные идеи реализации <code>ConcurrentHashMap</code> следующие: 
+<ol><li><p><strong>Элементы карты</strong></p><p>В отличие от элементов <code>HashMap</code>, <code>Entry</code> в <code>ConcurrentHashMap</code> объявлены как <code>volatile</code>. Это важная особенность, также связанная с изменениями в <a href='https://habr.com/post/133981/' rel='nofollow' target='_blank'>JMM</a>.</p>
+
+<pre class='lang-java line-numbers'><code>
+static final class HashEntry&lt;K, V&gt; {
+    final K key;
+    final int hash;
+    volatile V value;
+    final HashEntry&lt;K, V&gt; next;
+
+    HashEntry(K key, int hash, HashEntry&lt;K, V&gt; next, V value) {
+        this .key = key;
+        this .hash = hash;
+        this .next = next;
+        this .value = value;
+     }
+
+    @SuppressWarnings("unchecked")
+    static final &lt;K, V&gt; HashEntry&lt;K, V&gt;[] newArray(int i) {
+        return new HashEntry[i];
+    }
+}
+</code></pre></li>
+<li><p><strong>Хэш-функция</strong></p><p><code>ConcurrentHashMap</code> также используется улучшенная функция хэширования.</p>
+
+<p>Напомню, какой она была в <code>HashMap</code> из JDK 1.2:</p>
+<pre class='lang-java line-numbers'><code>
+static int hash(int h) {
+    h ^= (h >>> 20) ^ (h >>> 12);
+    return h ^ (h >>> 7) ^ (h >>> 4);
+}
+</code></pre>
+<p>Версия из ConcurrentHashMap JDK 1.5:</p>
+
+<pre class='lang-java line-numbers'><code>
+private static int hash(int h) {
+    h += (h << 15) ^ 0xffffcd7d;
+    h ^= (h >>> 10);
+    h += (h << 3);
+    h ^= (h >>> 6);
+    h += (h << 2) + (h << 14);
+    return h ^ (h >>> 16);
+}
+</code></pre>
+<p>В чём необходимость усложнения хэш-функции? Таблицы в хэш-карте имеют длину, определяемую степенью двойки. Для хэш-кодов, двоичные представления которых не различаются в младшей и старшей позиции, мы будем иметь коллизии. Усложнение хэш-функции как раз решает данную проблему, уменьшая вероятность коллизий в карте.</p></li>
+<li><p><strong>Сегменты</strong></p><p>Карта делится на N различных сегментов (16 по умолчанию, максимальное значение может быть 16-битным и представлять собой степень двойки). Каждый сегмент представляет собой потокобезопасную таблицу элементов карты. Увеличение количества сегментов будет способствовать тому, что операции модификации будут затрагивать различные сегменты, что уменьшит вероятность блокировок во время выполнения.</p></li>
+<li><p><strong>ConcurrencyLevel</strong></p><p>Данный параметр влияет на использование картой памяти и количество сегментов в карте.</p>
+
+<p>Количество сегментов будет выбрано как ближайшая степень двойки, большая чем concurrencyLevel.  Занижение concurrencyLevel ведёт к тому, что более вероятны блокировки потоками сегментов карты при записи. Завышение показателя ведёт к неэффективному использованию памяти.
+
+Если лишь один поток будет изменять карту, а остальные будут производить чтение — рекомендуется использовать значение 1.</p></li>
+<li style="list-style:none"><p><strong>Итого</strong></p><p>Итак, основные преимущества и особенности реализации <code>ConcurrentHashMap</code>:</p>
+<ul>
+    <li>Карта имеет схожий с <code>hashmap</code> интерфейс взаимодействия</li>
+    <li>Операции чтения не требуют блокировок и выполняются параллельно</li>
+    <li>Операции записи зачастую также могут выполняться параллельно без блокировок</li>
+    <li>При создании указывается требуемый <code>concurrencyLevel</code>, определяемый по статистике чтения и записи</li>
+    <li>Элементы карты имеют значение <code>value</code>, объявленное как <code>volatile</code></li>
+</ul><strong>Источник:</strong> <a href='https://habr.com/post/132884/' rel='nofollow' target='_blank'>Как работает ConcurrentHashMap</a></li></ol><h2>9. Что такое класс Lock?</h2>Для управления доступом к общему ресурсу в качестве альтернативы оператору synchronized мы можем использовать блокировки. Функциональность блокировок заключена в пакете <code>java.util.concurrent.locks</code>.
+
+Вначале поток пытается получить доступ к общему ресурсу. Если он свободен, то на поток на него накладывает блокировку. После завершения работы блокировка с общего ресурса снимается. Если же ресурс не свободен и на него уже наложена блокировка, то поток ожидает, пока эта блокировка не будет снята.
+
+Классы блокировок реализуют интерфейс <code>Lock</code>, который определяет следующие методы:
+<ul>
+    <li><code><strong>void lock():</strong></code> ожидает, пока не будет получена блокировка</li>
+    <li><code><strong>boolean tryLock():</strong></code> пытается получить блокировку, если блокировка получена, то возвращает <em>true</em>. Если блокировка не получена, то возвращает <em>false</em>. В отличие от метода <code>lock()</code> не ожидает получения блокировки, если она недоступна</li>
+    <li><code><strong>void unlock():</strong></code> снимает блокировку</li>
+    <li><code><strong>Condition newCondition():</strong></code> возвращает объект <code>Condition</code>, который связан с текущей блокировкой</li>
+</ul>Организация блокировки в общем случае довольно проста: для получения блокировки вызывается метод <code>lock()</code>, а после окончания работы с общими ресурсами вызывается метод <code>unlock()</code>, который снимает блокировку.
+
+Объект <code>Condition</code> позволяет управлять блокировкой.
+
+Как правило, для работы с блокировками используется класс <code><strong>ReentrantLock</strong></code> из пакета <code>java.util.concurrent.locks.</code> Данный класс реализует интерфейс <code>Lock</code>.
+
+Рассмотрим использование Java Lock API на примере небольшой программы:
+
+И так, пусть у нас есть класс <code>Resource</code> с парочкой потокобезопасных методов и методов, где потокобезопасность не требуется.
+
+<pre class='lang-java line-numbers'><code>
+public class Resource {
+ 
+    public void doSomething(){
+        // пусть здесь происходит работа с базой данных 
+    }
+     
+    public void doLogging(){
+        // потокобезопасность для логгирования нам не требуется
+    }
+}
+</code></pre>
+А теперь берем класс, который реализует интерфейс <code>Runnable</code> и использует методы класса <code>Resource</code>.
+
+<pre class='lang-java line-numbers'><code>
+public class SynchronizedLockExample implements Runnable{
+ 
+    // экземпляр класса Resource для работы с методами
+    private Resource resource;
+     
+    public SynchronizedLockExample(Resource r){
+        this.resource = r;
+    }
+     
+    @Override
+    public void run() {
+        synchronized (resource) {
+            resource.doSomething();
+        }
+        resource.doLogging();
+    }
+}
+</code></pre>
+А теперь перепишем приведенную выше программу с использованием Lock API вместо ключевого слова <code>synchronized</code>.
+
+<pre class='lang-java line-numbers'><code>
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+ 
+// класс для работы с Lock API. Переписан с приведенной выше программы,
+// но уже без использования ключевого слова synchronized
+public class ConcurrencyLockExample implements Runnable{
+ 
+    private Resource resource;
+    private Lock lock;
+     
+    public ConcurrencyLockExample(Resource r){
+        this.resource = r;
+        this.lock = new ReentrantLock();
+    }
+     
+    @Override
+    public void run() {
+        try {
+            // лочим на 10 секунд
+            if(lock.tryLock(10, TimeUnit.SECONDS)){
+            resource.doSomething();
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }finally{
+            //убираем лок
+            lock.unlock();
+        }
+        // Для логгирования не требуется потокобезопасность
+        resource.doLogging();
+    }
+ 
+}
+</code></pre>
+Как видно из программы, мы используем метод <code>tryLock()</code>, чтобы убедиться в том, что поток ждет только определенное время. Если он не получает блокировку на объект, то просто логгирует и выходит.
+
+Еще один важный момент. Необходимо использовать блок <code>try-finally</code>, чтобы убедиться в том, что блокировка будет снята, даже если метод <code>doSomething()</code> бросит исключение.
+
+<strong>Источники:</strong>
+<ul>
+<li><a href='https://metanit.com/java/tutorial/8.9.php' rel='nofollow' target='_blank'>Блокировки. ReentrantLock</a></li>
+</ul><h2>11. Что такое mutex?</h2><strong>Мютекс</strong> – это специальный объект для синхронизации нитей/процессов. Он может принимать два состояния – занят и свободен. Если упростить, то мютекс – это boolean-переменная, которая принимает два значения: занят(true) и свободен(false).
+
+Когда нить хочет монопольно владеть некоторым объектом, она помечает его мютекс занятым, а когда закончила работу с ним – помечает его мютекс свободным.
+
+Мютекс прикреплен к каждому объекту в Java. Прямой доступ к мютексу есть только у Java-машины. От программиста он скрыт.
+<h2>12. Что такое монитор?</h2><strong>Монитор</strong> – это специальный механизм (кусок кода) – надстройка над мютексом, который обеспечивает правильную работу с ним. Ведь мало пометить, что объект – занят, надо еще обеспечить, чтобы другие нити не пробовали воспользоваться занятым объектом.
+
+В Java монитор реализован с помощью ключевого слова <code>synchronized</code>.
+
+Когда мы пишем блок synchronized, то компилятор Java заменяет его тремя кусками кода:
+<ol>
+    <li>В начале блока <code>synchronized</code> добавляется код, который отмечает мютекс как занятый.</li>
+    <li>В конце блока <code>synchronized</code> добавляется код, который отмечает мютекс как свободный.</li>
+    <li>Перед блоком <code>synchronized</code> добавляется код, который смотрит, если мютекс занят – то нить должна ждать его освобождения.</li>
+</ol><a href='https://javarush.com/groups/posts/1580-urovenjh-26-otvetih-na-voprosih-k-sobesedovaniju-po-teme-urovnja-chastjh-1-voprosih-1-5-10' target='_blank'>Часть 1</a>

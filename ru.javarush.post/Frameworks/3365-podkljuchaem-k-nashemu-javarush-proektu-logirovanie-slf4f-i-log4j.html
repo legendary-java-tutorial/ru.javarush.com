@@ -1,0 +1,76 @@
+Подключаем к нашему JavaRush проекту логирование (slf4f и log4j)
+<p>----------------------------------------</p>
+Как подключить Maven к вашему JavaRush проекту можно прочитать в этой моей статье. Далее предполагается, что вы это умеете. Если мы хотим использовать slf4j, то нам нужна зависимость...
+<p>----------------------------------------</p>
+Как подключить Maven к вашему JavaRush проекту можно прочитать в <a href="https://javarush.com/groups/posts/3363-podkljuchenie-bibliotek-s-pomojshjhju-maven?post=full#discussion" target="_blank" rel="nofollow">этой моей статье</a>. Далее предполагается, что вы это умеете.
+
+<strong>Если мы хотим использовать slf4j, то нам нужна зависимость:</strong>
+<pre class="language-java line-numbers"><code>
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+            &lt;artifactId&gt;slf4j-api&lt;/artifactId&gt;
+            &lt;version&gt;1.7.30&lt;/version&gt;
+        &lt;/dependency&gt;
+</code></pre>
+
+<strong>После этого делаем:</strong>
+<pre class="language-java line-numbers"><code>
+    public static void main(String[] args) throws IOException {
+        Logger logger = LoggerFactory.getLogger(Solution.class);
+        logger.info("hello world!");
+    }
+</code></pre>
+
+<strong>И получаем ошибку:</strong>
+<pre class="language-java line-numbers"><code>
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+</code></pre>
+
+Что в целом логично. slf4j - это обёртка, а вокруг чего мы его обернули? Ничего? Ну вот и получили ошибку. Обернуть можно вокруг чего-то одного из списка: log4j, util.logging, NOP, System.err, JCL, logback. Подробнее в <a href="http://slf4j.org/manual.html" target="_blank" rel="nofollow">оригинальной инструкции</a>.
+
+Рассмотрим на примере log4j и System.err:
+<strong>1) Начнём с простого, с System.err</strong>. Для этого к предыдущей зависимости (slf4j-api) добавляем вот эту (slf4j-simple).
+<pre class="language-java line-numbers"><code>
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+            &lt;artifactId&gt;slf4j-simple&lt;/artifactId&gt;
+            &lt;version&gt;1.7.30&lt;/version&gt;
+        &lt;/dependency&gt;
+</code></pre>
+Версии берём одинаковые, на 10 мая 2021 это 1.7.30. Если будете брать зависимости с <a href="https://mvnrepository.com/" target="_blank" rel="nofollow">https://mvnrepository.com/</a> не забудьте удалить 
+<pre class="language-java line-numbers"><code>
+&lt;scope&gt;test&lt;/scope&gt;
+</code></pre>
+А иначе ваши логи будут работать только в тестах.
+
+
+<strong>2) Теперь попробуем настроить log4j</strong>, для этого нам нужно добавить 2 зависимости: сам log4j и прослойку между slf4j и log4j (slf4j-log4j12). Выглядит это так:
+<pre class="language-java line-numbers"><code>
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+            &lt;artifactId&gt;slf4j-log4j12&lt;/artifactId&gt;
+            &lt;version&gt;1.7.30&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;log4j&lt;/groupId&gt;
+            &lt;artifactId&gt;log4j&lt;/artifactId&gt;
+            &lt;version&gt;1.2.17&lt;/version&gt;
+        &lt;/dependency&gt;
+</code></pre>
+Понятное дело, что (slf4j-simple) нам нужно удалить, чтобы slf4j не путался, с каким логгером ему работать. А (slf4j-api) оставить, так как это и есть slf4j.
+По поводу 2х добавленных зависимостей. log4j мы добавляем старый (от мая 2012, хз почему, можете поэксперементировать с другими). Версия у него 1.2.17. Чтобы slf4j смог с ним работать, нужна соответствующая прослойка - slf4j-log4j12, где последние символы (12) - означают версию log4j. При этом версия slf4j-api и slf4j-log4j12 должна быть 1.7.30 - последняя стабильная на текущий момент.
+
+После того, как вы подключили зависимости и обновили Maven проект. Для работы log4j нужно ещё 2 вещи:
+1) Настроить конфигурационный файл. <a href="https://www.mkyong.com/logging/log4j-log4j-properties-examples/" target="_blank" rel="nofollow">Читаем, выбираем, копируем.</a>
+2) Вчитать конфигурацию log4j перед работой:
+<pre class="language-java line-numbers"><code>
+        PropertyConfigurator.configure("d:\\Java\\JavaRushTasks\\4.JavaCollections\\log4j.properties");
+</code></pre>
+ну или где там у вас файлик лежит. Если вы хотите видеть все логи - не забудьте поставить уровень логгирования ALL.
+
+Дописываем в резюме - log4j &amp; slf4j.
+Вы восхитительны!
+
+Если помогло - лайк, подписка, колокольчик!)))

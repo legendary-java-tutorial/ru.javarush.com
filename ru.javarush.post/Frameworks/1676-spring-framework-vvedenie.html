@@ -1,0 +1,62 @@
+Spring Framework. Введение
+<p>----------------------------------------</p>
+Привет! Пока администрация JavaRush работает над новыми уровнями я хочу начать серию обучающих статей по Spring Framework. Да, я знаю, что в сети уже много материала на эту тему, но, как показывает практика, все они на уровне Hello World’a. Я же хочу рассказать не о том ...
+<p>----------------------------------------</p>
+Привет! 
+
+Пока администрация JavaRush работает над новыми уровнями я хочу начать серию обучающих статей по Spring Framework. Да, я знаю, что в сети уже много материала на эту тему, но, как показывает практика, все они на уровне Hello World’a. Я же хочу рассказать не о том, как правильно расставить аннотации, а о том, как это все устроено «под капотом». Статья рассчитана на тех, кто уже так или иначе работал с этим фреймворком и знаком с основными понятиями.
+
+<img data-id="571d0b4a-30a5-426f-8040-8ff3c0b371ba" data-max-width="850" alt="Spring Framework. Введение - 1" src="https://cdn.javarush.com/images/article/571d0b4a-30a5-426f-8040-8ff3c0b371ba/1024.jpeg"><h2>Инициализация контекста.</h2>Итак, начнем с основ. На мой взгляд, одним из наиважнейших моментов является понимание того, как происходит настройка контекста и инициализаци бинов.
+
+Как известно, прежде чем <a href='https://javarush.com/groups/posts/476-spring-dlja-lenivihkh-osnovih-bazovihe-koncepcii-i-primerih-s-kodom-chastjh-1' target='_blank'>Spring</a> начнет работать его необходимо сконфигурировать. В допотопные времена это делали с помощью xml файлов (на некоторых проектах, преимущественно старых, продолжают делать это до сих пор). Вот небольшой пример такого конфигурационного файла:
+
+<pre class='lang-java line-numbers'><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+
+&lt;beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans-3.0.xsd"&gt;
+
+   &lt;bean id="helloWorld" class="ru.javarush.HelloWorld"&gt;
+       &lt;property name="message" value="Hello World!"/&gt;
+   &lt;/bean&gt;
+
+&lt;/beans&gt;
+</code></pre>
+По-большому счету, этого достаточно, чтобы создать пару контроллеров и запустить стартап (который не взлетит). Но как эта конфигурация заставит работать Spring? А вот тут начинается самое интересно. Для того чтобы наша конфигурация была понята Spring’ом существует <code>XmlBeanDefinitionReader</code>. Это внутренний компонент Spring’a, который сканирует (парсит) xml и на основе того, что мы там написали создает <code>BeanDefinition</code>’ы. <code>BeanDefinition</code> – это объект, который хранит в себе информацию о бине. Сюда входит: из какого класса его (бин) надо создать; scope; установлена ли ленивая инициализация; нужно ли перед данным бином инициализировать другой и иные проперти, которые описаны в xml. Все полученные <code>BeanDefinition</code>’ы складываются в <code>HashMap</code>, в которой идентификатором является имя бина (установленное вами или присвоенное спрингом) и сам <code>BeanDefinition</code> объект. 
+
+После того, как все <code>BeanDefinition</code>’ы созданы на сцену выходит новый герой – <code>BeanFactory</code>. Этот объект итерируется по <code>HashMap’e</code> с <code>BeanDefinition</code>’ами, создает на их основе бины и складывает в IoC контейнер. Здесь есть нюанс, на самом деле, при старте приложения, в IoC контейнер попадут бины, которые имеют scope Singleton (устанавливается по-умолчанию), остальные же создаются, тогда когда они нужны (prototype, request, session). А теперь небольшое отступление, познакомимся с еще одним персонажем.
+<h2>Встречайте — BeanPostProcessor. (BPP)</h2><img data-id="c7086349-9c05-4e77-b8eb-8eddbcc6306c" data-max-width="600" alt="bean post processor" src="https://cdn.javarush.com/images/article/c7086349-9c05-4e77-b8eb-8eddbcc6306c/1024.jpeg">Дело в том, что бин это не обязательно класс бизнес-логики вашего приложения. Бином также называют инфраструктурный бин. Вкратце, инфраструктурный бин это класс, который настраивает бины вашей бизнес-логики (да-да, слишком много бинов). Подробнее о нём я расскажу ниже, но чтобы было чуточку понятнее, что именно BPP настраивает, приведу пример. Всем же знакома аннотация <code>@Autowired</code>? Так вот, именно <code>AutowiredAnnotationBeanPostProcessor</code> ответственен за то, чтобы все ваши классы были внедрены друг в друга.
+<img data-max-width="180" alt="uknowimean" src="https://cdn.javarush.com/images/article/e4313405-c16d-44f6-b695-a9f288963e5e/original.jpeg"><h2>Вернемся к BeanFactory</h2>Зная теперь о BPP, нужно уточнить, что итерируясь по <code>HashMap</code>’e с <code>BeanDefinition</code>’ами сперва создаются и кладутся отдельно (не в IoC контейнер) все <code>BeanPostProcessor</code>’ы. После этого создаются обычные бины нашей бизнес-логики, складываются в IoC-контейнер и начинается их настройка с помощью отдельно отложенных BPP.
+
+А происходит это вот как, каждый BPP имеет 2 метода: 
+
+<pre class='lang-java line-numbers'><code>
+postProcessorBeforeInitialization(Object bean, String beanName);
+postProcessorAfterInitialization(Object bean, String beanName);
+</code></pre>
+Происходит итерация по нашим бинам дважды. В первый раз вызывается метод <code>postProcessorBeforeInitialization</code>, а во второй раз вызывается метод <code>postProcessorAfterInitialization</code>. Наверняка возник вопрос, зачем нужны два метода, объясняю. Дело в том, что для обработки некоторых аннотаций (таких как <code>@Transactional</code>, например) наш бин заменяется proxy классом. Чтобы понять зачем это делается, нужно знать как работает <code>@Transactional</code>, а работает это вот как. В метод, помеченный данной аннотацией необходимо налету добавить еще пару строк кода. Как это сделать? Верно, с помощью создания класса proxy, внутри которого и будет добавлен необходимый код в нужный метод. А теперь представим такую ситуацию, у нас есть класс:
+
+<pre class='lang-java line-numbers'><code>
+class A {
+    @Autowired
+    private SomeClass someClass;
+
+    @Transactional
+    public void method() {
+        // модификатор доступа обязательно public
+    }
+}
+</code></pre>
+В этом классе 2 аннотации <code>@Autowired</code> и <code>@Transactional</code>. Обе аннотации обрабатываются разными BPP. Если первым отработает <code>AutowiredBPP</code>, то все будет в порядке, но если нет, то мы столкнемся с вот какой проблемой. Дело в том, что когда создается класс proxy, то вся мета-информация теряется. Другими словами, информации об аннотации <code>@Autowired</code> в proxy классе не будет, а значит и <code>AutowiredBPP</code> не отработает, а значит наше поле <code>someClass</code> будет иметь значение <code>null</code>, что, скорее всего, приведет к NPE. Также стоит знать, что между вызовами методов <code>postProcessorBeforeInitialization</code> и <code>postProcessorAfterInitialization</code> происходит вызов <code>init</code>-метода, если он есть. Это по-большому счету второй конструктор, но отличие в том, что в этот момент все наши зависимости уже внедрены в класс и мы можем к ним обратиться из <code>init</code>-метода.
+
+Итак, еще раз алгоритм инициализации контекста:
+<ol>
+<li><code>XmlBeanDefinitionReader</code> сканирует наш xml-конфигурационный файл.</li>
+<li>Создает <code>BeanDefinition</code>’ы и кладет их в <code>HashMap</code>.</li>
+<li>Приходит <code>BeanFactory</code> и из этой <code>HashMap</code> отдельно складывает все <code>BeanPostProcessor</code>’ы.</li>
+<li>Создает из <code>BeanDefinition</code>’ов бины и кладет их в IoC-контейнер.</li>
+<li>Тут приходят BPP и настраивают эти бины с помощью 2х методов.</li>
+<il>Готово.</li>
+</ol>Собственно, на этом всё, пишите понравилась вам статья и стоит ли продолжать писать подобные туториалы.

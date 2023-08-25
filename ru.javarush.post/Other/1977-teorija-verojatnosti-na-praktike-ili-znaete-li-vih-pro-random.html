@@ -1,0 +1,138 @@
+Теория вероятностей на практике или знаете ли вы о Random
+<p>----------------------------------------</p>
+Казалось бы, Random — штука простая. Но действительно ли так всё просто, как выглядит сначала? В мире существует немало наук, которые что-то такое изучают. И науки состоят из различных разделов. Например, в математике есть отдельный раздел, посвящённый изучению ...
+<p>----------------------------------------</p>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="1b1a43d3-0de0-469f-828b-d0baf2dc2da8" data-max-width="710" alt="Теория вероятностей на практике или знаете ли вы о Random - 1" src="https://cdn.javarush.com/images/article/1b1a43d3-0de0-469f-828b-d0baf2dc2da8/1024.jpeg"></div></div><h2>Вступление</h2>В мире существует немало наук, которые изучают теорию вероятности. И науки состоят из различных разделов. Например, в математике есть отдельный раздел, посвящённый исследованию случайных событий, величин и т.п. А науки ведь берутся не просто так. В данном случае, теория вероятности начала формироваться, когда люди пытались понять, какие закономерности есть в бросании кубика при игре в азартные игры. Если приглядеться, вокруг нас есть множество на первый взгляд случайных вещей. Но всё случайное не совсем случайное. Но об этом чуть позже.
+
+В языке программирования Java тоже есть поддержка случайных чисел, начиная ещё с первой версии JDK. 
+
+Случайные числа в Java можно использовать при помощи класса <strong><a href="https://docs.oracle.com/javase/8/docs/api/java/util/Random.html" target="_blank" rel="nofollow">java.util.Random</a></strong>. Для испытаний нам подойдёт <a href="https://www.tutorialspoint.com/compile_java_online.php" target="_blank" rel="nofollow">tutorialspoint java online compiler</a>.
+
+Вот примитивный пример использования <em>Random</em> для эмулирования бросания "костей", или по-русски кубика:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.Random;
+
+public class HelloWorld{
+    public static void main(String []args){
+        Random rnd = new Random();
+        int number = rnd.nextInt(6) + 1;
+        System.out.println("Random number: " + number);
+    }
+}
+</code></pre>
+Казалось бы, на этом можно закончить описание <em>Random</em>, но не так всё просто. Откроем-ка мы описание класса <a href="https://docs.oracle.com/javase/8/docs/api/java/util/Random.html" target="_blank" rel="nofollow">java.util.Random</a> в Java API.
+
+И тут мы видим интересные вещи. Класс <strong>Random</strong> использует псевдослучайные числа. Как так? Получается, случайные числа не такие случайные?
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="77ed16d9-4036-4d43-948e-ef24370fdc3c" data-max-width="338" alt="Теория вероятностей на практике или знаете ли вы о Random - 2" src="https://cdn.javarush.com/images/article/77ed16d9-4036-4d43-948e-ef24370fdc3c/1024.jpeg"></div></div><h2>Псевдослучайность java.util.Random</h2>Документация класса <a href="https://docs.oracle.com/javase/8/docs/api/java/util/Random.html" target="_blank" rel="nofollow">java.util.Random</a> говорит, что если экземпляры <em><strong>Random</strong></em> созданы с одинаковым параметром <strong>seed</strong> и с экземплярами выполнены одинаковые последовательности действий, они возвращают идентичные последовательности чисел.
+
+И если мы приглядимся, то увидим, что у <em>Random</em> действительно есть <a href="https://docs.oracle.com/javase/8/docs/api/java/util/Random.html#Random-long-" target="_blank" rel="nofollow">конструктор</a>, который принимает некоторое <em>long</em> значение в качестве <em>seed:</em>
+
+<pre class="lang-java line-numbers"><code>
+Random rnd1 = new Random(1L);
+Random rnd2 = new Random(1L);
+boolean test = rnd1.nextInt(6) == rnd2.nextInt(6);
+System.out.println("Test: " + test);
+</code></pre>
+Данный пример вернёт <em>true</em>, т.к. <em>seed</em> обоих экземпляров одинаков.
+
+Что же делать? Отчасти проблему решает конструктор по умолчанию. Ниже приведён пример содержимого конструктора <em>Random</em>:
+
+<pre class="lang-java line-numbers"><code>
+public Random() {
+	this(seedUniquifier() ^ System.nanoTime());
+}
+</code></pre>
+Конструктор по умолчанию использует операцию побитового исключающего <em>OR</em>. И использует для этого <em>long</em> представляющий текущее время и некоторый <em>seed</em>:
+
+<pre class="lang-java line-numbers"><code>
+private static long seedUniquifier() {
+	for (;;) {
+		long current = seedUniquifier.get();
+		long next = current * 181783497276652981L;
+		if (seedUniquifier.compareAndSet(current, next))
+			return next;
+	}
+}
+</code></pre>
+Здесь интересно ещё и то, что каждый вызов метода получения <em>seedUniquifier</em> изменяет значение <em>seedUniquifier</em>. То есть класс спроектирован так, чтобы максимально эффективно подбирать случайные числа. Однако, как и сказано в документации, они "<strong>are not cryptographically secure</strong>". То есть для каких-то целей использования в криптографических целей (генерация паролей и т.п.) не годится, т.к. последовательность при должном подходе предсказывается.
+
+На эту тему есть в интернете примеры, например тут: "<a href="https://franklinta.com/2014/08/31/predicting-the-next-math-random-in-java/" target="_blank" rel="nofollow">Predicting the next Math.random() in Java</a>". Или например исходный код тут: "<a href="https://gist.github.com/DinisCruz/828a23e607c1eab6b66c866e7f3a37c9" target="_blank" rel="nofollow">Vulnerability Weak Crypto</a>".
+
+У <strong>java.util.Random</strong> (генератора случайных чисел) есть некий "шорткат", то есть укороченная версия вызова, которая выполняется через Math.random:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args){
+	int random_number = 1 + (int) (Math.random() * 6);
+	System.out.println("Value: " + random_number);
+}
+</code></pre>
+Но если посмотреть внимательно, внутри сидит всё тот же Random:
+
+<pre class="lang-java line-numbers"><code>
+public static double random() {
+	return RandomNumberGeneratorHolder.randomNumberGenerator.nextDouble();
+}
+private static final class RandomNumberGeneratorHolder {
+	static final Random randomNumberGenerator = new Random();
+}
+</code></pre>
+В JavaDoc советуют использовать класс <strong>SecureRandom</strong> для "<strong>cryptographically secure pseudo-random number generator</strong>".
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="ecc1d67f-7960-4bec-970e-ad1942fd3568" data-max-width="331" alt="Теория вероятностей на практике или знаете ли вы о Random - 3" src="https://cdn.javarush.com/images/article/ecc1d67f-7960-4bec-970e-ad1942fd3568/1024.jpeg"></div></div><h2>Безопасный Random Java</h2>Класс <em>SecureRandom</em> является наследником <strong>java.util.Random</strong> и расположен в пакете <strong>java.security</strong>.
+
+Сравнение этих двух классов можно прочитать в статье "<a href="http://www.techiedelight.com/difference-java-util-random-java-security-securerandom/" target="_blank" rel="nofollow">Difference between java.util.Random and java.security.SecureRandom</a>". 
+
+Чем же так хорош этот SecureRandom? Дело в том, что для него источником случайных чисел является такая магически звучащая штука как "пул энтропии ядра". Это одновременно и плюс, и минус. Про минус этого можно прочитать в статье: "<a href="http://www.mattnworb.com/post/the-dangers-of-java-security-securerandom/" target="_blank" rel="nofollow">The dangers of java.security.SecureRandom</a>". Если кратко, в Linux есть генератор случайных чисел ядра (RNG). RNG генерирует случайные числа  на основе данных из пула энтропии (entropy pool), который наполняется на основе случайных событий в системе, таких как тайминги клавиатуры и дисков, движения мыши, прерывания (interrupts), сетевой трафик.
+
+Подробнее про пул энтропии изложено в материале "<a href="https://ivirt-it.ru/linux-kernel-rng/" target="_blank" rel="nofollow">Случайные числа в Linux(RNG) или как «наполнить» /dev/random и /dev/urandom</a>". 
+
+На Windows системах используется SHA1PRNG, реализованная в sun.security.provider.SecureRandom.
+
+С развитием Java менялся и SecureRandom, о чём для полной картины стоит прочитать в обзоре "<a href="https://www.synopsys.com/blogs/software-security/proper-use-of-javas-securerandom/" target="_blank" rel="nofollow">Java SecureRandom updates as of April 2016</a>".
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="2fa1064c-3d62-432c-a3b4-c226577c3a3d" data-max-width="271" alt="Теория вероятностей на практике или знаете ли вы о Random - 4" src="https://cdn.javarush.com/images/article/2fa1064c-3d62-432c-a3b4-c226577c3a3d/1024.jpeg"></div></div><h2>Многопоточность или будь как Цезарь</h2>Если смотреть код класса <strong><em>Random</em></strong>, то вроде ничто не предвещает беды. Методы не помечены как <em>synchronized</em>. Но есть одно НО: при создании <em>Random</em> конструктором по умолчанию в нескольких потоках мы будем между ними делить один и тот же <em>instance seed</em>, по которому будет создаваться <em>Random</em>. А также при получении нового случайного числа у <em>instance</em> так же меняется внутренний <em>AtomicLong</em>.
+
+С одной стороны, в этом нет ничего страшного с логической точки зрения, т.к. используется <em>AtomicLong</em>. С другой стороны, за всё надо платить, в том числе производительностью. И за это тоже. 
+
+Поэтому даже в официальной документации к <a href="https://docs.oracle.com/javase/8/docs/api/java/util/Random.html" target="_blank" rel="nofollow">java.util.Random</a> сказано: "<strong>Instances of java.util.Random are threadsafe. However, the concurrent use of the same java.util.Random instance across threads may encounter contention and consequent poor performance. Consider instead using ThreadLocalRandom in multithreaded designs</strong>". То есть в многопоточных приложениях при активном использовании <em>Random</em> из нескольких потоков лучше использовать класс <em>ThreadLocalRandom</em>.
+
+Его использование немного отличается от обычного<em> Random</em>:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args){
+	int rand = ThreadLocalRandom.current().nextInt(1,7);
+	System.out.println("Value: " + rand);
+}
+</code></pre>
+Как видим, для него мы не указываем <em>seed</em>.
+
+Данный пример описан в официальном tutorial от Oracle: <a href="https://docs.oracle.com/javase/tutorial/essential/concurrency/threadlocalrandom.html" target="_blank" rel="nofollow">Concurrent Random Numbers</a>.
+
+Подробнее про данный класс можно прочитать в обзоре: "<a href="https://www.baeldung.com/java-thread-local-random" target="_blank" rel="nofollow">Guide to ThreadLocalRandom in Java</a>".
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="cbb9cd7c-bda0-403c-a71f-d62559df6f8e" data-max-width="315" alt="Теория вероятностей на практике или знаете ли вы о Random - 5" src="https://cdn.javarush.com/images/article/cbb9cd7c-bda0-403c-a71f-d62559df6f8e/1024.jpeg"></div></div><h2>StreamAPI и Random</h2>Благодаря выходу Java 8 у нас появилось много новых возможностей. В том числе и Stream API. И изменения коснулись и генерации<em> Random</em> значений.
+
+Например, в классе <em>Random</em> появились новые методы, которые позволяют получить <em>Stream</em> со случайными значениями типа <code>int</code>, <code>double</code> или <code>long</code>. Например:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.Random;
+
+public class HelloWorld{
+    public static void main(String []args){
+        new Random().ints(10, 1, 7).forEach(n -&gt; System.out.println(n));
+    }    
+}
+</code></pre>
+Также появился новый класс <strong><em>SplittableRandom</em></strong>:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.SplittableRandom;
+
+public class HelloWorld{
+    public static void main(String []args){
+        new SplittableRandom().ints(10, 1, 7).forEach(n -&gt; System.out.println(n));
+    }  
+}
+</code></pre>
+Подробнее про отличие <em>SplittableRandom</em> от остальных классов можно прочитать здесь: "<a href="https://www.logicbig.com/how-to/java-random/different-random-classes.html" target="_blank" rel="nofollow">Different ways to create Random numbers in Java</a>".
+<h2>Заключение</h2>Думаю, стоит сделать вывод. Нужно внимательно читать JavaDoc к используемым классам. За такой простой на первый взгляд вещью как Random стоят нюансы, которые могут сыграть злую шутку.
+
+#Viacheslav

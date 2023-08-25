@@ -1,0 +1,503 @@
+Ваше первое приложение на Hibernate
+<p>----------------------------------------</p>
+В этой статье вы познакомитесь с одним из наиболее популярных enterprise-фреймворков для Java и создадите свое первое приложение на Hibernate.
+Никогда не слышали о Hibernate? Может быть, слышали о нем, но не пользовались? Или пытались начать, но не получилось? 
+<p>----------------------------------------</p>
+В этой статье вы познакомитесь с одним из наиболее популярных enterprise-фреймворков для Java и создадите свое первое приложение на Hibernate.
+
+Никогда не слышали о Hibernate? Может быть, слышали о нем, но не пользовались? Или пытались начать, но не получилось? 
+
+Во всех трех случаях — добро пожаловать под кат:)
+
+<img data-max-width="800" data-id="2d110611-52c1-44c9-9fc8-519d636b8f4f" src="/images/article/2d110611-52c1-44c9-9fc8-519d636b8f4f/800.jpeg" class="img-fluid" alt="Ваше первое приложение на Hibernate - 1">Всем привет!
+
+В этой статье я расскажу об основных особенностях фреймворка Hibernate и помогу вам написать свое первое мини-приложение. 
+
+Для этого нам понадобятся:
+<ol>
+<li>Intellij Idea Ultimate Edition;<br>
+Качаем с <a href="https://www.jetbrains.com/idea/" target="_blank" rel="nofollow">официального сайта</a> и активируем 30-дневную пробную версию.</li>
+<li>PostgeSQL — одна из самых популярных современных систем управления базами данных (СУБД);</li>
+<li>Maven (уже зашит в IDEA);</li>
+<li>Немного терпения.</li>
+</ol><!--На всякий случай я выложил код приложения на <a href="https://github.com/jd2050/PracticeRoom2/tree/javarush" target="_blank" rel="nofollow">github</a> (ветка javarush)-->Статья ориентирована прежде всего на тех, кто никогда не работал с данной технологией, поэтому количество кода было максимально уменьшено. Приступим!
+<h2>Что такое Hibernate?</h2> Это — одна из наиболее популярных реализаций ORM-модели. Объектно-реляционная модель описывает отношения между программными объектами и записями в БД. 
+
+Конечно, функционал Hibernate очень широк, но мы остановимся на самых простых функциях.
+
+Наша цель: создать CRUD-приложение (Create,Read,Update,Delete), которое будет уметь:
+<ol>
+<li>Создавать пользователей (User), а также искать их в базе данных по ID, обновлять их данные в базе, а также удалять из базы.</li>
+<li>Присваивать пользователям объекты автомобилей (Auto). Создавать, редактировать, находить и удалять автомобили из базы данных.</li>
+<li>Кроме того, приложение должно автоматически удалять "бесхозные" автомобили из БД. Т.е. при удалении пользователя, все принадлежащии ему автомобили также должны быть удалены из БД.</li>
+</ol>Структура нашего проекта будет следующей:
+<img data-max-width="425" alt="Ваше первое приложение на Hibernate - 2" src="https://cdn.javarush.com/images/article/3e1bf54f-8e8c-4ed7-9bbe-72697e210ead/original.jpeg">Как видите, ничего сложного. 6 классов + 1 файл с конфигами. 
+
+Для начала, создадим новый maven-проект в Intellij Idea. File -&gt; New Project.
+
+Из предлагаемых типов проектов выбирайте Maven и переходите дальше.<img data-max-width="512" data-id="2dcbc8aa-57ea-4b41-82fc-5a368b048775" src="/images/article/2dcbc8aa-57ea-4b41-82fc-5a368b048775/512.jpeg" class="img-fluid" alt="Ваше первое приложение на Hibernate - 3">Apache Maven — фреймворк для автоматизации сборки проектов на основе описания их структуры в файлах на языке POM. Вся структура вашего проекта будет описана в файле pom.xml, который IDEA сама создаст в корне вашего проекта. 
+
+В настройках проекта вам нужно будет указать параметры Maven — groupId и artifactId. Обычно в проектах groupId наименование организации или подразделения, туда записывают доменное имя организации или сайта проекта. В свою очередь artifactId — название проекта. 
+
+Для groupdId можете указать <code>com.вашНикнейм.javarush</code>, на работу приложения это никак не повлияет. Для artifactId выберите любое понравившееся вам название проекта. Version тоже можете оставить без изменений.<img data-max-width="512" data-id="0aba8341-eddc-4d4f-b3e1-2dbb621f659a" src="/images/article/0aba8341-eddc-4d4f-b3e1-2dbb621f659a/512.jpeg" class="img-fluid" alt="Ваше первое приложение на Hibernate - 4">На последнем экране просто подтвердите ранее введенные данные.<img data-max-width="512" data-id="b1a09443-6064-47e8-85c8-de74415cb9a7" src="/images/article/b1a09443-6064-47e8-85c8-de74415cb9a7/512.jpeg" class="img-fluid" alt="Ваше первое приложение на Hibernate - 5">Итак, проект мы создали, осталось всего ничего — написать код и заставить его работать :)
+
+Прежде всего, если мы хотим создать приложение, работающие с базой данных — нам определенно не обойтись без базы данных! Качаем PostgreSQL <a href="https://www.postgresql.org/download/" target="_blank" rel="nofollow">отсюда</a> (я использую 9 версию). 
+
+В PostgreSQL имеется созданный по умолчанию пользователь 'postgres', пароль для него вам нужно будет придумать при установке. Не забывайте пароль, он нам понадобится позже!
+
+(Вообще, пользоваться дефолтной БД в приложениях — bad practice, но с целью сократить объем геморроя с созданием своей БД обойдемся ей).
+
+Если вы не дружите с командной строкой и SQL-запросами — есть хорошая новость. Intellij IDEA предоставляет вполне годный пользовательский интерфейс для работы с БД. Выглядит он так:<img data-max-width="800" data-id="9d022e52-3681-4f3e-be31-4310ad12e5be" src="/images/article/9d022e52-3681-4f3e-be31-4310ad12e5be/800.jpeg" class="img-fluid" alt="Ваше первое приложение на Hibernate - 6">(находится на правой боковой панели IDEA, вкладка Database)
+
+Для создания поключения нажмите "+", выберите нашего провайдера (PostgeSQL). Заполните поля с пользователем, именем БД (и то и другое — postgres) и введите пароль, который задали при установке PostgreSQL. При необходимости — скачайте драйвер Postgres, это можно сделать на этой же странице. Намжмите "Test Connection", чтобы проверить, что соединение с БД установлено. Если видите надпись "Successful" — едем дальше.
+
+Теперь создадим нужные нам таблицы. Всего их будет две — users и autos. 
+
+Параметры для таблицы users:
+<img data-max-width="750" alt="Ваше первое приложение на Hibernate - 7" src="https://cdn.javarush.com/images/article/0626275a-4632-47c3-8683-bc96c742143f/original.jpeg">Обратите внимание на то, что id является первичным ключом (Primary Key). Если не знаете что такое первичный ключ в SQL — гугл, это важно.
+
+Настройка для таблицы autos:
+<img data-max-width="750" alt="Ваше первое приложение на Hibernate - 8" src="https://cdn.javarush.com/images/article/93e0f1cb-cd51-40b0-8b2c-1f6115b92749/original.jpeg">Для autos нужно настроить Foreign Key — внешний ключ. Он будет связывать наши таблицы. Советую почитать про него подробнее; если говорить совсем просто - он ссылается на внешнюю таблицу, в нашем случае на users. Если машина принадлежит юзеру с id=1, то в поле user_id таблицы autos у нее будет 1. Так мы в нашем приложении связываем пользователей с их автомобилями.
+
+В нашей таблице autos роль внешнего ключа будет выполнять поле user_id. Оно будет ссылаться на поле id таблицы users.
+<img data-max-width="750" alt="Ваше первое приложение на Hibernate - 9" src="https://cdn.javarush.com/images/article/1d5a8142-0448-4c44-97d1-1d1909161f75/original.jpeg">Таким образом, мы создали базу данных с двумя таблицами. Осталось понять, как управлять ей из Java-кода.
+
+Начнем мы с файла pom.xml, в котором нам необходимо подключить нужные библиотеки (на языке Maven они называются dependencies — "зависимости"). Все библиотеки хранятся в центральном репозитории Maven. Те из них, которые вы укажете в pom.xml, вы сможете использовать в проекте. Ваш pom.xml должен выглядеть так:
+<img data-max-width="800" src="/images/article/ee21e4c4-7479-4b3f-aae8-07d08856a946/original.jpeg" class="img-fluid" alt="Ваше первое приложение на Hibernate - 10">Ничего сложного, как видите. Мы добавили всего 2 зависимости — для использования PostgreSQL и Hibernate. 
+
+<div class="email-subscription"><iframe frameborder="0" src="https://secure.esputnik.com.ua/4Q0Ef6d2SOs" width="100%" height="200" scrolling="no"></iframe></div>
+
+Теперь перейдем к Java-коду. Создайте все необходимые пакеты и классы проекта.  Для начала, нам понадобятся модели данных — классы<code>User</code> и <code>Auto</code>.
+
+<pre class="lang-java line-numbers"><code>
+package models;
+
+import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table (name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+    @Column(name = "name")
+    private String name;
+    //можно не указывать Column name, если оно совпадает с названием столбца в таблице
+    private int age;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List&lt;Auto&gt; autos;
+
+    public User() {
+    }
+
+    public User(String name, int age) {
+        this.name = name;
+        this.age = age;
+        autos = new ArrayList&lt;&gt;();
+    }
+
+    public void addAuto(Auto auto) {
+        auto.setUser(this);
+        autos.add(auto);
+    }
+
+    public void removeAuto(Auto auto) {
+        autos.remove(auto);
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public List&lt;Auto&gt; getAutos() {
+        return autos;
+    }
+
+    public void setAutos(List&lt;Auto&gt; autos) {
+        this.autos = autos;
+    }
+
+    @Override
+    public String toString() {
+        return "models.User{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", age=" + age +
+                '}';
+    }
+}
+
+</code></pre>
+<pre class="lang-java line-numbers"><code>
+package models;
+
+import javax.persistence.*;
+
+@Entity
+@Table(name = "autos")
+public class Auto {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+
+    @Column (name = "model")
+    private String model;
+
+    //можно не указывать Column name, если оно совпадает с названием столбца в таблице
+    private String color;
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    public Auto() {
+    }
+
+    public Auto(String model, String color) {
+        this.model = model;
+        this.color = color;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public String getModel() {
+        return model;
+    }
+
+    public void setModel(String model) {
+        this.model = model;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    @Override
+    public String toString() {
+        return color + " " + model;
+    }
+}
+
+</code></pre>
+Как видите, классы снабжены кучей пока непонятных аннотаций. Давайте начнем с ними разбираться.
+
+Главная для нас аннотация — @Entity (сущность). Прочитайте в о ней в Википедии и запомните все, это — основа основ. Эта аннотация позволяет Java-объектам вашего класса быть связанными с БД. 
+
+Чтобы класс мог быть сущностью, к нему предъявляются следующие требования:
+<ul>
+<li>Должен иметь пустой конструктор (<code>public</code> или <code>protected</code>);</li>
+<li>Не может быть вложенным, интерфейсом или <code>enum</code>;</li>
+<li>Не может быть <code>final</code> и не может содержать <code>final</code>-полей/свойств;</li>
+<li>Должен содержать хотя бы одно @Id-поле.</li>
+</ul>Проверьте ваши entity-классы, эти пункты — очень популярное место для "выстрела себе в ногу". Очень легко что-нибудь забыть. 
+
+При этом entity может:
+<ul>
+<li>Содержать непустые конструкторы;</li>
+<li>Наследоваться и быть наследованным;</li>
+<li>Содержать другие методы и реализовывать интерфейсы.</li>
+</ul>Как видите, класс <code>User</code> во многом похож на таблицу users. Есть поля <code>id</code>, <code>name</code>, <code>age</code>. Расположенные над ними аннотации в пояснениях особо не нуждаются: и так понятно, что @Id — это указание, что поле является идентификатором объектов этого класса. Аннотация @Table над классом указывает как называется таблица, в которую записываются объекты. Обратите внимание на комментарий над полем age: если имя поля в классе и таблице совпадает — можно не добавлять аннотацию @Column, будет работать и так. Что касаемо указанного в скобках "strategy = GenerationType.IDENTITY": есть несколько стратегий генерации ID. Можете погуглить, но в рамках нашего приложения можно не заморачиваться. Главное, что id для наших объектов будут генерироваться автоматически, поэтому для id отсутствует сеттер, и в конструкторе мы его тоже не задаем.
+
+Однако, кое-чем класс <code>User</code> все-таки выделяется. 
+
+У него есть список машин! 
+
+Над списком висит аннотация @OneToMany. Она означает, что одному объекту класса user может соответствовать несколько машин. Настройка "mappedBY" указывает на поле user класса <code>Auto</code>. Таким образом машины и пользователи связаны между с собой. Настройка orphanRemoval вполне хорошо переводится с английского — "удалять сирот". Если мы удалим юзера из БД — все связанные с ним автомобили также будут удалены. 
+
+В свою очередь в классе <code>Auto</code> вы увидите поле user с аннотацией @ManyToOne (многим Auto может соответствовать один User) и аннотацию @JoinColumn. Она указывает, через какой столбец в таблице autos происходит связь с таблицей users (тот самый внешний ключ, о котором мы говорили ранее). 
+
+После создания модели данных пора научить нашу программу выполнять с этими данными операции в БД.
+
+Начнем с утилитного класса HibernateSessionFactoryUtil. У него всего одна задача — создавать для нашего приложения фабрику сессий для работы с БД (привет, паттерн "Фабрика!").
+
+Больше он ничего не умеет. 
+
+<pre class="lang-java line-numbers"><code>
+package utils;
+
+import models.Auto;
+import models.User;
+import org.hibernate.SessionFactory;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.cfg.Configuration;
+
+public class HibernateSessionFactoryUtil {
+    private static SessionFactory sessionFactory;
+
+    private HibernateSessionFactoryUtil() {}
+
+    public static SessionFactory getSessionFactory() {
+        if (sessionFactory == null) {
+            try {
+                Configuration configuration = new Configuration().configure();
+                configuration.addAnnotatedClass(User.class);
+                configuration.addAnnotatedClass(Auto.class);
+                StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder().applySettings(configuration.getProperties());
+                sessionFactory = configuration.buildSessionFactory(builder.build());
+
+            } catch (Exception e) {
+                System.out.println("Исключение!" + e);
+            }
+        }
+        return sessionFactory;
+    }
+}
+</code></pre>
+В этом классе мы создаем новый объект конфигураций Configuration, и передаем ему те классы, которые он должен воспринимать как сущности — <code>User</code> и <code>Auto</code>.
+
+Обратите внимание на метод <code>configuration.getProperties()</code>.
+
+Какие еще properties? Откуда?
+
+Properties — это параметры для работы hibernate, указанные в специальном файле hibernate.cfg.xml.
+<img data-max-width="750" alt="Ваше первое приложение на Hibernate - 11" src="https://cdn.javarush.com/images/article/ce810a70-3a1d-4670-ac9f-c99fe1463270/original.jpeg">Hibernate.cfg.xml зачитывается здесь: <code>new Configuration().configure();</code>
+
+В нем, как видите, нет ничего особенного — параметры соединения с БД, и специальный параметр show_sql. Он нужен для того, чтобы все sql-запросы, которые hibernate будет выполнять к нашей БД, выводились в консоль. Таким образом, вы будете видеть что конкретно делает Hibernate в каждый момент времени и избавитесь от эффекта "магии".
+
+Далее нам понадобится класс <code>UserDAO</code>. 
+
+(По-хорошему, программировать нужно через интерфейсы — создать интерфейс <code>UserDAO</code> и отдельно его реализацию <code>UserDAOImpl</code>, но для сокращения объема кода я опущу это. Не делайте так в реальных проектах!). 
+
+DAO (data access object) — один из наиболее распространенных паттернов проектирования, "Доступ к данным". Его смысл прост — создать в приложении слой, который отвечает только за доступ к данным, и больше ни за что. Достать данные из БД, обновить данные, удалить данные — и все. Почитайте про DAO подробнее, в работе будете пользоваться ими постоянно.
+
+Что же умеет наш класс <code>UserDao</code>?
+
+Собственно, как и все DAO, он умеет только работать с данными. Найти юзера по id, обновить его данные, удалить его, вытащить из БД список всех юзеров или сохранить в БД нового юзера — вот весь его функционал. 
+
+<pre class="lang-java line-numbers"><code>
+package dao;
+
+import models.Auto;
+import models.User;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+import utils.HibernateSessionFactoryUtil;
+import java.util.List;
+
+public class UserDao {
+
+    public User findById(int id) {
+        return HibernateSessionFactoryUtil.getSessionFactory().openSession().get(User.class, id);
+    }
+
+    public void save(User user) {
+        Session session = HibernateSessionFactoryUtil.getSessionFactory().openSession();
+        Transaction tx1 = session.beginTransaction();
+        session.save(user);
+        tx1.commit();
+        session.close();
+    }
+
+    public void update(User user) {
+        Session session = HibernateSessionFactoryUtil.getSessionFactory().openSession();
+        Transaction tx1 = session.beginTransaction();
+        session.update(user);
+        tx1.commit();
+        session.close();
+    }
+
+    public void delete(User user) {
+        Session session = HibernateSessionFactoryUtil.getSessionFactory().openSession();
+        Transaction tx1 = session.beginTransaction();
+        session.delete(user);
+        tx1.commit();
+        session.close();
+    }
+
+    public Auto findAutoById(int id) {
+        return HibernateSessionFactoryUtil.getSessionFactory().openSession().get(Auto.class, id);
+    }
+
+    public List&lt;User&gt; findAll() {
+        List&lt;User&gt; users = (List&lt;User&gt;)  HibernateSessionFactoryUtil.getSessionFactory().openSession().createQuery("From User").list();
+        return users;
+    }
+}
+</code></pre>
+Методы <code>UserDao</code> похожи друг на друга. В большинстве из них мы получаем объект <a href="https://docs.jboss.org/hibernate/orm/3.5/javadocs/org/hibernate/Session.html" target="_blank" rel="nofollow">Session</a> (сессия соединения с нашей БД) с помощью нашей Фабрики Сессий, создаем в рамках этой сессии одиночную транзакцию, выполняем необходимые преобразования данных, сохраняем результат транзакции в БД и закрываем сессию. Сами методы тоже, как видите, довольно просты.
+
+Именно DAO — "сердце" нашего приложения. Однако, мы не будем создавать DAO напрямую и вызывать его методы в нашем методе <code>main()</code>.
+
+Вся логика будет перемещена в класс <code>UserService</code>. 
+
+<pre class="lang-java line-numbers"><code>
+package services;
+
+import dao.UserDao;
+import models.Auto;
+import models.User;
+
+import java.util.List;
+
+public class UserService {
+
+    private UserDao usersDao = new UserDao();
+
+    public UserService() {
+    }
+
+    public User findUser(int id) {
+        return usersDao.findById(id);
+    }
+
+    public void saveUser(User user) {
+        usersDao.save(user);
+    }
+
+    public void deleteUser(User user) {
+        usersDao.delete(user);
+    }
+
+    public void updateUser(User user) {
+        usersDao.update(user);
+    }
+
+    public List&lt;User&gt; findAllUsers() {
+        return usersDao.findAll();
+    }
+
+    public Auto findAutoById(int id) {
+        return usersDao.findAutoById(id);
+    }
+
+
+}
+
+</code></pre>
+Service — слой данных в приложении, отвечающий за выполнение бизнес-логики. 
+
+Если ваша программа должна выполнить какую-то бизнес-логику — она делает это через сервисы. Сервис содержит внутри себя <code>UserDao</code>, и в своих методах вызывает методы DAO. Это может показаться вам дублированием функций (почему бы просто не вызывать методы из dao-объекта), но при большом количестве объектов и сложной логике разбиение приложения на слои дает огромные преимущества (это good practice, запомните эту информацию на будущее и почитайте про "слои приложения"). У нас-то в сервисе логика простая, а в реальных проектах методы сервисов будут содержать куда больше одной строки кода:) 
+
+Теперь у нас есть все нужно для работы приложения!
+Давайте создадим в методе <code>main()</code> пользователя, машины для него, свяжем их друг с другом и сохраним в БД.
+
+<pre class="lang-java line-numbers"><code>
+import models.Auto;
+import models.User;
+import services.UserService;
+
+import java.sql.SQLException;
+
+public class Main {
+    public static void main(String[] args) throws SQLException {
+
+        UserService userService = new UserService();
+        User user = new User("Masha",26);
+        userService.saveUser(user);
+        Auto ferrari = new Auto("Ferrari", "red");
+        ferrari.setUser(user);
+        user.addAuto(ferrari);
+        Auto ford = new Auto("Ford", "black");
+        ford.setUser(user);
+        user.addAuto(ford);
+        userService.updateUser(user);
+    }
+}
+
+</code></pre>
+Как видите, в таблице users появилась своя запись, а в таблице autos — свои. 
+<img data-max-width="750" alt="Ваше первое приложение на Hibernate - 13" src="https://cdn.javarush.com/images/article/169acb91-2cde-4bf4-b728-46174b703e0b/original.jpeg"><img data-max-width="750" alt="Ваше первое приложение на Hibernate - 14" src="https://cdn.javarush.com/images/article/ad5007f0-684d-4ac2-a7a5-96ac4fe85626/original.jpeg">Попробуем переименовать нашего пользователя. Очистим таблицу users и выполним код
+
+<pre class="lang-java line-numbers"><code>
+import models.Auto;
+import models.User;
+import services.UserService;
+
+import java.sql.SQLException;
+
+public class Main {
+    public static void main(String[] args) throws SQLException {
+
+        UserService userService = new UserService();
+        User user = new User("Masha",26);
+        userService.saveUser(user);
+        Auto ferrari = new Auto("Ferrari", "red");
+        user.addAuto(ferrari);
+        Auto ford = new Auto("Ford", "black");
+        ford.setUser(user);
+        user.addAuto(ford);
+        userService.updateUser(user);
+        user.setName("Sasha");
+        userService.updateUser(user);
+    }
+}
+
+</code></pre>
+Работает!
+<img data-max-width="750" alt="Ваше первое приложение на Hibernate - 15" src="https://cdn.javarush.com/images/article/c71435d6-b917-4e58-b166-907864ea4e41/original.jpeg">А что если удалить пользователя? Очистим таблицу users (autos очистится сама) и выполним код
+
+<pre class="lang-java line-numbers"><code>
+import models.Auto;
+import models.User;
+import services.UserService;
+
+import java.sql.SQLException;
+
+public class Main {
+    public static void main(String[] args) throws SQLException {
+
+        UserService userService = new UserService();
+        User user = new User("Masha",26);
+        userService.saveUser(user);
+        Auto ferrari = new Auto("Ferrari", "red");
+        user.addAuto(ferrari);
+        Auto ford = new Auto("Ford", "black");
+        ford.setUser(user);
+        user.addAuto(ford);
+        userService.updateUser(user);
+        user.setName("Sasha");
+        userService.updateUser(user);
+        userService.deleteUser(user);
+    }
+}
+
+</code></pre>
+И наши таблицы абсолютно пусты (обратите внимание на консоль, туда выведутся все запросы, которые выполнил Hibernate).
+
+Вы можете "поиграться" с приложением и попробовать все его функции.
+
+Например, создайте пользователя с машинами, сохраните его в БД, посмотрите какой ID ему присвоен, и попробуйте в методе <code>main()</code> "вытащить" пользователя из БД по этому id и вывести в консоль список его машин.
+
+Конечно, мы увидели лишь небольшую часть функциональности Hibernate. Его возможности очень широки, и он давно является одним из промышленных стандартов Java-разработки. Если вы хотите изучить его во всех подробностях – могу рекомендовать книгу "Java Persistence API и Hibernate", <a href="https://javarush.com/groups/posts/498-hibernate-dlja-chaynikov-obzor-knigi-java-persistence-api-i-hibernate" target="_blank" rel="nofollow">обзор</a> на которую я делал в одной из прошлых статей.
+
+Надеюсь, эта статья была полезна читателям. Если у вас будут вопросы — задавайте их в комментариях, с радостью отвечу :)
+
+Также не забывайте поддержать автора в конкурсе, поставив "Нравится". А лучше — "Очень нравится" :)
+
+Успехов в учебе!

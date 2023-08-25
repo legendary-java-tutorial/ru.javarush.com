@@ -1,0 +1,224 @@
+Раздел "Игры" на JavaRush: Обработка событий
+<p>----------------------------------------</p>
+Это первая часть гайда по разделу "Игры" на JavaRush. В нем вы найдете полезную информацию о том, как работать с этим типом задач. Для работы с мышкой у игрового движка есть два метода:  void onMouseLeftClick(int x, int y); и void onMouseRightClick(int x, int y); ...
+<p>----------------------------------------</p>
+<strong>«Игры» от JavaRush</strong> — новый раздел с интересными и масштабными задачами по созданию своих версий популярных игр. Все просто: каждый проект-игра разделен на подзадачи. Выполните их одну за другой — игра готова. Ею можно поделиться в соцсетях и пригласить друзей поиграть.<img data-id="0b1a3579-b0ea-4df4-b9cf-62e3c535acd8" data-max-width="710" alt="Раздел " src="https://cdn.javarush.com/images/article/0b1a3579-b0ea-4df4-b9cf-62e3c535acd8/1024.jpeg">В этом материале подробно расскажем о методах <strong>обработки событий</strong> при написании игр.
+<h2 id="Работа с мышкой">1. Работа с мышкой</h2>Для работы с мышкой у игрового движка есть два метода: 
+
+<ul>
+<li><code>void onMouseLeftClick(int x, int y);</code></li><br />
+<li><code>void onMouseRightClick(int x, int y);</code></li>
+</ul>
+Вы просто объявляете эти методы в классе игры, унаследованном от <code>Game</code>, и пишите в них любой код. А игровой движок сам будет их вызывать, когда пользователь нажимает кнопки мышки. 
+
+<ol>
+<li><code><strong>onMouseLeftClick(int x, int y)</strong></code> — вызывается движком при клике левой кнопкой мыши. В качестве аргументов получает координаты клетки игрового поля, где произошел клик. Левая верхняя ячейка имеет координаты (0,0). Для использования этого метода, его нужно переопределить.</li><br />
+<li><code><strong>onMouseRightClick(int x, int y)</strong></code> — вызывается при клике правой кнопкой мыши. Работает аналогично методу <code>onMouseLeftClick(int x, int y)</code>.</li>
+</ol>
+Пример использования методов:
+
+<pre class='lang-java line-numbers'><code>
+import com.javarush.engine.cell.Color;
+import com.javarush.engine.cell.Game;
+import com.javarush.engine.cell.Key;
+
+public class MySuperGame extends Game {
+    @Override
+    public void initialize() {
+        // Устанавливаем размер игрового поля 3x3
+        setScreenSize(3, 3);
+        
+        // Закрашиваем игровое поле белым цветом
+        for (int x = 0; x < 3; x++) {
+            for (int y = 0; y < 3; y++) {
+                setCellColor(x, y, Color.WHITE);
+            }
+        }
+    }
+
+    @Override
+    public void onMouseLeftClick(int x, int y) {
+        // Ставим символ "X" в клетку по которой кликнули левой кнопкой мыши
+        setCellValue(x, y, "X");
+    }
+
+    @Override
+    public void onMouseRightClick(int x, int y) {
+        // Очищаем клетку по которой кликнули правой кнопкой мыши
+        setCellValue(x, y, "");
+    }
+}
+</code></pre>
+<h3 id="Работа с клавиатурой">2. Работа с клавиатурой</h3>Для работы с клавиатурой у игрового движка есть два метода: 
+
+<ul>
+<li><code>void onKeyPress(Key key);</code></li><br />
+<li><code>void onKeyReleased(Key key);</code></li>
+</ul>
+Если вы хотите, чтобы при нажатии пользователем кнопки на клавиатуре осуществлялись действия, объявите эти методы в классе вашей игры, унаследованном от Game, и напишите в них ваш код. Игровой движок сам их вызовет, когда пользователь нажмет или отпустит клавишу клавиатуры. 
+
+<ol>
+<li><code><strong>onKeyPress (Key key)</strong></code> — вызывается при нажатии любой клавиши клавиатуры. В качестве аргумента key в метод передается значение нажатой клавиши (или Key.UNKNOWN).</li><br />
+<li><code><strong>onKeyReleased (Key key)</strong></code> — вызывается при отпускании любой клавиши клавиатуры. В качестве аргумента key получает значение соответствующей	клавиши (или Key.UNKNOWN).</li>
+</ol>
+Пример использования методов:
+
+<pre class='lang-java line-numbers'><code>
+import com.javarush.engine.cell.Color;
+import com.javarush.engine.cell.Game;
+import com.javarush.engine.cell.Key;
+
+public class MySuperGame extends Game {
+    @Override
+    public void initialize() {
+        // Устанавливаем размер игрового поля 3x3
+        setScreenSize(3, 3);
+        
+        // Закрашиваем игровое поле белым цветом
+        for (int x = 0; x < 3; x++) {
+            for (int y = 0; y < 3; y++) {
+                setCellColor(x, y, Color.WHITE);
+            }
+        }
+    }
+
+    @Override
+    public void onKeyPress(Key key) {
+        // При нажатии пробела, центральная клетка становится желтой
+        if (key == Key.SPACE) {
+            setCellColor(1, 1, Color.YELLOW);
+        }
+    }
+
+    @Override
+    public void onKeyReleased(Key key) {
+        // При отпускании пробела, центральной клетке возвращается белый цвет
+        if (key == Key.SPACE) {
+            setCellColor(1, 1, Color.WHITE);
+        }
+    }
+}
+</code></pre>
+<mark>Важно!</mark>
+
+В текущей версии движка тип Key может принимать только ограниченный набор значений (9 шт):
+<table class="table table--striped">
+<tr>
+<th>Значение
+</th>
+<th>Что нажал пользователь
+</th>
+</tr>
+<tr>
+<td><strong>Key.ENTER</strong>
+</td>
+<td>Пользователь нажал кнопку Enter
+</td>
+</tr>
+<tr>
+<td><strong>Key.ESCAPE</strong>
+</td>
+<td>Пользователь нажал кнопку Esc
+</td>
+</tr>
+<tr>
+<td><strong>Key.PAUSE</strong>
+</td>
+<td>Пользователь нажал кнопку Pause
+</td>
+</tr>
+<tr>
+<td><strong>Key.SPACE</strong>
+</td>
+<td>Пользователь нажал Пробел
+</td>
+</tr>
+<tr>
+<td><strong>Key.LEFT</strong>
+</td>
+<td>Пользователь нажал Стрелку Влево
+</td>
+</tr>
+<tr>
+<td><strong>Key.RIGHT</strong>
+</td>
+<td>Пользователь нажал Стрелку Вправо
+</td>
+</tr>
+<tr>
+<td><strong>Key.UP</strong>
+</td>
+<td>Пользователь нажал Стрелку Вверх
+</td>
+</tr>
+<tr>
+<td><strong>Key.DOWN</strong>
+</td>
+<td>Пользователь нажал Стрелку Вниз
+</td>
+</tr>
+<tr>
+<td><strong>Key.UNKNOWN</strong>
+</td>
+<td>Любую клавишу, кроме вышеперечисленных
+</td>
+</tr>
+</table><h2 id="Работа с таймером">3. Работа с таймером</h3>Многие игры происходят в реальном времени, то есть даже если пользователь ничего не делает, события в игре все равно выполняются. Чтобы вы могли реализовывать такие игры, мы добавили в игровой движок работу с таймером.
+
+Работает это примерно так: вы включаете таймер и выставляете временной отрезок, через который он должен срабатывать. Например, 500 миллисекунд. После этого каждые полсекунды Игровой Движок вызывает метод <code><strong>onTurnTimer()</strong></code>. Бесконечное число раз, пока таймер не выключат.
+
+Как же пользоваться таймером?
+<ol>
+<li><p><strong>Включаем таймер.</strong></p>
+<p>Для этого есть специальный метод <code><strong>void setTurnTimer(int timeMs)</strong></code>. В качестве аргумента метод принимает длительность интервала между вызовами в миллисекундах (1/1000 секунды). Достаточно один раз вызвать его, и игровой движок начнет вызывать метод <code>onTurn()</code> каждые timeMs миллисекунд.</p></li>
+<li><p><strong>Переопределяем метод onTurn(int).</strong></p>
+<p>Для этого необходимо объявить метод <code><strong>void onTurn(int step)</strong></code> в классе, унаследованном от класса <code>Game</code>. Этот метод будет вызываться игровым движком. При этом движок каждый раз будет передавать в метод порядковый номер такого вызова (1,2,3, …).</p></li>
+<li><p><strong>Выключаем таймер.</strong></p>
+<p>Если таймер больше не нужен, когда, например, пользователь прошел игру, его можно выключить. Для этого нужно просто вызвать метод <code><strong>stopTurnTimer()</strong></code>.</p></li>
+<li><p><strong>Ускоряем или меняем таймер.</strong></p>
+<p>В некоторых играх события постоянно ускоряются, поэтому было бы удобно ускорять наш таймер (уменьшать время между вызовами). Нет ничего проще: вызовите <code><strong>setTurnTimer(int timeMs)</strong></code> еще раз, с новым значением, и время между вызовами <code>onTurn()</code> изменится.</p></li></ol>Пример:
+
+<pre class='lang-java line-numbers'><code>
+import com.javarush.engine.cell.Color;
+import com.javarush.engine.cell.Game;
+
+public class MySuperGame extends Game {
+    …
+    @Override
+    public void initialize() {
+    	// Создаем игровое поле 3x3 клетки		
+        setScreenSize(3, 3);
+        showGrid(false);
+        setCellValueEx(1, 1, Color.BLUE, "X", Color.ORANGE, 50);
+
+        setTurnTimer(500);   //Включаем таймер, интервал между вызовами – 500мс.               
+    }
+
+    @Override
+    public void onTurn(int step) {
+        if(step == 100) {
+            stopTurnTimer();  // если прошло 100 тактов, выключаем таймер
+        }
+
+        if (step % 2 == 1) {
+            // Если данный такт нечётный, установить клетке красный фон
+            setCellColor(1, 1, Color.RED); 
+        } else {
+            //если данный такт чётный, установить клетке синий фон
+            setCellColor(1, 1, Color.BLUE);  
+
+        }
+    }
+    …
+}
+</code></pre>
+В этом простом примере мы создали поле размером 3x3 клетки. Затем включили таймер, который каждые полсекунды будет вызывать метод <code>onTurn()</code>. Каждые полсекунды будет меняться цвет клетки, при этом ее контент не изменится. Через 50 секунд цвет перестанет меняться.
+
+На этом все!
+
+Если вы хотите узнать о разделе "Игры" больше, вот полезная документация, которая может в этом помочь:
+<ul>
+<li><a href='https://javarush.com/groups/posts/2052-razdel-igrih-na-javarush-chastjh-1-populjarnihe-voprosih' target='_blank'>Раздел "Игры" на JavaRush: Популярные вопросы</a></li>
+<li><a href='https://javarush.com/groups/posts/2055-razdel-igrih-na-javarush-chastjh-2-opisanie-igrovogo-dvizhka' target='_blank'>Раздел "Игры" на JavaRush: Игровой движок</a></li>
+<li><a href='https://javarush.com/groups/posts/2057-razdel-igrih-na-javarush-chastjh-4-poleznaja-teorija' target='_blank'>Раздел "Игры" на JavaRush: Полезная теория</a></li>
+</ul>

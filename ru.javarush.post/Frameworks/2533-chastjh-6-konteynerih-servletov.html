@@ -1,0 +1,253 @@
+Часть 6. Контейнеры сервлетов
+<p>----------------------------------------</p>
+В прошлой статье мы познакомились с сервлетами, научились с их помощью создавать веб-приложения. Пришло время повнимательнее взглянуть на то, без чего этот праздник был бы невозможен — контейнеры сервлетов. Это программа, которая запускается на сервере и умеет...
+<p>----------------------------------------</p>
+Этот материал — часть цикла “Введение в Enterprise-разработку”. Предыдущие статьи:
+
+<ul>
+<li><a href="https://javarush.com/groups/posts/2514-vvedenie-v-enterprise-razrabotku" target="_blank">о сети</a>;</li>
+<li><a href="https://javarush.com/groups/posts/2519-chastjh-2-pogovorim-nemnogo-ob-arkhitekture-po" target="_blank">об архитектуре ПО</a>;</li>
+<li><a href="https://javarush.com/groups/posts/2521-chastjh-3-protokolih-httphttps" target="_blank">о протоколах HTTP/HTTPS</a>;</li>
+<li><a href="https://javarush.com/groups/posts/2523-chastjh-4osnovih-maven" target="_blank">об основах Maven;</a></li>
+<li><a href="https://javarush.com/groups/posts/2529-chastjh-5-servletih-pishem-prostoe-veb-prilozhenie" target="_blank">о сервлетах (пишем простое веб-приложение)</a>.</li>
+</ul><img data-max-width="850" alt="Часть 6. Контейнеры сервлетов - 1" src="https://cdn.javarush.com/images/article/ab74c65f-1f4d-4970-9c03-c5c75857acd7/original.jpeg">В прошлой статье мы познакомились с сервлетами, научились с их помощью создавать веб-приложения. Пришло время повнимательнее взглянуть на то, без чего этот праздник был бы невозможен — контейнеры сервлетов.
+<h2>Содержание:</h2><ul>
+<li><a href="#topic1">Что такое контейнер сервлетов</a></li>
+<li><a href="#topic2">Как используют контейнеры сервлетов</a></li>
+<li><a href="#topic3">Установка и запуск Tomcat"</a></li>
+<li><a href="#topic4">Развертывание приложения в Tomcat</a></li>
+<li><a href="#topic5">Использование HTTPS протокола вместо HTTP</a></li>
+<li><a href="#topic6">Генерация сертификата</a></li>
+<li><a href="#topic7">Настраиваем сервер</a></li>
+<li><a href="#topic8">Динамическая генерация HTML-страниц</a></li>
+<li><a href="#topic9">Альтернативы Tomcat</a></li></ul><h2 id="topic1">Что такое контейнер сервлетов</h2>Это программа, которая запускается на сервере и умеет взаимодействовать с созданными нами сервлетами. Иными словами, если мы хотим запустить наше веб-приложение на сервере, мы сначала разворачиваем контейнер сервлетов, а потом помещаем в него сервлеты.
+
+Схема работы проста: когда клиент обращается на сервер, контейнер обрабатывает его запрос, определяет, какой именно сервлет должен его обработать и передает его.
+<img data-max-width="850" alt="Часть 6. Контейнеры сервлетов - 2" src="https://cdn.javarush.com/images/article/3ded8c5f-bd0d-4df6-8657-43ad40797ba8/original.jpeg"><h2 id="topic2">Как используют контейнеры сервлетов</h2>Кроме маршрутизации запросов, контейнер сервлетов выполняет и другие функции:
+<ol>
+<li>Динамически генерирует HTML-страницы с JSP-файлов.</li>
+<li>Зашифровывает/расшифровывает HTTPS-сообщения.</li>
+<li>Предоставляет разграниченный доступ для администрирования сервлетов.</li>
+</ol>В общем, звучит неплохо, осталось только разобраться, как это все применить. Ну а чтобы научиться что-то использовать, нужно просто... попробовать это использовать :) Поэтому сегодня будем практиковаться!
+
+Самый популярный контейнер сервлетов — <a href="http://tomcat.apache.org/" rel="nofollow" target="_blank">Apache Tomcat</a>. Он имеет открытый исходный код, и его можно использовать бесплатно. Скачай Tomcat для своей операционной системы <a href="https://tomcat.apache.org/download-90.cgi" rel="nofollow" target="_blank">по этой ссылке</a>, и посмотрим на работу с контейнерами “в деле”.
+<h2 id="topic3">Установка и запуск Tomcat</h2><ol>
+<li><p>Для установки Tomcat просто распакуй скачанный архив в нужную директорию.</p></li>
+<li><p>Учти, что для запуска и работы Tomcat нужна Java версии 8 или выше. Убедись, что переменная среды JAVA_HOME ссылается на актуальную версию jdk.</p></li>
+<li><p>Далее необходимо сконфигурировать <span class="text-bold">доступ пользователей к Tomcat</span>. Это делается в файле tomcat-users.xml, который находится в папке conf.</p>
+<p>В Tomcat заранее предусмотрены четыре роли:</p><ul>
+<li>manager-gui — доступ к графическому интерфейсу и странице статусов;</li>
+<li>manager-script — доступ к текстовому интерфейсу и странице статусов;</li>
+<li>manager-jmx — доступ к JMX и странице статусов;</li>
+<li>manager-status — доступ только к странице статусов.</li>
+</ul><p></p>
+<p>Внутри тега &lt;tomcat-users&gt; явно пропишем эти роли и назначим их нашему юзеру:</p>
+<pre class="lang-java line-numbers"><code>
+&lt;role rolename="manager-gui"/&gt;
+&lt;role rolename="manager-script"/&gt;
+&lt;role rolename="manager-jmx"/&gt;
+&lt;role rolename="manager-status"/&gt;
+&lt;user username="user" password="password"
+    roles="manager-gui, manager-script, manager-jmx, manager-status"/&gt;
+</code></pre>
+<p>Теперь все готово к запуску!</p></li>
+<li><p>В папке bin запусти файл startup.bat (startup.sh на Linux). </p></li>
+<li><p>Через несколько секунд в браузере открой ссылку <a href="http://localhost:8080/" rel="nofollow" target="_blank">http://localhost:8080/</a>. Там появится графический менеджер:</p>
+<img data-max-width="850" alt="Часть 6. Контейнеры сервлетов - 3" src="https://cdn.javarush.com/images/article/d7ce894c-c534-44d3-8425-f101595237c6/original.jpeg"><p>Если видишь такое меню, значит, Tomcat запущен.</p></li>
+<li><p>Если не работает, вручную проверь переменные среды JAVA_HOME и CATALINA_HOME:</p><ul>
+<li>JAVA_HOME — должна ссылаться на актуальную версию джавы 8+;</li>
+<li>CATALINA_HOME — должна ссылаться на Tomcat  или отсутствовать (не должна указывать на другую версию Tomcat).</li>
+</ul></li></ol><h2 id="topic4">Развертывание приложения в Tomcat</h2>Запустить Tomcat у нас получилось, стало быть, пришло время развернуть в нем какой-то проект. 
+
+Давай используем сервлеты из <a href="https://javarush.com/groups/posts/2529-chastjh-5-servletih-pishem-prostoe-veb-prilozhenie" target="_blank">прошлой статьи</a>.
+
+MainServlet:
+
+<pre class="lang-java line-numbers"><code>
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.io.PrintWriter;
+
+@WebServlet("/hello")
+public class MainServlet extends HttpServlet {
+
+   @Override
+   protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+       HttpSession session = req.getSession();
+       Integer visitCounter = (Integer) session.getAttribute("visitCounter");
+       if (visitCounter == null) {
+           visitCounter = 1;
+       } else {
+           visitCounter++;
+       }
+       session.setAttribute("visitCounter", visitCounter);
+       String username = req.getParameter("username");
+       resp.setContentType("text/html");
+       PrintWriter printWriter = resp.getWriter();
+       if (username == null) {
+           printWriter.write("Hello, Anonymous" + "<br>");
+       } else {
+           printWriter.write("Hello, " + username + "<br>");
+       }
+       printWriter.write("Page was visited " + visitCounter + " times.");
+       printWriter.close();
+   }
+}
+</code></pre>
+IndexServlet:
+
+<pre class="lang-java line-numbers"><code>
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
+@WebServlet("/")
+public class IndexServlet extends HttpServlet {
+
+   @Override
+   protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+       resp.sendRedirect(req.getContextPath() + "/hello");
+   }
+}
+</code></pre>
+Перед развертыванием наши сервлеты необходимо упаковать в war-архив. 
+
+Обычно для этого используется Мавен, но для создания war-архива нужен файл web.xml, в котором мапятся все сервлеты. Мы же писали сервлеты с использованием новой аннотации @WebServlet, поэтому web.xml у нас нет. Благо, IDEA может выполнить грязную работу за нас и поштучно завернуть наш проект в war-архив. 
+
+Для этого нужно открыть структуру проекта (Ctrl + Shift + Alt + S) -&gt; Artifacts  -&gt; Выбрать нужный варник  -&gt; Поставить галочку возле поля “Include in project build” -&gt; Нажать “ОК”.
+<img data-max-width="850" alt="Часть 6. Контейнеры сервлетов - 4" src="https://cdn.javarush.com/images/article/3684e801-e669-4d17-ad5f-747d5965c8ce/original.jpeg">Билдим проект с помощью комбинации Ctrl + F9. Теперь в директории target лежит наш war-архив
+<img data-max-width="300" alt="Часть 6. Контейнеры сервлетов - 5" src="https://cdn.javarush.com/images/article/126236dd-b005-4754-b6cd-b3e27f0df4e2/original.jpeg">Файл можно переназвать как-то попроще — например, servlet.war — и перенести в более удобное место — в C:\my\.
+
+Когда варник готов к использованию, <span class="text-bold">помещаем его в контейнер</span>. Это можно сделать двумя способами.
+<ol>
+<li><p><big>С помощью графического интерфейса</big></p>
+<p>Для этого переходим по ссылке <a href="http://localhost:8080/manager/html" rel="nofollow" target="_blank">http://localhost:8080/manager/html</a>. Tomcat должен запросить логин и пароль.</p>
+<p>Если ты повторял все действия за мной, то <span class="text-bold">логин — user, пароль — password</span>.</p>
+<p>После успешной авторизации ты увидишь Tomcat Web Application Manager. В разделе Applications уже содержатся 5 приложений — это служебные приложения Tomcat, необходимые для упрощения работы с ним. В будущем их можно будет удалить.</p>
+<img data-max-width="850" alt="Часть 6. Контейнеры сервлетов - 6" src="https://cdn.javarush.com/images/article/a6011e3a-6472-407b-b12d-0bb5f57dbf98/original.jpeg">
+<p>Ниже находится раздел Deploy. С его помощью можно выбрать war-архив для развертывания. Пропишем путь и контекст вручную:</p>
+<img data-max-width="500" alt="Часть 6. Контейнеры сервлетов - 7" src="https://cdn.javarush.com/images/article/d75c5595-1162-40d9-835e-2a8e871b9554/original.jpeg">
+<p>Нажимаем “Deploy”, видим, что в разделе Applications появилось наше приложение:</p>
+<img data-max-width="850" alt="Часть 6. Контейнеры сервлетов - 8" src="https://cdn.javarush.com/images/article/b1c6d384-47a2-48b1-a94f-b037497b4b6a/original.jpeg">
+С помощью графического интерфейса Tomcat мы его можем останавливать, перезапускать, устанавливать длину сессии и удалять. При развертывании мы указали контекст /demo, а значит, обращаться к нашему приложению нужно по ссылке <a href="http://localhost:8080/demo" rel="nofollow" target="_blank">http://localhost:8080/demo</a>. Проверь, все должно работать.<p></p></li>
+<li><p><big>Через файловую систему</big></p>
+<p>Чтобы задеплоить приложение таким способом, необходимо открыть директорию, в которой разархивирован Tomcat, перейти в webapps. Здесь находятся знакомые нам служебные приложения:</p>
+<img data-max-width="100" alt="Часть 6. Контейнеры сервлетов - 9" src="https://cdn.javarush.com/images/article/d0074695-1800-4145-a596-1c2b774de60c/original.jpeg"><p>Все, что требуется от нас  — переместить сюда наш servlet.war.</p>
+<p>Ждем несколько секунд, видим, что появилась новая папка servlet, а это значит, что наше приложение развернуто. Переходим в знакомый нам Application Manager интерфейс — <a href="http://localhost:8080/manager/" rel="nofollow" target="_blank">http://localhost:8080/manager/</a>. Здесь мы видим, что наше приложение развернуто в контексте /servlet:</p>
+<img data-max-width="850" alt="Часть 6. Контейнеры сервлетов - 10" src="https://cdn.javarush.com/images/article/a2bc2fd9-50a1-4d5b-8b8c-1798296bd940/original.jpeg"><p>При развертывании таким способом, контекст автоматически присваивается по названию развернутого war-архива. Для смены контекста можно переназвать новосозданную папку с приложением, но перед этим нужно удалить варник: в ином случае Tomcat повторно развернет приложение с именем архива.</p>
+<p>Как видишь, деплоить приложения в Tomcat намного проще, чем может показаться. Но и другими его функциями пользоваться несложно. Давай проверим.</p></li></ol><h2 id="topic5">Использование HTTPS протокола вместо HTTP</h2>Если помнишь, разницу между HTTP и HTTPS мы рассматривали <a href="https://javarush.com/groups/posts/2521-chastjh-3-protokolih-httphttps" target="_blank">в отдельной статье</a>. HTTPS — тот же протокол, что и HTTP, только с использованием шифрования данных, которые передаются.
+
+На стороне клиента шифрованием занимается браузер, а шифрование на стороне сервера должны обеспечить мы. Так как HTTP запросы принимает и маршрутизирует Tomcat, логично будет делегировать ему и шифрование.
+
+<span class="text-bold">Для этого необходимо:</span><ol>
+<li>Сгенерировать самоподписанный сертификат;</li>
+<li>Сделать дополнительные настройки сервера.</li>
+</ol>Давай попрактикуемся в этом.
+<h2 id="topic6">Генерация сертификата</h2>В JDK независимо от версии поставляется большое количество утилит, одна из которых — <span class="text-bold">keytool</span>. Это инструмент для генерации ключей шифрования и работы с ними. Чтобы его использовать, с помощью командной строки перейдем в директорию <em>C:\Program Files\Java\jdk1.8.0_181\bin</em> и выполним команду <em>keytool -genkey -alias tomcat -keyalg RSA</em>. 
+<ul>
+<li>keytool — запускаем утилиту с параметрами;</li>
+<li>-genkey — указываем, что мы хотим сгенерировать новый ключ;</li>
+<li>-alias tomcat — создаем псевдоним ключа;</li>
+<li>-keyalg RSA — выбираем RSA как алгоритм генерации ключа.</li>
+</ul>После выполнения команды, утилита затеет с нами диалог:
+<img data-max-width="850" alt="Часть 6. Контейнеры сервлетов - 11" src="https://cdn.javarush.com/images/article/2e8459df-9aaf-478f-a222-33f51b919dd2/original.jpeg">Вводим необходимую информацию. Теперь мы создали хранилище ключей в нашем домашнем каталоге (для Windows это C:\Users\{username}\.keystore) и ключ tomcat в нем.
+
+Мы сгенерировали простой сертификат, на который будет ругаться большинство браузеров. Такой сертификат не подойдет для коммерческих приложений: его можно использовать только в тестовых целях. На продакшн-сервере необходимо использовать сертификат от центра сертификации (например, <a href="https://letsencrypt.org/" rel="nofollow" target="_blank">https://letsencrypt.org/</a>).
+<h2 id="topic7">Настраиваем сервер</h2>Теперь, когда сертификат готов, нужно подкорректировать серверные настройки, а именно — SSL-коннектор. Это делается в файле server.xml, который находится в <em>apache-tomcat-9.0.30/conf/</em>.
+
+Находим там блоки типа:
+
+<pre class="lang-java line-numbers"><code>
+&lt;Connector port="8443" protocol="org.apache.coyote.http11.Http11NioProtocol"
+               maxThreads="150" SSLEnabled="true"&gt;
+        &lt;SSLHostConfig&gt;
+            &lt;Certificate certificateKeystoreFile="conf/localhost-rsa.jks"
+                         type="RSA" /&gt;
+        &lt;/SSLHostConfig&gt;
+ &lt;/Connector&gt;
+</code></pre>
+и возле них помещаем свою конфигурацию:
+
+<pre class="lang-java line-numbers"><code>
+    &lt;Connector
+           protocol="org.apache.coyote.http11.Http11NioProtocol"
+           port="8443" maxThreads="200"
+           scheme="https" secure="true" SSLEnabled="true"
+           keystoreFile="C:\Users\user\.keystore" keystorePass="mypass"
+           clientAuth="false" sslProtocol="TLS"/&gt;
+</code></pre>
+Параметрам keystoreFile и keystorePass присваиваем актуальные для нас значения, сохраняем и перезапускаем Tomcat с помощью файлов shutdown.bat и startup.bat.
+
+Теперь сервер готов обрабатывать https-запросы, вот только немного по измененному адресу — <a href="https://localhost:8443/demo/hello" rel="nofollow" target="_blank">https://localhost:8443/demo/hello</a>. 
+
+При переходе по ссылке у тебя появится предупреждение о сомнительности сертификата, что и неудивительно. Как описывалось немного ранее, для получения нормального сертификата нужно воспользоваться услугами одного из сервисов сертификации. Но пока мы достигли нашей цели: приложение работает по HTTPS-протоколу, а это главное!
+<h2 id="topic8">Динамическая генерация HTML-страниц</h2>Теперь продолжим обзор других фич контейнеров сервлетов — динамической генерации HTML-страниц. 
+
+Представь себе идеальный мир, где вместо скучного статичного HTML-кода можно было бы писать JAVA-код, используя переменные, циклы, массивы и другие конструкции языка. Представил? Хорошая новость — что-то похожее существует, плохая — не в полной мере. 
+
+Если ты не догадался, речь идет о технологии JSP (Java Server Pages). Если коротко, это технология, которая позволяет вставлять в HTML-страницу куски JAVA-кода. Правда, потом этот код все равно превращается в HTML перед отправкой клиенту, но он будет динамически сгенерирован с учетом различных факторов. 
+
+Например, можно использовать условные конструкции, и в зависимости от какого-то условия отдавать различный контент.
+
+Пример JSP-страницы: 
+
+<pre class="lang-java line-numbers"><code>
+&lt;%@ page language="java"" %&gt;
+&lt;html&gt;
+&lt;head&gt;
+&lt;title&gt;JSP&lt;/title&gt;
+&lt;/head&gt;
+
+&lt;body&gt;
+&lt;%
+String firstName="name";
+String secondName="surname";
+    
+    if(firstName.equals("name")){
+      out.print("Hello :"+firstName+"&lt;br&gt;");
+    }
+
+    if(firstName.equals("name") &amp;&amp; secondName.equals("surname"))
+    {
+      out.print("Hello, my dear friend! &lt;br&gt;");
+    }
+    else
+    {
+      out.print("I don’t know you. Go away! &lt;br&gt;");
+    }
+%&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+Дополнительно о JSP можно почитать <a href="https://www.oracle.com/technetwork/java/index-jsp-138231.html" rel="nofollow" target="_blank">здесь</a>. 
+
+Вообще... мы не ради этого здесь собрались, а ради контейнеров сервлетов! Причем тут JSP? 
+
+Все просто: превращение JAVA-кода из JSP в HTML-код осуществляет именно контейнер сервлетов. Когда сервлет собирается вернуть в качестве ответа   JSP-контент, контейнер обращает на это внимание, и перед отправкой такого контента клиенту сначала превращает его в понятную для браузера HTML-страницу. 
+
+Сегодня известно много аналогов технологии JSP — Thymeleaf, FreeMarket, Mustache и другие. Все они работаю по схожему принципу. Какой из них выбирать для работы — дело вкуса. 
+
+Это касается и выбора контейнера сервлетов. В примерах мы использовали Tomcat — самый распространенный контейнер, но в некоторых проектах используются и другие. С самыми популярными стоит кратко ознакомиться и посмотреть на их отличия от Tomcat.
+<h2 id="topic9">Альтернативы Tomcat</h2><ol>
+<li><p><span class="text-bold">GlassFish</span> — контейнер с открытым исходным кодом, разработку которого поддерживает Oracle.</p>
+<p>В отличие от Tomcat, это полноценный веб-сервер, который кроме сервлетов может оперировать и другими компонентами из фреймворка JavaEE. В то же время, он использует намного больше оперативной памяти. Более гибкий при тонкой настройке сервера, что усложняет его использование. Стоит использовать при разработке приложений на фреймворке JavaEE.</p></li>
+<li><p><span class="text-bold">WildFly</span> — ранее <span class="text-bold">Jboss</span>. Также имеет открытый исходный код. Разрабатывается компанией Red Hat. Название изменили, чтобы избежать путаницы с другим продуктом компании — JBoss Enterprise Application Platform.</p>
+<p>WildFly, как и GlassFish, — полноценный веб-сервер. Кстати, под капотом WildFly использует Tomcat, как контейнер сервлетов. В отличии от GlassFish, WildFly более легковесный и простой в настройке.</p></li>
+<li><p><span class="text-bold">Jetty</span> — аналогично предыдущим имеет открытый исходный код. Развивается компанией Eclipse.</p>
+<p>Как и Tomcat, является простым контейнером сервлетов, без поддержки всех компонентов фреймворка JavaEE. В то же время, он более легковесный, и его можно запустить даже на мобильном телефоне. Он быстро запускается и останавливается, хорошо масштабируется. В отличие от Tomcat, имеет меньшее комьюнити и базу знаний.</p></li>
+<li><p><span class="text-bold">WebLogic</span> — лицензированное программное обеспечение, требующие покупки перед использованием. Принадлежит компании Oracle.</p>
+<p>По сравнению с Tomcat, его функционал немного шире. Может работать с протоколом ftp. Но он не настолько гибкий при разработке и тестировании приложений.</p></li>
+<li><p><span class="text-bold">WebSphere</span> ( WebSphere Application Server, если быть точным) — платное программное обеспечение. Разрабатывается компаниеей IBM. Аналогично WildFly и GlassFish является полноценным сервером приложений. Но у него более дружелюбный интерфейс настройки, плюс высокая надежность в работе.</p>
+<p>Из минусов — он использует очень много ресурсов, долго запускается и останавливается, что не очень удобно при разработке небольших проектов.</p></li>
+</ol>Какой контейнер сервлетов или сервер приложений выбрать, зависит от конкретного проекта. Бывают проекты, где даже явный аутсайдер сможет проявить себя максимально качественно, но на первых порах лучше качественно разобраться с чем-то одним. Наверное, идеальный кандидат на роль этого одного — Tomcat. Первые шаги в его изучении мы уже сделали, а дальше дело за тобой!
+
+В завершающих статьях цикла “Введение в Enterprise-разработку” мы с тобой познакомимся с паттерном MVC.
+
+<a href="https://javarush.com/groups/posts/2536-chastjh-7-znakomstvo-s-patternom-mvc-model-view-controller" target="_blank">Часть 7. Знакомство с паттерном MVC (Model-View-Controller)</a>
+<a href="https://javarush.com/groups/posts/2537-chastjh-8-pishem-neboljhshoe-prilozhenie-na-spring-boot" target="_blank">Часть 8. Пишем небольшое приложение на spring-boot</a>

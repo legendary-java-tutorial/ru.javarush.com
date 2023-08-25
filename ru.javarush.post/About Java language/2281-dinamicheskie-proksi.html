@@ -1,0 +1,315 @@
+Динамические прокси (Dynamic Proxies) в Java
+<p>----------------------------------------</p>
+Привет! Сегодня мы рассмотрим достаточно важную и интересную тему — создание динамических прокси-классов в Java. Она не слишком простая, поэтому попробуем разобраться с ней на примерах :) Итак, самый важный вопрос: что такое динамические прокси и для чего они нужны?
+<p>----------------------------------------</p>
+Привет! Сегодня мы рассмотрим достаточно важную и интересную тему — создание динамических прокси-классов в Java. Она не слишком простая, поэтому попробуем разобраться с ней на примерах :)
+
+Итак, самый важный вопрос: что такое динамические прокси и для чего они нужны?
+
+Прокси-класс — это некоторая «надстройка» над оригинальным классом, которая позволяет нам при необходимости изменить его поведение.
+
+Что значит «изменить поведение» и как это работает? Рассмотрим простой пример.
+
+Допустим, у нас есть интерфейс <code>Person</code> и простой класс <code>Man</code>, реализующий этот интерфейс
+
+<pre class="lang-java line-numbers"><code>
+public interface Person {
+
+   public void introduce(String name);
+  
+   public void sayAge(int age);
+  
+   public void sayFrom(String city, String country);
+}
+
+public class Man implements Person {
+
+   private String name;
+   private int age;
+   private String city;
+   private String country;
+
+   public Man(String name, int age, String city, String country) {
+       this.name = name;
+       this.age = age;
+       this.city = city;
+       this.country = country;
+   }
+
+   @Override
+   public void introduce(String name) {
+
+       System.out.println("Меня зовут " + this.name);
+   }
+
+   @Override
+   public void sayAge(int age) {
+       System.out.println("Мне " + this.age + " лет");
+   }
+
+   @Override
+   public void sayFrom(String city, String country) {
+
+       System.out.println("Я из города " + this.city + ", " + this.country);
+   }
+
+   //..геттеры, сеттеры, и т.д.
+}
+</code></pre>
+У нашего класса <code>Man</code> есть 3 метода: представиться, назвать свой возраст, и сказать, откуда ты родом.
+
+Представим, что этот класс мы получили в составе готовой JAR-библиотеки и не можем просто взять и переписать его код.
+
+Тем не менее, нам нужно изменить его поведение. К примеру, мы не знаем, какой именно метод будет вызван у нашего объекта, а потому хотим, чтобы при вызове любого из них человек сначала говорил «Привет!» (никто не любит невежливых).
+<img data-id="429d5f97-141a-4a7c-900e-249d35b4387b" data-max-width="850" alt="Динамические прокси - 1" src="https://cdn.javarush.com/images/article/429d5f97-141a-4a7c-900e-249d35b4387b/1024.jpeg">Как же нам в такой ситуации поступить?
+
+Нам понадобятся несколько вещей:
+<ol>
+<li><p><code><strong>InvocationHandler</strong></code></p></li></ol>Что это такое? Можно перевести дословно — «перехватчик вызовов». Это довольно точно опишет его предназначение.
+
+<code><strong>InvocationHandler</strong></code> — это специальный интерфейс, который позволяет перехватить любые вызовы методов к нашему объекту и добавить нужное нам дополнительное поведение.
+
+Нам необходимо сделать собственный перехватчик — то есть, создать класс и реализовать этот интерфейс.
+
+Это довольно просто:
+
+<pre class="lang-java line-numbers"><code>
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+
+public class PersonInvocationHandler implements InvocationHandler {
+  
+private Person person;
+
+public PersonInvocationHandler(Person person) {
+   this.person = person;
+}
+
+ @Override
+   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+
+       System.out.println("Привет!");
+       return null;
+   }
+}
+</code></pre>
+Нам нужно реализовать всего один метод интерфейса — <code><strong>invoke()</strong></code>. Он, собственно, и делает то что нам нужно — перехватывает все вызовы методов к нашему объекту и добавляет необходимое поведение (здесь мы внутри метода <code>invoke()</code> выводим в консоль «Привет!»).
+<ol start="2"><li><strong>Оригинальный объект и его прокси.</strong></li></ol>Создадим оригинальный объект <code>Man</code> и «надстройку» (прокси) для него:
+
+<pre class="lang-java line-numbers"><code>
+import java.lang.reflect.Proxy;
+
+public class Main {
+
+   public static void main(String[] args) {
+
+       //Создаем оригинальный объект
+       Man vasia = new Man("Вася", 30, "Санкт-Петербург", "Россия");
+
+       //Получаем загрузчик класса у оригинального объекта
+       ClassLoader vasiaClassLoader = vasia.getClass().getClassLoader();
+
+       //Получаем все интерфейсы, которые реализует оригинальный объект
+       Class[] interfaces = vasia.getClass().getInterfaces();
+
+       //Создаем прокси нашего объекта vasia
+       Person proxyVasia = (Person) Proxy.newProxyInstance(vasiaClassLoader, interfaces, new PersonInvocationHandler(vasia));
+
+       //Вызываем у прокси объекта один из методов нашего оригинального объекта
+       proxyVasia.introduce(vasia.getName());
+
+   }
+}
+</code></pre>
+Выглядит не очень просто!
+
+Я специально написал к каждой строке кода комментарий: давай разберемся подробнее, что там происходит.<p></p>В первой строке мы просто делаем оригинальный объект, для которого будем создавать прокси.
+
+Следующие две строки могут вызвать у тебя затруднение:
+
+<pre class="lang-java line-numbers"><code>
+ //Получаем загрузчик класса у оригинального объекта
+ClassLoader vasiaClassLoader = vasia.getClass().getClassLoader();
+
+//Получаем все интерфейсы, которые реализует оригинальный объект
+Class[] interfaces = vasia.getClass().getInterfaces();
+</code></pre>
+Но на самом деле ничего особенного здесь не происходит :)
+
+Для создания прокси нам нужен <code>ClassLoader</code> (загрузчик классов) оригинального объекта и список всех интерфейсов, которые реализует наш оригинальный класс (то есть <code>Man</code>).
+
+Если ты не знаешь что такое <code>ClassLoader</code>, можешь почитать <a href="https://javarush.com/groups/posts/646-kak-proiskhodit-zagruzka-klassov-v-jvm" target="_blank">эту статью</a> о загрузке классов в JVM или <a href="https://habr.com/ru/post/103830/" rel="nofollow" target="_blank">эту на Хабре</a>, но пока не особо с этим заморачивайся. Просто запомни, что мы получаем немного дополнительной информации, которая потом будет нужна для создания прокси-объекта.
+
+В четвертой строке мы используем специальный класс <code><strong>Proxy</strong></code> и его статический метод <code><strong>newProxyInstance()</strong></code>:
+
+<pre class="lang-java line-numbers"><code>
+//Создаем прокси нашего объекта vasia
+Person proxyVasia = (Person) Proxy.newProxyInstance(vasiaClassLoader, interfaces, new PersonInvocationHandler(vasia));
+</code></pre>
+Этот метод как раз создает наш прокси-объект.
+
+В метод мы передаем ту информацию об оригинальном классе, которую получили на прошлом шаге (его <code>ClassLoader</code> и список его интерфейсов), а также объект созданного нами ранее перехватчика — <code>InvocationHandler</code>’a. Главное — не забудь передать перехватчику наш оригинальный объект <code>vasia</code>, иначе ему нечего будет «перехватывать» :) 
+
+Что же у нас в итоге получилось?
+
+У нас теперь есть прокси-объект <code><strong>vasiaProxy</strong></code>. Он может вызывать <strong>любые методы интерфейса <code>Person</code></strong>. Почему?
+
+Потому что мы передали ему список всех интерфейсов — вот здесь:
+
+<pre class="lang-java line-numbers"><code>
+//Получаем все интерфейсы, которые реализует оригинальный объект
+Class[] interfaces = vasia.getClass().getInterfaces();
+
+//Создаем прокси нашего объекта vasia
+Person proxyVasia = (Person) Proxy.newProxyInstance(vasiaClassLoader, interfaces, new PersonInvocationHandler(vasia));
+</code></pre>
+Теперь он «в курсе» всех методов интерфейса <code>Person</code>. 
+
+Кроме того, мы передали нашему прокси объект <code><strong>PersonInvocationHandler</strong></code>, настроенный на работу с объектом <code><strong>vasia</strong></code>:
+
+<pre class="lang-java line-numbers"><code>
+//Создаем прокси нашего объекта vasia
+Person proxyVasia = (Person) Proxy.newProxyInstance(vasiaClassLoader, interfaces, new PersonInvocationHandler(vasia));
+</code></pre>
+Теперь, если мы вызовем у прокси-объекта любой метод интерфейса <code>Person</code>, наш перехватчик «словит» этот вызов и выполнит вместо него свой метод <code><strong>invoke()</strong></code>.
+
+Давай попробуем запустить метод <code>main()</code>!
+
+<strong>Вывод в консоль:
+
+<em>Привет!</em></strong>
+
+Отлично! Мы видим, что вместо настоящего метода <code>Person.introduce()</code> вызван метод <code>invoke()</code> нашего <code>PersonInvocationHandler()</code>:
+
+<pre class="lang-java line-numbers"><code>
+@Override
+public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+
+   System.out.println("Привет!");
+   return null;
+}
+</code></pre>
+И в консоль было выведено «Привет!»
+
+<strong>Но это не совсем то поведение, которое мы хотели получить :/</strong>
+
+По нашей задумке сначала должно быть выведено «Привет!», а после — сработать сам метод, который мы вызываем.
+
+Иными словами, вот этот вызов метода:
+
+<pre class="lang-java line-numbers"><code>
+proxyVasia.introduce(vasia.getName());
+</code></pre>
+должен выводить в консоль «Привет! Меня зовут Вася», а не просто «Привет!»
+
+Как же нам добиться этого? Ничего сложного: просто придется немного похимичить над нашим перехватчиком и методом <code>invoke()</code> :)
+
+Обрати внимание, какие аргументы передаются в этот метод:
+
+<pre class="lang-java line-numbers"><code>
+public Object invoke(Object proxy, Method method, Object[] args)
+</code></pre>
+<strong>У метода <code>invoke()</code> есть доступ к методу, вместо которого он вызывается, и ко всем его аргументам</strong> (Method method, Object[] args).
+
+Иными словами, если мы вызываем метод <code><strong>proxyVasia.introduce(vasia.getName())</strong></code>, и вместо метода <code>introduce()</code> вызывается метод <code>invoke()</code>, внутри этого метода у нас есть доступ и к оригинальному методу <code>introduce()</code>, и к его аргументу!
+
+В результате мы можем сделать вот так:
+
+<pre class="lang-java line-numbers"><code>
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+
+public class PersonInvocationHandler implements InvocationHandler {
+
+   private Person person;
+
+   public PersonInvocationHandler(Person person) {
+
+       this.person = person;
+   }
+
+   @Override
+   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+       System.out.println("Привет!");
+       return method.invoke(person, args);
+   }
+}
+</code></pre>
+Теперь мы добавили в метод <code>invoke()</code> вызов оригинального метода.
+
+Если мы попробуем сейчас запустить код из нашего предыдущего примера:
+
+<pre class="lang-java line-numbers"><code>
+import java.lang.reflect.Proxy;
+
+public class Main {
+
+   public static void main(String[] args) {
+
+       //Создаем оригинальный объект
+       Man vasia = new Man("Вася", 30, "Санкт-Петербург", "Россия");
+
+       //Получаем загрузчик класса у оригинального объекта
+       ClassLoader vasiaClassLoader = vasia.getClass().getClassLoader();
+
+       //Получаем все интерфейсы, которые реализует оригинальный объект
+       Class[] interfaces = vasia.getClass().getInterfaces();
+
+       //Создаем прокси нашего объекта vasia
+       Person proxyVasia = (Person) Proxy.newProxyInstance(vasiaClassLoader, interfaces, new PersonInvocationHandler(vasia));
+
+       //Вызываем у прокси объекта один из методов нашего оригинального объекта
+       proxyVasia.introduce(vasia.getName());
+   }
+}
+</code></pre>
+то увидим, что теперь все работает как надо :)
+
+<strong>Вывод в консоль:
+
+<em>Привет!
+
+Меня зовут Вася</em></strong>
+ 
+Где это может тебе понадобиться? На самом деле, много где.
+
+Паттерн проектирования «динамический прокси» активно используется в популярных технологиях...а я, кстати, и забыл тебе сказать, что <strong><code>Dynamic Proxy</code> — это паттерн</strong>! 
+
+Поздравляю, ты выучил еще один! :)
+<img data-id="14e2066d-3c45-4ba9-b5b3-9fc7f12710dc" data-max-width="850" alt="Динамические прокси - 2" src="https://cdn.javarush.com/images/article/14e2066d-3c45-4ba9-b5b3-9fc7f12710dc/1024.jpeg">Так вот, он активно используется в популярных технологиях и фреймворках, связанных с безопасностью.
+
+Представь, что у тебя есть 20 методов, которые могут выполнять только залогиненные пользователи твоей программы. С помощью изученных приемов ты легко сможешь добавить в эти 20 методов проверку того, ввел ли пользователь логин и пароль, не дублируя код проверки отдельно в каждом методе.
+
+Или, к примеру, если ты хочешь создать журнал, куда будут записываться все действия пользователей, это также легко сделать с использованием прокси. 
+
+Можно даже сейчас: просто допиши в пример код, чтобы название метода выводилось в консоль при вызове <code>invoke()</code>, и ты получишь простенький журнал логов нашей программы :)
+
+В завершение лекции, <strong>обрати внимание на одно важное ограничение</strong>.
+
+Создание прокси объекта происходит на уровне интерфейсов, а не классов. Прокси создается для интерфейса.
+
+Взгляни на этот код:
+
+<pre class="lang-java line-numbers"><code>
+//Создаем прокси нашего объекта vasia
+Person proxyVasia = (Person) Proxy.newProxyInstance(vasiaClassLoader, interfaces, new PersonInvocationHandler(vasia));
+</code></pre>
+Здесь мы создаем прокси именно для интерфейса <code>Person</code>.
+
+Если попробуем создать прокси для класса, то есть поменяем тип ссылки и попытаемся сделать приведение к классу <code>Man</code>, у нас ничего не выйдет.
+
+<pre class="lang-java line-numbers"><code>
+Man proxyVasia = (Man) Proxy.newProxyInstance(vasiaClassLoader, interfaces, new PersonInvocationHandler(vasia));
+
+proxyVasia.introduce(vasia.getName());
+</code></pre>
+<em><strong>Exception in thread "main" java.lang.ClassCastException: com.sun.proxy.$Proxy0 cannot be cast to Man</strong></em>
+
+Наличие интерфейса — обязательное требование. Прокси работает на уровне интерфейсов.
+
+На этом на сегодня все :)
+
+В качестве дополнительного материала по теме прокси могу порекомендовать тебе отличное <a href="https://www.youtube.com/watch?v=aMc1wHveqGM" rel="nofollow" target="_blank">видео</a>, и также неплохую <a href="https://restless-man.livejournal.com/24320.html" rel="nofollow" target="_blank">статью</a>.
+
+Ну, а теперь было бы неплохо решить несколько задач! :)
+До встречи!

@@ -1,0 +1,280 @@
+Ошибки начинающих java-программистов. Часть 1
+<p>----------------------------------------</p>
+Все используемые мною среды java, включая Javasoft JDKs, предполагают, что исходный код класса с модификатором public хранится в файле с точно таким же именем, как и имя класса, и расширением .java. Несоблюдение этого соглашения может стать причиной многих проблем ...
+<p>----------------------------------------</p>
+<h2>1. Имя класса отличается от имени файла, в котором он хранится</h2>Все используемые мною среды java, включая Javasoft JDKs, предполагают, что исходный код класса с модификатором public хранится в файле с точно таким же именем, как и имя класса, и расширением .java. Несоблюдение этого соглашения может стать причиной многих проблем, которые выявятся во время компиляции.
+<div class='row justify-content-center jr-image-wrap'><div class='col-12 col-sm-10 col-md-8'><img data-id="375fbeb4-da88-4258-902d-612fa18165ab" data-max-width="710" alt="Ошибки начинающих java-программистов. Часть 1 - 1" src="https://cdn.javarush.com/images/article/375fbeb4-da88-4258-902d-612fa18165ab/1024.jpeg"></div></div>
+Начинающие студенты (программисты) часто забывают об этом соглашении, и, например, задают имя файла в соответствии с заданием: Lab6.java.
+
+<strong>Ошибочный пример: Имя файла <code>Lab6.java</code></strong>
+
+<pre class='lang-java line-numbers'><code>
+public class Airplane extends Vehicle
+  Seat pilot;
+  public Airplane() { 
+    pilot = new Seat(); 
+  }
+}
+</code></pre>
+<strong>Исправленный пример: Имя файла <code>Airplane.java</code></strong>
+
+<pre class='lang-java line-numbers'><code>
+public class Airplane extends Vehicle
+  Seat pilot;
+  public Airplane() { 
+    pilot = new Seat(); 
+  }
+}
+</code></pre>
+<mark>Заметьте:</mark> предполагается, что имя класса начинается с заглавной буквы. В операционных системах, которые учитывают регистр символов в именах файлов, могут появиться дополнительные проблемы, особенно у студентов, изучающих Java под Unix, и привыкших к системеm именования файлов в DOS. Класс <code><strong>MotorVehicle</strong></code> должен храниться в файле <code><strong>MotorVehicle.java</strong></code>, но не в файле <code><strong>motorvehicle.java</strong></code>.
+<h2>2. Сравнение с помощью <code>==</code></h2>В Java строки — это объекты класса <code><strong>java.lang.String</strong></code>. Оператор <code><strong>==</strong></code>, применяемый к объектам, проверяет на равенство ссылки на объекты! Иногда студенты не понимают семантики оператора <code><strong>==</strong></code> и пытаются применить его для сравнения строк.
+
+<strong>Ошибочный пример: </strong>
+
+<pre class='lang-java line-numbers'><code>
+// проверим, равен ли первый аргумент "-a"
+if (args[0] == "-a") {
+    optionsAll = true;
+}
+</code></pre>
+Правильный способ сравнения 2х строк на равенство — это использование метода <code><strong>equals()</strong></code> класса <code><strong>java.lang.String</strong></code>. Он возвращает <code><strong>true</strong></code>, если строки одинаковой длины и состоят из одних и тех же символов. (Прим. перев.: вообще-то это не гарантирует равенство. На самом деле, <code><strong>equals</strong></code> проверяет, равны ли посимвольно 2 строки)
+
+<strong>Исправленный пример:</strong>
+
+<pre class='lang-java line-numbers'><code>
+//  проверим, равен ли первый аргумент "-a"
+if ("-a".equals(args[0])) {
+    optionsAll = true;
+}
+</code></pre>
+Эта ошибка — дурацкая, потому что на самом деле Java код получается синтаксически правильным, а в итоге работает не так как нужно. Некоторые студенты также пытаются применять операторы сравнения <code><strong>></strong></code> и <code><strong><=</strong></code>, вместо метода <code><strong>compareTo()</strong></code> класса <code><strong>java.lang.String</strong></code>. Эту ошибку обнаружить проще, потому что она вызывает ошибки на этапе компиляции.
+<h2>3. Забыл проинициализировать объекты, являющиеся элементами массива.</h2>В Java массив объектов - это на самом деле массив ссылок на объекты. Создание массива — это просто создание набора ссылок, ни на что не указывающих (то есть равных null). Чтобы на самом деле создать "полноценный" массив объектов, необходимо проинициализировать каждый элемент массива. Многие студенты не понимают этого; они считают, что, создавая массив объектов, они автоматически создают сами объекты. (В большинстве случаев, студенты приносят эту концепцию из C++, где создание массива объектов приводит к созданию самих объектов путем вызова их конструктора по умолчанию).
+
+В примере ниже, студент хочет создать 3 объекта класса <code><strong>StringBuffer</strong></code>. Код будет откомпилирован без ошибок, но в последней строке произойдет исключение <code><strong>NullPointerException</strong></code>, где происходит обращение к несуществующему объекту.
+
+<strong>Ошибочный пример:</strong>
+
+<pre class='lang-java line-numbers'><code>
+// Создаем массив из StringBuffer
+StringBuffer [] myTempBuffers;
+myTempBuffers = new StringBuffer[3];
+myTempBuffers[0].add(data);
+</code></pre>
+Чтобы не допускать эту ошибку, необходимо не забывать проинициализировать элементы массива.
+
+<strong>Исправленный пример:</strong>
+
+<pre class='lang-java line-numbers'><code>
+// Создаем массив из StringBuffer и инициализируем элементы
+StringBuffer [] myTempBuffers;
+myTempBuffers = new StringBuffer[3];
+for (int ix = 0; ix &lt; myTempBuffers.length; ix++) 
+     myTempBuffers[ix] = new StringBuffer();
+
+myTempBuffers[0].add(data);
+</code></pre>
+<h2>4. Помещение в один файл сразу нескольких классов с модификатором <code>public</code></h2>Файлы с исходным java-кодом определенным образом связаны с классами, содержащимися в этих файлах. Связь можно охарактеризовать так:
+
+Любой Java-класс хранится не более чем в одном файле. В любой файл с исходным кодом можно поместить не более 1-го класса с модификатором <code>public</code>. Если в файле с исходным кодом есть класс с модификатором <code>public</code>, имя файла и имя класса должны быть строго одинаковыми (прим. перев.: до регистра, см. п.1)
+
+Иногда студенты забывают о 2-ом правиле, что приводит к ошибкам на этапе компиляции. Сообщение об ошибке для 2-го и 3-го правила будет одинаковым (в чем собственно и заключается трудность распознания этой ошибки).
+<h2>5. Подмена поля класса локальной переменной.</h2>Java позволяет объявлять внутри метода переменные, чье имя совпадает с полями класса. В таком случае преимущество будет отдано локальным переменным, и они будут использоваться вместо полей.
+
+Компилятор выдаст ошибку, если переменные с одинаковыми именами будут разных типов. Если же они одинаковых типов, ошибки компиляции не будет, и будут непонятны причины неправильной работы программы.
+
+<strong>Ошибочный пример:</strong>
+
+<pre class='lang-java line-numbers'><code>
+public class Point3 {
+    int i = 0;    
+    int j = 0;    
+    int k = 0;
+
+    public boolean hits(Point[] p2list) {
+      for(int i = 0; i &lt; p2list.length; i++) {
+        Point p2 = p2list[i];
+        if (p2.x == i && p2.y == j)
+          return true;
+      }
+      return false;
+    }
+}
+</code></pre>
+Есть несколько способов, как исправить эту ошибку. Наиболее простой — обращаться к полям класса с помощью неявного указателя <code><strong>this</strong></code>: <code><strong>this.имя_поля</strong></code>. 
+
+Лучший способ — это переименовать поле класса или локальную переменную, тогда подмены не произойдет. (прим. перев.: 2-ой способ - не наш метод. К тому же он не гарантирует, что я когда нибудь случайно не подменю поле переменной. Еще большая трудность возникнет при наследовании, когда я вообще не вижу, какие поля есть у класса)
+
+<strong>Исправленный пример:</strong>
+
+<pre class='lang-java line-numbers'><code>
+// One way to fix the problem
+  int i = 0;    
+  int j = 0;    
+  int k = 0;
+
+  public boolean hits(Point[] p2list) {
+    for(int i = 0; i &lt; p2list.length; i++) {
+      Point p2 = p2list[i];
+      if (p2.x == this.i && p2.y == this.j)
+        return true;
+    }
+    return false;
+  }
+
+  // *****************************
+  // Лучший способ
+  int x = 0;    
+  int y = 0;    
+  int z = 0;
+
+  public boolean hits(Point[] p2list) {
+    for(int i = 0; i &lt; p2list.length; i++) {
+      Point p2 = p2list[i];
+      if (p2.x == x && p2.y == y)
+        return true;
+    }
+    return false;
+  }
+</code></pre>
+Еще одно возможное место появления этой ошибки — задание имени параметра метода таким же, как и имя поля класса. Это хорошо выглядит в конструкторах, но для обычных методов не подходит.
+<table>
+<tr>
+<td><p>прим. перев.</p>
+<p>немного сумбурно, но смысл такой</p>
+<pre class='lang-java line-numbers'><code>
+public class Test {
+   private int param = 0;
+
+   public Test(int param) {
+      this.param = param;
+   }
+}
+</code></pre>
+<p>то есть в конструкторе все смотрится красиво, но для обычных методов применять это не следует.</p> 
+</td>
+</tr>
+</table><h2>6. Забыл вызвать конструктор родителя (суперкласса)</h2>Когда класс расширяет другой класс, каждый конструктор подкласса должен вызвать какой либо конструктор суперкласса. Обычно это достигается вызовом конструктора суперкласса методом <code><strong>super(x)</strong></code>, помещенным в первой строке конструктора. Если в первой строке конcтруктора нет вызова <code><strong>super(x)</strong></code>, компилятор самостоятельно вставляет этот вызов, но без параметров: <code><strong>super()</strong></code>. (прим. перев.: х...се, а я и не знал )
+
+Иногда студенты забывают об этом требовании. Обычно это не является проблемой: вызов конструктора суперкласса вставляется компилятором и все работает отлично. Однако если у суперкласса нет конструктора по умолчанию (прим. перев.: то есть конструктора без параметров), то компилятор выдаст ошибку. В примере ниже все конструкторы суперкласса <code><strong>java.io.File</strong></code> имеют 1 или 2 параметра:
+
+<strong>Ошибочный пример:</strong></code>
+
+<pre class='lang-java line-numbers'><code>
+public class JavaClassFile extends File {
+    String classname;
+    public JavaClassFile(String cl) {
+        classname = cl;
+    }
+}
+</code></pre>
+Решением проблемы является вставка явного вызова правильного конструктора суперкласса:
+
+<strong>Исправленный пример:</strong>
+
+<pre class='lang-java line-numbers'><code>
+public class JavaClassFile extends File {
+    String classname;
+    public JavaClassFile(String cl) {
+        super(cl + ".class");
+        classname = cl;
+    }
+}
+</code></pre>
+Более неприятная ситуация возникает, когда у суперкласса есть конструктор по умолчанию, но он не полностью инициализирует объект. В таком случае код скомпилируется, но результат работы программы может быть неправильным или может возникнуть исключение.
+<h2>7. Неправильный перехват исключений</h2>Система обработки исключений в Java достаточно мощная, но трудная для понимания новичками. Студенты, хорошо владеющие C++ или Ada, обычно не испытывают сложностей, в отличие от программистов C и Fortran. Примеры ниже показывают некоторые распространенные ошибки.
+
+В данном примере для исключения не указано имя. На эту ошибку укажет компилятор на этапе компиляции, так что ее легко исправить самостоятельно.
+
+<strong>Ошибочный пример:</strong>
+ 
+<pre class='lang-java line-numbers'><code>
+try {
+    stream1 = new FileInputStream("data.txt");
+} catch (IOException) { 
+    message("Could not open data.txt");
+}
+</code></pre>
+
+<strong>Исправленный пример:</strong>
+
+<pre class='lang-java line-numbers'><code>
+try {
+   stream1 = new FileInputStream("data.txt");
+} catch (IOException ie) { 
+   message("Could not open data.txt: " + ie);
+}
+</code></pre>
+Порядок расположения блоков <code><strong>catch</strong></code> определяет очередность перехвата исключений. Нужно учитывать, что каждый такой блок перехватит все исключения указанного класса или любого его подкласса. Если не учесть это, то можно получить недостижимый блок catch, на что укажет компилятор. В примере ниже <code><strong>SocketException</strong></code> является подклассом <code><strong>IOException</strong></code>.
+
+<strong>Ошибочный пример:</strong>
+ 
+<pre class='lang-java line-numbers'><code>
+try {
+    serviceSocket.setSoTimeout(1000);
+    newsock = serviceSocket.accept();
+} catch (IOException ie) { 
+    message("Error accepting connection.");
+} catch (SocketException se) {
+    message("Error setting time-out.");
+}
+</code></pre>
+
+<strong>Исправленный пример:</strong>
+
+<pre class='lang-java line-numbers'><code>
+try {
+    serviceSocket.setSoTimeout(1000);
+    newsock = serviceSocket.accept();
+} catch (SocketException se) {
+    message("Error setting time-out.");
+} catch (IOException ie) { 
+    message("Error accepting connection.");
+}
+
+</code></pre>
+Если в коде возможно появление исключения, которое не перехватавается ни одним блоком <code><strong>try-catch</strong></code>, то это исключение следует объявить в заголовке метода. (Для исключений — подклассов класса <code><strong>RuntimeException</strong></code> это не обязательно). Студенты иногда забывают о том, что вызов метода может порождать исключение. Проще всего это исправить, помещая вызов метода в блок <code><strong>try-catch</strong></code>.
+
+<strong>Ошибочный пример:</strong>
+
+<pre class='lang-java line-numbers'><code>
+public void waitFor(int sec) {
+    Thread.sleep(sec * 1000);
+}
+</code></pre>
+<strong>Исправленный пример:</strong>
+
+<pre class='lang-java line-numbers'><code>
+public void waitFor(int sec) throws InterruptedException {
+    Thread.sleep(sec * 1000);
+}
+</code></pre>
+<h2>8. Метод доступа имеет тип <code>void</code></h2>Это очень простая ошибка. Студент создает метод для доступа к переменной, но указывает, что метод ничего не возвращает (помещает модификатор <code><strong>void</strong></code> в загогловок метода). Чтобы исправить эту ошибку, нужно указать правильный тип возвращаемого значения.
+
+<strong>Ошибочный пример:</strong>
+
+<pre class='lang-java line-numbers'><code>
+public class Line {
+    private Point start, end;
+    public void getStart() { 
+      return start; 
+    }
+}
+</code></pre>
+
+<strong>Исправленный пример:</strong>
+
+<pre class='lang-java line-numbers'><code>
+public class Line {
+    private Point start, end;
+    public Point getStart() { 
+      return start; 
+    }
+}
+</code></pre>
+Ука</strong></code>зание неправильного возвращаемого типа порождает целый класс ошибок. Обычно компилятор распознает эти ошибки и сообщает о них, так что студенты могут самостоятельно их исправить.
+
+Автор: А.Грасоff™
+
+<a href="https://javarush.com/groups/posts/1393-oshibki-nachinajujshikh-java-programmistov-chastjh-2">Читать продолжение</a>
+
+<em>Ссылка на первоисточник: <a href="http://www.sql.ru/faq/faq_topic.aspx?fid=566" rel="nofollow" >Ошибки начинающих java-программистов</a></em>

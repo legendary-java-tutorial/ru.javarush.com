@@ -1,0 +1,234 @@
+Stream API
+<p>----------------------------------------</p>
+Задали вопрос на собеседовании про Stream API, не нашёлся даже что и ответить, пришёл домой, начал рыть и решил запилить небольшой обзорчик для новичков. PS: если что не так, не кусайте сильно, говорите, что не так — буду править))
+<p>----------------------------------------</p>
+
+<img data-max-width="800" data-id="de3864e0-da79-44aa-bc1c-462c76b27cb2" src="/images/article/de3864e0-da79-44aa-bc1c-462c76b27cb2/800.jpeg" alt="Stream API - 1"><h2>Что такое Stream API?</h2>Stream API — это новый способ работать со структурами данных в функциональном стиле. Stream (поток) API (описание способов, которыми одна компьютерная программа может взаимодействовать с другой программой) — это по своей сути поток данных. Сам термин "поток" довольно размыт в программировании в целом и в Java в частности.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="8450a780-412a-4554-bc86-d935d8867cc5" data-max-width="633" alt="Stream API - 1" src="https://cdn.javarush.com/images/article/8450a780-412a-4554-bc86-d935d8867cc5/1024.jpeg"></div></div>С появлением Java 8 Stream API позволило программистам писать существенно короче то, что раньше занимало много строк кода, а именно — упростить работу с наборами данных, в частности, упростить операции фильтрации, сортировки и другие манипуляции с данными. Если у вас промежуточных операций нет, часто можно и нужно обойтись без стрима, иначе код будет сложнее чем без потока.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="8a16e2d8-1736-4a84-ab16-49d733db8ea4" data-max-width="420" alt="Stream API - 2" src="https://cdn.javarush.com/images/article/8a16e2d8-1736-4a84-ab16-49d733db8ea4/1024.jpeg"></div></div>C чего, собственно, начать? С создания экземпляра Stream, который опирается на нужную нам коллекцию, массив или метод их и откуда соответственно будут браться данные:
+
+<pre class="lang-java line-numbers"><code>
+ List&lt;String&gt; list = new ArrayList&lt;String&gt;();
+        list.add("One");
+        list.add("Two");
+        list.add("Three");
+        list.add("Four");
+        list.add("Five");
+        list.add("Six");
+        list.add("Seven");
+        list.add("Eight");
+        list.add("Nine");
+        list.add("Ten");
+        Stream stream = list.stream();
+</code></pre>
+Как говорилось выше, Stream API позволяет сократить количество строк кода. 
+
+Пример c потоком:
+
+<pre class="lang-java line-numbers"><code>
+IntStream.of(50, 60, 70, 80, 90, 100, 110, 120).filter(x -&gt; x &lt; 90).map(x -&gt; x + 10)
+.limit(3).forEach(System.out::print);
+</code></pre>
+Пример без потока:
+
+<pre class="lang-java line-numbers"><code>
+int[] arr = {50, 60, 70, 80, 90, 100, 110, 120
+	int count = 0;
+	for (int x : arr) {
+	    if (x &gt;= 90) continue;
+	    x += 10;
+	    count++;
+	    if (count &gt; 3) break;
+	    System.out.print(x);
+	}
+</code></pre>
+Возможные способы создания Stream:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="531c02de-cb44-43e7-9ee5-f36a50bf587e" data-max-width="677" alt="Stream API - 3" src="https://cdn.javarush.com/images/article/531c02de-cb44-43e7-9ee5-f36a50bf587e/1024.jpeg"></div></div><ul>
+    <li>Пустой стрим: <code>Stream.empty()</code></li>
+    <li>Стрим из List: <code>list.stream()</code></li>
+    <li>Стрим из Map: <code>map.entrySet().stream()</code></li>
+    <li>Стрим из массива: <code>Arrays.stream(array)</code></li>
+    <li>Стрим из указанных элементов: <code>Stream.of("1", "2", "3")</code></li>
+</ul>Далее, есть такое понятие как операторы (по сути методы класса Stream)
+
+Операторы можно разделить на две группы:
+<ul>
+<li><em>Промежуточные</em> (“intermediate”, ещё называют “lazy”) — обрабатывают поступающие элементы и возвращают стрим. Промежуточных операторов в цепочке обработки элементов может быть много.</li>
+<li><em>Терминальные</em> (“terminal”, ещё называют “eager”) — обрабатывают элементы и завершают работу стрима, так что терминальный оператор в цепочке может быть только один.</li>
+</ul>Пример:
+
+<pre class="lang-java line-numbers"><code>
+1.List&lt;String&gt; list = new ArrayList&lt;String&gt;();
+2.list.add("One");
+…
+11.list.add("Ten");
+12.Stream stream = list.stream();
+13.stream.filter(x-&gt; x.toString().length() == 3).forEach(System.out::println);
+</code></pre>
+Что здесь происходит: 
+<ul>
+<li>1 — создаём список <code>list</code>;</li>
+<li>2-11 — заполняем его тестовыми данными;</li>
+<li>12 — создаём обьект <code>Stream</code>;</li>
+<li>13 — метод <code>filter</code> (фильтр) — промежуточный оператор, <code>x</code> приравнивается к одному элементу коллекции для перебора (как при <code>for each</code>) и после -&gt;  мы указываем как фильтруется наша коллекция и так как это промежуточный оператор, отфильтрованная коллекция идёт дальше в метод <code>forEach</code> который в свою очередь является терминальным (конечным) аналогом перебора <code>for each</code> (Выражение <code>System.out::println</code> сокращенно от: <code>x-&gt; System.out.println(x))</code>, которое в свою очередь проходит по всем элементам переданной ему коллекции и выводит её)</li></ul><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="581cd355-aaf5-4173-94fe-58afe6c97e04" data-max-width="600" alt="Stream API - 5" src="https://cdn.javarush.com/images/article/581cd355-aaf5-4173-94fe-58afe6c97e04/1024.jpeg"></div></div>Важные моменты:
+<ul>
+<li>Обработка не начнётся до тех пор, пока не будет вызван терминальный оператор. <code>list.stream().filter(s -&gt; s &gt; 5)</code> (не возьмёт ни единого элемента из списка);</li>
+<li>Экземпляр, стрима нельзя использовать более одного раза =( ;</li>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="d9a242c6-2c6a-4dee-a65e-166b9cf037d8" data-max-width="408" alt="Stream API - 6" src="https://cdn.javarush.com/images/article/d9a242c6-2c6a-4dee-a65e-166b9cf037d8/1024.jpeg"></div></div><p>Поэтому каждый раз новый:</p>
+<pre class="lang-java line-numbers"><code>
+list.stream().filter(x-&gt; x.toString().length() == 3).forEach(System.out::println);
+list.stream().forEach(x -&gt; System.out.println(x));
+</code></pre>
+<li><p>промежуточных операторов вызванных на одном стриме может быть множество, в то время терминальный оператор только один:</p>
+<pre class="lang-java line-numbers"><code>
+stream.filter(x-&gt; x.toString().length() == 3).map(x -&gt; x + " - the length of the letters is three").forEach(x -&gt; System.out.println(x));
+</code></pre></li></ul>Далее давайте рассмотрим некоторые промежуточные операторы:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="aef72b75-7e8b-4cb4-b69e-7c8b6f67802a" data-max-width="671" alt="Stream API - 7" src="https://cdn.javarush.com/images/article/aef72b75-7e8b-4cb4-b69e-7c8b6f67802a/1024.jpeg"></div></div><ul>
+<li><code>filter(Predicate predicate)</code> фильтрует стрим, пропуская только те элементы, что проходят по условию (Predicate  встроенный функциональный интерфейс, добавленный в Java SE 8 в пакет <code>java.util.function</code>. Проверяет значение на “<em>true</em>” и “<em>false</em>”);</li>
+<li><code>map(Function mapper)</code> даёт возможность создать функию с помощью которой мы будем изменять каждый элемент и пропускать его дальше (Функциональный интерфейс <code>Function&lt;T,R&gt;</code> представляет функцию перехода от объекта типа T к объекту типа R)</li>
+<li><code>flatMap(Function&lt;T, Stream&lt;R&gt;&gt; mapper)</code> — как и в случае с <code>map</code>, служат для преобразования в примитивный стрим.</li></ul>При работе например с массивом стримов (массивов, списков и так далее) преобразует их в один стрим (массив,список и так далее
+
+<code>[stream1,stream2,stream3,stream4] =&gt; stream</code>:
+
+<pre class="lang-java line-numbers"><code>
+String[] array = {"Java", "Ruuuuussshhh"};
+Stream&lt;String&gt; streamOfArray = Arrays.stream(array);
+streamOfArray.map(s-&gt;s.split("")) //Преобразование слова в массив букв
+        .flatMap(Arrays::stream).distinct() //выравнивает каждый сгенерированный поток в один поток
+        .collect(Collectors.toList()).forEach(System.out::println);
+</code></pre>
+В то время когда <code>map</code> преобразует в список потоков (точнее <code>&lt;Stream&gt;</code> потоков) <code>[stream1,stream2,stream3,stream4] =&gt;Stream.of(stream1,stream2,stream3,stream4)</code>:
+
+<pre class="lang-java line-numbers"><code>
+String[] array = {"Java", "Ruuuuussshhh"};
+Stream&lt;String&gt; streamOfArray = Arrays.stream(array);
+streamOfArray.map(s-&gt;s.split("")) //Преобразование слова в массив букв
+        .map(Arrays::stream).distinct() //Сделать массив в отдельный поток
+        .collect(Collectors.toList()).forEach(System.out::println);
+</code></pre>
+Ещё одно отличие в сравнении с <code>map</code>, можно преобразовать один элемент в ноль, один или множество других.
+
+Для того, чтобы один элемент преобразовать в ноль элементов, нужно вернуть <code>null</code>, либо пустой стрим. Чтобы преобразовать в один элемент, нужно вернуть стрим из одного элемента, например, через <code>Stream.of(x)</code>. Для возвращения нескольких элементов, можно любыми способами создать стрим с этими элементами.
+
+Тот же метод flatMap, но для Double, Integer и Long:
+<ul>
+<li>flatMapToDouble(Function mapper)</li>
+<li>flatMapToInt(Function mapper)</li>
+<li>flatMapToLong(Function mapper)</li>
+</ul>И ещё пример для сравнения, flatMap:
+
+<pre class="lang-java line-numbers"><code>
+Stream.of(2, 3, 0, 1, 3)
+        .flatMapToInt(x -&gt; IntStream.range(0, x))
+        .forEach(System.out::print);// 010120012
+</code></pre><ul>
+<li><p>IntStream.range(0,x) – выдаёт на поток элементов с 0 (включительно) по x (не включительно);</p>
+<p>map:</p>
+<pre class="lang-java line-numbers"><code>
+Stream.of(2, 3, 0, 1, 3)
+        .map(x -&gt; IntStream.range(0, x))
+        .forEach(System.out::print);//перечень стримов(потоков);
+</code></pre></li>
+<li><p>limit(long maxSize) – ограничивает стрим по количеству элементов:</p>
+<pre class="lang-java line-numbers"><code>
+stream.limit(5).forEach(x -&gt; System.out.println(x));
+</code></pre></li>
+<li><p>skip(long n) – пропускаем n элементов:</p>
+<pre class="lang-java line-numbers"><code>
+stream.skip(3).forEach(x -&gt; System.out.println(x));
+</code></pre></li>
+<li><p>sorted()</p></li>
+<li>sorted(Comparator comparator) – сортирует стрим (сортировка как у TreeMap):<p></p>
+<pre class="lang-java line-numbers"><code>
+stream.sorted().forEach(x -&gt; System.out.println(x));
+</code></pre></li>
+<li><p>distinct() — проверяет стрим на уникальность элементов(убирает повторы элементов);</p></li>
+<li><p>dropWhile(Predicate predicate) — пропускает элементы которые удовлетворяют условию (появился в 9 java, Функциональный интерфейс Predicate&lt;T&gt; проверяет соблюдение некоторого условия. Если оно соблюдается, то возвращается значение true. В качестве параметра лямбда-выражение принимает объект типа T:</p>
+<pre class="lang-java line-numbers"><code>
+ Predicate&lt;Integer&gt; isPositive = x -&gt; x &gt; 0;    
+        System.out.println(isPositive.test(3)); // true
+        System.out.println(isPositive.test(-9)); // false
+</code></pre></li></ul>Терминальные операторы:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="6b0e817d-98fc-4473-bf63-6fb3b55befe4" data-max-width="667" alt="Stream API - 8" src="https://cdn.javarush.com/images/article/6b0e817d-98fc-4473-bf63-6fb3b55befe4/1024.jpeg"></div></div><ul>
+<li><p>forEach(Consumer action) – аналог for each (Consumer&lt;T&gt; выполняет некоторое действие над объектом типа T, при этом ничего не возвращая);</p></li>
+<li><p>count() – возвращает количество елементов стрима:</p>
+<p><code>System.out.println(stream.count());</code></p></li>
+<li><p>collect(Collector collector) – метод собирает все элементы в список, множество или другую коллекцию, сгруппировывает элементы по какому-нибудь критерию, объединяет всё в строку и т.д.:</p>
+
+<pre class="lang-java line-numbers"><code>
+List&lt;String&gt; list = Stream.of(“One”, “Two”, “Three”).collect(Collectors.toList());
+</code></pre></li>
+<li><p><code>collect(Supplier supplier, BiConsumer accumulator, BiConsumer combiner)</code> — тот же, что и <code>collect(collector)</code>, только параметры разбиты для удобства (<code>supplier</code> поставляет новые объекты (контейнеры), например <code>new ArrayList()</code>, <code>accumulator</code> добавляет элемент в контейнер, <code>combiner</code> объединяет части стрима воедино);</p></li>
+<li><p>reduce(T identity, BinaryOperator accumulator) — преобразовывает все элементы стрима в один объект(посчитать сумму всех элементов, либо найти минимальный элемент), cперва берётся объект <code>identity</code> и первый элемент стрима, применяется функция <code>accumulator</code> и <code>identity</code> становится её результатом. Затем всё продолжается для остальных элементов.</p>
+
+<pre class="lang-java line-numbers"><code>
+int sum = Stream.of(1, 2, 3, 4, 5).reduce(10, (acc, x) -&gt; acc + x);// = 25
+</code></pre></li>
+<li><p><code>reduce(BinaryOperator accumulator)</code> — такой же метод как и выше но отсутсвует начальный <code>identity</code>, им служит первый элемент стрима</p>
+<p><code>Optional min(Comparator comparator)</code><br>
+Optional max(Comparator comparator) ищет минимальный/максимальный элемент, основываясь на переданном компараторе;</p></li>
+<li><p><code>findFirst()</code> – вытаскивает первый элемент стрима: </p>
+<pre class="lang-java line-numbers"><code>
+Stream.of(1, 2, 3, 4, 9).findFirst();
+</code></pre></li>
+<li><p><code>allMatch(Predicate predicate)</code> — возвращает <em>true</em>, если все элементы стрима удовлетворяют условию. Если встречается какой-либо элемент, для которого результат вызова функции-предиката будет <em>false</em>, то оператор перестаёт просматривать элементы и возвращает <em>false</em>:</p>
+<pre class="lang-java line-numbers"><code>
+Stream.of(1, 2, 3, 4, 9).allMatch(x -&gt; x &lt;= 7);//false
+</code></pre></li>
+<li><p><code>anyMatch(Predicate predicate)</code> — вернет <em>true</em>, если хотя бы один элемент стрима удовлетворяет условию <code>predicate</code>:</p>
+<pre class="lang-java line-numbers"><code>
+Stream.of(1, 2, 3, 4, 9).anyMatch(x -&gt; x &gt;= 7);//true
+</code></pre></li>
+<li><p><code>noneMatch(Predicate predicate)</code> — вернёт <em>true</em>, если, пройдя все элементы стрима, ни один не удовлетворил условию <code>predicate</code>:</p>
+<pre class="lang-java line-numbers"><code>
+Stream.of(1, 2, 3, 4, 9).noneMatch(x -&gt; x &gt;= 7);//false
+</code></pre></li>
+</ul><div class="email-subscription"><iframe frameborder="0" src="https://secure.esputnik.com.ua/4Q0Ef6d2SOs" width="100%" height="200" scrolling="no"></iframe></div>
+И хотелось бы напоследок просмотреть некоторые методы <code>Collectors</code>:
+<ul>
+<li><p><code>toList()</code> — собирает элементы в <code>List</code>:</p>
+<pre class="lang-java line-numbers"><code>
+ List&lt;Integer&gt; list = Stream.of(99, 2, 3).collect(Collectors.toList());
+</code></pre></li>
+<li><p><code>toSet()</code> — cобирает элементы в множество:</p>
+<pre class="lang-java line-numbers"><code>
+Set&lt;Integer&gt; set = Stream.of(99, 2, 3).collect(Collectors.toSet());
+</code></pre></li>
+<li><p><code>counting()</code> — Подсчитывает количество элементов:</p>
+<pre class="lang-java line-numbers"><code>
+Long count = Stream.of("1", "2", "3", "4").collect(Collectors.counting());
+</code></pre></li>
+<li><p><code>joining()</code></p></li>
+<li><p><code>joining(CharSequence delimiter)</code></p></li>
+<li><p><code>joining(CharSequence delimiter, CharSequence prefix, CharSequence suffix)</code> — cобирает элементы в одну строку. Дополнительно можно указать разделитель, а также префикс и суффикс для всей последовательности:</p>
+<pre class="lang-java line-numbers"><code>
+ String a = Stream.of("s", "u" ,"p", "e", "r").collect(Collectors.joining());
+        System.out.println(a); // super
+
+        String b = Stream.of("s", "u", "p", "e", "r").collect(Collectors.joining("-"));
+        System.out.println(b); // s-u-p-e-r
+
+        String c = Stream.of("s", "u", "p", "e", "r").collect(Collectors.joining(" -&gt; ", "[ ", " ]"));
+        System.out.println(c);  // [ s -&gt; u -&gt; p -&gt; e -&gt; r ]
+
+</code></pre></li>
+<li><p><code>summingInt(ToIntFunction mapper)</code></p></li>
+<li><p><code>summingLong(ToLongFunction mapper)</code></p></li>
+<li><p><code>summingDouble(ToDoubleFunction mapper)</code> — коллектор, который преобразовывает объекты в int/long/double и подсчитывает сумму.</p></li></ul><strong>Полезные ссылки:</strong>
+<ul>
+    <li>
+        <a href="https://javarush.com/groups/posts/592-java-functional-interfaces" target="_blank" rel="nofollow">https://javarush.com/groups/posts/592-java-functional-interfaces</a>
+    </li>
+    <li>
+        <a href="https://www.baeldung.com/java-8-streams" target="_blank" rel="nofollow">https://www.baeldung.com/java-8-streams</a>
+    </li>
+    <li>
+        <a href="https://docs.oracle.com/javase/8/docs/api/java/util/stream/package-summary.html" target="_blank" rel="nofollow">https://docs.oracle.com/javase/8/docs/api/java/util/stream/package-summary.html</a>
+    </li>
+    <li>
+        <a href="https://www.youtube.com/watch?v=nNEMhUQCysA&amp;t=993s" target="_blank" rel="nofollow">https://www.youtube.com/watch?v=nNEMhUQCysA&amp;t=993s</a>
+    </li>
+    <li>
+        <a href="https://habr.com/ru/post/224593/" target="_blank" rel="nofollow">https://habr.com/ru/post/224593/</a>
+    </li>
+</ul>PS: не стесняемся сыпем лайками   ^ : ^ 

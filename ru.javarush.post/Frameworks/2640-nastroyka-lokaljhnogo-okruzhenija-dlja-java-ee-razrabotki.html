@@ -1,0 +1,208 @@
+Настройка локального окружения для Java EE разработки
+<p>----------------------------------------</p>
+В данной статье мы будем настраивать рабочее окружение для запуска Java EE приложений. Напомню: в предыдущем материале мы разобрали основы Java EE. Под окружением имеем в виду набор различных программных компонентов: Java EE SDK, Java EE Application Server GlassFish...
+<p>----------------------------------------</p>
+В данной статье мы будем настраивать рабочее окружение для запуска Java EE приложений. Напомню: в предыдущем материале мы разобрали основы <a href="https://javarush.com/groups/posts/2637-vvedenie-v-java-ee/" target="_blank">Java EE</a>.
+<img data-max-width="800" data-id="f7a1ce18-c4ab-4be1-858e-795f35c6fa1a" src="/images/article/f7a1ce18-c4ab-4be1-858e-795f35c6fa1a/800.webp" class="img-fluid" alt="Настройка локального окружения для Java EE разработки - 1">Под окружением имеем в виду набор различных программных компонентов:
+<ul>
+<li>Java EE SDK;</li>
+<li>Java EE Application Server GlassFish;</li>
+<li>Настройка IntelliJ IDEA.</li>
+</ul>Главные цели этого материала:
+<ol>
+<li>Показать, как можно подготовить рабочее окружение для работы с Java EE приложениями.</li>
+<li>Показать, каким образом можно деплоить и запускать Java EE приложения из IntelliJ IDEA на сервере GlassFish.</li>
+</ol>Вот что мы сделаем для этого:
+<ol>
+<li>Скачаем и установим Java EE 7 SDK. </li>
+<li>Поднимем Java EE Application Server GlassFish.</li>
+<li>Научимся запускать и останавливать сервер через командную строку.</li>
+<li>Настроим IntelliJ IDEA для деплоя приложений на этот сервер.</li>
+<li>Развернем и запустим демонстрационное приложение, которое вместе с сервером приложений GlassFish входит в поставку Java EE 7 SDK. </li>
+</ol>Эта статья будет полезной начинающим Java-девелоперам, которые знакомятся с Enterprise-разработкой на Java. Считайте, что это небольшая подготовка площадки для дальнейшей практики. 
+
+Вам будет понятен материал, если вы знакомы с базовыми навыками работы в командной строке Windows (PowerShell).
+
+Версии используемых в статье программных компонент: 
+<ul>
+<li>GlassFish 4.0;</li>
+<li>IntelliJ IDEA 2019.3.1 (Ultimate);</li>
+<li>Java EE SDK 7.</li>
+</ul><h2>Установка Java EE SDK</h2><strong>Важное условие.</strong> Перед установкой Java EE SDK, необходимо удостовериться, что Java SE SDK предустановлена.
+<ol>
+<li><p>Для начала нам необходимо скачать SDK. Для этого в поисковике можно набрать: “Java EE SDK 7”, либо напрямую перейти на <a href="https://www.oracle.com/java/technologies/java-ee-sdk-7-jdk-7u21-downloads.html" rel="nofollow" target="_blank">страницу загрузки sdk</a> с сайта Oracle.</p></li>
+<li><p>В списке представленных SDK, необходимо выбрать ту, которая подходит для вашей платформы. В статье описывается установка дистрибутива: “java_ee_sdk-7-jdk7-windows-x64-ml.exe”</p></li>
+<li><p>Запускаем установочный файл. Во время запуска может возникнуть следующая ошибка (если она не возникнет, значит, можно просто продолжать установку):</p>
+<img data-max-width="512" data-id="82ade6c9-b034-406f-b39d-e23cfec04065" src="/images/article/82ade6c9-b034-406f-b39d-e23cfec04065/512.webp" class="img-fluid" alt="Настройка локального окружения для Java EE разработки - 2">
+<p>Это значит, что установщику не удалось найти путь к предустановленной Java Runtime Environment. Ошибку можно исправить, передав путь до JRE вручную средствами командной строки. Для этого необходимо запустить установочный файл через PowerShell и передать через параметр -j путь до предустановленной JRE.</p>
+<p>Например, так:</p>
+<img data-max-width="800" data-id="6ce408f5-593d-483a-8285-5999b8a105a1" src="/images/article/6ce408f5-593d-483a-8285-5999b8a105a1/800.webp" class="img-fluid" alt="Настройка локального окружения для Java EE разработки - 3"></li>
+<li><p>Дальнейшая процедура установки вполне типична для большинства программ. Все, что нужно делать, — кликать на кнопки Next и Install.</p><!--<p-->Программа установит Java EE SDK, а также сервер GlassFish, который по завершению установки будет поднят и готов к работе. <p></p></li>
+<li><p>Чтобы убедиться в работоспособности сервера GlassFish, по завершению установки можно открыть администраторскую панель сервера, которая будет доступна по адресу:  <a href="http://localhost:4848/" rel="nofollow" target="_blank">http://localhost:4848/</a></p>
+<p>Скрин — ниже:</p>
+<img data-max-width="800" data-id="89ec0805-b1bc-4e29-bbe3-996f704699c0" src="/images/article/89ec0805-b1bc-4e29-bbe3-996f704699c0/800.webp" class="img-fluid" alt="Настройка локального окружения для Java EE разработки - 4"></li></ol><h2>GlassFish запуск и остановка через командную строку</h2>Итак, сервер поднят и работает, но старт сервера был инициирован программой установки. Ниже попробуем разобраться с тем, как стартовать и останавливать сервер самостоятельно. 
+
+Для начала раскроем такую сущность, как домен. 
+
+<strong>Домен</strong> — это набор одного или нескольких экземпляров (инстансов) GlassFish сервера, управляемых одним сервером администрирования. При установке сервера GlassFish создается домен по умолчанию — domain1. С ним связаны такие компоненты: 
+<ul>
+<li>Порт сервера (по умолчанию 8080);</li>
+<li>Порт сервера администрирования (по умолчанию 4848);</li>
+<li>Имя пользователя и пароль администратора (по умолчанию — admin, и по умолчанию пароль не требуется).</li>
+</ul>В домене domain1 закреплены значения по умолчанию. 
+<img data-max-width="800" data-id="9a72d006-432e-4303-a457-9cc0251248e2" src="/images/article/9a72d006-432e-4303-a457-9cc0251248e2/800.webp" class="img-fluid" alt="Настройка локального окружения для Java EE разработки - 5">Для запуска и остановки сервера дистрибутив GlassFish включает в себя несколько скриптов, которые по умолчанию располагаются в следующей директории: C:\glassfish4\glassfish\bin 
+
+Для запуска и остановки сервера GlassFish через командную строку, можно использовать скрипт asadmin и его команды: 
+
+<pre class="lang-java line-numbers"><code>
+asadmin start-domain domain_name
+asadmin stop-domain domain_name
+</code></pre>
+Попробуем остановить сервер (так как после установки он уже запущен), запустив PowerShell из поддиректории <em>C:\glassfish4\glassfish\bin</em>:
+<img data-max-width="800" data-id="1112e2f2-63c2-4308-8c40-97a80e5071f2" src="/images/article/1112e2f2-63c2-4308-8c40-97a80e5071f2/800.webp" class="img-fluid" alt="Настройка локального окружения для Java EE разработки - 6">Сервер остановлен. Теперь запустим его: 
+<img data-max-width="800" data-id="11f27bec-eeea-44d5-968e-1b1db107a16e" src="/images/article/11f27bec-eeea-44d5-968e-1b1db107a16e/800.webp" class="img-fluid" alt="Настройка локального окружения для Java EE разработки - 7"><h2>Разбираем первое Java EE приложение, dukes-age</h2>Далее мы рассмотрим демонстрационное Java EE приложение: dukes-age. Данное приложение включается в поставку Java EE SDK совместно с приложением first-cup.
+
+Описание данных приложений представлено на сайте с официальной документацией Oracle в разделах 3 и 4 <a href="https://docs.oracle.com/javaee/7/firstcup/index.html" rel="nofollow" target="_blank">вводного курса по Java EE для начинающих Java EE разработчиков</a>. 
+
+В данной статье мы кратко рассмотрим приложение dukes-age и более подробно разберем процесс запуска данного приложения на сервере GlassFish из среды разработки IntelliJ IDEA. 
+
+Приложение располагается внутри директории сервера glassfish. Если вы не меняли путь по умолчанию для сервера glassfish при установке Java EE SDK, вы сможете найти данное приложение в папке: <em>C:\glassfish4\docs\firstcup\example\dukes-age</em>. 
+Наверное, каждый Java разработчик, начинающий и опытный, хотя бы раз видел талисман языка программирования Java — Дюка: 
+<img data-max-width="256" data-id="279df178-9fe8-49a8-865f-880354b0e53b" src="/images/article/279df178-9fe8-49a8-865f-880354b0e53b/256.webp" class="img-fluid" alt="Настройка локального окружения для Java EE разработки - 8">Немногим известно, что у Дюка есть день рождения. Он родился 23 мая 1995 года, когда была опубликована первая демо-версия технологии Java. 
+
+Приложение dukes-age, как следует из названия, выдает информацию о возрасте Дюка. 
+
+Откроем данное приложение в IntelliJ IDEA: File -&gt; New -&gt; Project From Existing Sources…
+
+Затем перейдем в папку с приложением dukes-age, расположенную по умолчанию по адресу <em>C:\glassfish4\docs\firstcup\example\dukes-age</em>, выберем файл pom.xml и нажмем кнопку OK:
+<img data-max-width="512" data-id="005af729-3661-4e9c-98bf-fd609138919e" src="/images/article/005af729-3661-4e9c-98bf-fd609138919e/512.webp" class="img-fluid" alt="Настройка локального окружения для Java EE разработки - 9">У нас откроется приложение со следующей структурой: 
+<img data-max-width="512" data-id="51477e14-1ee8-4814-bacd-18a0c6d16c4e" src="/images/article/51477e14-1ee8-4814-bacd-18a0c6d16c4e/512.webp" class="img-fluid" alt="Настройка локального окружения для Java EE разработки - 10">Взглянем на код класса <code>DukesAgeResource</code>: 
+
+<pre class="lang-java line-numbers"><code>
+package firstcup.dukesage.resource;
+
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+
+/**
+ * REST Web Service
+ *
+ */
+@Path("dukesAge")
+public class DukesAgeResource {
+
+    /** Creates a new instance of DukesAgeResource */
+    public DukesAgeResource() {
+    }
+
+    /**
+     * Retrieves representation of an instance of DukesAgeResource
+     * @return an instance of java.lang.String
+     */
+    @GET
+    @Produces("text/plain")
+    public String getText() {
+        // Create a new Calendar for Duke's birthday
+        Calendar dukesBirthday = new GregorianCalendar(1995, Calendar.MAY, 23);
+        // Create a new Calendar for today
+        Calendar now = GregorianCalendar.getInstance();
+
+        // Subtract today's year from Duke's birth year, 1995
+        int dukesAge = now.get(Calendar.YEAR) - dukesBirthday.get(Calendar.YEAR);
+        dukesBirthday.add(Calendar.YEAR, dukesAge);
+
+        // If today's date is before May 23, subtract a year from Duke's age
+        if (now.before(dukesBirthday)) {
+            dukesAge--;
+        }
+        // Return a String representation of Duke's age
+        return "" + dukesAge;
+    }
+}
+</code></pre>
+Это JAX-RS RESTful web-сервис с одним методом — <code>getText()</code>. 
+
+Если изучить код данного метода, станет ясно, что метод возвращает количество лет, прошедших со дня рождения Дюка. То есть, метод возвращает возраст Дюка. 
+
+Класс является ресурсом в контексте REST. 
+<ol>
+<li>Аннотация над классом <code>@Path("dukesAge")</code> определяет URI путь, обращения на который будет обрабатывать данный класс.</li>
+<li>Аннотация над методом <code>@GET</code> говорит нам о том, что данный метод обрабатывает GET запросы.</li>
+<li>Аннотация <code>@Produces("text/plain")</code> определяет media type ответа на запрос. Нетрудно догадаться, что метод <code>getText()</code> будет формировать ответы с media type: text/plain.</li></ol>Взглянем также на конфигурационный файл web.xml:
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;web-app version="3.0" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"&gt;
+    &lt;servlet&gt;
+        &lt;servlet-name&gt;javax.ws.rs.core.Application&lt;/servlet-name&gt;
+    &lt;/servlet&gt;
+    &lt;servlet-mapping&gt;
+        &lt;servlet-name&gt;javax.ws.rs.core.Application&lt;/servlet-name&gt;
+        &lt;url-pattern&gt;/webapi/*&lt;/url-pattern&gt;
+    &lt;/servlet-mapping&gt;
+&lt;/web-app&gt;
+</code></pre>
+В данном файле, внутри тега <code>servlet-mapping</code>, определен тег <code>url-pattern</code> со значением <code>/webapi/*</code>. Здесь определяется некоторая корневая точка, обращения на которую будут обрабатываться в дальнейшем сервисом.
+
+Если сложить с аннотацией <code>@Path("dukesAge")</code>, выходит, чтобы получить информацию о возрасте Дюка, необходимо обратиться на адрес /webapi/dukesAge.
+<h2>Настройка IntelliJ IDEA для запуска Java EE приложения на сервере GlassFish</h2>Получив весьма обобщенное представление о приложении dukes-age (подробнее читайте о нем на <a href="https://docs.oracle.com/javaee/7/firstcup/index.html" rel="nofollow" target="_blank">сайте Oracle</a>), давайте настроим IntelliJ IDEA, чтобы мы могли запускать это приложение из нашей IDE. 
+
+Настройка IntelliJ IDEA
+<ol>
+<li>Для этого переходим в меню Run -&gt; Edit Configurations.</li>
+<li>У нас откроется панель Run/Debug Configurations:
+<img data-max-width="800" data-id="45db5975-7b84-485c-b6b3-9db408fbe231" src="/images/article/45db5975-7b84-485c-b6b3-9db408fbe231/800.webp" class="img-fluid" alt="Настройка локального окружения для Java EE разработки - 11"></li>
+<li>Нам необходимо добавить новую конфигурацию. Для этого нажмем на плюсик, либо воспользуемся хоткеем Alt+Insert. В открывшемся списке выберем GlassFish Server -&gt; Local:
+<img data-max-width="800" data-id="93addbaf-8d0f-4554-98c6-822bfaaf2275" src="/images/article/93addbaf-8d0f-4554-98c6-822bfaaf2275/800.webp" class="img-fluid" alt="Настройка локального окружения для Java EE разработки - 12"></li>
+<li>В открывшемся окне приступим к настройке конфигурации: 
+<img data-max-width="800" data-id="6667f1b0-db52-47da-ab2f-c9887ef6c8ae" src="/images/article/6667f1b0-db52-47da-ab2f-c9887ef6c8ae/800.webp" class="img-fluid" alt="Настройка локального окружения для Java EE разработки - 13"></li>
+<li>Следующим шагом укажем артефакты, которые необходимо будет деплоить на сервер. Это можно сделать через вкладку Deployment, нажав на плюс -&gt; Artifact...
+<img data-max-width="800" data-id="ac3c49e2-ddba-4ccb-87b6-d5ae72a45673" src="/images/article/ac3c49e2-ddba-4ccb-87b6-d5ae72a45673/800.webp" class="img-fluid" alt="Настройка локального окружения для Java EE разработки - 14"></li>
+<li>Выбираем dukes-age:war и нажимаем OK:
+<img data-max-width="512" data-id="720f9512-0f66-4df5-983e-9b877946990c" src="/images/article/720f9512-0f66-4df5-983e-9b877946990c/512.webp" class="img-fluid" alt="Настройка локального окружения для Java EE разработки - 15"></li>
+<li>Далее сохраняем нашу конфигурацию, нажав на Apply, а затем OK. </li></ol>Конфигурация создана!
+<h2>Запуск приложения</h2>Теперь давайте попробуем запустить приложение. 
+<ol>
+<li><p>Для этого можно воспользоваться хоткеем Alt+Shift+F10, либо через меню Run -&gt; Run…</p>
+<p>И выбираем созданную нами конфигурацию dukes-age: </p>
+<img data-max-width="256" data-id="7329d82d-99e4-4499-b080-f5c21755bcb8" src="/images/article/7329d82d-99e4-4499-b080-f5c21755bcb8/256.webp" class="img-fluid" alt="Настройка локального окружения для Java EE разработки - 16"><p></p></li>
+<li><p>После этого мы видим логи запуска в панели Services:</p>
+<img data-max-width="800" data-id="eba878e4-3d6a-417b-a8b6-315387643bb4" src="/images/article/eba878e4-3d6a-417b-a8b6-315387643bb4/800.webp" class="img-fluid" alt="Настройка локального окружения для Java EE разработки - 17"></li>
+<li><p>Затем, если все сделано согласно инструкции, откроется браузер и станет понятно, что ничего не работает: </p>
+<img data-max-width="512" data-id="8e90a499-c07c-4e24-9bf6-e0fdde3edeea" src="/images/article/8e90a499-c07c-4e24-9bf6-e0fdde3edeea/512.webp" class="img-fluid" alt="Настройка локального окружения для Java EE разработки - 18"></li></ol>Таков уж мир IT. Даже если все сделано правильно, что-то может не работать. Но не стоит переживать: можно было бы сразу описать, как сделать правильно, но тогда некоторые нюансы были бы менее очевидны. Например, как формируется url, на который нас направляет IDEA при запуске приложения? Обратим на него внимание. 
+
+Нас перенаправили на <a href="http://localhost:8080/dukes-age-7.0.1/" rel="nofollow" target="_blank">http://localhost:8080/dukes-age-7.0.1/</a>. 
+
+Чтобы понять, откуда это взялось (/dukes-age-7.0.1/), перейдем в администраторскую панель сервера GlassFish. В левом меню необходимо кликнуть на пункт Applications. Далее вы увидите задеплоенные приложения, в том числе dukes-age. При выборе приложения dukes-age, можно увидеть некоторые его характеристики, в том числе и пункт Context-Root:
+<img data-max-width="800" data-id="a78d9197-2ba0-4278-853f-417466d3813e" src="/images/article/a78d9197-2ba0-4278-853f-417466d3813e/800.webp" class="img-fluid" alt="Настройка локального окружения для Java EE разработки - 19">dukes-age-7.0.1 — это имя и версия приложения. Корневая точка. Все запросы, которые будет обрабатывать dukes-age, должны начинаться с префикса /dukes-age-7.0.1/. 
+
+Итак, у нас есть корневая точка: /dukes-age-7.0.1. Также, ранее мы обсуждали, что наше приложение будет обрабатывать обращения на /webapi/dukesAge. 
+
+Совместим эти две вещи и обновим нашу конфигурацию. 
+<ol>
+<li><p>Для этого вернемся в IntelliJ IDEA, затем в меню: Run -&gt; Edit Configurations…</p></li>
+<li><p>Выберем ранее сохраненную конфигурацию и обновим URL в соответствии со скрином ниже:</p>
+<img data-max-width="800" data-id="fe19b282-f623-42a5-be41-c54561a31285" src="/images/article/fe19b282-f623-42a5-be41-c54561a31285/800.webp" class="img-fluid" alt="Настройка локального окружения для Java EE разработки - 20"></li>
+<li><p>Сохраним конфигурацию и перезапустим наше приложение с помощью хоткея Ctrl+Shift+F10, либо с помощью специальной кнопки, на панели Services:</p>
+<img data-max-width="512" data-id="60533ea6-5545-4eeb-b697-95791873611c" src="/images/article/60533ea6-5545-4eeb-b697-95791873611c/512.webp" class="img-fluid" alt="Настройка локального окружения для Java EE разработки - 21"></li>
+<li><p>После перезапуска, если все было сделано правильно, мы увидим возраст Дюка:</p>
+<img data-max-width="512" data-id="11071fa2-8421-49cf-9abe-fc065af0b2cb" src="/images/article/11071fa2-8421-49cf-9abe-fc065af0b2cb/512.webp" class="img-fluid" alt="Настройка локального окружения для Java EE разработки - 22"></li></ol>Отлично. Наконец-то мы выяснили, что Дюку 24 года. Если вы не повторите все описанные шаги в течении ближайшей пары месяцев, начиная с апреля 2020, то Дюк, вероятно, немного состарится.
+<h2>Заключение</h2>В данной статье мы разобрали, как можно настроить свое локальное окружение для работы с Java EE приложениями на примере сервера GlassFish 4.0, среды разработки IntelliJ IDEA 2019.3.1 (Ultimate), а также Java EE SDK версии 7.
+
+Мы рассмотрели, как можно:
+<ul>
+<li>скачать и установить Java EE SDK, а также сервер GlassFish;</li>
+<li>остановить и запустить сервер GlassFish через PowerShell;</li>
+<li>настроить IntelliJ IDEA, чтобы можно было деплоить Java EE приложения из IDE на сервер GlassFish и сразу же запускать их.</li>
+</ul><h2>Бонусное задание</h2><ol>
+<li>Повторить все описанные шаги самостоятельно. </li>
+<li>Изучить <a href="https://docs.oracle.com/javaee/7/firstcup/index.html" rel="nofollow" target="_blank">вводный курс по Java EE для начинающих Java EE разработчиков от Oracle</a>.</li>
+<li>Пункт со звездочкой. Попробовать задеплоить самостоятельно второе демонстрационное приложение first-cup. Данное приложение более интерактивное, а также оно взаимодействует с приложением dukes-age. Для выполнения данного пункта необходимо будет самостоятельно разобраться с такими вопросами:
+<ol type="a" ;="">
+<li>Как включить базу данных внутри сервера glassFish;</li>
+<li>Как интегрировать два приложения друг с другом (внутри first-cup указать путь до эндпоинта dukes-age, который мы обсуждали в данной статье);</li>
+<li>Как создать новую конфигурацию в Intellij IDEA для деплоя first-cup (по аналогии с тем, как было показано в данной статье);</li>
+<li>Возможно, многими другими вопросами )</li></ol></li></ol>P.S. Порог вхождения высок, но разве не это вас мотивирует?

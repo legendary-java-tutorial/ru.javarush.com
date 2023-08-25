@@ -1,0 +1,198 @@
+Калькулятор на Java с базой лишь в 10 лвл JavaRush (3Kyu задача на CodeWars)
+<p>----------------------------------------</p>
+Очередная статья про мои приключения на CodeWars. На этот реализуем функционал элементарного калькулятора: Create a simple calculator that given a string of operators (), +, -, *, / . У меня за плечами лишь 10+ уровней...
+<p>----------------------------------------</p>
+Очередная статья про мои приключения на CodeWars. На этот реализуем функционал элементарного калькулятора: <em>Create a simple calculator that given a string of operators (), +, -, *, /</em>.
+<img data-max-width="800" data-id="b58999d9-9a34-41b6-9d84-ce0abe028214" src="/images/article/b58999d9-9a34-41b6-9d84-ce0abe028214/800.jpeg" class="img-fluid" alt="Калькулятор на Java с базой лишь в 10 лвл JavaRush (3Kyu задача на CodeWars) - 1">У меня за плечами лишь 10+ уровней JavaRush, поэтому код довольно громоздок, но функционирует отлично.
+
+Задача как вы могли заметить, с сайта <span class="text-bold">CodeWars</span>. Ее ранг — <span class="text-bold">3kyu</span>. ссылку могу дать в личке.
+
+<span class="text-bold">Вот частичный список методов и процессов, которые мне помогли:</span>
+<ol><li>Рекурсия. Процесс, при котором метод вызывает сам себя (впервые его применил:)), в данном случае необходима, чтобы избавиться от скобок.</li>
+<li>Методы <code>String</code>'a  <code>trim()</code>, <code>split()</code>, <code>substring()</code>, <code>replace()</code>.</li>
+<li>Базовые методы коллекции <code>List</code>.</li>
+<li>А также преобразование типов <code>Double</code> в <code>String</code> и назад.</li></ol>В принципе, этого хватает.
+
+Прежде чем перейти к самому коду, расскажу на какие подводные камни я наткнулся.
+
+В большинстве своем, это порядок выполнения вычислений, сначала я сделал стандартную схему <code>* &gt; / &gt; + &gt; -</code>, однако понял, что например при вот таком варианте: <code>12/6 * 32/2</code>, программа сначала выполнит умножение (<code>6*32</code>) и все пойдет под откос, так что очередность стала такой: <code>* &gt; / &gt; + &gt; -</code>.
+
+Еще через пару часов наткнулся на самый большой камушек — <code>-</code>. В разных позициях и при разных комбинациях он <span class="text-bold">менял ВСЕ</span>. (Тут конечно есть и моя вина, т.к., например: <code>-34</code>, лежит у меня не в одной ячейке списка, а в двух: в одной, <code>-</code>  в другой, <code>34</code>). Из-за этого пришлось прописывать 2 дополнительные логики в вычисления с <code>-</code>, вообщем увидите это в коде.
+
+Извиняюсь за излишние комментарии в коде, я хотел максимально раскрыть ход своих мыслей и объяснить, что там вообще происходит.
+
+<pre class="lang-java line-numbers"><code>
+import java.util.*;
+
+public class Calculator {
+    public static void main(String[] args) {
+        String num = "2 / ( ( 2 + 0 ) * 1 ) - 6";
+        System.out.println(evaluate(num));
+    }
+
+    public static Double evaluate(String expression) {
+
+//  Этап 1
+//  На данном этапе преобразуем нашу строку в список строк, через совмещение цикла for-each и метода split(),
+//  также используем метод trim(), чтобы избавиться от пробелов по краям.
+//  Обратите внимание, что каждым вторым элиментом я добавляю " ". Для того, чтобы потом мне было легче работать со строкой
+
+        List&lt;string&gt; strList = new ArrayList&lt;&gt;();
+        for (String listElement : expression.trim().split(" ")) {
+            strList.add(listElement);
+            strList.add(" ");
+        }
+        strList.remove(strList.size() - 1);
+//        for (String x : strList) System.out.print(x + "");
+//        System.out.println();
+//        После того, как дочитаете код до конца, расскоментируйте две верхние строчки
+//        и посмотрите как работает рекрусия
+
+//  Этап 2
+//  Производим поиск символа "(" в списке если находим, то преобразуем все символы от '(' до последнего ')' в строку.
+//  Надо быть внимательными и проверить на случай двух контрукций: 1) (())  2) ()().
+//  P.S. После получения строки мы используем РЕКУРСИЮ (метод вызывает сам себя). Таким образом будем находить произведение скобок.
+
+        if (strList.indexOf("(") != -1) {
+//          Если "(" обнаружен, ищем подходящую конструкцию используя цикл.
+
+            for (int i = strList.indexOf("(") + 1; i &lt; strList.size() - 1; i++) {
+//
+//              Конструкция 1: первым элиментом, который мы отыскали были вторые "("
+                String recursion = "";
+                if (strList.get(i).equals("(")) {
+                    for (int j = i; j &lt; strList.lastIndexOf(")"); j++) {
+                        recursion += strList.get(j);
+                    }
+                    // сверху считывали последовательность находящуюся в скобках (()) До lastIndex элемента
+                    String test = expression.substring(expression.indexOf("("), expression.lastIndexOf(")") + 1);
+                    // test - последовательность как и сверху, но с добавлением скобок по краям
+
+                    // т.к. наш метод evaluate() возвращает Double, мы должны преобразовать результат рекрусии в String;
+                    String testRecursion = String.valueOf(evaluate(recursion));
+                    expression = expression.replace(test, testRecursion);
+                    // преобразовали нашу строку с использование рекруси. Избавились от первых скобок
+                    strList.removeAll(strList);
+                    for (String newElement : expression.trim().split(" ")) {
+                        strList.add(newElement);
+                        strList.add(" ");
+                    }
+                    // Тут очищаем наш список и сново его заполняем (но уже раскрыв первые скобки)
+                }
+
+//                Конструкция 2: первым элиментом, который мы отыскали был  ")"
+                String recursion2 = "";
+                if (strList.get(i).equals(")")) {
+
+                    for (int j = strList.indexOf("(") + 1; j &lt; strList.indexOf(")"); j++) {
+                        recursion2 += strList.get(j);
+                    }
+                    String test2 = expression.substring(expression.indexOf("("), expression.lastIndexOf(")") + 1);
+                    String testRecursion2 = String.valueOf(evaluate(recursion2));
+                    expression = expression.replace(test2, testRecursion2);
+                    for (String newElement : expression.trim().split(" ")) {
+                        strList.add(newElement);
+                        strList.add(" ");
+                    }
+                    // Тут повторили тот же алгоритм, что и в первой конструкции
+                }
+            }
+        }
+
+//  Этап 3
+//  Заключительный этап на котором мы будем реализовывать сами вычесления (*/-+)
+//  Всю реализацию помещаем в цикл while ( который прекратиться, если все действия будут выполнены (соответственно в списке останется 1 элемент)).
+//  Внимательно посмотрите на порядок операций: 1)/ 2)* 3)- 4)+
+
+//        System.out.println(expression + "-------expression-");
+//        System.out.println();
+        // создаем очередной список для реализации вычеслений, на этот раз без добавления " ".
+        List&lt;string&gt; stringList2 = new ArrayList&lt;&gt;();
+        for (String element : expression.trim().split(" ")) {
+            stringList2.add(element);
+        }
+
+
+        while (stringList2.size() != 0) {
+//          работаем со списком: глубоком этапе рекрусии обрабатываем:  (2+0)
+//          на среднем: 1 * 1  "или вот этой части уравнения "( ( 2 + 0 ) * 1 ) "
+//          Посмтортите сами
+//            for (String x : stringList2) System.out.print(x );
+//            System.out.println();
+
+            // наш Double :) Также стоит обратить внимание, что для получения класса обертки мы используем не
+            // Double.parseDouble() а Double.valueOf()
+             Double result = 0d;
+
+//  Сами алгоритмы вычеслений, впринципе понятны, поэтому не буду их комментировать.
+//  Однако обратите внимание на очередность, особенно при вычетании (там вместо 1 условия, 3)
+//  Если что в комментариях под постом немного объясню, если кто-нибудь дочитает до сюда и у него будет желание)
+            if (stringList2.indexOf("/") != -1) {
+                int index = stringList2.indexOf("/");
+                result = Double.valueOf(stringList2.get(index - 1)) / Double.valueOf(stringList2.get(index + 1));
+                stringList2.add(index - 1, String.valueOf(result));
+                stringList2.remove(index + 2);
+                stringList2.remove(index + 1);
+                stringList2.remove(index);
+            }
+            else if (stringList2.indexOf("*") != -1) {
+                int index = stringList2.indexOf("*");
+                result = Double.valueOf(stringList2.get(index - 1)) * Double.valueOf(stringList2.get(index + 1));
+                stringList2.add(index - 1, String.valueOf(result));
+                stringList2.remove(index + 2);
+                stringList2.remove(index + 1);
+                stringList2.remove(index);
+            }
+            else if (stringList2.indexOf("-") != -1) {
+                int index = stringList2.indexOf("-");
+                int lastIndex = stringList2.lastIndexOf("-");
+                if (index == 0) {
+                    result = 0.0 - Double.valueOf(stringList2.get(index + 1));
+                    stringList2.add(0, String.valueOf(result));
+                    stringList2.remove(2);
+                    stringList2.remove(1);
+                }
+                else if ((lastIndex-2&gt;0) &amp;&amp; (stringList2.get(lastIndex-2).equals("-"))){
+                    result = Double.valueOf(stringList2.get(lastIndex + 1)) + Double.valueOf(stringList2.get(lastIndex - 1));
+                    stringList2.add(lastIndex - 1, String.valueOf(result));
+                    stringList2.remove(lastIndex + 2);
+                    stringList2.remove(lastIndex + 1);
+                    stringList2.remove(lastIndex);
+                }
+                else {
+                    result = Double.valueOf(stringList2.get(index - 1)) - Double.valueOf(stringList2.get(index + 1));
+                    stringList2.add(index - 1, String.valueOf(result));
+                    stringList2.remove(index + 2);
+                    stringList2.remove(index + 1);
+                    stringList2.remove(index);
+                }
+            }
+            else if (stringList2.indexOf("+") != -1) {
+                int index = stringList2.indexOf("+");
+                result = Double.valueOf(stringList2.get(index - 1)) + Double.valueOf(stringList2.get(index + 1));
+                stringList2.add(index - 1, String.valueOf(result));
+                stringList2.remove(index + 2);
+                stringList2.remove(index + 1);
+                stringList2.remove(index);
+            }
+
+            // Вот тут все немного коряво. (На всякий случий проверял отсутствие (*/+-))
+            if ((stringList2.indexOf("*") == -1) &amp;&amp; (stringList2.indexOf("/") == -1) &amp;&amp; (stringList2.indexOf("+") == -1) &amp;&amp; (stringList2.indexOf("-") == -1)) {
+                return result;
+            }
+        }
+        return Double.valueOf(stringList2.get(0));
+    }
+}
+&lt;/string&gt;&lt;/string&gt;</code></pre>
+Спасибо всем кто прочитал и оставил комментарий)
+Если есть замечания, а скорее всего они есть, буду рад услышать их)
+<table>
+<tbody><tr>
+<th>Мои предыдущие статьи:</th>
+</tr>
+<tr>
+<td><ul>
+<li><a href="https://javarush.com/groups/posts/2724-pokorenie-codewars-reshaem-zadachu-4kyu" target="_blank" rel="nofollow">Покорение CodeWars (Решаем задачу 4kyu)</a></li>
+<li><a href="https://javarush.com/groups/posts/2705-sozdanie-magicheskogo-kvadrata-v-java" target="_blank" rel="nofollow">Создание "Магического квадрата" в Java</a></li>
+</ul></td></tr></tbody></table>

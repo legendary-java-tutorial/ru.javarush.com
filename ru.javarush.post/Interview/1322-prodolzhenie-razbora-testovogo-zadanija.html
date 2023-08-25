@@ -1,0 +1,195 @@
+Продолжение разбора тестового задания
+<p>----------------------------------------</p>
+В продолжение топика про полученное мной задание публикую разбор таких вопросов как прикручивание БД к проекту Spring Boot, соединение БД к контроллеру, вывод д
+<p>----------------------------------------</p>
+В продолжение топика про <a href="http://info.javarush.ru/timurnav/2015/09/02/%D0%A2%D0%B5%D1%81%D1%82%D0%BE%D0%B2%D0%BE%D0%B5-%D0%B7%D0%B0%D0%B4%D0%B0%D0%BD%D0%B8%D0%B5-%D0%BD%D0%B0-%D1%82%D1%80%D1%83%D0%B4%D0%BE%D1%83%D1%81%D1%82%D1%80%D0%BE%D0%B9%D1%81%D1%82%D0%B2%D0%BE-%D0%B4%D0%B0%D0%B2%D0%B0%D0%B9%D1%82%D0%B5-%D1%80%D0%B0%D0%B7%D0%B1%D0%B5%D1%80%D0%B5%D0%BC%D1%81%D1%8F-.html">полученное мной задание</a> публикую разбор таких вопросов как прикручивание БД к проекту Spring Boot, соединение БД к контроллеру, вывод данных из бд в браузер в формате JSON.
+<cut>
+<strong>Прикрутим базу данных</strong>
+
+Начну как обычно с лирики..
+Если вы пробовали настраивать соединение с базой данных, не важно что это за база данных: PostgreSQL, MySQL или встраеваемые базы данных типа H2 или HSQLDB, не важно какой технологией вы пользовались: JDBC, JPA/<a href='https://javarush.com/groups/posts/520-vashe-pervoe-prilozhenie-na-hibernate' target='_blank'>Hibernate</a>, даже если и использовали проект Spring Data... Spring Boot наделяет вас уникальным препаратом избавляющим от геморроя всего за одно применение!
+
+Что уж тут говорить, давайте за дело!
+Согласно официальной документации, для того чтобы добавить в проект встраиваемую базу данных (embeded databases - google it!), нам необходимо только добавить в помник проекта зависимость драйвера соответствующей базы данных и технологии (у нас data jpa), написать класс-сущность, написать один интерфейс без реализации и написать скрипт заполнения базы данных, всё остальное сделает за нас великий и могучий Spring Boot, у нас будет не встраиваемая база данных, поэтому действий будет чуть больше.
+
+А теперь по конкретным действиям:
+Создаем класс сущность, по заданию нужно работать с Юзерами, так и создадим - класс User. Сразу сделаем его персистентным - добавим нужные аннотации.
+Создаем директорию domain в той же папке где лежит главный класс.
+
+Должно получиться так:
+<code>└── src
+    └── main
+        └── java
+            └── demo(тут ваше название)
+                └── controller - о нем речь в конце
+                └── domain
+                └── repository - о нем речь дальше
+                    └── User - новый класс
+                └── DemoApplication - главный класс
+                └── DemoController - контроллер созданный нами ранее
+</code>
+а вот и сам класс
+<code>package demo.domain;
+
+import org.hibernate.validator.constraints.Email;
+import org.hibernate.validator.constraints.Length;
+
+import java.sql.Timestamp;
+
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue
+    private long id;
+
+    @Column(name = "avatar")
+    private String url;
+
+    @Length(min = 2)
+    private String name;
+
+    @Column(unique = true)
+    @Email
+    private String email;
+
+    public long getId() {
+        return id;
+    }
+
+    public User setId(long id) {
+        this.id = id;
+        return this;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public User setUrl(String url) {
+        this.url = url;
+        return this;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public User setName(String name) {
+        this.name = name;
+        return this;
+    }
+}
+</code>
+Если вы не проявляли самостоятельность, то большая часть аннотаций не подгрузятся, для их использования нам нужно подтянуть библиотечки бута, которые предоставляются, инициализатором при создании проекта если поставить галочку на JPA, но их можно добавить и руками, на работоспособность не повлияет.
+
+Открываем pom.xml, находим тег <em>&lt;dependencies&gt;...&lt;/dependencies&gt;</em> и вставляем в него еще одну зависимость
+<code>		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency></code>
+вставив эти строки, обновляем зависимости или включаем автоконфигурацию зависимостей мавена, после чего можно перейти назад в класс с Юзером и импортировать аннотации из javax.persistence.*
+
+итак что же мы тут наворотили?!
+@Entity - означает что объект этого класса может быть сохранен в базу данных, а сам класс является схемой таблицы, т.е. соответствует структуре таблицы: поля класса - столбцы таблицы.
+@Table - говорит о том, какой именно таблице в базе данных соответствует этот класс. В нашем случае название таблицы, не поверите! "users"
+@Id - это индентификатор поля,
+@GeneratedValue - и ежу понятно, что генерируется значение, в нашем случае имеется ввиду автоинкремент, но нам не нужно об этом беспокоиться и скоро мы узнаем почему!
+@Column - применяется если нужно добавить свойств столбцу или если имя имя поля класса не соответствует имени столбца таблицы (например id соответствует, там и мы и не применяем), но можно и применять, за это не поругают.
+@Length и @Email - это аннотацим валидации, кликните по ним с нажатым ctrl - провалитесь в сорсы, если они не скачаны - скачайте, почитайте, что там написано.
+Вообще, вводите себе за правило постоянно лезть в исходники и читать комментарии авторов кода, смотреть их код, это крайне полезно. Сначала может быть непонятно совсем, но со временем будете понимать всё больше, потом вообще перестанете читать такую лабуду как сейчас читаете - только исходники только хардкор!
+
+В тестовом проекте требуется использовать MySQL, если она у вас не установлена - как ее ставить и основы синтаксиса языка MySQL гуглятся без проблем. 
+Вообще <a href='https://javarush.com/groups/posts/476-spring-dlja-lenivihkh-osnovih-bazovihe-koncepcii-i-primerih-s-kodom-chastjh-1' target='_blank'>Spring</a> работает с PostgreSQL, MySQL, Apache Derbi, H2 или HSQLDB (это на момент написания статьи, позднее скорей всего их будет больше)
+Включаем очередную зависимость в помник.
+<code>  <!--Database-->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+        </dependency></code>
+
+Теперь настал черед урока чародейства и волшебства. Создаем новый паккадж repository на том же уровне что и domain. В нем создаем один единственный интерфейс назовем его DemoRepository вот весь его код
+<code>package demo.repository;
+
+import demo.domain.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+interface DemoRepository extends JpaRepository<User, Long> {
+}
+</code>
+
+теперь создадим скрипт заполнения таблички, он обязательно должен называться data.sql, кладем его в папку src/mail/resources
+<code>INSERT INTO users (avatar, name, email) VALUES
+  ('/pic/ava1', 'Kris', 'kroskross@gmail.com'),
+  ('/pic/ava2', 'Josh', 'joshlong@gmail.com');</code>
+
+ну и последний штрих - то, что не нужно делать если используешь встраиваемую базу. в файл application.properties вставляем следующие строки
+<code>spring.data.jpa.repositories.enabled=true
+
+spring.jpa.generate-ddl=true
+spring.jpa.hibernate.ddl-auto=create
+
+spring.datasource.url=jdbc:mysql://localhost:3306/test
+spring.datasource.username=root
+spring.datasource.password=root
+spring.jpa.show-sql=true
+</code>
+и снова маленький ньюанс, нужно чтобы у вас была создана база в MySQL, которая называется test, либо вставьте в datasource.url название другой своей созданной базы.
+
+итак резюме:
+чтобы прикрутить базу нужно:
+1. иметь созданную базу (никаких табличек руками создавать не нужно!, только базу)
+2. создать класс-сущность, экземпляры которой будут сохраняться в базу.
+3. вставить 2 зависимости в помник
+4. создать интерфейс репозитория и унаследоваться от одного из стандартных репозиториев Spring Data Jpa.
+5. создать скрипт заполняющий базу.
+6. внести настройки базы данных в application.properties
+
+Создается впечатление, что проделан просто громадный объем работы, выдели бы вы сколько нужно писать кода, чтобы подключиться через хибернейт! не говоря уже о jdbc вместе с созданием базы данных через консоль mysql
+
+<strong>итак проверяем.</strong>
+перезапустив приложение мы увидим гораздо больше логов чем, до использования баз данных, но главное должны появиться такие строки:
+<code>Hibernate: drop table if exists users
+Hibernate: create table users (id bigint not null auto_increment, email varchar(255), name varchar(255), avatar varchar(255), primary key (id))
+Hibernate: alter table users add constraint UK_6dotkott2kjsp8vw4d0m25fb7  unique (email)
+</code>
+Да, это спринг Бут создает за нас наши таблицы. Когда я впервые это увидел, я слегка опешил :)
+Теперь если у вас меняется доменная модель на этапе проектирования - решили вы Юзеру добавить фамилию или пол или добавить булеан козел он или не козел - нужно просто добавить поле в класс-@Entity и при перезапуске Спринг бут создаст вам таблицу с нужным столбцом, остается только добавить соответствующее поле в скрипт data.sql
+
+<strong>теперь давайте выведем наконец в браузер наших юзеров!</strong>
+создаем паккадж controller, в нем класс UserController, а в нем как мы уже знаем создаем метод с маппингом запроса, который будет возвращать нам список наших Юзеров.
+<code>package demo.controller;
+
+import demo.domain.User;
+import demo.repository.DemoRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@RestController
+@RequestMapping(value = "/users")
+public class UserController {
+
+    @Autowired
+    DemoRepository demoRepository;
+
+    @RequestMapping(method = RequestMethod.GET)
+    public List<User> getAll() {
+        return demoRepository.findAll();
+    }
+
+}</code>
+Тут ничего нового кроме @Autowired, это привязка созданного бина репозитория(если не слышали о таких, почитайте что такое java beans, потом почитайте как они используются в Spring) к ссылке используемой в этом классе.
+перезапускаем приложение, пробуем в браузере адрес
+<blockquote>http://localhost:8080/users</blockquote>
+ответ должен быть такой
+<blockquote>[{"id":1,"url":"/pic/ava1","name":"Kris","email":"kroskross@gmail.com"},{"id":2,"url":"/pic/ava2","name":"Josh","email":"joshlong@gmail.com"}]</blockquote>
+это наши Юзеры в формате JSON
+
+на сегодня всё. Всем спасибо
+
+п.с. в следующем посте займемся основным функционалом сервера по заданию

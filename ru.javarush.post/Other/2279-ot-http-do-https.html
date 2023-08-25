@@ -1,0 +1,297 @@
+От HTTP до HTTPS
+<p>----------------------------------------</p>
+Каждый день в адресной строке своего браузера мы видим знак замка и надпись https. Но что за этим стоит и что должно произойти, чтобы это появилось? На сколько это безопасно и на чём эта безопасность основана? Давайте попробуем в этом разобраться.
+<p>----------------------------------------</p>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="195" alt="От HTTP до HTTPS - 1" src="https://cdn.javarush.com/images/article/a831a2da-db36-40e9-a196-5ef38d4455b7/original.jpeg"></div></div>Содержание:
+<ul>
+<li><a href="#Вступление">Вступление</a></li>
+<li><a href="#Веб_приложение_на_Java">Веб-приложение на Java</a></li>
+<li><a href="#Требования_для_HTTPS">Требования для HTTPS</a><a></a></li><a>
+</a><li><a></a><a href="#KeyManager">KeyManager</a></li>
+<li><a href="#Управление_сертификатами">Управление сертификатами</a></li>
+<li><a href="#Итог">Итог</a></li>
+</ul><h2 id="Вступление">Вступление</h2>В современном мире без веб-приложений никак. И начнём мы с небольшого эксперимента. В детстве я помню, как во всех ларьках продавалась такая газета, как "Аргументы и факты". Вспомнил я о них потому, что по моему личному восприятию из детства, эти газеты выглядели всегда странно. И решил, а не зайти ли нам на их сайт:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="bd7eb251-25ba-48ea-9c73-c72a49b07b22" data-max-width="545" alt="От HTTP до HTTPS - 2" src="https://cdn.javarush.com/images/article/bd7eb251-25ba-48ea-9c73-c72a49b07b22/1024.jpeg"></div></div>Если перейти в справку Google Chrome, то мы прочитаем, что данный сайт не использует защищённое соединение и информация, которой вы обмениваетесь с сайтом, может быть доступна посторонним.
+
+Давайте проверим какие-нибудь другие новости, например новости Санкт-Петербурга от "Фонтанки", электронного СМИ:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="d4359457-b58b-433d-9175-78eae5bdc969" data-max-width="543" alt="От HTTP до HTTPS - 3" src="https://cdn.javarush.com/images/article/d4359457-b58b-433d-9175-78eae5bdc969/1024.jpeg"></div></div>Как видно, у сайта Фонтанки с безопасностью по этим данным проблем нет.
+
+Получается, что веб-ресурсы могут быть безопасными, а могут и не быть. Так же видим, что обращение к не защищённым ресурсам происходит по протоколу HTTP. А если ресурс защищён, то обмен данными осуществляется по протоколу HTTPS, где S на конце обозначает "Secure".
+
+Протокол HTTPS описан в спецификации rfc2818: "<a href="https://tools.ietf.org/html/rfc2818" target="_blank" rel="nofollow">HTTP Over TLS</a>".
+
+Давайте попробуем создать своё веб-приложение и сами увидеть, как это работает. И попутно будем разбираясь в терминах.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="5b572e3c-c58f-4eaf-9376-b051922e72da" data-max-width="310" alt="От HTTP до HTTPS - 4" src="https://cdn.javarush.com/images/article/5b572e3c-c58f-4eaf-9376-b051922e72da/1024.jpeg"></div></div><h2 id="Веб_приложение_на_Java">Веб-приложение на Java</h2>Итак, нам нужно создать самое простое веб-приложение на Java. Для начала, нам нужно само приложение на Java. Для этого воспользуемся системой автоматической сборки проекта Gradle.  Это нам позволит не создавать вручную нужную структуру каталогов + Gradle за нас будет управлять всеми необходимыми для проекта библиотеками и обеспечивать, чтобы они были доступны при выполнении кода. Подробнее про Gradle можно прочитать в небольшом обзоре: "<a href="https://javarush.com/groups/posts/2126-kratkoe-znakomstvo-s-gradle" target="_blank" rel="nofollow">Краткое знакомство с Gradle</a>".
+
+Воспользуемся <a href="https://docs.gradle.org/current/userguide/build_init_plugin.html#sec:build_init_types" target="_blank" rel="nofollow">Gradle Init Plugin</a>'ом и выполним команду:
+
+<pre class="lang-java line-numbers"><code>
+gradle init --type java-application
+</code></pre>
+После этого откроем билд скрипт <code>build.gradle</code>, в котором описано, из каких библиотек состоит наш проект, которые Gradle нам предоставит.
+Добавим туда зависимость от веб-сервера, на котором мы будем экспериментировать:
+
+<pre class="lang-java line-numbers"><code>
+dependencies {
+    // Web server
+    implementation 'io.undertow:undertow-core:2.0.20.Final'
+     // Use JUnit test framework
+     testImplementation 'junit:junit:4.12'
+}
+</code></pre>
+Чтобы веб-приложение работало, нам обязательно нужен веб-сервер, где будет размещено наше приложение. Веб серверов существует огромное множество, но основные это: Tomcat, Jetty, Undertow. Мы с Вами выберем на этот раз Undertow.
+
+Чтобы понять, как нам работать с этим нашим веб-сервером перейдём на официальный сайт <a href="http://undertow.io/" target="_blank" rel="nofollow">Undertow</a> и перейдём в раздел <a href="http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html" target="_blank" rel="nofollow">документации</a>.
+
+Мы с Вами подключили зависимость от Undertow Core, поэтому нам интересует раздел про этот самый <a href="http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#undertow-core" target="_blank" rel="nofollow">Core</a>, то есть ядро, основу веб-сервера.
+
+Самым простым способом является использование Builder API для Undertow:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+	Undertow server = Undertow.builder()
+            .addHttpListener(8080, "localhost")
+            .setHandler(new HttpHandler() {
+                @Override
+                public void handleRequest(final HttpServerExchange exchange) throws Exception {
+                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+                    exchange.getResponseSender().send("Hello World");
+                }
+            }).build();
+    server.start();
+}
+</code></pre>
+Если мы выполним код, то мы сможем перейти на следующий веб-ресурс:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="b3612df6-b29a-4758-9194-00efa443e4e7" data-max-width="434" alt="От HTTP до HTTPS - 5" src="https://cdn.javarush.com/images/article/b3612df6-b29a-4758-9194-00efa443e4e7/1024.jpeg"></div></div>Работает это просто. Благодаря Undertow Builder API мы добавляем HTTP слушателя на адрес localhost и порт 8080.
+
+Этот слушатель получает запросы от веб-браузера и возвращает в ответ строку "Hello World".
+
+Отличное веб-приложение. Но как мы видим, мы используем протокол HTTP, т.е. такой обмен данными небезопасен. Давайте разбираться, как же осуществляют обмен по протоколу HTTPS.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="244" alt="От HTTP до HTTPS - 6" src="https://cdn.javarush.com/images/article/08661338-06ff-4535-9ca3-163fbc06a5a3/original.jpeg"></div></div><h2 id="Требования_для_HTTPS">Требования для HTTPS</h2>Чтобы понять, как подключить HTTPS вернёмся к спецификации HTTPS: "<a href="https://tools.ietf.org/html/rfc2818" target="_blank" rel="nofollow">RFC-2818: HTTP Over TLS</a>".
+
+Согласно спецификации, данные в протоколе HTTPS передаются поверх криптографических протоколов SSL или TLS. Часто людей вводит в заблуждение, что есть SSL и TLS. На самом деле, SSL развивался и менял свои версии. Позже, очередным витком в развитии протокола SSL стал TLS. То есть TLS — это просто новая версия SSL. В спецификации так и сказано: "SSL, and its successor TLS".
+
+Итак, мы узнали, что есть криптографические протоколы SSL/TLS.
+
+<strong>SSL</strong> — это сокращение от Secure Sockets Layer и переводится как "уровень защищённых cокетов". Сокет (Socket) в переводе с английского — разъём. Участники передачи данных по сети используют сокеты, как программный интерфейс (то есть API) для общения друг с другом по сети. Браузер выступает как клиент и использует клиентский сокет, а сервер принимающий запрос и выдающий ответ использует серверный сокет. И именно между этими сокетами и происходит обмен данными. Поэтому изначально протокол и назван SSL. 
+
+Но время шло и протокол развивался. И в один прекрасный момент протокол SSL стал протоколом TLS. TLS — это сокращение от Transport Layer Security. TLS-протокол в свою очередь основан на спецификации протокола SSL версии 3.0.
+
+Протокол TLS — это тема отдельных статей и обзоров, поэтому я просто укажу материалы, которые считаю интересными:
+<ul>
+<li><a href="https://mnorin.com/tls-ssl-neobhodimy-j-minimum-znanij.html" target="_blank" rel="nofollow">TLS и SSL: Необходимый минимум</a></li>
+<li><a href="https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2003/cc784149(v%3dws.10)" target="_blank" rel="nofollow">TLS/SSL Technical Reference</a></li>
+<li><a href="https://habr.com/ru/post/258285/" target="_blank" rel="nofollow">Что такое TLS</a></li>
+<li><a href="https://tls.dxdt.ru/tls.html" target="_blank" rel="nofollow">Ключи, шифры, сообщения: как работает TLS</a></li>
+</ul>Если очень коротко, то основа HTTPS — это TLS handshake и проверка "Server Identity" (т.е. идентификация сервера) по его цифровому сертификату. Это важно. Запомним это, т.к. позже мы вернёмся к этому факту.
+
+Итак, ранее мы использовали HttpListener, чтобы рассказать серверу как работать по протоколу HTTP.
+
+Если в примере выше мы добавили HttpListener для работы по HTTP, то для работы по HTTPS нам нужно добавить HttpsListener:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="8495b5d6-34c4-4080-9835-2fd98a7d6882" data-max-width="607" alt="От HTTP до HTTPS - 7" src="https://cdn.javarush.com/images/article/8495b5d6-34c4-4080-9835-2fd98a7d6882/1024.jpeg"></div></div>Но чтобы его добавить нам нужен SSLContext. 
+
+Интересно, что SSLContext — это класс не из Undertow, а <code>javax.net.ssl.SSLContext</code>. 
+
+Класс SSLContext  входит в так называемый "<strong>Java Secure Socket Extension</strong>" (JSSE) — расширение Java для обеспечения безопасности интернет соединения. Данное расширение описано в документе "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html" target="_blank" rel="nofollow">Java Secure Socket Extension (JSSE) Reference Guide</a>".
+
+Как видно из вступительной части документации, JSSE предоставляет фрэймворк и Java реализацию протоколов SSL и TLS.
+
+Как же нам получить SSLContext? Открываем JavaDoc SSLContext и находим метод <a href="https://docs.oracle.com/javase/8/docs/api/javax/net/ssl/SSLContext.html#getInstance-java.lang.String-" target="_blank" rel="nofollow">getInstance</a>.
+Как видно, для получения SSLContext нам нужно указать название "Secure Socket Protocol".
+
+В описании параметров дано указание, что эти названия можно посмотреть в "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#SSLContext" target="_blank" rel="nofollow">Java Cryptography Architecture Standard Algorithm Name Documentation</a>".
+
+Поэтому, последуем указанию и идём в документацию. И видим, что мы можем выбрать между SSL и TLS:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="86b3f6fe-8a7c-4c42-9d38-39ed433a0c80" data-max-width="377" alt="От HTTP до HTTPS - 8" src="https://cdn.javarush.com/images/article/86b3f6fe-8a7c-4c42-9d38-39ed433a0c80/1024.jpeg"></div></div>Теперь нам понятно, что SSLContext нам надо создать следующим образом:
+
+<pre class="lang-java line-numbers"><code>
+public SSLContext getSSLContext() {
+	// 1. Получаем контекст, в рамках которого будем работать по TLS протоколу
+	SSLContext context = null;
+	try {
+		context = SSLContext.getInstance("TLS");
+	} catch (NoSuchAlgorithmException e) {
+		throw new IllegalStateException(e);
+	}
+	return context;
+}
+</code></pre>
+Создав новый контекст вспоминаем, что SSLContext описывался в "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html#SSLContext" target="_blank" rel="nofollow">Java Secure Socket Extension (JSSE) Reference Guide</a>".
+
+Читаем и видим, что "A newly created SSLContext should be initialized by calling the init method". То есть создать контекст - мало. Его нужно инициализировать. И это логично, т.к. про безопасность мы рассказали только то, что мы хотим использовать протокол TLS.
+
+Чтобы инициализировать SSLContext нам нужно предоставить три вещи: KeyManager, TrustManager, SecureRandom.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="3739a6ef-3ef6-49f3-b47c-6a1907ae2832" data-max-width="347" alt="От HTTP до HTTPS - 9" src="https://cdn.javarush.com/images/article/3739a6ef-3ef6-49f3-b47c-6a1907ae2832/1024.jpeg"></div></div><h2 id="KeyManager">KeyManager</h2><a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html#KeyManager" target="_blank" rel="nofollow">KeyManager</a> — это менеджер ключей.
+
+Он отвечает за то, какой "authentication credential" предоставить тому, кто к нам обратиться. Credential можно перевести, как удостоверение. Удостоверение нужно, чтобы клиент был уверен что сервер тот, за кого себя выдаёт и ему можно доверять.
+
+Что будет использовано в качестве удостоверения? Как мы помним, Server Identity проверяется по цифровому сертификату сервера. Этот процесс можно представить следующим образом:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="f6632a0b-3665-4e1c-8741-09fb1152d99b" data-max-width="707" alt="От HTTP до HTTPS - 10" src="https://cdn.javarush.com/images/article/f6632a0b-3665-4e1c-8741-09fb1152d99b/1024.jpeg"></div></div>Кроме того, в "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html#HowSSLWorks" target="_blank" rel="nofollow">JSSE Reference Guide: How SSL Works</a>" сказано, что SSL использует "asymmetric cryptography", а это значит, что нам требуется пара ключей: public key и private key.
+
+Так как речь зашла о криптографии, то в дело вступает "Java Cryptography Architecture" (JCA). Oracle по данной архитектуре предоставляет отличный документ: "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html#Introduction" target="_blank" rel="nofollow">Java Cryptography Architecture (JCA) Reference Guide</a>".
+
+Кроме этого, можно прочитать кратки обзор JCA на JavaRush: "<a href="https://javarush.com/groups/posts/2277-java-cryptography-architecture--pervoe-znakomstvo" target="_blank" rel="nofollow">Java Cryptography Architecture: Первое знакомство</a>". 
+
+Итак, для инициализации KeyManager нам нужен KeyStore, в котором будет храниться сертификат нашего сервера. Самым распространённым способом создания хранилища ключей и сертификатов является утилита keytool, которая входит в состав JDK. Пример можно увидеть в документации JSSE: "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html#CreateKeystore" target="_blank" rel="nofollow">Creating a Keystore to Use with JSSE</a>".
+
+Итак, нам нужно при помощи утилиты KeyTool создать хранилище ключей и записать туда сертификат. Интересно, что раньше генерация ключа задавалось при помощи -genkey, а теперь рекомендуется использовать -genkeypair.
+
+Нам понадобится определить следующие вещи:
+<ul>
+<li><strong>alias</strong>: Псевдоним или просто имя, под которым будет сохранена запись в Keystore</li>
+<il><strong>keyalg</strong>: Алгоритм шифрования ключей. Выберем алгоритм RSA, который является по сути стандартным решением для нашей цели.
+<li><strong>keysize</strong>: Размер ключа (в битах). Минимальный рекомендуемый размер 2048, т.к. размер меньше уже взламывался. Подробнее можно прочитать здесь: "<a href="https://www.wowza.com/community/questions/1296/how-to-create-a-ssl-certificate-in-2048-bit-key-le.html" target="_blank" rel="nofollow">a ssl certificate in 2048 bit</a>".</li>
+<li><strong>dname</strong>: Distinguished Name, отличительное имя.</li>
+</il></ul>Важно понимать, что запрашиваемый ресурс (например, https://localhost) будет сравниваться по нему. Это называется "subject cn matching".
+<ul>
+<li><strong>validity</strong>: Продолжительность в днях, в течении которых генерируемый сертификат валиден, т.е. действителен.</li>
+<li><strong>ext</strong>: Certificate Extension, указанные в "<a href="https://docs.oracle.com/javase/8/docs/technotes/tools/unix/keytool.html#CHDGDJDA" target="_blank" rel="nofollow">Named Extensions</a>".</li>
+</ul>Для Self-signed Certificates (т.е. для сертификатов, созданных самостоятельно) необходимо указать следующие расширения:
+<ul>
+<li>-ext san:critical=dns:localhost,ip:127.0.0.1 &gt; для выполнения subject matching по SubjectAlternativeName</li>
+<li>-ext bc=ca:false &gt; чтобы указать, что данный сертификат не используется для подписи других сертификатов</li>
+</ul>Выполним команду (пример для ОС Windows):
+
+<pre class="lang-java line-numbers"><code>
+keytool -genkeypair -alias ssl -keyalg RSA -keysize 2048 -dname "CN=localhost,OU=IT,O=Javarush,L=SaintPetersburg,C=RU,email=contact@email.com" -validity 90 -keystore C:/keystore.jks -storepass passw0rd -keypass passw0rd -ext san:critical=dns:localhost,ip:127.0.0.1 -ext bc=ca:false
+</code></pre>
+Т.к. будет создан файл убедитесь, что у Вас есть все права на создание файла.
+
+Кроме того, скорей всего, Вы увидите совет вроде этого:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="1a8ad239-4bb6-4a60-8aee-a18b40c91a7f" data-max-width="663" alt="От HTTP до HTTPS - 11" src="https://cdn.javarush.com/images/article/1a8ad239-4bb6-4a60-8aee-a18b40c91a7f/1024.jpeg"></div></div>Тут нам говорят, что JKS — проприетарный формат. Проприетарный — значит является частной собственностью авторов и предназначен для использования только в Java. При работе со сторонними утилитами может возникнуть конфликт, поэтому нас и предупреждают.
+
+Кроме того, мы можем получить ошибку: <code>The destination pkcs12 keystore has different storepass and keypass</code>.
+
+Эта ошибка возникает из-за того, что используются разные пароли от записи в Keystore и от самого keystore. Как сказано в документации к <a href="https://docs.oracle.com/javase/8/docs/technotes/tools/unix/keytool.html#keytool_option_importkeystore" target="_blank" rel="nofollow">keytool</a>,
+"For example, most third-party tools require storepass and keypass in a PKCS #12 keystore to be the same".
+
+Мы можем указать сами ключ (например, -destkeypass entrypassw). Но лучше не нарушать требований и задать одинаковый пароль.
+
+Итак, импорт может выглядеть следующим образом:
+
+<pre class="lang-java line-numbers"><code>
+keytool -importkeystore -srckeystore C:/keystore.jks -destkeystore C:/keystore.jks -deststoretype pkcs12
+</code></pre>
+Пример успешного выполнения:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="b906cda8-438e-430c-9f93-2d836e532ffa" data-max-width="673" alt="От HTTP до HTTPS - 12" src="https://cdn.javarush.com/images/article/b906cda8-438e-430c-9f93-2d836e532ffa/1024.jpeg"></div></div>Для экспорта сертификата в файл можно выполнить:
+
+<pre class="lang-java line-numbers"><code>
+keytool -export -alias ssl -storepass passw0rd -file C:/server.cer -keystore C:/keystore.jks
+</code></pre>
+Кроме того, мы можем получить содержимое Keystore следующим образом:
+
+<pre class="lang-java line-numbers"><code>
+keytool -list -v -keystore C:/keystore.jks -storepass passw0rd
+</code></pre>
+Отлично, теперь у нас есть keystore, в котором есть сертификат. Теперь его можно получать из кода:
+
+<pre class="lang-java line-numbers"><code>
+public KeyStore getKeyStore() {
+	// Согласно https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#KeyStore
+	try(FileInputStream fis = new FileInputStream("C:/keystore.jks")){
+		KeyStore keyStore = KeyStore.getInstance("pkcs12");
+		keyStore.load(fis, "passw0rd".toCharArray());
+		return keyStore;
+	} catch (IOException ioe) {
+		throw new IllegalStateException(ioe);
+	} catch (KeyStoreException | NoSuchAlgorithmException | CertificateException e) {
+		throw new IllegalStateException(e);
+	}
+}
+</code></pre>
+Если есть KeyStore, то можем инициализировать и KeyManager:
+
+<pre class="lang-java line-numbers"><code>
+public KeyManager[] getKeyManagers(KeyStore keyStore) {
+	String keyManagerAlgo = KeyManagerFactory.getDefaultAlgorithm();
+	KeyManagerFactory keyManagerFactory = null;
+	try {
+		keyManagerFactory = KeyManagerFactory.getInstance(keyManagerAlgo);
+		keyManagerFactory.init(keyStore, "passw0rd".toCharArray());
+		return keyManagerFactory.getKeyManagers();
+	} catch (NoSuchAlgorithmException e) {
+		throw new IllegalStateException(e);
+	} catch (UnrecoverableKeyException | KeyStoreException e) {
+		throw new IllegalStateException(e);
+	}
+}
+</code></pre>
+Наша первая цель достигнута. Осталось разобраться, что такое TrustManager.
+
+TrustManager описан в документации JSSE в разделе "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html#TrustManager" target="_blank" rel="nofollow">The TrustManager Interface</a>".
+
+Он очень похож на KeyManager, но его цель проверить, можно ли доверять тому, кто запрашивает соединение. Если совсем грубо, то это KeyManager наоборот =)
+
+У нас нет необходимости в TrustManager'е, поэтому передадим null. Тогда будет создан TrustManager по умолчанию, не проверяющий конечного пользователя, который выполняет запросы на наш сервер. В документации так и сказано: "default implementation will be used".
+
+Аналогично с SecureRandom. Если мы укажем null, то будет использована реализация по умолчанию. Вспомним только, что SecureRandom - это класс, относящийся к JCA и описанный в документации JCA в разделе "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html#SecureRandom" target="_blank" rel="nofollow">The SecureRandom Class</a>".
+
+Итого, подготовка с учётом всех вышеописанных методов может выглядеть следующим образом:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+	// 1. Подготавливаем приложение к работе по HTTPS
+	App app = new App();
+	SSLContext sslContext = app.getSSLContext();
+	KeyStore keyStore = app.getKeyStore();
+	KeyManager[] keyManagers = app.getKeyManagers(keyStore);
+	try {
+		sslContext.init(keyManagers, null, null);
+	} catch (KeyManagementException e) {
+		throw new IllegalStateException(e);
+	}
+</code></pre>
+Далее остаётся только запустить сервер:
+
+<pre class="lang-java line-numbers"><code>
+	// 2. Поднимаем сервер
+ 	int httpsPort = 443;
+	Undertow server = Undertow.builder()
+            .addHttpsListener(httpsPort, "localhost", sslContext)
+            .setHandler(new HttpHandler() {
+                @Override
+                public void handleRequest(final HttpServerExchange exchange) throws Exception {
+                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+                    exchange.getResponseSender().send("Hello World");
+                }
+            }).build();
+	server.start();
+}
+</code></pre>
+На этот раз наш сервер будет доступен по адресу <code>https://localhost:443</code>
+
+Однако, мы по прежнему получим ошибку, что нельзя доверять данному ресурсу:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="c4d4a7ed-72bc-4d3a-8eeb-aa6087b6f6db" data-max-width="321" alt="От HTTP до HTTPS - 13" src="https://cdn.javarush.com/images/article/c4d4a7ed-72bc-4d3a-8eeb-aa6087b6f6db/1024.jpeg"></div></div>Давайте разбираться, что не так с сертификатом и что с этим делать.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="254" alt="От HTTP до HTTPS - 14" src="https://cdn.javarush.com/images/article/132f6ae1-52f4-4eef-ba86-efdc85f9cbdf/original.jpeg"></div></div><h2 id="Управление_сертификатами">Управление сертификатами</h2>Итак, наш сервер уже готов работать по HTTPS, но клиент ему не доверяет. Почему? Давайте посмотрим:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="5f249a3f-a036-43c9-8214-e24752963be2" data-max-width="412" alt="От HTTP до HTTPS - 15" src="https://cdn.javarush.com/images/article/5f249a3f-a036-43c9-8214-e24752963be2/1024.jpeg"></div></div>Причина в том, что данный сертификат является самоподписанным (Self-signed Certificate). 
+
+Под самоподписанным SSL сертификатом понимают сертификат открытого ключа, изданный и подписанный тем же лицом, которое он идентифицирует. То есть его не выдавал никакой уважаемый центр сертификации (CA, он же Certificate Authority). 
+
+Центр сертификации (Certificate Authority) выступает как доверенное лицо и похож на нотариуса в обычной жизни. Он заверяет, что выданные им сертификаты надёжны. Услуга выдачи сертификатов такими CA является платной, поэтому утеря доверия и репутационные риски никому не нужны.
+
+По умолчанию есть несколько центров сертификации, которым доверяют. Этот список доступен для редактирования. И управление списком центров сертификации в каждой операционной системе свой.
+
+Например, управление данным списком в Windows можно прочитать здесь: "<a href="https://www.thewindowsclub.com/manage-trusted-root-certificates-windows" target="_blank" rel="nofollow">Manage Trusted Root Certificates in Windows</a>". 
+
+Давайте добавим сертификат в доверенные, как указано в сообщении об ошибке.
+
+Для этого, сначала, скачаем сертификат:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="2505c749-9db6-4b44-822b-1b999ac0a5a2" data-max-width="412" alt="От HTTP до HTTPS - 16" src="https://cdn.javarush.com/images/article/2505c749-9db6-4b44-822b-1b999ac0a5a2/1024.jpeg"></div></div>В OS Windows нажмём Win+R и выполним <code>mmc</code> для вызова консоли управления. Далее нажмём Ctrl+M для добавления раздела "Сертификаты" в текущую консоль.
+
+Далее в подразделе "Доверенные корневые центры сертификации" выполним <code>Действия / Все задачи / Импорт</code>. Выполним импорт файла, скачанного ранее в файл.
+
+Браузер мог запомнить прошлое состояние доверия к сертификату. Поэтому, перед открытием страницы нужно выполнить рестарт браузера. Например, в Google Chrome в адресной строке необходимо выполнить <code>chrome://restart</code>.
+
+В OS Windows для просмотра сертификатов так же можно воспользоваться утилитой <code>certmgr.msc</code>:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="a66b207e-9fbc-4a18-8d56-42dd2e2df5bf" data-max-width="638" alt="От HTTP до HTTPS - 17" src="https://cdn.javarush.com/images/article/a66b207e-9fbc-4a18-8d56-42dd2e2df5bf/1024.jpeg"></div></div>Если мы всё сделали правильно, то увидим успешное обращение к нашему серверу по HTTPS:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="ddc53d3b-c602-41c3-9b8c-15e5d6a9214c" data-max-width="433" alt="От HTTP до HTTPS - 18" src="https://cdn.javarush.com/images/article/ddc53d3b-c602-41c3-9b8c-15e5d6a9214c/1024.jpeg"></div></div>Как видно, сертификат теперь считается действительным, ресурс доступен, ошибок нет.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="6db94e81-51d5-46af-af34-e6425d60936f" data-max-width="286" alt="От HTTP до HTTPS - 19" src="https://cdn.javarush.com/images/article/6db94e81-51d5-46af-af34-e6425d60936f/1024.jpeg"></div></div><h2 id="Итог">Итог</h2>Вот мы с Вами и разобрали, как примерно выглядит схема включения протокола HTTPS на веб-сервере и что для этого нужно. Надеюсь, на данном этапе стало понятно, что поддержка обеспечена взаимодействием Java Cryptography Architecture (JCA), отвечающей за криптографию, и Java Secure Socket Extension (JSSE), обеспечивающей реализацию TLS на стороне Java. Мы увидели, как используется входящая в состав JDK утилита keytool для работы с хранилищем ключей и сертификатов KeyStore.
+
+Кроме того, мы поняли, что HTTPS использует протоколы SSL/TLS для обеспечения безопасности. Для закрепления советую прочитать отличные статьи на эту тему:
+<ul>
+<li><a href="https://mnorin.com/tls-ssl-neobhodimy-j-minimum-znanij.html" target="_blank" rel="nofollow">TLS и SSL: Необходимый минимум знаний</a></li>
+<li><a href="https://tls.dxdt.ru/tls.html" target="_blank" rel="nofollow">Ключи, шифры, сообщения: как работает TLS</a></li>
+<li><a href="https://www.youtube.com/watch?v=Cr4f6Cwjugs" target="_blank" rel="nofollow">Асимметричное шифрование. Как это работает?</a></li>
+</ul>Надеюсь, после этого небольшого обзора HTTPS станет чуть более прозрачным. А в случае необходимости включения HTTPS Вы сможете легко понимать термины из документации ваших серверов приложений и фрэймворков.
+
+#Viacheslav

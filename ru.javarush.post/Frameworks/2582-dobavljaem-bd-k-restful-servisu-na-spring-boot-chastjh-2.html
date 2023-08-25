@@ -1,0 +1,352 @@
+Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 2
+<p>----------------------------------------</p>
+Итак, в прошлой части мы научились устанавливать базу данных PostgresSQL на компьютер, создавать БД в pgAdmin, а также создавать и удалять в ней таблицы вручную и программно. В этой части мы будем...
+<p>----------------------------------------</p>
+<a href="https://javarush.com/groups/posts/2579-dobavljaem-bd-k-restful-servisu-na-spring-boot-chastjh-1" target="_blank" rel="nofollow">Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1</a>
+<img src="/images/article/901725c5-bab1-4998-8c30-15a0cf07e866/original.png" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 2 - 1">Итак, в прошлой части мы научились устанавливать базу данных PostgresSQL на компьютер, создавать БД в pgAdmin, а также создавать и удалять в ней таблицы вручную и программно.
+
+В этой части мы будем переписывать нашу программу, чтобы она научилась работать с этой БД и таблицами.
+Почему мы? Потому что я и сам учусь вместе с вами на этом материале. И дальше мы будем не только решать поставленную задачу, но и исправлять возникающие ошибки на ходу, при помощи советов более опытных программистов. Так сказать, будем учиться работать в команде ;)
+
+Для начала создадим в папке <code><span>com.javarush.lectures.rest_example</span></code> новый пакет, и назовем его <code><span>repository</span></code>.
+
+В этом пакете создадим новый интерфейс <code><span>ClientRepository</span></code>:
+
+<pre class="lang-java line-numbers"><code>
+package com.javarush.lectures.rest_example.repository;
+
+import com.javarush.lectures.rest_example.model.Client;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface ClientRepository extends JpaRepository&lt;Client, Integer&gt;  {
+}
+</code></pre>
+Этот интерфейс и будет "волшебным образом" взаимодействовать с нашими базами данных и таблицами. Почему волшебным образом?
+
+Потому что его реализацию нам писать будет не нужно, а ее предоставит нам каркас Spring. Достаточно только создать такой интерфейс, и уже можно пользоваться этой «магией».
+
+Следующим шагом отредактируем класс <code><span>Client</span></code> таким образом:
+
+<pre class="lang-java line-numbers"><code>
+package com.javarush.lectures.rest_example.model;
+
+import javax.persistence.*;
+
+@Entity
+@Table(name = "clients")
+public class Client {
+    @Id
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(name = "name")
+    private String name;
+
+    @Column(name = "email")
+    private String email;
+
+    @Column(name = "phone")
+    private String phone;
+
+    //… getters and setters
+}
+</code></pre>
+Все что мы сделали в этом классе  — это просто добавили некоторые аннотации.
+
+Пройдемся по ним:
+<ul>
+<li><span>@Entity</span> — указывает, что данный бин (класс) является сущностью.</li>
+<li><span>@Table</span> — указывает на имя таблицы, которая будет отображаться в этой сущности.</li>
+<li><span>@Id</span> — id колонки (первичный ключ - значение которое будет использоваться для обеспечения уникальности данных в текущей таблице прим. <a href="https://javarush.com/users/1013296" target="_blank" rel="nofollow">Andrei</a>)</li>
+<li><span>@Column</span> — указывает на имя колонки, которая отображается в свойство сущности.</li>
+<li><span>@GeneratedValue</span> — указывает, что данное свойство будет создаваться согласно указанной стратегии.</li>
+</ul>Имена полей таблицы не обязательно должны совпадать с именами переменных в классе.
+
+Например, если у нас есть переменная <code><span>firstName</span></code>, то поле в таблице мы назовем <code><span>first_name</span></code>.
+
+Эти аннотации можно устанавливать как непосредственно у полей, так и у их геттеров. Но если вы выбрали один из этих способов, то постарайтесь придерживаться этого стиля во всей вашей программе. Я использовал первый способ, просто чтобы сократить листинги. 
+
+Более полный список аннотаций для работы с базами данных можно найти <a href="http://javastudy.ru/spring-data-jpa/annotation-persistence/" target="_blank" rel="nofollow">здесь</a>.
+
+Теперь перейдем к классу <code><span>ClientServiceImpl</span></code> и перепишем его следующим образом:
+
+<pre class="lang-java line-numbers"><code>
+package com.javarush.lectures.rest_example.service;
+
+import com.javarush.lectures.rest_example.model.Client;
+import com.javarush.lectures.rest_example.repository.ClientRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class ClientServiceImpl implements ClientService {
+
+    @Autowired
+    private ClientRepository clientRepository;
+
+    @Override
+    public void create(Client client) {
+        clientRepository.save(client);
+    }
+
+    @Override
+    public List&lt;Client&gt;  readAll() {
+        return clientRepository.findAll();
+    }
+
+    @Override
+    public Client read(int id) {
+        return clientRepository.getOne(id);
+    }
+
+    @Override
+    public boolean update(Client client, int id) {
+        if (clientRepository.existsById(id)) {
+            client.setId(id);
+            clientRepository.save(client);
+            return true;
+        }
+
+        return false;
+    }
+
+    @Override
+    public boolean delete(int id) {
+        if (clientRepository.existsById(id)) {
+            clientRepository.deleteById(id);
+            return true;
+        }
+        return false;
+    }
+}
+</code></pre>
+Как видно из листинга, всё что мы сделали, это удалили уже не нужные нам строки:
+
+<pre class="lang-java line-numbers"><code>
+// Хранилище клиентов
+private static final Map&lt;Integer, Client&gt;  CLIENT_REPOSITORY_MAP = new HashMap&lt;&gt;();
+
+// Переменная для генерации ID клиента
+private static final AtomicInteger CLIENT_ID_HOLDER = new AtomicInteger();
+</code></pre>
+Вместо них мы объявили наш интерфейс <code><span>ClientRepository</span></code>, а также поместили над ним аннотацию <span>@Autowired</span>, чтобы Spring автоматически добавил эту зависимость в наш класс.
+
+А также делегировали всю работу этому интерфейсу, а точнее его реализации, которую добавит Spring.
+
+Перейдем к заключительному и самому интересному этапу – тестированию нашего приложения. Откроем программу Postman (как ей пользоваться смотрите <a href="https://javarush.com/groups/posts/2488-obzor-rest-chastjh-3-sozdanie-restful-servisa-na-spring-boot" target="_blank" rel="nofollow">здесь</a>),
+И посылаем GET запрос по этому адресу: http://localhost:8080/clients.
+
+Получаем такой ответ:
+
+<pre class="lang-java line-numbers"><code>
+[
+    {
+        "id": 1,
+        "name": "Vassily Petrov",
+        "email": "vpetrov@jr.com",
+        "phone": "+7 (191) 322-22-33)"
+    },
+    {
+        "id": 2,
+        "name": "Pjotr Vasechkin",
+        "email": "pvasechkin@jr.com",
+        "phone": "+7 (191) 223-33-22)"
+    }
+]
+</code></pre>
+Посылаем POST запрос:
+<pre class="lang-java line-numbers"><code>
+{
+  "name" : "Amigo",
+  "email" : "amigo@jr.com",
+  "phone" : "+7 (191) 746-43-23"
+}
+</code></pre>
+ И… ловим наш первый баг в программе:
+
+<pre class="lang-java line-numbers"><code>
+{
+    "timestamp": "2020-03-06T13:21:12.180+0000",
+    "status": 500,
+    "error": "Internal Server Error",
+    "message": "could not execute statement; SQL [n/a]; constraint [null]; nested exception is org.hibernate.exception.ConstraintViolationException: could not execute statement",
+    "path": "/clients"
+}
+</code></pre>
+<img src="https://cdn.javarush.com/images/article/c28751b7-95c0-4004-8d66-f1e6e571054c/512.webp" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 2 - 2">
+Просматриваем логи, и обнаруживаем там такую ошибку:
+
+<pre><code>
+org.postgresql.util.PSQLException: ОШИБКА: повторяющееся значение ключа нарушает ограничение уникальности "clients_pkey"
+  Detail: Ключ "(id)=(1)" уже существует.
+</code></pre>
+Посылаем еще раз такой же POST запрос, результат тот же, но с таким отличием: <code>Ключ "(id)=(2)" уже существует.</code>
+
+Посылаем в третий раз этот же запрос, и получаем Status: 201 Created.
+
+Посылаем еще раз GET запрос, и получаем на него ответ:
+
+<pre class="lang-java line-numbers"><code>
+[
+    {
+        "id": 1,
+        "name": "Vassily Petrov",
+        "email": "vpetrov@jr.com",
+        "phone": "+7 (191) 322-22-33)"
+    },
+    {
+        "id": 2,
+        "name": "Pjotr Vasechkin",
+        "email": "pvasechkin@jr.com",
+        "phone": "+7 (191) 223-33-22)"
+    },
+    {
+        "id": 3,
+        "name": "Amigo",
+        "email": "amigo@jr.com",
+        "phone": "+7 (191) 746-43-23"
+    }
+]
+</code></pre>
+Это говорит о том, что наша программа игнорирует тот факт, что эта таблица уже была предварительно заполнена, и назначает id опять начиная с единицы.
+
+Что-ж, баг — это рабочий момент, не стоит отчаиваться, такое бывает часто. Поэтому я обращусь за помощью к более опытным коллегам: "Уважаемые коллеги, посоветуйте пожалуйста в комментариях как это пофиксить, чтобы программа заработала нормально". 
+
+Помощь не заставила себя долго ждать, и <a href="https://javarush.com/users/460666" target="_blank" rel="nofollow">Стас Пасинков</a> подсказал мне в комментариях, в какую сторону нужно посмотреть.
+
+Отдельное ему за это спасибо!
+
+А дело было в том, что в классе <code>Client</code> я неправильно указал стратегию для аннотации <code>@GeneratedValue(strategy = GenerationType.IDENTITY)</code> у поля <code>id</code>.
+<img src="https://cdn.javarush.com/images/article/e33b57bb-eb94-4f50-a904-aaed78dc2768/512.webp" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 2 - 3">
+Эта стратегия подходит для MySQL. Если же мы работаем с Oracle или PostrgeSQL, то нужно установить другую стратегию. 
+
+Подробнее о стратегиях для первичных ключей можно почитать <a href="https://javarush.com/quests/lectures/questhibernate.level12.lecture02" target="_blank" rel="nofollow">здесь</a>.
+
+Я выбрал стратегию GenerationType.SEQUENCE. Для ее реализации нам нужно будет немного переписать файл initDB.sql, и, конечно аннотации поля id класса Client.
+
+Переписываем initDB.sql:
+
+<pre class="lang-java line-numbers"><code>
+CREATE TABLE IF NOT EXISTS clients
+(
+    id    INTEGER PRIMARY KEY ,
+    name  VARCHAR(200) NOT NULL ,
+    email VARCHAR(254) NOT NULL ,
+    phone VARCHAR(50)  NOT NULL
+);
+CREATE SEQUENCE clients_id_seq START WITH 3 INCREMENT BY 1;
+</code></pre>
+Что изменилось: поменялся тип столбца id нашей таблицы, но об этом чуть позже.
+
+Добавилась строчка снизу, в которой мы создаем новую последовательность clients_id_seq, указываем, что она должна начинаться с тройки (потому что последний id в файле populateDB.sql равен 2), и указываем, что инкремент должен происходить на единицу.
+
+Вернемся к типу столбца id. Здесь мы указали INTEGER, потому что если оставить SERIAL, то последовательность создастся автоматически, с тем же именем clients_id_seq, но будет начинаться с единицы (что и приводило к багу программы).
+
+Однако, теперь, если вы захотите удалить таблицу, то нужно будет дополнительно удалить и эту последовательность либо вручную через интерфейс pgAdmin, либо через файл .sql при помощи таких команд:
+<pre class="lang-java line-numbers"><code>
+DROP TABLE IF EXISTS clients;
+DROP SEQUENCE IF EXISTS clients_id_seq
+</code></pre>
+
+Но если вы не используете для первоначального заполнения таблицы файл наподобие populateDB.sql, то для первичного ключа можно использовать типы SERIAL или BIGSERIAL, и не создавать последовательность вручную, соответственно и удалять ее отдельно не придется.
+
+Подробнее почитать о последовательностях можно на сайте оф. <a href="https://www.postgresql.org/docs/9.5/sql-createsequence.html" target="_blank" rel="nofollow">Документации PostgreSQL</a>.
+
+Перейдем к аннотациям поля <code>id</code> класса <code>Client</code>, и оформим их следующим образом:
+
+<pre class="lang-java line-numbers"><code>
+@Id
+@Column(name = "id")
+@SequenceGenerator(name = "clientsIdSeq", sequenceName = "clients_id_seq", allocationSize = 1)
+@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "clientsIdSeq")
+private Integer id;
+</code></pre>
+Что мы сделали: установили новую аннотацию <code>@SequenceGenerator</code> для создания генератора последовательности, назначили ему имя <code>clientsIdSeq</code>, указали что это генератор для последовательности <code>clients_id_seq</code>, и добавили атрибут <code>allocationSize = 1</code>
+Это необязательный атрибут, но если мы этого не сделаем, то при запуске программы получим такую ошибку:
+
+<pre><code>
+org.hibernate.MappingException: The increment size of the [clients_id_seq] sequence is set to [50] in the entity mapping while the associated database sequence increment size is [1]
+</code></pre>
+Вот что пишет user <a href="https://javarush.com/users/1013296" target="_blank" rel="nofollow">Andrei</a> по этому поводу в комментариях:
+
+<em>allocationSize в первую очередь предназначен для сокращения похода hibernate-ом в БД за "новым id". При значении == 1 - hibernate для каждой новой сущности, перед тем как сохранить ее в БД, "сбегает" в БД за id. При значении &gt; 1 (к примеру 5) - hibernate будет обращаться к БД за "новым" id реже (для примера - в 5 раз), при этом при обращении hibernate попросит БД зарезервировать это количество (в нашем случае 5) значений. Ошибка же которую вы описали говорит о том что hibernate хотел бы получить 50 дефолтных id, но вот в БД вы указали что готовы выдавать id для данной сущности только по 1-ой</em>.
+
+Еще один баг был выловлен пользователем <a href="https://javarush.com/users/2299415" target="_blank" rel="nofollow">Nikolya Kudryashov</a>:
+Если выполнить запрос из оригинальной  статьи http://localhost:8080/clients/1 ,То вернётся ошибка:
+<pre class="lang-java line-numbers"><code>
+{
+    "timestamp": "2020-04-02T19:20:16.073+0000",
+    "status": 500,
+    "error": "Internal Server Error",
+    "message": "Type definition error: [simple type, class org.hibernate.proxy.pojo.bytebuddy.ByteBuddyInterceptor]; nested exception is com.fasterxml.jackson.databind.exc.InvalidDefinitionException: No serializer found for class org.hibernate.proxy.pojo.bytebuddy.ByteBuddyInterceptor and no properties discovered to create BeanSerializer (to avoid exception, disable SerializationFeature.FAIL_ON_EMPTY_BEANS) (through reference chain: com.javarush.lectures.rest_example.model.Client$HibernateProxy$ZA2m7agZ[\"hibernateLazyInitializer\"])",
+    "path": "/clients/1"
+}
+</code></pre> 
+Эта ошибка связана с ленивой инициализацией Hibernate, и чтобы от нее избавиться, нам необходимо добавить в класс Client дополнительную аннотацию :
+<pre class="lang-java line-numbers"><code>
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+</code></pre>
+Таким вот образом:
+<pre class="lang-java line-numbers"><code>
+@Entity
+@Table(name = "clients")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+public class Client {.....}
+</code></pre>
+Теперь запустим нашу программу (предварительно удалив таблицу clients из БД, если она осталась там с прошлого раза), и закомментируем 3 строчки из файла application.properties:
+
+<pre class="lang-java line-numbers"><code>
+#spring.datasource.initialization-mode=ALWAYS
+#spring.datasource.schema=classpath*:database/initDB.sql
+#spring.datasource.data=classpath*:database/populateDB.sql
+</code></pre>
+В прошлый раз мы комментировали только последнюю строку, но т.к. мы уже создали и заполнили таблицу, то это мне показалось на данный момент более логичным.
+
+Перейдем к тестированию, выполним GET, POST, PUT и DELETE запросы через Postman, и увидим, что баги исчезли, и все работает нормально.
+
+Вот и всё, работа выполнена.
+
+Теперь можно подвести краткий итог, и рассмотреть, чему мы научились:
+<ul>
+    <li>Устанавливать PostgreSQL на компьютер</li>
+    <li>Создавать базы данных в pgAdmin</li>
+    <li>Создавать и удалять таблицы вручную и программно</li>
+    <li>Заполнять таблицы через файлы .sql</li>
+    <li>Немного познакомились с «волшебным» интерфейсом JpaRepository каркаса Spring</li>
+    <li>Узнали о некоторых багах, которые могут возникнуть при создании такой программы</li>
+    <li>Поняли, что не нужно стесняться обращаться за советом к коллегам</li>
+    <li>Утвердились во мнении, что JavaRush комьюнити – это сила, которая всегда придет на помошь ;)</li>
+</ul>На этом пока можно и закончить.<a href="https://javarush.com/welcome" target="_blank" rel="nofollow"><img data-id="b6dd1449-ce91-4ba0-9103-8eae760be739" src="/images/article/b6dd1449-ce91-4ba0-9103-8eae760be739/1024.webp" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 2 - 4"></a>Спасибо всем, кто потратил свое время на прочтение данного материала. Буду рад вашим комментариям, замечаниям, дополнениям и конструктивной критике. Возможно, вы предложите более элегантные решения этой задачи, которые я обещаю добавить в эту статью посредством “ключевого слова” UPD, с упоминанием вас как автора, конечно.
+
+Ну и вообще, пишите, понравилась ли вам эта статья и такой стиль подачи материала, и вообще, стоит ли мне продолжать писать статьи на JR.
+
+Вот и дополнения подоспели:
+UPD1 : user <a href="https://javarush.com/users/2054381" target="_blank" rel="nofollow">Justinian</a> настойчиво рекомендовал мне переименовать package <code>com.javarush.lectures.rest_example</code> в <code>com.javarush.lectures.rest.example</code>, и название проекта, чтобы не нарушать конвенции именования в Java. 
+
+UPD2 user <a href="https://javarush.com/users/1367247" target="_blank" rel="nofollow">Александр Пьянов</a> подсказал, что для инициализации поля <code>ClientRepository</code> в классе <code>ClientServiceImpl</code> лучше использовать конструктор чем аннотацию <code>@Autowired</code>.
+Объясняется это тем, что в редких случаях можно получить <code>NullPointerException</code>, и вообще, это является best practice, и я с ним соглашусь.
+По логике, если поле является обязательным для изначальной функциональности объекта, то лучше его инизиализировать в конструкторе, ведь класс без конструктора не соберется в объект, следовательно, это поле поле будет проинициализировано еще на этапе создания объекта.
+
+Добавлю фрагмент кода с исправлениями (что на что нужно заменить):
+<pre class="lang-java line-numbers"><code>
+<s>@Autowired
+private ClientRepository clientRepository;</s>
+
+private final ClientRepository clientRepository;
+
+public ClientServiceImpl(ClientRepository clientRepository) {
+   this.clientRepository = clientRepository;
+}
+</code></pre>
+<a href="https://javarush.com/groups/posts/2579-dobavljaem-bd-k-restful-servisu-na-spring-boot-chastjh-1" target="_blank" rel="nofollow">Ссылка на первую часть: Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1</a>
+
+PS Если кто-то из вас захочет продолжить развивать это учебное приложение, то я буду рад добавить ссылку на ваши гайды в эту статью. Возможно, когда-нибудь эта программа вырастет во что-то похожее на настоящее бизнес-приложение, работу над которым вы сможете добавить в свое портфолио.
+
+PPS Что касается этой скромной статьи, то я решил посвятить эту пробу пера нашим дорогим девушкам, женщинам и дамам. Кто знает, возможно сейчас и не было-бы в природе ни Java ни JavaRush, ни программирования, если бы не эта <a href="https://ru.wikipedia.org/wiki/%D0%9B%D0%B0%D0%B2%D0%BB%D0%B5%D0%B9%D1%81,_%D0%90%D0%B4%D0%B0" target="_blank" rel="nofollow">женщина</a>.
+
+Поздравляю вас с праздником, дорогие вы наши умницы!
+
+С 8 Марта! Будьте счастливы и красивы!

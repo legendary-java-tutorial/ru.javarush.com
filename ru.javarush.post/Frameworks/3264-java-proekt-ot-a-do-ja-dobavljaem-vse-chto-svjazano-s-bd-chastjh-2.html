@@ -1,0 +1,699 @@
+Добавляем все, что связано с БД. (Часть 2) - "Java-проект от А до Я"
+<p>----------------------------------------</p>
+Всем привет. Напомню: в первой части мы добавляли Flyway. Продолжим. Следующий этап — настройка работы с базой данных у основного docker-compose.yml. Добавим БД...
+<p>----------------------------------------</p>
+Всем привет. Напомню: <a href="https://javarush.com/groups/posts/3262-java-proekt-ot-a-do-ja-dobavljaem-vse-chto-svjazano-s-bd-chastjh-1" target="_blank">в первой части</a> мы добавляли Flyway. Продолжим.<h2>Добавление базы данных в docker-compose.yml</h2>Следующий этап — настройка работы с базой данных у основного docker-compose.yml.
+
+Добавим БД в docker-compose файл:
+
+<pre class="language-java line-numbers"><code>
+version: '3.1'
+
+services:
+ jrtb-bot:
+   depends_on:
+     - jrtb-db
+   build:
+     context: .
+   environment:
+     BOT_NAME: ${BOT_NAME}
+     BOT_TOKEN: ${BOT_TOKEN}
+     BOT_DB_USERNAME: ${BOT_DB_USERNAME}
+     BOT_DB_PASSWORD: ${BOT_DB_PASSWORD}
+   restart: always
+ jrtb-db:
+   image: mysql:5.7
+   restart: always
+   environment:
+     MYSQL_USER: ${BOT_DB_USERNAME}
+     MYSQL_PASSWORD: ${BOT_DB_PASSWORD}
+     MYSQL_DATABASE: 'jrtb_db'
+     MYSQL_ROOT_PASSWORD: 'root'
+   ports:
+     - '3306:3306'
+   expose:
+     - '3306'
+</code></pre>
+Я добавил еще такую строку в наше приложение:
+
+<pre class="language-java line-numbers"><code>
+depends_on:
+ - jrtb-db
+</code></pre>
+Это значит, что перед запуском приложения мы ожидаем, что запустится база данных. 
+
+Далее можно заметить добавление еще двух переменных, которые нужны нам для работы с БД:
+
+<pre class="language-java line-numbers"><code>
+${BOT_DB_USERNAME}
+${BOT_DB_PASSWORD}
+</code></pre>
+Их мы получим в docker-compose так же, как и для телеграм-бота — через переменные окружения. Сделал я это для того, чтобы у нас было только одно место, где мы выставляем значения имени пользователя БД и его пароль. 
+
+Мы передаем их в докер образ нашего приложения и в докер контейнер нашей базы данных.
+
+Далее нужно обновить Dockerfile, чтобы научить наш SpringBoot принимать переменные для базы данных.
+
+<pre class="language-java line-numbers"><code>
+FROM adoptopenjdk/openjdk11:ubi
+ARG JAR_FILE=target/*.jar
+ENV BOT_NAME=test.javarush_community_bot
+ENV BOT_TOKEN=1375780501:AAE4A6Rz0BSnIGzeu896OjQnjzsMEG6_uso
+ENV BOT_DB_USERNAME=jrtb_db_user
+ENV BOT_DB_PASSWORD=jrtb_db_password
+COPY ${JAR_FILE} app.jar
+ENTRYPOINT ["java","-Dspring.datasource.password=${BOT_DB_PASSWORD}", "-Dbot.username=${BOT_NAME}", "-Dbot.token=${BOT_TOKEN}", "-Dspring.datasource.username=${BOT_DB_USERNAME}", "-jar", "app.jar"]
+</code></pre>
+Теперь добавляем переменные базы данных в Dockerfile:
+
+<pre class="language-java line-numbers"><code>
+ENV BOT_DB_USERNAME=jrtb_db_user
+ENV BOT_DB_PASSWORD=jrtb_db_password
+</code></pre>
+Значения переменных будут другие. Те, которые мы передадим в Dockerfile, тем не менее, требуют дать значения по умолчанию, поэтому я и ввел какие-то.
+
+Расширяем последнюю строку двумя элементами, при помощи которых мы передадим в запуск приложения имя пользователя ДБ и его пароль:
+
+<pre class="language-java line-numbers"><code>
+"-Dspring.datasource.password=${BOT_DB_PASSWORD}", "-Dbot.username=${BOT_NAME}" 
+</code></pre>
+<span class="text-bold">Последняя строка в Dockerfile (которая начинается с ENTRYPOINT) должна быть без переноса элементов. Если сделать перенос, работать этот код не будет.</span>
+
+Последний шаг — обновить <span class="text-bold">start.sh</span> файл, чтобы передавать переменные для базы данных. 
+
+<pre class="language-java line-numbers"><code>
+#!/bin/bash
+
+# Pull new changes
+git pull
+
+# Prepare Jar
+mvn clean
+mvn package
+
+# Ensure, that docker-compose stopped
+docker-compose stop
+
+# Add environment variables
+export BOT_NAME=$1
+export BOT_TOKEN=$2
+export BOT_DB_USERNAME='prod_jrtb_db_user'
+export BOT_DB_PASSWORD='Pap9L9VVUkNYj99GCUCC3mJkb'
+
+# Start new deployment
+docker-compose up --build -d
+</code></pre>
+Мы уже умеем добавлять переменные среды перед тем, как запустить docker-compose. Для этого просто нужно выполнить export var_name=var_value.. Поэтому добавляем всего две строки:
+
+<pre class="language-java line-numbers"><code>
+export BOT_DB_USERNAME='prod_jrtb_db_user'
+export BOT_DB_PASSWORD='Pap9L9VVUkNYj99GCUCC3mJkb'
+</code></pre>
+Именно здесь мы задаем имя пользователя БД и его пароль. Конечно, можно было бы эти переменные передавать при запуске баш скрипта, как мы это делаем для имя и токена бота. Но мне кажется, что это излишне. Чтобы реально получить доступ к базе данных, нужно знать IP сервера, на котором будет развернута БД, и быть в списке разрешенных IP-адресов для запроса. Как по мне, этого уже и так достаточно. 
+
+Основа заложена: теперь можно заниматься более понятными для разработчика вещами — писать код. До этого мы занимались тем, что делают DevOps инженеры — настраивали окружение.<h2>Добавляем Repository слой</h2>Обычно у приложения есть три слоя:<ol>
+
+<li><span class="text-bold">Контроллеры</span> — точки входа в приложение.</li>
+<li><span class="text-bold">Сервисы</span> — место работы бизнес-логики. Это у нас уже отчасти есть: SendMessageService — явный представитель бизнес-логики.</li>
+<li><span class="text-bold">Репозитории</span> — место работы с базой данных. В нашем случае это телеграм-бот.</li>
+
+</ol>Вот сейчас будем добавлять третий слой — репозитории. 
+
+Здесь мы будем использовать проект из экосистемы Spring — Spring Data. Почитать о том, что это такое, можно <a href="https://habr.com/ru/post/435114/" rel="nofollow" target="_blank">в этой статье на Хабре</a>. Нам нужно знать и понимать несколько моментов:<ol>
+ 
+<li>У нас не будет работы с JDBC: мы будем работать сразу с более высокими абстракциями. То есть, сохранять объекты POJO, которые соответствуют таблицам в базе данных. Такие классы мы будем называть <span class="text-bold">entity</span>, так, как они называются официально в <span class="text-bold">Java Persistence API</span> (это общий набор интерфейсов для работы БД через ORM, то есть абстракция над работой с JDBC). У нас будет класс entity, который мы будем сохранять в БД, и они запишутся именно в ту таблицу, которая нам нужна. Такие же объекты мы будем получать при поиске в базе данных.</li>
+<li>Spring Data предлагает использовать их набор интерфейсов: <span class="text-bold">JpaRepository</span>, <span class="text-bold">CrudRepository</span>, etc... Есть и другие интерфейсы: полный перечень можно найти <a href="https://docs.spring.io/spring-data/commons/docs/current/api/org/springframework/data/repository/Repository.html" rel="nofollow" target="_blank">здесь</a>. Прелесть заключается в том, что можно использовать их методы не реализовывая их(!). Более того, есть определенный шаблон, используя который можно писать в интерфейсе новые методы, и они будут реализованы автоматически.</li>
+<li>Spring упрощает нашу разработку как может. Для этого нам нужно создать свой интерфейс и наследоваться от вышеописанных. А чтобы Spring знал, что ему нужно использовать этот интерфейс, добавить аннотацию Repository. </li>
+<li>Если нам нужно будет написать метод для работы с базой данных, которого нет, то это тоже не проблема — напишем. Покажу, что и как там делать.</li>
+
+</ol>В рамках этой статьи мы проведем работу с добавлением по всему пути TelegramUser и покажем на его примере эту часть. Остальное уже будем расширять на других задачах. 
+
+То есть при выполнении команды /start мы будем записывать в базу данных нашего пользователя active = true. Это будет означать, что пользователь пользуется ботом. Если пользователь уже есть в БД, будем обновлять поле active = true.
+
+При выполнении команды /stop мы не будем удалять пользователя, а только обновим поле active на значение false, чтобы если пользователь опять захочет использовать бота, он мог его запустить и продолжить с того момента, где остановился. 
+
+А чтобы при тестировании было видно, что что-то происходит, мы создадим команду /stat: она будет отображать количество активных пользователей. 
+
+Создаем <span class="text-bold">repository</span> пакет рядом с пакетами bot, command, service.
+
+В этом пакете создаем еще один — <span class="text-bold">entity</span>. В пакете entity создаем класс TelegramUser:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.repository.entity;
+
+import lombok.Data;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+
+/**
+* Telegram User entity.
+*/
+@Data
+@Entity
+@Table(name = "tg_user")
+public class TelegramUser {
+
+   @Id
+   @Column(name = "chat_id")
+   private String chatId;
+
+   @Column(name = "active")
+   private boolean active;
+}
+</code></pre>
+Здесь видно, что у нас все аннотации из javax.persistence пакета. Это общие аннотации, которые используются для всех реализаций ORM. По умолчанию в Spring Data Jpa используется Hibernate, хотя можно использовать и другие реализации.
+
+Вот перечень аннотаций, которые мы используем:<ul>
+
+<li><span class="text-bold">Entity</span> —говорит о том, что это сущность для работы с БД;</li>
+<li><span class="text-bold">Table</span> — здесь мы определяем имя таблицы; </li>
+<li><span class="text-bold">Id</span> — аннотация говорит, какое поле будет Primary Key в таблице;</li>
+<li><span class="text-bold">Column</span> — определяем имя поля из таблицы. </li>
+
+</ul>Далее создаем интерфейс для работы с базой данных. Обычно имена у таких интерфейсов пишутся по шаблону — EntiryNameRepository. У нас будет TelegramuserRepository:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.repository;
+
+import com.github.javarushcommunity.jrtb.repository.entity.TelegramUser;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+/**
+* {@link Repository} for handling with {@link TelegramUser} entity.
+*/
+@Repository
+public interface TelegramUserRepository extends JpaRepository&lt;TelegramUser, String&gt; {
+   List&lt;TelegramUser&gt; findAllByActiveTrue();
+}
+</code></pre>
+Здесь видно, как я добавил метод <span class="code">findAllByActiveTrue()</span>, который нигде не реализую. Но это не помешает ему работать. Spring Data поймет, что нужно получить все записи из таблицы tg_user, у которых поле <span class="text-bold">active = true</span>.
+
+Добавляем сервис по работе с сущностью TelegramUser (применяем dependency inversion из SOLID в контексте того, что сервисы других сущностей не могут напрямую общаться с репозиторием другой сущности — только через сервис той сущности). Создаем в пакете service TelegramUserService, в котором пока что будет несколько методов: сохранить пользователя, получить пользователя по его ID и отобразить список активных пользователей.
+
+Сперва создаем интерфейс TelegramUserService:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.service;
+
+import com.github.javarushcommunity.jrtb.repository.entity.TelegramUser;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+* {@link Service} for handling {@link TelegramUser} entity.
+*/
+public interface TelegramUserService {
+
+   /**
+    * Save provided {@link TelegramUser} entity.
+    *
+    * @param  telegramUser provided telegram user.
+    */
+   void save(TelegramUser telegramUser);
+
+   /**
+    * Retrieve all active {@link TelegramUser}.
+    *
+    * @return the collection of the active {@link TelegramUser} objects.
+    */
+   List&lt;TelegramUser&gt; retrieveAllActiveUsers();
+
+   /**
+    * Find {@link TelegramUser} by chatId.
+    *
+    * @param chatId provided Chat ID
+    * @return {@link TelegramUser} with provided chat ID or null otherwise.
+    */
+   Optional&lt;TelegramUser&gt; findByChatId(String chatId);
+}
+</code></pre>
+И, собственно, реализация TelegramUserServiceImpl:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.service;
+
+import com.github.javarushcommunity.jrtb.repository.TelegramUserRepository;
+import com.github.javarushcommunity.jrtb.repository.entity.TelegramUser;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+* Implementation of {@link TelegramUserService}.
+*/
+@Service
+public class TelegramUserServiceImpl implements TelegramUserService {
+
+   private final TelegramUserRepository telegramUserRepository;
+
+   @Autowired
+   public TelegramUserServiceImpl(TelegramUserRepository telegramUserRepository) {
+       this.telegramUserRepository = telegramUserRepository;
+   }
+
+   @Override
+   public void save(TelegramUser telegramUser) {
+       telegramUserRepository.save(telegramUser);
+   }
+
+   @Override
+   public List&lt;TelegramUser&gt; retrieveAllActiveUsers() {
+       return telegramUserRepository.findAllByActiveTrue();
+   }
+
+   @Override
+   public Optional&lt;TelegramUser&gt; findByChatId(String chatId) {
+       return telegramUserRepository.findById(chatId);
+   }
+}
+</code></pre>
+Здесь нужно отметить, что мы используем dependency injection (вводим экземпляр класса) объекта TelegramuserRepository при помощи аннотации <span class="text-bold">Autowired</span>, причем на конструкторе. Можно делать это и для переменной, но именно этот подход рекомендует нам Spring Framework команда.<h2>Добавляем статистику для бота</h2>Далее нужно обновить команды /start и /stop. Когда используется команда /start, нужно сохранить в БД нового пользователя и поставить ему active = true. А когда будет /stop, обновить данные пользователя: поставить active = false. 
+
+Поправим класс <span class="code">StartCommand</span>:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import com.github.javarushcommunity.jrtb.repository.entity.TelegramUser;
+import com.github.javarushcommunity.jrtb.service.SendBotMessageService;
+import com.github.javarushcommunity.jrtb.service.TelegramUserService;
+import org.telegram.telegrambots.meta.api.objects.Update;
+
+/**
+* Start {@link Command}.
+*/
+public class StartCommand implements Command {
+
+   private final SendBotMessageService sendBotMessageService;
+   private final TelegramUserService telegramUserService;
+
+   public final static String START_MESSAGE = "Привет. Я Javarush Telegram Bot. Я помогу тебе быть в курсе последних " +
+           "статей тех авторов, котрые тебе интересны. Я еще маленький и только учусь.";
+
+   public StartCommand(SendBotMessageService sendBotMessageService, TelegramUserService telegramUserService) {
+       this.sendBotMessageService = sendBotMessageService;
+       this.telegramUserService = telegramUserService;
+   }
+
+   @Override
+   public void execute(Update update) {
+       String chatId = update.getMessage().getChatId().toString();
+
+       telegramUserService.findByChatId(chatId).ifPresentOrElse(
+               user -&gt; {
+                   user.setActive(true);
+                   telegramUserService.save(user);
+               },
+               () -&gt; {
+                   TelegramUser telegramUser = new TelegramUser();
+                   telegramUser.setActive(true);
+                   telegramUser.setChatId(chatId);
+                   telegramUserService.save(telegramUser);
+               });
+
+       sendBotMessageService.sendMessage(chatId, START_MESSAGE);
+   }
+}
+</code></pre>
+Здесь мы передаем в конструктор еще и объект TelegramuserService, при помощи которого будем сохранять нового пользователя.
+
+Далее, используя прелести Optional в джаве, работает следующая логика: если пользователь в базе у нас есть, просто делаем его активным, если нет — создаем нового активного.
+
+StopCommand:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import com.github.javarushcommunity.jrtb.repository.entity.TelegramUser;
+import com.github.javarushcommunity.jrtb.service.SendBotMessageService;
+import com.github.javarushcommunity.jrtb.service.TelegramUserService;
+import org.telegram.telegrambots.meta.api.objects.Update;
+
+import java.util.Optional;
+
+/**
+* Stop {@link Command}.
+*/
+public class StopCommand implements Command {
+
+   private final SendBotMessageService sendBotMessageService;
+   private final TelegramUserService telegramUserService;
+
+   public static final String STOP_MESSAGE = "Деактивировал все ваши подписки \uD83D\uDE1F.";
+
+   public StopCommand(SendBotMessageService sendBotMessageService, TelegramUserService telegramUserService) {
+       this.sendBotMessageService = sendBotMessageService;
+       this.telegramUserService = telegramUserService;
+   }
+
+   @Override
+   public void execute(Update update) {
+       sendBotMessageService.sendMessage(update.getMessage().getChatId().toString(), STOP_MESSAGE);
+       telegramUserService.findByChatId(update.getMessage().getChatId().toString())
+               .ifPresent(it -&gt; {
+                   it.setActive(false);
+                   telegramUserService.save(it);
+               });
+   }
+}
+</code></pre>
+В StopCommand точно так же передаем TelegramServiceTest. Дополнительная логика такая: если у нас есть пользователь с таким chat ID, мы его деактивируем, то есть ставим active = false.
+
+Как это увидеть собственными глазами? Сделаем новую команду /stat, которая будет отображать статистику бота. На данном этапе это будет простая статистика, доступная всем пользователям. В дальнейшем мы ее ограничим и сделаем доступ только для администраторов.
+
+В статистике будет одна запись: количество активных пользователей бота.
+
+Для этого добавляем значение <span class="code">STAT("/stat")</span> в CommandName.
+
+Далее создаем <span class="code">StatCommand</span> класс:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import com.github.javarushcommunity.jrtb.service.SendBotMessageService;
+import com.github.javarushcommunity.jrtb.service.TelegramUserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.telegram.telegrambots.meta.api.objects.Update;
+
+/**
+* Statistics {@link Command}.
+*/
+public class StatCommand implements Command {
+
+   private final TelegramUserService telegramUserService;
+   private final SendBotMessageService sendBotMessageService;
+
+   public final static String STAT_MESSAGE = "Javarush Telegram Bot использует %s человек.";
+
+   @Autowired
+   public StatCommand(SendBotMessageService sendBotMessageService, TelegramUserService telegramUserService) {
+       this.sendBotMessageService = sendBotMessageService;
+       this.telegramUserService = telegramUserService;
+   }
+
+   @Override
+   public void execute(Update update) {
+       int activeUserCount = telegramUserService.retrieveAllActiveUsers().size();
+       sendBotMessageService.sendMessage(update.getMessage().getChatId().toString(), String.format(STAT_MESSAGE, activeUserCount));
+   }
+}
+</code></pre>
+Здесь все просто: мы получаем список всех активных пользователей при помощи метода <span class="code">retrieveAllActiveUsers</span> и получаем размер коллекции.
+
+Также теперь нужно обновить классы по восходящей: <span class="code">CommandContainer</span> и <span class="code">JavarushTelegramBot</span>, чтобы они научились передавать нужный нам новый сервис.
+
+CommandContainer:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import com.github.javarushcommunity.jrtb.service.SendBotMessageService;
+import com.github.javarushcommunity.jrtb.service.TelegramUserService;
+import com.google.common.collect.ImmutableMap;
+
+import static com.github.javarushcommunity.jrtb.command.CommandName.*;
+
+/**
+* Container of the {@link Command}s, which are using for handling telegram commands.
+*/
+public class CommandContainer {
+
+   private final ImmutableMap&lt;String, Command&gt; commandMap;
+   private final Command unknownCommand;
+
+   public CommandContainer(SendBotMessageService sendBotMessageService, TelegramUserService telegramUserService) {
+
+       commandMap = ImmutableMap.&lt;String, Command&gt;builder()
+               .put(START.getCommandName(), new StartCommand(sendBotMessageService, telegramUserService))
+               .put(STOP.getCommandName(), new StopCommand(sendBotMessageService, telegramUserService))
+               .put(HELP.getCommandName(), new HelpCommand(sendBotMessageService))
+               .put(NO.getCommandName(), new NoCommand(sendBotMessageService))
+               .put(STAT.getCommandName(), new StatCommand(sendBotMessageService, telegramUserService))
+               .build();
+
+       unknownCommand = new UnknownCommand(sendBotMessageService);
+   }
+
+   public Command retrieveCommand(String commandIdentifier) {
+       return commandMap.getOrDefault(commandIdentifier, unknownCommand);
+   }
+
+}
+</code></pre>
+Здесь мы добавили в мапу новую команду и передали через конструктор TelegramUserService.
+
+А вот в самом боте изменится только конструктор:
+
+<pre class="language-java line-numbers"><code>
+@Autowired
+public JavarushTelegramBot(TelegramUserService telegramUserService) {
+   this.commandContainer = new CommandContainer(new SendBotMessageServiceImpl(this), telegramUserService);
+}
+</code></pre>
+Теперь мы передаем в виде аргумента TelegramUserService, добавляя аннотацию Autowired. Это значит, что ее мы получим из Application Context. 
+
+Также обновим класс <span class="code">HelpCommand</span>, чтобы в описании появилась еще и новая команда по статистике.<h2>Мануальное тестирование</h2>Запустим базу данных из docker-compose-test.yml и main метод в классе JavarushTelegramBotApplication.
+
+Далее пишем набор команд:<ul>
+
+<li>/stat — ожидаем, что при пустой базе данных человек, использующих этот бот, будет ноль;</li>
+<li>/start — запускаем бота;</li>
+<li>/stat — теперь ожидаем, что бота будет использовать 1 человек;</li>
+<li>/stop — останавливаем бота;</li>
+<li>/stat — ожидаем, что опять будет 0 человек использовать.</li>
+
+</ul><img data-max-width="512" data-id="c1faafce-8511-43df-90f1-7fd96427622c" src="https://cdn.javarush.com/images/article/c1faafce-8511-43df-90f1-7fd96427622c/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем все, что связано с БД. Часть 2 - 2">Если у вас в результате будет так же, можно сказать, что функционал отработал верно и бот исправный.
+
+Если что-то пойдет не так — не беда: перезапускаем main метод в режиме дебага и проходим четко по всему пути, чтобы найти, в чем была ошибка.<h2>Пишем и обновляем тесты</h2>Так как мы изменили конструкторы, нужно будет обновить и тестовые классы.
+
+В классе <span class="code">AbstractCommandTest</span> нам нужно добавить еще одно поле — замоканный класс <span class="code">TelegramUserService</span>, который нужен для трех команд:
+
+<pre class="language-java line-numbers"><code>
+protected TelegramUserService telegramUserService = Mockito.mock(TelegramUserService.class);
+</code></pre>
+Далее в CommandContainer обновим метод <span class="code">init()</span>:
+
+<pre class="language-java line-numbers"><code>
+@BeforeEach
+public void init() {
+   SendBotMessageService sendBotMessageService = Mockito.mock(SendBotMessageService.class);
+   TelegramUserService telegramUserService = Mockito.mock(TelegramUserService.class);
+   commandContainer = new CommandContainer(sendBotMessageService, telegramUserService);
+}
+</code></pre>
+В StartCommand нужно обновить <span class="code">getCommand()</span> метод:
+
+<pre class="language-java line-numbers"><code>
+@Override
+Command getCommand() {
+   return new StartCommand(sendBotMessageService, telegramUserService);
+}
+</code></pre>
+Также и в StopCommand:
+
+<pre class="language-java line-numbers"><code>
+@Override
+Command getCommand() {
+   return new StopCommand(sendBotMessageService, telegramUserService);
+}
+</code></pre>
+Далее пойдем по новым тестам. Создаем типовый тест для <span class="code">StatCommand</span>:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import static com.github.javarushcommunity.jrtb.command.CommandName.STAT;
+import static com.github.javarushcommunity.jrtb.command.StatCommand.STAT_MESSAGE;
+
+public class StatCommandTest extends AbstractCommandTest {
+   @Override
+   String getCommandName() {
+       return STAT.getCommandName();
+   }
+
+   @Override
+   String getCommandMessage() {
+       return String.format(STAT_MESSAGE, 0);
+   }
+
+   @Override
+   Command getCommand() {
+       return new StatCommand(sendBotMessageService, telegramUserService);
+   }
+}
+</code></pre>
+Это из простого.
+
+Теперь поговорим о том, как мы будем тестировать работу с базой данных. Все, что мы делали до этого, это были юнит-тесты.
+
+<em>В интеграционном тесте проверяется интеграция между несколькими частями приложения. Например, приложения и базы данных.</em>
+
+Здесь все будет сложнее, потому что для тестирования нам нужна развернутая база данных.
+
+Поэтому когда мы будем локально прогонять наши тесты, у нас должна быть запущена база данных из docker-compose-test.yml.
+
+Чтобы прогнать этот тест, нужно запустить все SpringBoot приложение. Для тестового класса есть аннотация <span class="text-bold">SpringBootTest</span>, которая запустит приложение. Но этот подход нам не подойдет, потому что при запуске приложения будет запускаться и телеграм-бот. Но здесь есть противоречие. Тесты будут запускаться как локально у нас на машине, так и публично, через GitHub Actions. Чтобы тесты прошли с запуском всего приложения, мы должны их запускать с валидными данными по телеграм-боту: то есть, по его имени и токену…
+
+Поэтому у нас два варианта:<ol>
+
+<li>Таки сделать публичными имя и токен бота и надеяться, что все будет хорошо, никто его не будет использовать и мешать нам.</li>
+<li>Придумать другой путь.</li>
+
+</ol>Я выбрал второй вариант.
+
+В тестировании SpringBoot есть аннотация <span class="text-bold">DataJpaTest</span>, которая создана, чтобы при тестировании базы данных мы использовали только нужные нам классы и не трогали другие. Но нам это подходит, потому что телеграм-бот вовсе не будет запускаться. А значит, не нужно передавать ему валидное имя и токен!)))
+
+Получим тест, в котором проверим, что методы, которые Spring Data нам реализует, работают так, как мы ожидаем. 
+
+Здесь важно отметить, что мы при помощи аннотации <span class="text-bold">@ActiveProfiles("test")</span> задаем использование профиля test. А это нам как раз и нужно, чтобы мы считали правильные проперти для нашей базы данных.
+
+Хорошо бы иметь подготовленную базу данных перед запуском наших тестов. Для этого дела есть такой подход: добавить к тесту аннотация Sql и передать ей коллекцию имен скриптов, которые нужно запустить перед началом теста:
+
+<pre class="language-java line-numbers"><code>
+@Sql(scripts = {"/sql/clearDbs.sql", "/sql/telegram_users.sql"})
+</code></pre>
+У нас они буду лежать по пути ./src/test/resources/ + путь, указанный в аннотации.
+
+Вот как они выглядят:
+
+<pre class="language-java line-numbers"><code>
+clearDbs.sql:
+DELETE FROM tg_user;
+
+telegram_users.sql:
+INSERT INTO tg_user VALUES ("123456789", 1);
+INSERT INTO tg_user VALUES ("123456788", 1);
+INSERT INTO tg_user VALUES ("123456787", 1);
+INSERT INTO tg_user VALUES ("123456786", 1);
+INSERT INTO tg_user VALUES ("123456785", 1);
+INSERT INTO tg_user VALUES ("123456784", 0);
+INSERT INTO tg_user VALUES ("123456782", 0);
+INSERT INTO tg_user VALUES ("123456781", 0);
+</code></pre>
+Вот как в результате будет выглядеть наш тест TelegramUserRepositoryIT (как видите, и имя для интеграционного тестирования будет другое — добавляем не Test, а IT):
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.repository;
+
+import com.github.javarushcommunity.jrtb.repository.entity.TelegramUser;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace.NONE;
+
+/**
+* Integration-level testing for {@link TelegramUserRepository}.
+*/
+@ActiveProfiles("test")
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = NONE)
+public class TelegramUserRepositoryIT {
+
+   @Autowired
+   private TelegramUserRepository telegramUserRepository;
+
+   @Sql(scripts = {"/sql/clearDbs.sql", "/sql/telegram_users.sql"})
+   @Test
+   public void shouldProperlyFindAllActiveUsers() {
+       //when
+       List&lt;TelegramUser&gt; users = telegramUserRepository.findAllByActiveTrue();
+
+       //then
+       Assertions.assertEquals(5, users.size());
+   }
+
+   @Sql(scripts = {"/sql/clearDbs.sql"})
+   @Test
+   public void shouldProperlySaveTelegramUser() {
+       //given
+       TelegramUser telegramUser = new TelegramUser();
+       telegramUser.setChatId("1234567890");
+       telegramUser.setActive(false);
+       telegramUserRepository.save(telegramUser);
+
+       //when
+       Optional&lt;TelegramUser&gt; saved = telegramUserRepository.findById(telegramUser.getChatId());
+
+       //then
+       Assertions.assertTrue(saved.isPresent());
+       Assertions.assertEquals(telegramUser, saved.get());
+   }
+}
+</code></pre>
+Тесты написали, но возникает вопрос: а что будет с запуском нашего CI процесса на GitHub? У него же не будет базы данных. На данный момент действительно будет просто красный билд.
+
+Для этого у нас есть GitHub actions, в котором мы можем настроить запуск нашего билда. До запуска тестов нужно добавить запуск базы данных с нужными настройками. 
+
+Как оказалось, на просторах интернета не так уж и много примеров, поэтому советую сохранить себе где-то это.
+
+Обновим файл .github/workflows/maven.yml:
+
+<pre class="language-java line-numbers"><code>
+# This workflow will build a Java project with Maven
+# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
+
+name: Java CI with Maven
+
+on:
+ push:
+   branches: [ main ]
+ pull_request:
+   branches: [ main ]
+
+jobs:
+ build:
+   runs-on: ubuntu-latest
+   steps:
+   - uses: actions/checkout@v2
+   - name: Set up MySQL
+     uses: mirromutth/mysql-action@v1.1
+     with:
+       mysql version: '5.7'
+       mysql database: 'dev_jrtb_db'
+       mysql root password: 'root'
+       mysql user: 'dev_jrtb_db_user'
+       mysql password: 'dev_jrtb_db_password'
+   - name: Set up JDK 1.11
+     uses: actions/setup-java@v1
+     with:
+       java-version: 1.11
+   - name: Build with Maven
+     run: mvn -B package --file pom.xml
+</code></pre>
+Теперь здесь есть новый блок <span class="text-bold">Set up MySQL</span>. В нем добавляем MySQL к нашему CI процессу, попутно определяя нужные для нас переменные.
+
+Теперь уже все, что хотели, мы добавили. Последний этап — запушить изменения и посмотреть, что билд пройдет и будет зеленый.<h2>Обновляем документацию</h2>Обновим версию проекта с 0.3.0-SNAPSHOT на 0.4.0-SNAPSHOT в pom.xml и добавим в RELEASE_NOTES также:
+
+<pre class="language-java line-numbers"><code>
+## 0.4.0-SNAPSHOT
+
+*   JRTB-1: added repository layer.
+</code></pre>
+После всего этого создаем коммит, пуш и пулл-реквест.
+
+И самое главное — наш билд зеленый!<img data-max-width="800" data-id="c8a36ec1-7e1a-4d2e-9af9-ae0b7efd71eb" src="https://cdn.javarush.com/images/article/c8a36ec1-7e1a-4d2e-9af9-ae0b7efd71eb/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем все, что связано с БД. Часть 2 - 3"><h3>Полезные ссылки:</h3><ul>
+<li><a href="https://github.com/javarushcommunity/javarush-telegrambot" rel="nofollow" target="_blank">Репозиторий нашего телеграм-бота</a></li>
+<li><a href="https://t.me/romankh3/36" rel="nofollow" target="_blank">Пулл-реквест</a> со всеми изменениями, описанными в статье</li>
+<li><a href="https://javarush.com/groups/posts/3157-java-proekt-ot-a-do-ja-springboot--flyway" target="_blank">SpringBoot + Flyway</a> статья</li>
+<li><a href="https://hub.docker.com/_/mysql" rel="nofollow" target="_blank">MySQL образ</a> из DockerHub</li>
+<li>Medium: <a href="https://medium.com/@chrischuck35/how-to-create-a-mysql-instance-with-docker-compose-1598f3cc1bee" rel="nofollow" target="_blank">How to Create a MySql Instance with Docker Compose</a></li>
+<li>Habr: <a href="https://habr.com/ru/post/435114/" rel="nofollow" target="_blank">Spring Data Jpa</a></li>
+<li><a href="https://t.me/romankh3" rel="nofollow" target="_blank">Мой телеграм-канал</a></li>
+</ul>Все изменения можно увидеть вот здесь в созданном <a href="https://github.com/javarushcommunity/javarush-telegrambot/pull/20" rel="nofollow" target="_blank">пулл-реквесте</a>. Всем спасибо за прочтение.<h4><a href="https://javarush.com/groups/posts/2935-java-proekt-ot-a-do-ja-pishem-realjhnihy-proekt-dlja-portfolio#articles" target="_blank">Список всех материалов серии в начале этой статьи.</a></h4>

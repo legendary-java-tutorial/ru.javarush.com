@@ -1,0 +1,272 @@
+Хватит писать циклы! Топ-10 лучших методов для работы с коллекциями из Java 8
+<p>----------------------------------------</p>
+Что такое коллекции и для чего они нужны, думаю, ученикам JavaRush объяснять не надо. Однако после выхода 8-ой версии многие элементарные операции, на которые раньше уходило 6-7 строчек кода ...
+<p>----------------------------------------</p>
+Что такое коллекции и для чего они нужны, думаю, ученикам JavaRush объяснять не надо. 
+
+Однако после выхода 8-ой версии многие элементарные операции, на которые раньше уходило 6-7 строчек кода, были упрощены до минимума.
+
+Без лишних предисловий — топ-10 лучших методов Java8 Collections Framework, которые сэкономят вам кучу времени и места!
+
+<img data-id="a90668ba-b209-43f4-a262-a6ae614d5051" data-max-width="850" alt="Хватит писать циклы! Топ-10 лучших методов для работы с коллекциями из Java 8 - 1" src="https://cdn.javarush.com/images/article/a90668ba-b209-43f4-a262-a6ae614d5051/1024.jpeg">Всем привет, друзья! 
+
+Привычка, как известно, вторая натура. И привыкнув писать <code>for (int i = 0; i &lt;......)</code> переучиваться совсем не хочется (тем более, что конструкция эта довольно проста и понятна). Однако, внутри циклов мы часто повторяем одни и те же элементарные операции, от повторения которых очень хотелось бы избавиться.
+
+С выходом Java8 Oracle решили помочь нам с этим.
+
+Ниже — 10 лучших методов коллекций, которые сэкономят вам кучу времени и кода
+<h2>1. Iterable.forEach(Consumer&lt;? super T&gt; action)</h2>Название говорит само за себя.
+
+Перебирает переданную коллекцию, и выполняет лямбда-выражение <code>action</code> для каждого ее элемента.
+
+<pre class="lang-java line-numbers"><code>
+List &lt;Integer&gt; numbers = new ArrayList&lt;&gt;(Arrays.asList(1,2,3,4,5,6,7));
+numbers.forEach(s -&gt; System.out.print(s + " "));
+</code></pre> 
+<pre class="lang-java line-numbers"><code>
+1 2 3 4 5 6 7 
+</code></pre><h2>2. Collection.removeIf(Predicate&lt;? super E&gt; filter)</h2>Тоже ничего сложного. Метод перебирает коллекцию, и удаляет те элементы, которые соответствуют <code>filter</code>.
+
+<pre class="lang-java line-numbers"><code>
+List &lt;Integer&gt; numbers = new ArrayList&lt;&gt;(Arrays.asList(1,2,3,4,5,6,7));
+numbers.removeIf(s -&gt; s &gt; 5);
+ numbers.forEach(s -&gt; System.out.print(s + " "));
+</code></pre>
+В одну строку удаляем из списка все числа больше 5. 
+<h2>3. Map.forEach(BiConsumer&lt;? super K, ? super V&gt; action)</h2>Метод <code>forEach</code> работает не только для классов, реализующих интерфейс <code>Collection</code>, но и для <code>Map</code>.
+
+<pre class="lang-java line-numbers"><code>
+Map &lt;String, String&gt; books = new HashMap&lt;&gt;();
+books.put("Война и мир", "Лев Толстой");
+books.put("Преступление и наказание", "Федор Достоевский");
+books.put("Философия Java", "Брюс Эккель");
+books.put("Братья Карамазовы", "Федор Достоевский");
+books.put("Властелин Колец", "Джон Толкин");
+books.forEach((a,b) -&gt; System.out.println("Название книги: " + a + ". Автор: " + b));
+</code></pre>
+<pre class="lang-java line-numbers"><code>
+Название книги: Братья Карамазовы. Автор: Федор Достоевский
+Название книги: Философия Java. Автор: Брюс Эккель
+Название книги: Преступление и наказание. Автор: Федор Достоевский
+Название книги: Война и мир. Автор: Лев Толстой
+Название книги: Властелин Колец. Автор: Джон Толкин
+</code></pre><h2>4. Map.compute(K key,BiFunction&lt;? super K, ? super V, ? extends V&gt; remappingFunction)</h2>Выглядит чуть более устрашающе, но на деле прост, как и все предыдущие.
+
+Для указанного ключа <code>key</code> этот метод устанавливает в качестве value результат выполнения функции <code>remappingFunction</code>.
+
+Например:
+
+<pre class="lang-java line-numbers"><code>
+Map &lt;String, String&gt; books = new HashMap&lt;&gt;();
+books.put("Война и мир", "Лев Толстой");
+books.put("Преступление и наказание", "Федор Достоевский");
+books.put("Философия Java", "Брюс Эккель");
+books.put("Братья Карамазовы", "Федор Достоевский");
+books.put("Властелин Колец", "Джон Толкин");
+books.forEach((a,b) -&gt; System.out.println("Название книги: " + a + ". Автор: " + b));
+
+books.compute("Философия Java", (a,b) -&gt; b+", крутой чувак");
+System.out.println("_______________________");
+books.forEach((a,b) -&gt; System.out.println("Название книги: " + a + ". Автор: " + b));
+</code></pre>
+<pre class="lang-java line-numbers"><code>
+Название книги: Братья Карамазовы. Автор: Федор Достоевский
+Название книги: Философия Java. Автор: Брюс Эккель
+Название книги: Преступление и наказание. Автор: Федор Достоевский
+Название книги: Война и мир. Автор: Лев Толстой
+Название книги: Властелин Колец. Автор: Джон Толкин
+_______________________
+Название книги: Братья Карамазовы. Автор: Федор Достоевский
+Название книги: Философия Java. Автор: Брюс Эккель, крутой чувак
+Название книги: Преступление и наказание. Автор: Федор Достоевский
+Название книги: Война и мир. Автор: Лев Толстой
+Название книги: Властелин Колец. Автор: Джон Толкин
+</code></pre>
+Автор "<a href="https://javarush.com/groups/posts/1004-filosofija-java--java-polnoe-rukovodstvo" target="_blank">Философии Java</a>" определенно крут!:)
+<h2>5. Map.computeIfAbsent(K key, Function&lt;? super K, ? extends V&gt; mappingFunction)</h2>Метод добавит новый элемент в <a href="https://javarush.com/groups/posts/763-9-glavnihkh-voprosov-o-map-v-java" target="_blank">Map</a>, но только в том случае, если элемент с таким ключом там отсутствует. В качестве <code>value</code> ему будет присвоен результат выполнения функции <code>mappingFunction</code>. 
+
+Если же элемент с таким ключом уже есть — он не будет перезаписан, а останется на месте.
+
+Вернемся к нашим книгам и испробуем новый метод:
+
+<pre class="lang-java line-numbers"><code>
+Map &lt;String, String&gt; books = new HashMap&lt;&gt;();
+books.put("Война и мир", "Лев Толстой");
+books.put("Преступление и наказание", "Федор Достоевский");
+books.put("Философия Java", "Брюс Эккель");
+books.put("Братья Карамазовы", "Федор Достоевский");
+books.put("Властелин Колец", "Джон Толкин");
+
+books.computeIfAbsent("Гарри Поттер и узник Азкабана", b -&gt; getHarryPotterAuthor());
+books.forEach((a,b) -&gt; System.out.println("Название книги: " + a + ". Автор: " + b));
+</code></pre>
+Наша функция <code>mappingFunction</code>:
+
+<pre class="lang-java line-numbers"><code>
+public static String getHarryPotterAuthor() {
+        return "Джоан Роулинг";
+    }
+</code></pre>
+А вот и новая книга:
+
+<pre class="lang-java line-numbers"><code>
+Название книги: Братья Карамазовы. Автор: Федор Достоевский
+Название книги: Философия Java. Автор: Брюс Эккель
+Название книги: Преступление и наказание. Автор: Федор Достоевский
+Название книги: Война и мир. Автор: Лев Толстой
+Название книги: Гарри Поттер и узник Азкабана. Автор: Джоан Роулинг
+Название книги: Властелин Колец. Автор: Джон Толкин
+</code></pre><h2>6. Map.computeIfPresent(K key, BiFunction&lt;? super K, ? super V, ? extends V&gt; remappingFunction)</h2>Тот же принцип, что и у <code>Map.compute()</code>, но все вычисления будут выполнены только в случае, если элемент с ключом <code>key</code> уже существует.
+
+<pre class="lang-java line-numbers"><code>
+Map &lt;String, String&gt; books = new HashMap&lt;&gt;();
+books.put("Война и мир", "Лев Толстой");
+books.put("Преступление и наказание", "Федор Достоевский");
+books.put("Философия Java", "Брюс Эккель");
+books.put("Братья Карамазовы", "Федор Достоевский");
+books.put("Властелин Колец", "Джон Толкин");
+
+books.computeIfPresent("Евгений Онегин", (a,b) -&gt; b="Александр Пушкин");
+System.out.println("_________________");
+books.forEach((a,b) -&gt; System.out.println("Название книги: " + a + ". Автор: " + b));
+books.computeIfPresent("Братья Карамазовы", (a,b) -&gt; b="Александр Пушкин");
+System.out.println("_________________");
+books.forEach((a,b) -&gt; System.out.println("Название книги: " + a + ". Автор: " + b));
+</code></pre>
+При первом вызову функции никаких изменений не произошло, потому что книги с названием "Евгений Онегин" в нашей <code>Map</code> нет.
+
+А вот во второй раз программа изменила автора для книги "Братья Карамазовы" на "Александр Пушкин".
+
+Вывод:
+
+<pre class="lang-java line-numbers"><code>
+_________________
+Название книги: Братья Карамазовы. Автор: Федор Достоевский
+Название книги: Философия Java. Автор: Брюс Эккель
+Название книги: Преступление и наказание. Автор: Федор Достоевский
+Название книги: Война и мир. Автор: Лев Толстой
+Название книги: Властелин Колец. Автор: Джон Толкин
+_________________
+Название книги: Братья Карамазовы. Автор: Александр Пушкин
+Название книги: Философия Java. Автор: Брюс Эккель
+Название книги: Преступление и наказание. Автор: Федор Достоевский
+Название книги: Война и мир. Автор: Лев Толстой
+Название книги: Властелин Колец. Автор: Джон Толкин
+</code></pre><h2>7. Map.getOrDefault(Object key, V defaultValue)</h2>Возвращает значение, соответствующее ключу <code>key</code>. Если такой ключ не существует — возвращает значение по умолчанию.
+
+<pre class="lang-java line-numbers"><code>
+Map &lt;String, String&gt; books = new HashMap&lt;&gt;();
+books.put("Война и мир", "Лев Толстой");
+books.put("Преступление и наказание", "Федор Достоевский");
+books.put("Философия Java", "Брюс Эккель");
+books.put("Братья Карамазовы", "Федор Достоевский");
+books.put("Властелин Колец", "Джон Толкин");
+
+String igor = books.getOrDefault("Слово о полку Игореве", "Неизвестный автор");
+System.out.println(igor);
+</code></pre>
+Очень удобно:
+
+<pre class="lang-java line-numbers"><code>
+Неизвестный автор
+</code></pre>
+
+<div class="email-subscription"><iframe frameborder="0" src="https://secure.esputnik.com.ua/4Q0Ef6d2SOs" width="100%" height="200" scrolling="no"></iframe></div><h2>8. Map.merge(K key, V value, BiFunction&lt;? super V, ? super V, ? extends V&gt; remappingFunction)</h2>Я даже не стал пытаться посчитать, сколько строк кода вам сэкономит этот метод.
+<ul>
+<li>Если в вашей <code>Map</code> ключ <code>key</code> не существует, или <code>value</code> для этого ключа равно <code>null</code> — метод добавляет в <code>Map</code> переданную пару <code>key-value</code>.</li>
+<li>Если ключ <code>Key</code> существует и его <code>value != null</code> — метод меняет его <code>value</code> на результат выполнения переданной функции <code>remappingFunction</code>.</li>
+<li>Если <code>remappingFunction</code> возвращает <code>null</code> - <code>key</code> удаляется из коллекции. </li>
+</ul><pre class="lang-java line-numbers"><code>
+Map &lt;String, String&gt; books = new HashMap&lt;&gt;();
+books.put("Война и мир", "Лев Толстой");
+books.put("Преступление и наказание", "Федор Достоевский");
+books.put("Философия Java", "Брюс Эккель");
+books.put("Братья Карамазовы", "Федор Достоевский");
+books.put("Властелин Колец", "Джон Толкин");
+
+books.merge("Философия Java", "Брюс Эккель", (a, b) -&gt; b +  " и кто-то там еще");
+books.forEach((a,b) -&gt; System.out.println("Название:" + a + ". Автор: " + b));
+</code></pre>
+Вывод:
+
+<pre class="lang-java line-numbers"><code>
+Название:Братья Карамазовы. Автор: Федор Достоевский
+Название:Философия Java. Автор: Брюс Эккель и кто-то там еще
+Название:Преступление и наказание. Автор: Федор Достоевский
+Название:Война и мир. Автор: Лев Толстой
+Название:Властелин Колец. Автор: Джон Толкин
+</code></pre>
+*извини, Брюс*
+<h2>9. Map.putIfAbsent(K key, V value)</h2>Раньше чтобы добавить пару в <code>Map</code>, если ее там нет, необходимо было делать следующее:
+
+<pre class="lang-java line-numbers"><code>
+Map &lt;String, String&gt; map = new HashMap&lt;&gt;();
+if (map.get("Властелин Колец") == null)
+    map.put("Властелин Колец", "Джон Толкин");
+</code></pre>
+Теперь все стало куда проще:
+
+<pre class="lang-java line-numbers"><code>
+Map&lt;String, String&gt; map = new HashMap&lt;&gt;();
+map.putIfAbsent("Властелин Колец", "Джон Толкин");
+</code></pre><h2>10. Map.replace и Map.replaceAll()</h2>Последние по списку, но не по значимости. 
+
+<code>Map.replace(K key, V newValue</code> — заменяет значение ключа <code>key</code> на <code>newValue</code>, если такой ключ существует. Если нет — ничего не происходит.
+
+<code>Map.replace(K key, V oldValue, V newValue)</code> — делает то же самое, но только если текущее значение <code>key</code> равно <code>oldValue</code>.
+
+<code>Map.replaceAll(BiFunction&lt;? super K, ? super V, ? extends V&gt; function)</code> — заменяет все значения <code>value</code> на результат выполнения функции <code>function</code>.
+
+Например:
+
+<pre class="lang-java line-numbers"><code>
+Map &lt;String, String&gt; books = new HashMap&lt;&gt;();
+books.put("Война и мир", "Лев Толстой");
+books.put("Преступление и наказание", "Федор Достоевский");
+books.put("Философия Java", "Брюс Эккель");
+books.put("Братья Карамазовы", "Федор Достоевский");
+books.put("Властелин Колец", "Джон Толкин");
+
+books.replace("Братья Карамазовы", "Брюс Эккель", "Джон Толкин");
+books.forEach((a,b) -&gt; System.out.println("Название:" + a + ". Автор: " + b));
+</code></pre>
+<pre class="lang-java line-numbers"><code>
+Название:Братья Карамазовы. Автор: Федор Достоевский
+Название:Философия Java. Автор: Брюс Эккель
+Название:Преступление и наказание. Автор: Федор Достоевский
+Название:Война и мир. Автор: Лев Толстой
+Название:Властелин Колец. Автор: Джон Толкин
+</code></pre>
+Не сработало! Текущее значение ключа "Братья Карамазовы" — "Федор Достоевский", а не "Брюс Эккель", поэтому ничего не изменилось.
+
+<pre class="lang-java line-numbers"><code>
+Map &lt;String, String&gt; books = new HashMap&lt;&gt;();
+books.put("Война и мир", "Лев Толстой");
+books.put("Преступление и наказание", "Федор Достоевский");
+books.put("Философия Java", "Брюс Эккель");
+books.put("Братья Карамазовы", "Федор Достоевский");
+books.put("Властелин Колец", "Джон Толкин");
+
+books.replaceAll((a,b) -&gt; getCoolWriter());
+books.forEach((a,b) -&gt; System.out.println("Название:" + a + ". Автор: " + b));
+</code></pre>
+<pre class="lang-java line-numbers"><code>
+public static String getCoolWriter() {
+        return "Крутой писатель";
+    }
+</code></pre>
+<pre class="lang-java line-numbers"><code>
+Название:Братья Карамазовы. Автор: Крутой писатель
+Название:Философия Java. Автор: Крутой писатель
+Название:Преступление и наказание. Автор: Крутой писатель
+Название:Война и мир. Автор: Крутой писатель
+Название:Властелин Колец. Автор: Крутой писатель
+</code></pre>
+Легко изменили значения для всей Map безо всяких сложных конструкций!
+P.S. Привыкать к новому всегда непросто, но эти изменения действительно хороши.
+
+Во всяком случае, некоторые куски моего кода теперь определенно меньше похожи на спагетти, чем раньше:)
+
+Если вам понравилась статья, и вы хотели бы увидеть новые - не забудьте поддержать автора в конкурсе, нажав "Нравится", а лучше - "Очень нравится" :)
+
+Успехов в обучении!

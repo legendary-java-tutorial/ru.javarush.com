@@ -1,0 +1,188 @@
+Первое знакомство с Docker
+<p>----------------------------------------</p>
+Контейнеризация - часто применяемый на практике механизм. Например, при поиске по headhunter вы найдёте на текущий день 477 вакансий, где упоминается Docker. Поэтому, не лишним будет ознакомиться с тем, что это такое. Надеюсь, данный небольшой обзор поможет сформировать...
+<p>----------------------------------------</p>
+Контейнеризация — часто применяемый на практике механизм. Например, при поиске по headhunter вы найдёте на текущий день 477 вакансий, где упоминается Docker. Поэтому, не лишним будет ознакомиться с тем, что это такое. Надеюсь, данный небольшой обзор поможет сформировать первое представление. Ну и подкрепит его дополнительными материалами, вроде курсов на Udemy.
+
+<img data-id="1ddedcb2-da7b-443c-a5c7-bf96e56d8eb5" data-max-width="850" alt="Первое знакомство с Docker - 1" src="https://cdn.javarush.com/images/article/1ddedcb2-da7b-443c-a5c7-bf96e56d8eb5/1024.jpeg"><h2>Вступление</h2>В данном небольшом обзоре хочется затронуть такую тему, как контейнеризация. И начать нужно с понимания того, что такое вообще контейнеризация. 
+
+Согласно википедии "<a href="https://ru.wikipedia.org/wiki/Контейнеризация" target="_blank" rel="nofollow">Контейнеризация</a>" — это виртуализация на уровне операционной системы (то есть <strong>НЕ</strong> аппаратная), при которой ядро операционной системы поддерживает несколько изолированных экземпляров пространства пользователя вместо одного. 
+
+"<a href="https://ru.wikipedia.org/wiki/Пользовательское_пространство" target="_blank" rel="nofollow">Пространство пользователя</a>" — это адресное пространство виртуальной памяти операционной системы, отводимое для пользовательских программ.
+
+Экземпляры пространства пользователя (обычно называемые контейнерами) с точки зрения пользователя полностью идентичны отдельному экземпляру операционной системы. Ядро обеспечивает полную изолированность контейнеров, поэтому программы из разных контейнеров не могут воздействовать друг на друга.
+
+Получается, что контейнеризация — это программная виртуализация, то есть виртуализация на уровне операционной системы, за которую отвечает ядро операционной системы. Одной из характерных черт такого подхода является использование всеми контейнерами общего ядра, того же, что и у хостовой операционной системы (то есть той, в которой размещены контейнеры). Это позволяет избавиться от накладных расходов на эмуляцию виртуального оборудования и запуска полноценного экземпляра операционной системы. Можно сказать, что это "легковесная" виртуализация.
+
+Ядро (kernel) — центральная часть ОС, обеспечивающая приложениям координированный доступ к ресурсам компьютера, таким как процессорное время, память, внешнее аппаратное обеспечение, внешнее устройство ввода и вывода информации. Также обычно ядро предоставляет сервисы файловой системы и сетевых протоколов. В общем, это сердце всей системы.
+
+В качестве дополнительной информации может быть полезно ознакомиться с материалом "<a href="https://docs.microsoft.com/ru-ru/dotnet/standard/microservices-architecture/container-docker-introduction/" target="_blank" rel="nofollow">Общие сведения о контейнерах</a>".
+
+И ещё пару слов, чтобы вступление было полным. У нас теперь есть понимание, что в операционной системе есть ядро. Оно обеспечивает изолированность экземпляров пространств пользователей. В этом контексте Вы можете встретить такой термин как "<a href="https://ru.wikipedia.org/wiki/Cgroups" target="_blank" rel="nofollow">cgroups</a>". Так называется как раз тот самый механизм ядра Linux, который позволяет этого добиться. Поэтому, можно сказать, что путь контейнеризации начался с Linux систем. Однако, начиная с Windows 10 тоже появилась поддержка контейнеризации.
+
+Для работы с виртуализацией необходимо в BIOS компьютера настроить поддержку виртуализации. Как это сделать зависит от компьютера. Например, это может выглядеть так:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="1ab3d99e-e16b-4807-9325-241256a0ddb6" data-max-width="620" alt="Первое знакомство с Docker - 2" src="https://cdn.javarush.com/images/article/1ab3d99e-e16b-4807-9325-241256a0ddb6/1024.jpeg"></div></div>На Windows это можно проверить разными способами. 
+
+Например, можно скачать специальную утилиту с сайта Microsoft: <a href="https://www.microsoft.com/en-us/download/details.aspx?id=592" target="_blank" rel="nofollow">Hardware-Assisted Virtualization Detection Tool</a>.
+
+Ну и стоит упоминуть ещё одно важное понятие — Гипервизор. Гипервизор (Hypervisor) — это монитор виртуальных машин, программа для обеспечения параллельного выполнения нескольких операционных система на одном и том же компьютере. Гипервизор обеспечивает изоляцию операционных систем друг от друга, разделяет между запущенными ОС ресурсы. Одним из таких гипервизоров является <a href="https://www.virtualbox.org/" target="_blank" rel="nofollow">Oracle VirtualBox</a>.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="471733b6-fed9-40d3-8292-2630717d6e81" data-max-width="370" alt="Первое знакомство с Docker - 3" src="https://cdn.javarush.com/images/article/471733b6-fed9-40d3-8292-2630717d6e81/1024.jpeg"></div></div><h2>Docker</h2>Итак, что такое виртуализация — понятно. Но как этим пользоваться? И тут нам на помощь приходит Docker. Docker — программное обеспечение для автоматизации развёртывания и управления приложениями в средах с поддержкой контейнеризации.
+
+Стоит начать с того, что Docker представлен таким понятием, как Docker Enginge. И начать стоит с официального сайта докера и раздела "<a href="https://docs.docker.com/engine/docker-overview/" target="_blank" rel="nofollow">Docker Overview</a>". 
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="246" alt="Первое знакомство с Docker - 4" src="https://cdn.javarush.com/images/article/abbc4697-9665-4e8a-837d-f0ab69add143/original.jpeg"></div></div>В документации сказано, что докер состоит из:
+<ul>
+<li>Докер-сервера, который называется Docker Daemon process (dockerd).</li>
+<li>Интерфейс коммандной строки, он же CLI (docker).</li>
+<li>REST API, который описывает то, каким образом программы могут "разговаривать" с deamon и давать ему указания, что делать.</li>
+</ul>Прежде, чем мы перейдём к дальнейшему погружению установим докер, то есть установим докер демона.
+
+На сайте Docker есть инструкция по установке "<a href="https://docs.docker.com/docker-for-windows/install/" target="_blank" rel="nofollow">Docker для Windows</a>". Интересно, что у Docker есть свои системные требования. И если у Вас, как и у меня, старая Windows, например Windows 7, то необходимо использовать Docker Toolbox.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="233" alt="Первое знакомство с Docker - 5" src="https://cdn.javarush.com/images/article/d174ec4d-c483-49e4-be9b-c685100782b0/original.jpeg"></div></div><h2>Docker Toolbox</h2>Для установки Docker на старые, не подходящие под системные требования, машины. На сайте так и написано, "Legacy Desktop Solution".
+
+Перейдём на страницу "<a href="https://docs.docker.com/toolbox/overview/" target="_blank" rel="nofollow">Docker Toolbox</a>" и скачаем его. Весит такой набор около 211 мегабайт. Установим в комплектации по умолчанию, то есть просто будем безропотно соглашаться со всем, не переставляя флаги.
+
+После установки проверим, что всё хорошо. В дальнейшем нашим полем боя будет коммандная строка. Рекомендую не использовать коммандную строку Windows, потому что с ней могут быть неочевидные проблемы. Лучше использовать bash shell.
+
+На Windows самый рекомендуемый способ получения его - установить себе систему контроля версий <a href="https://git-scm.com/" target="_blank" rel="nofollow">git</a>, всё равно она пригодится. Потому что "в комплекте" с ним будет и нужный нам bash. Для данного обзора я буду использовать именно git bash. Так же bash можно поставить вместе с <a href="https://www.cygwin.com/" target="_blank" rel="nofollow">CYGWIN</a>.
+
+Запустим bash или git bash. 
+
+Убедимся, что у нас установилась докер машина, она же Docker Machine: <code>docker-machine -version</code>
+
+Что такое эта Docker Machine?
+
+<a href="https://docs.docker.com/machine/overview/" target="_blank" rel="nofollow">Docker Machine</a> — это утилита для управления докеризированными хостами (это такие хосты, на которых установлен Docker Engine). Если мы выполним сразу же после установки Docket Toolbox просмотр докер-машин при помощи комманды <code>docker-machine ls</code>, то увидим пустой список:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="97b7c0c8-6d04-4248-bf29-b4b6d187e0f5" data-max-width="452" alt="Первое знакомство с Docker - 6" src="https://cdn.javarush.com/images/article/97b7c0c8-6d04-4248-bf29-b4b6d187e0f5/1024.jpeg"></div></div>Давайте создадим новую машину. 
+
+Для этого нам понадобится выполнить комманду <a href="https://docs.docker.com/machine/reference/create/" target="_blank" rel="nofollow">create</a>: <code>docker-machine create -- driver virtualbox javarush</code>: 
+Мы увидим лог создания докер машины:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="19d9e92a-b16b-4881-921a-103e366ded6e" data-max-width="591" alt="Первое знакомство с Docker - 7" src="https://cdn.javarush.com/images/article/19d9e92a-b16b-4881-921a-103e366ded6e/1024.jpeg"></div></div>Тут интересно нам следующее. Что за Boot2Docker? Это минималистичный дистрибутив Linux для запуска Docker Engine (мы ведь поним, что Docker работает благодаря средствам виртуализации Linux, а в Windows необходимый механизм появился только начиная с Windows 10). Этот дистрибутив основан на дистрибутиве "<a href="https://ru.wikipedia.org/wiki/Tiny_Core_Linux" target="_blank" rel="nofollow">Tiny Core Linux</a>".
+
+Так же упоминается про VirtualBox VM. Это потому, что мы указали <code>--driver virtualbox</code>. Была создана новая виртуальная машина в VirtualBox из образа Boot2Docker.
+
+После создания мы можем запустить VirtualBox (т.к. VirtualBox установливаяется вместе с Docker Toolbox) и увидеть созданную виртуальную машину для докер машины:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="3954e26e-2132-4a98-81fc-701fe15bb748" data-max-width="766" alt="Первое знакомство с Docker - 8" src="https://cdn.javarush.com/images/article/3954e26e-2132-4a98-81fc-701fe15bb748/1024.jpeg"></div></div>После создания нам предложат выполнить комманду "<a href="https://docs.docker.com/machine/reference/env/" target="_blank" rel="nofollow">docker-machine env</a>", чтобы получить переменные среды, которые нужно настроить для подключения к докер машине:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="58d932a5-1cb2-40da-9c93-25bff3388a4f" data-max-width="576" alt="Первое знакомство с Docker - 9" src="https://cdn.javarush.com/images/article/58d932a5-1cb2-40da-9c93-25bff3388a4f/1024.jpeg"></div></div>После выполнения этой комманды при помощи docker-machine мы подключаемся к удалённому докеризированному хосту (в данном случае виртуальному, размещённому на Virtual Box) и можем выполнять комманды docker у себя локально так, словно бы выполняли их на удалённом хосте.
+
+Для проверки можем выполнить комманду "<a href="https://docs.docker.com/engine/reference/commandline/info/" target="_blank" rel="nofollow">docker info</a>". В случае, если подключения к докер машине не установлено, мы получим ошибку. А если всё хорошо — информацию о докере на докер машине.
+
+Теперь самое время разобраться с тем, как вообще работает докер и как его использовать.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="bd46187a-12dd-4475-aa26-6f1821580b57" data-max-width="276" alt="Первое знакомство с Docker - 10" src="https://cdn.javarush.com/images/article/bd46187a-12dd-4475-aa26-6f1821580b57/1024.jpeg"></div></div><h2>Docker Containers</h2>Итак, у нас есть докер. Что такое вообще этот докер? Понять это нам поможет документация Docker и раздел "<a href="https://docs.docker.com/get-started/" target="_blank" rel="nofollow">Get started</a>".
+
+В вводной части этого раздела рассказывается по концепцию докера (<a href="https://docs.docker.com/get-started/#docker-concepts" target="_blank" rel="nofollow">Docker Concepts</a>). Там указано, что докер — это платформа для разработки, отладки и запуска приложений в контейнерах. Поэтому, главное для докера — это контейнеры. Даже если вы посмотрите на логотип докера - это кит, который держит на своей спине контейнеры.
+
+Но что такое контейнер? Далее в разделе "<a href="https://docs.docker.com/get-started/#images-and-containers" target="_blank" rel="nofollow">Images and Containers</a>" говорится, что контейнер — это запущенный экземпляр Image. А Image — это выполняем "пакет", который содержит всё необходимое для приложения (код, окружение, библиотеки, настройки и т.д.).
+
+Теперь давайте попробуем это сами. На сайте Docker'а есть раздел "<a href="https://docs.docker.com/samples/" target="_blank" rel="nofollow">Docker samples</a>", в котором есть "<a href="https://github.com/docker/labs/blob/master/beginner/chapters/alpine.md" target="_blank" rel="nofollow">Docker for Beginners</a>". Примеры отсюда мне кажутся более интересными.
+
+Итак, мы вдруг захотели ознакомиться с <a href="https://www.alpinelinux.org/" target="_blank" rel="nofollow">Alpine Linux</a> и можем это сделать при помощи контейнеров докера. Чтобы получить образ, мы должны его "вытянуть" или "вытащить". Поэтому, выполняем комманду <a href="https://docs.docker.com/engine/reference/commandline/pull/" target="_blank" rel="nofollow">docker pull</a>: <code>docker pull apline</code>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="1005c868-4bb3-473d-a6c8-ebefb8967f7a" data-max-width="574" alt="Первое знакомство с Docker - 11" src="https://cdn.javarush.com/images/article/1005c868-4bb3-473d-a6c8-ebefb8967f7a/1024.jpeg"></div></div>Как мы видим, мы откуда-то скачиваем. По умолчанию, докер смотрит на свой репозиторий в сети <a href="https://hub.docker.com/_/alpine" target="_blank" rel="nofollow">https://hub.docker.com</a>.
+
+После успешного получения image мы можем проверить список доступных образов, выполнив комманду <a href="https://docs.docker.com/engine/reference/commandline/images/" target="_blank" rel="nofollow">docker images</a>:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="e926bd47-fe81-4ce9-a190-28c15a90ae3b" data-max-width="516" alt="Первое знакомство с Docker - 12" src="https://cdn.javarush.com/images/article/e926bd47-fe81-4ce9-a190-28c15a90ae3b/1024.jpeg"></div></div>Теперь, у нас есть образ apline. Так как контейнер — запущенный экземпляр image, то давайте запустим этот самый образ.
+
+Выполним запуск контейнера при помощи комманды <code>docker run alpine</code>. Как мы видим, ничего не произошло. Если мы выполним комманду <code>docker ps</code> для вывода всех активных контейнеров, то тоже ничего не получим. Но если мы выполним <code>docker ps -a</code> то увидим все контейнеры:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="af5a8b1b-f286-4cdf-aeec-f5d750024778" data-max-width="577" alt="Первое знакомство с Docker - 13" src="https://cdn.javarush.com/images/article/af5a8b1b-f286-4cdf-aeec-f5d750024778/1024.jpeg"></div></div>Всё дело в том, что мы запустили докер не в интерактивном режиме. Поэтому, он выполнил комманду и остановился. Комманда была — открытие терминала.
+
+Давайте выполним тоже самое, но в интерактивном режиме (с флагом <a href="https://docs.docker.com/v17.09/edge/engine/reference/commandline/run/#assign-name-and-allocate-pseudo-tty-name--it" target="_blank" rel="nofollow">-it</a>):
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="1e30cd37-6e3f-46be-ba95-2cd03ba2b218" data-max-width="572" alt="Первое знакомство с Docker - 14" src="https://cdn.javarush.com/images/article/1e30cd37-6e3f-46be-ba95-2cd03ba2b218/1024.jpeg"></div></div>
+Как видно, преодолев одну ошибку и воспользовавшись подсказкой мы попали на контейнер и можем в нём работать!
+Чтобы выйти из контейнера не прекращая его работу можно нажать <code>Ctrl + p + q</code>. Если выполнить теперь <code>docker ps</code>, то мы увидим один активный контейнер.
+
+Чтобы зайти на уже запущенный контейнер, выполним комманду <a href="https://docs.docker.com/engine/reference/commandline/exec/" target="_blank" rel="nofollow">docker exec</a>: 
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="2995ede6-f8f2-4f25-8af8-3c99d49d4ec0" data-max-width="534" alt="Первое знакомство с Docker - 15" src="https://cdn.javarush.com/images/article/2995ede6-f8f2-4f25-8af8-3c99d49d4ec0/1024.jpeg"></div></div>Отличное описание того, как это всё происходит рекомендую прочитать в описании докер сэмпла: "<a href="https://github.com/docker/labs/blob/master/beginner/chapters/alpine.md#11-docker-run" target="_blank" rel="nofollow">1.0 Running your first container</a>". Он мне нравится за то, что там всё написано очень доступно и понятно.
+
+Если кратко перефразировать, то мы подключены при помощи docker-machine к виртуальной машине, на которой запущен Docker Daemon. При помощи CLI по REST API мы просим запустить alpine образ. Докер его находит и поэтому не скачивает. Докер создаёт новый контейнер и запускает в этом контейнере указанную нами комманду.
+
+И всё это, конечно, хорошо. Но зачем нам это всё? И тут нам надо разобраться, как вообще докер создаёт image. А создаёт он их на основе докерфайла (dockerfile).
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="99047e5d-57d7-462a-b11e-3d9aa9d1c931" data-max-width="319" alt="Первое знакомство с Docker - 16" src="https://cdn.javarush.com/images/article/99047e5d-57d7-462a-b11e-3d9aa9d1c931/1024.jpeg"></div></div><h2>Dockerfile</h2>Как сказано в <a href="https://docs.docker.com/engine/reference/builder/" target="_blank" rel="nofollow">Dockerfile reference</a>, докерфайл — это текстовый файл, в котором указаны все комманды для получения image. На самом деле, все образы, которые мы получаем (даже Alpine, из примера выше) создавались из докерфайла.
+
+Давайте соберём свой образ с Java приложением. И для начала нам понадобится это Java приложение. Предлагаю воспользоваться системой сборки Gradle, подробней про которую можно прочитать в кратком обзоре: "<a href="https://javarush.com/groups/posts/2126-kratkoe-znakomstvo-s-gradle" target="_blank" rel="nofollow">Краткое знакомство с Gradle</a>". 
+
+Поможет нам в создании проекта "<a href="https://docs.gradle.org/current/userguide/build_init_plugin.html" target="_blank" rel="nofollow">Gradle Build init plugin</a>".
+
+Выполним создание нового Java приложения при помощи Gradle:
+
+<code>gradle init --type java-application</code>
+
+Данная команда создаёт заготовку Java проекта. Это standalone приложение, а нам хотелось бы создать веб-приложение.
+
+Удалим классы App и AppTest (их сгенерировал автоматически Gradle Build Init Plugin). Чтобы быстро создать веб-приложение воспользуемся tutorial'ом от Gradle: "<a href="https://guides.gradle.org/building-java-web-applications/" target="_blank" rel="nofollow">Building Java Web Applications</a>".
+
+Согласно tutorial выполним:
+<ul>
+<li>Откроем билд скрипт build.gradle и поправим его, согласно разделу: "<a href="https://guides.gradle.org/building-java-web-applications/#add_a_gradle_build_file" target="_blank" rel="nofollow">Add a Gradle build file</a>".</li>
+<li>Добавим страницы в src/main/webapp, как указано в разделе "<a href="https://guides.gradle.org/building-java-web-applications/#add_jsp_pages_to_the_demo_application" target="_blank" rel="nofollow">Add JSP pages to the demo application</a>".</li>
+<li>Добавим класс <code>HelloServlet</code> с содержимым из раздела "<a href="https://guides.gradle.org/building-java-web-applications/#add_a_servlet_and_metadata_to_the_project" target="_blank" rel="nofollow">Add a servlet and metadata to the project</a>".</li>
+</ul>Тут надо быть внимательным. Как обычно, в примерах могут быть ошибки. Тут она и есть:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="53ded331-fab1-4d67-9a78-084b939832e8" data-max-width="559" alt="Первое знакомство с Docker - 17" src="https://cdn.javarush.com/images/article/53ded331-fab1-4d67-9a78-084b939832e8/1024.jpeg"></div></div>Теперь, для проверки в build.gradle добавим плагин gretty, как указано в разделе "<a href="https://guides.gradle.org/building-java-web-applications/#add_the_code_gretty_code_plugin_and_run_the_app" target="_blank" rel="nofollow">Add the gretty plugin and run the app</a>":
+
+<pre class="lang-java line-numbers"><code>
+plugins {
+    id 'war'
+    id 'org.gretty' version '2.2.0'
+}
+</code></pre>
+Интересно, что Gretty не видит ошибку в <code>HelloServlet</code>, которая описана выше. Это доказывает, что в разном окружении приложение себя может вести по-разному. Gretty может работать там, где обычный standalone сервер выдаст ошибку. 
+
+Осталось проверить, что приложение работает правильно. Выполним: <code>gradle appRun</code>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="58de8f2d-1840-422a-b2e3-1d074598db6a" data-max-width="589" alt="Первое знакомство с Docker - 18" src="https://cdn.javarush.com/images/article/58de8f2d-1840-422a-b2e3-1d074598db6a/1024.jpeg"></div></div>Если всё хорошо, то коммандой <code>gradle war</code> соберём архив с расширениеи war (web archive). 
+
+По умолчанию gradle собирает его в каталоге <code>\build\libs</code>. Теперь, мы готовы написать наш докерфайл. 
+
+Руководствуясь "<a href="https://docs.docker.com/engine/reference/builder/" target="_blank" rel="nofollow">Dockerfile reference</a>" создадим докерфайл. Создадим файл с названием "Dockerfile" в корне нашего Java проекта (там же, где build скрипт). Откроем его на редактирование. У данного файла есть свой формат, описанный в разделе "<a href="https://docs.docker.com/engine/reference/builder/#format" target="_blank" rel="nofollow">Dockerfile reference : Format</a>".
+
+Любой докерфайл начинается с инструкции FROM, указывая "базовый образ" (base image). Можно сказать, что это родительский образ, на основе которого мы делаем наш image. Родительский образ нам выбрать очень просто. Веб-приложению нужен веб-сервер. Например, мы можем использовать веб-сервер Tomcat. Заходим на официальный репозиторий докера, который называется <a href="https://hub.docker.com" target="_blank" rel="nofollow">docker hub</a>.
+Ищем там, есть ли нужный нам image:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="eb42e750-b5f4-4126-b53e-ad842d352a65" data-max-width="561" alt="Первое знакомство с Docker - 19" src="https://cdn.javarush.com/images/article/eb42e750-b5f4-4126-b53e-ad842d352a65/1024.jpeg"></div></div>Стоит так же понимать, что назыается образ tomcat. Но кроме названия у него есть тэг. Тэг - это как версия.
+
+Образы томката разных версий различаются тем, какая версия Tomcat используется, какая версия jre и какой базовый образ. Например, мы можем получить образ <code>docker pull tomcat:9-jre8-alpine</code>
+
+В нём используется 9 версия tomcat, jre версии 8 и образ alpine как основа. Это может иметь важную роль, чтобы уменьшить размер нашего образа:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="ddcf7d14-3343-454f-9b1b-246c04a4f321" data-max-width="523" alt="Первое знакомство с Docker - 20" src="https://cdn.javarush.com/images/article/ddcf7d14-3343-454f-9b1b-246c04a4f321/1024.jpeg"></div></div>Как мы видим, разница огромна. Если мы будем строить наш образ на основе tomcata alpine, то мы начнём всего со 100 мегабайт, а не с 600.
+
+Соответственно, в ранее созданный докерфайл добавим следующее содержимое:
+
+<pre class="lang-java line-numbers"><code>
+# Базовый образ, "наследуемся" от него
+FROM tomcat:9-jre8-alpine
+# Копируем из Build Context'а собранный web archive в каталог томката
+COPY build/libs/docker.war /usr/local/tomcat/webapps/docker.war
+# Меняем рабочий каталог на томкатовский
+WORKDIR /usr/local/tomcat
+# Открываем порт 8080 для контейнера, т.к. его слушает томкат
+EXPOSE 8080
+</code></pre>
+И теперь выполним команду построения образа: <code>docker build -t jrdocker .</code>.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="89027958-c06a-4ff1-8106-843c5bb31006" data-max-width="475" alt="Первое знакомство с Docker - 21" src="https://cdn.javarush.com/images/article/89027958-c06a-4ff1-8106-843c5bb31006/1024.jpeg"></div></div><code>-t</code> — это tag, то есть как назвать собранный образ. 
+
+Точкой в конце мы обозначаем, что текущий каталог (каталог, где находится докерфайл и откуда мы запускали команду) добавляем в <code>Build context</code>. <code>Build context</code> — это контекст тех файлов, которые доступны при создании докерфайла. Как видно, мы смогли скопировать благодаря этому собранный war файл в наш образ, в каталог веб-сервера.
+
+Теперь запустим наш образ: <code>docker run -d --rm -p 8888:8080 jrdocker</code>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="692a940c-60b8-48d1-8358-775bbba977e2" data-max-width="534" alt="Первое знакомство с Docker - 22" src="https://cdn.javarush.com/images/article/692a940c-60b8-48d1-8358-775bbba977e2/1024.jpeg"></div></div>Чтобы понять, запустился ли сервер, можно посмотреть лог с контейнера. 
+
+Лог можно получить при помощи команды docker logs с указанием контейнера по его ID или названию. Например:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="34df505b-d737-4929-a2ac-6178da8163bd" data-max-width="587" alt="Первое знакомство с Docker - 23" src="https://cdn.javarush.com/images/article/34df505b-d737-4929-a2ac-6178da8163bd/1024.jpeg"></div></div>Ну и не забываем, что мы по имени всегда можем зайти на запущенный контейнер командой: <code>winpty docker exec -it ИмяКонтейнера sh</code>
+
+Теперь осталось подключиться. Ранее мы указали <a href="https://docs.docker.com/engine/reference/builder/#expose" target="_blank" rel="nofollow">EXPOSE</a>, то есть изнутри контейнера разрешили доступ к порту 8080. Когда же мы запускали сам контейнер, мы указали тэг -p (<a href="https://docs.docker.com/engine/reference/run/#expose-incoming-ports" target="_blank" rel="nofollow">incoming ports</a>), тем самым соотнесли порт 8080 на контейнере (там ожидает подключения веб-сервер томкат) с портом 8888 на машине с докер демоном. 
+
+Как мы помним, докер демон мы запустили не напрямую, а через docker-machine. Поэтому, ещё раз спросим данные по нашим докер машинам при помощи команды docker-machine ls и обратимся на сервер в контейнере:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="2d81822d-c286-4bb9-af9d-74cd279e9e75" data-max-width="526" alt="Первое знакомство с Docker - 24" src="https://cdn.javarush.com/images/article/2d81822d-c286-4bb9-af9d-74cd279e9e75/1024.jpeg"></div></div>Таким образом, мы с Вами только что запустили своё веб-приложение в докер контейнере! )
+
+Ещё хотелось бы отметить следующее. В случае возникновения проблем с доступом следует помнить, что докер машина в первую очередь это виртуальная машина Virtual BOx. Возможно, проблемы в настройках сети виртуальной машины. Рабочая конфигурация VMBox может выглядеть следующим образом:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="c4bc17af-3daa-4ddb-bdda-7249acf93353" data-max-width="741" alt="Первое знакомство с Docker - 25" src="https://cdn.javarush.com/images/article/c4bc17af-3daa-4ddb-bdda-7249acf93353/1024.jpeg"></div></div><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="70c4c594-c321-40df-9d67-e3312646f2e1" data-max-width="289" alt="Первое знакомство с Docker - 26" src="https://cdn.javarush.com/images/article/70c4c594-c321-40df-9d67-e3312646f2e1/1024.jpeg"></div></div><h2>Слои (layers)</h2>Мы с вами уже разобрались, что образы создаются из докерфайлов и что докерфайлы — это набор комманд. Ещё мы разобрались, что у докерфайла есть родительский. И что размер образов разный. Интересно, что можно посмотреть историю того, как собирался образ при помощи команды <a href="https://docs.docker.com/engine/reference/commandline/history/" target="_blank" rel="nofollow">docker history</a>. Например:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="ef8bae0c-670c-4005-a7eb-aad4663f80f1" data-max-width="691" alt="Первое знакомство с Docker - 27" src="https://cdn.javarush.com/images/article/ef8bae0c-670c-4005-a7eb-aad4663f80f1/1024.jpeg"></div></div>Важно об этом сказать для понимание того, что по своей сути каждый образ - это набор образов. Каждое изменение образа (каждая новая команда в докерфайле) создаёт новый слой, который имеет свой ID.
+
+Подробнее про слои можно прочитать в документации "<a href="https://docs.docker.com/storage/storagedriver/#images-and-layers" target="_blank" rel="nofollow">Docker: Images and Layers</a>".
+
+Так же очень рекомендую к ознакомлению статью на хабре: "<a href="https://habr.com/ru/post/272145/" target="_blank" rel="nofollow">Образы и контейнеры Docker в картинках</a>".
+<h2>Заключение</h2>Надеюсь, этот небольшой обзор был достаточен, чтобы заинтересовать в контейнеризации. Ниже приведены ссылки на дополнительный материал, который может быть полезен:
+<ul>
+<li><a href="https://docs.docker.com/develop/develop-images/dockerfile_best-practices/" target="_blank" rel="nofollow">Best practices for writing Dockerfiles</a></li>
+<li><a href="https://community.vscale.io/hc/ru/community/posts/115002400569-Как-создать-контейнер-на-удалённом-хосте-с-помощью-Docker-Machine" target="_blank" rel="nofollow">Контейнер на удалённом хосте с помощью Docker Machine</a></li>
+<li>Статья на хабре "<a href="https://habr.com/ru/post/353238/" target="_blank" rel="nofollow">Docker. Начало</a>"</li>
+<li>Статья на хабре "<a href="https://habr.com/ru/post/234829/" target="_blank" rel="nofollow">Оптимизация образов Docker</a>". </li>
+<li>Udemy: "<a href="https://www.udemy.com/topic/docker/?price=price-free&amp;lang=en&amp;sort=popularity" target="_blank" rel="nofollow">Getting Started With Docker</a>"</li>
+<li>Youtube : "<a href="https://www.youtube.com/watch?v=EbEZgdTOHzE&amp;list=PLD5U-C5KK50XMCBkY0U-NLzglcRHzOwAg" target="_blank" rel="nofollow">Docker уроки от А до Я</a>"</li>
+<li><a href="https://www.youtube.com/watch?v=7GLP8_UEBp4" target="_blank" rel="nofollow">Возможности программного обеспечения Docker</a> [GeekBrains]</li>
+</ul>#Viacheslav

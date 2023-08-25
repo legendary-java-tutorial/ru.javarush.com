@@ -1,0 +1,268 @@
+BigInteger и BigDecimal
+<p>----------------------------------------</p>
+В языке Java приложение состоит из классов, а классы — из методов и переменных. Переменные, в свою очередь, делятся на примитивные и ссылочные. В Java есть 8 видов переменных и, если не считать boolean и char, они делятся на такие типы: целые: byte, short, int и long...
+<p>----------------------------------------</p>
+В языке Java приложение состоит из классов, а классы — из методов и переменных. Переменные, в свою очередь, делятся на примитивные и ссылочные.
+
+<img data-max-width="800" data-id="d8cc0760-5a1a-42d0-a712-732d45d0409c" src="/images/article/d8cc0760-5a1a-42d0-a712-732d45d0409c/800.jpeg" class="img-fluid" alt="BigInteger и BigDecimal - 1"> В Java есть 8 видов переменных и, если не считать <code>boolean</code> и <code>char</code>, они делятся на такие типы:
+<ul>
+<li>целые: <code>byte</code>, <code>short</code>, <code>int</code> и <code>long</code>;</li>
+<li>с плавающей точкой (также называют вещественными числами): <code>float</code> и <code>double</code>.</li>
+</ul>Внутри этих небольших групп различия существуют только в диапазоне вмещаемых значений (и соответственно, разнится занимаемое место такой переменной).
+
+Самый большой из целочисленных типов — <code>long</code>, с диапазоном от -9223372036854775808 до 9223372036854775807. Из чисел с плавающей точкой — <code>double</code>, с диапазоном от 1.7e-308 до 1.7e+308. Подробнее о вещественных числах можно почитать в <a href="https://javarush.com/groups/posts/2136-ustroystvo-vejshestvennihkh-chisel" target="_blank">этой статье</a>. 
+
+Но что если нам понадобится сохранять числа, которые превышают допустимый диапазон? 
+
+В таком случае нам пригодятся <code>BigInteger</code> и <code>BigDecimal</code>.
+<h2>BigInteger в Java</h2>Класс Java <code>BigInteger</code> используется как аналог целочисленных значений произвольной длины, у которого нет ограничения в 64 битов, как например у long. При этом он потомок класса <code>Number</code>, как и стандартные обертки для числовых простых типов — <code>Integer</code>, <code>Long</code>, <code>Byte</code>, <code>Double</code> и так далее — поэтому имеет реализации методов, приводящих к простым типам:
+
+<pre class="lang-java line-numbers"><code>
+BigInteger value = new BigInteger("32145");
+
+int intValue = value.intValue();//32145
+
+long longValue = value.longValue();//32145
+
+double doubleValue = value.doubleValue();//32145.0
+</code></pre>
+Тут же мы видим создание такого объекта <code>BigInteger</code> с передачей в конструктор нашего значения, но в формате строки. Стоит отметить, что конструктор у него не один, а на все случаи жизни.
+
+Если простые типы не вмещают полный объем данных из <code>BigInteger</code>, данные будут урезаны до диапазона этого примитивного типа.
+
+Но при этом есть аналоги этих методов (<code>intValueExact()</code>, <code>longValueExact()</code> и т. д.), с той только разницей, что если простой тип, в который идет преобразование, не вмещает диапазон данных, выбрасывается <a href="https://docs.oracle.com/en/java/javase/13/docs/api/java.base/java/lang/ArithmeticException.html" rel="nofollow" target="_blank">ArithmeticException</a>.
+<h3>Константы BigInteger</h3>Для внутреннего пользования, у класса есть константы:
+
+<pre class="lang-java line-numbers"><code>
+BigInteger.ZERO
+BigInteger.ONE
+BigInteger.TEN
+</code></pre>
+Это константные объекты <code>BigInteger</code> со значениями, соответственно, <code>0</code>, <code>1</code> и <code>10</code>.
+<h3>Методы BigInteger</h3>Одна из главных особенностей данного класса — он полон методов, реализующих стандартные арифметические операции на Java. Например:
+<ul>
+<li><p>операции суммирования:</p>
+<pre class="lang-java line-numbers"><code>
+BigInteger firstValue = new BigInteger("37995");
+BigInteger secondValue = new BigInteger("35466");
+BigInteger resultValue =  firstValue.add(secondValue);//73461
+</code></pre></li>
+<li><p>операции умножения:</p>
+<pre class="lang-java line-numbers"><code>
+BigInteger firstValue = new BigInteger("37995");
+BigInteger secondValue = new BigInteger("35466");
+BigInteger resultValue =  firstValue.multiply(secondValue);//1347530670
+</code></pre></li>
+<li><p>операции нахождения остатка при делении одного числа на другое:</p>
+<pre class="lang-java line-numbers"><code>
+BigInteger firstValue = new BigInteger("37995");
+BigInteger secondValue = new BigInteger("35466");
+BigInteger resultValue =  firstValue.remainder(secondValue);//2529
+</code></pre></li>
+<li><p>получение абсолютного значения числа (то есть по модулю, без знака):</p>
+<pre class="lang-java line-numbers"><code>
+BigInteger firstValue = new BigInteger("-37995");
+BigInteger resultValue =  firstValue.abs();//37995
+</code></pre></li></ul>Также присутствуют методы для более сложных (специфических) операций:
+<ul>
+<li><p>операции с вычислением <a href="https://habr.com/ru/post/421071/" rel="nofollow" target="_blank">mod</a>:</p>
+<pre class="lang-java line-numbers"><code>
+BigInteger firstValue = new BigInteger("-34");
+BigInteger secondValue = new BigInteger("5");
+BigInteger resultValue = firstValue.mod(secondValue); //1
+</code></pre></li></ul>Существуют несколько разных вариаций данной функции:
+<ul>
+<li><p>получение рандомного числа с заданием количества битов, которое будет использовать полученное значение:</p>
+<pre class="lang-java line-numbers"><code>
+BigInteger firstValue = BigInteger.probablePrime(8, new Random());//211
+BigInteger secondValue = BigInteger.probablePrime(16, new Random());//42571
+</code></pre></li>
+<li><p>операции побитовых сдвигов(this &gt;&gt; n)</p>
+<p>Сдвиг влево:</p>
+<pre class="lang-java line-numbers"><code>
+BigInteger firstValue = new BigInteger("5");
+BigInteger firstResultValue = firstValue.shiftLeft(3);//40
+</code></pre>
+<p>Сдвиг вправо:</p>
+<pre class="lang-java line-numbers"><code>
+BigInteger secondValue = new BigInteger("34");
+BigInteger secondResultValue = secondValue.shiftRight(2); //8
+</code></pre></li></ul>Конечно же, полный перечень методов лучше посмотреть в <a href="https://docs.oracle.com/javase/8/docs/api/java/math/BigInteger.html" rel="nofollow" target="_blank">документации</a>.
+<img data-max-width="800" data-id="bbea36bc-0673-45d3-875b-a44c1f8d61d7" src="/images/article/bbea36bc-0673-45d3-875b-a44c1f8d61d7/800.jpeg" class="img-fluid" alt="BigInteger и BigDecimal - 2"><h2>BigDecimal в Java</h2>Когда нам нужно вещественное число произвольной длины, используется класс Java — <code>BigDecimal</code>. Как правило его применяют для работы с финансами вместо <code>double</code>, так как он дает больше возможности настройки. 
+
+Как и <code>BigInteger</code>, <code>BigDecimal</code> является потомком класса <code>Number</code> и имеет методы, возвращающие значение объекта в виде определенного примитивного типа:
+
+<pre class="lang-java line-numbers"><code>
+BigDecimal value = new BigDecimal(35563.3);
+
+long longValue = value.longValue();//35563
+
+double doubleValue = value.doubleValue();//35563.3
+</code></pre>
+Как мы можем видеть при приведении к <code>long</code>, остаётся только целая часть, а знаки после запятой отбрасываются.
+<h3>Конструкторы BigDecimal</h3>С конструкторами <code>BigDecimal</code> мы ознакомимся подробнее, так как у класса есть их гораздо более широкий выбор. Есть конструкторы, позволяющие задать значение объекта разными способами (передачей <code>int</code>, <code>long</code>, <code>double</code>, <code>String</code> и даже <code>BigInteger</code>), а есть такие, которые позволяю. задавать настройки создаваемого объекта (способы округления, количество знаков после запятой):
+
+<pre class="lang-java line-numbers"><code>
+BigDecimal firstValue = new BigDecimal("455656.545");//455656.545
+</code></pre>
+Тут всё понятно, мы непосредственно задали значение и количество знаков после запятой, которые хотим видеть.
+
+<pre class="lang-java line-numbers"><code>
+BigDecimal secondValue = new BigDecimal(3445.54);//3445.5399999999999636202119290828704833984375
+</code></pre>
+Результаты этого конструктора могут быть весьма непредсказуемыми, ведь мы задаем double, который по своей природе весьма неоднозначный тип. Поэтому обычно рекомендуется использовать в конструкторе <code>String</code>.
+
+<pre class="lang-java line-numbers"><code>
+BigDecimal thirdValue = new BigDecimal(3445.554645675444, MathContext.DECIMAL32);//3445.555
+</code></pre>
+Мы задаем <code>double</code>, но при этом и задаём параметр, описывающий правило округления (который содержит количество знаков после запятой и алгоритм для округления).
+
+<pre class="lang-java line-numbers"><code>
+char[] arr = new String("455656.545").toCharArray();
+
+BigDecimal fourthValue = new BigDecimal(arr, 2, 6);//5656.5
+</code></pre>
+Задаем массив знаков, с которого элемента берём значения для объекта и сколько этих элементов берём.
+
+<pre class="lang-java line-numbers"><code>
+BigDecimal fifthValue = new BigDecimal(new BigInteger("44554"), 3);//44.554
+</code></pre>
+Берем уже существующий объект <code>BigInteger</code>, задаём какое количество знаков после запятой.
+<h3>Методы BigDecimal</h3>Класс <code>BigDecimal</code> также содержит в себе методы для разнообразных арифметических операций, но методов работы с битами, как у <code>BigInteger</code>, у него нет.
+
+Но тем не менее, главная фишка <code>BigDecimal</code> — гибкость в работе с числами с плавающей запятой.
+
+Давайте рассмотрим некоторые методы, которые дают нам возможность властвовать над вещественными числами:
+<ul>
+<li><p>получаем точность (количество чисел):</p>
+<pre class="lang-java line-numbers"><code>
+BigDecimal value = new BigDecimal("454334.34334");
+int result = value.precision();//11
+</code></pre></li>
+<li><p>задаем количество знаков после запятой и правило округления:</p>
+<pre class="lang-java line-numbers"><code>
+BigDecimal firstValue = new BigDecimal(3445.544445);
+
+BigDecimal secondValue = firstValue.setScale(3,BigDecimal.ROUND_CEILING);//3445.545
+</code></pre>
+<p>Немного ниже мы рассмотрим подробнее константы для задания правил округления.</p></li>
+<li><p>делим <code>BigDecimal</code> на другой <code>BigDecimal</code>, при этом указывая необходимое количество знаков после запятой и правило округления:</p>
+<pre class="lang-java line-numbers"><code>
+BigDecimal firstValue = new BigDecimal("455656.545");
+
+BigDecimal secondValue = new BigDecimal(3445.544445);
+
+BigDecimal result = firstValue.divide(secondValue, 2,RoundingMode.DOWN);//132.24
+</code></pre></li>
+<li><p>перемещение запятой вправо/влево на определенное количество знаков:</p>
+<pre class="lang-java line-numbers"><code>
+BigDecimal value = new BigDecimal("455656.545");
+BigDecimal firstResult = value.movePointRight (2);//45565654.5
+BigDecimal secondResult = value.movePointLeft (2);//4556.56545
+</code></pre></li>
+<li><p>обрезаем конечные нули:</p>
+<pre class="lang-java line-numbers"><code>
+BigDecimal value = new BigDecimal("45056.5000");
+BigDecimal result = value.stripTrailingZeros();//45056.5
+</code></pre>
+<p>Если же у нас в вещественной части все нули и в целой тоже есть (или у нас и вовсе нет знаков после запятой), тогда:</p>
+<pre class="lang-java line-numbers"><code>
+BigDecimal value = new BigDecimal("450000.000");
+BigDecimal result = value.stripTrailingZeros();//4.5E+5
+</code></pre></li></ul><h3>Правила округления BigDecimal</h3>Для задания правил округления, внутри <code>BigDecimal</code> мы можем увидеть специальные константы, описывающие алгоритмы округления:
+
+<code>ROUND_UP</code> — округления от нуля, округление в сторону вещественной части:
+
+<pre class="lang-java line-numbers"><code>
+BigDecimal firstValue = new BigDecimal("2.578");
+BigDecimal firstResult =  firstValue.setScale(1, BigDecimal.ROUND_UP );//2.6
+BigDecimal secondValue = new BigDecimal("-2.578");
+BigDecimal secondResult = secondValue.setScale(1, BigDecimal.ROUND_UP );//-2.5
+</code></pre>
+<code>ROUND_DOWN</code> — округления до нуля, то есть усечение вещественной части:
+
+<pre class="lang-java line-numbers"><code>
+BigDecimal firstValue = new BigDecimal("2.578");
+BigDecimal firstResult =  firstValue.setScale(1, BigDecimal.ROUND_DOWN  );//2.5
+BigDecimal secondValue = new BigDecimal("-2.578");
+BigDecimal secondResult = secondValue.setScale(1, BigDecimal.ROUND_DOWN  );//-2.6
+</code></pre>
+<code>ROUND_CEILING</code> — округления до положительной бесконечности. То есть, если число у нас положительное, то -&gt; <code>ROUND_UP</code>, если отрицательное, то -&gt; <code>ROUND_DOWN</code>
+
+<pre class="lang-java line-numbers"><code>
+BigDecimal firstValue = new BigDecimal("2.578");
+BigDecimal firstResult =  firstValue.setScale(1, BigDecimal.ROUND_CEILING);//2.6
+BigDecimal secondValue = new BigDecimal("-2.578");
+BigDecimal secondResult = secondValue.setScale(1, BigDecimal.ROUND_CEILING);//-2.5
+</code></pre>
+<code>ROUND_FLOOR</code> — округления до отрицательной бесконечности, то есть если число у нас положительное, то -&gt; <code>ROUND_DOWN</code>, если отрицательное, то -&gt; <code>ROUND_UP</code>
+
+<pre class="lang-java line-numbers"><code>
+BigDecimal firstValue = new BigDecimal("2.578");
+BigDecimal firstResult =  firstValue.setScale(1, BigDecimal.ROUND_FLOOR);//2.5
+BigDecimal secondValue = new BigDecimal("-2.578");
+BigDecimal secondResult = secondValue.setScale(1, BigDecimal.ROUND_FLOOR);//-2.6
+</code></pre>
+Для рассматриваемого значения это ближайшее число с урезанным знаком после запятой будем рассматривать как ближайшего соседа рассматриваемого числа.
+
+Например, 2.43 будет ближе к 2.4, чем к 2.5, но 2.48 будет уже ближе к 2.5.
+
+<code>ROUND_HALF_DOWN</code> — округления до «ближайшего соседа». Если оба соседа равноудалены от конкретного значения, тогда производится округление к нулю. Равноудалены — это, например, когда округляемое число — 5, и оно находится на одинаковом расстоянии от 0 и 10):
+
+<pre class="lang-java line-numbers"><code>
+BigDecimal firstValue = new BigDecimal("2.58");
+BigDecimal firstResult =  firstValue.setScale(1, BigDecimal.ROUND_HALF_DOWN );//2.6
+BigDecimal secondValue = new BigDecimal("2.55");
+BigDecimal secondResult = secondValue.setScale(1, BigDecimal.ROUND_HALF_DOWN );//2.5
+</code></pre>
+<code>ROUND_HALF_UP</code> — режим для округления в сторону «ближайшего соседа». Если оба соседа равноудалены, округление выполняется к большему числу (это то самое  округление, которому нас обучали в школе):
+
+<pre class="lang-java line-numbers"><code>
+BigDecimal firstValue = new BigDecimal("2.53");
+BigDecimal firstResult =  firstValue.setScale(1, BigDecimal.ROUND_HALF_UP  );//2.5
+BigDecimal secondValue = new BigDecimal("2.55");
+BigDecimal secondResult = secondValue.setScale(1, BigDecimal.ROUND_HALF_UP  );//2.6
+</code></pre>
+<code>ROUND_HALF_EVEN</code> — округления до «ближайшего соседа», если оба соседа не равноудалены. В этом случае если перед округляемым числом стоит нечетное, выполняется округление в большую сторону, если чётное — в меньшую:
+
+<pre class="lang-java line-numbers"><code>
+BigDecimal firstValue = new BigDecimal("2222.2225");
+BigDecimal secondValue = firstValue.setScale(3,BigDecimal.ROUND_HALF_EVEN );//2222.222
+</code></pre>
+Такой результат мы получаем, потому что при округлении 5 смотрит на предыдущее число 2, и видя, что оно чётное, округление идет в меньшую сторону.
+
+Но если:
+
+<pre class="lang-java line-numbers"><code>
+BigDecimal firstValue = new BigDecimal("2222.22255");
+BigDecimal secondValue = firstValue.setScale(3,BigDecimal.ROUND_HALF_EVEN );//2222.223
+</code></pre>
+То округление идёт в большую сторону, так как последняя 5 смотрит на предыдущее значение и видит нечётное число. Как следствие, число округляется в большую сторону до 6, после чего следующая 6 тоже идёт на округление. Но шестерка уже не смотрит на число слева, так как число явно ближе в большую сторону, и в итоге последняя 2 увеличивается на 1.
+
+<code>ROUND_UNNECESSARY</code> — используется для  проверки, что число в округлении не нуждается. То есть, мы проверяем, что число имеет нужное нам количество знаков после запятой:
+
+<pre class="lang-java line-numbers"><code>
+BigDecimal firstValue = new BigDecimal("2.55");
+BigDecimal firstResult =  firstValue.setScale(2, BigDecimal.ROUND_UNNECESSARY);//2.55
+</code></pre>
+Тут всё хорошо, значение имеет два знака и мы проверяем, что после запятой только два знака.
+
+Но если:
+
+<pre class="lang-java line-numbers"><code>
+BigDecimal secondValue = new BigDecimal("2.55");
+BigDecimal secondResult = secondValue.setScale(1, BigDecimal.ROUND_UNNECESSARY);
+</code></pre>
+То мы получим — <code>ArithmeticException</code>, так как проверяемое значение превышает заданное количество знаков после запятой.
+
+Но если мы будем проверять два знака после запятой, а по факту там есть один, то исключение не выпадет, а недостающие знаки просто дополняются нулями:
+
+<pre class="lang-java line-numbers"><code>
+BigDecimal thirdValue = new BigDecimal("2.5");
+BigDecimal thirdResult = thirdValue.setScale(3, BigDecimal.ROUND_UNNECESSARY   );//2.500
+</code></pre>
+Еще хотелось бы отметить что у <code>BigDecimal</code> есть константы, аналогичные константам <code>BigInteger ZERO</code>, <code>ONE</code> и <code>TEN</code>. Вот ссылка на <a href="https://docs.oracle.com/javase/8/docs/api/java/math/BigDecimal.html#ROUND_CEILING" rel="nofollow" target="_blank">документацию</a>.
+
+И напоследок: как вы, наверное, заметили, выполняя операции с объектами <code>BigInteger</code> и <code>BigDecimal</code>, мы не изменяем старые, а всегда получаем новые. Это нам говорит о том, что они — <code>immutable</code>, то есть неизменные после их создания, как и <code>String</code>. 
+
+Иными словами, все их методы не могут изменить внутреннее состояние объекта, максимум — вернуть новый объект с параметрами, заданными используемой нами функцией.

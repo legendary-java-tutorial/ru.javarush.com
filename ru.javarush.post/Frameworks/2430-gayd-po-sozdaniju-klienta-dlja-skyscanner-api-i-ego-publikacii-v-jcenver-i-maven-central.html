@@ -1,0 +1,506 @@
+Гайд по созданию клиента для Skyscanner API и его публикации в jCenter и Maven Central [Часть 1]
+<p>----------------------------------------</p>
+Идея разработки клиента как отдельной библиотеки пришла в тот момент, когда я писал статью Создание системы мониторинга цен на авиабилеты: пошаговое руководство (часть 1, часть 2, часть 3)...
+
+<p>----------------------------------------</p>
+<h2>Содержание:</h2><ul>
+<li><a href="#topic1">План действий</a></li>
+<li><a href="#topic2">Часть первая: пишем Skyscanner API клиент</a><ul>
+<li><a href="#topic2_1">Шаг 1: создаем пустой проект на основе Gradle</a></li>
+<li><a href="#topic2_2">Шаг 2: добавляем необходимые зависимости</a></li>
+<li><a href="#topic2_3">Шаг 3: пишем UniRestUnit и пакет с DTO объектами</a></li>
+<li><a href="#topic2_4">Шаг 4: Описываем интерфейсы и реализации для клиента</a></li></ul></li>
+</ul><a href="https://javarush.com/groups/posts/2431-gayd-po-sozdaniju-klienta-dlja-skyscanner-api-i-ego-publikacii-v-jcenver-i-maven-central-chastj" target="_blank">Гайд по созданию клиента для Skyscanner API и его публикации в jCenver и Maven Central [Часть 2]</a>
+
+Идея разработки клиента как отдельной библиотеки пришла в тот момент, когда я писал статью <span class="text-bold">Создание системы мониторинга цен на авиабилеты: пошаговое руководство</span> (<a href="https://javarush.com/groups/posts/2400-sozdanie-sistemih-monitoringa-cen-na-aviabiletih-poshagovoe-rukovodstvo" target="_blank">часть 1</a>, <a href="https://javarush.com/s/2185" target="_blank">часть 2</a>, <a href="https://javarush.com/s/2186" target="_blank">часть 3</a>).
+<img data-max-width="850" alt="Гайд по созданию клиента для Skyscanner API и его публикации в jCenter и Maven Central [Часть 1] - 1" src="https://cdn.javarush.com/images/article/575f0255-9527-45cb-bed7-d4592a3e3583/original.jpeg">Зачем это нужно? Например, чтобы можно было просто добавить ее как зависимость в проект, не думать, как и что нужно делать, а просто использовать созданный API. 
+
+Для статьи нужно иметь представление о том, что такое:
+<ul>
+<li>система сборки проектов Gradle. В прошлый раз мы использовали Maven, в этот раз для публикации возьмем Gradle. Для быстрого ознакомления хватит и <a href="https://habr.com/ru/company/redmadrobot/blog/275515/" rel="nofollow" target="_blank">этой статьи</a>.</li>
+<li>groupId, artifactId, version. Это для публикации клиента.</li>
+</ul><h2 id="topic1">План действий</h2>У Skyscanner API есть четыре группы запросов:<ul>
+<li>Live Flight Search</li>
+<li>Places</li>
+<li>Browse Flight Prices</li>
+<li>Localisation</li>
+</ul>Так вот идея состоит в том, чтобы написать клиент с четырьмя интерфейсами для работы с этими группами, который требует только передать токен для работы с Rapid API и необходимые данные для запроса, а клиент сам заботится обо всем остальном.
+
+Польза от этого проекта реально осязаема, так как после поиска я не нашел ни одной реализации клиента для этого API (есть два клиента на GitHub, но они используют API, которого уже нет, так что даже они не валидны на этот момент).
+
+Как найти и получить данные для клиента я подробно описал в статье, а именно — <a href="https://javarush.com/groups/posts/2400-sozdanie-sistemih-monitoringa-cen-na-aviabiletih-poshagovoe-rukovodstvo#topic2" target="_blank">здесь</a>. Это первая часть, которую нужно сделать. 
+
+Вторая часть не менее важна — <span class="text-bold">опубликовать клиент в Maven Central и JCenter.</span> Я уже сталкивался с этим, и скажу вам, что это не самая очевидная вещь. Ведь мы хотим что-то такое: <span class="text-bold">git push mavenCentral</span>, но в реальности это не так. Поэтому вторая часть будут именно об этом — публикации клиента в самые масштабные <span class="text-bold">хранилища Maven Central</span> и <span class="text-bold">JCenter</span>.
+
+Итогом статьи будет использование клиента для проекта по мониторингу цен на авиабилеты. Если поведение не изменится после добавления клиента, значит все сделано правильно, и можно будет двигаться дальше в направлении версии 1.0-RELEASE.
+<h2 id="topic2">Часть первая: пишем Skyscanner API клиент</h2><h3 id="topic2_1">Шаг 1: создаем пустой проект на основе Gradle</h3>Через Intellij IDEA создаем <span class="text-bold">gradle</span> проект. Выбираем <span class="text-bold">Create New Project</span>:
+<img data-max-width="850" alt="Гайд по созданию клиента для Skyscanner API и его публикации в jCenter и Maven Central [Часть 1] - 2" src="https://cdn.javarush.com/images/article/aed1c9e8-c187-4177-afa1-72be405adab1/original.jpeg">Переходим в <span class="text-bold">Gradle</span> и жмем <span class="text-bold">Next</span>:
+<img data-max-width="850" alt="Гайд по созданию клиента для Skyscanner API и его публикации в jCenter и Maven Central [Часть 1] - 3" src="https://cdn.javarush.com/images/article/e9042c9a-045d-451d-a57f-db569b85e9e9/original.jpeg">Выбираем название <span class="text-bold">skyscanner-flight-search-api-client</span>, открываем <span class="text-bold">Artifact Coordinates</span> и groupId, artifactId и version:
+<img data-max-width="850" alt="Гайд по созданию клиента для Skyscanner API и его публикации в jCenter и Maven Central [Часть 1] - 4" src="https://cdn.javarush.com/images/article/abed787d-e2d6-4d08-8493-2aa75803000b/original.jpeg">Причем вот что нужно иметь в виду:
+<ul>
+<li>GroupId: можно представить себе как идентификатор аккаунта, организации или package name, под которым распространяется библиотека или несколько библиотек. GROUP_ID должен быть в формате Reverse FQDN;</li>
+<li>ArtifactId: название библиотеки или в терминологии Maven название «артефакта»;</li>
+<li>Version: рекомендуется использовать паттерн вида x.y.z, но допустимо использование любых строковых значений.</li>
+</ul><em><span class="text-bold">Примечание:</span> при выборе GROUP_ID следует иметь в виду, что вам должен принадлежать выбранный домен. Иначе возникнут проблемы при его регистрации в Sonatype.</em>
+
+Из этого следует, что нужно выбирать GroupId таким, чтоб это был ваш домен, например, как мой <span class="text-bold">com.github.romankh3</span> — аккаунт на GitHub.
+
+Далее, переиспользуем множество кода с небольшими изменениями из <span class="text-bold">flights-monitoring</span>, на основе которого была создана статья (<a href="https://javarush.com/groups/posts/2400-sozdanie-sistemih-monitoringa-cen-na-aviabiletih-poshagovoe-rukovodstvo" target="_blank">Создание системы мониторинга цен на авиабилеты: пошаговое руководство</a>).
+<h3 id="topic2_2">Шаг 2: добавляем необходимые зависимости</h3>Во время написания клиента оказалось, что библиотека Unirest переехала в гитхаб и продолжает развиваться, но уже под другим groupId. Так что теперь добавляем в <span class="text-bold">build.gradle</span> следующую зависимость в блок dependencies:
+
+<pre><code>
+compile 'com.konghq:unirest-java:3.2.00'
+</code></pre>
+также нам для работы понадобится уже известный по прошлой статье <a href="https://projectlombok.org/" rel="nofollow" target="_blank">Lombok Project</a>. Добавляем его так ,чтобы он работал при рантайме:
+
+<pre><code>
+runtime 'org.projectlombok:lombok:1.18.10'
+</code></pre>
+Далее, для работы с JSON файлами, будем также использовать <a href="https://github.com/FasterXML/jackson" rel="nofollow" target="_blank">Jackson Project</a>. Он имеет не одну зависимость, нам нужны аннотации и databind:
+
+<pre><code>
+compile 'com.fasterxml.jackson.core:jackson-annotations:2.10.0'
+compile 'com.fasterxml.jackson.core:jackson-databind:2.10.0'
+</code></pre>
+И, конечно, для тестирования не забудем добавить JUnit и Mockito. <span class="text-bold">testCompile</span> означает, что зависимость будет видна только для тестов. Как в maven <code>&lt;scope&gt;test&lt;/scope&gt;</code>
+
+<pre><code>
+testCompile 'junit:junit:4.12'
+testCompile 'org.mockito:mockito-core:2.26.0'
+</code></pre>
+Ну вот, мы подготовили все требующиеся зависимости, теперь можно перейти к коду.
+<h3 id="topic2_3">Шаг 3: пишем UniRestUnit и пакет с DTO объектами</h3>Для отправки REST запросов мы создаем <span class="text-bold">UniRestUtil</span> со статическими методами для запросов.
+
+Эта версия 0.1, и у нее будут только те запросы, которые уже реализованы в предыдущей статье, поэтому будет один метод <code>get</code>, который принимает необходимый для работы с Rapidapi ключ и <span class="text-bold">String path</span>. Он уже будет сформирован именно так, как необходимо для запроса. 
+
+path создан для того, чтоб сделать этот метод универсальным.
+
+В ходе написания клиента были переработаны почти все классы, внесены изменения.
+
+Собственно, сам UniRestUtil:
+
+<pre class="lang-java line-numbers"><code>
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.romankh3.skyscanner.api.flightsearchclient.v1.exception.FlightSearchApiClientException;
+import com.github.romankh3.skyscanner.api.flightsearchclient.v1.model.validation.ValidationErrorDto;
+import java.util.List;
+import kong.unirest.HttpResponse;
+import kong.unirest.JsonNode;
+import kong.unirest.Unirest;
+import kong.unirest.UnirestException;
+import org.apache.http.HttpStatus;
+
+/**
+* Unit with static methods for using Unirest library.
+*
+* @author Roman Beskrovnyi
+* @since 0.1
+*/
+final class UniRestUtil {
+
+   private static final String HOST = "skyscanner-skyscanner-flight-search-v1.p.rapidapi.com";
+
+   static final String PLACES_FORMAT = "/apiservices/autosuggest/v1.0/%s/%s/%s/?query=%s";
+   static final String CURRENCIES_FORMAT = "/apiservices/reference/v1.0/currencies";
+   static final String COUNTRIES_FORMAT = "/apiservices/reference/v1.0/countries/%s";
+   static final String VALIDATIONS_KEY = "ValidationErrors";
+
+   static final String PLACES_KEY = "Places";
+   static final String CURRENCIES_KEY = "Currencies";
+   static final String COUNTRIES_KEY = "Countries";
+
+   private static ObjectMapper objectMapper = new ObjectMapper();
+
+
+   static HttpResponse&lt;JsonNode&gt; get(String xRapidApiKey, String path) {
+       HttpResponse&lt;JsonNode&gt; response;
+       try {
+           response = Unirest.get("https://" + HOST + path)
+                   .header("x-rapidapi-host", HOST)
+                   .header("x-rapidapi-key", xRapidApiKey)
+                   .asJson();
+
+           if (response.getStatus() != HttpStatus.SC_OK) {
+               throw new FlightSearchApiClientException(
+                       String.format("There are validation errors. statusCode = %s", response.getStatus()),
+                       readValueWrapper(response.getBody().getObject().get(VALIDATIONS_KEY).toString(),
+                               new TypeReference&lt;list&lt;validationerrordto&gt;&gt;() {
+                               }));
+           }
+       } catch (UnirestException e) {
+           throw new FlightSearchApiClientException(String.format("Request failed, path=%s", HOST + path), e);
+       }
+
+       return response;
+   }
+
+   static &lt;T&gt; T readValueWrapper(String content, TypeReference&lt;T&gt; valueTypeRef) {
+       try {
+           return objectMapper.readValue(content, valueTypeRef);
+       } catch (JsonProcessingException e) {
+           throw new FlightSearchApiClientException("Object Mapping failure.", e);
+       }
+   }
+}
+</code></pre>
+Здесь можно заметить, что я сделал оболочку для checked исключений при помощи своего RuntimeException. Делается это для того, чтобы checked исключения не засоряли кодовую базу у пользователей клиента, а если и произойдет исключительная ситуация, RuntimeException передаст всю информацию пользователю клиента.
+
+Для этого я создал метод <code>readValueWrapper</code>, который выполняет описанное выше поведение для чтения из JSON в POJO. 
+
+Также при помощи идентификаторов доступа были инкапсулированы классы, к которым не нужен доступ извне, поэтому в UniRestUtil стоит package-private идентификатор.
+
+Собственно, вот сам RuntimeException:
+
+<pre class="lang-java line-numbers"><code>
+import com.github.romankh3.skyscanner.api.flightsearchclient.v1.model.validation.ValidationErrorDto;
+import java.util.List;
+
+/**
+* A {@link RuntimeException} that is thrown in case of an flight monitoring failures.
+*
+* @author Roman Beskrovnyi
+* @since 0.1
+*/
+public final class FlightSearchApiClientException extends RuntimeException {
+
+   private List&lt;ValidationErrorDto&gt; validationErrorDtos;
+
+   /**
+    * Constructs a new {@link FlightSearchApiClientException} with the specified detail message and cause.
+    * Note that the detail message associated with cause is not automatically incorporated in this {@link
+    * FlightSearchApiClientException}'s detail message.
+    *
+    * @param message the detail message (which is saved for later retrieval by the Throwable.getMessage() method).
+    * @param throwable the cause (which is saved for later retrieval by the Throwable.getCause() method).
+    * (A null value is permitted, and indicates that the cause is nonexistent or unknown.)
+    */
+   public FlightSearchApiClientException(String message, Throwable throwable) {
+       super(message, throwable);
+   }
+
+   /**
+    * Constructs a new {@link FlightSearchApiClientException} with specified collection of the
+    * {@link ValidationErrorDto} objects.
+    *
+    * @param message the detail message (which is saved for later retrieval by the Throwable.getMessage() method).
+    * @param errors the collection of the {@link ValidationErrorDto} which contain errors from Skyscanner API.
+    */
+   public FlightSearchApiClientException(String message, List&lt;ValidationErrorDto&gt; errors) {
+       super(message);
+       this.validationErrorDtos = errors;
+   }
+}
+</code></pre>
+Самым большим пакетом будет пакет <span class="text-bold">model</span>, который хранит все DTO (data transfer object) объекты. Как те, которые нужны будут для создание запроса, так и те, которые будут возвращать значения. Для большей ясности и структуры, дтошки будут поделены на группы, в которых они используются. 
+
+Почему? Потому что у объекта Place разные поля и имена полей в разных группах. Поэтому есть <span class="text-bold">BrowsePlaceDto</span> и <span class="text-bold">PlacesPlaceDto</span>, и соответственно, они разделены как показано на рисунке ниже:
+<img data-max-width="850" alt="Гайд по созданию клиента для Skyscanner API и его публикации в jCenter и Maven Central [Часть 1] - 5" src="https://cdn.javarush.com/images/article/d7eae698-e54c-41df-b72c-24991e302a1b/original.jpeg">Чтобы не выливать на вас все эти классы, я опишу два типа, а на другие дам <a href="https://github.com/romankh3/skyscanner-flight-api-client/tree/master/src/main/java/com/github/romankh3/skyscannerflightapiclient/v1/model" rel="nofollow" target="_blank">ссылку на GitHub</a>.
+
+Первый тип DTO — Search, то есть те, которые используются для поиска через клиент. На них накладывается валидация полей и указывается, какие из них требуемые и какие опциональные. 
+
+Рассмотрим <span class="text-bold">BrowseSearchDto</span>:
+
+<pre class="lang-java line-numbers"><code>
+import java.time.LocalDate;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NonNull;
+
+/**
+* DTO object for search in Browse Flight Search calls.
+*
+* @since 0.1
+* @author Roman Beskrovnyi
+*/
+@Getter
+@Builder(builderMethodName = "hiddenBuilder")
+public class BrowseSearchDto {
+
+   @NonNull
+   private String country;
+
+   @NonNull
+   private String currency;
+
+   @NonNull
+   private String locale;
+
+   @NonNull
+   private String originPlace;
+
+   @NonNull
+   private String destinationPlace;
+
+   @NonNull
+   private LocalDate outboundPartialDate;
+
+   private LocalDate inboundPartialDate;
+}
+</code></pre>
+Здесь используется три аннотации из Project Lombok:
+<ul>
+<li>@Getter — генерирует геттеры для всех полей;</li>
+<li>@Builder — генерирует все данные, необходимые для использования паттерна <a href="https://ru.wikipedia.org/wiki/%D0%A1%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D1%8C_(%D1%88%D0%B0%D0%B1%D0%BB%D0%BE%D0%BD_%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F)#Java" rel="nofollow" target="_blank">Builder</a>. Оказалось, что в @Builder’e нет геттеров, поэтому отдельно добавил @Getter;</li>
+<li>@NotNull — говорит Lombok, что эти поля должны иметь значения при создании объекта. Это сделано потому, что в поиске эти поля обязательны, и аннотация валидирует их при создании. Просто и быстро. Стоит также отметить, что у поля <span class="text-bold">inboundPartialDate</span> нет этой аннотации, так как оно опционально в этом запросе. Это можно увидеть здесь:</li>
+</ul><img data-max-width="850" alt="Гайд по созданию клиента для Skyscanner API и его публикации в jCenter и Maven Central [Часть 1] - 6" src="https://cdn.javarush.com/images/article/762076a5-302b-41c0-894e-4f76acfd2d35/original.jpeg">Второй тип DTO — это возвращающий результат. Их особенность заключается в том, что нужно добавить аннотацию для Jackson Project.  Ниже приведен CountryDto:
+
+<pre class="lang-java line-numbers"><code>
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
+
+/**
+* Data transfer object for Country.
+*
+* @since 0.1
+* @author Roman Beskrovnyi
+*/
+@Data
+public class CountryDto {
+
+   @JsonProperty("Code")
+   private String code;
+
+   @JsonProperty("Name")
+   private String name;
+}
+</code></pre>
+Где: 
+<ul>
+<li>@Data — аннотация из <a href="https://projectlombok.org/features/Data" rel="nofollow" target="_blank">Lombok проекта</a>, которая генерирует все геттеры, сеттеры, переопределяет <code>toString()</code>, <code>equals()</code> и <code>hashCode()</code> методы. Этим она улучшает читабельность кода и ускоряет время написания <a href="https://ru.wikipedia.org/wiki/POJO" rel="nofollow" target="_blank">POJO</a> объектов;</li>
+<li>@JsonProperty("Code") — это аннотация из Jackson Project, которая говорит, какое поле будет присваиваться этой переменной. То есть поле в JSON, равное Code, будет присваиваться переменной code.</li>
+</ul><h3 id="topic2_4">Шаг 4: Описываем интерфейсы и реализации для клиента</h3><span class="text-bold">PlacesClient</span>:
+
+<pre class="lang-java line-numbers"><code>
+import com.github.romankh3.skyscanner.api.flightsearchclient.v1.model.place.PlaceSearchDto;
+import com.github.romankh3.skyscanner.api.flightsearchclient.v1.model.place.PlacesPlaceDto;
+import java.util.List;
+ 
+/**
+* Get a list of places that match a query string.
+*
+* @author Roman Beskrovnyi
+* @since 0.1
+*/
+public interface PlacesClient {
+ 
+   /**
+    * Get a list of places that match a query string based on arguments.
+    *
+    * @param xRapidApiKey key for getting access to rapid api.
+    * @param placeSearchDto {@link PlacesPlaceDto} object for search places
+    * @return the collection of the {@link PlacesPlaceDto} objects.
+    */
+   List&lt;PlacesPlaceDto&gt; retrieveListPlaces(String xRapidApiKey, PlaceSearchDto placeSearchDto);
+}
+</code></pre>
+И реализация <span class="text-bold">PlacesClientImpl</span>:
+ 
+<pre class="lang-java line-numbers"><code>
+import static com.github.romankh3.skyscanner.api.flightsearchclient.v1.UniRestUtil.PLACES_FORMAT;
+import static com.github.romankh3.skyscanner.api.flightsearchclient.v1.UniRestUtil.PLACES_KEY;
+import static com.github.romankh3.skyscanner.api.flightsearchclient.v1.UniRestUtil.get;
+ 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.github.romankh3.skyscanner.api.flightsearchclient.v1.model.place.PlaceSearchDto;
+import com.github.romankh3.skyscanner.api.flightsearchclient.v1.model.place.PlacesPlaceDto;
+import java.util.List;
+import kong.unirest.HttpResponse;
+import kong.unirest.JsonNode;
+ 
+/**
+* {@inheritDoc}
+*/
+public class PlacesClientImpl implements PlacesClient {
+ 
+   /**
+    * {@inheritDoc}
+    */
+   public List&lt;PlacesPlaceDto&gt; retrieveListPlaces(String xRapidApiKey, PlaceSearchDto placeSearchDto) {
+       HttpResponse&lt;JsonNode&gt; response = get(xRapidApiKey,
+               String.format(PLACES_FORMAT, placeSearchDto.getCountry(), placeSearchDto.getCurrency(),
+                       placeSearchDto.getLocale(), placeSearchDto.getPlaceName()));
+ 
+       String jsonList = response.getBody().getObject().get(PLACES_KEY).toString();
+ 
+       return UniRestUtil.readValueWrapper(jsonList, new TypeReference&lt;List&lt;PlacesPlaceDto&gt;&gt;() {
+       });
+   }
+}
+</code></pre>
+<span class="text-bold">LocalisationClient:</span>
+
+<pre class="lang-java line-numbers"><code>
+import com.github.romankh3.skyscanner.api.flightsearchclient.v1.exception.FlightSearchApiClientException;
+import com.github.romankh3.skyscanner.api.flightsearchclient.v1.model.localisation.CountryDto;
+import com.github.romankh3.skyscanner.api.flightsearchclient.v1.model.localisation.CurrencyDto;
+import java.util.List;
+ 
+/**
+* Retrieve the market countries that we support. Most suppliers (airlines, travel agents and car hire dealers) set
+* their fares based on the market (or country of purchase). It is therefore necessary to specify the market country in
+* every query.
+*
+* @author Roman Beskrovnyi
+* @since 0.1
+*/
+public interface LocalisationClient {
+ 
+   /**
+    * Retrieve the market countries that SkyScanner flight search API support. Most suppliers (airlines,
+    * travel agents and car hire dealers) set their fares based on the market (or country of purchase).
+    * It is therefore necessary to specify the market country in every query.
+    *
+    * @param locale locale of the response.
+    * @return the collection of the {@link CountryDto} objects.
+    */
+   List&lt;countrydto&gt; retrieveCountries(String locale, String xRapidApiKey) throws FlightSearchApiClientException;
+ 
+   /**
+    * Retrieve the currencies that we ScyScanner flight search API.
+    *
+    * @return the collection of the {@link CurrencyDto} objects.
+    */
+   List&lt;currencydto&gt; retrieveCurrencies(String xRapidApiKey) throws FlightSearchApiClientException;
+ 
+}
+</code></pre>
+И реализация <span class="text-bold">LocalisationClientImpl</span>
+
+<pre class="lang-java line-numbers"><code>
+import static com.github.romankh3.skyscanner.api.flightsearchclient.v1.UniRestUtil.COUNTRIES_FORMAT;
+import static com.github.romankh3.skyscanner.api.flightsearchclient.v1.UniRestUtil.COUNTRIES_KEY;
+import static com.github.romankh3.skyscanner.api.flightsearchclient.v1.UniRestUtil.CURRENCIES_FORMAT;
+import static com.github.romankh3.skyscanner.api.flightsearchclient.v1.UniRestUtil.CURRENCIES_KEY;
+import static com.github.romankh3.skyscanner.api.flightsearchclient.v1.UniRestUtil.get;
+import static com.github.romankh3.skyscanner.api.flightsearchclient.v1.UniRestUtil.readValueWrapper;
+ 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.github.romankh3.skyscanner.api.flightsearchclient.v1.model.localisation.CountryDto;
+import com.github.romankh3.skyscanner.api.flightsearchclient.v1.model.localisation.CurrencyDto;
+import java.util.List;
+import kong.unirest.HttpResponse;
+import kong.unirest.JsonNode;
+ 
+/**
+* {@inheritDoc}
+*/
+public class LocalisationClientImpl implements LocalisationClient {
+ 
+   /**
+    * {@inheritDoc}
+    */
+   public List&lt;CountryDto&gt; retrieveCountries(String locale, String xRapidApiKey) {
+       HttpResponse&lt;JsonNode&gt; response = get(xRapidApiKey, String.format(COUNTRIES_FORMAT, locale));
+       String jsonList = response.getBody().getObject().get(COUNTRIES_KEY).toString();
+       return readValueWrapper(jsonList, new TypeReference&lt;List&lt;CountryDto&gt;&gt;() {
+       });
+   }
+ 
+   /**
+    * {@inheritDoc}
+    */
+   public List&lt;CurrencyDto&gt; retrieveCurrencies(String xRapidApiKey) {
+       HttpResponse&lt;JsonNode&gt; response = get(xRapidApiKey, CURRENCIES_FORMAT);
+       String jsonList = response.getBody().getObject().get(CURRENCIES_KEY).toString();
+       return readValueWrapper(jsonList, new TypeReference&lt;List&lt;CurrencyDto&gt;&gt;() {
+       });
+   }
+}
+</code></pre>
+<span class="text-bold">BrowseFlightPricesClient:</span>
+
+<pre class="lang-java line-numbers"><code>
+import com.github.romankh3.skyscanner.api.flightsearchclient.v1.model.browse.BrowseFlightPricesResponseDto;
+import com.github.romankh3.skyscanner.api.flightsearchclient.v1.model.browse.BrowseSearchDto;
+ 
+/**
+* Retrieve the market countries that Skyscanner support. Most suppliers (airlines, travel agents and car hire dealers)
+* set their fares based on the market (or country of purchase). It is therefore necessary to specify the market country
+* in every query.
+*
+* @author Roman Beskrovnyi
+* @since 0.1
+*/
+public interface BrowseFlightPricesClient {
+ 
+   /**
+    * Retrieve the cheapest quotes from our cache prices.
+    *
+    * @param xRapidApiKey key for getting access to rapid api.
+    * @param searchDto {@link BrowseSearchDto} object for search.
+    * @return {@link BrowseFlightPricesResponseDto} object with all the data related to provided search dto.
+    */
+   BrowseFlightPricesResponseDto browseQuotes(String xRapidApiKey, BrowseSearchDto searchDto);
+}
+</code></pre>
+И реализация BrowseFlightPricesClientImpl:
+
+<pre class="lang-java line-numbers"><code>
+import static com.github.romankh3.skyscanner.api.flightsearchclient.v1.UniRestUtil.CURRENCIES_KEY;
+import static com.github.romankh3.skyscanner.api.flightsearchclient.v1.UniRestUtil.PLACES_KEY;
+import static com.github.romankh3.skyscanner.api.flightsearchclient.v1.UniRestUtil.get;
+import static com.github.romankh3.skyscanner.api.flightsearchclient.v1.UniRestUtil.readValueWrapper;
+ 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.github.romankh3.skyscanner.api.flightsearchclient.v1.model.browse.BrowseFlightPricesResponseDto;
+import com.github.romankh3.skyscanner.api.flightsearchclient.v1.model.browse.BrowsePlaceDto;
+import com.github.romankh3.skyscanner.api.flightsearchclient.v1.model.browse.BrowseSearchDto;
+import com.github.romankh3.skyscanner.api.flightsearchclient.v1.model.browse.CarrierDto;
+import com.github.romankh3.skyscanner.api.flightsearchclient.v1.model.browse.QuoteDto;
+import com.github.romankh3.skyscanner.api.flightsearchclient.v1.model.localisation.CurrencyDto;
+import java.util.List;
+import kong.unirest.HttpResponse;
+import kong.unirest.JsonNode;
+ 
+/**
+* {@inheritDoc}
+*/
+public class BrowseFlightPricesClientImpl implements BrowseFlightPricesClient {
+ 
+   public static final String BROWSE_QUOTES_FORMAT = "/apiservices/browsequotes/v1.0/%s/%s/%s/%s/%s/%s";
+   public static final String OPTIONAL_BROWSE_QUOTES_FORMAT = BROWSE_QUOTES_FORMAT + "?inboundpartialdate=%s";
+ 
+   public static final String QUOTES_KEY = "Quotes";
+   public static final String ROUTES_KEY = "Routes";
+   public static final String DATES_KEY = "Dates";
+   public static final String CARRIERS_KEY = "Carriers";
+ 
+   @Override
+   public BrowseFlightPricesResponseDto browseQuotes(String xRapidApiKey, BrowseSearchDto searchDto) {
+       HttpResponse&lt;JsonNode&gt; response = searchDto.getInboundPartialDate() == null ?
+               get(xRapidApiKey, String
+                       .format(BROWSE_QUOTES_FORMAT, searchDto.getCountry(), searchDto.getCurrency(),
+                               searchDto.getLocale(), searchDto.getOriginPlace(), searchDto.getDestinationPlace(),
+                               searchDto.getOutboundPartialDate())) :
+               get(xRapidApiKey, String
+                       .format(OPTIONAL_BROWSE_QUOTES_FORMAT, searchDto.getCountry(), searchDto.getCurrency(),
+                               searchDto.getLocale(), searchDto.getOriginPlace(), searchDto.getDestinationPlace(),
+                               searchDto.getOutboundPartialDate(), searchDto.getInboundPartialDate()));
+ 
+       return mapToObject(response);
+   }
+ 
+   private BrowseFlightPricesResponseDto mapToObject(HttpResponse&lt;jsonnode&gt; response) {
+       BrowseFlightPricesResponseDto flightPricesDto = new BrowseFlightPricesResponseDto();
+       flightPricesDto.setQuotas(readValueWrapper(response.getBody().getObject().get(QUOTES_KEY).toString(),
+               new TypeReference&lt;List&lt;QuoteDto&gt;&gt;() {
+               }));
+       flightPricesDto.setCarriers(readValueWrapper(response.getBody().getObject().get(CARRIERS_KEY).toString(),
+               new TypeReference&lt;List&lt;CarrierDto&gt;&gt;() {
+               }));
+       flightPricesDto
+               .setCurrencies(readValueWrapper(response.getBody().getObject().get(CURRENCIES_KEY).toString(),
+                       new TypeReference&lt;List&lt;CurrencyDto&gt;&gt;() {
+                       }));
+       flightPricesDto.setPlaces(readValueWrapper(response.getBody().getObject().get(PLACES_KEY).toString(),
+               new TypeReference&lt;List&lt;BrowsePlaceDto&gt;&gt;() {
+               }));
+       return flightPricesDto;
+   }
+}
+</code></pre>
+На этом работа нам над клиентом закончена, <a href="https://github.com/romankh3/skyscanner-flight-api-client" rel="nofollow" target="_blank">проект хранится на GitHub</a>.
+
+<a href="https://javarush.com/groups/posts/2431-gayd-po-sozdaniju-klienta-dlja-skyscanner-api-i-ego-publikacii-v-jcenver-i-maven-central-chastj" target="_blank">Гайд по созданию клиента для Skyscanner API и его публикации в jCenver и Maven Central [Часть 2]</a>

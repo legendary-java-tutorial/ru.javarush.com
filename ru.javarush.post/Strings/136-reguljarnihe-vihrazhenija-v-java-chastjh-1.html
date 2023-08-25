@@ -1,0 +1,247 @@
+Регулярные выражения в Java, часть 1
+<p>----------------------------------------</p>
+Предлагаем вашему вниманию перевод краткого руководства по регулярным выражениям в языке Java, написанного Джеффом Фрисеном (Jeff Friesen) для сайта JavaWorld. Для простоты чтения мы разделили статью на несколько частей. 
+
+<p>----------------------------------------</p>
+Предлагаем вашему вниманию перевод краткого руководства по регулярным выражениям в языке Java, написанного Джеффом Фрисеном (Jeff Friesen) для сайта <a href="https://www.javaworld.com/article/3188545/learn-java/java-101-regular-expressions-in-java-part-1.html" target="_blank">JavaWorld</a>. Для простоты чтения мы разделили статью на несколько частей. 
+<img data-max-width="800" data-id="e0682156-0945-4ae6-8a03-d88faabb1d0e" src="/images/article/e0682156-0945-4ae6-8a03-d88faabb1d0e/800.jpeg" class="img-fluid" alt="Регулярные выражения в Java, часть 1 - 1"><h3>Использование API регулярных выражений в программах на языке Java для распознания и описания шаблонов</h3>Символьный и разнообразные строковые типы данных языка Java обеспечивают низкоуровневую поддержку поиска по шаблону, но их использование в этих целях обычно сильно усложняет код. Более простой и производительный код получается при использовании API Regex ("API регулярных выражений"). Данная инструкция поможет вам приступить к работе с регулярными выражениями и API Regex. Сначала мы обсудим в общем три наиболее интересных класса из пакета <code>java.util.regex</code>, а затем заглянем в класс <code>Pattern</code> и изучим его изощренные конструкции поиска по шаблонам.
+
+<span class="text-bold"><mark>Внимание:</mark> </span>загрузить исходный код (созданный Джеффом Фризеном для сайта JavaWorld) демо-приложения из данной статьи можно <a href="http://images.techhive.com/assets/2017/04/11/jw-j101-regexp1-src.zip" target="_blank">отсюда</a>.
+<h3>Что такое регулярные выражения?</h3><a href="https://javarush.com/groups/posts/2013-reguljarnihe-vihrazhenija-v-java" target="_blank">Регулярное выражение</a> (regular expression/regex/regexp) — это строка, которая является шаблоном (pattern), описывающим некий набор строк. Шаблон определяет, какие именно строки относятся к набору. Шаблон состоит из литералов и метасимволов — символов со специальным, а не буквальным значением.
+
+Поиск по шаблону –— это поиск по тексту для нахождения совпадений, то есть строк, соответствующих шаблону регулярного выражения. Java поддерживает поиск по шаблону посредством своего API Regex. Этот API состоит из трех классов: <code>Pattern</code>, <code>Matcher</code> и <code>PatternSyntaxException</code>, расположенных в пакете <code>java.util.regex</code>:
+<ul>
+<li>oбъекты класса <code>Pattern</code>, называемые также шаблонами, представляют собой скомпилированные регулярные выражения.</li>
+<li>oбъекты класса <code>Matcher</code>, или сопоставители, представляют собой механизмы интерпретации шаблонов для обнаружения совпадений в символьных последовательностях (объектах, чьи классы реализуют интерфейс <code>java.lang.CharSequence</code> и служат источниками текста).</li>
+<li>oбъекты класса <code>PatternSyntaxException</code> служат для описания недопустимых шаблонов регулярных выражений.</li>
+</ul>Java также предоставляет поддержку поиска по шаблону посредством различных методов класса <code> java.lang.String</code>. Например, функция <code>boolean matches (String regex)</code> возвращает <code>true</code> только тогда, когда вызывающая строка в точности соответствует регулярному выражению <code>regex</code>.
+<table>
+<thead>
+<tr>
+<th>Удобные методы</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>matches()</code> и другие ориентированные на регулярные выражения удобные методы класса <code>String</code> "под капотом" реализованы аналогично API Regex.
+</td>
+</tr>
+</tbody>
+</table><h3>RegexDemo</h3>Я создал приложение <code>RegexDemo</code> для демонстрации регулярных выражений языка Java и различных методов классов <code>Pattern</code>, <code>Matcher</code> и <code>PatternSyntaxException</code>. 
+
+Ниже — исходный код этого демо-приложения. 
+
+Листинг 1. Демонстрация регулярных выражений
+
+<pre class="lang-java line-numbers"><code>
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+public class RegexDemo
+{
+   public static void main(String[] args)
+   {
+      if (args.length != 2)
+      {
+         System.err.println("usage: java RegexDemo regex input");
+         return;
+      }
+      // Преобразуем символьные последовательности начала новой строки (\n) в символы начала строки.
+      args[1] = args[1].replaceAll("\\\\n", "\n");
+      try
+      {
+         System.out.println("regex = " + args[0]);
+         System.out.println("input = " + args[1]);
+         Pattern p = Pattern.compile(args[0]);
+         Matcher m = p.matcher(args[1]);
+         while (m.find())
+            System.out.println("Found [" + m.group() + "] starting at "
+                               + m.start() + " and ending at " + (m.end() - 1));
+      }
+      catch (PatternSyntaxException pse)
+      {
+         System.err.println("Неправильное регулярное выражение: " + pse.getMessage());
+         System.err.println("Описание: " + pse.getDescription());
+         System.err.println("Позиция: " + pse.getIndex());
+         System.err.println("Неправильный шаблон: " + pse.getPattern());
+      }
+   }
+}
+</code></pre>
+Первое, что делает метод <code>main</code> класса <code>RegexDemo</code> — проверяет свою командную строку. Он требует двух аргументов: первый — регулярное выражение, а второй — входной текст, в котором будет выполняться поиск по этому регулярному выражению.
+
+Возможно, вам понадобится использовать внутри входного текста символ новой строки <code>(\n)</code>. Сделать это можно только указав символ <code>\</code>, за которым следует символ <code>n</code>. Функция <code>main()</code> преобразует эту символьную последовательность в Unicode-значение 10.
+<img data-max-width="800" data-id="0bd03ef1-74da-4b26-a0e2-f7fb95b4cd77" src="/images/article/0bd03ef1-74da-4b26-a0e2-f7fb95b4cd77/800.jpeg" class="img-fluid" alt="Регулярные выражения в Java, часть 1 - 2">Основная часть кода <code>RegexDemo</code> заключена в конструкцию <code>try-catch</code>. Блок <code>try</code> сначала выводит заданное регулярное выражение и входной текст, после чего создает объект <code>Pattern</code>, сохраняющий скомпилированное регулярное выражение (регулярные выражения компилируются ради улучшения производительности поиска по шаблону). Сопоставитель извлекается из объекта <code>Pattern</code> и используется для многократного поиска совпадений, до тех пор, пока не будут найдены все. Блок <code>catch</code> вызывает несколько методов класса <code>PatternSyntaxException</code> для извлечения полезной информации об исключении. Эта информация последовательно выводится в поток вывода.
+
+Необходимости знать детали работы кода пока что нет: они прояснятся, когда мы будем изучать API во второй части статьи. Однако необходимо скомпилировать листинг 1. Возьмите код из листинга 1, после чего наберите в командной строке следующую команду для компиляции <code>RegexDemo</code>:
+
+<code>javac RegexDemo.java</code>
+<h3>Класс Pattern и его конструкции</h3>Класс <code>Pattern</code>, первый из трех классов, составляющих API Regex, представляет собой скомпилированное представление регулярного выражения. Документация по SDK класса <code>Pattern</code> описывает разнообразные конструкции регулярных выражений, но если вы не пользуетесь активно регулярными выражениями, то отдельные части этой документации могут поставить вас в тупик. Что такое квантификаторы (quantifiers) и в чем различие между жадными (greedy), ленивыми (reluctant) и сверхжадными (possessive) квантификаторами? Что такое классы символов (character classes), граничные сопоставители (boundary matchers,), обратные ссылки (back references) и вложенные флаговые выражения (embedded flag expressions)? Я отвечу на эти и другие вопросы в следующих разделах.
+<h3>Литеральные строки</h3>Простейшая конструкция регулярного выражения — литеральная строка. Для успеха поиска по шаблону какая-либо часть входного текста должен соответствовать шаблону этой конструкции. Рассмотрим следующий пример:
+
+<code>java RegexDemo apple applet</code>
+
+В этом примере мы пытаемся найти соответствие для шаблона <code>apple</code> во входном тексте <code>applet</code>. В следующем результате показано найденное совпадение:
+
+<pre class="lang-java line-numbers"><code>
+regex = apple
+input = applet
+Found [apple] starting at 0 and ending at 4
+</code></pre>
+Мы видим в выводимых данных регулярное выражение и входной текст, а затем указание на успешное обнаружение <code>apple</code> в applet. Кроме того, там приведены начальная и конечная позиции этого совпадения: <code>0</code> и <code>4</code>, соответственно. Начальная позиция указывает на первое место в тексте, где было обнаружено совпадение с шаблоном, а конечная позиция — последнюю точку совпадения.
+
+Теперь допустим, что мы задали следующую командную строку:
+
+<code>java RegexDemo apple crabapple</code>
+
+На этот раз мы получим следующий результат, с другими начальной и конечной позициями:
+
+<pre class="lang-java line-numbers"><code>
+regex = apple
+input = crabapple</code>
+Found [apple] starting at 4 and ending at 8
+</pre>
+В обратном случае, с <code>applet</code> в качестве регулярного выражения и <code>apple</code> — входного текста, совпадений найдено не будет. Совпасть должно всё регулярное выражение, а в данном случае, входной текст не содержит <code>t</code> после <code>apple</code>.
+<img data-max-width="800" data-id="63d9a5c3-ac2e-43e3-8516-5fb8f96ff45f" src="/images/article/63d9a5c3-ac2e-43e3-8516-5fb8f96ff45f/800.jpeg" class="img-fluid" alt="Регулярные выражения в Java, часть 1 - 3"><h3>Метасимволы</h3>Более интересные конструкции регулярных выражений сочетают литеральные символы с метасимволами. Например, в регулярном выражении <code>a.b</code>, метасимвол точки <code>(.)</code> означает любой символ, находящийся между <code>a</code> и b. Рассмотрим следующий пример:
+
+<code>java RegexDemo .ox "The quick brown fox jumps over the lazy ox."</code>
+
+В этом примере используется <code>.ox</code> в качестве регулярного выражения, и <code>The quick brown fox jumps over the lazy ox.</code> в качестве входного текста. <code>RegexDemo</code> выполняет поиск в тексте совпадений, начинающихся с любого символа и заканчивающихся на <code>ox.</code> Результаты его выполнения – следующие:
+
+<pre class="lang-java line-numbers"><code>
+regex = .ox
+input = The quick brown fox jumps over the lazy ox.
+Found [fox] starting at 16 and ending at 18
+Found [ ox] starting at 39 and ending at 41
+</code></pre>
+В выведенных результатах видим два совпадения: <code>fox</code> и <code>ox</code> (с символом пробела перед ним). Метасимвол <code>. </code>соответствует символу <code>f</code> в первом случае и пробелу – во втором.
+
+Что же произойдет, если заменить <code>.ox</code> метасимволом <code>.</code>? То есть что мы получим в результате следующей командной строки:
+
+<code>java RegexDemo . "The quick brown fox jumps over the lazy ox."</code>
+
+Поскольку метасимвол точки соответствует любому символу, <code>RegexDemo</code> выведет найденные совпадения для всех символов (включая завершающий символ точки) входного текста:
+
+<pre class="lang-java line-numbers"><code>
+regex = .
+input = The quick brown fox jumps over the lazy ox.
+Found [T] starting at 0 and ending at 0
+Found [h] starting at 1 and ending at 1
+Found [e] starting at 2 and ending at 2
+Found [ ] starting at 3 and ending at 3
+Found [q] starting at 4 and ending at 4
+Found [u] starting at 5 and ending at 5
+Found [i] starting at 6 and ending at 6
+Found [c] starting at 7 and ending at 7
+Found [k] starting at 8 and ending at 8
+Found [ ] starting at 9 and ending at 9
+Found [b] starting at 10 and ending at 10
+Found [r] starting at 11 and ending at 11
+Found [o] starting at 12 and ending at 12
+Found [w] starting at 13 and ending at 13
+Found [n] starting at 14 and ending at 14
+Found [ ] starting at 15 and ending at 15
+Found [f] starting at 16 and ending at 16
+Found [o] starting at 17 and ending at 17
+Found [x] starting at 18 and ending at 18
+Found [ ] starting at 19 and ending at 19
+Found [j] starting at 20 and ending at 20
+Found [u] starting at 21 and ending at 21
+Found [m] starting at 22 and ending at 22
+Found [p] starting at 23 and ending at 23
+Found [s] starting at 24 and ending at 24
+Found [ ] starting at 25 and ending at 25
+Found [o] starting at 26 and ending at 26
+Found [v] starting at 27 and ending at 27
+Found [e] starting at 28 and ending at 28
+Found [r] starting at 29 and ending at 29
+Found [ ] starting at 30 and ending at 30
+Found [t] starting at 31 and ending at 31
+Found [h] starting at 32 and ending at 32
+Found [e] starting at 33 and ending at 33
+Found [ ] starting at 34 and ending at 34
+Found [l] starting at 35 and ending at 35
+Found [a] starting at 36 and ending at 36
+Found [z] starting at 37 and ending at 37
+Found [y] starting at 38 and ending at 38
+Found [ ] starting at 39 and ending at 39
+Found [o] starting at 40 and ending at 40
+Found [x] starting at 41 and ending at 41
+Found [.] starting at 42 and ending at 42
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Метасимволы кавычек</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Чтобы указать <code>.</code> или любой другой метасимвол в качестве литерального символа в конструкции регулярного выражения, необходимо экранировать его одним из следующих способов:
+<ul>
+<li>поставить перед ним символ обратной косой черты;</li>
+<li>Поместить этот метасимвол между <code>\Q</code> и <code>\E</code> (например, <code>\Q.\E</code>).</li>
+</ul>Не забывайте дублировать все встречающиеся в строковом литерале, например, <code>String regex = "\\.";</code> символы обратной косой черты (например, <code>\\.</code> или <code>\\Q.\\E</code>). Не дублируйте те символы обратной косой черты, которые представляют собой часть аргумента командной строки.
+</td>
+</tr>
+</tbody>
+</table><h3>Классы символов</h3>Иногда приходится ограничивать искомые совпадения конкретным набором символов. Например, искать в тексте гласные <code>a</code>, <code>e</code>, <code>i</code>, <code>o</code> и <code>u</code>, причем каждое вхождение гласной буквы считается совпадением. В решении подобных задач нам помогут классы символов, которые задают наборы символов между метасимволами квадратных скобок (<code>[ ]</code>). Класс <code>Pattern</code> поддерживает простые классы символов, диапазонные классы, инверсию, объединение, пересечение и вычитание классов. Мы рассмотрим все их сейчас.
+
+<div class="email-subscription"><iframe frameborder="0" src="https://secure.esputnik.com.ua/4Q0Ef6d2SOs" width="100%" height="200" scrolling="no"></iframe></div><h3>Простые классы символов</h3>Простой класс символов состоит из размещенных бок о бок символов и задает соответствие только этим символам. Например, класс <code>[abc]</code> соответствует символам <code>a</code>,<code>b</code> и <code>c</code>.
+
+Рассмотрим следующий пример:
+
+<code>java RegexDemo [csw] cave</code>
+
+Как видно из результатов, в этом примере будет найден только символ <code>c</code>, для которого есть соответствие в <code>cave</code>:
+
+<pre class="lang-java line-numbers"><code>
+regex = [csw]
+input = cave
+Found [c] starting at 0 and ending at 0
+</code></pre><h2>Инвертированные классы символов</h2>Инвертированный класс символов начинается с метасимвола <code>^</code> и задает соответствие только тем символам, которые в нём не содержатся. Например, класс <code>[^abc]</code> соответствует всем символам, кроме <code>a</code>,<code>b</code> и <code>c</code>.
+
+Рассмотрим следующий пример:
+
+<code>java RegexDemo "[^csw]" cave</code>
+
+Обратите внимание, что на моей операционной системе (Windows) необходимы двойные кавычки, так как командная оболочка рассматривает <code>^</code> как экранирующий символ.
+
+Как видим, в этом примере найдены только символы <code>a</code>, <code>v</code> и <code>e</code>, для которых есть соответствия в <code>cave</code>:
+
+<pre class="lang-java line-numbers"><code>
+regex = [^csw]
+input = cave
+Found [a] starting at 1 and ending at 1
+Found [v] starting at 2 and ending at 2
+Found [e] starting at 3 and ending at 3
+</code></pre><h2>Диапазонные классы символов</h2>Диапазонный класс символов состоит из двух символов, разделенных символом дефиса (<code>-</code>). Все символы, начиная с символа слева от дефиса и заканчивая символом справа, относятся к диапазону. Например, диапазон <code>[a-z]</code> соответствует всем латинским буквам в нижнем регистре. Это эквивалентно заданию простого класса <code>[abcdefghijklmnopqrstuvwxyz]</code>.
+
+Рассмотрим следующий пример:
+
+<code>java RegexDemo [a-c] clown</code>
+
+В этом примере будет найден только символ <code>c</code>, для которого есть соответствие в <code>clown</code>:
+
+<pre class="lang-java line-numbers"><code>
+regex = [a-c]
+input = clown
+Found [c] starting at 0 and ending at 0
+</code></pre>
+<a href="https://javarush.com/groups/posts/154-reguljarnihe-vihrazhenija-v-java-chastjh-2" target="_blank">Регулярные выражения в Java, часть 2</a> 
+<a href="https://javarush.com/groups/posts/186-reguljarnihe-vihrazhenija-v-java-chastjh-3" target="_blank">Регулярные выражения в Java, часть 3</a>
+<a href="https://javarush.com/groups/posts/229-reguljarnihe-vihrazhenija-v-java-chastjh-4" target="_blank">Регулярные выражения в Java, часть 4</a>
+<a href="https://javarush.com/groups/posts/247-reguljarnihe-vihrazhenija-v-java-chastjh-5" target="_blank">Регулярные выражения в Java, часть 5</a>
+<table>
+<tbody><tr>
+<th><p>Что еще почитать:
+</p>
+</th>
+</tr>
+<tr>
+<td><ul>
+<li><a href="https://javarush.com/groups/posts/72-kak-praviljhno-nachatjh-razrabotku-pod-subd-oracle" target="_blank">Как правильно начать разработку под СУБД Oracle</a></li>
+<li><a href="https://javarush.com/groups/posts/254-top-5-bibliotek-mashinnogo-obuchenija-dlja-java" target="_blank">Топ 5 библиотек машинного обучения для Java</a><a href="https://javarush.com/groups/posts/264-populjarno-o-ljambda-vihrazhenijakh-v-java-s-primerami-i-zadachami-chastjh-1-" target="_blank">Популярно о лямбда-выражениях в Java. С примерами и задачами. Часть 1</a></li>
+<li><a href="https://javarush.com/groups/posts/845-lambda-vihrazhenija-na-primerakh" target="_blank">Lambda-выражения на примерах</a></li></ul></td>
+</tr>
+</tbody></table>

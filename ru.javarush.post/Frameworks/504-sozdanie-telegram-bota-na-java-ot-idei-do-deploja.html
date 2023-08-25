@@ -1,0 +1,273 @@
+Создание Telegram-бота на Java: от идеи до деплоя
+<p>----------------------------------------</p>
+Статья о том как создать бота для мессенджера Telegram с описанием всех подводных камней. Что же такое вообще боты? Для начала вам необходимо ознакомиться с официальной документацией к библиотеке для разработки ботов на Telegram(далее API) ...
+<p>----------------------------------------</p>
+Что же такое вообще боты? Подробно почитать об этом можно <a href="https://tlgrm.ru/docs/bots" target="_blank" rel="nofollow">здесь</a>. 
+
+Для начала вам необходимо ознакомиться с официальной документацией к библиотеке для разработки ботов на Telegram(далее API). Лежит она <a href="https://tlgrm.ru/docs/bots/api" target="_blank" rel="nofollow">здесь</a>.
+<img data-id="5105f296-1f83-4610-999c-e615dcd72fce" data-max-width="850" alt="Создание Telegram-бота на Java: от идеи до деплоя - 1" src="https://cdn.javarush.com/images/article/5105f296-1f83-4610-999c-e615dcd72fce/1024.jpeg">Там все очень доступно и понятно. Казалось бы, пиши да радуйся! Но не все так просто. Проведя много времени в поисковиках я находил отрывки знаний по разработке ботов, например, как сделать клавиатуру, обработать CallbackQuery и тому подобное. Полного и исчерпывающего руководства для разработки ботов на Java я так и не нашел. Это и натолкнуло меня на написание этой статьи.
+
+В Интернете много сайтов, где можно создать своего бота с уже готовым деплоем. Но дело в том. что в своем большинстве создаются боты, которые могут предоставить справочную информацию и прочее. Наш бот - полноценное веб-приложение, к которому можно привязать базу данных, выполнять запросы на различные API, парсить сайты, выполнять сложные вычисления и прочее. Дело ограничено только вашей фантазией. Я надеюсь что в этих строках я немного разъяснил вам о чем собираюсь писать.
+
+Бота в Telegram зарегистрировать очень просто, этот процесс подробно описан в документации по ссылке выше. Для нашего приложение необходимо знать только имя бота и  токен, который вы получите при регистрации.
+
+По сути бот — просто консольное веб-приложение. Никакого фронтенда, чистая обработка команд. Если вы желаете хорошо освоить Hibernate или научиться парсить JSON, то такой проект для вас.
+
+Начнем с того чтобы подключить зависимость в pom.xml (подразумеваем что вы используете Maven). Сделать это можно так:
+
+<pre class="lang-java line-numbers"><code>
+&lt;dependency&gt;
+            &lt;groupId&gt;org.telegram&lt;/groupId&gt;
+            &lt;artifactId&gt;telegrambots&lt;/artifactId&gt;
+            &lt;version&gt;3.5&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+Затем создаем класс <code>Bot</code>, унаследуем его от класса <code>TelegramLongPollingBot</code>, переопределив его методы:
+
+<pre class="lang-java line-numbers"><code>
+public class Bot extends TelegramLongPollingBot {
+
+    /**
+     * Метод для приема сообщений.
+     * @param update Содержит сообщение от пользователя.
+     */
+    @Override
+    public void onUpdateReceived(Update update) {
+	String message = update.getMessage().getText();
+	sendMsg(update.getMessage().getChatId().toString(), message);
+    }
+
+    /**
+     * Метод для настройки сообщения и его отправки.
+     * @param chatId id чата
+     * @param s Строка, которую необходимот отправить в качестве сообщения.
+     */
+    public synchronized void sendMsg(String chatId, String s) {
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.enableMarkdown(true);
+        sendMessage.setChatId(chatId);
+        sendMessage.setText(s);
+        try {
+            sendMessage(sendMessage);
+        } catch (TelegramApiException e) {
+            log.log(Level.SEVERE, "Exception: ", e.toString());
+        }
+    }
+
+    /**
+     * Метод возвращает имя бота, указанное при регистрации.
+     * @return имя бота
+     */
+    @Override
+    public String getBotUsername() {
+        return ”BotName”;
+    }
+
+    /**
+     * Метод возвращает token бота для связи с сервером Telegram
+     * @return token для бота
+     */
+    @Override
+    public String getBotToken() {
+        return ”BotToken”;
+    }
+}
+</code></pre>
+Ну и содержимое метода <code>main</code>:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+        ApiContextInitializer.init();
+        TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
+        try {
+            telegramBotsApi.registerBot(Bot.getBot());
+        } catch (TelegramApiRequestException e) {
+            e.printStackTrace();
+        }
+}
+</code></pre>
+Вписав в методы <code>getBotUsername()</code> и <code>getBotToken()</code> мы запускаем бота. Пока он только перенаправляет нам любые сообщения, которые мы отправим ему, этакое «зеркало». Работает это все следующим образом: когда вы запускаете приложение, оно начинает раз в n количество секунд отправлять на сервер Telegram GET запрос по следующему URL: https://api.telegram.org/BotToken/getMe, где BotToken – токен вашего бота, получая в ответ JSON, в котором находятся все сообщения. Каждое такое сообщение обрабатывается библиотекой и приходит в метод <code>OnUpdateReceived(Update update)</code> объектом <code>Update</code>. С ним то мы и работаем. В этом вся прелесть Telegram-ботов, они могут работать на любом компьютере, для тестирования нужно просто запустить приложение, не нужно деплоить его на хостинг после каждого изменения. Это очень удобно.
+
+Само собой бота можно настроить на работу по вебхуку, руководство можно найти на просторах Интернета, мы будем для простоты работать по LongPolling.
+
+То как обрабатывать сообщения и что отправлять в ответ ограничено только лишь средствами языка и библиотекой, все остальное на ваше усмотрение. Вы можете сделать бота, который будет искать для вас видео на YouTube, можете сделать бота, который каждый день будет присылать вам то, что вы отправите себе, к примеру, за год, эдакую капсулу времени. А можете научиться интегрироваться к CRM-системам и делать ботов для малого бизнеса, все ограничено вашей фантазией.
+
+Идем дальше. Те, кто пользовался ботами знают, что с ними удобно взаимодействовать командами, начинающимися со знака <code>«/»</code>, например <code>/start</code>. Но есть способ удобнее — кнопки. Есть два вида кнопок: те, что появляются под полем ввода, <code>ReplyKeyboardMarkup</code> и кнопки, которые находятся непосредственно под сообщением, к которому привязаны, <code>InlineKeyboardMarkup</code>. В документации вы можете поверхностно ознакомиться с их описанием.
+ 
+<strong>ReplyKeyboardMarkup. </strong>
+
+По сути это — массив массивов кнопок, <code>List&lt;KeyboardRow&lt;KeyboardButton&gt;&gt;</code>. Вот пример кода, который создает клавиатуру 
+
+<pre class="lang-java line-numbers"><code>
+public synchronized void setButtons(SendMessage sendMessage) {
+        // Создаем клавиуатуру
+        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
+        sendMessage.setReplyMarkup(replyKeyboardMarkup);
+        replyKeyboardMarkup.setSelective(true);
+        replyKeyboardMarkup.setResizeKeyboard(true);
+        replyKeyboardMarkup.setOneTimeKeyboard(false);
+
+        // Создаем список строк клавиатуры
+        List&lt;KeyboardRow&gt; keyboard = new ArrayList&lt;&gt;();
+
+        // Первая строчка клавиатуры
+        KeyboardRow keyboardFirstRow = new KeyboardRow();
+        // Добавляем кнопки в первую строчку клавиатуры
+        keyboardFirstRow.add(new KeyboardButton(“Привет”));
+
+        // Вторая строчка клавиатуры
+        KeyboardRow keyboardSecondRow = new KeyboardRow();
+        // Добавляем кнопки во вторую строчку клавиатуры
+        keyboardSecondRow.add(new KeyboardButton(“Помощь”);
+
+        // Добавляем все строчки клавиатуры в список
+        keyboard.add(keyboardFirstRow);
+        keyboard.add(keyboardSecondRow);
+        // и устанваливаем этот список нашей клавиатуре
+        replyKeyboardMarkup.setKeyboard(keyboard);
+    }
+</code></pre>
+В методе <code>sendMsg()</code> мы вызываем этот метод, передавая ему сообщение, таким образом устанавливая для такого сообщения клавиатуру. Когда мы отправим это сообщение пользователю, то он увидит текст сообщения, который мы установили, а также 2 кнопки, на которых будет написано Привет и Помощь, друг под дружкой.
+
+По нажатию на эти кнопки боту будет отправлено сообщение, текст которого представляет собой то, что написано на кнопке. То есть если клиент нажмет «Помощь», то боту придет сообщение с текстом “Помощь“. Для него это как будто бы клиент сам написал текст “Помощь“ и отправил бы ему. Ну а затем вы обрабатываете такие сообщения. 
+
+<div class="email-subscription"><iframe frameborder="0" src="https://secure.esputnik.com.ua/4Q0Ef6d2SOs" width="100%" height="200" scrolling="no"></iframe></div>
+<strong>InlineKeyboardMarkup</strong>
+
+Это тоже массив массивов, он похож на предыдущий Markup, но логика работы здесь немного другая. Такая клавиатура привязывается к определенному сообщению и существует только для него. Вот метод для установки Inline-клавиатуры
+
+<pre class="lang-java line-numbers"><code>
+private void setInline() {
+        List&lt;List&lt;InlineKeyboardButton&gt;&gt; buttons = new ArrayList&lt;&gt;();
+        List&lt;InlineKeyboardButton&gt; buttons1 = new ArrayList&lt;&gt;();
+        buttons1.add(new InlineKeyboardButton().setText(“Кнопка“).setCallbackData(17));
+        buttons.add(buttons1);
+
+        InlineKeyboardMarkup markupKeyboard = new InlineKeyboardMarkup();
+        markupKeyboard.setKeyboard(buttons);
+    }
+</code></pre>
+Создаем <code>List</code> в <code>List</code>, добавляем в первую строку Inline-кнопку. Такая кнопка может содержать URL, ссылку на канал или же <code>CallbackQuery</code>, о которой я напишу чуть позже. Здесь мы устанавливаем текст для нашей кнопки, который будет видеть пользователь, а затем устанавливаем данные, которые будут отправлены боту. В нашем примере пользователь видит «Привет», а боту при нажатии отправится число 17, это и есть наш <code>CallbackQuery</code>.
+
+Пару слов о <code>CallbackQuery</code>. Для получения таких данных из объекта <code>Update</code> нужно выполнить <code>update.getCallbackQuery()</code>, этот метод возвращает <code>CallbackQuery</code>, из которого уже можно получить данные, переданные боту. Не нужно пытаться получить эти данные через метод <code>update.getMessage().getText()</code>, получите <code>NullPointerException</code>.
+
+<pre class="lang-java line-numbers"><code>
+@Override
+    public void onUpdateReceived(Update update) {
+        if(update.hasMessage()) {
+            ThreadClass thread = new ThreadClass(update.getMessage());
+        } else  if(update.hasCallbackQuery()) {
+            AnswerCallbackThread answerThread = new AnswerCallbackThread(update.getCallbackQuery());
+        }
+    }
+</code></pre>
+Если есть сообщение, отправляем на обработку в новый поток сообщение, если есть <code>CallbackQuery</code>, отправляем его на обработку в соответствующий поток.
+
+На <code>CallbackQuery</code> можно отправлять ответ. У каждого объекта в Telegram есть свой id. Для отправки ответа на определенный <code>CallbackQuery</code> нужно знать лишь его id, который мы получим из соответствующего объекта. Для отправки ответа вызовем такой метод:
+
+<pre class="lang-java line-numbers"><code>
+public synchronized void answerCallbackQuery(String callbackId, String message) {
+        AnswerCallbackQuery answer = new AnswerCallbackQuery();
+        answer.setCallbackQueryId(callbackId);
+        answer.setText(message);
+        answer.setShowAlert(true);
+        try {
+            answerCallbackQuery(answer);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+</code></pre>
+<mark>ВАЖНО:</mark> Текст в ответе на <code>CallbackQuery</code> должен быть не длиннее 200 символов!
+
+При отправке такого ответа клиент получит всплывающее окно, в котором будет написано сообщение. Такое окно может исчезнуть через несколько секунд само после появления, а может висеть до тех пор, пока пользователь не нажмет ок. Для переключения этих режимов мы вызываем метод <code>answer.setShowAlert(true)</code>. При <code>true</code> окошко висит до нажатия ок, при <code>false</code> исчезает через 5 секунд.
+
+В принципе это все базовые фишки библиотеки Telegram bot. Такие вещи как отправка мультимедиа, геолокации и тд вы при желании сможете освоить из документации.
+
+Давайте перейдем к деплою нашего бота на хостинге.
+
+Для своего проекта я выбрал Heroku, тк по моему мнению это достаточно удобный хостинг, который имеет свой CLI. Он бесплатен, но на таком тарифе ваш бот при отсутствии запросов будет уходить в спячку через 30 минут. Когда же к нему будет отправлен запрос, он просыпается. Это происходит довольно быстро, вы даже не заметите(если конечно коннект к БД не поднимается заново). Ограничение на бесплатный тариф - 5MБ база данных, 100МБ дисковое пространство, 2ТБ траффика в месяц, 1 дино. Дино — это ваше запущенное приложение. 
+
+Скажу сразу, именно стадия деплоя вызвала у меня трудности, так как я до этого никогда не разворачивал свои приложения. 
+
+Heroku при деплое требует наличия файла с именем Procfile(без расширения). Создаем его в корне проекта, пишем туда 
+<code>worker: sh target/bin/workerBot</code>
+
+<strong>workerBot</strong> – имя, которое мы указываем в <code>pom.xml</code>
+
+Будет запускаться&nbsp;sh&nbsp;скрипт, генерируемый с помощью&nbsp;Maven&nbsp;плагина&nbsp;appassembler-maven-plugin. В скрипте описан запуск скомпилированного&nbsp;jar. Имя запускаемого класса указывается между&nbsp;&lt;mainClass&gt;&lt;/mainClass&gt;, имя скрипта между&nbsp;&lt;name&gt;&lt;/name&gt; 
+pom.xml:
+
+<pre class="lang-java line-numbers"><code>
+...
+&lt;build&gt;
+    &lt;plugins&gt;
+        ...
+       &lt;plugin&gt;
+            &lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+            &lt;artifactId&gt;appassembler-maven-plugin&lt;/artifactId&gt;
+            &lt;version&gt;1.1.1&lt;/version&gt;
+            &lt;configuration&gt;
+                &lt;assembleDirectory&gt;target&lt;/assembleDirectory&gt;
+                &lt;programs&gt;
+                    &lt;program&gt;
+                        &lt;mainClass&gt;com.home.server.TelegramBot&lt;/mainClass&gt;
+                        &lt;name&gt;workerBot&lt;/name&gt;
+                    &lt;/program&gt;
+                &lt;/programs&gt;
+            &lt;/configuration&gt;
+            &lt;executions&gt;
+                &lt;execution&gt;
+                    &lt;phase&gt;package&lt;/phase&gt;
+                    &lt;goals&gt;
+                        &lt;goal&gt;assemble&lt;/goal&gt;
+                    &lt;/goals&gt;
+                &lt;/execution&gt;
+            &lt;/executions&gt;
+        &lt;/plugin&gt;
+    &lt;/plugins&gt;
+&lt;/build&gt;
+</code></pre>
+Перед началом этого процесса вам следует зарегистрироваться на Heroku, установить Git и Heroku CLI. Если вашему приложению необходима БД, то при оформлении нового приложения не забудьте добавить нужную вам БД. Далее вам необходимо узнать host, username, password и port вашей БД, а после указать в своем приложении. Далее перед деплоем выполните сборку вашего проекта с помощью Maven.
+
+<pre class="lang-java line-numbers"><code>
+mvn clean install
+</code></pre>
+<strong>Для начала мы переходим в каталог нашего проекта, инициализируем репозиторий командой <code>git init</code></strong>
+
+<strong>Затем добавляем в этот репозиторий свой проект</strong>
+
+<pre class="lang-java line-numbers"><code>
+git add .
+</code></pre>
+<strong>После коммитим изменения</strong>
+
+<pre class="lang-java line-numbers"><code>
+git commit -m “First commit in project”
+</code></pre>
+<strong>Далее вам нужно залогиниться на heroku, пишем в командной строке</strong>
+
+<pre class="lang-java line-numbers"><code>
+heroku login
+</code></pre>
+<strong>Вводим свои данные, указаные при регистрации. После вам нужно узнать URL вашего репозитория на heroku, делается это в настройках.</strong>
+
+<strong>Затем пишем</strong>
+
+<pre class="lang-java line-numbers"><code>
+git remote add heroku [url]
+</code></pre>
+<strong>Для вашего репозитория добавится удаленный репозиторий heroku. Далее пишем</strong>
+
+<pre class="lang-java line-numbers"><code>
+git push heroku master
+</code></pre>
+Ждем…
+<strong>При успешном деплое приложения выполняем команду</strong>
+
+<pre class="lang-java line-numbers"><code>
+heroku ps:scale worker=1
+</code></pre>
+И все, ваше приложение запущено. Если же этого не произошло, просмотрите внимательно логи, скорее всего возникает ошибка в вашем приложении, из-за которой оно упало.
+
+Спасибо за прочтение такой длинной статьи, надеюсь кому-нибудь это окажется полезным и сэкономит массу времени в тех местах, где я спотыкался при разработке.

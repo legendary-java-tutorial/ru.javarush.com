@@ -1,0 +1,161 @@
+Строки в Java (class java.lang.String)
+<p>----------------------------------------</p>
+Ни дня без строчки. Ни строчки без char'а. Что можно делать со строками, а что нельзя. А что можно, но не нужно. Путь программиста – сложный и долгий процесс. И в большинстве случаев начинается он с программы, которая выводит Hello World на экран. Java не исключение ...
+<p>----------------------------------------</p>
+<h2>Вступление</h2>Путь программиста – сложный и долгий процесс. И в большинстве случаев начинается он с программы, которая выводит Hello World на экран. Java не исключение (см. Lesson: <a href="https://docs.oracle.com/javase/tutorial/getStarted/cupojava/index.html" target="_blank" rel="nofollow">The "Hello World!" Application</a>).
+
+Как мы видим, вывод сообщения осуществляется при помощи <code>System.out.println("Hello World!");</code>
+Если посмотреть в Java API, то метод <a href="https://docs.oracle.com/javase/8/docs/api/java/io/PrintStream.html#println-java.lang.String-" target="_blank" rel="nofollow">System.out.println</a> принимает входным параметром <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html" target="_blank" rel="nofollow">String</a>. Про этот тип данных и пойдёт речь.
+<h2>String как последовательность символов</h2>Собственно, <strong>String</strong> в переводе с английского – строка. Так и есть, тип String представляет текстовую строку. А чем же является текстовая строка? Текстовая строка - это какая-то упорядоченная последовательность символов, которые идут друг за другом. Символ – char. Последовательность – sequence. Так что да, абсолютно правильно, String является реализацией <code>java.lang.CharSequence</code>. А если заглянуть внутрь самого класса String, то внутри него ничто иное как массив char’ов: <code>private final char value[];</code>
+
+У <code>java.lang.CharSequence</code> довольно простой контракт:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="3a95a4a2-be7c-47ab-b402-601dabba66c4" data-max-width="710" alt="Строки в Java (class java.lang.String) - 1" src="https://cdn.javarush.com/images/article/3a95a4a2-be7c-47ab-b402-601dabba66c4/1024.jpeg"></div></div>У нас есть метод получения количества элементов, получения конкретного элемента и получения набора элементов + непосредственно сам метод toString, который вернёт this)
+
+Интереснее разобраться в методах, которые пришли к нам в Java 8, а это: <code>chars()</code> и <code>codePoints()</code>
+
+Вспоминаем по Tutorial от Oracle «<a href="https://docs.oracle.com/javase/tutorial/java/nutsandbolts/datatypes.html" target="_blank" rel="nofollow">Primitive Data Types</a>», что char - это <code>single 16-bit Unicode character</code>.То есть по сути char это просто тип размером в половину типа int (32 бита), который представляет числа от 0 до 65535 (см. decimal значения в <a href="https://simple.wikipedia.org/wiki/ASCII " target="_blank" rel="nofollow">ASCII Table</a>). То есть при желании мы можем char представить в виде int. И в Java 8 этим воспользовались. 
+
+Начиная с 8 версии Java у нас появляется <strong>IntStream</strong> - стрим для работы с примитивными int'ами. Поэтому в charSequence есть возможность получить IntStream, представляющий или char’ы или codePoint’ы.
+
+Прежде чем перейдём к ним, увидим пример, чтобы показать всё удобство этого подхода. Воспользуемся <a href="https://www.tutorialspoint.com/compile_java_online.php" target="_blank" rel="nofollow">Tutorialspoint online java compiler</a>’ом и выполним код:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args){
+        String line = "aaabccdddc";
+        System.out.println( line.chars().distinct().count() );
+}
+</code></pre>
+Теперь таким незамысловатым способом можно получить кол-во уникальных символов.
+ <h2>CodePoints</h2>Итак, про chars мы увидели. Теперь непонятно, что за code points такие.
+
+Понятие codePoint появилось потому, что когда Java появилась, то хватало 16 бит (половина int) чтобы закодировть символ. Поэтому char в java представлен в UTF-16 формате ("Unicode 88" specification). Позже повяился Unicode 2.0, концепция которого заключалась в представлении символа в виде сурогатной пары (2 чаров). Это позволило расширить диапазон возможных значений до значения int. Подробнее см. на stackoverflow: "<a href="https://stackoverflow.com/questions/1029897/comparing-a-char-to-a-code-point" target="_blank" rel="nofollow">Comparing a char to a code-point?</a>".
+Про UTF-16 так же указано и в JavaDoc к <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Character.html" target="_blank" rel="nofollow">Character</a> . Там же, в JavaDoc, сказано, что:
+
+<code>In this representation, supplementary characters are represented as a pair of char values, the first from the high-surrogates range, (\uD800-\uDBFF), the second from the low-surrogates range (\uDC00-\uDFFF).</code>
+
+На стандартных алфавитах довольно трудно (а может даже нельзя) воспроизвести это. 
+
+Но символы буквами и цифрами не заканчиваются. В японии придумали такую сложную для кодировок штуку, как emoji - язык идеограмм и смайликов. Есть про это интересная статья на википедии: «<a href="https://ru.wikipedia.org/wiki/%D0%AD%D0%BC%D0%BE%D0%B4%D0%B7%D0%B8" target="_blank" rel="nofollow">Эмодзи</a>».
+
+Найдём пример emoji, например такой: «<a href="https://emojipedia.org/ghost/" target="_blank" rel="nofollow">Emoji Ghost</a>». Как мы видим, там даже указан тот самый codePoint (значение = U+1F47B). Указан он в шестнадцатеричном формате. Если перевести в десятичное число, то получим 128123. Это больше, чем позволяет 16 бит (т.е. больше чем 65535). Скопируем его:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="d3638d24-218a-492c-9242-13e22020acff" data-max-width="710" alt="Строки в Java (class java.lang.String) - 2" src="https://cdn.javarush.com/images/article/d3638d24-218a-492c-9242-13e22020acff/1024.jpeg"></div></div>К сожалению, платформа JavaRush не поддерживает такие символы в тексте. Поэтому, в пример ниже нужно будет в String вставить значение.
+Поэтому, теперь нам будет понятен простой тест:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args){
+	    String emojiString = "Вставте сюда эмоджи через ctrl+v";
+	    //На один emojiString приходится 2 чара (т.к. не влезает в 16 бит)
+	    System.out.println(emojiString.codePoints().count()); //1
+	    System.out.println(emojiString.chars().count()); //2
+}
+</code></pre>
+Как видно, в данном случае 1 codePoint идёт за 2 char’а. Вот такая вот магия.
+<h2>Character</h2>Как мы увидели выше, String’и в Java состоят из char. Примитивный тип позволяет хранить значение, а вот обёртка <code>java.lang.Character</code> над примитивным типом позволяет сделать много полезного с этим символом. Например, мы можем перевести строку в верхний регистр:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+    String line = "организация объединённых наций";
+    char[] chars = line.toCharArray();
+    for (int i = 0; i &lt; chars.length; i++) {
+        if (i == 0 || chars[i - 1] == ' ') {
+            chars[i] = Character.toUpperCase(chars[i]);
+        }
+    }
+    System.out.println(new String(chars));
+}
+</code></pre>
+Ну и разные интересности: <code>isAlphabetic()</code>, <code>isLetter()</code>, <code>isSpaceChar()</code>, <code>isDigit()</code>, <code>isUpperCase()</code>, <code>isMirrored()</code> (например, скобки. '(' имеет зеркальное отражение ')').
+<h2>String Pool</h2>Строки в Java неизменяемы, то есть константны. В том числе об этом указано в самом JavaDoc класса <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html" target="_blank" rel="nofollow">java.lang.String</a>.
+
+Второе и тоже очень важное – строки могут задаваться литералами:
+
+<pre class="lang-java line-numbers"><code>
+String literalString = "Hello, World!";
+String literalString = "Hello, World!";
+</code></pre>
+То есть любая строка в кавычках, как указано выше, на самом деле объект. И тут напрашивается вопрос – если мы так часто используем строки и они часто могут быть одинаковыми (например, текст «Ошибка» или «Выполнено успешно»), нельзя ли как-нибудь сделать так, чтобы строки не создавались каждый раз? Кстати, у нас ведь ещё есть Map’ы, где ключом может быть строка. Тогда нам точно нельзя, чтобы одинаковые строки были разными объектами, иначе мы потом не сможем из Map достать объект.
+
+Разработчики Java подумали подумали и придумали String Pool. Это такое место, где хранятся строки, можно назвать это кэшем строк. Попадают туда «сами» не все строки, а только строки, указанные в коде литералом. В пул можно внести строку и самому, но об этом чуть позже.
+
+Итак, в памяти у нас есть где-то этот кэш. Справедливый вопрос: а где этот пул находится? Ответ на него можно найти на stackoverflow: «<a href="https://stackoverflow.com/questions/4918399/where-does-javas-string-constant-pool-live-the-heap-or-the-stack" target="_blank" rel="nofollow">Where does Java's String constant pool live, the heap or the stack?</a>». 
+
+Расположен он в Heap памяти, в особой runtime constant pool области. Runtime constant pool выделяется при создании класса или интерфейса виртуальной машиной из <a href="https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-2.html#jvms-2.5.4" target="_blank" rel="nofollow">method area</a> - особой области в Heap, доступ к которой есть у всех потоков внутри виртуальной машины Java.
+
+Что же даёт нам String pool? У этого есть несколько преимуществ:
+<ul>
+<li>Не будут создаваться однотипные объекты</li>
+<li>Сравнение по ссылке быстрее, чем посимвольное сравнение через equals</li>
+</ul>Но что, если нам хочется внести созданный объект в этот кэш? Тогда, у нас есть особый метод: <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html#intern--" target="_blank" rel="nofollow">String.intern</a>
+Данный метод добавляет строку в String Pool. Стоит заметить, что это не просто какой-то кэш в виде массива (как для Integer’ов). Метод intern указан как «native». Это значит, что сам метод реализован на другом языке (в основном c++). В случае с базовыми методами Java к ним могут применяться ещё различные оптимизации на уровне JVM. В общем, тут будет происходить магия.
+
+Про intern интересно прочитать следующий пост: <a href="https://habr.com/post/79913/#comment_2345814" target="_blank" rel="nofollow">https://habr.com/post/79913/#comment_2345814</a>
+И вроде идея хороша. Но как это скажется на нас? А ведь действительно, скажется)
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+    String test = "literal";
+    String test2 = new String("literal");
+    System.out.println(test == test2);
+}
+</code></pre>
+Как видите, строки одинаковые, но результат будет false. А всё потому, что == сравнивает не по значению, а по ссылке. А вот так работает:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+    String test = "literal";
+    String test2 = new String("literal").intern();
+    System.out.println(test == test2);
+}
+</code></pre>
+Только заметим, что new String всё равно мы сделаем. То есть intern нам вернёт String из кэша, а вот изначальный String, по которому мы искали в кэше, будет выброшен на очистку, т.к. никто больше про него не знает. На лицо лишнее потребление ресурсов =( Поэтому, сравнивать строки нужно всегда через equals, чтобы уйти по возможности от внезапных и трудно определяемых ошибок.
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+    String test = "literal";
+    String test2 = new String("literal").intern();
+    System.out.println(test.equals(test2));
+}
+</code></pre>
+Equals выполняет посимвольное сравнивание строк.
+<h2>Конкатенация</h2>Как мы помним, строки можно складывать. И как мы помним строки у нас неизменяемы. Так как же тогда это работает? Всё верно, создаётся новая строка, которая состоит из символов складываемых объектов.
+
+Существует миллион версий о том, как работает конкатенация через плюс. Кто-то считает что будет каждый раз новый объект, кто-то считает что будет ещё что-то. Но прав может быть кто-то один. И этот кто-то – компилятор javac.
+
+Воспользуемся сервисом <a href="https://www.compilejava.net" target="_blank" rel="nofollow">онлайн компилятора</a> и выполним:
+
+<pre class="lang-java line-numbers"><code>
+public class HelloWorld {
+
+    public static void main(String[] args) {
+        String helloMessage = "Hello, ";
+        String target = "World";
+        System.out.println(helloMessage + target);
+    }
+
+}
+</code></pre>
+Теперь сохраним это как zip архив, извлечём в каталог и выполним: <code>javap –c HelloWorld</code>
+
+И тут мы всё узнаем:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="e1718240-a526-4dab-8bb5-0185b20a59a1" data-max-width="710" alt="Строки в Java (class java.lang.String) - 3" src="https://cdn.javarush.com/images/article/e1718240-a526-4dab-8bb5-0185b20a59a1/1024.jpeg"></div></div>В цикле, конечно, лучше делать конкатенацию через StringBuilder самим. И не потому что какая-то магия, а чтобы StringBuilder создавался до цикла, а в самом цикле происходил только append. Кстати, тут есть ещё одна интересность. 
+
+Есть отличная статья: «<a href="https://habr.com/post/260767/" target="_blank" rel="nofollow">Обработка строк в Java. Часть I: String, StringBuffer, StringBuilder</a>». Много полезного в комментариях. Например, указано, что при конкатенации вида <code>new StringBuilder().append()...toString()</code> действует intrinsic оптимизация, регулируемая опцией -XX:+OptimizeStringConcat, которая по умолчанию включена.
+
+intrinsic - переводится как "внутренний". Такие вещи JVM обрабатывает особенным образом, обрабатывая их как Native, только без дополнительных затрат на JNI. Подробнее: "<a href="https://www.slideshare.net/RednaxelaFX/green-teajug-hotspotintrinsics02232013" target="_blank" rel="nofollow">Intrinsic Methods in HotSpot VM</a>".
+
+<div class="email-subscription"><iframe frameborder="0" src="https://secure.esputnik.com.ua/4Q0Ef6d2SOs" width="100%" height="200" scrolling="no"></iframe></div><h2>StringBuilder и StringBuffer</h2>Как мы выше видели, StringBuilder очень полезный инструмент. Строки являются immutable, т.е. неизменяемыми. А складывать хочется. Поэтому, нам в помощь даны 2 класса: StringBuilder и StringBuffer. Основное отличие между ними в том, что StringBuffer появился в JDK1.0, в то время как StringBuilder пришёл в java 1.5 как не синхронизированная версия StringBuffer, чтобы снять повышенные затраты на ненужную синхронизацию методов. Оба эти классы являются реализацией абстрактного класса AbstractStringBuilder - A mutable sequence of characters. Внутри хранится массив чаров, который расширяется по правилу: value.length * 2 + 2. По умолчанию размер (capacity) у StringBuilder'а равен 16.
+<h2>Comparable</h2>Строки являются comparable, т.е. реализуют метод compareTo. Выполняется это при помощи посимвольного сравнения. Интересно, что из двух строк выбирается минимальная длинна и по ней выполняется цикл. Поэтому, compareTo вернёт или разницу между int значениями первых несовпавших символов в пределе наименьшей из длинн строк, либо вернёт разницу между длиннами строк, если в пределах минимальной длинны строки все символы совпадают. Такое сравнение называется «лексикографическим».
+<h2>Работа со строками Java</h2>String имеет множество полезных методов:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="be4a7efb-b708-4433-b3b6-da38154099ec" data-max-width="710" alt="Строки в Java (class java.lang.String) - 4" src="https://cdn.javarush.com/images/article/be4a7efb-b708-4433-b3b6-da38154099ec/1024.jpeg"></div></div>На работу со строками сущесвует множество задач. Например, на <a href="http://codingbat.com/java" target="_blank" rel="nofollow">Coding Bat</a>.
+Так же есть курс на coursera: "<a href="https://ru.coursera.org/learn/algorithms-on-strings" target="_blank" rel="nofollow">Algorithms on Strings</a>". 
+<h2>Заключение</h2>Даже небольшой обзор данного класса занимает внушительное место. А это ещё не всё.
+
+Настоятельно рекомендую к просмотру доклад с JPoint 2015 года: Алексей Шипилёв — Катехизис java.lang.String
+<div class="row">
+<div class="col col-md-10 col-lg-8">
+<div class="embed-responsive embed-responsive-16by9">
+<iframe width="560" height="315" src="https://www.youtube.com/embed/SZFe3m1DV1A" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen=""></iframe>
+</div>
+</div>
+</div>
+#Viacheslav

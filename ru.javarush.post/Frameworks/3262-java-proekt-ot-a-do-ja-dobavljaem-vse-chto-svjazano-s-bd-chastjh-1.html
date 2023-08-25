@@ -1,0 +1,409 @@
+Добавляем все, что связано с БД. (Часть 1) - "Java-проект от А до Я"
+<p>----------------------------------------</p>
+Шаг за шагом мы идем к нашей цели. Сегодня нам нужно решить выполнить много задач: Добавить Flyway. Здесь же настроим развертывание БД для проекта...
+<p>----------------------------------------</p>
+Шаг за шагом мы идем к нашей цели.
+
+<img data-max-width="800" data-id="06c2b289-0c7f-4e27-ae5c-f7468f2359e7" src="https://cdn.javarush.com/images/article/06c2b289-0c7f-4e27-ae5c-f7468f2359e7/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем все, что связано с БД. Часть 1 - 1">Сегодня нам нужно решить выполнить много задач:<ol>
+
+<li>Добавить Flyway. Здесь же настроим развертывание БД для проекта.</li>
+<li>Добавить схему БД.</li>
+<li>Добавить слой репозитория.</li>
+<li>Добавить команду для статистики бота.</li>
+<li>Написать тесты, в конце концов.</li>
+
+</ol>Поэтому садитесь поудобнее: будет лонгрид.
+
+Мы уже научились <span class="text-bold">деплоить наше приложение</span> с помощью docker и docker-compose. Это было нелегко, и тех, у кого это получилось сделать, поздравляю.
+
+Если будут какие-то вопросы по реализации — можете посмотреть на код в этом <a href="https://t.me/romankh3/36" rel="nofollow" target="_blank">пулл-реквесте</a>.<h2>Добавляем Flyway</h2>Чтобы добавить Flyway, нужно иметь базу данных, которую мы добавим как еще один service в docker-compose. <a href="https://javarush.com/groups/posts/3241-java-proekt-ot-a-do-ja-realizuem-razvertihvanie-prilozhenija" target="_blank">В прошлый раз</a> я говорил, что в docker-compose есть секция services, которая как раз и отвечает за добавление и управление некой инфраструктурой — то есть, набором приложений/баз данных/мессенджеров и тд.<table><tbody>
+
+<tr><td>Я уже говорил о том, <a href="https://javarush.com/groups/posts/3157-java-proekt-ot-a-do-ja-springboot--flyway" target="_blank">что такое Flyway и как его добавить в SpringBoot приложение</a>. Советую освежить информацию в памяти перед прочтением этой статьи. Также можно почитать <a href="https://github.com/javarushcommunity/springboot-flyway-demo/blob/master/README.md" rel="nofollow" target="_blank">README.md</a> файл проекта с демонстрацией статьи о Flyway + SpringBoot.</td></tr>
+
+</tbody></table>Первое, что мы делаем — обновляем нашу main ветку в проекте (git pull) и создаем новую с названием нашей задачи — STEP_5_JRTB-1 (git checkout -b STEP_5_JRTB-1). Напомню: мы переименовали ветки, чтобы отсортировать последовательность выполнения задач в проекте можно было только по названию. Это позволит быстро переходить от одного шага к другому. 
+
+Теперь можно спокойно работать.
+
+Нам нужно добавить три зависимости:
+
+<pre class="language-java line-numbers"><code>
+&lt;dependency&gt;
+  &lt;groupId&gt;org.flywaydb&lt;/groupId&gt;
+  &lt;artifactId&gt;flyway-core&lt;/artifactId&gt;
+&lt;/dependency&gt;
+
+&lt;dependency&gt;
+  &lt;groupId&gt;mysql&lt;/groupId&gt;
+  &lt;artifactId&gt;mysql-connector-java&lt;/artifactId&gt;
+  &lt;scope&gt;runtime&lt;/scope&gt;
+&lt;/dependency&gt;
+
+&lt;dependency&gt;
+  &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+  &lt;artifactId&gt;spring-boot-starter-data-jpa&lt;/artifactId&gt;
+&lt;/dependency&gt;
+</code></pre>
+Первая зависимость отвечает за добавление в проект FlyWay, вторая добавляет нам возможность подключаться к MySQL бд. Третья — SpringBoot starter, который запускает всю магию использования БД в Spring. 
+
+И еще добавим ломбок, чтобы не писать геттеры и сеттеры: 
+
+<pre class="language-java line-numbers"><code>
+&lt;dependency&gt;
+  &lt;groupId&gt;org.projectlombok&lt;/groupId&gt;
+  &lt;artifactId&gt;lombok&lt;/artifactId&gt;
+  &lt;optional&gt;true&lt;/optional&gt;
+&lt;/dependency&gt;
+</code></pre>
+Теперь нам нужна база данных для разработки. Мы будем создавать ее пока что (<em>пока я лучше не придумал</em>) как отдельный docker-compose файл и отдельный файл для application.properties. 
+
+Есть такая вещь в разработке (и в Spring экосистеме в частности) как профили. В зависимости от профиля запускаются разные настройки для работы. Думаю, в будущем мы объединим docker-compose в один файл и сделаем так, чтобы для разработки запускалась только одна база данных на тех настройках, которые нам нужны. 
+
+На данный момент сделаем так:<ol>
+
+<li>Создадим файл в корне проекта docker-compose-test.yml, в котором будет запускаться только база данных с собственными настройками. </li>
+<li>Создадим файл application-test.properties с настройками, которые соответствуют настройкам в docker-compose-test.yml файле. </li>
+
+</ol>Для работы с MySQL я взял официальный образ из <a href="https://hub.docker.com/_/mysql" rel="nofollow" target="_blank">DockerHub</a>:<img data-max-width="512" data-id="637cbcf9-ec2c-4be2-b249-efa916a6bc33" src="https://cdn.javarush.com/images/article/637cbcf9-ec2c-4be2-b249-efa916a6bc33/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем все, что связано с БД. Часть 1 - 2">Быстро пролистав, нашел нужные переменные:
+
+<span class="code">MYSQL_DATABASE</span> — имя БД
+<span class="code">MYSQL_USER</span> — имя пользователя БД
+<span class="code">MYSQL_PASSWORD</span> — пароль пользователя БД
+
+И то, как их нужно правильно записать:
+
+<pre class="language-java line-numbers"><code>
+jrtb-db:
+   image: mysql
+   restart: always
+   container_name: dev-jrtb-db
+   ports:
+     - "3306:3306"
+   environment:
+     MYSQL_DATABASE: "dev_jrtb_db"
+     MYSQL_USER: root
+     MYSQL_PASSWORD: root
+</code></pre>
+После этого создаю в корне проекта docker-compose-test.yml:
+
+<pre class="language-java line-numbers"><code>
+version: '3.1'
+
+services:
+ jrtb-db:
+   image: mysql
+   restart: always
+   container_name: dev-jrtb-db
+   ports:
+     - "3306:3306"
+   environment:
+     MYSQL_DATABASE: "dev_jrtb_db"
+     MYSQL_USER: root
+     MYSQL_PASSWORD: root
+</code></pre>
+Чтобы запустить именно этот файл для работы с docker-compose, нужно использовать в запросе флаг <span class="text-bold">-f</span>. Он означает, что будет предоставлено имя файла, который запускается, а не взят стандартный docker-compose.yml. 
+
+Поэтому запрос будет выглядеть так:
+
+<span class="text-bold">docker-compose -f docker-compose-test.yml up -d</span>
+
+Получается, вначале мы говорим, какой взять файл (<span class="text-bold">-f docker-compose-test.yml</span>), а потом говорим, что нужно поднять сервисы и сделать это в daemon режиме (<span class="text-bold">up -d</span>) — то есть так, чтобы процесс работал вне сессии терминала, в котором эту команду запустили.
+
+Запускаем и пробуем подключиться к БД, чтобы удостовериться, что она поднялась и ею можно пользоваться. Для этого открываем знакомый нам MySQL Workbench (<a href="https://javarush.com/groups/posts/2989-java-proekt-ot-a-do-ja-razbiraem-bazih-dannihkh-i-jazihk-sql-chastjh-4--proverka-domashnego-zad" target="_blank">вот здесь мы говорили об этом</a>) и создаем новое соединение:<img data-max-width="800" data-id="820efb09-f50a-4162-98ec-d573b274c32d" src="https://cdn.javarush.com/images/article/820efb09-f50a-4162-98ec-d573b274c32d/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем все, что связано с БД. Часть 1 - 3">Нам нужно заполнить следующие поля:<ul>
+
+<li>Connection name — имя соединения — как вариант, DEV_JRTB_DB;</li>
+<li>Hostname — здесь адрес, на котором развернута БД. В нашем случае все останется, как и было: <span class="text-bold">127.0.0.1</span>, ну или localhost;</li>
+<li>username — здесь будет root, как у нас записано в docker-compose; </li>
+<li>password — также root.</li>
+
+</ul>После этого нужно проверить, будет ли соединение. Для этого нажимаем <span class="text-bold">Test Connection</span>:<img data-max-width="800" data-id="47bc0771-1f79-4780-bc13-8f5758e6a9b7" src="https://cdn.javarush.com/images/article/47bc0771-1f79-4780-bc13-8f5758e6a9b7/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем все, что связано с БД. Часть 1 - 4">В итоге получаем: Failed to Connect to MySQL…
+
+Почему? Заходим в терминал и смотрим, что произошло с докер-контейнером. Напишем в терминале:<img data-max-width="800" data-id="39fa940e-9ff0-4ad6-b1ef-030decc04013" src="https://cdn.javarush.com/images/article/39fa940e-9ff0-4ad6-b1ef-030decc04013/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем все, что связано с БД. Часть 1 - 5">Видим, что терминал создан 59 минут назад, а перезапуск был 55 секунд... почему? Непонятно, нужно смотреть логи. Заходим в терминале в корень проекта и запустить следующую команду:
+
+<span class="text-bold">docker-compose -f docker-compose-test.yml logs</span>
+
+<details><summary>Получаем:</summary><p></p><div class="terminal">dev-jrtb-db | 2021-02-28 10:14:28+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.23-1debian10 started.
+dev-jrtb-db | 2021-02-28 10:14:28+00:00 [Note] [Entrypoint]: Switching to dedicated user 'mysql'
+dev-jrtb-db | 2021-02-28 10:14:28+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.23-1debian10 started.
+dev-jrtb-db | 2021-02-28 10:14:28+00:00 [ERROR] [Entrypoint]: Database is uninitialized and password option is not specified
+dev-jrtb-db | 	You need to specify one of MYSQL_ROOT_PASSWORD, MYSQL_ALLOW_EMPTY_PASSWORD and MYSQL_RANDOM_ROOT_PASSWORD
+dev-jrtb-db | 2021-02-28 10:14:29+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.23-1debian10 started.
+dev-jrtb-db | 2021-02-28 10:14:29+00:00 [Note] [Entrypoint]: Switching to dedicated user 'mysql'
+dev-jrtb-db | 2021-02-28 10:14:29+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.23-1debian10 started.
+dev-jrtb-db | 2021-02-28 10:14:29+00:00 [ERROR] [Entrypoint]: Database is uninitialized and password option is not specified
+dev-jrtb-db | 	You need to specify one of MYSQL_ROOT_PASSWORD, MYSQL_ALLOW_EMPTY_PASSWORD and MYSQL_RANDOM_ROOT_PASSWORD
+dev-jrtb-db | 2021-02-28 10:14:29+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.23-1debian10 started.
+dev-jrtb-db | 2021-02-28 10:14:29+00:00 [Note] [Entrypoint]: Switching to dedicated user 'mysql'
+dev-jrtb-db | 2021-02-28 10:14:29+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.23-1debian10 started.
+dev-jrtb-db | 2021-02-28 10:14:29+00:00 [ERROR] [Entrypoint]: Database is uninitialized and password option is not specified
+dev-jrtb-db | 	You need to specify one of MYSQL_ROOT_PASSWORD, MYSQL_ALLOW_EMPTY_PASSWORD and MYSQL_RANDOM_ROOT_PASSWORD
+dev-jrtb-db | 2021-02-28 10:14:30+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.23-1debian10 started.
+dev-jrtb-db | 2021-02-28 10:14:30+00:00 [Note] [Entrypoint]: Switching to dedicated user 'mysql'
+dev-jrtb-db | 2021-02-28 10:14:30+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.23-1debian10 started.
+dev-jrtb-db | 2021-02-28 10:14:30+00:00 [ERROR] [Entrypoint]: Database is uninitialized and password option is not specified
+dev-jrtb-db | 	You need to specify one of MYSQL_ROOT_PASSWORD, MYSQL_ALLOW_EMPTY_PASSWORD and MYSQL_RANDOM_ROOT_PASSWORD
+dev-jrtb-db | 2021-02-28 10:14:32+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.23-1debian10 started.
+dev-jrtb-db | 2021-02-28 10:14:32+00:00 [Note] [Entrypoint]: Switching to dedicated user 'mysql'
+dev-jrtb-db | 2021-02-28 10:14:32+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.23-1debian10 started.
+dev-jrtb-db | 2021-02-28 10:14:32+00:00 [ERROR] [Entrypoint]: Database is uninitialized and password option is not specified
+dev-jrtb-db | 	You need to specify one of MYSQL_ROOT_PASSWORD, MYSQL_ALLOW_EMPTY_PASSWORD and MYSQL_RANDOM_ROOT_PASSWORD
+dev-jrtb-db | 2021-02-28 10:14:34+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.23-1debian10 started.
+dev-jrtb-db | 2021-02-28 10:14:34+00:00 [Note] [Entrypoint]: Switching to dedicated user 'mysql'
+dev-jrtb-db | 2021-02-28 10:14:34+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.23-1debian10 started.
+dev-jrtb-db | 2021-02-28 10:14:34+00:00 [ERROR] [Entrypoint]: Database is uninitialized and password option is not specified
+dev-jrtb-db | 	You need to specify one of MYSQL_ROOT_PASSWORD, MYSQL_ALLOW_EMPTY_PASSWORD and MYSQL_RANDOM_ROOT_PASSWORD
+dev-jrtb-db | 2021-02-28 10:14:37+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.23-1debian10 started.
+dev-jrtb-db | 2021-02-28 10:14:37+00:00 [Note] [Entrypoint]: Switching to dedicated user 'mysql'
+dev-jrtb-db | 2021-02-28 10:14:37+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.23-1debian10 started.
+dev-jrtb-db | 2021-02-28 10:14:37+00:00 [ERROR] [Entrypoint]: Database is uninitialized and password option is not specified
+dev-jrtb-db | 	You need to specify one of MYSQL_ROOT_PASSWORD, MYSQL_ALLOW_EMPTY_PASSWORD and MYSQL_RANDOM_ROOT_PASSWORD
+dev-jrtb-db | 2021-02-28 10:14:44+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.23-1debian10 started.
+dev-jrtb-db | 2021-02-28 10:14:44+00:00 [Note] [Entrypoint]: Switching to dedicated user 'mysql'
+dev-jrtb-db | 2021-02-28 10:14:44+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.23-1debian10 started.
+dev-jrtb-db | 2021-02-28 10:14:44+00:00 [ERROR] [Entrypoint]: Database is uninitialized and password option is not specified
+dev-jrtb-db | 	You need to specify one of MYSQL_ROOT_PASSWORD, MYSQL_ALLOW_EMPTY_PASSWORD and MYSQL_RANDOM_ROOT_PASSWORD
+dev-jrtb-db | 2021-02-28 10:14:58+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.23-1debian10 started.
+dev-jrtb-db | 2021-02-28 10:14:58+00:00 [Note] [Entrypoint]: Switching to dedicated user 'mysql'
+dev-jrtb-db | 2021-02-28 10:14:58+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.23-1debian10 started.
+dev-jrtb-db | 2021-02-28 10:14:58+00:00 [ERROR] [Entrypoint]: Database is uninitialized and password option is not specified
+dev-jrtb-db | 	You need to specify one of MYSQL_ROOT_PASSWORD, MYSQL_ALLOW_EMPTY_PASSWORD and MYSQL_RANDOM_ROOT_PASSWORD</div><p></p></details>
+Теперь понятно, что БД так и не запустилась с нашими настройками. Ошибка одна и та же, поэтому вычленим ее из листа:
+
+<div class="terminal">2021-02-28 11:03:37+00:00 [ERROR] [Entrypoint]: Database is uninitialized and password option is not specified
+dev-jrtb-db | 	You need to specify one of MYSQL_ROOT_PASSWORD, MYSQL_ALLOW_EMPTY_PASSWORD and MYSQL_RANDOM_ROOT_PASSWORD</div>
+То есть ему нужно определить пароль для root пользователя — главного пользователя. Хорошо, сейчас мы обновим наш файл:
+
+<pre class="language-java line-numbers"><code>
+version: '3.1'
+
+services:
+ jrtb-db:
+   image: mysql
+   restart: always
+   container_name: dev-jrtb-db
+   ports:
+     - "3306:3306"
+   environment:
+     MYSQL_DATABASE: "dev_jrtb_db"
+     MYSQL_ROOT_PASSWORD: root
+</code></pre>
+Мы убрали те переменные за пользователя и пароль и добавили только пароль для рутовского пользователя. Это значит, что теперь для пользователя root будет пароль root. По крайней мере, мы так предполагаем. Сейчас запустим и посмотрим, что будет:
+
+<span class="text-bold">docker-compose -f docker-compose-test.yml up -d</span>
+
+И сразу посмотрим, что говорят нам логи:
+
+<span class="text-bold">docker-compose -f docker-compose-test.yml logs</span>
+
+<details><summary>Смотрим:</summary><p></p><div class="terminal">Attaching to dev-jrtb-db
+dev-jrtb-db | 2021-02-28 11:20:40+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.23-1debian10 started.
+dev-jrtb-db | 2021-02-28 11:20:41+00:00 [Note] [Entrypoint]: Switching to dedicated user 'mysql'
+dev-jrtb-db | 2021-02-28 11:20:41+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.23-1debian10 started.
+dev-jrtb-db | 2021-02-28 11:20:41+00:00 [Note] [Entrypoint]: Initializing database files
+dev-jrtb-db | 2021-02-28T11:20:41.083803Z 0 [System] [MY-013169] [Server] /usr/sbin/mysqld (mysqld 8.0.23) initializing of server in progress as process 43
+dev-jrtb-db | 2021-02-28T11:20:41.088457Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+dev-jrtb-db | 2021-02-28T11:20:41.447990Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
+dev-jrtb-db | 2021-02-28T11:20:42.672093Z 6 [Warning] [MY-010453] [Server] root@localhost is created with an empty password ! Please consider switching off the --initialize-insecure option.
+dev-jrtb-db | 2021-02-28 11:20:45+00:00 [Note] [Entrypoint]: Database files initialized
+dev-jrtb-db | 2021-02-28 11:20:45+00:00 [Note] [Entrypoint]: Starting temporary server
+dev-jrtb-db | 2021-02-28T11:20:45.893664Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.23) starting as process 88
+dev-jrtb-db | 2021-02-28T11:20:45.921695Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+dev-jrtb-db | 2021-02-28T11:20:46.088339Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
+dev-jrtb-db | 2021-02-28T11:20:46.207499Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Socket: /var/run/mysqld/mysqlx.sock
+dev-jrtb-db | 2021-02-28T11:20:46.369170Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
+dev-jrtb-db | 2021-02-28T11:20:46.369357Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
+dev-jrtb-db | 2021-02-28T11:20:46.371501Z 0 [Warning] [MY-011810] [Server] Insecure configuration for --pid-file: Location '/var/run/mysqld' in the path is accessible to all OS users. Consider choosing a different directory.
+dev-jrtb-db | 2021-02-28T11:20:46.402227Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.23'  socket: '/var/run/mysqld/mysqld.sock'  port: 0  MySQL Community Server - GPL.
+dev-jrtb-db | 2021-02-28 11:20:46+00:00 [Note] [Entrypoint]: Temporary server started.
+dev-jrtb-db | Warning: Unable to load '/usr/share/zoneinfo/iso3166.tab' as time zone. Skipping it.
+dev-jrtb-db | Warning: Unable to load '/usr/share/zoneinfo/leap-seconds.list' as time zone. Skipping it.
+dev-jrtb-db | Warning: Unable to load '/usr/share/zoneinfo/zone.tab' as time zone. Skipping it.
+dev-jrtb-db | Warning: Unable to load '/usr/share/zoneinfo/zone1970.tab' as time zone. Skipping it.
+dev-jrtb-db | 2021-02-28 11:20:49+00:00 [Note] [Entrypoint]: Creating database dev_jrtb_db
+dev-jrtb-db | 
+dev-jrtb-db | 2021-02-28 11:20:49+00:00 [Note] [Entrypoint]: Stopping temporary server
+dev-jrtb-db | 2021-02-28T11:20:49.187996Z 11 [System] [MY-013172] [Server] Received SHUTDOWN from user root. Shutting down mysqld (Version: 8.0.23).
+dev-jrtb-db | 2021-02-28T11:20:50.925075Z 0 [System] [MY-010910] [Server] /usr/sbin/mysqld: Shutdown complete (mysqld 8.0.23)  MySQL Community Server - GPL.
+dev-jrtb-db | 2021-02-28 11:20:51+00:00 [Note] [Entrypoint]: Temporary server stopped
+dev-jrtb-db | 
+dev-jrtb-db | 2021-02-28 11:20:51+00:00 [Note] [Entrypoint]: MySQL init process done. Ready for start up.
+dev-jrtb-db | 
+dev-jrtb-db | 2021-02-28T11:20:51.420058Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.23) starting as process 1
+dev-jrtb-db | 2021-02-28T11:20:51.427384Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+dev-jrtb-db | 2021-02-28T11:20:51.577244Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
+dev-jrtb-db | 2021-02-28T11:20:51.677659Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Bind-address: '::' port: 33060, socket: /var/run/mysqld/mysqlx.sock
+dev-jrtb-db | 2021-02-28T11:20:51.787156Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
+dev-jrtb-db | 2021-02-28T11:20:51.787325Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
+dev-jrtb-db | 2021-02-28T11:20:51.789742Z 0 [Warning] [MY-011810] [Server] Insecure configuration for --pid-file: Location '/var/run/mysqld' in the path is accessible to all OS users. Consider choosing a different directory.
+dev-jrtb-db | 2021-02-28T11:20:51.812100Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.23'  socket: '/var/run/mysqld/mysqld.sock'  port: 3306  MySQL Community Server - GPL.</div><p></p></details>
+Ошибок вроде уже нет, поэтому можно смотреть, будет ли доступ.
+
+Но, к сожалению, доступа опять нет… Ничего: будем дальше разбираться!<img data-max-width="800" data-id="7ef67a2a-0954-4898-aa44-51c359ff5b2e" src="https://cdn.javarush.com/images/article/7ef67a2a-0954-4898-aa44-51c359ff5b2e/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем все, что связано с БД. Часть 1 - 6">Чтобы завершить работу docker-compose и удалить все контейнеры, нужно написать:
+
+<span class="text-bold">docker-compose -f docker-compose-test.yml down</span>
+
+Здесь мы указали файл, по которому нужно сделать удаление.
+
+Что делать? Будем гуглить: может, у кого-то получилось сделать лучше. Самый простой запрос: “example of mysql in docker-compose” помогает нам найти <a href="https://medium.com/@chrischuck35/how-to-create-a-mysql-instance-with-docker-compose-1598f3cc1bee" rel="nofollow" target="_blank">ссылку</a> на medium ресурс.
+
+Там приводят такой пример:
+
+<pre class="language-java line-numbers"><code>
+version: '3.3'
+services:
+ db:
+   image: mysql:5.7
+   restart: always
+   environment:
+     MYSQL_DATABASE: 'db'
+     # So you don't have to use root, but you can if you like
+     MYSQL_USER: 'user'
+     # You can use whatever password you like
+     MYSQL_PASSWORD: 'password'
+     # Password for root access
+     MYSQL_ROOT_PASSWORD: 'password'
+   ports:
+     # &lt;Port exposed&gt; : &lt; MySQL Port running inside container&gt;
+     - '3306:3306'
+   expose:
+     # Opens port 3306 on the container
+     - '3306'
+     # Where our data will be persisted
+   volumes:
+     - my-db:/var/lib/mysql
+# Names our volume
+volumes:
+ my-db:
+</code></pre>
+Адаптируем его под наши нужды и получаем:
+
+<pre class="language-java line-numbers"><code>
+version: '3.1'
+
+services:
+ jrtb-db:
+   image: mysql:5.7
+   restart: always
+   environment:
+     MYSQL_DATABASE: 'dev_jrtb_db'
+     # So you don't have to use root, but you can if you like
+     MYSQL_USER: 'dev_jrtb_db_user'
+     # You can use whatever password you like
+     MYSQL_PASSWORD: 'dev_jrtb_db_password'
+     # Password for root access
+     MYSQL_ROOT_PASSWORD: 'root'
+   ports:
+     # &lt;Port exposed&gt; : &lt; MySQL Port running inside container&gt;
+     - '3306:3306'
+   expose:
+       # Opens port 3306 on the container
+       - '3306'
+</code></pre>
+Запускаем этот вариант уже известной нам командой:
+
+<span class="text-bold">docker-compose -f docker-compose-test.yml up -d</span>
+
+Пытаемся еще раз получить доступ к базе данных через MySQLWorkBench:<img data-max-width="800" data-id="9ab2bfa8-7b30-41a4-9da3-343e992eee20" src="https://cdn.javarush.com/images/article/9ab2bfa8-7b30-41a4-9da3-343e992eee20/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем все, что связано с БД. Часть 1 - 7">Наконец-то появился доступ. Но теперь же интересно, что повлияло на это. 
+
+Я грешу на эту часть:
+
+<pre class="language-java line-numbers"><code>
+expose:
+   # Opens port 3306 on the container
+   - '3306'
+</code></pre>
+Проверить легко: без этого просто ничего не должно работать :D. Проверим: удалим эту часть, перезапустим docker-compose:
+
+<span class="text-bold">docker-compose -f docker-compose-test.yml down</span>
+
+<span class="text-bold">docker-compose -f docker-compose-test.yml up</span>
+
+Пытаемся зайти в БД через workbench: все зашло. Тогда единственный вариант — это версия БД. Здесь четко указана 5.7, то есть, если поменять ее на последнюю, не должно работать.
+
+Перезапустил — и вправду не работает…<img data-max-width="800" data-id="9826a212-8d1e-4c5a-b625-d036508dfa8a" src="https://cdn.javarush.com/images/article/9826a212-8d1e-4c5a-b625-d036508dfa8a/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем все, что связано с БД. Часть 1 - 8">Видимо, какие-то проблемы у них с докер образом на последней версии. Ну ладно, не беда. Такое часто случается с бесплатным программным обеспечением. Будем использовать версию 5.7.
+
+Посмотрим, есть ли база данных, которая нам нужна — dev_jrtb_db. Для этого запустим Query в MySQL Workbench команду <span class="text-bold">SHOW DATABASES</span>:<img data-max-width="800" data-id="f2a910b4-8e20-4d73-9926-a1b1003c4970" src="https://cdn.javarush.com/images/article/f2a910b4-8e20-4d73-9926-a1b1003c4970/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем все, что связано с БД. Часть 1 - 9">Да, в выводе она присутствует. Отлично, можно двигаться дальше.
+
+Далее добавим нашу первую миграцию. На основе задач из статьи <a href="https://javarush.com/groups/posts/3170-java-proekt-ot-a-do-ja-planirovanie-proekta-semjh-raz-otmerjh--odin-raz-otrezhjh" target="_blank">"Планирование проекта: семь раз отмерь — один раз отрежь"</a> создадим нашу первую таблицу tg_user. 
+
+Находиться все миграции будут в папке <span class="text-bold">projectDir/src/main/resources/db/migration</span>, а имя будет такое: <span class="text-bold">V00001__add_tg_user_table.sql</span>. Почему именно в той папке и такое имя — описывал в статье про Spring + flyway.
+
+Вот как будет выглядеть наша первая миграция:
+
+<span class="text-bold">V00001__add_tg_user_table.sql:</span>
+
+<pre class="language-java line-numbers"><code>
+-- ensure that the table with this name is removed before creating a new one.
+DROP TABLE IF EXISTS tg_user;
+
+-- Create tg_user table
+CREATE TABLE tg_user (
+   chat_id VARCHAR(100),
+   active BOOLEAN
+);
+</code></pre>
+То есть, здесь просто мы создаем таблицу пользователя, у которого есть только ID-шник чата (уникальный элемент, который может быть использован для работы как ID в таблице) и его состояние — активный или неактивный. Так, в случае остановки бота информация о подписке останется, и ее можно будет использовать, если ботом опять захотят воспользоваться. Другой информации о пользователе пока что не нужно. 
+
+Теперь главный вопрос: а как это проверить? Нужно запустить наше приложение. Пока что в основном docker-compose.yml файле нет связи с БД, а еще нам нужно научиться отлаживать приложение вместе с базой данных. Поэтому запустим приложение с Intellij IDEA.
+
+Для проверки этого нам нужно будет запустить наш main метод в JavarushTelegramBotApplication. 
+
+Чтобы разделить работу по деплою и тестированию, мы будем использовать другой файл с пропертями — <span class="text-bold">application-test.properties</span>. С помощью этого шаблона мы даем Spring’у понять, что этот файл будет использоваться для профиля <span class="text-bold">test</span>. Когда мы не указываем профиль, используется профиль по умолчанию (проверьте это у себя в логах при запуске SpringBoot: в первых строках об этом будет написано).
+
+Вот так он будет выглядеть:
+
+<pre class="language-java line-numbers"><code>
+# MySQL configurations:
+spring.datasource.url=jdbc:mysql://localhost:3306/dev_jrtb_db
+spring.datasource.username=dev_jrtb_db_user
+spring.datasource.password=dev_jrtb_db_password
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# TelegramBot configurations:
+bot.username=tes
+bot.token=1375780501:AAE4A6Rz0BSnIGzeu896OjQnjzsMEG6_uso
+</code></pre>
+А основной <span class="text-bold">application.properties</span> будет выглядеть несколько иначе:
+
+<pre class="language-java line-numbers"><code>
+# MySQL configurations:
+spring.datasource.url=jdbc:mysql://jrtb-db:3306/jrtb_db
+spring.datasource.username=jrtb_db_user
+spring.datasource.password=jrtb_db_password
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# TelegramBot configurations:
+bot.username=test.javarush_community_bot
+bot.token=1375780501:AAE4A6Rz0BSnIGzeu896OjQnjzsMEG6_uso
+</code></pre>
+Существенная разница находится в поле <span class="code">spring.datasource.url:</span> в test профиле у нас URL на <span class="code">localhost</span>. То есть ожидается, что приложение будет запускаться вне докера, что правда, потому что при отладке мы будем запускать в Intellij IDEA наш проект и ожидать, что у нас будет доступ к БД с локальной машины.
+
+А вот в application.properties URL уже указан другой — <span class="code">jrtb-db</span>. Это будет имя нашей базы данных в docker-compose, и таким образом наше приложение в докере сможет достучаться в базе данных. Почему? Потому они запустятся в рамках одного docker-compose и будут знать друг о друге вот таким образом. Это нужно, чтобы у нас была одна закрытая инфраструктура для проекта.
+
+Но как запустить профиль при запуске? Для этого можно настроить запуск main метода в Intellij IDEA.
+
+Для этого есть <span class="text-bold">Edit Configurations</span>: переходим в главный класс JavarushTelegramBotApplication, нажимаем на зеленую стрелочку напротив объявления <span class="code">main</span> метода и выбираем <span class="text-bold">Modify Run Configuration</span>:<img data-max-width="1080" data-id="861c00fc-01dc-4fb7-a1ec-77439b45d352" src="https://cdn.javarush.com/images/article/861c00fc-01dc-4fb7-a1ec-77439b45d352/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем все, что связано с БД. Часть 1 - 10">Вводим необходимые переменные и настраиваем профиль. В Intellij IDEA несколько изменился интерфейс этого конфигурационного окна, поэтому я советую всем обновить IDEA до последней версии, чтобы мы видели одинаковую картинку:<img data-max-width="800" data-id="29b8852c-716b-494f-b326-b4dac383e7a5" src="https://cdn.javarush.com/images/article/29b8852c-716b-494f-b326-b4dac383e7a5/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем все, что связано с БД. Часть 1 - 11">В поле <span class="text-bold">Environment variables</span> нам нужно добавить переменные имени и токена бота по такому шаблону: <span class="code">имя1_переменной=значение1;имя2_переменной=значение2</span>. 
+
+То есть ключ=значение разделены точкой с запятой. В нашем случае это будет так:
+
+<span class="text-bold">bot.token=1375780501:AAHLzsf4WhcjSdPguDwtggRS1IMu5l8;bot.username=javarush_community_bot</span> (у вас будет другое имя и токен для бота)
+
+Далее выбираем в кнопке <span class="text-bold">Modify options</span> поле <span class="text-bold">Add VM options</span>:<img data-max-width="800" data-id="5d426bc7-7b8f-48c5-adf7-05d845c9f7dc" src="https://cdn.javarush.com/images/article/5d426bc7-7b8f-48c5-adf7-05d845c9f7dc/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем все, что связано с БД. Часть 1 - 12">Пишем: <span class="text-bold">-Dspring.profiles.active=test</span> — это скажет SpringBoot, что нужно использовать профиль test, а значит и проперти будут взяты из application-test.properties.
+
+В итоге это будет выглядеть так:<img data-max-width="800" data-id="95b48452-c42b-477c-a19a-c0cf3693a7b8" src="https://cdn.javarush.com/images/article/95b48452-c42b-477c-a19a-c0cf3693a7b8/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем все, что связано с БД. Часть 1 - 13">Теперь запускаем нашу тестовую базу данных:
+
+<span class="text-bold">docker-compose -f docker-compose-test.yml up</span>
+
+Причем именно так, чтобы без приставки -d, чтобы в терминале сразу было видно логи, если такие понадобятся.
+
+И последний шаг — просто запустить main метод. Если вы сделаете все так же, как я описал, в итоге получите:<img data-max-width="1080" data-id="d9efa03c-681e-44a0-9992-5adb79a8d1e4" src="https://cdn.javarush.com/images/article/d9efa03c-681e-44a0-9992-5adb79a8d1e4/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем все, что связано с БД. Часть 1 - 14">Второй строкой логов будет описание, что заработал test профиль.
+
+Заходим через MySQLWorkbench и запускаем две команды, чтобы проверить, что миграция накатилась и все работает (хотя это и видно из логов запуска приложения, но проверить определенно стоит):<ol>
+
+<li>use dev_jrtb_db;</li>
+<li>show tables;</li>
+
+</ol>Результат:<img data-max-width="800" data-id="6f637044-3e19-4a19-ae02-87da5c5a1d55" src="https://cdn.javarush.com/images/article/6f637044-3e19-4a19-ae02-87da5c5a1d55/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем все, что связано с БД. Часть 1 - 15">Как мы и ожидали, получилось две таблицы. Первая — техническая для учета миграций, вторая — наша таблица для пользователей Телеграма. 
+
+Все: Flyway вместе с базой данных добавлен. Теперь новые миграции будут идти как по маслу. Самое сложное — это первая настройка и запуск процесса. 
+
+<a href="https://javarush.com/groups/posts/3264-java-proekt-ot-a-do-ja-dobavljaem-vse-chto-svjazano-s-bd-chastjh-2" target="_blank">В продолжении</a> — завершаем работу над этой глобальной задачей: добавляем базы данных в docker-compose.yml, добавляем Repository слой, статистику для бота, пишем и обновляем тесты и документацию.<h4><a href="https://javarush.com/groups/posts/2935-java-proekt-ot-a-do-ja-pishem-realjhnihy-proekt-dlja-portfolio#articles" target="_blank">Список всех материалов серии в начале этой статьи.</a></h4>

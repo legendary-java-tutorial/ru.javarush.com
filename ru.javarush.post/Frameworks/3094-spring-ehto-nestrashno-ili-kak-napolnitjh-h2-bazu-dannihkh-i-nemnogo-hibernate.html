@@ -1,0 +1,290 @@
+Spring — это не страшно, или как наполнить h2 базу данных (и немного Hibernate)
+<p>----------------------------------------</p>
+Как наполнить h2 базу данных
+<p>----------------------------------------</p>
+<a href="https://javarush.com/groups/posts/3092-spring-ehto-nestrashno" target="_blank" rel="nofollow"><strong>СОДЕРЖАНИЕ ЦИКЛА СТАТЕЙ</strong></a>
+
+Продолжаем наш проект.
+Как создать <a href="https://javarush.com/groups/posts/3092-spring-ehto-nestrashno" target="_blank" rel="nofollow">веб проект.</a>
+Подключаем <a href="https://javarush.com/groups/posts/3093-spring-ehto-nestrashno-ili-kak-podkljuchitjh-bazu-dannihkh-dlja-studencheskogo-proekta-za-5-min" target="_blank" rel="nofollow">базу к своему веб проекту</a>.
+В этот раз букв будет больше, пятью минутами не обойдемся.
+
+В прошлой статье я советовал почитать  про Spring  <a href="https://beginner-mercenary.blogspot.com/" target="_blank" rel="nofollow">несколько страниц</a> или несколько <a href="https://javarush.com/groups/posts/spring-framework-java-1" target="_blank" rel="nofollow">статей</a>, или хотя бы <a href="https://javarush.com/groups/posts/1763-36-urovenjh---tozhe-ne-nashjel-otvetih-na-voprosih-iz-sobesedovaniy" target="_blank" rel="nofollow">погуглить</a> про что такое бины, контекст, сущности ,внедрение зависимостей в spring, способы конфигурации бинов. Если нет, то советую это сделать сразу сейчас или после этой статьи.
+
+Перед тем как наполнять нашу h2 базу. 
+Необходимо создать класс утилиту для запуска в ней методов по заполнению базы. 
+В пакете <pre class="language-java line-numbers"><code>ru.java.rush</code></pre>
+Создаем пакет для утилит
+<pre class="language-java line-numbers"><code>utils</code></pre>
+И саму утилиту:
+<pre class="language-java line-numbers"><code>
+package ru.java.rush.utils;
+
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Service;
+
+@Service //аннотация помечает бин как сервис
+public class InitiateUtils implements CommandLineRunner { //имплементируем интерфейс CommandLineRunner (командная строка запуска)
+   
+    @Override
+//переопределяем метод который позволит 
+//нам выполнять методы нашего приложения при запуске
+    public void run(String... args) throws Exception { 
+        System.out.println("run"); //проверим что это работает
+    }
+}
+</code></pre>  
+Запустим приложение и в консоль выведется <em>"run"</em>.
+Нам нужна эта утилита, в качестве альтернативы классу Applications, так как он должен отвечать только за запуск приложения. 
+
+Создадим сущности.
+Сущность  - это бин, цель которого хранить некоторые данные.
+В пакете <pre class="language-java line-numbers"><code>ru.java.rush</code></pre>
+Создаем пакет для сущностей
+<pre class="language-java line-numbers"><code>entities</code></pre>
+И саму сущность, пусть это будет фрукты:
+<pre class="language-java line-numbers"><code>
+package ru.java.rush.entities;
+
+import org.hibernate.annotations.GenericGenerator;
+
+import javax.persistence.*;
+
+@Entity//помечаем бин как сущность
+@Table(name = "fruit_table")//в этой аннотации можно указать имя создаваемой таблицы 
+public class FruitEntity {
+
+    @Id//аннотация из пакета avax.persistence.*, помечает поле как id
+    @Column(name = "id_fruit")//в этой аннотации можно указать имя поля 
+    @GenericGenerator(name = "generator", strategy = "increment")//незаметно добрались до hibernate,
+// здесь указывается что id будет автоматически увеличиваться при новых записях  
+    @GeneratedValue(generator = "generator")//аннотация генерации id
+    private Integer id;
+
+    @Column(name = "fruit_name")
+    private String fruitName;
+
+    @Column(name = "provider_code")
+    private Integer providerCode;
+
+   //что бы в с классом можно было совершать манипуляции создается
+  //пустой конструктор, геттеры, сеттеры и переопределяется метод toString()
+
+  public FruitEntity(){ //пустой конструктор
+
+ }
+
+public Integer getId() {
+    return id;
+}
+
+ //геттеры, сеттеры
+public String getFruitName() {
+    return fruitName;
+}
+
+public FruitEntity setFruitName(String fruitName) {
+    this.fruitName = fruitName;
+    return this;
+}
+
+public Integer getProviderCode() {
+    return providerCode;
+}
+
+public FruitEntity setProviderCode(Integer providerCode) {
+    this.providerCode = providerCode;
+    return this;
+}
+
+//переопределяем toString()
+@Override
+public String toString() {
+    return "FruitEntity{" +
+            "id=" + id +
+            ", fruitName='" + fruitName + '\'' +
+            ", providerCode=" + providerCode +
+            '}';
+}
+}
+</code></pre>
+Конструктор, геттеры, сеттеры  и toString() не обязательно писать руками, можно быстро <a href="https://fooobar.com/questions/31217/how-to-automatically-generate-getters-and-setters-in-android-studio" target="_blank" rel="nofollow">нагенерировать</a> .
+
+Ладно, сущность у нас взаимодействует с базой и хранит в себе данные из БД. Сущность при деле.
+Но кто то должен оперировать сущностью в приложении. Для этого придумали "репозиторий".
+В пакете <pre class="language-java line-numbers"><code>ru.java.rush</code></pre>
+Создаем пакет для репозиториев
+<pre class="language-java line-numbers"><code>repositories</code></pre>
+И сам репозиторий
+<pre class="language-java line-numbers"><code>
+package ru.java.rush.repositories;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import ru.java.rush.entities.FruitEntity;
+
+@Repository//помечаем что этот бин - репозиторий
+public interface FruitRepository extends JpaRepository&lt;FruitEntity,Integer&gt; {
+//репозиторий является интерфейсом, который наследуется от другого интерфейса JpaRepository&lt;&gt;
+//для него необходимо указать с какой сущность он должен работать, у нас это FruitEntity
+//и тип данных у поля id данной сущности, у нас это Integer
+}
+</code></pre>
+Вопрос, а почему тело интерфейса пустое, нет ни одного метода, что он объявляет?
+Для ответа зажмем Ctrl и кликнем на  JpaRepository и посмотрим что он и сам наследуется от PagingAndSortingRepository&lt;t, ""&gt; и QueryByExampleExecutor&lt;&gt;, они тоже объявляют какие то методы.
+Не буду сюда копировать методы сами по смотрите.
+
+Поскольку репозиторий это интерфейс, он ни чего не делает, он только объявляет методы,
+необходим еще кто-то что бы эти методы реализовать.
+Для этого придуман "сервис".
+В пакете <pre class="language-java line-numbers"><code>ru.java.rush</code></pre>
+Создаем пакет для сервисов
+<pre class="language-java line-numbers"><code>services</code></pre>
+И сам сервис
+<pre class="language-java line-numbers"><code>
+package ru.java.rush.services;
+
+import org.springframework.stereotype.Service;
+
+@Service//помечаем что этот бин - сервис
+public class FruitService {
+}
+</code></pre>
+
+Сейчас мы дошли до важного момента: "Как и зачем заинжектить бин" (внедрить зависимость). Если вы не понимаете о чем это я, то прошу вас почитать на эту тему, сейчас или после, особенно обратите внимание на способы "инжекта",сколько их, какой лучше, какой хуже, и почему. Мы используем один из способов. 
+
+Нам нужно что бы "сервис" как то был связан с "репозиторием".
+Дополняем наш сервис аннотацией и переменной.
+<pre class="language-java line-numbers"><code>
+package ru.java.rush.services;
+
+import org.springframework.stereotype.Service;
+import ru.java.rush.repositories.FruitRepository;
+
+@Service
+public class FruitService {
+    
+    private final FruitRepository fruitRepository;  //final переменная репозитория 
+    
+public FruitService(FruitRepository fruitRepository) {//внедрили зависимость через конструктор
+    this.fruitRepository = fruitRepository;
+}
+
+}
+</code></pre>  
+
+Теперь можно реализовать метод из "репозитория"
+Дополняем "сервис"
+<pre class="language-java line-numbers"><code>
+package ru.java.rush.services;
+
+import org.springframework.stereotype.Service;
+import ru.java.rush.entities.FruitEntity;
+import ru.java.rush.repositories.FruitRepository;
+
+@Service
+public class FruitService {
+
+    private final FruitRepository fruitRepository;
+
+public FruitService(FruitRepository fruitRepository) {//внедили зависимость
+    this.fruitRepository = fruitRepository;
+}
+
+//создали публичный метод (название любое может быть)
+//на вход принимает сущность и сохраняет ее в базу
+    public void save(FruitEntity fruitEntity){ 
+        fruitRepository.save(fruitEntity); //реализовали метод внедренного бина
+    }
+
+//возвращает лист всех сущностей из базы
+    public List&lt;FruitEntity&gt; getAll(){
+       return fruitRepository.findAll(); //реализовали метод внедренного бина
+    }
+}
+</code></pre>
+
+Осталось только реализовать это в нашей утилите
+Переходим к классу InitiateUtils
+<pre class="language-java line-numbers"><code>
+package ru.java.rush.utils;
+
+
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Service;
+import ru.java.rush.entities.FruitEntity;
+import ru.java.rush.services.FruitService;
+
+import java.util.List;
+
+@Service
+public class InitiateUtils implements CommandLineRunner {
+
+    private final FruitService fruitService;
+
+public InitiateUtils (FruitService fruitService) {//незабываем конструктор для внедрения
+    this. fruitService = fruitService;
+}
+
+    @Override
+    public void run(String... args) throws Exception {
+
+//создаем несколько сущностей фруктов, через сеттеры заполняем поля
+        FruitEntity fruitEntity1 = new FruitEntity();
+        fruitEntity1.setFruitName("fruit1");
+        fruitEntity1.setProviderCode(1);
+
+        FruitEntity fruitEntity2 = new FruitEntity();
+        fruitEntity2.setFruitName("fruit2");
+        fruitEntity2.setProviderCode(2);
+
+        FruitEntity fruitEntity3 = new FruitEntity();
+        fruitEntity3.setFruitName("fruit3");
+        fruitEntity3.setProviderCode(3);
+
+//с помощью переменной сервиса вызываем методы сохранения в базу, по разу для одного объекта
+        fruitService.save(fruitEntity1);
+        fruitService.save(fruitEntity2);
+        fruitService.save(fruitEntity3);
+
+//здесь вытаскиваем базу обратно
+        List&lt;FruitEntity&gt; all = fruitService.getAll();
+
+//и выводим что получилось
+        for (FruitEntity entity : all) {
+            System.out.println(entity);
+        }
+    }
+}
+</code></pre>
+
+<em>Вывод в консоль:
+FruitEntity(id=1, fruitName=fruit1, providerCode=1)
+FruitEntity(id=2, fruitName=fruit2, providerCode=2)
+FruitEntity(id=3, fruitName=fruit3, providerCode=3)</em>
+
+Вот тут можно и закончить.
+"Секундочку!" - воскликнет самый внимательный читатель - "А где же тут все таки Hibernate?"
+А Hibernate выступает здесь в роли борца невидимого фронта, он сделал очень важную вещь: создал нам структуры БД. Вот когда мы в "сущности"  написали поля, и пометили нужными аннотациями, Hibernate сделал свое дело.
+На самом деле, при разработке на проме вы вряд ли будете заниматься структурой БД, все уже будет создано  и развернуто за вас. 
+Но в таких небольших проектах Hibernate со своим умением делать структуры БД просто не заменим, конечно это его не единственный плюс, например он хорош в создании <a href="http://java-online.ru/hibernate-entities.xhtml" target="_blank" rel="nofollow">связанных сущностей</a> (в этом проекте мы не будем их использовать).
+Давайте поздороваемся с этим скромным трудягой: зайдем в IDEA в структуру проекта (слева такое дерево с папочками и файликами ), там найдем 
+External Libraries раскроем его и среди прочих библиотек увидим 
+<pre class="language-java line-numbers"><code>
+Maven: org.hibernate.common:hibernate-commons-annotations:5.1.0.Final
+Maven: org.hibernate.validator:hibernate-validator:6.0.17.Final
+Maven: org.hibernate:hibernate-core:5.4.6.Final
+</code></pre>
+В частности Hibernate был выкачан для нас мавеном и
+<pre class="language-java line-numbers"><code>
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-data-jpa&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+</code></pre>
+На самом деле мистер Hiber провел еще одну скрытую операцию, но о ней мы поговорим в следующей статье. 
+Вот теперь точно всё.
+
+В качестве тренировки предлагаю вам самим реализовать метод saveAll() для <em>FruitEntity</em>  который сохранит все сущности в базу за один раз.
+
+<a href="https://javarush.com/groups/posts/3124-spring--ehto-ne-strashno-koroche-lombok" target="_blank" rel="nofollow">Дальше по смотрим как сократить код проекта с помощью библиотеки Lombok</a>

@@ -1,0 +1,338 @@
+Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 7
+<p>----------------------------------------</p>
+Hey everyone! Программирование полно подводных камней. И нет практически ни одной темы, в которой вы не споткнетесь и не набьете шишки. Особенно это касается новичков. Уменьшить количество этого...
+<p>----------------------------------------</p>
+Hey everyone!
+ 
+Программирование полно подводных камней. И нет практически ни одной темы, в которой вы не споткнетесь и не набьете шишки. Особенно это касается новичков.
+ 
+Уменьшить количество этого можно лишь одним способом — учиться. В частности это касается подробных разборов самых базовых тем.
+ 
+Сегодня продолжаю разбор <a href="https://dou.ua/lenta/articles/interview-questions-java-developer/" rel="nofollow" target="_blank">вопросов 250+</a> с собеседований на Java-разработчика, которые хорошо охватывают базовые темы. Отмечу, что в списке есть и не совсем стандартные вопросы, позволяющие взглянуть на обычные темы под другим углом.<img data-max-width="800" data-id="10fe3ce3-118c-4252-b972-27e28ec8e4b0" src="https://cdn.javarush.com/images/article/10fe3ce3-118c-4252-b972-27e28ec8e4b0/800.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 7 - 1"><h4>62. Что такое строковый пул и зачем он нужен?</h4>В памяти в Java (Heap, о которой мы ещё поговорим) есть область — <span class="code">String pool</span>, или строковый пул.
+ 
+Она предназначена для хранения строковых значений. Другими словами когда вы создаете некую строку, например через двойные кавычки:
+
+<pre class="language-java line-numbers"><code>
+String str = "Hello world";
+</code></pre> 
+происходит проверка того, имеет ли строковой пул данное значение.
+ 
+Если имеет, переменной <span class="code">str</span> присваивается ссылка на это значение в пуле. Если же не имеет, создастся новое значение в пуле, и ссылка на него будет присвоена переменной <span class="code">str</span>.
+ 
+Рассмотрим пример:
+
+<pre class="language-java line-numbers"><code>
+String firstStr = "Hello world";
+String secondStr = "Hello world";
+System.out.println(firstStr == secondStr);
+</code></pre>
+На экран будет выведено <span class="text-bold">true</span>. Мы помним, что <span class="code">==</span> сравнивает именно ссылки — значит эти две ссылки ссылаются на одно и то же значение из строкового пула.
+ 
+Это сделано для того, чтобы не плодить множество одинаковых объектов типа <span class="code">String</span> в памяти, ведь как мы помним, <span class="code">String</span> — неизменяемый класс, и если у нас будет множество ссылок на одно и то же значение, плохого в этом ничего нет. <em>Теперь невозможна ситуация, при которой изменение значения в одном месте приводит к изменениям сразу для нескольких других ссылок.</em>
+ 
+Но тем не менее, если мы создадим строку через <span class="code">new</span>:
+
+<pre class="language-java line-numbers"><code>
+String str = new String("Hello world");
+</code></pre>
+создастся отдельный объект в памяти, который будет хранить данное строковое значение (и не важно, есть ли у нас уже такое значение в строковом пуле).
+ 
+В качестве подтверждения:
+
+<pre class="language-java line-numbers"><code>
+String firstStr = new String("Hello world");
+String secondStr = "Hello world";
+String thirdStr = new String("Hello world");
+System.out.println(firstStr == secondStr);
+System.out.println(firstStr == thirdStr);
+</code></pre>
+Мы получим два <span class="text-bold">false</span>, и это значит, что у нас тут три разные значения, на которые ссылаются ссылки. Собственно, поэтому рекомендуется создавать строки просто через двойные кавычки.
+ 
+Тем не менее, можно сложить (или получать ссылку) значения в строковой пул и при создании объекта через <span class="code">new</span>. Для этого используем метод класса строки — <span class="code">intern()</span>. Данный метод принудительно создает значение в строковом пуле, ну или получает ссылку на него, если оно уже хранится там. 
+ 
+Вот пример:
+
+<pre class="language-java line-numbers"><code>
+String firstStr = new String("Hello world").intern();
+String secondStr = "Hello world";
+String thirdStr = new String("Hello world").intern();
+System.out.println(firstStr == secondStr);
+System.out.println(firstStr == thirdStr);
+System.out.println(secondStr == thirdStr);
+</code></pre>
+в результате мы получим в консоли три значения <span class="text-bold">true</span>, а значит, все три переменные ссылаются на одну и ту же строку.<img data-max-width="512" data-id="616f6b03-6b39-4f83-9126-473725140081" src="https://cdn.javarush.com/images/article/616f6b03-6b39-4f83-9126-473725140081/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 7 - 2"><h4>63. Какие GOF-шаблоны применяются в строковом пуле?</h4>В строковом пуле явно прослеживается <span class="text-bold">GOF</span> шаблон — <span class="text-bold">легковес</span> (flyweight), иначе его называют поселенец. Если же вы увидели тут ещё какой-то шаблон — делитесь в комментарии.
+ 
+Ну а мы поговорим о шаблоне легковесе.
+ 
+Легковес — структурный шаблон проектирования, при котором объект, представляющий себя как уникальный экземпляр в разных местах программы, по факту не является таковым. Легковес экономит память, разделяя общее состояние объектов между собой, вместо хранения одинаковых данных в каждом объекте.
+ 
+Для понимания сути рассмотрим самый простой пример. Предположим, у нас есть интерфейс сотрудника:
+
+<pre class="language-java line-numbers"><code>
+public interface Employee {
+   void work();
+}
+</code></pre>
+И есть некоторые реализации, например, юрист:
+ 
+<pre class="language-java line-numbers"><code>
+public class Lawyer implements Employee {
+ 
+   public Lawyer() {
+       System.out.println("Юрист взят в штат.");
+   }
+ 
+   @Override
+   public void work() {
+       System.out.println("Решение юридических вопросов...");
+   }
+}
+</code></pre>
+И бухгалтер:
+
+<pre class="language-java line-numbers"><code>
+public class Accountant implements Employee{
+ 
+   public Accountant() {
+       System.out.println("Бухгалтер взят в штат.");
+   }
+ 
+   @Override
+   public void work() {
+       System.out.println("Ведение бухгалтерского отчёта....");
+   }
+}
+</code></pre>
+Методы весьма условны: нам всего лишь нужно видеть, что они выполняются. Такая же ситуация и с конструктором. Благодаря выводу в консоли мы будем видеть, когда создаются новые объекты.
+ 
+Также у нас есть отдел сотрудников, задача которого — выдавать запрашиваемого сотрудника, если же его нет — нанимать в штат и выдавать в ответ на запрос:
+ 
+<pre class="language-java line-numbers"><code>
+public class StaffDepartment {
+   private Map&lt;String, Employee&gt; currentEmployees = new HashMap&lt;&gt;();
+ 
+   public Employee receiveEmployee(String type) throws Exception {
+       Employee result;
+       if (currentEmployees.containsKey(type)) {
+           result = currentEmployees.get(type);
+       } else {
+           switch (type) {
+               case "Бухгалтер":
+                   result = new Accountant();
+                   currentEmployees.put(type, result);
+                   break;
+               case "Юрист":
+                   result = new Lawyer();
+                   currentEmployees.put(type, result);
+                   break;
+               default:
+                   throw new Exception("Данный сотрудник в штате не предусмотрен!");
+           }
+       }
+       return result;
+   }
+}
+</code></pre>
+То есть логика простая: если есть данная единица — верни её, если нет — создай, помести в хранилище (что-то вроде кеша) и отдай назад.
+ 
+А теперь давайте посмотрим, как это всё работает:
+ 
+<pre class="language-java line-numbers"><code>
+public static void main(String[] args) throws Exception {
+   StaffDepartment staffDepartment = new StaffDepartment();
+   Employee empl1  = staffDepartment.receiveEmployee("Юрист");
+   empl1.work();
+   Employee empl2  = staffDepartment.receiveEmployee("Бухгалтер");
+   empl2.work();
+   Employee empl3  = staffDepartment.receiveEmployee("Юрист");
+   empl1.work();
+   Employee empl4  = staffDepartment.receiveEmployee("Бухгалтер");
+   empl2.work();
+   Employee empl5  = staffDepartment.receiveEmployee("Юрист");
+   empl1.work();
+   Employee empl6  = staffDepartment.receiveEmployee("Бухгалтер");
+   empl2.work();
+   Employee empl7  = staffDepartment.receiveEmployee("Юрист");
+   empl1.work();
+   Employee empl8  = staffDepartment.receiveEmployee("Бухгалтер");
+   empl2.work();
+   Employee empl9  = staffDepartment.receiveEmployee("Юрист");
+   empl1.work();
+   Employee empl10  = staffDepartment.receiveEmployee("Бухгалтер");
+   empl2.work();
+}
+</code></pre>
+И в консоли, соответственно, будет вывод:
+
+<div class="terminal">Юрист взят в штат.
+Решение юридических вопросов...
+Бухгалтер взят в штат.
+Ведение бухгалтерского отчёта....
+Решение юридических вопросов...
+Ведение бухгалтерского отчёта....
+Решение юридических вопросов...
+Ведение бухгалтерского отчёта....
+Решение юридических вопросов...
+Ведение бухгалтерского отчёта....
+Решение юридических вопросов...
+Ведение бухгалтерского отчёта...</div>
+Как вы видите, всего было создано лишь два объекта, которые при этом многократно переиспользовались. 
+ 
+Пример весьма простой, но он наглядно демонстрирует как применение данного шаблона может сэкономить наши ресурсы. Ну и как вы заметили, логика данного паттерна уж больно похожа на логику работы страхового пула.
+ 
+Подробнее о разновидностях <span class="text-bold">GOF</span> паттернов вы можете почитать <a href="https://javarush.com/groups/posts/496-patternih-proektirovanija-v-java" target="_blank">в этой статье</a>.<img data-max-width="512" data-id="3e409aec-b314-4694-ae87-7caf9d99f20f" src="https://cdn.javarush.com/images/article/3e409aec-b314-4694-ae87-7caf9d99f20f/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 7 - 3"><h4>64. Как разделить строку на части? Приведите пример соответствующего кода</h4>Очевидно, что в данном вопросе речь идёт о методе <span class="code">split</span>. У класса <span class="code">String</span> есть две вариации данного метода:
+ 
+<pre class="language-java line-numbers"><code>
+String split(String regex);
+</code></pre>
+ и 
+ 
+<pre class="language-java line-numbers"><code>
+String split(String regex);
+</code></pre>
+<span class="code">regex</span> — это разделитель строки — некоторое регулярное выражение, по которому производится разделение строки на массив строк, например:
+ 
+<pre class="language-java line-numbers"><code>
+String str = "Hello, world it's Amigo!";
+String[] arr = str.split("\\s");
+for (String s : arr) {
+  System.out.println(s);
+}
+</code></pre>
+В консоль будет выведено:
+
+<div class="terminal">Hello,
+world
+it's
+Amigo!</div>
+То есть, наше строковое значение было разбито на массив строк и разделителем послужил пробел (для разделения можно было использовать и не регулярное выражение пробела <span class="code">"\\s"</span> и просто строковое выражение <span class="code">" "</span>).
+ 
+Второй, перегруженный метод имеет дополнительный аргумент — <span class="code">limit</span>.
+ 
+<span class="code">limit</span> — максимально допустимое значение получаемого массива. То есть, когда строка будет уже разбита на предельное допустимое количество подстрок, дальнейшей разбивки не будет, и у последнего элемента будет “остаток” от возможно недоразбитой строки.
+ 
+Пример:
+
+<pre class="language-java line-numbers"><code>
+String str = "Hello, world it's Amigo!";
+String[] arr = str.split(" ", 2);
+for (String s : arr) {
+  System.out.println(s);
+}
+</code></pre>
+Вывод в консоли:
+
+<div class="terminal">Hello,
+world it's Amigo!</div>
+Как мы видим, если бы не ограничение <span class="code">limit = 2</span>, последний элемент массива можно было бы разбить на три подстроки.<img data-max-width="512" data-id="e1eca0f7-2e86-47ec-9712-7a1b71a76327" src="https://cdn.javarush.com/images/article/e1eca0f7-2e86-47ec-9712-7a1b71a76327/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 7 - 4"><h4>65. Почему массив символов лучше строки для сохранения пароля?</h4>Причин для предпочтения массива строке при сохранении пароля несколько:
+ 
+<span class="text-bold">1. Строковой пул и неизменяемость строк.</span>
+При использовании массива (<span class="code">char[]</span>) мы можем явно стереть данные после того, как закончили работу с ним. Также мы можем сколько угодно переписывать массив, и действительного пароля нигде не будет в системе, даже до сбора мусора (достаточно изменить пару ячеек на недействительные значения). 
+ 
+В то самое время <span class="code">String</span> — immutable класс. То есть, если мы хотим изменить его значение, мы получим новое, а старое при этом останется в строковом пуле. Если мы захотим удалить <span class="code">String</span> значение пароля, это может быть весьма сложным занятием, так как нужно, чтобы сборщик мусора удалил именно значение из <span class="code">String pool</span>-а, и существует большая вероятность, что это <span class="code">String</span> значение останется там надолго.
+ 
+То есть, в данной ситуации <span class="code">String</span> уступает массиву <span class="code">char</span> в безопасности хранения данных.
+ 
+<span class="text-bold">2. При случайном выводе в консоли (или в логи) значения <span class="code">String</span> выведется само значение:</span>
+<pre class="language-java line-numbers"><code>
+String password = "password";
+System.out.println("Пароль - " + password);
+</code></pre>
+Вывод в консоли:
+
+<div class="terminal">Пароль - password</div> 
+В то же время, если случайно вывести в консоль массив:
+
+<pre class="language-java line-numbers"><code>
+char[] arr = new char[]{'p','a','s','s','w','o','r','d'};
+System.out.println("Пароль - " + arr);
+</code></pre>
+в консоли будет непонятная абракадабра:
+
+<div class="terminal">Пароль - [C@7f31245a</div>
+На самом деле не абракадабра, а:
+
+<span class="code"> [C</span> — имя класса — массив <span class="code">char</span>,
+<span class="code">@</span> — разделитель, после которого —
+<span class="code">7f31245a</span> — шестнадцатеричный хешкод.
+ 
+<span class="text-bold">3. Официальный документ, руководство по архитектуре криптографии Java прямо указывает на хранение паролей в <span class="code">char[]</span> вместо <span class="code">String</span>:</span>
+<em>“Казалось бы, логично собрать и сохранить пароль в объекте типа <span class="code">java.lang.String</span>. Однако здесь есть предостережение: объекты типа <span class="code">String</span> неизменяемы, т. е. Не определены методы, позволяющие изменять (перезаписывать) или обнулять содержимое объекта <span class="code">String</span> после использования. Эта функция делает <span class="code">String</span> объекты непригодными для хранения конфиденциальной информации, такой как пароли пользователей. Вместо этого вы всегда должны собирать и хранить конфиденциальную информацию о безопасности в массиве символов.”</em><img data-max-width="512" data-id="df377a2f-db06-4b59-ba8d-cd0246c88ead" src="https://cdn.javarush.com/images/article/df377a2f-db06-4b59-ba8d-cd0246c88ead/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 7 - 5"><h3>Enum</h3><h4>66. Дайте краткую характеристику Enum в Java</h4><span class="text-bold">Enum</span> — перечисление, набор строковых констант, объединенных общим типом. Объявляется через ключевое слово — <span class="code">enum</span>.
+ 
+Вот пример с <span class="code">enum</span> — допустимые роли в некоторой школе:
+
+<pre class="language-java line-numbers"><code>
+public enum Role {
+   STUDENT,
+   TEACHER,
+   DIRECTOR,
+   SECURITY_GUARD
+}
+</code></pre>
+Слова, написанные большими буквами, и есть те самые константы перечисления, которые объявляются упрощенно, без использования оператора <span class="code">new</span>.
+ 
+Использование перечислений заметно упрощает жизнь, так как они помогают избежать ошибок и путаницы в наименованиях (так как может быть только определенный перечень значений).
+ 
+Лично для меня они очень удобны при использовании в логической конструкции <a href="https://javarush.com/groups/posts/operator-switch-v-java" target="_blank">Switch</a>.<h4>67. Может Enum реализовывать (implements) интерфейсы?</h4>Да. Ведь перечисления должны представлять не просто пассивные наборы (как например, роли).
+ 
+В Java они могут представлять более сложные объекты с некоторым функционалом, поэтому вам, возможно, понадобится добавить к ним дополнительный функционал. 
+ 
+Также это позволит использовать возможности полиморфизма, подставляя значение <span class="code">enum</span> в места, где необходим тип имплементируемого интерфейса.<h4>68. Может Enum расширять (extends) класс?</h4>Нет, не может, так как перечисление — это подкласс по умолчанию универсального класса <span class="code">Enum &lt;T&gt;</span>, где <span class="code">T</span> представляет универсальный тип перечисления. Это не что иное, как общий базовый класс для всех типов перечисления языка Java. 
+ 
+Преобразование <span class="code">enum</span> в класс выполняется компилятором Java во время компиляции. Это расширение явно в коде не указывается, но всегда незримо присутствует.<h4>69. Можно ли создать Enum без экземпляров объектов?</h4>Как по мне, вопрос немного странный, ну или я его не до конца понял.
+ 
+У меня есть две интерпретации:
+ 
+1. Может ли быть <span class="code">enum</span> без значений — да, конечно, это будет что-то вроде пустого класса — бессмысленно:
+ 
+<pre class="language-java line-numbers"><code>
+public enum Role {
+}
+</code></pre>
+И вызвав:
+
+<pre class="language-java line-numbers"><code>
+var s = Role.values();
+System.out.println(s);
+</code></pre>
+Мы получим в консоли:
+
+<div class="terminal">[Lflyweight.Role;@9f70c54</div>
+(пустой массив значений <span class="code">Role</span>)
+ 
+2. Можно ли создать <span class="code">enum</span> без оператора <span class="code">new</span> — да, конечно. Как я выше уже сказал, для значений (перечислений) enum не нужно использовать оператор <span class="code">new</span>, так как это — статические значения.<h4>70. Можно ли мы переопределить метод toString() для Enum?</h4>Да, конечно вы можете переопределить метод <span class="code">toString()</span>, чтобы определить конкретный способ отображения вашего <span class="code">enum</span> при вызове метода <span class="code">toString</span> (при переводе <span class="code">enum</span> в обычную строку, например, для вывод в консоль или логи).
+
+<pre class="language-java line-numbers"><code>
+public enum Role {
+   STUDENT,
+   TEACHER,
+   DIRECTOR,
+   SECURITY_GUARD;
+
+   @Override
+   public String toString() {
+       return "Выбрана роль - " + super.toString();
+   }
+}
+</code></pre>
+На этом на сегодня у меня всё, до следующей части!<img data-max-width="512" data-id="300cf1fd-e09d-46c6-a8b3-ff868419589c" src="https://cdn.javarush.com/images/article/300cf1fd-e09d-46c6-a8b3-ff868419589c/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 7 - 6"><table><tbody>
+<tr><th>
+Другие материалы серии:
+</th></tr><tr><td>
+<ul><li><a href="https://javarush.com/groups/posts/3243-razbor-voprosov-i-otvetov-na-sobesedovanii-chastjh-1" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 1</a></li>
+<li><a href="https://javarush.com/groups/posts/3252-razbor-voprosov-i-otvetov-na-sobesedovanii-chastjh-2" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 2</a></li>
+<li><a href="https://javarush.com/groups/posts/3273-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-3" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 3</a></li>
+<li><a href="https://javarush.com/groups/posts/3284-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-4" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 4</a></li>
+<li><a href="https://javarush.com/groups/posts/3296-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-5" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 5</a></li>
+<li><a href="https://javarush.com/groups/posts/3341-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-6" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 6</a></li>
+<li><a href="https://javarush.com/groups/posts/3415-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-8" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 8</a></li>
+<li><a href="https://javarush.com/groups/posts/3434-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-9" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 9</a></li>
+<li><a href="https://javarush.com/groups/posts/3452-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-10" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 10</a></li>
+<li><a href="https://javarush.com/groups/posts/3464-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-11" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 11</a></li>
+<li><a href="https://javarush.com/groups/posts/3475-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-12" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 12</a></li>
+<li><a href="https://javarush.com/groups/posts/3507-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-13" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 13</a></li>
+<li><a href="https://javarush.com/groups/posts/3558-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-14" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 14</a></li>
+<li><a href="https://javarush.com/groups/posts/3592-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-15" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 15</a></li>
+<li><a href="https://javarush.com/groups/posts/3621-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-16" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 16</a></li>
+</ul>
+</td></tr></tbody></table>

@@ -1,0 +1,182 @@
+8 частых ошибок начинающих программистов
+<p>----------------------------------------</p>
+Привет! Сегодня мы рассмотрим список из 8 распространенных ошибок начинающих (да и не только) Java-разработчиков. В Сети ты найдешь немало таких подборок: многие из них похожи друг на друга. Когда мы составляли этот список, ориентировались на один критерий ...
+<p>----------------------------------------</p>
+Привет! Сегодня мы рассмотрим список из 8 распространенных ошибок начинающих (да и не только) Java-разработчиков. В Сети ты найдешь немало таких подборок: многие из них похожи друг на друга.
+
+Когда мы составляли этот список, ориентировались на один критерий: допускали ли эти ошибки сами во время учебы и работы :) Они расставлены не по приоритету и одинаково важны для понимания и запоминания.
+
+<ol>
+<li><p><strong>Сравнение объектов с помощью <code>==</code>.</strong></p>
+<p>Оператор <code>==</code> сравнивает ссылки объектов.</p>
+<p>Ссылки указывают на адреса в памяти, и если они находятся по разным адресам, сравнение через <code>==</code> будет возвращать <code>false</code>.</p>
+<pre class="lang-java line-numbers"><code>
+public class Car {
+
+   String model;
+   int maxSpeed;
+   int yearOfManufacture;
+
+   public Car(String model, int maxSpeed, int yearOfManufacture) {
+       this.model = model;
+       this.maxSpeed = maxSpeed;
+       this.yearOfManufacture = yearOfManufacture;
+   }
+
+   public static void main(String[] args) {
+       Car ferrari = new Car("Ferrari 360 Spider", 280, 1996);
+       Car ferrariTwin = new Car("Ferrari 360 Spider", 280, 1996);
+       System.out.println(ferrari == ferrariTwin);
+   }
+}
+</code></pre>
+<p>Для сравнения объектов в классе <code>Object</code> есть специальный метод — <code>equals()</code>. Его реализация по умолчанию, прямо скажем, так себе:</p>
+<pre class="lang-java line-numbers"><code>
+public boolean equals(Object obj) {
+   return (this == obj);
+}
+</code></pre>
+<p>В самом классе <code>Object</code> логика метода <code>equals()</code> реализована как сравнение двух ссылок. В свою очередь, для корректного сравнения объектов тебе необходимо переопределить этот метод в соответствии с теми критериями, которые важны в конкретной программе для конкретных объектов. Критерии равенства определяешь ты сам.</p>
+<p>Единственное, о чем не стоит забывать, — список требований для правильного переопределения <code>equals()</code>. Ты их легко найдешь в Интернете, но наши крутые ученики уже сделали <a href="https://javarush.com/groups/posts/1340-peregruzka-metodov-equals-i-hashcode-v-java" target="_blank">статью на эту тему</a>.</p></li>
+<li><p><strong>Использование нестатических переменных в статических методах (и наоборот).</strong></p>
+<p>Если ты хоть раз видел надпись «<em>Non-static variable x cannot be referenced from a static context</em>» — добро пожаловать в клуб :)</p>
+<p>Статические методы не имеют доступа к нестатическим переменным класса.</p>
+<p>Это логично: ведь статический метод можно вызвать, не создавая объект класса, а все переменные-поля принадлежат конкретным объектам. В этом и заключается противоречие, приводящее к ошибке.</p>
+<p><em>Наоборот, кстати, можно:</em> использовать статические переменные в нестатических методах допустимо:</p>
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public int x = 10;
+
+   public static int staticX = 100;
+
+   public static void main(String[] args) {
+
+       System.out.println(x);//ошибка компиляции, так нельзя!
+   }
+
+   public void printX() {
+
+       System.out.println(staticX);//а так можно!
+   }
+}
+</code></pre></li>
+<li><p><strong>Непонимание того, как передаются параметры в методы: по ссылке или по значению.</strong></p>
+<p>Объекты и примитивы передаются в методы в качестве параметров по-разному: первые — по ссылке, вторые — по значению.</p>
+<p>Новичкам часто бывает сложно понять эту концепцию, в результате их код ведет себя неожиданно:</p>
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) {
+
+       int x = 7;
+       incrementNumber(x);
+       System.out.println(x);
+
+       Cat cat = new Cat(7);
+       catLevelUp(cat);
+       System.out.println(cat.getAge());
+
+   }
+
+   public static void catLevelUp(Cat cat) {
+
+       cat.setAge(cat.getAge()+1);
+   }
+
+   public static void incrementNumber(int x) {
+       x++;
+   }
+}
+</code></pre>
+<p>Если в этом примере ты точно не знаешь, какое число увеличится, а какое нет (обычное число или возраст кота), тогда перечитай еще раз <a href="https://javarush.com/groups/posts/1950-metodih-ikh-parametrih-vzaimodeystvie-i-peregruzka" target="_blank">нашу лекцию на эту тему</a>.</p></li>
+<li><p><strong>Игнорирование правил написания кода.</strong></p>
+<p>И это касается не только соблюдения тех или иных «технических» принципов, но и банальных соглашений об именовании.</p>
+<p>Все эти правила «<em>как надо называть переменные</em>», «<em>как надо писать названия методов</em>» были придуманы не просто так. Это и правда сильно влияет на читаемость кода.</p>
+<p>Ведь код не всегда будет только твоим. Ты можешь перевестись на другой проект в компании, и он перейдет по наследству к твоим коллегам, которые будут явно не в восторге, получив в работу что-то вроде этого:</p>
+
+<pre class="lang-java line-numbers"><code>
+public class Cat {
+
+   private int S_O_M_E_T_H_I_N_G = 7;
+   public String striiiiiiiiiiiiiing;
+   protected double X3_4TO_ET0_TAK0E = 3.14;
+   boolean random = Math.random() &gt; 0.5;
+
+}
+</code></pre>
+<p>Твой код может быть гениальным с точки зрения производительности, но если его невозможно прочитать и понять как он, собственно, работает, цена его, увы, невелика.</p>
+<p>Придерживайся стандартов написания, и твой код, даже далекий от идеала, хотя бы прочтут более опытные товарищи и подскажут, что с технической точки зрения в нем можно улучшить :)</p></li>
+<li><p><strong>Непонимание работы класса <code>String</code></strong></p>
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) {
+
+       String s1 = "Я изучаю Java";
+       String s2 = new String("Я изучаю Java");
+
+       System.out.println(s1 == s2);
+   }
+}
+</code></pre>
+<p>Если ты не знаешь, почему этот код выводит <code>false</code>, знания явно нужно подтянуть:)</p>
+<p>Новички часто не знают что такое <code>String Pool</code> и как он работает.</p>
+<p>Как следствие, не до конца ясно, как правильно сравнивать строки в своем коде. В <a href="https://javarush.com/groups/posts/1923-equals-i-sravnenie-strok-" target="_blank">одной из наших лекций</a> мы подробно рассматривали эту тему</p></li>
+<li><p><strong>Неправильная работа с исключениями.</strong></p>
+<p>Это свойственно не только новичкам, но и опытным разработчикам. Причин несколько.</p>
+<p>Во-первых, универсального рецепта не существует. Ошибки в программе бывают разные, сценарии их обработки, соответственно, тоже. Во-вторых, не все понимают структуру <code>stackTrace</code>, а антипаттернов обработки ошибок очень много, и каждый из них «неправилен» по-своему. Так что вариантов сделать неправильно здесь намного больше, чем где бы то ни было.</p>
+<p>Распространенные антипаттерны приведены здесь:</p>
+<ul>
+<li><a href="https://dev64.wordpress.com/2012/10/07/exception-handling-antipatterns/" rel="nofollow" target="_blank">Антипаттерны обработки исключений в Java</a>;</li>
+<li><a href="https://habr.com/post/337536/" rel="nofollow" target="_blank">Исправляем 7 распространенных ошибок обработки исключения в Java</a>.</li>
+</ul></li>
+<li><p><strong>Неполное понимание работы операторов (арифметических, логических и других).</strong></p>
+<img data-id="84b9a0e5-9b71-493a-b3a6-f17b0e529dbd" data-max-width="850" alt="8 частых ошибок начинающих программистов - 2" src="https://cdn.javarush.com/images/article/84b9a0e5-9b71-493a-b3a6-f17b0e529dbd/1024.jpeg">
+<p>Простой пример. Сможешь сходу сказать, что выведет этот код?</p>
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) {
+
+       int i = 6;
+       System.out.println(7 == i++);
+   }
+}
+</code></pre>
+<p>Если ты ответил неправильно или наугад, значит, в этой области пока есть пробелы:)</p>
+<p>Код выведет <code>false</code>, потому что приоритет у оператора сравнения <code>==</code> выше, чем у постфиксного инкремента <code>++</code>. Поэтому сначала будет выполнено сравнение <code>7 == i</code>, и только потом - операция <code>i++</code>.
+</p><p>По этой теме, кстати, у нас тоже была подробная лекция. Вот <a href="https://javarush.com/groups/posts/1924-operacii-nad-chislami-v-java" target="_blank">ссылка</a>, если пропустил.</p></li>
+<li><p><strong>Пропуск слова <code>break</code> в операторе <code>switch</code>.</strong></p>
+<p>Эту ошибку, вероятно, допускали многие из читателей!)</p>
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) {
+
+       int i = 1;
+
+       switch (i) {
+
+           case 1: {
+               System.out.println("Число равно 1");
+           }
+           case 2: {
+               System.out.println("Число равно 2");
+           }
+           case 3: {
+               System.out.println("Число равно 3");
+           }
+       }
+   }
+}
+</code></pre>
+<p>В результате на них обрушивается водопад из всех возможных вариантов:</p>
+<p>Вывод:</p>
+<pre><code>
+Число равно 1
+Число равно 2
+Число равно 3
+</code></pre>
+<p>Оператор <code>break</code> прерывает работу оператора <code>switch</code> в момент, когда отработал один из вариантов. Не стоит о нем забывать, иначе результат может быть неожиданным :)</p>
+</li></ol>

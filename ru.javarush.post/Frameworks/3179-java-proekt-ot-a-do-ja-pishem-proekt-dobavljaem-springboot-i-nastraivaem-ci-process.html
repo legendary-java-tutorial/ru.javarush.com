@@ -1,0 +1,132 @@
+Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - "Java-проект от А до Я"
+<p>----------------------------------------</p>
+Приветствую вас, дорогие читатели. Как было описано в предыдущей части, будем идти по плану. Мы уже создали проект и пора его наполнять кодом. Теперь все issue будут добавляться отдельными...
+<p>----------------------------------------</p>
+<em>Статья из серии о создании Java-проекта (ссылки на другие материалы — в конце). Ее цель — разбор ключевых технологий, итог — написание телеграм-бота.</em>
+
+Приветствую вас, дорогие читатели. Как было описано в <a href="https://javarush.com/groups/posts/3170-java-proekt-ot-a-do-ja-planirovanie-proekta-semjh-raz-otmerjh--odin-raz-otrezhjh" target="_blank">предыдущей</a> части, будем идти по плану. Мы уже создали проект и пора его наполнять кодом. 
+
+Теперь все issue будут добавляться отдельными коммитами. Все, что будет необходимо, я опишу здесь. Если что-то упущу или опишу недостаточно понятно — спрашивайте в комментариях, постараюсь ответить.<img data-max-width="800" data-id="00e7dec4-e207-4a33-910d-73d909000f28" src="https://cdn.javarush.com/images/article/00e7dec4-e207-4a33-910d-73d909000f28/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 1"><h2>Пишем JRTB-0M</h2>В этой задаче нам нужно добавить пустой SpringBoot каркас для будущей работы. 
+
+Делать мы это будем так же, как и делали в <a href="https://javarush.com/groups/posts/3157-java-proekt-ot-a-do-ja-springboot--flyway" target="_blank">статье о SpringBoot + Flyway</a>.
+
+Качаем <a href="https://github.com/javarushcommunity/javarush-telegrambot" rel="nofollow" target="_blank">проект</a>, открываем его в IDEA и создаем новую ветку с названием <span class="text-bold">JRTB-0</span>. Как это сделать через идею я описывал <a href="https://javarush.com/groups/posts/2818-podruzhim-git-s-intellij-idea" target="_blank">здесь</a>. Так будет удобнее понятнее для нас в будущем для отслеживания работы. <img data-max-width="512" data-id="040fb8ee-5934-4ac5-8133-6f592d457549" src="https://cdn.javarush.com/images/article/040fb8ee-5934-4ac5-8133-6f592d457549/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 2">Вы уже знали, что теперь нет <span class="text-bold">master</span> ветки? Теперь она называется нейтрально — <span class="text-bold">main</span>. Поэтому привыкаем. Хотя, по правде сказать, мы всегда можем переименовать ее обратно в мастер.
+
+Заходим на <a href="https://start.spring.io/" rel="nofollow" target="_blank">Spring Initializr</a> и создаем SpringBoot каркас для нашего бота.<img data-max-width="800" data-id="8faab327-aff5-4d45-acdc-a3d70ec297d5" src="https://cdn.javarush.com/images/article/8faab327-aff5-4d45-acdc-a3d70ec297d5/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 3">На данный момент самая младшая предлагаемая версия спринта бута — 2.3.7, берем ее.
+
+Следующие настройки опишу отдельно:<ul>
+
+<li><span class="text-bold">Project: Maven Project</span> — мы уже разобрали мавен <a href="https://javarush.com/groups/posts/3119-java-proekt-ot-a-do-ja-vse-chto-vih-khoteli-znatjh-o-maven" target="_blank">здесь</a> и <a href="https://javarush.com/groups/posts/3120-java-proekt-ot-a-do-ja-vse-chto-vih-khoteli-znatjh-o-maven-chastjh-2" target="_blank">здесь</a>. Поэтому дополнительно буду описывать только то, что не раскрыл в предыдущих статьях. Если такие “белые пятна” будут, конечно)</li>
+<li><span class="text-bold">Language: Java</span> — здесь все понятно. Будет желание — можем переписать это дело на Kotlin. Я как раз прикупил себе книжонку Kotlin in Action, будем учить котлин вместе))</li>
+<li><span class="text-bold">Spring Boot: 2.3.7</span> — берем самую меньшую из предложенных версий, чтобы исключить какие-либо проблемы. Это и так вполне современная версия бута. </li>
+
+</ul>Project Metadata:<ul>
+
+<li><span class="text-bold">Group: com.github.javarushcommunity</span> — здесь выбираем домен, на котором хостится наша группа репозиториев. </li>
+<li><span class="text-bold">Artifact: javarush-telegrambot</span> — максимальное описание проекта.</li>
+<li><span class="text-bold">Name: Javarush TelegramBot</span> — здесь уже полностью напишем.</li>
+<li><span class="text-bold">Description: Telegram bot for Javarush from community to community</span> — здесь уже более детальное описание проекта. </li>
+<li><span class="text-bold">Package name: com.github.javarushcommunity.jrtb</span> — здесь уже можно использовать аббревиатуру для имени проекта. Теперь с этого пакета будет начинаться проект. Зачем так много? Для того, чтобы когда мы добавляли в classpath другие проекты, они были в разных пакетах. Каждый в своем уникальном. Это важно, чтобы сохранять ООП принципы.</li>
+<li><span class="text-bold">Packaging: Jar</span> — это наш стандарт)</li>
+<li><span class="text-bold">Java: 11</span> — будем на шаг впереди. Не думаю, что я буду использовать новшества после восьмой джавы, но пусть уже будет. Есть не просит)... это решение подложит нам небольшую пасхалку в будущем)</li>
+
+</ul>Пока что зависимостей никаких добавлять не будем. В рамках этой задачи нам этого не нужно. Заполнив все это, получим (вот <a href="https://start.spring.io/#!type=maven-project&amp;language=java&amp;platformVersion=2.3.7.RELEASE&amp;packaging=jar&amp;jvmVersion=11&amp;groupId=com.github.javarushcommunity&amp;artifactId=javarush-telegrambot&amp;name=Javarush%20TelegramBot&amp;description=Telgeram%20bot%20for%20Javarush%20from%20community%20to%20community&amp;packageName=com.github.javarushcommunity.jrtb" rel="nofollow" target="_blank">ссылка</a> на сгенерированный проект):<img data-max-width="800" data-id="275df880-3fe5-4a46-ba41-44bfe691be39" src="https://cdn.javarush.com/images/article/275df880-3fe5-4a46-ba41-44bfe691be39/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 4">Заполнив, нажимаем GENERATE и добавляем в наш проект все внутренности в архиве.<img data-max-width="512" data-id="cdf00769-f99d-4eea-9089-4798a2f18211" src="https://cdn.javarush.com/images/article/cdf00769-f99d-4eea-9089-4798a2f18211/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 5">Добавляем файлы в проект.
+
+В итоге у нас есть приложение. Чтобы проверить, собирается ли оно вообще, заходим в терминал и пишем:
+
+<span class="text-bold">$ mvn clean package</span><img data-max-width="1080" data-id="0c53f18e-7e12-40b7-8e11-74b671fb4b46" src="https://cdn.javarush.com/images/article/0c53f18e-7e12-40b7-8e11-74b671fb4b46/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 6">Если у вас так же как из здесь, все ок: проект собрался, и джарник уже готов в target папке. 
+
+На этом задача в рамках описания готова. Все просто, да?
+
+Поэтому делаем коммит и пуш в нашу ветку:<img data-max-width="512" data-id="461d76b5-f352-4a49-9e6f-94a032f717f9" src="https://cdn.javarush.com/images/article/461d76b5-f352-4a49-9e6f-94a032f717f9/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 7">Добавляем в начале описания комита имя нашей задачи, чтобы потом было понятно, в рамках какой задачи делалась работа.
+
+Нажимаем <span class="text-bold">Commit and Push</span>…<img data-max-width="512" data-id="2750375d-0c22-48ac-9083-6d626dc9b647" src="https://cdn.javarush.com/images/article/2750375d-0c22-48ac-9083-6d626dc9b647/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 8">Еще раз пересматриваем и проверяем, что именно мы хотим запушить из локального репозитория на удаленный и удостоверившись, что все ок, нажимаем <span class="text-bold">Push</span>.
+
+Какой наш следующий шаг? По всем правилам (которые можно почитать в <a href="https://javarush.com/groups/posts/2693-komandnaja-rabota-bez-putanicih-razbiraem-strategii-vetvlenija-v-gite" target="_blank">этой статье</a>, в части о GitHub flow) нужно создать пулл-реквест на главную ветку и подождать, чтобы кто-то из команды сделал рецензию кода. Так как я сам, я формально создам пулл-реквест и еще раз все пересмотрю.
+
+Захожу на страницу репозитория, а гитхаб уже знает, что у нас прибавление и предлагает создать пулл-реквест:<img data-max-width="1080" data-id="074cacba-abfb-4d84-b1d6-df176e8cd5dc" src="https://cdn.javarush.com/images/article/074cacba-abfb-4d84-b1d6-df176e8cd5dc/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 9">Нет препятствий патриотам (с) — создаем, как и предлагают.
+
+Выставляем такие же label, project как и на задаче, в рамках которой работаем, и заполняем описание:<img data-max-width="1080" data-id="21eaa9aa-c95e-49a8-9232-cefc4356f846" src="https://cdn.javarush.com/images/article/21eaa9aa-c95e-49a8-9232-cefc4356f846/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 10">Нажимаем <span class="text-bold">Create pull request</span>.<h2>Настраиваем CI процесс</h2>Заходим в созданный пулл-реквест: внизу видим, что у нас не настроен <span class="text-bold">Continuous Integration</span> (здесь и далее — CI). <img data-max-width="800" data-id="de141e0e-ebe2-41da-bd8b-ebe9902be897" src="https://cdn.javarush.com/images/article/de141e0e-ebe2-41da-bd8b-ebe9902be897/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 11">Ну не настроен, и что? А зачем нам вообще нужен CI? Что вообще такое CI?
+
+Вот примерно тот перечень вопросов, который должен волновать нас в этот момент. 
+
+В общем и целом <span class="text-bold">CI</span> — это непрерывный процесс сливания кода в общую кодовую базу с запуском сборки проекта перед этим. Так называемый билд (от англ build). Каждый раз, когда мы собираем проект, мы удостовериваемся, что проект прошел компиляцию, все его тесты прошли успешно, плюс к CI после сборки проекта еще можно добавить автотесты от тестировщиков, которые запускаются на эту конкретную сборку.
+
+Таким образом получится, что мы становимся более уверенные в том, что новые изменения работают так, как мы ожидаем, и не ломают предыдущий функционал. 
+
+Также CI хорош тем, что он запускается автоматически после обновления кодовой базы. То есть мы запушили в ветку свои изменения и процесс пошел — сборка, тесты, автотесты и другие шаги. Если какой-то из этих шагов провалился, сборка считается битой и не может быть влита основную ветку. 
+
+Именно это мы сейчас и сделаем: добавим GitHub Actions, который будет запускать наш код после пуша. GitHub Actions прекрасно ложится на наш GitHub Flow, так что будем использовать его для автоматизации работы. Этот инструмент очень мощный и большой, но пока что мы будем использовать его только для прогонки билда и проверки, что он собирается как нужно. 
+
+Чтобы включить его, найдем на страничке репозитория кнопку <span class="text-bold">Actions</span> и перейдем по ней:<img data-max-width="1080" data-id="f37d4a83-3135-4ea5-a691-0ee14ac770ce" src="https://cdn.javarush.com/images/article/f37d4a83-3135-4ea5-a691-0ee14ac770ce/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 12">Находим необходимый для нас Continuous Integration workflow:<img data-max-width="512" data-id="7d87d0ba-2ccf-4baf-b379-dbff5a3fcd44" src="https://cdn.javarush.com/images/article/7d87d0ba-2ccf-4baf-b379-dbff5a3fcd44/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 13">Нажимаем Set up this workflow.
+
+Далее нам предлагают использовать их шаблон: полностью соглашаемся, лишь несколько уточним все:
+
+<pre class="language-java line-numbers"><code>
+# This workflow will build a Java project with Maven
+# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
+
+name: Java CI with Maven
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+    - name: Build with Maven
+      run: mvn -B package --file pom.xml
+</code></pre>
+Здесь обозначено, что GitHub Action вызывается в двух случаях:<ol>
+<li>Когда делается пуш в main ветку.</li>
+<li>Когда создается пулл-реквест в main ветку.</li>
+
+</ol>В секции jobs описаны шаги, которые будут выполняться.
+
+У нас всего один шаг — build. В нем видно, что наш проект будет запущен в убунте командой <span class="text-bold">mvn -B package --file pom.xml</span>. Это как раз то, что мы делали локально. Хотите здесь что-то поменять — пожалуйста. 
+
+Я буду использовать этот шаблон, мне его хватит с головой. Нажимаю <span class="text-bold">Start commit</span>, выбираю create a new branch для настройки процесса и потом <span class="text-bold">Propose new file</span>.
+
+Но процесс сборки упал…<img data-max-width="850" data-id="c89f7a98-a186-46c1-84fd-baad20f9f999" src="https://cdn.javarush.com/images/article/c89f7a98-a186-46c1-84fd-baad20f9f999/1024.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 14">Как видно, что Failing after 14s — build. Похоже, что-то произошло: переходим к сборке и смотрим на подробности:<img data-max-width="1080" data-id="87034a42-4459-48e8-ac35-47c77c9bdfc3" src="https://cdn.javarush.com/images/article/87034a42-4459-48e8-ac35-47c77c9bdfc3/850.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 15">Пишет, что не нашел такой помник. Почему? Аааа, точно-точно! Потому что мы создали изменения в главной ветке, а нашей задачи там еще нет. И поэтому он не нашел помник…
+
+Поэтому сейчас делаем следующее: таки мерджим в мастер эти данные, потом мерджим main ветку в JRTB-0, и тогда уже все должно пройти отлично.
+
+В пулл-реквесте с изменениями github actions нажимаем <span class="text-bold">Merge pull request</span>:<img data-max-width="850" data-id="3f58333e-95fa-424f-af8b-bdd25be34b99" src="https://cdn.javarush.com/images/article/3f58333e-95fa-424f-af8b-bdd25be34b99/850.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 16">И  повторяем <span class="text-bold">Confirm merge</span>.
+
+Далее гитхаб предлагает нам удалить ветку, в которой мы работали. Мы не отказываемся и удаляем:<img data-max-width="850" data-id="6369cee9-ce84-4522-a818-2e98606cf960" src="https://cdn.javarush.com/images/article/6369cee9-ce84-4522-a818-2e98606cf960/850.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 17">Далее я не нашел в пулл-реквесте со SpringBoot, как стащить изменения из главной ветки с веб-сайта, поэтому сделаем это ручками через IDEA.<h4>Шаг 1: обновить главную ветку в локальный репозиторий.</h4>В идее переходим на главную ветку, нажимаем ctrl + t и обновляем главную ветку:<img data-max-width="512" data-id="5d6e4624-a61a-435b-a8bf-c9f9c51063a8" src="https://cdn.javarush.com/images/article/5d6e4624-a61a-435b-a8bf-c9f9c51063a8/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 18"><h4>Шаг 2: смерджить изменения из главной ветки в ветку JRTB-0.</h4>Переходим на JRTB-0 и мерджим в нее главную.<img data-max-width="512" data-id="6a96021d-4e9a-4229-bb4b-ead9d5b21ccb" src="https://cdn.javarush.com/images/article/6a96021d-4e9a-4229-bb4b-ead9d5b21ccb/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 19"><h4>Шаг 3: запушить изменения.</h4>Нажимаем ctrl + shift + k и подтверждаем пуш.
+
+Теперь ждем, когда пройдет билд и будет зеленый!)) Но он опять красный. Что ж такое?
+
+Заходим в логи actions и видим, что у нас рассинхрон в версиях джавы. В GitHubActions стоит 8, а у нас используется 11:<img data-max-width="1080" data-id="4b6f67a0-5115-429c-985d-baf98c1f1ee3" src="https://cdn.javarush.com/images/article/4b6f67a0-5115-429c-985d-baf98c1f1ee3/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 20">Теперь есть два варианта: или actions подправить, или версию опустить до восьмой. Первый вариант, мне кажется, лучше и правильнее. Вносим изменения отдельным коммитом: будем работать не с 8-й, а с 11-й джавой.<img data-max-width="1080" data-id="b3b463b6-67ee-4aea-a7a0-9b1dbc255b65" src="https://cdn.javarush.com/images/article/b3b463b6-67ee-4aea-a7a0-9b1dbc255b65/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 21">И после этого, наконец-то, у нас все получилось, и мы смогли настроить наш CI процесс для проекта. Такие вещи нужно настраивать на начальном этапе, чтобы потом не париться об этом. 
+
+Теперь уже видно, что билд прошел и можно мерджить без опасений:<img data-max-width="850" data-id="308838df-4856-4f11-8b3d-90882cab267a" src="https://cdn.javarush.com/images/article/308838df-4856-4f11-8b3d-90882cab267a/850.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 22"><h2>Настраиваем работу с ветками в репозитории</h2>Еще можно настроить  в репозитории такие вещи, как правила при работе с ветками. 
+
+Я хочу сделать так, чтобы в main ветку нельзя было пушить напрямую, а только через пулл-реквесты, и сделать так, чтобы нельзя было мержить пулл-реквест, если не прошел билд (то есть, если GitHub Actions упал на каком-то шаге).
+
+Для этого находим кнопку <span class="text-bold">Settings</span> и выбираем <span class="text-bold">Branches</span>:<img data-max-width="1080" data-id="9b7d5259-f6db-4681-8782-3d6426bc7db8" src="https://cdn.javarush.com/images/article/9b7d5259-f6db-4681-8782-3d6426bc7db8/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 23">На данный момент нет правил для веток, поэтому добавим новое через кнопку <span class="text-bold">Add rule</span>:<img data-max-width="800" data-id="15d8d8b0-6609-46b4-97da-893c6027f5be" src="https://cdn.javarush.com/images/article/15d8d8b0-6609-46b4-97da-893c6027f5be/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 24">Здесь много настроек, и каждый может сделать что-то под свои нужды.
+
+
+Чтобы перед мержем в пулл-реквесте успешно прошел билд, добавляем галочку в Require status checks to pass before merging и выбираем статус, который нам нужен — build.
+
+Пока что хватит: далее можно будет обновлять этот рул и смотреть, что хочется еще. Нажимаем <span class="text-bold">Create</span>, чтобы создать этот рул.<img data-max-width="800" data-id="e1f313ab-8f34-43ee-973c-666002c8228d" src="https://cdn.javarush.com/images/article/e1f313ab-8f34-43ee-973c-666002c8228d/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 25">Далее, если мы снова зайдем в наш пулл-реквест, можно будет увидеть, что теперь у нашей проверки есть маркировка required:<img data-max-width="850" data-id="80286008-6dd3-45f3-bfd5-4d7d7ea214c6" src="https://cdn.javarush.com/images/article/80286008-6dd3-45f3-bfd5-4d7d7ea214c6/850.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 26">Проверим нашу страницу с проектом, на которой отображены все статусы задач:<img data-max-width="1024" data-id="569374fc-95a8-47e4-bb63-ca58a3d88734" src="https://cdn.javarush.com/images/article/569374fc-95a8-47e4-bb63-ca58a3d88734/1024.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 27">Сразу видно, над какой задачей идет работа. Причем работа уже сделана, и задача находится в code review (рецензия кода) статусе.<h2>Закрываем JRTB-0</h2>Теперь, когда мы подготовили пулл-реквест и сделали к нему CI, нужно завершить последний этап: закрыть задачу, перенести в правильный статус, посмотреть на борде (от англ board) изменения в нашем проекте.
+
+Наш <a href="https://github.com/javarushcommunity/javarush-telegrambot/pull/14" rel="nofollow" target="_blank">пулл-реквест</a> готов к тому, чтобы слить его в мастер. В пулл-реквесте нажимаем кнопку <span class="text-bold">Merge pull request</span>:<img data-max-width="850" data-id="24fc7d3b-8313-4916-b2ec-0633ce031c3d" src="https://cdn.javarush.com/images/article/24fc7d3b-8313-4916-b2ec-0633ce031c3d/850.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 28">После успешного мерджа можно удалить, и обычно так и делают. Я этого делать не буду, чтобы вам было легче смотреть изменения между ветками/коммитами.
+
+Как только пулл-реквест смерджен, он автоматически переходит в done в нашем борде проекта:<img data-max-width="1024" data-id="6bc2e52d-fb8e-48e6-b751-47f67aa58f03" src="https://cdn.javarush.com/images/article/6bc2e52d-fb8e-48e6-b751-47f67aa58f03/1024.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 29">Последний шаг — закрыть задачу (issue) со ссылкой на пулл-реквест, в котором это было:<img data-max-width="850" data-id="91a2cf9d-92bf-4d57-94fa-63af1b2a164f" src="https://cdn.javarush.com/images/article/91a2cf9d-92bf-4d57-94fa-63af1b2a164f/850.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 30">Эта задача автоматически уходит в done на борде.<img data-max-width="850" data-id="bf7f4b26-5fed-4fa1-8186-0cfd9dba102b" src="https://cdn.javarush.com/images/article/bf7f4b26-5fed-4fa1-8186-0cfd9dba102b/850.jpeg" alt="&quot;Java-проект от А до Я&quot;: Пишем проект. Добавляем SpringBoot и настраиваем CI процесс - 31">Начало положено, первая задача сделана!<h2>Выводы</h2>Казалось бы, мы уже начали работать и писать код, но все еще настройки необходимы. Да, это занимает время, но оно окупится стократ, когда проект станет больше и сложнее и нужны будут гарантии, что просто так не получится все поломать одним коммитом.
+
+Пулл-реквест, в котором все это происходит, доступен <a href="https://github.com/javarushcommunity/javarush-telegrambot/pull/14" rel="nofollow" target="_blank">здесь</a>. Быть может, когда вы будете читать, он будет уже закрыт. Это не страшно: вся нужная информация будет храниться по ссылке. 
+
+Всем спасибо за чтение, до скорой встречи. Дальше — больше!
+
+<h4><a href="https://javarush.com/groups/posts/2935-java-proekt-ot-a-do-ja-pishem-realjhnihy-proekt-dlja-portfolio#articles" target="_blank">Список всех материалов серии в начале этой статьи.</a></h4>

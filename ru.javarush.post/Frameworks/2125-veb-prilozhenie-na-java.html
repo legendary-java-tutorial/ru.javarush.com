@@ -1,0 +1,340 @@
+Веб-приложение на Java
+<p>----------------------------------------</p>
+В век глобальной сети просто необходимо понимать, как работают веб-приложения. В данном обзоре постараемся понять, на чём всё строится, причём тут Servlet API и сервлет контейнеры, и как работают современные фрэймворки вроде Spring.
+<p>----------------------------------------</p>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="81e98417-8e66-4c88-9695-3ebe693acaf0" data-max-width="256" alt="Веб-приложение на Java - 1" src="https://cdn.javarush.com/images/article/81e98417-8e66-4c88-9695-3ebe693acaf0/1024.jpeg"></div></div><h2>Введение</h2>Когда-то Java укрепил свои позиции благодаря тому, что выбрал приоритетным направлением веб-приложения. С первых дней Java пытался найти свой путь. Сначала — предложил апплеты. Это предоставило много возможностей разработчикам по созданию динамического контента (содержимого) на статических HTML страницах. Однако апплеты не оправдали ожиданий по многим причинам: безопасность, накладные расходы и другие. Тогда разработчики языка Java предложили альтернативу — <strong>Servlet API</strong>. И это оказалось правильным решением.
+
+<strong>Servlet API</strong> — это спецификация, на которой построено любое веб-приложение на Java, будь то приложение с веб-интерфейсом или веб-сервис, который возвращает информацию согласно запросу. Поэтому путь к пониманию работы веб-приложений на Java начинается с понимания Servlet API.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="cd25ed9c-f802-4dc7-a29f-d2457fcfdbf2" data-max-width="269" alt="Веб-приложение на Java - 2" src="https://cdn.javarush.com/images/article/cd25ed9c-f802-4dc7-a29f-d2457fcfdbf2/1024.jpeg"></div></div><h2>Servlet API</h2>Итак, <strong>Servlet API</strong> — это то, что предложили разработчики языка Java-разработчикам. Servlet API — это спецификация, которая должна отвечать на основные наши вопросы. Найти ее можно тут: "<a href="https://download.oracle.com/otndocs/jcp/servlet-3_1-fr-eval-spec/index.html" target="_blank" rel="nofollow">JSR-000340 JavaTM Servlet 3.1 Final Release for Evaluation</a>".
+
+В главе "<strong>1.1 What is a Servlet?</strong>" сказано, что <u>сервлет — это веб-компонент</u>, основанный на Java-технологии, который создаёт динамический контент (то есть содержимое). "Основан на Java-технологии" означает, что <strong>сервлет — это Java-класс, скомпилированный в байт-код</strong>. 
+Сервлеты управляются контейнером сервлетов, который иногда называют Servlet Engine. <u>Сервлет контейнер — это расширение веб-сервера</u>, которое предоставляет функциональность сервлетов. В свою очередь сервлеты обеспечивают взаимодействие с клиентом в парадигме запрос/ответ, которая и реализуется сервлет-контейнером.
+
+В главе "<strong>1.2 What is a Servlet Container?</strong>" сказано, что <u>сервлет контейнер — это часть веб-сервера</u> или сервера приложений, который предоставляет сетевые сервисы, при помощи которых посылаются запросы и ответы, формируются и обрабатываются MIME-based запросы и ответы.
+
+Кроме того, сервлет контейнеры управляют жизненным циклом сервлетов (т.е. решают, когда их создавать, удалять и т.п.).
+Все сервлет контейнеры должны поддерживать протокол HTTP для получения запросов и отправления ответов.
+
+Тут хочется добавить, что MIME — это такой стандарт, спецификация, которая говорит, как надо кодировать информацию и форматировать сообщения, чтобы их можно было пересылать по интернету.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="230" alt="Веб-приложение на Java - 3" src="https://cdn.javarush.com/images/article/e4dac51c-69b0-4ff6-aabb-9d89fdb2ce2f/original.jpeg"></div></div><h2>Web-server</h2>Веб-сервер — это сервер, который принимает HTTP-запросы от клиентов и выдающий им HTTP ответы (как правило, вместе с HTML страницей, изображением, файлом или другими данными).
+
+Запрашиваемые ресурсы обознаются URL-адресами.
+
+Одним из самых популярных веб-серверов с поддержкой Servlet API является <a href="https://tomcat.apache.org/download-90.cgi" target="_blank" rel="nofollow">Apache Tomcat</a>.
+
+Большинство веб-серверов — сложные механизмы, которые состоят из различных компонентов, и каждый из них выполняет опредленные функции. Например:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="9f216a07-8b51-4fd7-b31f-f333a24c3a91" data-max-width="296" alt="Веб-приложение на Java - 4" src="https://cdn.javarush.com/images/article/9f216a07-8b51-4fd7-b31f-f333a24c3a91/1024.jpeg"></div></div><h2>Connectors</h2> — На входе у нас есть Connectors (т.е. коннекторы), которые принимают входящие запросы от клиентов.
+HTTP коннектор в Tomcat реализован при помощи компонента "Coyote". Коннекторы принимают данные от клиента и передают их дальше в Tomcat Engine. 
+<strong>Servlet Container</strong> — Tomcat Engine в свою очередь обрабатывает полученный от клиента request при помощи компонента "Catalina", который является сервлет контейнером.
+
+Подробнее см. документацию Tomcat : "<a href="http://tomcat.apache.org/tomcat-9.0-doc/architecture/overview.html" target="_blank" rel="nofollow">Architecture Overview</a>".
+
+Сущестуют и другие веб-серверы, поддерживающие спецификацию Servlet API. Например, "<a href="https://www.eclipse.org/jetty/documentation/current/architecture.html#basic-architecture" target="_blank" rel="nofollow">Jetty</a>" или "<a href="http://undertow.io/undertow-docs/undertow-docs-1.2.0/#architecture-overview" target="_blank" rel="nofollow">Undertow</a>". Их архитектура похожа, поэтому понимая принцип работы с одним сервлет контейнером, можно перестроиться на работу с другим.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="231" alt="Веб-приложение на Java - 5" src="https://cdn.javarush.com/images/article/d8c11b24-effe-4f43-8085-ece2df5eaa17/original.jpeg"></div></div><h2>Веб-приложение (Web Application)</h2>Итак, чтобы мы смогли запустить веб-приложение, нам нужен веб-сервер, который поддерживает Servlet API (т.е. в котором есть компонент-расширение, реализующее для веб-сервера поддержку Servlet API). 
+Хорошо. <strong>А что же такое вообще веб-приложение?</strong>
+
+Согласно главе "<strong>10 Web Applications</strong>" спецификации Servlet API, <strong>Web application </strong>— это набор сервлетов, HTML страниц, классов и других ресурсов, которые составляют законечнное приложение на веб-сервере.
+
+Согласно главе "<strong>10.6 Web Application Archive File</strong>", веб-приложение может быть запаковано в Web ARchive (в архив с расширением WAR). Как сказано на странице "<strong>Glossary-219</strong>":
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="c1047032-0cff-479d-b86f-bc83a16811aa" data-max-width="448" alt="Веб-приложение на Java - 6" src="https://cdn.javarush.com/images/article/c1047032-0cff-479d-b86f-bc83a16811aa/1024.jpeg"></div></div>То есть WAR сделано вместо JAR, чтобы показать, что это веб-приложение.
+
+Следующий важный факт: у нас должна быть определённая структура каталогов в нашем WAR архиве. В спецификации Servlet API в главе "<strong>10.5 Directory Structure</strong>". В этой главе сказано, что есть особый каталог, который называется "WEB-INF". Данный каталог особен тем, что он не виден клиенту и напрямую ему не показывается, но он доступен для кода сервлетов.
+Также сказано, что может содержать каталог WEB-INF:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="7fcfd600-54e1-4f08-86ae-c633ae81105a" data-max-width="504" alt="Веб-приложение на Java - 7" src="https://cdn.javarush.com/images/article/7fcfd600-54e1-4f08-86ae-c633ae81105a/1024.jpeg"></div></div>Из всего этого списка нам теперь неизвестен и непонятен пункт про какой-то файл <strong>web.xml</strong>, называемый <strong>deployment descriptor</strong> (дескриптор развёртывания). Что же это такое? Деплоймент дескриптору отведена глава "<strong>14. Deployment Descriptor</strong>". Если кратко, то <strong>деплоймент дескриптор</strong> — это такой xml файл, который описывает, как нужно разворачивать (то есть запускать) на веб-сервере наше веб-приложение. Например, в деплоймент дескрипторе указывается по каким URL надо обращаться к нашему приложению, указываются настройки безопасности, которые относятся к нашему приложению и т.д. 
+
+В главе "<strong>14.2 Rules for Processing the Deployment</strong>" сказано, что web.xml прежде чем наше приложение будет настроено и запущено будет провалидирован по схеме (то есть будет выполнена проверка, что содержимое web.xml написано правильно согласно схеме). А в главе "<strong>14.3 Deployment Descriptor</strong>" указано, что схема лежит здесь:
+
+<code>http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd</code>
+
+Если посмотреть на содержимое файла, мы можем увидеть:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="9035c425-c263-4f22-b305-5d9b4a770dfd" data-max-width="494" alt="Веб-приложение на Java - 8" src="https://cdn.javarush.com/images/article/9035c425-c263-4f22-b305-5d9b4a770dfd/1024.jpeg"></div></div>Для чего используется схема для XML файлов? В схемах указано, как правильно заполнять XML документ: какие элементы можно использовать, какого типа данные в элементах могут быть указаны, в каком порядке элементы должны идти, какие элементы обязательны и т.д. Можно сравнить схему XML документа с интерфейсом в Java, ведь схема в Java тоже указывает, каким образом должны быть написаны классы, которые удовлятворяют данному интерфейсу (т.е. которые реализуют данный интерфейс).
+
+Итак, мы вооружены тайными знаниями и готовы создавать своё первое веб-приложение!
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="d0c5fe25-79f9-4840-ae4e-85ee31bb82f2" data-max-width="321" alt="Веб-приложение на Java - 9" src="https://cdn.javarush.com/images/article/d0c5fe25-79f9-4840-ae4e-85ee31bb82f2/1024.jpeg"></div></div><h2>Создание веб-приложения</h2>Работы с современным Java-приложением уже трудно представить без использования систем автоматической сборки проектов. Одними из самых популярных систем являются <strong>Maven и Gradle</strong>. Воспользуемся для данного обзора Gradle. Установка Gradle описана на <a href="https://gradle.org/install/" target="_blank" rel="nofollow">официальном сайте</a>.
+
+Для создания нового приложения нам понадобится встроенный в Gradle плагин: "<a href="https://docs.gradle.org/current/userguide/build_init_plugin.html" target="_blank" rel="nofollow">Build Init Plugin</a>". 
+
+Для создания Java-приложения необходимо выполнить следующую команду:
+
+<code>gradle init --type java-application</code>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="fa6b1de0-b722-49d0-81f5-191104eac720" data-max-width="484" alt="Веб-приложение на Java - 10" src="https://cdn.javarush.com/images/article/fa6b1de0-b722-49d0-81f5-191104eac720/1024.jpeg"></div></div>После создания проекта нам понадобится отредактировать файл <strong>build.gradle</strong>. Это так называемый Build Script (подробнее см. документацию Gradle: "<a href="https://docs.gradle.org/current/userguide/writing_build_scripts.html" target="_blank" rel="nofollow">Writing Build Scripts</a>"). В данном файле описывается то, каким образом необходимо собирать проект и другие аспекты работы с Java проектом.
+
+В блоке plugins описывается, какие "<a href="https://docs.gradle.org/current/userguide/plugins.html" target="_blank" rel="nofollow">Gradle плагины</a>" необходимо использовать для текущего Gradle проекта. Плагины расширяют возможности нашего проекта. Например, по умолчанию исопльзуется плагин "<a href="https://docs.gradle.org/current/userguide/java_plugin.html" target="_blank" rel="nofollow">java</a>". Данный плагин всегда используется, если нам нужна поддержка Java. Но вот плагин "<a href="https://docs.gradle.org/current/userguide/application_plugin.html" target="_blank" rel="nofollow">application</a>" нам не нужен, т.к. в его описании указано, что он служит для создания "executable JVM application", т.е. выполняемых JVM приложений. Нам же нужно создание Web приложения в виде WAR архива.
+
+И если мы в документации Gradle поищем слово WAR, найдём и "<a href="https://docs.gradle.org/current/userguide/war_plugin.html#header" target="_blank" rel="nofollow">War Plugin</a>".
+
+Следовательно, укажем следующие плагины:
+
+<pre class="lang-java line-numbers"><code>
+plugins {
+    id 'java'
+    id 'war'
+}
+</code></pre>
+Так же в "<a href="https://docs.gradle.org/current/userguide/war_plugin.html#sec:war_default_settings" target="_blank" rel="nofollow">War Plugin Default Settings</a>" сказано, что каталог со всем содержимым веб-приложения должен быть "src/main/webapp", там должен лежать тот самый каталог WEB-INF, в котором должен лежать web.xml.
+
+Создадим такой файл. Заполнять же его будем несколько позднее, т.к. мы ещё не имеем достаточно информации для этого.
+
+В блоке "dependencies" указываем зависимости нашего проекта, то есть те библиотеки/фрэймворки, без которых не может работать наше приложение. В данном случае, мы пишем веб-приложение, а значит мы не можем работать без Servlet API:
+
+<pre class="lang-java line-numbers"><code>
+dependencies {
+    providedCompile 'javax.servlet:javax.servlet-api:3.1.0'
+    testCompile 'junit:junit:4.12'
+}
+</code></pre>
+providedCompile говорит о том, что зависимость не нужно включать в наш WAR архив веб-приложения: она нужна только для компиляции. А при выполнении данная зависимость будет предоставлена кем-то другим (то есть веб-сервером).
+
+Ну и оставляем в build script информацию о том, какой репозиторий зависимостей мы хотим использовать — из него будут скачаны все указанные dependencies:
+
+<pre class="lang-java line-numbers"><code>
+repositories {
+    jcenter()
+}
+</code></pre>
+Всё остальное из файла build script'а убираем.
+
+Теперь отредактируем класс src\main\java\App.java. Сделаем из него сервлет. В спецификации Servlet API в главе "<strong>CHAPTER 2. The Servlet Interface</strong>" сказано, что Servlet Interface имеет базовую реализацию <a href="https://tomcat.apache.org/tomcat-8.0-doc/servletapi/javax/servlet/http/HttpServlet.html" target="_blank" rel="nofollow">HttpServlet</a>, которой должно быть достаточно в большинстве случаев и разработчикам достаточно унаследоваться от неё. А в главе "<strong>2.1.1 HTTP Specific Request Handling Methods</strong>" указаны основные методы, которые обрабатывают входящие запросы. Таким образом, перепишем класс App.java:
+
+<pre class="lang-java line-numbers"><code>
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.PrintWriter;
+import java.io.IOException;
+
+public class App extends HttpServlet {
+    public String getGreeting() {
+        return "Hello world.";
+    }
+
+    public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+ 		// https://www.oracle.com/technetwork/java/servlet-142430.html
+ 		PrintWriter out = resp.getWriter();
+ 		out.println(this.getGreeting());
+ 		out.close();
+ 	}
+}
+</code></pre>
+Итак, у нас вроде всё готово. Осталось правильно написать дескриптор развёртывания.
+
+Из схемы скопируем в web.xml следующий текст:
+
+<pre class="lang-java line-numbers"><code>
+&lt;web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="..."
+      version="3.1"&gt; 
+      ...
+&lt;/web-app&gt;
+</code></pre>
+А также путь к схеме, который указан в ней:  
+
+<code>http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd</code>
+
+Теперь посмотрим пример того, как должен выглядеть web.xml в спецификации Servlet API. Данный пример указан в главе "<strong>14.5.1 A Basic Example</strong>".
+
+Совместим то, что указано в схеме с примером, который указан в спецификации. Получим следующее:
+
+<pre class="lang-java line-numbers"><code>
+&lt;web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee 
+      http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+      version="3.1"&gt;
+      &lt;display-name&gt;A Simple Web Application&lt;/display-name&gt;
+      &lt;servlet&gt;
+		&lt;servlet-name&gt;app&lt;/servlet-name&gt;
+		&lt;servlet-class&gt;App&lt;/servlet-class&gt;
+	  &lt;/servlet&gt;
+	  &lt;servlet-mapping&gt;
+		&lt;servlet-name&gt;app&lt;/servlet-name&gt;
+		&lt;url-pattern&gt;/app&lt;/url-pattern&gt;
+	  &lt;/servlet-mapping&gt;
+&lt;/web-app&gt;
+</code></pre>
+Как видно, мы использовали схему и schemaLocation, которые были указаны ранее. А описание самих элементов взяли из примера из главы 14.5.1.
+
+Если мы сделали всё правильно, выполним gradle задачу gradle war без ошибок:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="333d2b17-2db8-4272-bd1a-065735d325d2" data-max-width="258" alt="Веб-приложение на Java - 11" src="https://cdn.javarush.com/images/article/333d2b17-2db8-4272-bd1a-065735d325d2/1024.jpeg"></div></div><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="7df59e37-ea7d-4ce6-a3a8-778eb80ee440" data-max-width="289" alt="Веб-приложение на Java - 12" src="https://cdn.javarush.com/images/article/7df59e37-ea7d-4ce6-a3a8-778eb80ee440/1024.jpeg"></div></div><h2>Запуск веб-приложения</h2>Как же происходит запуск веб-приложения?
+
+Давайте разберёмся сначала с более сложным вариантом. Мы ранее говорили, что есть Apache Tomcat веб-сервер, который поддерживает Servlet API. А это значит, что наш собранный war архив мы сможем развернуть (ещё говорят "задеплоить") на этом сервере.
+
+На странице "<a href="https://tomcat.apache.org/download-90.cgi" target="_blank" rel="nofollow">Download Tomcat</a>" скачаем из раздела "Binary Distributions" тип поставки "Core" в формате zip. И распакуем скачанный архив в какой-нибудь каталог, например в C:\apache-tomcat-9.0.14.
+
+Прежде чем запускать сервер, откроем на редактирование файл <code>conf\tomcat-users.xml</code> и добавим в него следующую строку:
+
+<code>&lt;user username="tomcat" password="tomcat" roles="tomcat,manager-gui,admin-gui"/&gt;</code>
+
+Теперь в командной строке переходим в каталог bin и выполняем <code>catalina.bat start</code>.
+
+По умолчанию консоль сервера будет доступна по адресу <code>http://localhost:8080/manager</code>. Логин и пароль те самые, которые мы указали в tomcat-users.xml.
+
+У Tomcat'а есть каталог "webapps", в котором лежат веб-приложения. Если мы хотим развернуть своё, мы должны скопировать туда свой war архив.
+Когда мы ранее выполнили команду gradle war, то в каталоге <code>\build\libs\</code> создался war архив. Вот его-то нам и надо скопировать.
+После копирования обновим страницу <code>http://localhost:8080/manager</code> и увидим:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="b4e5f708-90e4-4416-8f29-ccc6d93af713" data-max-width="794" alt="Веб-приложение на Java - 13" src="https://cdn.javarush.com/images/article/b4e5f708-90e4-4416-8f29-ccc6d93af713/1024.jpeg"></div></div>Выполнив <code>http://localhost:8080/javaweb/app</code>, мы обратимся к нашему сервлету, т.к. обращение /app ранее мы "замапили" (то есть сопоставили) на сервлет App.
+
+Существует более быстрый способ проверить, как работает приложение. И в этом нам снова помогает система сборки.
+
+В build script нашего Gradle проекта мы можем добавить в секцию plugins новый плагин "<a href="https://github.com/akhikhl/gretty" target="_blank" rel="nofollow">Gretty</a>":
+
+<code>id "org.gretty" version "2.3.1"</code>
+
+И теперь мы можем выполнять gradle task для запуска нашего приложения: <code>gradle appRun</code>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="8128b699-e632-444b-a2a1-113f1c40908c" data-max-width="590" alt="Веб-приложение на Java - 14" src="https://cdn.javarush.com/images/article/8128b699-e632-444b-a2a1-113f1c40908c/1024.jpeg"></div></div>Подробнее см. "<a href="https://guides.gradle.org/building-java-web-applications/#add_the_code_gretty_code_plugin_and_run_the_app" target="_blank" rel="nofollow">Add the gretty plugin and run the app</a>". 
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="c03ef9f2-913e-452a-9523-bcf092b34c67" data-max-width="331" alt="Веб-приложение на Java - 15" src="https://cdn.javarush.com/images/article/c03ef9f2-913e-452a-9523-bcf092b34c67/1024.jpeg"></div></div><h2>Spring и Servlet API</h2>Сервлеты — основа всего. И даже популярный сейчас Spring Framework ничто иное, как надстройка над Servlet API.
+
+Для начала, <a href="http://spring-projects.ru/projects/spring-framework/" target="_blank" rel="nofollow">Spring Framework</a> — это новая зависимость для нашего проекта. Поэтому добавим её в build script в блок dependencies:
+
+<code>compile 'org.springframework:spring-webmvc:5.1.3.RELEASE'</code>
+
+В документации Spring Framework есть глава "<a href="https://docs.spring.io/spring/docs/current/spring-framework-reference/web.html#mvc-servlet" target="_blank" rel="nofollow">1.1. DispatcherServlet</a>". В ней сказано, что Spring Framework построен по шаблону "front controller" - это когда есть центральный сервлет, который называется "<strong>DispatcherServlet</strong>". Все запросы поступают на этот сервлет, а он делегирует уже вызовы нужным компонентам. Видите, даже тут сервлеты.
+
+В деплоймент дескриптор необходимо добавить listener (слушателя):
+
+<pre class="lang-java line-numbers"><code>
+&lt;listener&gt;
+	&amp;ltlistener-class&gt;org.springframework.web.context.ContextLoaderListener&lt;/listener-class&gt;
+&lt;/listener&gt;
+</code></pre>
+Это слушатель событий сервлет контекста. То есть, когда стартует Servlet Context, стартует и контекст Spring'а (WebApplicationContext). <strong>Что такое Servlet Context?</strong> Он описан в спецификации Servle API в главе "<strong>CHAPTER 4. Servlet Context</strong>". Сервлет контекст — это "взгляд" сервлетов на веб-приложение, внутри которого сервлеты запущены. У каждого веб-приложения свой Servlet Context.
+
+Дальше для включения Spring Framework необходимо указать context-param — параметр инициализации сервлет контекста.
+
+<pre class="lang-java line-numbers"><code>
+&lt;context-param&gt;
+	&lt;param-name&gt;contextConfigLocation&lt;/param-name&gt;
+	&lt;param-value&gt;/WEB-INF/app-context.xml&lt;/param-value&gt;
+&lt;/context-param&gt;
+</code></pre>
+И завершает конфигурацию определение <strong>DispatcherServlet</strong>:
+
+<pre class="lang-java line-numbers"><code>
+&lt;servlet&gt;
+	&lt;servlet-name&gt;app&lt;/servlet-name&gt;
+	&lt;servlet-class&gt;org.springframework.web.servlet.DispatcherServlet&lt;/servlet-class&gt;
+	&lt;init-param&gt;
+		&lt;param-name&gt;contextConfigLocation&lt;/param-name&gt;
+ 		&lt;param-value&gt;&lt;/param-value&gt;
+	&lt;/init-param&gt;
+	&lt;load-on-startup&gt;1&lt;/load-on-startup&gt;
+&lt;/servlet&gt;
+
+&lt;servlet-mapping&gt;
+	&lt;servlet-name&gt;app&lt;/servlet-name&gt;
+	&lt;url-pattern&gt;/&lt;/url-pattern&gt;
+&lt;/servlet-mapping&gt;
+</code></pre>
+И теперь нам осталось заполнить файл, указанный в contextConfigLocation. Как это сделать, описано в документации Spring Framework в главе "1.3.1. Declaration":
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:p="http://www.springframework.org/schema/p"
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/mvc
+        http://www.springframework.org/schema/mvc/spring-mvc.xsd"&gt;
+
+    &lt;context:component-scan base-package="ru.javarush.javaweb"/&gt;
+    &lt;mvc:annotation-driven/&gt;
+&lt;/beans&gt;
+</code></pre>
+Тут важно не только указать, какой пакет сканировать, но и то, что мы хотим annotation-driven, то есть управлять аннотациями тем, как будет работать Spring.
+
+Остаётся только создать пакет ru.javarush.javaweb и разместить в нём класс Spring контроллера:
+
+<pre class="lang-java line-numbers"><code>
+package ru.javarush.javaweb;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+@Controller
+public class SpringController {
+    
+    @GetMapping("/app")
+    @ResponseBody
+    public String getGreeting() {
+        return "Hello world.";
+    }
+}
+</code></pre>
+Запустив теперь gradle appRun и перейдя по адресу <code>http://127.0.0.1:8080/javaweb/app</code> мы получим всё тот же Hello World. Как видно, Spring Framework тесно переплетается с Servlet API и использует его, чтобы работать поверх него.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="242" alt="Веб-приложение на Java - 16" src="https://cdn.javarush.com/images/article/90b3ed09-fcae-4985-9b96-33cc6c744bd2/original.jpeg"></div></div><h2>Аннотации</h2>Как мы видели, аннотации — это удобно. И не мы одни так подумали. Поэтому в спецификации Servlet API начиная с версии 3.0 появилась глава "<strong>CHAPTER 8 Annotations and pluggability</strong>", которая указывает, что сервлет контейнеры должны поддерживать возможность указывать то, что раньше указывалось в Deployment Descriptor'е через аннотации.
+
+Таким образом, web.xml можно совсем удалить из проекта, а над классом сервлета указывать аннотацию <a href="https://tomcat.apache.org/tomcat-8.0-doc/servletapi/javax/servlet/annotation/WebServlet.html" target="_blank" rel="nofollow">@WebServlet</a> и указывать, на какой путь "мапить" сервлет.
+
+Тут вроде всё понятно. Но что делать, если мы к проекту подключили Spring, который требует более сложных настроек?
+
+Тут всё чуть-чуть сложнее. Во-первых, в документации Spring сказано, что для настройки Spring без web.xml нужно использовать свой класс, который будет реализовывать WebApplicationInitializer. Подробнее см. главу "<a href="https://docs.spring.io/spring/docs/current/spring-framework-reference/web.html#mvc-servlet" target="_blank" rel="nofollow">1.1. DispatcherServlet</a>".
+
+Получается, что это класс Spring'а. Как же тогда используется Servlet API тут? На самом деле, в Servlet API 3.0 был добавлен <a href="https://tomcat.apache.org/tomcat-8.0-doc/servletapi/javax/servlet/ServletContainerInitializer.html" target="_blank" rel="nofollow">ServletContainerInitializer</a>. Используя особый механизм в Java (называется <a href="https://habr.com/post/118488/" target="_blank" rel="nofollow">SPI</a>), Spring указывает свой инициализатор сервлет контейнера, который называется <code>SpringServletContainerInitializer</code>. В свою очередь, он уже ищет реализации WebApplicationInitializer и вызывает нужные методы и выполняет нужные настройки. Подробнее см. "<a href="https://stackoverflow.com/questions/28131102/how-servlet-container-finds-webapplicationinitializer-implementations" target="_blank" rel="nofollow">How servlet container finds WebApplicationInitializer implementations</a>".
+
+Вышеуказанные настройки можно выполнить так:
+
+<pre class="lang-java line-numbers"><code>
+package ru.javarush.javaweb.config;
+
+import org.springframework.web.WebApplicationInitializer;
+import org.springframework.web.context.ContextLoaderListener;
+import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
+import org.springframework.web.servlet.DispatcherServlet;
+
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRegistration;
+
+public class AppInitializer implements WebApplicationInitializer {
+    @Override
+    public void onStartup(ServletContext servletContext) throws ServletException {
+        AnnotationConfigWebApplicationContext ctx = new AnnotationConfigWebApplicationContext();
+        // регистрируем конфигурацию созданую высше
+        ctx.register(AppConfig.class);
+        // добавляем в контекст слушателя с нашей конфигурацией
+        servletContext.addListener(new ContextLoaderListener(ctx));
+
+        ctx.setServletContext(servletContext);
+
+        // настраиваем маппинг Dispatcher Servlet-а
+        ServletRegistration.Dynamic servlet =
+                servletContext.addServlet("dispatcher", new DispatcherServlet(ctx));
+        servlet.addMapping("/");
+        servlet.setLoadOnStartup(1);
+    }
+}
+</code></pre>
+Теперь при помощи "<a href="https://docs.spring.io/spring/docs/current/spring-framework-reference/core.html#beans-java" target="_blank" rel="nofollow">Java-based configuration</a>" укажем, какой пакет сканировать + включим аннотации:
+
+<pre class="lang-java line-numbers"><code>
+package ru.javarush.javaweb.config;
+
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+
+@Configuration
+@EnableWebMvc
+@ComponentScan(basePackages = "ru.javarush.javaweb.controllers")
+public class AppConfig {
+}
+</code></pre>
+А сам SpringController был перенесён в <code>ru.javarush.javaweb.controllers</code>, чтобы при сканировании конфигурация не находила сама себя, а искала только контроллеры.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="243" alt="Веб-приложение на Java - 17" src="https://cdn.javarush.com/images/article/efe9b1c3-76b6-4474-b755-9237c1bd5e07/original.jpeg"></div></div><h2>Подведение итогов</h2>Надеюсь, данный обзор пролил свет на то, как в Java работают веб-приложения. Это лишь верхушка айсберга, но непонимая основы трудно понимать, как работают технологии, основанные на этой основе. Servlet API - центральная часть любых веб-приложений на Java и мы разобрались, как в это встраиваются другие фрэймворки.
+
+А для продолжения можно посмотреть следующие материалы:
+<ul>
+<li>"<a href="https://guides.gradle.org/building-java-web-applications/" target="_blank" rel="nofollow">Gradle: Building Java Web Applications</a>"</li>
+<li>"<a href="https://www.udemy.com/restful-web-services-with-spring-framework-a-quick-start/" target="_blank" rel="nofollow">RESTful Web Services with Spring Framework - A quick start</a>"</li>
+<li>"<a href="https://www.udemy.com/spring-core/" target="_blank" rel="nofollow">Spring Core</a>"</li>
+<li>"<a href="https://www.youtube.com/watch?v=OQVTyjPzzeo&amp;list=PLwwk4BHih4fjstwgKAHPAuUcjpRUiRh5k" target="_blank" rel="nofollow">Введение в JEE</a>"</li>
+</ul>#Viacheslav

@@ -1,0 +1,180 @@
+Java varargs
+<p>----------------------------------------</p>
+Сегодня мы обсудим такую штуку как varargs в Java. Varargs — или Variable Arguments — это технология, которая позволяет создавать методы с произвольным количеством аргументов. В данной статье мы научимся создавать такие методы, обсудим, зачем нужны varargs и когда их лучше...
+<p>----------------------------------------</p>
+Сегодня мы обсудим такую штуку как varargs в Java. Varargs — или Variable Arguments — это технология, которая позволяет создавать методы с произвольным количеством аргументов. В данной статье мы научимся создавать такие методы, обсудим, зачем нужны varargs и когда их лучше использовать.
+
+<h2>Что такое varargs?</h2>Varargs — это аргументы переменной длины: фича, которая появилась еще в JDK5. Varargs позволяют нам создавать методы с произвольным количеством аргументов. По большому счету, создавать такие методы можно было и раньше. Правда, делать это было не очень удобно. 
+
+Приведем пример. Допустим, нам необходимо написать метод, который будет принимать произвольное количество целочисленных аргументов и складывать их вместе. 
+<img data-max-width="800" data-id="3975a4ce-681a-4b0f-879f-ca1961d3df93" src="/images/article/3975a4ce-681a-4b0f-879f-ca1961d3df93/800.jpeg" class="img-fluid" alt="Java varargs - 1">У нас есть два варианта.
+
+<span class="text-bold">Вариант 1 — перегрузка:</span>
+
+<pre class="lang-java line-numbers"><code>
+class Calculator {
+    int sum(int a, int b){...};
+    int sum(int a, int b, int c){...};
+    int sum(int a, int b, int c, int d){...};
+    int sum(int a, int b, int c, int d, int e){...};
+}
+</code></pre>
+Но с перегрузкой возникают две проблемы. Во-первых, не всегда понятно, когда пора остановиться, а во-вторых, это громоздко. Лучше уж массивы. 
+
+<span class="text-bold">Вариант 2 — массивы:</span>
+    
+<pre class="lang-java line-numbers"><code>
+class Calculator {
+    int sum(int[] numbers){...};
+}
+</code></pre>
+С массивом уже не громоздко, и вроде бы массив выглядит ничего так… до тех пор, пока не придет пора вызвать метод: 
+
+<pre class="lang-java line-numbers"><code>
+    public static void main(String... sss) {
+        Calculator calculator = new Calculator();
+        
+        int[] arguments = new int[7];
+        arguments[0] = 1;
+        arguments[1] = 10;
+        arguments[2] = 123;
+        arguments[3] = 234;
+        arguments[4] = 6234;
+        arguments[5] = 12;
+        arguments[6] = 8;
+
+        int sum = calculator.sum(arguments);
+    }
+</code></pre>
+Согласны, можно, конечно, и короче все записать. Но во-первых, хочется все-таки продемонстрировать неудобство использования массивов в качестве аргументов переменной длины, а во-вторых, даже если мы запишем так:
+
+<pre class="lang-java line-numbers"><code>
+        int[] arguments = {1,10,123,234,6234,12,8};
+        int sum = calculator.sum(arguments);
+</code></pre>
+То мы все равно не избавимся излишнего количества кода.
+
+Однако с выходом Java 5 для решения этих проблем появилась фича Varargs. Она позволила передавать в методы произвольное количество аргументов. 
+
+Выглядит это примерно так: 
+
+<pre class="lang-java line-numbers"><code>
+public class Calculator {
+    public static void main(String... sss) {
+        Calculator calculator = new Calculator();
+        int sum = calculator.sum(1,10,123,234,6234,12,8);
+    }
+    int sum(int... numbers){
+       return Arrays.stream(numbers).sum();
+    }
+}
+</code></pre>
+Итак, резюмируем. Varargs — это аргументы переменной длины, фича, которая появилась с выходом Java 5. Далее более подробно рассмотрим некоторые правила работы с Varargs.
+<h2>5 правил varargs</h2><span class="text-bold">Правило 1.</span> Vararg аргумент (или же аргумент переменной/произвольной длины) обозначается через троеточие следующим образом: 
+
+<pre class="lang-java line-numbers"><code>
+String... words
+Integer... numbers
+Person... people
+Cat... cats
+</code></pre>
+<span class="text-bold">Правило 2.</span> Аргумент произвольной длины может быть указан только как аргумент некоторого метода: 
+
+<pre class="lang-java line-numbers"><code>
+void print(String... words)
+int sum(Integer... numbers)
+void save(Person... people)
+void feed(Cat... cats)
+</code></pre>
+<span class="text-bold">Правило 3.</span> Каждый такой аргумент переменной длины в теле метода является массивом:
+
+<pre class="lang-java line-numbers"><code>
+    void print(String... words){
+        for (int i = 0; i &lt; words.length; i++) {
+            System.out.println(words[i]);
+        }
+    }
+</code></pre>
+<span class="text-bold">Правило 4.</span> Vararg аргумент должен быть последним в списке аргументов метода:
+
+<pre class="lang-java line-numbers"><code>
+void print(String... words, String anotherWord) // - Так нельзя!
+void print(String... words, int someNumber) // - Так нельзя!
+
+void print(String anotherWord, String... words) // - Так можно
+void print(int someNumber, String... words) // - Так можно
+</code></pre>
+<span class="text-bold">Правило 5.</span> Несмотря на то, что varargs являются массивами, при вызове метода, который принимает аргументы переменной длины, не обязательно создавать массив. Достаточно и даже желательно просто перечислить необходимые аргументы через запятую: 
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+    public static void main(String... sss) {
+        print("Как","же","прекрасно","изучать","Java");
+    }
+
+    static void print(String... words){
+        for (int i = 0; i &lt; words.length; i++) {
+            System.out.println(words[i]);
+        }
+    }
+}
+</code></pre><h2>Примеры varargs</h2>В примере ниже мы напишем метод, который принимает varargs состоящий из целых чисел и выводит на экран количество переданных элементов и их сумму. Передадим в этот метод и массив, и ряд целых чисел (оба варианта допустимы): 
+
+<pre class="lang-java line-numbers"><code>
+    public static void main(String... sss) {
+        int[] a = new int[100];
+        for (int i = 0; i &lt; a.length; i++) {
+            a[i] = i;
+        }
+
+        sum(a);
+        sum(1,2,3,4,5,6,7,8,9,10);
+    }
+
+    static void sum(int... numbers){
+        final int length = numbers.length;
+        final int sum = Arrays.stream(numbers).sum();
+        final String lineSeparator = System.lineSeparator();
+
+        System.out.printf("Кол-во элементов для сложения - %d, сумма - %d%s", length, sum, lineSeparator);
+    }
+</code></pre>
+После запуска программа выведет: 
+
+<pre><code>
+Кол-во элементов для сложения - 100, сумма - 4950 
+Кол-во элементов для сложения - 10, сумма - 55 
+</code></pre>
+Стоит сказать, что метод <code>System.out.printf</code> также принимает varargs. Если мы взглянем на код этого метода, то убедимся в этом: 
+
+<pre class="lang-java line-numbers"><code>
+    public PrintStream printf(String format, Object ... args) {
+        return format(format, args);
+    }
+</code></pre>
+Еще один широко используемый метод, принимающий varags — <code>String.format</code>. Его код приведен ниже: 
+
+<pre class="lang-java line-numbers"><code>
+    public static String format(String format, Object... args) {
+        return new Formatter().format(format, args).toString();
+    }
+</code></pre><h2>Когда использовать varargs?</h2>Ответ на этот вопрос зависит от того, кто спрашивает. 
+
+Если подобный вопрос задает клиент некоторого API, в котором есть методы с varargs, то ответ будет “использовать такие методы как можно чаще”. Для клиента кода varargs существенно упрощает жизнь, облегчая написание кода и повышая его читаемость.
+
+Однако в случае, если данный вопрос задает разработчик API, который интересуется, как часто стоит создавать методы с varargs, то ответ будет “не следует часто использовать varargs”. Varargs следует использовать только тогда, когда выгода от его использования очевидна. 
+
+Также не следует перегружать методы с varargs, так как это вызовет у клиентов вашего кода затруднения в понимании, какой из перегруженных методов в действительности вызывается. 
+<h2>Заключение</h2>Итак, мы разобрали еще одну тему, varargs в Java. Разобрали, что это такое. Расписали правила использования varargs. Взглянули на примеры методов с аргументами произвольной длины, а также обсудили, когда varargs лучше использовать, а когда от использования лучше воздержаться. 
+
+В качестве домашнего задания можно реализовать следующие методы:
+<ul>
+<li>Написать <code>void</code> метод, который принимает ряд целых чисел и возвращает их среднее арифметическое.</li>
+<li>Написать <code>void</code> метод, который принимает ряд строк и выводит на печать самое длинное слово.</li>
+<li>Написать метод, который возвращает <code>boolean</code> и принимает первым аргументом переменную типа <code>String</code>, а следующим аргументом ряд <code>boolean</code>, переменной длины.<br>
+Возможные значения <code>String</code> — <code>AND</code>, <code>OR</code>, <code>XOR</code>. В случае, если первый аргумент имеет какое то другое значение, метод должен бросить исключение <code>IllegalArgumentException</code>.<br>
+Метод должен осуществить логическую операцию (указанную в первом аргументе ) над каждым элементом varargs аргумента и вернуть результат вычисления.</li></ul>Пример аргументов и результата: 
+<ul>
+<li>"AND", true, true, false — вернет false</li>
+<li>"OR", false, true, false, false — вернет true</li>
+</ul>

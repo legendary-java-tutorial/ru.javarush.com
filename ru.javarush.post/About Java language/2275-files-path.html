@@ -1,0 +1,531 @@
+Java Files, Path
+<p>----------------------------------------</p>
+Привет! Сегодня мы поговорим о работе с файлами и каталогами. Ты уже знаешь, как управлять содержимым файлов: у нас было немало занятий, посвященных этому :) Думаю, ты легко сможешь вспомнить несколько классов, которые нужны для этих целей...
+<p>----------------------------------------</p>
+Привет! Сегодня мы поговорим о работе с файлами и каталогами. Ты уже знаешь, как управлять содержимым файлов: у нас было немало занятий, посвященных этому :) Думаю, ты легко сможешь вспомнить несколько классов, которые нужны для этих целей.
+
+На сегодняшней же лекции мы поговорим именно об управлении файлами — о создании, переименовании и т.д.
+
+До появления Java 7 все подобные операции проводились с помощью класса <code><strong>File</strong></code>. О его работе ты можешь прочитать <a href="https://javarush.com/quests/lectures/questcollections.level01.lecture01" target="_blank">здесь</a>.
+
+Но в Java 7 создатели языка решили изменить работу с файлами и каталогами.
+
+Это произошло из-за того, что у класса <code>File</code> был ряд недостатков. Например, в нем не было метода <code>copy()</code>, который позволил бы скопировать файл из одного места в другое (казалось бы, явно необходимая функция).
+
+Кроме того, в классе <code>File</code> было достаточно много методов, которые возвращали <code>boolean</code>-значения. При ошибке такой метод возвращает <em>false</em>, а не выбрасывает исключение, что делает диагностику ошибок и установление их причин очень непростым делом.
+
+Вместо единого класса <code>File</code> появились целых 3 класса: <code><strong>Paths</strong></code>, <code><strong>Path</strong></code> и <code><strong>Files</strong></code>. Ну а если быть точным, <code>Path</code> — это интерфейс, а не класс.
+
+Давай разберемся, чем они друг от друга отличаются и зачем нужен каждый из них.
+
+Начнем с самого легкого — <code><strong>Paths</strong></code>.
+<h2>Paths</h2><code>Paths</code> — это совсем простой класс с единственным статическим методом <code><strong>get()</strong></code>. Его создали исключительно для того, чтобы из переданной строки или URI получить объект типа <code>Path</code>.
+
+Другой функциональности у него нет.
+
+Вот пример его работы:
+
+<pre class="lang-java line-numbers"><code>
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+public class Main {
+
+   public static void main(String[] args) {
+
+       Path testFilePath = Paths.get("C:\\Users\\Username\\Desktop\\testFile.txt");
+   }
+}
+</code></pre>
+Не самый сложный класс, да? :)
+
+Ну, раз уж мы получили объект типа <code><strong>Path</strong></code>, давай разбираться, что это за <code>Path</code> такой и зачем он нужен :)
+<h2>Path</h2><code>Path</code>, по большому счету, — это переработанный аналог класса <code>File</code>. Работать с ним значительно проще, чем с <code>File</code>.
+
+<strong>Во-первых</strong>, из него убрали многие утилитные (статические) методы, и перенесли их в класс <code>Files</code>.
+
+<strong>Во-вторых</strong>, в <code>Path</code> были упорядочены возвращаемые значения методов. В классе <code>File</code> методы возвращали то <code>String</code>, то <code>boolean</code>, то <code>File</code> — разобраться было непросто. 
+
+Например, был метод <code><strong>getParent()</strong></code>, который возвращал родительский путь для текущего файла в виде строки. Но при этом был метод <code><strong>getParentFile()</strong></code>, который возвращал то же самое, но в виде объекта <code>File</code>!
+
+Это явно избыточно. Поэтому в интерфейсе <code>Path</code> метод <code>getParent()</code> и другие методы работы с файлами возвращают просто объект <code>Path</code>. Никакой кучи вариантов — все легко и просто.
+
+<strong>Какие же полезные методы есть у <code>Path</code>?</strong>
+
+Вот некоторые из них и примеры их работы:
+<ul>
+<li><p><code><strong>getFileName()</strong></code> — возвращает имя файла из пути;</p></li>
+<li><p><code><strong>getParent()</strong></code> — возвращает «родительскую» директорию по отношению к текущему пути (то есть ту директорию, которая находится выше по дереву каталогов);</p></li>
+<li><p><code><strong>getRoot()</strong></code> — возвращает «корневую» директорию; то есть ту, которая находится на вершине дерева каталогов;</p></li>
+<li><p><code><strong>startsWith()</strong></code>, <code><strong>endsWith()</strong></code> — проверяют, начинается/заканчивается ли путь с переданного пути:</p>
+<pre class="lang-java line-numbers"><code>
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+public class Main {
+
+   public static void main(String[] args) {
+
+       Path testFilePath = Paths.get("C:\\Users\\Username\\Desktop\\testFile.txt");
+
+       Path fileName = testFilePath.getFileName();
+       System.out.println(fileName);
+
+       Path parent = testFilePath.getParent();
+       System.out.println(parent);
+
+       Path root = testFilePath.getRoot();
+       System.out.println(root);
+
+       boolean endWithTxt = testFilePath.endsWith("Desktop\\testFile.txt");
+       System.out.println(endWithTxt);
+
+       boolean startsWithLalala = testFilePath.startsWith("lalalala");
+       System.out.println(startsWithLalala);
+   }
+}
+</code></pre>
+<p><strong>Вывод в консоль:</strong></p><strong>
+
+</strong><p><strong><em>testFile.txt<br>
+C:\Users\Username\Desktop<br>
+C:\<br>
+true<br>
+false</em></strong></p>
+<p>Обрати внимание на то, как работает метод <code><strong>endsWith()</strong></code>. Он проверяет, заканчивается ли текущий путь на переданный <strong>путь</strong>. Именно на <strong>путь</strong>, а <strong>не на набор символов</strong>.</p>
+<p>Сравни результаты этих двух вызовов:</p>
+<pre class="lang-java line-numbers"><code>
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+public class Main {
+
+   public static void main(String[] args) {
+
+       Path testFilePath = Paths.get("C:\\Users\\Username\\Desktop\\testFile.txt");
+
+       System.out.println(testFilePath.endsWith("estFile.txt"));
+       System.out.println(testFilePath.endsWith("Desktop\\testFile.txt"));
+   }
+}
+</code></pre>
+<p><strong>Вывод в консоль:</strong></p><strong>
+</strong><p><strong><em>false<br>
+true</em></strong></p>
+<p>В метод <code><strong>endsWith()</strong></code> нужно передавать именно полноценный путь, а не просто набор символов: в противном случае результатом всегда будет <em>false</em>, даже если текущий путь действительно заканчивается такой последовательностью символов (как в случае с “estFile.txt” в примере выше).</p>
+<p>Кроме того, <strong>в <code>Path</code> есть группа методов, которая упрощает работу с абсолютными (полными) и относительными путями</strong>.</p></li></ul>Давай рассмотрим эти методы:<ul>
+<li><p><code>boolean <strong>isAbsolute()</strong></code> — возвращает <em>true</em>, если текущий путь является абсолютным:</p>
+<pre class="lang-java line-numbers"><code>
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+public class Main {
+
+   public static void main(String[] args) {
+
+       Path testFilePath = Paths.get("C:\\Users\\Username\\Desktop\\testFile.txt");
+
+       System.out.println(testFilePath.isAbsolute());
+   }
+}
+</code></pre>
+<p><strong>Вывод в консоль:</strong></p>
+
+<p><em><strong>true</strong></em></p></li>
+<li><p><code>Path <strong>normalize()</strong></code> — «нормализует» текущий путь, удаляя из него ненужные элементы. Ты, возможно, знаешь, что в популярных операционных системах при обозначении путей часто используются символы “.” (“текущая директория”) и “..” (родительская директория). Например: “<em><strong>./Pictures/dog.jpg</strong></em>” обозначает, что в той директории, в которой мы сейчас находимся, есть папка Pictures, а в ней — файл “dog.jpg”</p>
+<p>Так вот. Если в твоей программе появился путь, использующий “.” или “..”, метод <code><strong>normalize()</strong></code> позволит удалить их и получить путь, в котором они не будут содержаться:</p>
+
+<pre class="lang-java line-numbers"><code>
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+public class Main {
+
+   public static void main(String[] args) {
+
+      
+       Path path5 = Paths.get("C:\\Users\\Java\\.\\examples");
+      
+       System.out.println(path5.normalize());
+      
+       Path path6 = Paths.get("C:\\Users\\Java\\..\\examples");
+       System.out.println(path6.normalize());
+   }
+}
+</code></pre>
+<p><strong>Вывод в консоль:</strong></p><strong>
+<em>C:\Users\Java\examples<br>
+C:\Users\examples</em></strong><p></p></li>
+<li><p><code>Path <strong>relativize()</strong></code> — вычисляет относительный путь между текущим и переданным путем.</p>
+<p>Например:</p>
+
+<pre class="lang-java line-numbers"><code>
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+public class Main {
+
+   public static void main(String[] args) {
+
+       Path testFilePath1 = Paths.get("C:\\Users\\Users\\Users\\Users");
+       Path testFilePath2 = Paths.get("C:\\Users\\Users\\Users\\Users\\Username\\Desktop\\testFile.txt");
+
+       System.out.println(testFilePath1.relativize(testFilePath2));
+   }
+}
+</code></pre>
+<p>Вывод в консоль:</p>
+<p><em><strong>Username\Desktop\testFile.txt</strong></em></p></li>
+</ul>Полный список методов <code>Path</code> довольно велик. Найти их все ты сможешь в <a href="https://docs.oracle.com/javase/7/docs/api/java/nio/file/Path.html" rel="nofollow" target="_blank">документации Oracle</a>.
+
+Мы же перейдем к рассмотрению <code><strong>Files</strong></code>.
+<h2>Files</h2><code><strong>Files</strong></code> — это утилитный класс, куда были вынесены статические методы из класса <code>File</code>. <code>Files</code> — это примерно то же, что и <code>Arrays</code> или <code>Collections</code>, только работает он с файлами, а не с массивами и коллекциями :)
+
+Он сосредоточен на управлении файлами и директориями. Используя статические методы <code>Files</code>, мы можем создавать, удалять и перемещать файлы и директории.
+
+Для этих операций используются методы <code><strong>createFile()</strong></code> (для директорий — <code><strong>createDirectory()</strong></code>), <code><strong>move()</strong></code> и <code><strong>delete()</strong></code>.
+
+Вот как ими пользоваться:
+
+<pre class="lang-java line-numbers"><code>
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
+public class Main {
+
+   public static void main(String[] args) throws IOException {
+
+       //создание файла
+       Path testFile1 = Files.createFile(Paths.get("C:\\Users\\Username\\Desktop\\testFile111.txt"));
+       System.out.println("Был ли файл успешно создан?");
+       System.out.println(Files.exists(Paths.get("C:\\Users\\Username\\Desktop\\testFile111.txt")));
+
+       //создание директории
+       Path testDirectory = Files.createDirectory(Paths.get("C:\\Users\\Username\\Desktop\\testDirectory"));
+       System.out.println("Была ли директория успешно создана?");
+       System.out.println(Files.exists(Paths.get("C:\\Users\\Username\\Desktop\\testDirectory")));
+
+       //перемещаем файл с рабочего стола в директорию testDirectory. Перемещать надо с указанием имени файла в папке!
+       testFile1 = Files.move(testFile1, Paths.get("C:\\Users\\Username\\Desktop\\testDirectory\\testFile111.txt"), REPLACE_EXISTING);
+
+       System.out.println("Остался ли наш файл на рабочем столе?");
+       System.out.println(Files.exists(Paths.get("C:\\Users\\Username\\Desktop\\testFile111.txt")));
+
+       System.out.println("Был ли наш файл перемещен в testDirectory?");
+       System.out.println(Files.exists(Paths.get("C:\\Users\\Username\\Desktop\\testDirectory\\testFile111.txt")));
+
+       //удаление файла
+       Files.delete(testFile1);
+       System.out.println("Файл все еще существует?");
+       System.out.println(Files.exists(Paths.get("C:\\Users\\Username\\Desktop\\testDirectory\\testFile111.txt")));
+   }
+}
+</code></pre>
+Здесь мы сначала создаем файл (метод <code><strong>Files.createFile()</strong></code>) на рабочем столе, далее создаем там же папку (метод <code><strong>Files.createDirectory()</strong></code>). После этого мы перемещаем файл (метод <code><strong>Files.move()</strong></code>) с рабочего стола в эту новую папку, а в конце — удаляем файл (метод <code><strong>Files.delete()</strong></code>).
+
+<strong>Вывод в консоль:
+
+<em>Был ли файл успешно создан?
+true
+Была ли директория успешно создана?
+true
+Остался ли наш файл на рабочем столе?
+false
+Был ли наш файл перемещен в testDirectory?
+true
+Файл все еще существует?
+false</em></strong>
+
+<mark>Обрати внимание:</mark> так же, как и методы интерфейса <code>Path</code>, <strong>многие методы <code>Files</code> возвращают объект <code>Path</code></strong>.
+
+Большинство методов класса <code>Files</code> принимают на вход также объекты <code>Path</code>. Тут твоим верным помощником станет метод <code><strong>Paths.get()</strong></code> — активно им пользуйся.
+
+Что еще интересного есть в <code>Files</code>? То, чего очень не хватало старому классу <code>File</code> — метод <code><strong>copy()</strong></code>! Мы говорили о нем в начале лекции, самое время с ним познакомиться!
+
+<pre class="lang-java line-numbers"><code>
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
+public class Main {
+
+   public static void main(String[] args) throws IOException {
+
+       //создание файла
+       Path testFile1 = Files.createFile(Paths.get("C:\\Users\\Username\\Desktop\\testFile111.txt"));
+       System.out.println("Был ли файл успешно создан?");
+       System.out.println(Files.exists(Paths.get("C:\\Users\\Username\\Desktop\\testFile111.txt")));
+
+       //создание директории
+       Path testDirectory2 = Files.createDirectory(Paths.get("C:\\Users\\Username\\Desktop\\testDirectory2"));
+       System.out.println("Была ли директория успешно создана?");
+       System.out.println(Files.exists(Paths.get("C:\\Users\\Username\\Desktop\\testDirectory2")));
+
+       //копируем файл с рабочего стола в директорию testDirectory2.
+       testFile1 = Files.copy(testFile1, Paths.get("C:\\Users\\Username\\Desktop\\testDirectory2\\testFile111.txt"), REPLACE_EXISTING);
+
+       System.out.println("Остался ли наш файл на рабочем столе?");
+       System.out.println(Files.exists(Paths.get("C:\\Users\\Username\\Desktop\\testFile111.txt")));
+
+       System.out.println("Был ли наш файл скопирован в testDirectory?");
+       System.out.println(Files.exists(Paths.get("C:\\Users\\Username\\Desktop\\testDirectory2\\testFile111.txt")));
+   }
+}
+</code></pre>
+<strong>Вывод в консоль:
+
+<em>Был ли файл успешно создан?
+true
+Была ли директория успешно создана?
+true
+Остался ли наш файл на рабочем столе?
+true
+Был ли наш файл скопирован в testDirectory?
+true</em></strong>
+ 
+Теперь ты умеешь копировать файлы программно! :)
+
+Но класс <code>Files</code> позволяет не только управлять самими файлами, но и работать с его содержимым. 
+
+Для записи данных в файл у него есть метод <code><strong>write()</strong></code>, а для чтения — целых 3: <code><strong>read()</strong></code>, <code><strong>readAllBytes()</strong></code> и <code><strong>readAllLines()</strong></code>
+
+Мы подробно остановимся на последнем. Почему именно на нем?
+
+Потому что у него есть очень интересный тип возвращаемого значения — <code><strong>List&lt;String&gt;</strong></code>! То есть он возвращает нам список строк файла. Конечно, это делает работу с содержимым очень удобной, ведь весь файл, строку за строкой, можно, например, вывести в консоль в обычном цикле <code>for</code>:
+
+<pre class="lang-java line-numbers"><code>
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+public class Main {
+
+   public static void main(String[] args) throws IOException {
+
+       List&lt;String&gt; lines = Files.readAllLines(Paths.get("C:\\Users\\Username\\Desktop\\pushkin.txt"), UTF_8);
+
+       for (String s: lines) {
+           System.out.println(s);
+       }
+   }
+}
+</code></pre>
+<strong>Вывод в консоль:
+
+<em>Я помню чудное мгновенье:
+Передо мной явилась ты,
+Как мимолетное виденье,
+Как гений чистой красоты.</em></strong>
+
+Очень удобно! :)
+
+Такая возможность появилась еще в Java 7.
+
+В версии Java 8 появился <strong>Stream API</strong>, который добавил в Java некоторые элементы функционального программирования. В том числе более богатые возможности работы с файлами.
+
+Представь, что у нас есть задача: найти в файле все строки, которые начинаются со слова «Как», привести их к UPPER CASE и вывести в консоль.
+
+Как выглядело бы решение с использованием класса <code>Files</code> в Java 7?
+
+Примерно вот так:
+
+<pre class="lang-java line-numbers"><code>
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+public class Main {
+
+   public static void main(String[] args) throws IOException {
+
+       List&lt;String&gt; lines = Files.readAllLines(Paths.get("C:\\Users\\Username\\Desktop\\pushkin.txt"), UTF_8);
+
+       List&lt;String&gt; result = new ArrayList&lt;&gt;();
+
+       for (String s: lines) {
+           if (s.startsWith("Как")) {
+               String upper = s.toUpperCase();
+               result.add(upper);
+           }
+       }
+
+       for (String s: result) {
+           System.out.println(s);
+       }
+   }
+}
+</code></pre>
+<strong>Вывод в консоль:
+
+<em>КАК МИМОЛЕТНОЕ ВИДЕНЬЕ,
+КАК ГЕНИЙ ЧИСТОЙ КРАСОТЫ.</em></strong>
+
+Мы вроде справились, но не кажется ли тебе, что для такой простой задачи наш код получился немного...многословным?
+
+С использованием Java 8 Stream API решение выглядит намного более элегантным:
+
+<pre class="lang-java line-numbers"><code>
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+public class Main {
+
+   public static void main(String[] args) throws IOException {
+
+       Stream&lt;String&gt; stream = Files.lines(Paths.get("C:\\Users\\Username\\Desktop\\pushkin.txt"));
+
+       List&lt;String&gt; result  = stream
+               .filter(line -&gt; line.startsWith("Как"))
+               .map(String::toUpperCase)
+               .collect(Collectors.toList());
+       result.forEach(System.out::println);
+   }
+}
+</code></pre>
+Мы добились того же результата, но с гораздо меньшим объемом кода! Причем нельзя сказать, что мы потеряли в «читабельности». Думаю, ты легко сможешь прокомментировать что делает этот код, даже не будучи знакомым со Stream API.
+
+Но если вкратце, <strong>Stream</strong> — это последовательность элементов, над которыми можно выполнять разные функции. Мы получаем объект Stream из метода <code><strong>Files.lines()</strong></code>, после чего применяем к нему 3 функции:
+<ol>
+<li><p>С помощью метода <code><strong>filter()</strong></code> отбираем только те строки из файла, которые начинаются с «Как».</p></li>
+<li><p>Проходимся по всем отобранным строкам с помощью метода <code><strong>map()</strong></code> и приводим каждую из них к UPPER CASE.</p></li>
+<li><p>Объединяем все получившиеся строки в <code>List</code> с помощью метода <code>collect()</code>.</p></li>
+</ol><strong>На выходе мы получаем тот же результат:
+
+<em>КАК МИМОЛЕТНОЕ ВИДЕНЬЕ,
+КАК ГЕНИЙ ЧИСТОЙ КРАСОТЫ.</em></strong>
+
+Если тебе будет интересно узнать больше о возможностях этой библиотеки, рекомендуем прочесть вот эту <a href="https://annimon.com/article/2778" rel="nofollow" target="_blank">статью</a>.
+
+Мы же вернемся к нашим баранам, то есть файлам :)
+
+Последняя возможность, которую мы сегодня рассмотрим — это <strong>проход по дереву файлов</strong>.
+
+Файловая структура в современных операционных системах чаще всего имеет вид дерева: у него есть корень и есть ветки, от которых могут отделяться другие ветки и т.д.
+
+Роль корня и веток выполняют директории.
+Например, в роли корня может выступать директория “<em><strong>С://</strong></em>”. 
+От него отходят две ветки: “<em><strong>C://Downloads</strong></em>” и “<em><strong>C://Users</strong></em>”. 
+От каждой из этих веток отходят еще по 2 ветки: 
+“<em><strong>C://Downloads/Pictures</strong></em>”, “<em><strong>C://Downloads/Video</strong></em>”, 
+“<em><strong>C://Users/JohnSmith</strong></em>”, “<em><strong>C://Users/Pudge2005</strong></em>”. 
+
+От этих веток отходят другие ветки и т.д. — так и получается дерево. 
+
+В Linux это выглядит примерно так же, только там в роли корня выступает директория <strong>/</strong>
+<img data-id="5e570d34-3f3f-45cf-8fda-62bc1dbd96ca" data-max-width="850" alt="Files, Path - 2" src="https://cdn.javarush.com/images/article/5e570d34-3f3f-45cf-8fda-62bc1dbd96ca/1024.jpeg">Теперь представь, что у нас есть задача: зная корневой каталог, мы должны пройтись по нему, заглянуть в папки всех уровней и найти в них файлы с нужным нам содержимым. Мы будем искать файлы, содержащие строку «This is the file we need!»
+
+Нашим корневым каталогом будет папка «testFolder», которая лежит на рабочем столе.
+
+Внутри у нее вот такое содержимое:
+<img data-id="7011dbf8-09a4-4435-8100-abaf6f578c43" data-max-width="850" alt="Files, Path - 3" src="https://cdn.javarush.com/images/article/7011dbf8-09a4-4435-8100-abaf6f578c43/1024.jpeg">Внутри папок level1-a и level1-b тоже есть папки:
+<img data-id="ef11d417-6233-43fb-a312-13c7a4deb521" data-max-width="850" alt="Files, Path - 4" src="https://cdn.javarush.com/images/article/ef11d417-6233-43fb-a312-13c7a4deb521/1024.jpeg"><img data-id="6660de42-92d4-46e1-84ad-3d99f00ff558" data-max-width="850" alt="Files, Path - 5" src="https://cdn.javarush.com/images/article/6660de42-92d4-46e1-84ad-3d99f00ff558/1024.jpeg">Внутри этих «папок второго уровня» папок уже нет, только отдельные файлы:
+<img data-id="e0b06daa-6464-4127-aedf-b681188f2371" data-max-width="850" alt="Files, Path - 6" src="https://cdn.javarush.com/images/article/e0b06daa-6464-4127-aedf-b681188f2371/1024.jpeg"><img data-id="af9ed6ac-f467-4463-9d5a-84021c3f4992" data-max-width="850" alt="Files, Path - 7" src="https://cdn.javarush.com/images/article/af9ed6ac-f467-4463-9d5a-84021c3f4992/1024.jpeg">3 файла с нужным нам содержимым мы специально обозначим понятными названиями — FileWeNeed1.txt, FileWeNeed2.txt, FileWeNeed3.txt
+
+Именно их нам и нужно найти по содержимому с помощью Java.
+Как же нам это сделать?
+
+На помощь приходит очень мощный метод для обхода дерева файлов — <code><strong>Files.walkFileTree()</strong></code>.
+
+Вот что нам нужно сделать. 
+
+Во-первых, нам понадобится <code><strong>FileVisitor</strong></code>. <code>FileVisitor</code> — это специальный интерфейс, в котором описаны все методы для обхода дерева файлов.
+
+В частности, мы поместим туда логику считывания содержимого файла и проверки, содержит ли он нужный нам текст.
+
+Вот как будет выглядеть наш <code>FileVisitor</code>:
+
+<pre class="lang-java line-numbers"><code>
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.List;
+
+public class MyFileVisitor extends SimpleFileVisitor&lt;Path&gt; {
+
+   @Override
+   public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+
+       List&lt;String&gt; lines = Files.readAllLines(file);
+       for (String s: lines) {
+           if (s.contains("This is the file we need")) {
+               System.out.println("Нужный файл обнаружен!");
+               System.out.println(file.toAbsolutePath());
+               break;
+           }
+       }
+
+       return FileVisitResult.CONTINUE;
+   }
+}
+</code></pre>
+В данном случае наш класс наследуется от <code><strong>SimpleFileVisitor</strong></code>. Это класс, реализующий <code>FileVisitor</code>, в котором нужно переопределить всего один метод: <code><strong>visitFile()</strong></code>. Здесь мы и описываем что нужно делать с каждым файлом в каждой директории.
+
+Если тебе нужна более сложная логика обхода, стоит написать свою реализацию <code>FileVisitor</code>. Там понадобится реализовать еще 3 метода:
+<ul>
+<li><p><code><strong>preVisitDirectory()</strong></code> — логика, которую надо выполнять перед входом в папку;</p></li>
+<li><p><code><strong>visitFileFailed()</strong></code> — что делать, если вход в файл невозможен (нет доступа, или другие причины);
+</p></li><li><p><code><strong>postVisitDirectory()</strong></code> — логика, которую надо выполнять после захода в папку.</p></li></ul>У нас такой логики нет, поэтому нам достаточно <code>SimpleFileVisitor</code>.
+
+Логика внутри метода <code>visitFile()</code> довольно проста: прочитать все строки из файла, проверить, есть ли в них нужное нам содержимое, и если есть — вывести абсолютный путь в консоль.
+
+Единственная строка, которая может вызвать у тебя затруднение — вот эта:
+
+<pre class="lang-java line-numbers"><code>
+return FileVisitResult.CONTINUE;
+</code></pre>
+На деле все просто. Здесь мы просто описываем что должна делать программа после того, как выполнен вход в файл, и все необходимые операции совершены. В нашем случае необходимо продолжать обход дерева, поэтому мы выбираем вариант <code><strong>CONTINUE</strong></code>.
+
+Но у нас, например, могла быть и другая задача: найти не все файлы, которые содержат «This is the file we need», а <strong>только один такой файл</strong>. После этого работу программы нужно завершить. В этом случае наш код выглядел бы точно так же, но вместо break; было бы:
+
+<pre class="lang-java line-numbers"><code>
+return FileVisitResult.TERMINATE;
+</code></pre>
+Что ж, давай запустим наш код и посмотрим, работает ли он.
+
+<pre class="lang-java line-numbers"><code>
+import java.io.IOException;
+import java.nio.file.*;
+
+public class Main {
+
+   public static void main(String[] args) throws IOException {
+
+       Files.walkFileTree(Paths.get("C:\\Users\\Username\\Desktop\\testFolder"), new MyFileVisitor());
+   }
+}
+</code></pre>
+<strong>Вывод в консоль:
+
+<em>Нужный файл обнаружен!
+C:\Users\Username\Desktop\testFolder\FileWeNeed1.txt
+Нужный файл обнаружен!
+C:\Users\Username\Desktop\testFolder\level1-a\level2-a-a\FileWeNeed2.txt
+Нужный файл обнаружен!
+C:\Users\Username\Desktop\testFolder\level1-b\level2-b-b\FileWeNeed3.txt</em></strong>
+
+Отлично, у нас все получилось! :)
+
+Если тебе хочется узнать больше о <code><strong>walkFileTree()</strong></code>, рекомендую тебе вот <a href="https://habr.com/ru/post/437694/" rel="nofollow" target="_blank">эту статью</a>. Также ты можешь выполнить небольшое задание — заменить <code>SimpleFileVisitor</code> на обычный <code>FileVisitor</code>, реализовать все 4 метода и придумать предназначение для этой программы. Например, можно написать программу, которая будет логировать все свои действия: выводить в консоль название файла или папки до/после входа в них.
+
+На этом все — до встречи! :) 

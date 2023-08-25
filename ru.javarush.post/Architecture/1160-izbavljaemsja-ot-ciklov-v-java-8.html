@@ -1,0 +1,173 @@
+Избавляемся от циклов в Java 8
+<p>----------------------------------------</p>
+Функциональный стиль, представленный в Java 8, — большая добавка к языку. Теперь Java — это не чистое ООП, теперь это гибрид ООП и функционального программирования. Это меняет правила игры и нам нужно изменить свои ООП-мозги, чтобы вобрать в себя эти изменения...
+
+<p>----------------------------------------</p>
+Функциональный стиль, представленный в Java 8, — большая добавка к языку. Теперь Java — это не чистое ООП, теперь это гибрид ООП и функционального программирования. Это меняет правила игры и нам нужно изменить свои ООП-мозги, чтобы вобрать в себя эти изменения.
+
+<img data-id="5aea6043-a97a-446b-bbb7-1502c97cc28b" data-max-width="850" alt="Избавляемся от циклов в Java 8 - 1" src="https://cdn.javarush.com/images/article/5aea6043-a97a-446b-bbb7-1502c97cc28b/1024.jpeg">Но почему мы должны принимать эти изменения? Почему должны тратить время в попытках ужиться с функциональным стилем, когда мы можем решить проблему на чистом ООП?
+<ul>
+<li><p>Функциональный стиль, представленный в Java 8, помогает нам уменьшить пропасть между бизнес-логикой и кодом. Он позволяет нам рассказывать историю в естественном потоке на более высоком уровне. Вместо того, чтобы говорить как вы хотите это сделать, вы можете сказать что вы хотите сделать.</p></li>
+<li><p>Код становится более чистым и кратким.</p></li>
+<li><p>Функции высокого порядка позволяют нам:</p><ul>
+<li>Отправлять функции в другие функции</li>
+<li>Создавать функции внутри других функций</li>
+<li>Возвращать функции из других функций</li>
+</ul>
+<p>Это большая победа для Java, где для этого нам нужно отправлять, создавать и возвращать объекты. Мы     сможем писать код, который будет более надёжный, сосредоточенный и более лёгкий для повторного использования.</p></li>
+    <li><p>Благодаря лямбдам мы можем делать ленивые вычисления. Когда лямбда-выражение отправляется как аргумент метода, компилятор вычислит его, когда оно вызывается в методе. Это отличается от обычных аргументов методов, которые вычисляются сразу же.</p></li>
+    <li><p>Лямбды делают написание unit-тестов весёлым. Они позволяют нам создавать легковесные тесты, которые чисты, малы по размеру и быстры в написании. Мы можем корчевать тестируемый код, используя лямбды. Это позволяет нам тестировать, как все виды сценариев повлияют на код.</p></li>
+    <li><p>Новые паттерны для изучения.</p></li>
+    <li><p>И многое другое!</p></li>
+</ul>Но хватит воды, в этой статье мы взглянем на альтернативные решения для традиционных циклов. Конечно циклы гибки, но это не даётся без своей цены. <code>break</code>, <code>continue</code>, <code>return</code> резко меняют поведение цикла, заставляя нас понимать не только, чего код пытается достигнуть, но и также понимать, как работает цикл.
+
+Сейчас мы взглянем, как мы можем преобразовать циклы в более краткий и читабельный код.
+<h2>Да начнётся кодинг!</h2>Мы будем работать со статьями. У статьи есть название, автор и несколько тегов.
+
+<pre class='lang-java line-numbers'><code>
+private class Article {
+ 
+    private final String title;
+    private final String author;
+    private final List&lt;String&gt; tags;
+ 
+    private Article(String title, String author, List&lt;String&gt; tags) {
+        this.title = title;
+        this.author = author;
+        this.tags = tags;
+    }
+ 
+    public String getTitle() {
+        return title;
+    }
+ 
+    public String getAuthor() {
+        return author;
+    }
+ 
+    public List&lt;String&gt; getTags() {
+        return tags;
+    }
+}
+</code></pre>
+Каждый пример будет содержать традиционное решение с использованием циклов и решение, использующее новые фишки Java 8.
+
+В первом примере мы хотим найти в коллекции первую статью с тегом “Java”.
+
+Давайте взглянем на решение с использованием цикла.
+
+<pre class='lang-java line-numbers'><code>
+public Article getFirstJavaArticle() {
+ 
+    for (Article article : articles) {
+        if (article.getTags().contains("Java")) {
+            return article;
+        }
+    }
+    return null;
+}
+</code></pre>
+Теперь давайте решим проблему, пользуясь операциями из Stream API.
+
+<pre class='lang-java line-numbers'><code>
+public Optional&lt;Article&gt; getFirstJavaArticle() {
+    return articles.stream()
+        .filter(article -&gt; article.getTags().contains("Java"))
+        .findFirst();
+    }
+</code></pre>
+Довольно таки круто, не правда ли? Сначала мы используем операцию <code>filter</code> для нахождения всех статей с тегом “Java”, потом используем <code>findFirst()</code>, чтобы получить первое вхождение. Так как потоки (streams) ленивые и фильтр возвращает поток, этот подход будет обрабатывать элементы только пока не найдёт первое совпадение.
+
+Теперь давайте получим все статьи с тегом “Java”, вместо только первой.
+
+Сначала решение с помощью циклов.
+
+<pre class='lang-java line-numbers'><code>
+public List&lt;Article&gt; getAllJavaArticles() {
+ 
+    List&lt;Article&gt; result = new ArrayList&lt;&gt;();
+ 
+    for (Article article : articles) {
+        if (article.getTags().contains("Java")) {
+            result.add(article);
+        }
+    }
+    return result;
+}
+</code></pre>
+Решение с использованием потоковых операций.
+
+<pre class='lang-java line-numbers'><code>
+public List&lt;Article&gt; getAllJavaArticles() {
+    return articles.stream()
+        .filter(article -&gt; article.getTags().contains("Java"))
+        .collect(Collectors.toList());
+    }
+</code></pre>
+В этом примере мы использовали операцию <code>collect</code> для сокращения результирующего потока, вместо объявления коллекции и явного добавления статей, которые подходят.
+
+Пока всё идёт хорошо. Время для примеров, которые заставят Stream API действительно блестать.
+
+Давайте сгруппируем все статьи по автору.
+
+Как обычно, начинаем с решения с помощью циклов:
+
+<pre class='lang-java line-numbers'><code>
+public Map&lt;String, List&lt;Article&gt;&gt; groupByAuthor() {
+ 
+    Map&lt;String, List&lt;Article&gt;&gt; result = new HashMap&lt;&gt;();
+ 
+    for (Article article : articles) {
+        if (result.containsKey(article.getAuthor())) {
+            result.get(article.getAuthor()).add(article);
+        } else {
+            ArrayList&lt;Article&gt; articles = new ArrayList&lt;&gt;();
+            articles.add(article);
+            result.put(article.getAuthor(), articles);
+        }
+    }
+    return result;
+}
+</code></pre>
+Сможем ли мы найти чистое решение этой проблемы, используя потоковые операции?
+
+<pre class='lang-java line-numbers'><code>
+public Map&lt;String, List&lt;Article&gt;&gt; groupByAuthor() {
+    return articles.stream()
+        .collect(Collectors.groupingBy(Article::getAuthor));
+}
+</code></pre>
+Замечательно! Используя операцию <code>groupingBy</code> и ссылку на метод <code>getAuthor()</code>, мы получаем чистый и читабельный код.
+
+Теперь давайте найдём остальные теги, используемые в коллекции.
+
+Начнём с циклового примера:
+
+<pre class='lang-java line-numbers'><code>
+public Set&lt;String&gt; getDistinctTags() {
+ 
+    Set&lt;String&gt; result = new HashSet&lt;&gt;();
+ 
+    for (Article article : articles) {
+        result.addAll(article.getTags());
+    } 
+    return result;
+}
+</code></pre>
+Окей, давайте взглянем, как мы можем решить это с помощью потоковых операций:
+
+<pre class='lang-java line-numbers'><code>
+public Set&lt;String&gt; getDistinctTags() {
+    return articles.stream()
+        .flatMap(article -&gt; article.getTags().stream())
+        .collect(Collectors.toSet());
+}
+</code></pre>
+Круто! <code>flatmap</code> помогает нам сгладить список тегов в один результирующий поток, а затем мы используем <code>collect</code> для создания возвращаемого сета.
+<h2>Бесконечные возможности</h2>Это были 4 примера, как можно заменить циклы более читабельным кодом. Обязательно ознакомьтесь с Stream API, так как эта статья только поскребла её поверхность.
+
+Освоение нового функционального стиля Java будем испытанием для ООП-разработчиков, но это испытание, которое должно быть хорошо принято. Я даже пойду дальше и скажу, что вам стоит выучить чистый функциональный язык программирования. Таким образом вы сможете полностью понять возможности и мощь, которые он предоставляет. Я думаю это поможет вам понять функциональное программирование на другом уровне.
+
+Так что осваивайте функциональное программирование, наряду со старым добрым ООП, и используйте их обоих для написания ещё более великого кода!
+
+Вольный микс из переводов двух статей — <a href='https://www.deadcoderising.com/why-you-should-embrace-lambdas-in-java-8/' rel='nofollow' target='_blank'>Why you should embrace functional programming in Java 8</a> и <a href='https://www.voxxed.com/blog/2015/03/swerving-away-from-loops-in-java-8/' rel='nofollow' target='_blank'>Swerving Away from Loops in Java 8</a>

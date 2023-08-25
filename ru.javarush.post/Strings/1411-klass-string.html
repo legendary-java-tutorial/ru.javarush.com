@@ -1,0 +1,608 @@
+Класс String
+<p>----------------------------------------</p>
+Класс String очень часто используется программистами, поэтому его следует изучить очень хорошо. Следует помнить, что объекты класса String являются неизменяемыми. Поэтому, когда вам кажется, что вы меняете строку, то на самом деле вы создаёте новую строку ...
+<p>----------------------------------------</p>
+<ul>
+    <li>Методы</li>
+    <li>Генерируем случайную строку</li>
+    <li>Сравнение строк: <code>equals()</code> или <code>==</code>?</li>
+</ul>Класс <code>String</code> очень часто используется программистами, поэтому его следует изучить очень хорошо.
+<img data-id="e67e8a55-bbfd-43ce-ae00-656358fce90d" data-max-width="850" alt="Класс String - 1" src="https://cdn.javarush.com/images/article/e67e8a55-bbfd-43ce-ae00-656358fce90d/1024.jpeg">Следует помнить, что объекты класса <code>String</code> являются неизменяемыми. Поэтому, когда вам кажется, что вы меняете строку, то на самом деле вы создаёте новую строку. В Java есть специальные классы <code>StringBuffer</code> и <code>StringBuilder</code>, который допускают изменения в строке.
+
+Классы <code>String</code>, <code>StringBuffer</code>, <code>StringBuilder</code> определены в пакете <em>java.lang</em> и доступны автоматически без объявления импорта. Все три класса реализуют интерфейс <code>CharSequence</code>.
+
+Создать строку очень просто. Например, можно так:
+
+<pre class='lang-java line-numbers'><code>
+String aboutCat = "Кот - это звучит гордо, а если наступить на хвост, то громко";
+</code></pre>
+Можно создать массив строк:
+
+<pre class='lang-java line-numbers'><code>
+String[] cats = {"Васька", "Барсик", "Мурзик"};
+</code></pre>
+Можно создать пустой объект класса <code>String</code>:
+
+<pre class='lang-java line-numbers'><code>
+String str = new String();
+</code></pre>
+Можно создать строку через массив символов:
+
+<pre class='lang-java line-numbers'><code>
+char[] chars = { 'c', 'a', 't' };
+String str = new String(chars);
+</code></pre>
+Есть ещё конструктор, позволяющий задать диапазон символьного массива. Вам нужно указать начало диапазона и количество символов для использования:
+
+<pre class='lang-java line-numbers'><code>
+char[] chars = {'c', 'a', 't', 'a', 'm', 'a', 'r', 'a', 'n' };
+String str = new String(chars, 0, 3);
+</code></pre>
+Можно создать объект класса <code>String</code> из объекта классов <code>StringBuffer</code> и <code>StringBuilder</code> при помощи следующих конструкторов:
+
+<pre class='lang-java line-numbers'><code>
+String(StringBuffer объект_StrBuf)
+String(StringBuilder объект_StrBuild)
+</code></pre>
+<h2>Операторы <code>+</code> и </code>+=</code> для <code>String</code></h2>На языке Java знак плюс (<code>+</code>) означает конкатенацию строк (concatenation), иными словами — объединение строк.
+
+<pre class='lang-java line-numbers'><code>
+String cat = "Кот";
+String name = "Васька";
+//складываем две строки и пробел между ними, чтобы слова не слиплись
+String fullname = cat + " " + name; // получится Кот Васька
+</code></pre>
+Если один из операндов в выражении содержит строку, то другие операнды также должны быть строками. Поэтому Java сама может привести переменные к строковому представлению, даже если они не являются строками.
+
+<pre class='lang-java line-numbers'><code>
+int digit = 4;
+String paws = " лапы";
+String aboutcat = digit + paws; // хотя мы складываем число и строку, но все равно получим строку
+За кулисами Java за нас преобразовало число 4 в строку "4"
+</code></pre>
+<h2>Форматирование строк</h2>Предположим у нас есть строковый ресурс:
+
+<pre class='lang-java line-numbers'><code>
+&lt;string name="aboutcat"&gt;У кота по имени Барсик четыре лапы, один хвост. Ему 5 лет&lt;/string&gt;
+</code></pre>
+Чтобы вывести эту строку программно в элементе <code>TextView</code>, можно использовать код:
+
+<pre class='lang-java line-numbers'><code>
+TextView tvCatsInfo = (TextView)findViewById(R.id.textView1);
+tvCatsInfo.setText(R.string.aboutcat);
+</code></pre>
+Представьте себе, что у вас несколько котов. Можно, конечно, завести для каждого кота свою строку. Но ведь строки очень похожи, меняются только имена и возраст. Также можно менять число лап и хвостов (что вы курите?).
+
+В таких случаях можно применить форматирование строк. Нужно определить слова, которые мы будем менять и заменить их на специальный набор символов, которые начинаются с символа процента, затем идет число, увеличивающееся на единицу, далее <code>$s</code> для строк или <code>$d</code> для чисел. Итак, изменим наш строковой ресурс так:
+
+<pre class='lang-java line-numbers'><code>
+&lt;string name="aboutcat"&gt;У кота по имени %1$s %2$s лапы, %3$s хвост. Ему %4$d лет&lt;/string&gt;
+</code></pre>
+Внесём изменения в код:
+
+<pre class='lang-java line-numbers'><code>
+String strBarsik = "Барсик";
+String strPaws = "четыре";
+String strTail = "один";
+int year = 5;  
+String strCats = getResources().getString(R.string.aboutcat);  
+String strFinal = String.format(strCats, strBarsik, strPaws, strTail, year);  
+tvCatsInfo.setText(strFinal);
+</code></pre>
+Если вас есть кот Васька и ему шесть лет, то добавляем две переменные и форматируем строку
+
+<pre class='lang-java line-numbers'><code>
+String strVaska = "Васька";
+year = 6;
+String strFinal = String.format(strCats, strVaska, strPaws, strTail, year);  
+tvCatsInfo.setText(strFinal);
+</code></pre>
+Здесь показан простейший пример с форматированием. Помните о нём и применяйте в нужных местах.
+<h2>Строковой ресурс</h2>Строки желательно хранить в ресурсах.
+
+Программно доступ к строковому ресурсу делается так:
+
+<pre class='lang-java line-numbers'><code>
+String catName = getResources().getString(R.string.barsik);
+</code></pre>
+<h2>Извлечь строки из строковых массивов в ресурсах</h2>Предположим, у вас есть строковый массив, определенный в файле <em>strings.xml</em> под именем <code>cats_array</code>. Тогда получить доступ к строкам из ресурсов можно так:
+
+<pre class='lang-java line-numbers'><code>
+Resources res = getResources();
+String[] cats = res.getStringArray(R.array.cats_array);
+</code></pre>
+<h2>Методы</h2><strong><code>public char charAt (int index)</code></strong>
+
+Возвращает символ с указанным смещением в этой строке. Отсчёт идет от 0. Не надо использовать отрицательные и несуществующие значения, будьте серьёзнее. Для извлечения нескольких символов используйте <code>getChars()</code>.
+
+<pre class='lang-java line-numbers'><code>
+String testString = "Котёнок";
+char myChar = testString.charAt(2);
+tv.setText(Character.toString(myChar)); // выводит третий символ - т
+</code></pre>
+<strong><code>public int codePointAt(int index)</code></strong>
+
+Возвращает Unicode-символ в заданном индексе
+
+<pre class='lang-java line-numbers'><code>
+String testString = "Котёнок";
+int myChar = testString.codePointAt(3);
+tv.setText(String.valueOf(myChar)); // возвращает 1105
+</code></pre>
+<strong><code>public int codePointBefore(int index)</code></strong>
+
+Возвращает Unicode-символ, который предшествует данному индексу
+
+<pre class='lang-java line-numbers'><code>
+String testString = "Котёнок";
+int myChar = testString.codePointBefore(4);
+tv.setText(String.valueOf(myChar)); // возвращает 1105
+</code></pre>
+<strong><code>public int codePointCount(int start, int end)</code></strong>
+
+Вычисляет количество Unicode-символов между позициями <code>start</code> и <code>end</code>
+
+<pre class='lang-java line-numbers'><code>
+String testString = "Котёнок";
+int myChar = testString.codePointCount(0, 3);
+tv.setText(String.valueOf(myChar)); // возвращает 3
+</code></pre>
+<strong><code>public int compareTo(String string)</code></strong>
+
+Сравнивает указанную строку, используя значения символов Unicode и вычисляет, какая из строк меньше, равна или больше следующей. Может использоваться при сортировке. Регистр учитывается. Если строки совпадают, то возвращается 0, если меньше нуля, то вызывающая строка меньше строки <code>string</code>, если больше нуля, то вызывающая строка больше строки <code>string</code>. Слова с большим регистром стоят выше слова с нижним регистром.
+
+<pre class='lang-java line-numbers'><code>
+String testString = "Котёнок";
+
+if (testString.compareTo("котёнок") == 0) {
+    tvInfo.setText("Строки равны");
+} else {
+    tvInfo.setText("Строки не равны. Возвращено"
+            + testString.compareTo("котёнок")); // возвращает -32
+}
+</code></pre>
+Отсортируем массив строк через пузырьковую сортировку.
+
+<pre class='lang-java line-numbers'><code>
+String[] poem = { "Мы", "везём", "с", "собой", "кота" };
+
+for (int j = 0; j &lt; poem.length; j++) {
+	for (int i = j + 1; i &lt; poem.length; i++) {
+		if (poem[i].compareTo(poem[j]) &lt; 0) {
+			String temp = poem[j];
+			poem[j] = poem[i];
+			poem[i] = temp;
+		}
+	}
+	System.out.println(poem[j]);
+}
+</code></pre>
+В результате мы получим:
+
+<pre class='lang-java line-numbers'><code>
+Мы
+везём
+кота
+с
+собой
+</code></pre>
+Как видите, от <em>перемены мест слагаемых сумма</em> сортировки коты не меняются.
+
+<strong><code>public int compareToIgnoreCase (String string)</code></strong>
+
+Сравнивает указанную строку, используя значения символов Unicode, без учета регистра.
+
+<pre class='lang-java line-numbers'><code>
+String testString = "Котёнок";
+
+if (testString.compareToIgnoreCase("котёнок") == 0) {
+    tv.setText("Строки равны"); // слова одинаковы, если не учитывать регистр
+} else {
+    tv.setText("Строки не равны. Возвращено"
+            + testString.compareTo("котёнок"));
+}
+</code></pre>
+<strong><code>public String concat (String string)</code></strong>
+
+Объединяет строку с указанной строкой. Возвращается новая строка, которая содержит объединение двух строк. Обратите внимание, что само имя метода содержит кота!
+
+<pre class='lang-java line-numbers'><code>
+String testString = "Сук";
+String newString = testString.concat("кот");
+tv.setText(newString);
+</code></pre>
+Метод выполняет ту же функцию, что и оператор <code>+</code> и можно было написать <code>Сук + кот</code>. Но настоящий кошатник будет использовать "кошачий" метод.
+
+<strong><code>public boolean contains (CharSequence cs)</code></strong>
+
+Определяет, содержит ли строка последовательность символов в <code>CharSequence</code>
+
+<pre class='lang-java line-numbers'><code>
+String testString = "котёнок";
+
+if(testString.contains("кот")){
+    infoTextView.setText("В слове котёнок содержится слово кот!");
+}
+</code></pre>
+<strong><code>public static String copyValueOf (char[] data, int start, int length)</code></strong>
+
+Создаёт новую строку, содержащую указанные символы из массива <code>Data</code> начиная с позиции <code>start</code> (нумерация начинается с нуля) длинной <em>length</em>.
+
+<strong><code>public static String copyValueOf(char[] data)</code></strong>
+
+Создаёт новую строку, содержащую символы из указанного массива. Изменение массива после создания строки не изменяет созданную строку.
+
+<strong><code>public boolean endsWith(String suffix)</code></strong>
+
+Проверяет, заканчивается ли строка символами <code>suffix</code>.
+
+<pre class='lang-java line-numbers'><code>
+String str1 = "Суккот";
+
+if(str1.endsWith("кот"))
+    infoTextView.setText("Слово заканчивается на котике");
+else
+    infoTextView.setText("Плохое слово. Нет смысла его использовать");
+</code></pre>
+<strong><code>public boolean equals (Object string)</code></strong>
+
+Сравнивает указанный объект и строку и возвращает <em>true</em>, если сравниваемые строки равны, т.е. содержит те же символы и в том же порядке с учётом регистра.
+
+<pre class='lang-java line-numbers'><code>
+String str1 = "Кот";
+String str2 = "Кошка";
+
+if(str1.equals(str2))
+    infoTextView.setText("Строки совпадают");
+else
+    infoTextView.setText("Строки не совпадают");
+</code></pre>
+Не путать метод с оператором <code>==</code>, который сравнивает две ссылки на объекты и определяет, ссылаются ли они на один и тот же экземпляр. Смотри пункт Сравнение строк: <code>equals()</code> или <code>==</code>?
+
+<strong><code>public boolean equalsIgnoreCase(String string)</code></strong>
+
+Сравнивает указанную строку с исходной строкой без учёта регистра и возвращает <em>true</em>, если они равны. Диапазон A-Z считается равным диапазону a-z.
+
+<pre class='lang-java line-numbers'><code>
+String str1 = "Кот";
+String str2 = "кот";
+
+if(str1.equalsIgnoreCase(str2))
+    infoTextView.setText("Строки совпадают");
+else
+    infoTextView.setText("Строки не совпадают");
+public static String format(Locale locale, String format, Object... args)
+</code></pre>
+Возвращает отформатированную строку, используя прилагаемый формат и аргументы, локализованных в данной области. Например дату или время
+
+<pre class='lang-java line-numbers'><code>
+// выводим число типа float с двумя знаками после запятой
+String.format("%.2f", floatValue);
+</code></pre>
+Склеиваем два слова, которые выводятся с новой строки. При этом второе слово выводится в верхнем регистре.
+
+<pre class='lang-java line-numbers'><code>
+String str1 = "Кот";
+String str2 = "васька";
+String strResult = String.format("%s\n%S", str1, str2);
+// выводим результат в TextView
+infoTextView.setText(strResult);
+</code></pre>
+Конвертируем число в восьмеричную систему.
+
+<pre class='lang-java line-numbers'><code>
+String str1 = "8";
+int inInt = Integer.parseInt(str1); // конвертируем строку в число
+String strResult = String.format("(Восьмеричное значение): %o\n", inInt);
+
+infoTextView.setText(strResult);
+</code></pre>
+По аналогии выводим в шестнадцатеричной системе
+
+<pre class='lang-java line-numbers'><code>
+String str1 = "255";
+int inInt = Integer.parseInt(str1);
+String strResult = String.format("(Шестнадцатеричное значение): %x\n", inInt);
+// число 255 будет выведено как ff
+infoTextView.setText(strResult);
+</code></pre>
+Для верхнего регистра используйте <code>%X</code>, тогда вместо <code>ff</code> будет <code>FF</code>.
+
+Для десятичной системы используйте <code>%d</code>.
+
+Дату тоже можно выводить по разному.
+
+<pre class='lang-java line-numbers'><code>
+Date now = new Date();
+Locale locale = Locale.getDefault();
+infoTextView.setText(
+		String.format(locale, "%tD\n", now) + // (MM/DD/YY)
+		String.format(locale, "%tF\n", now) + // (YYYY-MM-DD)
+		String.format(locale, "%tr\n", now) + // Full 12-hour time
+		String.format(locale, "%tz\n", now) + // Time zone GMT offset
+		String.format(locale, "%tZ\n", now)); // Localized time zone bbreviation
+</code></pre></code>
+
+<strong><code>public byte[] getBytes(String charsetName)</code></strong>
+
+Возвращает отформатированную строку, используя прилагаемый формат.
+
+<strong><code>public void getBytes(int start, int end, byte[] data, int index)</code> и другие перегруженные версии</strong>
+
+Метод сохраняет символы в массив байтов, альтернатива методу <code>getChars()</code>. Часто используется при экспорте строк из различных источников, где используются другие символы Unicode. Например, Java по умолчанию работает с 16-битовые символы Unicode, а в интернете часто строки используют 8-битовый код Unicode, ASCII и др.
+
+<strong><code>public void getChars(int start, int end, char[] buffer, int index)</code></strong>
+
+Метод для извлечения нескольких символов из строки. Вам надо указать индекс начала подстроки (<code>start</code>), индекс символа, следующего за концом извлекаемой подстроки (end). Массив, который принимает выделенные символы находится в параметре <strong>buffer</strong>. Индекс в массиве, начиная с которого будет записываться подстрока, передаётся в параметре <strong>index</strong>. Следите, чтобы массив был достаточного размера, чтобы в нём поместились все символы указанной подстроки.
+
+<pre class='lang-java line-numbers'><code>
+String unusualCat = "Котёнок по имени Гав";
+int start = 5;
+int end = 12;
+char[] buf = new char[end - start];
+unusualCat.getChars(start, end, buf, 0);
+infoTextView.setText(new String(buf));
+</code></pre>
+<strong><code>public int hashCode()</code></strong>
+
+Возвращает целое число — хэш-код для данного объекта.
+
+<strong><code>public int indexOf(int c)</code></strong>
+
+Возвращает номер первой встречной позиции с указанным индексом с.
+
+<pre class='lang-java line-numbers'><code>
+String testString = "котёнок";
+// символ ё встречается в четвёртой позиции (index = 3)
+infoTextView.setText(String.valueOf(testString.indexOf("ё")));
+</code></pre>
+<strong><code>public int indexOf (int c, int start)</code></strong>
+
+Ищет индекс с, начиная с позиции <code>start</code>
+
+<pre class='lang-java line-numbers'><code>
+String testString = "котёнок";
+// вернёт -1, так как после 5 символа буквы ё нет
+infoTextView.setText(String.valueOf(testString.indexOf("ё", 4)));
+</code></pre>
+<strong><code>public int indexOf (String string)</code></strong>
+
+Ищет цепочку символов <code>subString</code>
+
+<pre class='lang-java line-numbers'><code>
+String testString = "У окошка";
+infoTextView.setText(String.valueOf(testString.indexOf("кошка")));
+</code></pre>
+<strong><code>public int indexOf (String subString, int start)</code></strong>
+
+Ищет цепочку символов <code>subString</code>, начиная с позиции <code>start</code>
+
+<pre class='lang-java line-numbers'><code>
+String testString = "У окошка";
+infoTextView.setText(String.valueOf(testString.indexOf("кошка", 2)));
+</code></pre>
+<strong><code>public String intern ()</code></strong>
+
+«Xэширует» строку
+
+<strong><code>public boolean isEmpty ()</code></strong> 
+
+Проверяет, является ли строка пустой
+
+<pre class='lang-java line-numbers'><code>
+if(catname.isEmpty()) {
+    // здесь ваш код
+}
+</code></pre>
+Данный метод появился в API 9 (Android 2.1). Для старых устройств используйте <code>String.length() == 0</code>
+
+<strong><code>public int lastIndexOf (String string) и другие перегруженные версии</code></strong>
+
+Возвращает номер последней встречной позиции с указанным индексом. Например, получить имя файла без расширения можно так:
+
+<pre class='lang-java line-numbers'><code>
+filename.toString().substring(0, filename.getString().lastIndexOf("."));
+</code></pre>
+В этом примере мы получаем позицию последней точки и получаем подстроку до неё.
+
+<strong><code>public int length()</code></strong>
+
+Возвращает длину строки
+
+<pre class='lang-java line-numbers'><code>
+String testString = "котёнок";
+infoTextView.setText(String.valueOf(testString.length())); // возвращает 7 (семь символов)
+</code></pre>
+<strong><code>public boolean matches(String regularExpression)</code></strong>
+
+Проверяет, соответствует ли строка регулярным выражениям.
+
+<pre class='lang-java line-numbers'><code>
+public int offsetByCodePoints (int index, int codePointOffset)
+</code></pre>
+Возвращает позицию, расположенную на расстоянии <code>codePointOffset</code> после начальной позиции, заданной параметром <code>index</code>
+
+<strong><code>public boolean regionMatches (int thisStart, String string, int start, int length)</code></strong>
+
+Метод сравнивает указанную часть строки с другой частью строки. Нужно задать индекс начала диапазон строки вызывающего объекта класса <code>String</code>. Строка для сравнивания передаётся в параметре <code>string</code>. Индекс символа, начиная с которого нужно выполнять сравнение передаётся в параметре <code>start</code>, а длина сравниваемой подстроки в параметре <code>length</code>.
+
+<strong><code>public boolean regionMatches (boolean ignoreCase, int thisStart, String string, int start, int length)</code></strong>
+
+Перегруженная версия. Метод сравнивает указанную часть строки с другой частью строки, игнорируя регистр.
+
+<strong><code>public String replace(CharSequence target, CharSequence replacement) и другие перегруженные версии</code></strong>
+
+Меняет символ или последовательность символов <code>target</code> на <code>replacement</code>
+
+<pre class='lang-java line-numbers'><code>
+String testString = "кит";
+// меняем и на о
+infoTextView.setText(testString.replace("и", "о")); // возвращается кот
+</code></pre>
+<strong><code>public String replaceAll (String regularExpression, String replacement)</code></strong>
+
+<strong><code>public String replaceFirst (String regularExpression, String replacement)</code></strong>
+
+Удаляет первые символы при помощи регулярного выражения.
+
+Например, если нужно удалить нули в начале чисел 001, 007, 000024, то можно использовать такой вызов.
+
+<pre class='lang-java line-numbers'><code>
+String s = "001234-cat";
+String s = s.replaceFirst ("^0*", ""); // останется 1234-cat
+</code></pre>
+<strong><code>public String[] split (String regularExpression) и другие перегруженные версии</code></strong>
+
+Разбивает строку на массив из слов. Например, есть строка Васька Рыжик Мурзик Барсик и мы хотим получить массив имён котов:
+
+<pre class='lang-java line-numbers'><code>
+String catnames = "Васька Рыжик Мурзик Барсик";  
+String aCats[] = catnames.split(" ");  // по пробелу
+</code></pre>
+Получим:
+
+<pre class='lang-java line-numbers'><code>
+aCats[0] = Васька
+aCats[1] = Рыжик
+aCats[2] = Мурзик
+aCats[3] = Барсик
+</code></pre>
+<strong><code>public boolean startsWith(String prefix)</code></strong>
+
+Проверяет, начинается ли строка символами <code>prefix</code> с начала строки
+
+<pre class='lang-java line-numbers'><code>
+String str1 = "котлета";
+
+if(str1.startsWith("кот"))
+    infoTextView.setText("Слово содержит кота");
+else
+    infoTextView.setText("Плохое слово. Нет смысла его использовать");
+</code></pre>
+<strong><code>public boolean startsWith(String prefix, int start)</code></strong>
+
+Проверяет, начинается ли заданная строка символами <code>prefix</code> с указанной позиции.
+
+<pre class='lang-java line-numbers'><code>
+String str1 = "Суккот";
+
+if(str1.startsWith("кот", 3))
+    infoTextView.setText("Слово содержит кота");
+else
+    infoTextView.setText("Плохое слово. Нет смысла его использовать");
+</code></pre>
+<strong><code>public CharSequence subSequence (int start, int end)</code></strong>
+
+Аналогичен методу <code>substring()</code>, но может использоваться для <strong><code>CharSequence</code></strong>.
+
+<strong><code>public String substring(int start)</code> и другие перегруженные версии</strong>
+
+Создаёт новую последовательность/строку с символами из данной строки начиная с позиции <code>start</code> до конца строки/заканчивая символом с позиции <code>end</code>. Новая строка содержит символы от <code>start</code> до end - 1, поэтому берём на один символ больше.
+
+<pre class='lang-java line-numbers'><code>
+String testString = "скотина";
+
+infoTextView.setText(testString.substring(1, 4)); // возвращается кот
+</code></pre>
+<strong><code>public char[] toCharArray()</code></strong>
+
+Копирует символы в этой строке в массив символов. Тот же результат можно получить через метод <code>getChars()</code>. Документация не рекомендует использовать данный метод, предлагая метод <code>charAt()</code>.
+
+<pre class='lang-java line-numbers'><code>
+String unusualCat = "Котёнок по имени Гав";
+
+char[] yomoe = unusualCat.toCharArray();
+infoTextView.setText(String.valueOf(yomoe[3]));
+</code></pre>
+<strong><code>public String toLowerCase() и другие перегруженные версии</code></strong>
+
+Преобразовывает строку в нижний регистр. Преобразованием управляет заданный по умолчанию региональный язык.
+
+String cat = "Кот";
+String lower = cat.toLowerCase();
+infoTextView.setText(lower);
+<strong><code>public String toString ()</code></strong>
+
+Возвращает строку. Для самой строки, которая сама уже является строкой, возвращать строку бессмысленно (о, как я загнул). Но на самом деле этот метод очень полезен для других классов.
+
+<strong><code>public String toUpperCase()</code></strong>
+
+Преобразовывает строку в верхний регистр. Преобразованием управляет заданный по умолчанию региональный язык.
+
+<pre class='lang-java line-numbers'><code>
+String cat = "Кот";
+String upper = cat.toUpperCase();
+infoTextView.setText(upper);
+</code></pre>
+<strong><code>public String trim()</code></strong>
+
+Удаляет пробелы в начале и в конце строки.
+
+<pre class='lang-java line-numbers'><code>
+String str = "   Hello Kitty  ".trim();
+infoTextView.setText(str);
+</code></pre>
+<strong><code>public static String valueOf(long value)</code> и другие перегруженные версии</strong>
+
+Конвертирует содержимое (числа, объекты, символы, массивы символов) в строку.
+
+<pre class='lang-java line-numbers'><code>
+int catAge = 7; // это число
+
+infoTextView.setText(String.valueOf(catAge)); // преобразовано в строку
+</code></pre>
+<h2>Генерируем случайную строку</h2>Допустим, нам нужна случайная строка из заданных символов.
+
+<pre class='lang-java line-numbers'><code>
+private static final String mCHAR = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+private static final int STR_LENGTH = 9; // длина генерируемой строки
+Random random = new Random();
+    
+public void onClick(View view) {
+    TextView infoTextView = (TextView) findViewById(R.id.textViewInfo);
+    infoTextView.setText(createRandomString());
+}
+
+public String createRandomString() {
+    StringBuilder builder = new StringBuilder();
+    for (int i = 0; i < STR_LENGTH; i++) {
+        int number = random.nextInt(mCHAR.length());
+        char ch = mCHAR.charAt(number);
+        builder.append(ch);
+    }
+    return builder.toString();
+}
+</code></pre>
+<h2>Сравнение строк: <code>equals()</code> или <code>==</code>?</h2>Рассмотрим пример.
+
+<pre class='lang-java line-numbers'><code>
+String str1 = "Мурзик";
+String str2 = new String(str1);
+boolean isCat = str1 == str2;
+
+infoTextView.setText(str1 + " == " + str2 + " -&gt; " + isCat);
+</code></pre>
+Хотя в двух переменных содержится одно и то же слово, мы имеем дело с двумя разными объектами и оператор <code>==</code> вернёт <em>false</em>.
+
+Однажды, когда деревья были большими, мне понадобилось сравнить две строки из разных источников. Хотя строки выглядели совершенно одинаково, сравнение при помощи оператора <code>==</code> возвращало <em>false</em> и путало мне все карты. И только потом я узнал, что нужно использовать метод <code>equals()</code>. Строка в Java — это отдельный объект, который может не совпадать с другим объектом, хотя на экране результат выводимой строки может выглядеть одинаково. Просто Java в случае с логическим оператором <code>==</code> (а также <code>!=</code>) сравнивает ссылки на объекты (при работе с примитивами такой проблемы нет):
+
+<pre class='lang-java line-numbers'><code>
+String s1 = "hello";
+String s2 = "hello";
+String s3 = s1;
+String s4 = "h" + "e" + "l" + "l" + "o";
+String s5 = new String("hello");
+String s6 = new String(new char[]{'h', 'e', 'l', 'l', 'o'});
+
+infoTextView.setText(s1 + " == " + s2 + ": " + (s1 == s2));
+// попробуйте и другие варианты
+// infoTextView.setText(s1 + " equals " + s2 + ": " + (s1.equals(s2)));
+// infoTextView.setText(s1 + " == " + s3 + ": " + (s1 == s3));
+// infoTextView.setText(s1 + " equals " + s3 + ": " + (s1.equals(s3)));
+// infoTextView.setText(s1 + " == " + s4 + ": " + (s1 == s4));
+// infoTextView.setText(s1 + " equals " + s4 + ": " + (s1.equals(s4)));
+// infoTextView.setText(s1 + " == " + s5 + ": " + (s1 == s5)); // false
+// infoTextView.setText(s1 + " equals " + s5 + ": " + (s1.equals(s5)));
+// infoTextView.setText(s1 + " == " + s6 + ": " + (s1 == s6)); // false
+// infoTextView.setText(s1 + " equals " + s6 + ": " + (s1.equals(s6)));
+</code></pre>

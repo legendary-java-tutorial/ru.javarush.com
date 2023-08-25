@@ -1,0 +1,744 @@
+Как не потеряться во времени — DateTime и Calendar
+<p>----------------------------------------</p>
+Привет! Сегодня мы начнем работать с новым типом данных, с которым до этого не сталкивались, а именно — с датами. Что такое дата, думаю, объяснять не нужно:)  В принципе, записать текущую дату и время в Java вполне возможно в обычную строку ...
+<p>----------------------------------------</p>
+<div class="featured-content">
+	<a href="https://javarush.com/s/ua_webinar_dynamic_banners_logged_in_v1" target="_blank">
+		<picture>
+			<source srcset="/assets/images/site/featured-content/webinar/ua-mobile.webp, /assets/images/site/featured-content/webinar/ua-mobile@2x.webp 1.2x" type="image/webp" media="(max-width: 575px)">
+			<source srcset="/assets/images/site/featured-content/webinar/ua.webp, /assets/images/site/featured-content/webinar/ua@2x.webp 1.2x" type="image/webp" media="(min-width: 576px)">
+			<source srcset="/assets/images/site/featured-content/webinar/ua-mobile.png, /assets/images/site/featured-content/webinar/ua-mobile@2x.png 1.2x" type="image/png" media="(max-width: 575px)">
+			<source srcset="/assets/images/site/featured-content/webinar/ua.png, /assets/images/site/featured-content/webinar/ua@2x.png 1.2x" type="image/png" media="(min-width: 576px)">
+			<img src="/assets/images/site/featured-content/webinar/ua.png" alt="Вебінар JavaRush" border="0">
+		</picture>
+	</a>
+	<div class="featured-content__close"></div>
+</div>
+Привет! Сегодня мы начнем работать с новым типом данных, с которым до этого не сталкивались, а именно — с датами. 
+
+<img data-max-width="800" data-id="617017ce-5006-479b-a9b3-24736db85a4b" src="/images/article/617017ce-5006-479b-a9b3-24736db85a4b/800.jpeg" alt="Как не потеряться во времени — DateTime и Calendar - 1">Что такое дата, думаю, объяснять не нужно:) 
+
+В принципе, записать текущую дату и время в Java вполне возможно в обычную строку. 
+
+<pre class="lang-java line-numbers"><code>
+public class Main { 
+   public static void main(String[] args) { 
+
+       String date = "11 июня 2018 года"; 
+       System.out.println(date); 
+   } 
+}
+</code></pre> 
+Но у такого подхода много недостатков. Класс <code>String</code> создан для работы с текстом, и методы у него соответствующие. Если нам нужно будет как-то управлять датой (прибавить к ней 2 часа, например) — <code>String</code> тут не справится. Или, например, — вывести в консоль текущую дату и время на момент компиляции программы. Тут <code>String</code> тоже не поможет: пока ты напишешь код и запустишь его - время изменится и в консоль будет выведено неактуальное. 
+
+Поэтому в Java его создателями были предусмотрены несколько классов для работы с датами и временем. 
+
+Первый из них - это класс <code>java.util.Date</code>
+<h2>Класс Date Java</h2>Мы указали для него полное название, поскольку в другом пакете в Java есть еще класс <code>java.sql.Date</code>. Не перепутай! 
+
+Первое что нужно о нем знать — <span class="text-bold">он хранит дату в миллисекундах</span>, которые прошли с 1 января 1970 года. Для этой даты есть даже отдельное название — “Unix-время” 
+
+Довольно интересный способ, согласен? :) 
+
+Второе, что стоит запомнить: если создать объекта <code>Date</code> с пустым конструктором — результатом будет <span class="text-bold">текущая дата и время на момент создания объекта</span>.  
+
+Помнишь, мы писали, что для даты в формате <code>String</code> такая задача будет проблематичной? Класс <code>Date</code> ее легко решает. 
+
+<pre class="lang-java line-numbers"><code>
+public class Main { 
+   public static void main(String[] args) { 
+
+       Date date = new Date(); 
+       System.out.println(date); 
+   } 
+} 
+</code></pre>
+Запусти этот код несколько раз, и увидишь, как время каждый раз будет меняться:) Это возможно именно благодаря хранению в миллисекундах: они являются самой маленькой единицей времени, поэтому результаты настолько точные. 
+
+Существует и другой конструктор для <code>Date</code>: можно указать точное количество миллисекунд, которое прошло с 00:00 1 января 1970 года до требуемой даты, и она будет создана: 
+
+<pre class="lang-java line-numbers"><code>
+public class Main { 
+   public static void main(String[] args) { 
+ 
+       Date date = new Date(1212121212121L); 
+       System.out.println(date); 
+   }
+}
+</code></pre> 
+Вывод в консоль: 
+
+<pre><code>
+Fri May 30 08:20:12 MSD 2008
+</code></pre>
+У нас получилось 30 мая 2008 года. “Fri” означает день недели  — “Friday” (пятница), а MSD — “Moscow Daylight Saving” (московское летнее время). 
+
+Миллисекунды передаются в формате <code>long</code>, поскольку их количество чаще всего не влезает в <code>int</code>. 
+
+Итак, какие операции с датами нам могут понадобиться в работе? 
+
+Ну, самое очевидное, конечно — <span class="text-bold">сравнение</span>. Определить была ли одна дата позже или раньше другой. 
+
+Это можно сделать по-разному. 
+
+Например, можно вызвать метод <span class="text-bold"><code>Date.getTime()</code></span>.Он вернет количество миллисекунд, прошедших с полуночи 1 января 1970 года. 
+
+Просто вызовем его у двух объектов Date и сравним между собой: 
+
+<pre class="lang-java line-numbers"><code>
+public class Main { 
+   public static void main(String[] args) { 
+
+       Date date1 = new Date(); 
+
+       Date date2 = new Date(); 
+
+       System.out.println((date1.getTime() &gt; date2.getTime())? 
+               "date1 позже date2" : "date1 раньше date2"); 
+   } 
+}
+</code></pre> 
+Вывод:  
+
+<pre><code>
+date1 раньше date2
+</code></pre>
+Но есть и более удобный способ, а именно — использовать специальные методы класса <code>Date</code>: <code>before()</code>, <code>after()</code> и <code>equals()</code>. 
+
+Все они возвращают результат в формате <code>boolean</code>. 
+
+Метод <code>before()</code> проверяет, была ли наша дата раньше той, которую мы передаем в качестве аргумента: 
+
+<pre class="lang-java line-numbers"><code>
+public class Main { 
+   public static void main(String[] args) throws InterruptedException { 
+
+       Date date1 = new Date(); 
+
+       Thread.sleep(2000);//приостановим работу программы на 2 секунды 
+       Date date2 = new Date(); 
+
+       System.out.println(date1.before(date2)); 
+   } 
+}
+</code></pre> 
+Вывод в консоль: 
+
+<pre><code>
+true
+</code></pre>
+Похожим образом работает и метод <code>after()</code>, он проверяет была ли ли наша дата позже той, которую мы передаем в качестве аргумента: 
+
+<pre class="lang-java line-numbers"><code>
+public class Main { 
+   public static void main(String[] args) throws InterruptedException { 
+
+       Date date1 = new Date(); 
+
+       Thread.sleep(2000);//приостановим работу программы на 2 секунды 
+       Date date2 = new Date(); 
+
+       System.out.println(date1.after(date2)); 
+   }
+} 
+</code></pre>
+Вывод в консоль: 
+
+<pre><code>
+false
+</code></pre>
+В наших примерах мы “усыпляем” программу на 2 секунды, чтобы две даты гарантированно отличались. На быстрых компьютерах время между созданием <code>date1</code> и <code>date2</code> может быть меньше одной миллисекунды, и в таком случае оба метода — и <code>before()</code>, и <code>after()</code> — будут возвращать <code>false</code>. 
+
+А вот метод <code>equals()</code> в такой ситуации вернет <code>true</code>! 
+
+Ведь он сравнивает именно количество миллисекунд, прошедших с 00:00 1 января 1970 для каждой даты. Объекты будут считаться равными только в том случае, если совпадают вплоть до миллисекунды: 
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) { 
+
+   Date date1 = new Date(); 
+   Date date2 = new Date(); 
+
+   System.out.println(date1.getTime()); 
+   System.out.println(date2.getTime()); 
+
+   System.out.println(date1.equals(date2)); 
+} 
+</code></pre>
+Вот еще на что нужно обратить внимание. 
+
+Если ты откроешь документацию класса <code>Date</code> на сайте Oracle, то увидишь, что многие его методы и конструкторы были обозначены словом <code>Deprecated</code> (“нерекомендуемый‘). 
+
+Вот, посмотри: <a href="https://docs.oracle.com/javase/7/docs/api/java/util/Date.html#before(java.util.Date)" rel="nofollow" target="_blank">Class Date</a>
+
+Вот что сами создатели Java говорят про те части классов, которые стали deprecated: 
+
+<em><span class="text-bold">“Программный элемент, аннотированный @Deprecated, является тем, что программистам не рекомендуется использовать, как правило, потому, что это опасно, или потому, что существует лучшая альтернатива.”</span></em>
+
+Это не означает, что этими методами вообще нельзя пользоваться. Более того, если ты сам попробуешь запустить код с их использованием в IDEA — он, скорее всего будет работать 
+
+Возьмем для примера deprecated метод <code>Date.getHours()</code>, который возвращает количество часов из объекта <code>Date</code>. 
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) { 
+
+   Date date1 = new Date(); 
+
+   System.out.println(date1.<s>getHours()</s>); 
+
+} 
+</code></pre>
+Если на момент запуска кода у вас, например, время 14:21, он выведет число 14. 
+
+Как видите, deprecated-метод зачеркнут, но он вполне себе работает. 
+
+Это методы не стали убирать совсем, чтобы не сломать кучу уже написанного с их использованием кода.  
+
+То есть эти методы не “сломаны” и не “удалены”, просто их не рекомендуют использовать по причине наличия более удобной альтернативы. 
+
+О ней, кстати, написано прямо в документации: 
+<a href="https://javarush.com/welcome" target="_blank"><img data-id="b08a58e9-0470-41bc-b7e3-8b5fbd3fb182" data-max-width="512" alt="Как не потеряться во времени — DateTime и Calendar - 2" src="https://cdn.javarush.com/images/article/b08a58e9-0470-41bc-b7e3-8b5fbd3fb182/1024.jpeg"></a>Большинство методов класса Date было перенесено в его улучшенную, расширенную версию — класс <code>Calendar</code>. С ним мы и познакомимся дальше:) 
+<h2>Java Calendar</h2>В версии Java 1.1 появился новый класс — <code>Calendar</code>. Он сделал работу с датам в Java несколько проще, чем она выглядела раньше. 
+
+Единственной реализацией класса <code>Calendar</code>, с которой мы и будем работать, является класс <code>GregorianCalendar</code> (он реализует Григорианский календарь, по которому живет большинство стран мира). 
+
+Его основное удобство заключается в том, что он умеет работать с датами в более удобном формате. 
+
+Например, он может: 
+<ul>
+<li>Прибавить к текущей дате месяц или день</li>
+<li>Проверить, является ли год високосным;</li>
+<li>Получить отдельные компоненты даты (например, получить из целой даты номер месяца) </li>
+<li>А также — внутри него разработана очень удобная система констант (многие из них мы увидим ниже).</li>
+</ul>Еще одним важным отличием класса <code>Calendar</code> является то, что в нем реализована константа <code>Calendar.Era</code>: ты можешь установить для даты эру <span class="text-bold">BC</span> (“Before Christ” - до рождества Христова, т.е. “до нашей эры”) или <span class="text-bold">AC</span> (“After Christ” - “наша эра”). 
+
+Давай рассмотрим все это на примерах. 
+
+Создадим календарь с датой 25 января 2017 года: 
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) { 
+
+  Calendar calendar = new GregorianCalendar(2017, 0 , 25); 
+} 
+</code></pre>
+Месяцы в классе <code>Calendar</code> (как и в <code>Date</code>, кстати) начинаются с нуля, поэтому мы передали число 0 в качестве второго аргумента. 
+
+Главное при работе с классом <code>Calendar</code> — понимать, что это именно <span class="text-bold">календарь</span>, а не отдельная дата.  
+<img data-id="2a5a1d19-f5dc-41e7-8405-bacf9fc9f813" data-max-width="850" alt="Как не потеряться во времени — DateTime и Calendar - 3" src="https://cdn.javarush.com/images/article/2a5a1d19-f5dc-41e7-8405-bacf9fc9f813/1024.jpeg"><span class="text-bold">Дата</span> — это просто несколько чисел, обозначающих конкретный промежуток времени. А календарь - это целое устройство, с помощью которого можно много чего с датами делать:) 
+
+Это достаточно хорошо видно, если попробовать вывести объект Calendar в консоль: 
+
+Вывод: 
+
+<pre><code>
+java.util.GregorianCalendar[time=?,areFieldsSet=false,areAllFieldsSet=false,lenient=true,zone=sun.util.calendar.ZoneInfo[id="Europe/Moscow",offset=10800000,dstSavings=0,useDaylight=false,transitions=79,lastRule=null],firstDayOfWeek=2,minimalDaysInFirstWeek=1,ERA=?,YEAR=2017,MONTH=0,WEEK_OF_YEAR=?,WEEK_OF_MONTH=?,DAY_OF_MONTH=25,DAY_OF_YEAR=?,DAY_OF_WEEK=?,DAY_OF_WEEK_IN_MONTH=?,AM_PM=0,HOUR=0,HOUR_OF_DAY=0,MINUTE=0,SECOND=0,MILLISECOND=?,ZONE_OFFSET=?,DST_OFFSET=?]
+</code></pre>
+Видишь сколько информации! У календаря есть куча свойств, которыми не обладает обычная дата, и все они выводятся в консоль (так работает метод <code>toString()</code> в классе <code>Calendar</code>). 
+
+Если при работе тебе нужно просто получить из календаря простую дату, т.е. объект <code>Date</code> — это делается при помощи метода <code>Calendar.getTime()</code> (название не самое логичное, но тут уж ничего не поделаешь): 
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) { 
+
+   Calendar calendar = new GregorianCalendar(2017, 0 , 25); 
+   Date date = calendar.getTime(); 
+   System.out.println(date); 
+}
+</code></pre> 
+Вывод: 
+
+<pre><code>
+Wed Jan 25 00:00:00 MSK 2017
+</code></pre>
+Вот теперь мы “упростили” календарь до обычной даты. 
+
+Поехали дальше. 
+
+Помимо цифровых обозначений месяцев, в классе <code>Calendar</code> можно использовать константы.  
+
+Константы — это статические поля класса <code>Calendar</code> с уже установленным значением, которое нельзя изменить. 
+
+Этот вариант на самом деле даже лучше, поскольку такое написание улучшает читаемость кода. 
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) { 
+   GregorianCalendar calendar = new GregorianCalendar(2017, Calendar.JANUARY , 25); 
+}
+</code></pre> 
+<code>Calendar.JANUARY</code> — одна из констант для обозначения месяца. 
+
+При таком варианте именования никто не забудет, например, что цифра “3” обозначает апрель, а не привычный нам третий по счету месяц - март. Просто пишешь <code>Calendar.APRIL</code> - и все:) 
+
+Все поля календаря (число, месяц, минуты, секунды и т.д.) можно устанавливать по отдельности с помощью метода <code>set()</code>.  
+
+Он очень удобен, поскольку в классе <code>Calendar</code> для каждого поля выделена своя константа, и итоговый код будет выглядеть максимально просто. 
+
+Например, в прошлом примере мы создали дату, но не установили для нее текущее время. Давай установим время 19:42:12 
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) { 
+   Calendar calendar = new GregorianCalendar(); 
+   calendar.set(Calendar.YEAR, 2017); 
+   calendar.set(Calendar.MONTH, 0); 
+   calendar.set(Calendar.DAY_OF_MONTH, 25); 
+   calendar.set(Calendar.HOUR_OF_DAY, 19); 
+   calendar.set(Calendar.MINUTE, 42); 
+   calendar.set(Calendar.SECOND, 12); 
+
+   System.out.println(calendar.getTime()); 
+}
+</code></pre>
+Вывод: 
+
+<pre><code>
+Wed Jan 25 19:42:12 MSK 2017
+</code></pre>
+Мы вызываем метод <code>set()</code>, передаем в него константу (в зависимости от того поля, которое хотим изменить) и новое значение для этого поля. Получается, что метод <code>set()</code> — эдакий “супер-сеттер”, который умеет устанавливать значение не для одного поля, а для множества полей:) 
+
+Прибавление и вычитание значений в классе <code>Calendar</code> осуществляется с помощью метода <code>add()</code>. В него необходимо передать то поле, которое ты хочешь изменить, и число - сколько именно ты хочешь прибавить/убавить от текущего значения. 
+
+Например, вернем дату, которую мы создали, на 2 месяца назад: 
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) { 
+   Calendar calendar = new GregorianCalendar(2017, Calendar.JANUARY , 25); 
+   calendar.set(Calendar.HOUR, 19); 
+   calendar.set(Calendar.MINUTE, 42); 
+   calendar.set(Calendar.SECOND, 12); 
+
+   calendar.add(Calendar.MONTH, -2);//чтобы отнять значение - в метод нужно передать отрицательное число 
+   System.out.println(calendar.getTime()); 
+}
+</code></pre> 
+Вывод: 
+
+<pre><code>
+Fri Nov 25 19:42:12 MSK 2016
+</code></pre>
+Отлично! Мы вернули дату на 2 месяца назад. В результате изменился не только месяц, но и год, с 2017 на 2016. Подсчет текущего года при переносе дат, конечно, выполняется автоматически и его не надо контролировать вручную. 
+
+Но если для каких-то целей тебе нужно отключить это поведение — можно и так. 
+
+Специальный метод <code>roll()</code> может прибавлять и убавлять значения, не затрагивая при этом  остальные значения. К примеру, вот так: 
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) { 
+   Calendar calendar = new GregorianCalendar(2017, Calendar.JANUARY , 25); 
+   calendar.set(Calendar.HOUR, 10); 
+   calendar.set(Calendar.MINUTE, 42); 
+   calendar.set(Calendar.SECOND, 12); 
+
+   calendar.roll(Calendar.MONTH, -2); 
+   System.out.println(calendar.getTime()); 
+} 
+</code></pre>
+Мы сделали ровно то же самое, что и в предыдущем примере — отняли 2 месяца от текущей даты. Но теперь код сработал по-другому: месяц поменялся с января на ноябрь, но год как был 2017-ым, так и остался! 
+
+Вывод: 
+
+<pre><code>
+Sat Nov 25 10:42:12 MSK 2017
+</code></pre>
+Далее. 
+
+Как мы и говорили выше, все поля объекта <code>Calendar</code> можно получить по отдельности. За это отвечает метод <code>get()</code>: 
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) { 
+   GregorianCalendar calendar = new GregorianCalendar(2017, Calendar.JANUARY , 25); 
+   calendar.set(Calendar.HOUR, 10); 
+   calendar.set(Calendar.MINUTE, 42); 
+   calendar.set(Calendar.SECOND, 12); 
+ 
+   System.out.println("Год: " + calendar.get(Calendar.YEAR)); 
+   System.out.println("Месяц: " + calendar.get(Calendar.MONTH)); 
+   System.out.println("Порядковый номер недели в месяце: " + calendar.get(Calendar.WEEK_OF_MONTH));//порядковый номер недели в месяце
+
+   System.out.println("Число: " + calendar.get(Calendar.DAY_OF_MONTH)); 
+
+   System.out.println("Часы: " + calendar.get(Calendar.HOUR)); 
+   System.out.println("Минуты: " + calendar.get(Calendar.MINUTE)); 
+   System.out.println("Секунды: " + calendar.get(Calendar.SECOND)); 
+   System.out.println("Миллисекунды: " + calendar.get(Calendar.MILLISECOND)); 
+
+} 
+</code></pre>
+Вывод: 
+
+<pre><code>
+Год: 2017 
+Месяц: 0 
+Порядковый номер недели в месяце: 4 
+Число: 25 
+Часы: 10 
+Минуты: 42 
+Секунды: 12 
+Миллисекунды: 0
+</code></pre>
+То есть помимо “супер-сеттера” в классе <code>Calendar</code> есть еще и “супер-геттер” :) 
+
+Еще один интересный момент — это, конечно, работа с эрами. 
+
+Для создания даты “до нашей эры” нужно использовать поле <code>Calendar.Era</code> 
+
+Например, создадим дату, обозначающую битву при Каннах, в которой Ганнибал победил войско Рима. Это произошло 2 августа 216 г. до н. э.: 
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) { 
+   GregorianCalendar cannes = new GregorianCalendar(216, Calendar.AUGUST, 2); 
+   cannes.set(Calendar.ERA, GregorianCalendar.BC); 
+
+   DateFormat df = new SimpleDateFormat("dd MMM yyy GG"); 
+   System.out.println(df.format(cannes.getTime())); 
+} 
+</code></pre>
+Здесь мы использовали класс <code>SimpleDateFormat</code>, чтобы вывести дату в более понятном нам формате (буквы “GG” отвечают как раз за вывод эры). 
+
+Вывод: 
+
+<pre><code>
+02 авг 216 до н.э.
+</code></pre>
+В классе <code>Calendar</code> есть еще много методов и констант, почитай про них в документации: 
+<ul>
+<li><a href="https://docs.oracle.com/javase/7/docs/api/java/util/Calendar.html " rel="nofollow" target="_blank">Class Calendar</a></li></ul><h2>Перевод строки в Date</h2>Для перевода String в Date можно воспользоваться вспомогательным классом Java — <a href="https://docs.oracle.com/javase/8/docs/api/java/text/SimpleDateFormat.html" rel="nofollow" target="_blank">SimpleDateFormat</a>.
+
+Это класс, который нужен для приведения даты в определяемый вами формат. 
+<img data-max-width="256" data-id="56097e19-a430-447a-a3e0-a3b941520a40" src="/images/article/56097e19-a430-447a-a3e0-a3b941520a40/256.jpeg" alt="Как не потеряться во времени — DateTime и Calendar - 5">В свою очередь, он очень похож на <a href="https://docs.oracle.com/javase/8/docs/api/java/text/SimpleDateFormat.html" rel="nofollow" target="_blank">DateFormat</a>. Единственное заметное различие между ними заключается в том, что SimpleDateFormat можно использовать для форматирования (преобразования даты в строку) и для парсинга строки в дату с поддержкой языкового стандарта, тогда как DateFormat не поддерживает языкового стандарта.
+
+Кроме того, DateFormat — это абстрактный класс, который обеспечивает базовую поддержку для форматирования и анализа дат, а SimpleDateFormat — это конкретный класс, расширяющий класс DateFormat.
+
+Вот так выглядит пример создания объекта SimpleDateFormat и форматирования Date:
+
+<pre class="lang-java line-numbers"><code>
+SimpleDateFormat formater = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+Date date = new Date(1212121212121L);
+
+System.out.println(formatter.format(date));
+</code></pre>
+В приведенном выше примере мы использовали шаблон "yyyy-MM-dd HH:mm:ss", который означает:
+<ul>
+<li>4 цифры для года (yyyy);</li>
+<li>2 цифры для месяца (ММ);</li>
+<li>2 цифры для дня (dd);</li>
+<li>2 цифры для часов в 24-часовом формате (HH);</li>
+<li>2 цифры для минут (mm);</li>
+<li>2 цифры для секунд (ss).</li>
+</ul>Знаки разделения и порядок расстановки символов шаблона сохраняется.
+
+Вывод в консоль: 
+
+<pre class="lang-java line-numbers"><code>
+2008-05-30 08:20:12
+</code></pre>
+Шаблонных букв для класса <strong>SimpleDateFormat</strong> довольно много. Чтобы ты не запутался, мы собрали их в таблицу:
+<table>
+<tbody><tr>
+<th>Символ</th>
+<th>Описание</th>
+<th>Пример</th>
+</tr>
+<tr>
+<td>G</td>
+<td>эра (в английской локализации — AD и BC)</td>
+<td>н.э.</td>
+</tr>
+<tr>
+<td>y</td>
+<td>год (4-х значное число)</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>yy</td>
+<td>год (последние 2 цифры)</td>
+<td>20</td>
+</tr>
+<tr>
+<td>yyyy</td>
+<td>год (4-х значное число)</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>M</td>
+<td>номер месяца (без лидирующих нулей)</td>
+<td>8</td>
+</tr>
+<tr>
+<td>MM</td>
+<td>номер месяца (с лидирующими нулями, если порядковый номер месяца &lt; 10)</td>
+<td>04</td>
+</tr>
+<tr>
+<td>MMM</td>
+<td>трехбуквенное сокращение месяца (в соответствии с локализацией)</td>
+<td>янв</td>
+</tr>
+<tr>
+<td>MMMM</td>
+<td>полное название месяца</td>
+<td>Июнь</td>
+</tr>
+<tr>
+<td>w</td>
+<td>неделя в году (без лидирующих нулей)</td>
+<td>4</td>
+</tr>
+<tr>
+<td>ww</td>
+<td>неделя в году (с лидирующими нулями)</td>
+<td>04</td>
+</tr>
+<tr>
+<td>W</td>
+<td>неделя в месяце (без лидирующих нулей)</td>
+<td>3</td>
+</tr>
+<tr>
+<td>WW</td>
+<td>неделя в месяце (с лидирующим нулем)</td>
+<td>03</td>
+</tr>
+<tr>
+<td>D</td>
+<td>день в году</td>
+<td>67</td>
+</tr>
+<tr>
+<td>d</td>
+<td>день месяца (без лидирующих нулей)</td>
+<td>9</td>
+</tr>
+<tr><td>dd</td>
+<td>день месяца (с лидирующими нулями)</td>
+<td>09</td>
+</tr>
+<tr>
+<td>F</td>
+<td>день недели в месяце (без лидирующих нулей)</td>
+<td>9</td>
+</tr>
+<tr>
+<td>FF</td>
+<td>день недели в месяце (с лидирующими нулями)</td>
+<td>09</td>
+</tr>
+<tr>
+<td>E</td>
+<td>день недели (сокращение)</td>
+<td>Вт</td>
+</tr>
+<tr>
+<td>EEEE</td>
+<td>день недели (полностью)</td>
+<td>пятница</td>
+</tr>
+<tr>
+<td>u</td>
+<td>номер дня недели (без лидирующих нулей)</td>
+<td>5</td>
+</tr>
+<tr>
+<td>uu</td>
+<td>номер дня недели (с лидирующими нулями)</td>
+<td>05</td>
+</tr>
+<tr>
+<td>a</td>
+<td>маркер AM/PM</td>
+<td>AM</td>
+</tr>
+<tr>
+<td>H</td>
+<td>часы в 24-часовом формате без лидирующих нулей</td>
+<td>6</td>
+</tr>
+<tr>
+<td>HH</td>
+<td>часы в 24-часовом формате с лидирующим нулем</td>
+<td>06</td>
+</tr>
+<tr>
+<td>k</td>
+<td>количество часов в 24-часовом формате</td>
+<td>18</td>
+</tr>
+<tr>
+<td>K</td>
+<td>количество часов в 12-часовом формате</td>
+<td>6</td>
+</tr>
+<tr>
+<td>h</td>
+<td>время в 12-часовом формате без лидирующих нулей</td>
+<td>6</td>
+</tr>
+<tr>
+<td>hh</td>
+<td>время в 12-часовом формате с лидирующим нулем</td>
+<td>06</td>
+</tr>
+<tr><td>m</td>
+<td>минуты без лидирующих нулей</td>
+<td>32</td>
+</tr>
+<tr>
+<td>mm</td>
+<td>минуты с лидирующим нулем</td>
+<td>32</td>
+</tr>
+<tr>
+<td>s</td>
+<td>секунды без лидирующих нулей</td>
+<td>11</td>
+</tr>
+<tr>
+<td>ss</td>
+<td>секунды с лидирующим нулем</td>
+<td>11</td>
+</tr>
+<tr>
+<td>S</td>
+<td>миллисекунды</td>
+<td>297</td>
+</tr>
+<tr>
+<td>z</td>
+<td>часовой пояс</td>
+<td>EET</td>
+</tr>
+<tr>
+<td>Z</td>
+<td>часовой пояс в формате RFC 822</td>
+<td>300</td>
+</tr></tbody></table>Примеры комбинаций символов шаблонов:
+<table>
+<tbody><tr>
+<th>Шаблон</th>
+<th>Пример</th>
+</tr>
+<tr>
+<td>dd-MM-yyyy</td>
+<td>01-11-2020</td>
+</tr>
+<tr>
+<td>yyyy-MM-dd</td>
+<td>2019-10-01</td>
+</tr>
+<tr>
+<td>HH:mm:ss.SSS</td>
+<td>23:59.59.999</td>
+</tr>
+<tr>
+<td>yyyy-MM-dd HH:mm:ss</td>
+<td>2018-11-30 03:09:02</td>
+</tr>
+<tr>
+<td>yyyy-MM-dd HH:mm:ss.SSS</td>
+<td>2016-03-01 01:20:47.999</td>
+</tr>
+<tr>
+<td>yyyy-MM-dd HH:mm:ss.SSS Z</td>
+<td>2013-13-13 23:59:59.999 +0100</td>
+</tr>
+<tr>
+</tr></tbody></table>Если же немного ошибиться с форматом, то можно стать обладателем java.text.ParseException, а это не особо приятное достижение.
+
+Ну что же, небольшой экскурс по <strong>SimpleDateFormat</strong> окончен — вернёмся к переводу <strong>java string to date</strong>.
+
+<strong>SimpleDateFormat</strong> дает нам такие возможности, и мы рассмотрим этот процесс поэтапно.
+<ol>
+<li><p>Создаем строку, с которой нужно задать дату:</p>
+<pre class="lang-java line-numbers"><code>
+String strDate = "Sat, April 4, 2020";
+</code></pre></li>
+<li><p>Создаем новый объект <strong>SimpleDateFormat</strong> с шаблоном, который совпадает с тем, что у нас в строке (иначе распарсить не получится):</p>
+<pre class="lang-java line-numbers"><code>
+SimpleDateFormat formatter = new SimpleDateFormat("EEE, MMMM d, yyyy", Locale.ENGLISH);
+</code></pre><p>Как вы видите, у нас тут появился аргумент Locale. Если же мы его опустим, он будет использовать значение Locale по умолчанию, которое не всегда является английским.</p>
+<p>Если языковой стандарт не совпадает с входной строкой, то строковые данные, привязанные к языку, как у нас <u>Mon</u> или <u>April</u>, не будут распознаны и вызовут падение — java.text.ParseException, даже в том случае когда шаблон подходит.</p>
+<p>Тем не менее, можно не указывать формат, если у нас используется шаблон, который не привязан к языку. Как пример — yyyy-MM-dd HH:mm:ss</p></li>
+<li><p>Создаём дату с помощью форматтера, который в свою очередь парсит её из входной строки:</p>
+<pre class="lang-java line-numbers"><code>
+try {
+  Date date = formatter.parse(strDate);
+  System.out.println(date);
+}
+catch (ParseException e) {
+  e.printStackTrace();
+}
+</code></pre>
+<p>Вывод в консоль:</p>
+<pre><code>
+Sat Apr 04 00:00:00 EEST 2020
+</code></pre>
+<p>Хммм….Но формат-то уже не тот!</p>
+<p>Чтобы сделать тот же формат, вновь используем форматтер:</p>
+<pre class="lang-java line-numbers"><code>
+System.out.println(formatter.format(date));
+</code></pre>
+<p>Вывод в консоль:</p>
+<pre><code>
+Sat, April 4, 2020
+</code></pre></li>
+</ol><h2>SimpleDateFormat и Calendar</h2>SimpleDateFormat  позволит тебе форматировать все создаваемые объекты Date и Calendar для последующего использования. 
+
+Рассмотрим такой интересный момент как работа с эрами.
+
+Для создания даты “до нашей эры” нужно использовать поле Calendar.Era 
+
+Например, создадим дату, обозначающую битву при Каннах, в которой Ганнибал победил войско Рима. Это произошло 2 августа 216 г. до н. э.:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+   GregorianCalendar cannes = new GregorianCalendar(216, Calendar.AUGUST, 2);
+   cannes.set(Calendar.ERA, GregorianCalendar.BC);
+
+   DateFormat df = new SimpleDateFormat("dd MMM yyy GG");
+   System.out.println(df.format(cannes.getTime()));
+}
+</code></pre>
+Здесь мы использовали класс SimpleDateFormat, чтобы вывести дату в более понятном нам формате (как указано выше, буквы “GG” отвечают как раз за вывод эры). 
+
+Вывод: 
+
+<pre><code>
+02 авг 216 до н.э.
+</code></pre><h2>Java Date Format</h2>А вот еще один случай. Предположим, что данный формат даты нас не устраивает: 
+
+<pre><code>
+Sat Nov 25 10:42:12 MSK 2017
+</code></pre>
+Так вот. С помощью наших возможностей в java date format его можно поменять его на свой собственный, без особых сложностей: 
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   SimpleDateFormat dateFormat = new SimpleDateFormat("EEEE, d MMMM yyyy");
+   Calendar calendar = new GregorianCalendar(2017, Calendar.JANUARY , 25);
+   calendar.set(Calendar.HOUR, 10);
+   calendar.set(Calendar.MINUTE, 42);
+   calendar.set(Calendar.SECOND, 12);
+
+   calendar.roll(Calendar.MONTH, -2);
+   System.out.println(dateFormat.format(calendar.getTime()));
+}
+</code></pre>
+Вывод:
+
+<pre><code>
+суббота, 25 Ноябрь 2017
+</code></pre>
+Гораздо лучше, да? :)
+<div class="featured-content">
+	<a href="https://javarush.com/s/university_ua_dynamic_banners_logged_in_v1" target="_blank">
+		<picture>
+			<source srcset="/assets/images/site/featured-content/java-university/ua-mobile.webp, /assets/images/site/featured-content/java-university/ua-mobile@2x.webp 1.2x" type="image/webp" media="(max-width: 575px)">
+			<source srcset="/assets/images/site/featured-content/java-university/ua.webp, /assets/images/site/featured-content/java-university/ua@2x.webp 1.2x" type="image/webp" media="(min-width: 576px)">
+			<source srcset="/assets/images/site/featured-content/java-university/ua-mobile.png, /assets/images/site/featured-content/java-university/ua-mobile@2x.png 1.2x" type="image/png" media="(max-width: 575px)">
+			<source srcset="/assets/images/site/featured-content/java-university/ua.png, /assets/images/site/featured-content/java-university/ua@2x.png 1.2x" type="image/png" media="(min-width: 576px)">
+			<img src="/assets/images/site/featured-content/java-university/ua.png" alt="Java-університет" border="0">
+		</picture>
+	</a>
+	<div class="featured-content__close"></div>
+</div>

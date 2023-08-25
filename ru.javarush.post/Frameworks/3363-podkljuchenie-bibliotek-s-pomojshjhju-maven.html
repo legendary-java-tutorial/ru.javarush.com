@@ -1,0 +1,139 @@
+Подключение библиотек с помощью Maven
+<p>----------------------------------------</p>
+Проблема: JavaRush использует некоторые пакеты, которые были в JDK8, а потом их вырезали. Например, JavaFX для игр, или JAXB для обработки XML. Поэтому если вы используете свежую версию JDK...
+<p>----------------------------------------</p>
+<img src="https://maven.apache.org/images/maven-logo-black-on-white.png" alt="Подключение библиотек с помощью Maven - 1">
+
+<strong>Проблема</strong>
+JavaRush использует некоторые пакеты, которые были в JDK8, а потом их вырезали.
+Например, JavaFX для игр, или JAXB для обработки XML.
+Поэтому если вы используете свежую версию JDK, то у вас проблема...
+
+Но даже если вы сидите на олдскульной JDK8, то у вас тоже проблема...
+В 4 квесте Collections вам потребуется подключить Jackson, для обработки JSON.
+
+Конечно, всё можно подключить руками, но это довольно уныло.
+Надо выкачивать их руками, добавлять их в проект...
+
+
+<strong>Решение</strong>
+Собственно для автоматизации этой рутины и нужен Maven.
+
+0) Настоятельно рекомендую сделать резервную копию проекта JavaRush, 
+а то мало ли...
+
+1) Сначала добавим к нашему проекту Maven.
+Правой кнопкой на модуле 4.JavaCollections, там выбираем Add Framework Support...
+Maven, [Ok]
+
+2) Теперь находим файлик pom.xml, в нём руками добавляем блок
+<pre class="language-java line-numbers"><code>
+    &lt;dependencies&gt;
+    &lt;/dependencies&gt;
+</code></pre>
+Прям сразу после &lt;/version&gt;
+
+3) А дальше начинаем добавлять нужные нам пакеты.
+Если нам нужен Jeckson, гуглим "jackson maven dependency"
+Находим ответ типо такого: http://tutorials.jenkov.com/java-json/jackson-installation.html
+Видим, что нам для Jeckson нужно 3 зависимости (artifactId):
+jackson-core, jackson-annotations, jackson-databind
+Есть и другие зависимости, но они нам пока не нужны, будут  нужны - добавим.
+Теперь эти 3 зависимости ищем на этом сайте - <a href="https://mvnrepository.com/" target="_blank" rel="nofollow">https://mvnrepository.com/</a>
+Вбиваем туда названия наших артефактов, находим те, которыми пользуются большинство,
+или самую свежую версию. И копируем текст зависимости к нам в pom.xml.
+
+4) Итого наш pom.xml стал таким:
+<pre class="language-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+    &lt;groupId&gt;groupId&lt;/groupId&gt;
+    &lt;artifactId&gt;4.JavaCollections&lt;/artifactId&gt;
+    &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+    &lt;dependencies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.fasterxml.jackson.core&lt;/groupId&gt;
+            &lt;artifactId&gt;jackson-core&lt;/artifactId&gt;
+            &lt;version&gt;2.12.3&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.fasterxml.jackson.core&lt;/groupId&gt;
+            &lt;artifactId&gt;jackson-annotations&lt;/artifactId&gt;
+            &lt;version&gt;2.12.3&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.fasterxml.jackson.core&lt;/groupId&gt;
+            &lt;artifactId&gt;jackson-databind&lt;/artifactId&gt;
+            &lt;version&gt;2.12.3&lt;/version&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+
+
+&lt;/project&gt;
+
+</code></pre>Чудно, жмём правой кнопкой по нему, и выбираем Maven/Reimport.
+
+5) Теперь в наших программах Jeckson стал находиться, красные названия объектов пропали.
+Но код перестал компилироваться, пишет ошибку:
+<pre class="language-java line-numbers"><code>
+Error:java: error: release version 5 not supported
+</code></pre>
+Почему-то при внедрении Maven в проект, версия поддерживаемой Java падает до 5... 
+Нам это надо починить:
+File\Settings\Build, Execution, Deployment\Compiler\Java Compiler
+Там в модуля указывается, что для наш модуль 4.JavaCollections - нужно кодить в Java5...
+Удаляем наш модуль в этом окне.
+Но это не всё, дальше открываем File\Project Structure\Modules
+Там выбираем наш модуль 4.JavaCollections. Дальше выбираем вкладку Language level - Project default.
+
+5.1)  Нашёл как решить проблему из пункта 5. Просто дописываем в pom.xml следующее:
+<pre class="language-java line-numbers"><code>
+    &lt;build&gt;
+        &lt;plugins&gt;
+            &lt;plugin&gt;
+                &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+                &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+                &lt;configuration&gt;
+                    &lt;source&gt;1.8&lt;/source&gt;
+                    &lt;target&gt;1.8&lt;/target&gt;
+                &lt;/configuration&gt;
+            &lt;/plugin&gt;
+        &lt;/plugins&gt;
+    &lt;/build&gt;
+</code></pre>
+Теперь Maven проставляет версию байткода для нашего модуля равную JDK 8 и нас это устраивает.
+5й пункт не стал удалять, для общей информации оставил.
+Чтобы было понимание, где какие версии JDK можно поменять в IDEA
+
+6) Кстати о Project default. JavaRush работает на JDK 8. И если у вас 11 версия (или свежее), 
+то вы будете регулярно материться на Валидатор, который не пропускает ваш код.
+Потому что вы будете писать код, который ввели в JDK 9+, у вас всё будет работать,
+а Валидатор будет вам засчитывать ошибку.
+Поэтому идём: File\Project Structure\Project
+Указываем вашу текущую версию JDK, а под ней, указываем language level - строго 8 - Lambdas, type annotations etc.
+В чём выгода - вы будете видеть возможности JDK 9+, но если вы их попробуете добавить - IDEA будет ругаться.
+Например, "aaa".lines(); - написать можно (IDEA подставит, хоть и подсветит красным), провалиться можно - поизучать внутренности.
+А вот скомпилировать - не даст.
+
+7) Последнее что нам осталось сделать - это поправить пути внутри пакета 4.JavaCollections.
+Maven их переделал под себя, возвращаем как было:
+а) Заходим в File\Project Structure\Modules
+б) Выбираем 4.JavaCollections\Source
+в) Удаляем target, rosources, test
+г) Ставим Source Folder на src
+д) Папку com переносим на диске обратно в src
+е) Папку main - удаляем.
+Вобщем делаем как было до Maven, по аналогии с 3.JavaMultithreading
+
+8) Теперь самостоятельно добавляем оставшиеся зависимости, например для JAXB. 
+Если нужно добавить логгирование, может помочь <a href="https://javarush.com/groups/posts/3365-podkljuchaem-k-nashemu-javarush-proektu-logirovanie-slf4f-i-log4j?post=full#discussion" target="_blank" rel="nofollow">моя статья</a>.
+
+
+Дописываем в резюме - Maven.
+Вы восхитительны!
+
+Если помогло - лайк, подписка, колокольчик!)))

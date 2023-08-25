@@ -1,0 +1,247 @@
+Создаем телеграм-бота с использованием Spring Boot Pt.3: Quiz Bot
+<p>----------------------------------------</p>
+Окончание статьи, которые вынесено отдельно из-за лимита на количество символов
+<p>----------------------------------------</p>
+<a href="https://javarush.com/groups/posts/2959-sozdaem-telegram-bota-s-ispoljhzovaniem-spring-boot" target="_blank" rel="nofollow">ЧАСТЬ 1</a>
+<a href="https://javarush.com/groups/posts/2966-sozdaem-telegram-bota-s-ispoljhzovaniem-spring-boot-pt2-quiz-bot" target="_blank" rel="nofollow">ЧАСТЬ 2</a>
+
+К сожалению, первая версия статьи не пролезла в лимит символов, так что заканчиваю здесь:
+
+QuizHandler:
+
+<pre class="lang-java line-numbers"><code>
+package com.whiskels.telegram.bot.handler;
+
+import com.whiskels.telegram.bot.State;
+import com.whiskels.telegram.model.Question;
+import com.whiskels.telegram.model.User;
+import com.whiskels.telegram.repository.JpaQuestionRepository;
+import com.whiskels.telegram.repository.JpaUserRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.methods.PartialBotApiMethod;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import static com.whiskels.telegram.util.TelegramUtil.createInlineKeyboardButton;
+import static com.whiskels.telegram.util.TelegramUtil.createMessageTemplate;
+
+@Slf4j
+@Component
+public class QuizHandler implements Handler {
+    //Храним поддерживаемые CallBackQuery в виде констант
+    public static final String QUIZ_CORRECT = "/quiz_correct";
+    public static final String QUIZ_INCORRECT = "/quiz_incorrect";
+    public static final String QUIZ_START = "/quiz_start";
+    //Храним варианты ответа
+    private static final List&lt;string&gt; OPTIONS = List.of("A", "B", "C", "D");
+
+    private final JpaUserRepository userRepository;
+    private final JpaQuestionRepository questionRepository;
+
+    public QuizHandler(JpaUserRepository userRepository, JpaQuestionRepository questionRepository) {
+        this.userRepository = userRepository;
+        this.questionRepository = questionRepository;
+    }
+
+    @Override
+    public List&lt;partialbotapimethod&lt;? extends="" serializable=""&gt;&gt; handle(User user, String message) {
+        if (message.startsWith(QUIZ_CORRECT)) {
+            // действие на коллбек с правильным ответом
+            return correctAnswer(user, message);
+        } else if (message.startsWith(QUIZ_INCORRECT)) {
+            // действие на коллбек с неправильным ответом
+            return incorrectAnswer(user);
+        } else {
+            return startNewQuiz(user);
+        }
+    }
+
+    private List&lt;partialbotapimethod&lt;? extends="" serializable=""&gt;&gt; correctAnswer(User user, String message) {
+        log.info("correct");
+        final int currentScore = user.getScore() + 1;
+        user.setScore(currentScore);
+        userRepository.save(user);
+
+        return nextQuestion(user);
+    }
+
+    private List&lt;partialbotapimethod&lt;? extends="" serializable=""&gt;&gt; incorrectAnswer(User user) {
+        final int currentScore = user.getScore();
+        // Обновляем лучший итог
+        if (user.getHighScore() &lt; currentScore) {
+            user.setHighScore(currentScore);
+        }
+        // Меняем статус пользователя
+        user.setScore(0);
+        user.setBotState(State.NONE);
+        userRepository.save(user);
+
+        // Создаем кнопку для повторного начала игры
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+
+        List&lt;inlinekeyboardbutton&gt; inlineKeyboardButtonsRowOne = List.of(
+                createInlineKeyboardButton("Try again?", QUIZ_START));
+
+        inlineKeyboardMarkup.setKeyboard(List.of(inlineKeyboardButtonsRowOne));
+
+        return List.of(createMessageTemplate(user)
+                .setText(String.format("Incorrect!%nYou scored *%d* points!", currentScore))
+                .setReplyMarkup(inlineKeyboardMarkup));
+    }
+
+    private List&lt;partialbotapimethod&lt;? extends="" serializable=""&gt;&gt; startNewQuiz(User user) {
+        user.setBotState(State.PLAYING_QUIZ);
+        userRepository.save(user);
+
+        return nextQuestion(user);
+    }
+
+    private List&lt;partialbotapimethod&lt;? extends="" serializable=""&gt;&gt; nextQuestion(User user) {
+        Question question = questionRepository.getRandomQuestion();
+
+        // Собираем список возможных вариантов ответа
+        List&lt;string&gt; options = new ArrayList&lt;&gt;(List.of(question.getCorrectAnswer(), question.getOptionOne(), question.getOptionTwo(), question.getOptionThree()));
+        // Перемешиваем
+        Collections.shuffle(options);
+
+        // Начинаем формировать сообщение с вопроса
+        StringBuilder sb = new StringBuilder();
+        sb.append('*')
+                .append(question.getQuestion())
+                .append("*\n\n");
+
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+
+        // Создаем два ряда кнопок
+        List&lt;inlinekeyboardbutton&gt; inlineKeyboardButtonsRowOne = new ArrayList&lt;&gt;();
+        List&lt;inlinekeyboardbutton&gt; inlineKeyboardButtonsRowTwo = new ArrayList&lt;&gt;();
+
+        // Формируем сообщение и записываем CallBackData на кнопки
+        for (int i = 0; i &lt; options.size(); i++) {
+            InlineKeyboardButton button = new InlineKeyboardButton();
+
+            final String callbackData = options.get(i).equalsIgnoreCase(question.getCorrectAnswer()) ? QUIZ_CORRECT : QUIZ_INCORRECT;
+
+            button.setText(OPTIONS.get(i))
+                    .setCallbackData(String.format("%s %d", callbackData, question.getId()));
+
+            if (i &lt; 2) {
+                inlineKeyboardButtonsRowOne.add(button);
+            } else {
+                inlineKeyboardButtonsRowTwo.add(button);
+            }
+            sb.append(OPTIONS.get(i) + ". " + options.get(i));
+            sb.append("\n");
+        }
+
+        inlineKeyboardMarkup.setKeyboard(List.of(inlineKeyboardButtonsRowOne, inlineKeyboardButtonsRowTwo));
+        return List.of(createMessageTemplate(user)
+                .setText(sb.toString())
+                .setReplyMarkup(inlineKeyboardMarkup));
+    }
+
+    @Override
+ <strong></strong>   public State operatedBotState() {
+        return null;
+    }
+
+    @Override
+    public List&lt;string&gt; operatedCallBackQuery() {
+        return List.of(QUIZ_START, QUIZ_CORRECT, QUIZ_INCORRECT);
+    }
+}
+</code></pre>&lt;h3&gt;Заполняем базу данных&lt;/h3&gt;Здесь мы запишем наши вопросы по аналогии со скриптом инициализации БД.
+
+<pre class="lang-java line-numbers"><code>
+DELETE
+FROM java_quiz;
+
+INSERT INTO java_quiz (question, answer_correct, option1, option2, option3)
+VALUES ('What is a correct syntax to output "Hello World" in Java?', 'System.out.println("Hello World!");',
+        'print("Hello World!");', 'sout("Hello World!");', 'Systemout.print("Hello world!");'),
+       ('What is the correct way to create an object called foo of Bar class?', 'Bar foo = new Bar();',
+        'Foo bar = new Foo();', 'Bar foo() = new Foo();', 'Foo bar() = new Bar();'),
+       ('Which operator can be used to compare two values?', '==', '=', '&amp;', '==='),
+       ('Which method can be used to return a string in upper case letters?', 'toUpperCase()', 'camelCase()',
+        'upperCase()', 'formatUpper()'),
+       ('Which method can be used to find the length of a string?', 'length()', 'getSize()', 'len()', 'getLength()'),
+       ('Which data type is used to create a variable that should store text?', 'String', 'Text', 'Varchar', 'const'),
+       ('How to insert a comment?', '// like this', '# like this', '&lt;-- like this --&gt;', '/ like this');
+</code></pre>
+Осталось только поправить application.yaml:
+
+<pre class="lang-java line-numbers"><code>
+bot:
+  name: JavaQuiz
+  token: 1234567:AAF0Wru1Z60p8vPtKihx3odbwSv9O0y_-MM
+spring:
+  datasource:
+    url: jdbc:postgresql://ec2-54-75-199-252.eu-west-1.compute.amazonaws.com:5432/d5p9skg6nin3mh?user=bozuqwnhjhoubl&amp;password=8a40050de8a0014c14df49aeaac5880f1ac633cc20c78a4cc3b32323231
+    driver-class-name: org.postgresql.Driver
+    initialization-mode: never
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+</code></pre>
+URL базы данных отличается от того, что указан в поле URI на Heroku, так что вот краткая шпаргалка о том, как его составить:
+
+<pre class="lang-java line-numbers"><code>
+jdbc:postgresql://{Host}:{Port}/{Database}?user={User}&amp;password={Password}
+</code></pre>
+Если мы все сделали правильно, то запуская main не увидим стектрейса, даже наоборот:
+
+<pre class="lang-java line-numbers"><code>
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::        (v2.2.4.RELEASE)
+
+2020-10-02 19:27:43.081  INFO 14536 --- [           main] com.whiskels.telegram.App                : Starting App on Kuzmin with PID 14536 (D:\utilities\forJavaRush\target\classes started by whiskels in D:\utilities\forJavaRush)
+2020-10-02 19:27:43.087  INFO 14536 --- [           main] com.whiskels.telegram.App                : No active profile set, falling back to default profiles: default
+2020-10-02 19:27:44.014  INFO 14536 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2020-10-02 19:27:44.131  INFO 14536 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 102ms. Found 2 JPA repository interfaces.
+2020-10-02 19:27:44.774  INFO 14536 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2020-10-02 19:27:44.885  INFO 14536 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate Core {5.4.10.Final}
+2020-10-02 19:27:45.053  INFO 14536 --- [           main] o.hibernate.annotations.common.Version   : HCANN000001: Hibernate Commons Annotations {5.1.0.Final}
+2020-10-02 19:27:45.278  INFO 14536 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2020-10-02 19:27:46.770  INFO 14536 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2020-10-02 19:27:46.790  INFO 14536 --- [           main] org.hibernate.dialect.Dialect            : HHH000400: Using dialect: org.hibernate.dialect.PostgreSQLDialect
+2020-10-02 19:27:49.731  INFO 14536 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
+2020-10-02 19:27:49.741  INFO 14536 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2020-10-02 19:27:50.817  INFO 14536 --- [           main] c.g.x.bots.TelegramBotAutoConfiguration  : Starting auto config for telegram bots
+2020-10-02 19:27:50.830  INFO 14536 --- [           main] c.g.x.bots.TelegramBotAutoConfiguration  : Initializing API without webhook support
+2020-10-02 19:27:50.831  INFO 14536 --- [           main] c.g.x.bots.TelegramBotAutoConfiguration  : Registering polling bot: JavaQuiz
+2020-10-02 19:27:51.556  INFO 14536 --- [           main] com.whiskels.telegram.App                : Started App in 9.196 seconds (JVM running for 10.023)
+</code></pre>
+
+Попробуем пообщаться с нашим ботом:
+
+Знакомимся<img data-id="d31dc326-d9d5-4113-9288-eb2e4a826771" src="/images/article/d31dc326-d9d5-4113-9288-eb2e4a826771/1024.jpeg" alt="Создаем телеграм-бота с использованием Spring Boot Pt.3: Quiz Bot - 1">Играем<img data-id="e24bb142-f83c-4da8-9de4-344064ac4e17" src="/images/article/e24bb142-f83c-4da8-9de4-344064ac4e17/1024.jpeg" alt="Создаем телеграм-бота с использованием Spring Boot Pt.3: Quiz Bot - 2">Просим помощи<img data-id="2c70d2d8-6a67-4a97-8417-2c98d13e42f6" src="/images/article/2c70d2d8-6a67-4a97-8417-2c98d13e42f6/1024.jpeg" alt="Создаем телеграм-бота с использованием Spring Boot Pt.3: Quiz Bot - 3">Готово! Мы написали квиз-бота. Теперь нам предстоит огромная работа — нужно:<ul>
+<li>разобраться в написанном сегодня коде;</li>
+<li>почитать документацию Spring Data;</li>
+<li>добавить логгер;</li>
+<li>заняться рефакторингом;</li>
+<li>применить паттерны проектирования;</li>
+<li>сделать возможным просить помощь не только при State.NONE;</li>
+<li>добавить новый функционал;</li>
+<li>списки лидеров;</li>
+<li>выдавать только уникальные вопросы;</li>
+<li>категории вопросов.</li>
+
+</ul>Надеюсь, эта двойная статья была вам полезна. Если так — ставьте звездочку в <a href="https://github.com/whiskels/TelegramNotifierBot" target="_blank" rel="nofollow">моем репозитории</a>, мне будет приятно!  При возникновении вопросов — обсудим их в комментариях.
+
+И напоследок — схема проекта:<img data-id="8301b6fd-7fd3-4cd3-b3b3-b5d44a13f105" src="/images/article/8301b6fd-7fd3-4cd3-b3b3-b5d44a13f105/1024.jpeg" alt="Создаем телеграм-бота с использованием Spring Boot Pt.3: Quiz Bot - 4">
+
+UPDATE 12.10: Код проекта выложил на <a href="https://github.com/whiskels/simpleQuizBot" target="_blank" rel="nofollow">гит</a> as is без изменений

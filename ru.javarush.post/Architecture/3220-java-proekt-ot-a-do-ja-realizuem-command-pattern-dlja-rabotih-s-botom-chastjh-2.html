@@ -1,0 +1,349 @@
+Реализуем Command Pattern для работы с ботом. (Часть 2) - "Java-проект от А до Я"
+<p>----------------------------------------</p>
+Теперь нужно подумать о тестировании. Весь добавленный код должен быть покрыт тестами, чтобы мы были уверены, что функциональность работает как мы ожидаем...
+<p>----------------------------------------</p>
+<h2>Пишем тесты к приложению</h2>Начало статьи: <a href="https://javarush.com/groups/posts/3219-java-proekt-ot-a-do-ja-realizuem-command-pattern-dlja-rabotih-s-botom-chastjh-1" target="_blank">пишем JRTB-3</a>.
+
+Теперь нужно подумать о тестировании. Весь добавленный код должен быть покрыт тестами, чтобы мы были уверены, что функциональность работает как мы ожидаем. 
+
+Первыми напишем unit-тесты для сервиса SendBotMessageService.<table><tbody>
+
+<tr><td>Unit-тест — это тест, который проверяет логику какой-то маленькой части приложения: обычно это методы. А все связи, у которых есть этот метод, заменяются на ненастоящие при помощи моков.</td></tr>
+
+</tbody></table>Сейчас вы все увидите. В том же пакете, только уже в папке <span class="text-bold">./src/test/java</span> создаем класс с таким же именем, как у класса, который будем тестировать, и добавляем в конце <span class="text-bold">Test</span>. То есть для <span class="text-bold">SendBotMessageService</span> у нас будет <span class="text-bold">SendBotMessageServiceTest</span>, в котором будут все тесты на этот класс.
+
+Идея в его тестировании следующая: мы подсовываем моковый (фейковый) JavaRushTelegarmBot, у которого потом спросим, вызывался ли метод execute с таким аргументом или нет. 
+
+Вот что получилось:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.service;
+
+import com.github.javarushcommunity.jrtb.bot.JavarushTelegramBot;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+
+@DisplayName("Unit-level testing for SendBotMessageService")
+public class SendBotMessageServiceTest {
+
+   private SendBotMessageService sendBotMessageService;
+   private JavarushTelegramBot javarushBot;
+
+   @BeforeEach
+   public void init() {
+       javarushBot = Mockito.mock(JavarushTelegramBot.class);
+       sendBotMessageService = new SendBotMessageServiceImpl(javarushBot);
+   }
+
+   @Test
+   public void shouldProperlySendMessage() throws TelegramApiException {
+       //given
+       String chatId = "test_chat_id";
+       String message = "test_message";
+
+       SendMessage sendMessage = new SendMessage();
+       sendMessage.setText(message);
+       sendMessage.setChatId(chatId);
+       sendMessage.enableHtml(true);
+
+       //when
+       sendBotMessageService.sendMessage(chatId, message);
+
+       //then
+       Mockito.verify(javarushBot).execute(sendMessage);
+   }
+}
+</code></pre>
+При помощи Mockito я создал моковый объект JavaRushBot, который передал в конструктор нашему сервису. 
+
+Далее написал один тест (каждый метод с аннотацией Test — это отдельный тест). Структура этого метода одна и та же всегда — он не принимает аргументы, и возвращает void. Имя теста должно рассказать о том, что мы тестируем. В нашем случае это:
+
+should properly send message — должен правильно отправить сообщение.
+
+Тест у нас поделен на три части:<ul>
+<li>блок //given — где мы подготавливаем все необходимое к тесту;</li>
+<li>блок //when — где запускаем тот метод, который планируем тестировать;</li>
+<li>блок //then — где мы проверяем, правильно ли отработал метод.</li>
+
+</ul>Так как пока что логика в нашем сервисе простая, одного теста для этого класса будет достаточно. 
+
+Теперь напишем тест на CommandContainer:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import com.github.javarushcommunity.jrtb.service.SendBotMessageService;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import java.util.Arrays;
+
+@DisplayName("Unit-level testing for CommandContainer")
+class CommandContainerTest {
+
+   private CommandContainer commandContainer;
+
+   @BeforeEach
+   public void init() {
+       SendBotMessageService sendBotMessageService = Mockito.mock(SendBotMessageService.class);
+       commandContainer = new CommandContainer(sendBotMessageService);
+   }
+
+   @Test
+   public void shouldGetAllTheExistingCommands() {
+       //when-then
+       Arrays.stream(CommandName.values())
+               .forEach(commandName -&gt; {
+                   Command command = commandContainer.retrieveCommand(commandName.getCommandName());
+                   Assertions.assertNotEquals(UnknownCommand.class, command.getClass());
+               });
+   }
+
+   @Test
+   public void shouldReturnUnknownCommand() {
+       //given
+       String unknownCommand = "/fgjhdfgdfg";
+
+       //when
+       Command command = commandContainer.retrieveCommand(unknownCommand);
+
+       //then
+       Assertions.assertEquals(UnknownCommand.class, command.getClass());
+   }
+}
+</code></pre>
+Здесь не совсем очевидный тест. Он опирается на логику работы контейнера. Все команды, которые поддерживает бот, находятся в списке CommandName и должны быть в контейнере. Поэтому я взял все переменные CommandName, перешел в Stream API и для каждого выполнил поиск команды из контейнера. Если бы такой команды не было, была бы возвращена команда UnknownCommand. 
+
+Это мы и проверяем в этой строке:
+
+<pre class="language-java line-numbers"><code>
+Assertions.assertNotEquals(UnknownCommand.class, command.getClass());
+</code></pre>
+А чтобы проверить, что по умолчанию будет UnknownCommand, нужен отдельный тест — <span class="code">shouldReturnUnknownCommand</span>.
+
+Советую эти тесты переписать и проанализировать. 
+
+Для команд пока что будут полуформальные тесты, но их нужно писать. Логика будет такая же, как и для тестирования SendBotMessageService, поэтому я вынесу общую логику тестов в AbstractCommandTest класс, и уже каждый конкретный тест-класс будет наследоваться и определять необходимые ему поля.
+
+Так как все тесты однотипные, писать одно и тоже каждый раз не с руки, плюс это не признак хорошего кода. Вот такой получился обобщенный абстрактный класс:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import com.github.javarushcommunity.jrtb.bot.JavarushTelegramBot;
+import com.github.javarushcommunity.jrtb.service.SendBotMessageService;
+import com.github.javarushcommunity.jrtb.service.SendBotMessageServiceImpl;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.mockito.internal.verification.VerificationModeFactory;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+
+/**
+* Abstract class for testing {@link Command}s.
+*/
+abstract class AbstractCommandTest {
+
+   protected JavarushTelegramBot javarushBot = Mockito.mock(JavarushTelegramBot.class);
+   protected SendBotMessageService sendBotMessageService = new SendBotMessageServiceImpl(javarushBot);
+
+   abstract String getCommandName();
+
+   abstract String getCommandMessage();
+
+   abstract Command getCommand();
+
+   @Test
+   public void shouldProperlyExecuteCommand() throws TelegramApiException {
+       //given
+       Long chatId = 1234567824356L;
+
+       Update update = new Update();
+       Message message = Mockito.mock(Message.class);
+       Mockito.when(message.getChatId()).thenReturn(chatId);
+       Mockito.when(message.getText()).thenReturn(getCommandName());
+       update.setMessage(message);
+
+       SendMessage sendMessage = new SendMessage();
+       sendMessage.setChatId(chatId.toString());
+       sendMessage.setText(getCommandMessage());
+       sendMessage.enableHtml(true);
+
+       //when
+       getCommand().execute(update);
+
+       //then
+       Mockito.verify(javarushBot).execute(sendMessage);
+   }
+}
+</code></pre>
+Как видим, у нас есть три абстрактных метода, после определения которых у каждой команды должен запуститься тест, который здесь написан, и выполнится правильно.
+
+Это такой удобный подход, когда основная логика находится в абстрактном классе, а вот детали определяются в наследниках. А вот, собственно, реализации конкретных тестов:<h3>HelpCommandTest:</h3><pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import org.junit.jupiter.api.DisplayName;
+
+import static com.github.javarushcommunity.jrtb.command.CommandName.HELP;
+import static com.github.javarushcommunity.jrtb.command.HelpCommand.HELP_MESSAGE;
+
+@DisplayName("Unit-level testing for HelpCommand")
+public class HelpCommandTest extends AbstractCommandTest {
+
+   @Override
+   String getCommandName() {
+       return HELP.getCommandName();
+   }
+
+   @Override
+   String getCommandMessage() {
+       return HELP_MESSAGE;
+   }
+
+   @Override
+   Command getCommand() {
+       return new HelpCommand(sendBotMessageService);
+   }
+}
+</code></pre><h3>NoCommandTest:</h3><pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import org.junit.jupiter.api.DisplayName;
+
+import static com.github.javarushcommunity.jrtb.command.CommandName.NO;
+import static com.github.javarushcommunity.jrtb.command.NoCommand.NO_MESSAGE;
+
+@DisplayName("Unit-level testing for NoCommand")
+public class NoCommandTest extends AbstractCommandTest {
+
+   @Override
+   String getCommandName() {
+       return NO.getCommandName();
+   }
+
+   @Override
+   String getCommandMessage() {
+       return NO_MESSAGE;
+   }
+
+   @Override
+   Command getCommand() {
+       return new NoCommand(sendBotMessageService);
+   }
+}
+</code></pre><h3>StartCommandTest:</h3><pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import org.junit.jupiter.api.DisplayName;
+
+import static com.github.javarushcommunity.jrtb.command.CommandName.START;
+import static com.github.javarushcommunity.jrtb.command.StartCommand.START_MESSAGE;
+
+@DisplayName("Unit-level testing for StartCommand")
+class StartCommandTest extends AbstractCommandTest {
+
+   @Override
+   String getCommandName() {
+       return START.getCommandName();
+   }
+
+   @Override
+   String getCommandMessage() {
+       return START_MESSAGE;
+   }
+
+   @Override
+   Command getCommand() {
+       return new StartCommand(sendBotMessageService);
+   }
+}
+</code></pre><h3>StopCommandTest:</h3><pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import org.junit.jupiter.api.DisplayName;
+
+import static com.github.javarushcommunity.jrtb.command.CommandName.STOP;
+import static com.github.javarushcommunity.jrtb.command.StopCommand.STOP_MESSAGE;
+
+@DisplayName("Unit-level testing for StopCommand")
+public class StopCommandTest extends AbstractCommandTest {
+
+   @Override
+   String getCommandName() {
+       return STOP.getCommandName();
+   }
+
+   @Override
+   String getCommandMessage() {
+       return STOP_MESSAGE;
+   }
+
+   @Override
+   Command getCommand() {
+       return new StopCommand(sendBotMessageService);
+   }
+}
+</code></pre><h3>UnknownCommandTest:</h3><pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import org.junit.jupiter.api.DisplayName;
+
+import static com.github.javarushcommunity.jrtb.command.UnknownCommand.UNKNOWN_MESSAGE;
+
+@DisplayName("Unit-level testing for UnknownCommand")
+public class UnknownCommandTest extends AbstractCommandTest {
+
+   @Override
+   String getCommandName() {
+       return "/fdgdfgdfgdbd";
+   }
+
+   @Override
+   String getCommandMessage() {
+       return UNKNOWN_MESSAGE;
+   }
+
+   @Override
+   Command getCommand() {
+       return new UnknownCommand(sendBotMessageService);
+   }
+}
+</code></pre>
+Отлично видно, что игра стоила свеч, и благодаря AbstractCommandTest мы получили в итоге простые и понятные тесты, которые легко писать, легко понимать. В довесок избавились от лишнего дублирования кода (привет принципу DRY -&gt; Don’t Repeat Yourself).
+
+К тому же теперь у нас есть настоящие тесты, по которым можно судить о работе приложения.
+
+Еще хорошо бы написать тест на самого бота, но там все так просто не получится и вообще, может, игра не стоит свеч, как говорится. Поэтому на данном этапе будем завершать нашу задачу.
+
+Последнее и любимое — создаем коммит, пишет сообщение:
+
+<span class="text-bold">JRTB-3: added Command pattern for handling Telegram Bot commands</span>
+
+И как обычно — гитхаб уже знает и предлагает создать пулл-реквест:<img data-max-width="1080" data-id="6dd54089-5250-433c-9e6e-27eff42ecf55" src="https://cdn.javarush.com/images/article/6dd54089-5250-433c-9e6e-27eff42ecf55/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: Реализуем Command Pattern для работы с ботом. Часть 2 - 1">Билд прошел и можно уже мержить… Но нет!
+
+Я ж забыл обновить версию проекта и записать в RELEASE_NOTES. Добавляем запись с новой версией — 0.2.0-SNAPSHOT:<img data-max-width="512" data-id="5f0296bf-d1db-428e-88ac-5b56b8dc0463" src="https://cdn.javarush.com/images/article/5f0296bf-d1db-428e-88ac-5b56b8dc0463/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: Реализуем Command Pattern для работы с ботом. Часть 2 - 2">Обновляем эту версию в pom.xml и создаем новый коммит:<img data-max-width="800" data-id="4b70b101-e814-4ef6-8a47-3db52483e53c" src="https://cdn.javarush.com/images/article/4b70b101-e814-4ef6-8a47-3db52483e53c/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Реализуем Command Pattern для работы с ботом. Часть 2 - 3">Новый коммит: <span class="text-bold">JRTB-3: updated RELEASE_NOTES.md</span><img data-max-width="512" data-id="cc80b305-9de3-4cff-9b6a-56ffed1976c5" src="https://cdn.javarush.com/images/article/cc80b305-9de3-4cff-9b6a-56ffed1976c5/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: Реализуем Command Pattern для работы с ботом. Часть 2 - 4">Теперь пуш и ждем пока пройдет билд.
+
+Билд прошел, можно и мержить:<img data-max-width="800" data-id="03b316e8-b836-4066-ae86-c8849901cdae" src="https://cdn.javarush.com/images/article/03b316e8-b836-4066-ae86-c8849901cdae/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Реализуем Command Pattern для работы с ботом. Часть 2 - 5">Ветку я не удаляю, так что всегда можно будет посмотреть и сравнить, что изменилось.
+
+Наша доска с задачами обновилась:<img data-max-width="1024" data-id="ab34c5b9-2b85-4ea6-8ec5-f00a7665ef72" src="https://cdn.javarush.com/images/article/ab34c5b9-2b85-4ea6-8ec5-f00a7665ef72/1024.jpeg" alt="&quot;Java-проект от А до Я&quot;: Реализуем Command Pattern для работы с ботом. Часть 2 - 6"><h2>Выводы</h2>Сегодня мы сделали большое дело: внедрили Command шаблон для работы. Все настроено, и теперь добавление новой команды будет простым и понятным процессом.
+
+Также сегодня сегодня поговорили о тестировании. Немного даже поигрались с тем, чтобы не повторять код в разных тестах для команд.
+
+<em>Традиционно предлагаю зарегистрироваться на GitHub и подписаться на <a href="https://github.com/romankh3" rel="nofollow" target="_blank">мой аккаунт</a>, чтобы следить за этой серией и другими проектами, которые я там веду. 
+
+Также я создал <a href="https://t.me/romankh3" rel="nofollow" target="_blank">телеграм-канал</a>, в котором буду дублировать выход новых статей. Из интересного — код обычно выходит на неделю раньше самой статьи, и на канале я буду каждый раз писать о том, что новая задача сделана, что даст возможность разобраться с кодом до прочтения статьи.
+
+В скором времени я опубликую бота на постоянной основе, и первым узнают об этом те, кто подписан на телеграмм канал ;)</em>
+
+Всем спасибо за прочтение, продолжение следует.
+
+<h4><a href="https://javarush.com/groups/posts/2935-java-proekt-ot-a-do-ja-pishem-realjhnihy-proekt-dlja-portfolio#articles" target="_blank">Список всех материалов серии в начале этой статьи.</a></h4>

@@ -1,0 +1,228 @@
+Многопользовательская консольная игра на java
+<p>----------------------------------------</p>
+Всем привет, давно уже дописал игру, всё никак не доходили руки до написания статьи, она является логическим продолжение вот этой писулины
+
+Если вы пока еще н
+<p>----------------------------------------</p>
+Всем привет, давно уже дописал игру, всё никак не доходили руки до написания статьи, она является логическим продолжение вот этой <a href='https://javarush.com/groups/posts/1222-igra-na-java-dlja-nachinajujshikh' target='_blank'>писулины</a>
+
+Если вы пока еще не пробовали делать что-либо кроме задач JavaRush, то знакомство с игрой будет как раз именно тем, с чего нужно будет начать подготовку к тестовым заданиям реального проекта, в котором я настоятельно рекомендую поучаствовать каждому. Да и вообще пора уже перестать быть сферическим программистом в вакууме и начать изучать что нибудь за пределами java-core.
+
+Для того, чтобы просто посмотреть игру, у вас должен быть установлен MySQL, если вы пока еще таким не пользовались, не стесняйтесь – ставьте, это одна из тех баз данных, которые вы будете использовать в своей работе и личных проектах!
+
+Я не буду приводить описание установки и работы с базой, в интернете навалом туториалов и видео, рекомендую разобраться с этим вопросом самостоятельно, это тоже один из самых важных скилов программиста – разбираться самостоятельно :) 
+
+В жизни вам пригодится умение писать запросы в sql, как нативно, так и через JDBC, <a href='https://javarush.com/groups/posts/520-vashe-pervoe-prilozhenie-na-hibernate' target='_blank'>hibernate</a>, spring, spring data, возможно список можно продолжить, но мои знания на этом оканчиваются. 
+
+А теперь отложите чтение этой статьи и разберитесь с MySQL, это на самом деле совсем не сложно, вам нужно поставить сам сервер, из настроек там только логин и пароль. после почитайте про то какие команды используются при работе.
+
+<strong>Команды для работы с сервером:</strong>
+
+<code>create</code>, <code>show</code>, <code>use</code>, и прочие, команда <code>help</code> – даст полный список команд.
+
+<strong>Запросы для работы с конкретной таблицей:</strong>
+
+<code>select</code>, <code>insert</code>, <code>delete</code> и прочие.
+
+особо сильно не углубляйтесь, есть вероятность,что от простого чтения команд запомнится лишь малая часть. вы всё изучите, со временем. Можете поиграть в терминале MySQL, создайте БД, создайте таблички, заполните их, сделайте запрос на вывод данных, добавьте критерии запросов. скорей всего, у вас на этой уйдет не более 2-3 часов, если дольше – не расстраивайтесь, с опытом вы будете осваивать новый материал быстрее.
+
+Если с базами у вас проблем нет, то можно приступать к разработке игры, за основу взята игра, о которой я уже писал <a href='https://javarush.com/groups/posts/1222-igra-na-java-dlja-nachinajujshikh' target='_blank'>крестики-нолики</a>.
+
+Я очень долго не мог разобраться с тем, как же реализовать мультиплейер, выход я нашел в использовании БД. Процесс игры предполагает что игроки ходят по очереди, все изменения в игре фиксируются в базе данных. уже исходя из этого мы понимаем что у нас есть игрок и есть игровое поле, которое содержит ссылки на игроков, именно в игровом поле должна быть завязана логика, в которой один игрок находится в ожидании хода второго игрока и после чего, их роли меняются и уже первый игрок делает ход, а второй ждет.
+
+А так как все изменения должны дублироваться в БД, то после каждого хода нам нужно сохранять поле. Итак мы пришли к первому выводу, в Базе данных должно быть игровое поле и раз уж мы говорим о мультиплеере, то нужно туда добавить и игроков.
+
+Создадим таблицы в MySQL, я сделал это нативно, через окно терминала mysql. игровое поле содержит ссылки на игроков, значит логично будет сначала создать таблицу с игроками.
+
+<strong>Игроки у нас имеют:</strong>
+<ul>
+<li><code>id</code> – порядковый номер, мы его делаем первичным ключом;</li>
+<li><code>name</code> – обычное имя, строка;</li>
+<li><code>wins</code> – количество побед;</li>
+<li><code>loses</code> – количество поражений;</li>
+<li><code>games</code> – общее количество проведенных игр.</li></ul>
+<strong>Таблица с играми:</strong>
+<ul>
+<li><code>id</code> – порядковый номер, мы его делаем первичным ключом;</li>
+<li><code>x</code> – id игрока играющего <code>х</code> – вторичный ключ;</li>
+<li><code>o</code> – id игрока играющего <code>o</code> – вторичный ключ;</li>
+<li><code>field</code> – само поле, о его формате будет написано ниже;</li>
+<li><code>status</code> – это нужно для корректной работы мультиплеера, статус характеризует состояние игры:<br />
+создана, играем, игра окончена</p></li>
+<li><code>current</code> – тоже для мультиплеера, конкретно во время игры это поле управляет тем чей сейчас ход,<br />
+а после ее окончания оно объявляет победителя или ничью</p></li></ul>С таблицами разобрались, теперь нужно создать Java-классы с соответствующими полями – <code>Game</code> и <code>User</code>.
+
+<pre class='lang-java line-numbers'><code>
+public class Game {
+    private Integer id;
+    private Integer x;
+    private Integer y;
+    private Integer field;
+    private String status;
+    private String current;
+}
+</code></pre>
+<pre class='lang-java line-numbers'><code>
+public class User {
+    private Integer id;
+    private String name;
+    private Integer wins;
+    private Integer loses;
+    private Integer games;
+    private Boolean busy;
+}
+</code></pre>
+Добавим пустой конструктор без параметров – для работы с БД и еще один конструктор, которым мы будем создавать объекты. добавим сеттеры и геттеры для всех полей.
+
+Теперь разберемся с hibernate :) час от часу не легче. тут немного сложнее, чем с MySQL, я бегло пройдусь по общей структуре. Опять же не всё так сложно, основы можно усвоить через любой туториал за пару-тройку часов, а углублено уже лучше изучать в процессе написания своих проектиков.
+Работа с БД из JAVA подразумевает использование JDBC, почитайте о нем в <a href="https://ru.wikipedia.org/wiki/Java_Database_Connectivity" rel="nofollow" target="_blank">вики</a>. Но если пользоваться им в написании кода, то это принесет <s>очень много боли в заднем проходе</s> некоторую сложность в написании классов DAO (<a href="https://ru.wikipedia.org/wiki/Data_Access_Object" rel="nofollow" target="_blank">тоже вики</a>), hibernate немного улучшит ситуацию, с ним у вас будет гораздо меньше повторяющегося (шаблонного) кода.
+
+Для того, чтобы работать hibernate, к проекту необходимо подключить библиотеку, делается это очень просто: Ctrl+Alt+Shift+S(File-Project Structure), заходим во вкладку Libraries, нажимаем "+" и добавляем предварительно скачанную библиотеку (<a href="http://hibernate.org/orm/downloads/" rel="nofollow" target="_blank">как вариант, отсюда</a>).
+
+Для того, чтобы связать классы <code>User</code> и <code>Game</code> вам нужно использовать аннотации – они очень просты в применении, с ними код выглядит так:
+
+<pre class='lang-java line-numbers'><code>
+@Entity
+@Table(name="games")
+public class Game {
+    private Integer id;
+    private Integer x;
+    
+    @Id
+    @GeneratedValue
+    @Column(name = "id")
+    public Integer getId() {
+        return id;
+    }
+
+    @Column(name = "x")
+    public Integer getX() {
+        return x;
+    }
+}
+</code></pre>
+Тут всё просто,
+<ul>
+<li><code>@Entity</code> – говорит, о том что класс является "сущностью", простыми словами, она привязана к таблице в БД.</li>
+<li><code>@Table(name="games")</code> –  говорит от том к какой именно таблице, <code>games</code> – название таблицы в БД</li>
+<li><codE>@Id</code>, <code>@GeneratedValue</codE>, <code>@Column(name = "id")</code> – этими тремя аннотациями обозначаем, что это поле является идентификационным, генерируется автоматически, а столбец в БД называется id.</li>
+<li><code>@Column(name = "x")</code> – имя столбца в БД.</li></ul>Далее необходимо выстроить уровни – уровень DAO и сервис уровень.
+
+Если упростить всё до условий вакуума, то работа с данными идет через сервисный уровень, это один из уровней абстракции, он позволяет сделать работу приложения более независимой, чтобы разработчик логики игры не вдавался в подробности настройки доступа к БД, или например если вдруг мы вместо простого hibernate решили использовать spring, изменения не пойдут дальше сервисного слоя, без которого пришлось бы переписывать половину приложения! это является одним из паттернов проектирования.
+
+Начинаем писать уровень DAO.
+
+<pre class='lang-java line-numbers'><code>
+public class UserDAO {
+
+    public void addUser(User user) throws SQLException {
+        Session session = null;
+        try{
+            session = HibernateUtil.getSessionFactory().openSession();
+            session.beginTransaction();
+            session.save(user);
+            session.getTransaction().commit();
+        } catch (Exception e){
+            e.printStackTrace();
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
+        }
+    }
+}
+</code></pre>
+Так выглядит операция добавления нового пользователя в бд, обратите внимание, что в метод передается только объект класса-сущности, никакой дополнительной информации тут не требуется. это обеспечивается тем, что мы получаем уже готовую сессию связи с БД из класса HibernateUtil. 
+
+Рассмотрим его.
+
+<pre class='lang-java line-numbers'><code>
+public class HibernateUtil {
+    private static SessionFactory sessionFactory = null;
+
+    static {
+        try {
+
+            sessionFactory = new Configuration().configure().buildSessionFactory();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static SessionFactory getSessionFactory() {
+        return sessionFactory;
+    }
+}
+</code></pre>
+Как вы видите здесь тоже всё очень просто, <code>SessionFactory</code> – это интерфейс из библиотеки hibernate, которую мы подключили к нашему проекту.
+
+Для корректной работы, остается только заполнить конфигурационный файл hibernate.cfg.xml
+
+<pre class='lang-java line-numbers'><code>
+&lt;!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+        "http://hibernate.sourceforge.net/hibernate-configuration-3.0.dtd"&gt;
+&lt;hibernate-configuration&gt;
+    &lt;session-factory&gt;
+        &lt;property name="connection.driver_class"&gt;com.mysql.jdbc.Driver&lt;/property&gt;
+        &lt;property name="connection.url"&gt;jdbc:mysql://localhost:3306/tictactoe&lt;/property&gt;
+        &lt;property name="connection.username"&gt;root&lt;/property&gt;
+        &lt;property name="connection.password"&gt;root&lt;/property&gt;
+        &lt;property name="connection.pool_size"&gt;100&lt;/property&gt;
+        &lt;property name="dialect"&gt;org.hibernate.dialect.MySQL5InnoDBDialect&lt;/property&gt;
+        &lt;property name="show_sql"&gt;false&lt;/property&gt;
+        &lt;property name="hbm2ddl.auto"&gt;update&lt;/property&gt;
+        &lt;property name="hibernate.connection.autocommit"&gt;false&lt;/property&gt;
+        &lt;property name="current_session_context_class"&gt;thread&lt;/property&gt;
+        &lt;property name="hibernate.enable_lazy_load_no_trans"&gt;true&lt;/property&gt;
+        &lt;mapping class="entity.User" /&gt;
+        &lt;mapping class="entity.Game" /&gt;
+    &lt;/session-factory&gt;
+&lt;/hibernate-configuration&gt;
+</code></pre>
+Если пробежать глазами по тегам, становится ясно что и как мы тут настраиваем. Еще одна особенность hibernate, если мы вдруг решим сменить ДБ с MySQL, на какую-либо другую, нам нужно будет только сменить драйвер внутри тега <code>property name="connection.driver_class"</code>
+
+Слой DAO готов, делаем сервисный слой. чтобы не создавать объектов DAO в сервисном слое применим паттерн фабрика.
+
+<pre class='lang-java line-numbers'><code>
+public class Factory {
+    private static UserDAO userDAO = null;
+    private static Factory instance = null;
+    private Factory() {
+    }
+
+    public static synchronized Factory getInstance() {
+        if (instance == null) {
+            instance = new Factory();
+        }
+        return instance;
+    }
+
+    public UserDAO getUserDAO() {
+        if (userDAO == null) {
+            userDAO = new UserDAO();
+        }
+        return userDAO;
+    }
+}
+</code></pre>
+А вот один из методов сервисного уровня
+
+<pre class='lang-java line-numbers'><code>
+public class UserService {
+    static void setUserBusy(User user){
+        user.setBusy(true); //делаем его занятым
+        //и обновляем его в БД
+        Factory.getInstance().getUserDAO().updateUser(user);
+    }
+
+}
+</code></pre>
+Код для работы с БД завершен, переписываем игровую логику с учетом изменений. сначала выделим запускающий метод маин в отдельный класс <code>Main</code>, он будет только управляющим классом – игровым меню в котором можно будет запустить игру или посмотреть статистику.
+
+Создадим класс <code>GameLogic</code>, в нем будет описана вся логика игры и проверки игрового поля. Сохранение всех изменений на игровом поле и статистики игроков после игры он будет отдавать на откуп сервисному слою.
+
+Есть интересная особенность, игровое поле у нас содержится в виде массивов, в базу данных их можно сохранять, но я решил на этом этапе изобрести велосипед и в базе данных поле у меня содержится как int, а именно 9-тизначное число, парсинг которого производится двумя методами класса <code>GameLogic</code>, так делать не рекомендую, в следующих релизах игры я буду исправляться :)
+
+Всем удачи в изучении JAVA!
+Скачать проект можно <a href='https://github.com/timurnav/Tic-tac-toe/archive/master.zip' rel='nofollow' target='_blank'>тут</a>.

@@ -1,0 +1,55 @@
+Volatile (пример в 17 лекции)
+<p>----------------------------------------</p>
+Вообщем есть в лекции 17 пример c volatile, там сказано, если у переменной isCancel не использовать volatile то изменяя значения данной переменной из другой нити остальные о нем не узнают, я переписал пример, только в методе run происходит вывод имени потока ...
+<p>----------------------------------------</p>
+Вообщем есть в лекции 17 пример c <code>volatile</code>, там сказано, если у переменной <code>isCancel</code> не использовать <code>volatile</code> то изменяя значения данной переменной из другой нити остальные о нем не узнают, я переписал пример, только в методе <code>run</code> происходит вывод имени потока и значения <code>isCancel</code> и получилось так, что у независимо от того, будет ли стоять у переменной <code>volatile</code> или не будет, значение всеравно меняется для всех поток, хоть стукните но я запутался окончательно, если с синхронизацией я разобрался, то с <code>volatile</code> я запутался и не могу его никак применить. Может я как то не так пример создал? Я пробовал еще создать класс <code>Clock</code> и унаследовать от <code>Thread</code>, а в <code>main</code> создать два экземпляра и оба запустить, так же <code>volatile</code> не работал,помогите иначе я сойду сума )
+<img data-id="b5651025-eb76-47da-a57f-be2ea6e5f323" data-max-width="850" alt="Volatile (пример в 17 лекции) - 1" src="https://cdn.javarush.com/images/article/b5651025-eb76-47da-a57f-be2ea6e5f323/1024.jpeg"><pre class='lang-java line-numbers'><code>
+public static void main(String[] args)
+    {
+       Clock n = new Clock();
+
+        Thread thread1 = new Thread(n);
+        Thread thread2 = new Thread(n);
+        thread1.start();
+        thread2.start();
+
+        try
+        {
+            Thread.sleep(3000);
+        }
+        catch (InterruptedException e)
+        {
+            e.printStackTrace();
+        }
+
+        n.cancel();
+
+    }
+
+    public static class Clock implements Runnable
+    {
+        private volatile boolean isCancel = false;
+
+        public void cancel()
+        {
+            this.isCancel = true;
+        }
+
+        @Override
+        public void run()
+        {
+            while (true)
+            {
+               
+                try
+                {   System.out.println(Thread.currentThread().getName()+" "+isCancel);
+                    Thread.sleep(2000);
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+</code></pre>

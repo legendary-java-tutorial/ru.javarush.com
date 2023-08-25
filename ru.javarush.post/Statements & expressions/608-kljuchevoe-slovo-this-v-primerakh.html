@@ -1,0 +1,98 @@
+Ключевое слово this {в примерах}
+<p>----------------------------------------</p>
+На JavaRush студентов буквально с первых лекций знакомят с ключевым словом this. И со временем становится понятно, что все же оно означает. Но многие, обернувшись назад, наверное, честно себе скажут, что долго не могли осознать дзен этого ключевого слова. В статье приоткрываем ...
+<p>----------------------------------------</p>
+На JavaRush студентов буквально с первых лекций знакомят с ключевым словом <code>this</code>. И со временем становится понятно, что все же оно означает. Но многие, обернувшись назад, наверное, честно себе скажут, что долго не могли осознать дзен этого ключевого слова. В статье приоткрываем завесу тайн применения ключевика <code>this</code> для тех, кто до сих пор в него не может… Welcome!
+
+Если вы возьмете справочник <a href="https://www.ozon.ru/context/detail/id/31249554/" target="_blank" rel="nofollow">Шилдта по Java</a>, то на 171 странице вы прочитаете о том, что ключевое слово <code>this</code> требуется для того, чтобы метод мог сослаться на вызвавший его объект. На этом, собственно можно было бы и закончить. Но нам нужна конкретика.
+<img data-max-width="850" alt="Ключевое слово this {в примерах} - 1" src="https://cdn.javarush.com/images/article/0590d815-4654-4673-bee2-9570bfb546d5/original.jpeg">Как правило, применять <code>this</code> нужно <span class="text-bold">в двух случаях:</span>
+<ol>
+<li>Когда у переменной экземпляра класса и переменной метода/конструктора одинаковые имена;</li>
+<li>Когда нужно вызвать конструктор одного типа (например, конструктор по умолчанию или параметризированный) из другого. Это еще называется явным вызовом конструктора.</li>
+</ol>Вот и все, на самом деле не так много, — всего два случая, когда применяется это страшное ключевое слово. Теперь давайте рассмотрим эти две ситуации на примерах.
+<h2>Пример первый — у переменной экземпляра и метода одинаковые имена</h2>Допустим, у нас есть класс <code>Human</code>, для которого определено поле «имя»:
+<img data-max-width="462" alt="Ключевое слово this {в примерах} - 2" src="https://cdn.javarush.com/images/article/39ffe31d-3128-4762-8fd9-d2a922b25434/original.jpeg">Давайте для переменной <code>name</code> создадим сеттер (setter вполне рабочий и никакого подвоха здесь нет):
+<img data-max-width="700" alt="Ключевое слово this {в примерах} - 3" src="https://cdn.javarush.com/images/article/1c627f48-c5e8-4c56-a08d-d90425b60c8d/original.jpeg">Обратите внимание, что в метод (сеттер) <code>setName</code> мы передаем переменную <code>String newName</code>. Мы ввели новую переменную и (в общем-то) могли назвать ее как угодно ведь она будет видна только в пределах {фигурных скобок} метода <code>setName</code>. Обратите внимание, что в сеттере есть одна строка:
+
+<pre class="lang-java line-numbers"><code>
+name = newName;
+</code></pre>
+То есть по факту мы ввели новую переменную <code>newName</code> и присвоили ее уже существующей в классе переменной <code>name</code>. Многим программистом казалось это странным,  —  вводить переменную с новым именем, если в итоге речь идет об одном и том же. Об имени в классе <code>Human</code>. Поэтому, разработчики языка задумались о том, чтобы удобно сделать использование одного имени переменной. Другими словами, зачем иметь два имени для переменной, обозначающей одно и то же. То есть хотелось бы сделать как-то так:
+<img data-max-width="700" alt="Ключевое слово this {в примерах} - 4" src="https://cdn.javarush.com/images/article/eb499d8c-df06-4656-9d51-da83ba68578d/original.jpeg">Но в этом случае <u>возникает проблема</u>. У нас теперь две переменные, которые называются одинаково. Один <code>String name</code> принадлежит классу <code>Human</code>, а другой <code>String name</code> его методу <code>setName</code>. Поэтому Java – машина не знает, какую переменную вы имеете ввиду, когда пишете строку в сеттере:
+
+<pre class="lang-java line-numbers"><code>
+name = name;
+</code></pre>
+Java берет самую близкую – <code>name</code> из метода <code>setName</code>:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="5c2f3174-c5ae-4c42-97a5-702bfeeb466e" data-max-width="700" alt="Ключевое слово this {в примерах} - 5" src="https://cdn.javarush.com/images/article/5c2f3174-c5ae-4c42-97a5-702bfeeb466e/1024.jpeg"></div></div>и получается, что вы просто присваиваете значение переменной <code>name</code> из этого метода, ей же. Что конечно не имеет никакого смысла. Поэтому нужен был какой-то способ, чтобы отличить переменную <code>name</code> из класса <code>Human</code>, от переменной <code>name</code> из метода <code>setName</code>.Для решения этой проблемы и было введено ключевое слово <code>this</code>, которое в данном случае укажет, что нужно вызывать переменную не метода, а класса <code>Human</code>:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="4bb572e6-3b10-4122-860e-56f9fa614723" data-max-width="700" alt="Ключевое слово this {в примерах} - 6" src="https://cdn.javarush.com/images/article/4bb572e6-3b10-4122-860e-56f9fa614723/1024.jpeg"></div></div>То есть <code>this</code> сошлется на вызвавший объект, как было сказано в начале статьи. В результате чего имя человека через сеттер <code>setName</code> будет установлено создаваемому объекту. Ниже приведен программный код без использования ключевого слова <code>this</code>. В коде создается объект класса <code>Human</code> и присваивается ему имя:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="e9f92f1a-b12b-4538-b56c-19ad6a1895d1" data-max-width="939" alt="Ключевое слово this {в примерах} - 7" src="https://cdn.javarush.com/images/article/e9f92f1a-b12b-4538-b56c-19ad6a1895d1/1024.jpeg"></div></div>А ниже программный код с ключевым словом <code>this</code>:
+
+<pre class="lang-java line-numbers"><code>
+public class Solution{
+    public static void main(String[] args) {
+        Human human1 = new Human();
+        human1.setName("Volodya");
+        human1.print();
+    }
+}
+class Human{
+    String name;
+    public String getName() {
+        return name;
+    }
+    public void setName(String name){
+        this.name = name;
+    }
+    void print(){
+        System.out.println(name);
+    }
+}
+</code></pre>
+Таким образом, здесь <code>this</code> позволяет не вводить новые переменные для обозначения одного и того же, что позволяет сделать код менее «перегруженным» дополнительными переменными.
+
+<div class="email-subscription"><iframe frameborder="0" src="https://secure.esputnik.com.ua/4Q0Ef6d2SOs" width="100%" height="200" scrolling="no"></iframe></div><h2>Пример второй — Применение this для явного вызова конструктора</h2>Вызов одного конструктора из другого может пригодиться тогда, когда у вас (как ни странно) несколько конструкторов и вам не хочется в новом конструкторе переписывать код инициализации, приведенный в конструкторе ранее. Запутал? Все не так страшно как кажется. Посмотрите на код ниже, в нем два конструктора класса <code>Human</code>:
+
+<pre class="lang-java line-numbers"><code>
+class Human{
+    int age;
+    int weight;
+    int height;
+
+    Human(int age, int weight){
+        this.age = age;
+        this.weight = weight;
+    }
+    Human(int age, int weight, int height){
+        //вы вызываете конструктор с двумя параметрами
+        this(age, weight);
+        //и добавляете недостающую переменную
+        this.height = height;
+    }
+}
+</code></pre>
+Здесь у нас сначала приводится конструктор с двумя параметрами, который принимает <code>int age</code> и <code>int weight</code>. Допустим, мы написали в нем две строчки кода:
+
+<pre class="lang-java line-numbers"><code>
+this.age = age;
+this.weight = weight;
+</code></pre>
+а потом решили добавить еще один конструктор, с тремя параметрами, который помимо возраста и веса принимает еще и рост. В новом конструкторе вы бы могли написать так:
+
+<pre class="lang-java line-numbers"><code>
+this.age = age;
+this.weight = weight;
+this.height = height;
+</code></pre>
+Но вместо того, чтобы повторять уже написанный ранее код в этом конструкторе, вы можете с помощью ключевого слова <code>this</code> явно вызвать конструктор с двумя параметрами:
+
+<pre class="lang-java line-numbers"><code>
+this(age, weight);
+// и дописываете недостающую переменную:
+this.height = height;
+</code></pre>Таким образом, вы как-бы говорите конструктору с тремя параметрами: 
+<ul>
+<li>вызови this (этот) конструктор, который имеет два параметра. </li>
+<li>и добавить недостающую переменную.</li>
+</ul>Вот и все =). Напоследок отметим, что ключевое слово this в Java используется только в составе методов либо конструкторов экземпляра класса. Но неявно ключевое слово <code>this</code> передается во все методы, кроме статических (поэтому <code>this</code> часто называют неявным параметром) и может быть использовано для обращения к объекту, вызвавшему метод. Бояться этого ключевого слова не нужно, потому что <code>This</code> не страшно.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="a9a853e7-3c89-432a-b66f-f122afdf7c50" data-max-width="700" alt="Ключевое слово this {в примерах} - 9" src="https://cdn.javarush.com/images/article/a9a853e7-3c89-432a-b66f-f122afdf7c50/1024.jpeg"></div></div>

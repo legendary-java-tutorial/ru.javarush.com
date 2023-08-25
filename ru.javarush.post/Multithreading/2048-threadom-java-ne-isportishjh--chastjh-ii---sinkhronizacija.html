@@ -1,0 +1,375 @@
+Thread'ом Java не испортишь: Часть II — синхронизация
+<p>----------------------------------------</p>
+Продолжение обзора многопоточности в Java. В прошлый раз кратко вспоминали про потоки, в этой части рассмотрим базовые средства синхронизации между потоками. Что такое монитор, лок, синхронизация?
+<p>----------------------------------------</p>
+<h2>Вступление</h2>
+Итак, мы знаем, что в Java есть потоки, о чём можно прочитать в обзоре "<a href="https://javarush.com/groups/posts/2047-threadom-java-ne-isportishjh--chastjh-i---potoki" target="_blank" rel="nofollow">Thread'ом Java не испортишь : Часть I - потоки</a>".
+Потоки нужны, чтобы одновременно выполнять работу. Поэтому очень вероятно, что потоки будут как-то взаимодействовать между собой. Давайте разберёмся, как это происходит и какие базовые средства управления у нас есть.
+<img data-max-width="800" data-id="d6076434-b756-40c7-b858-a8ef0c04ff4b" src="/images/article/d6076434-b756-40c7-b858-a8ef0c04ff4b/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть II — синхронизация - 1"><h2>Yield</h2>Метод <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html#yield--" target="_blank" rel="nofollow">Thread.yield()</a> загадочный и редко используемый. Существует много вариаций его описания в интернете. Вплоть до того, что некоторые пишут про какую-то очередь потоков, в которой поток переместится вниз с учётом их приоритетов. Кто-то пишет, что поток изменит статус с running на runnable (хотя разделения на эти статусы нет, и Java их не различает). Но на самом деле всё куда неизвестнее и в каком-то смысле проще.
+<img data-max-width="800" data-id="12b6080a-173b-4e6a-a3e6-47b3e08bf3dc" src="/images/article/12b6080a-173b-4e6a-a3e6-47b3e08bf3dc/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть II — синхронизация - 2">На тему документации метода <code>yield</code> есть баг "<a href="https://bugs.java.com/bugdatabase/view_bug.do?bug_id=6416721" target="_blank" rel="nofollow">JDK-6416721 : (spec thread) Fix Thread.yield() javadoc</a>". Если прочитать его, то понятно, что на самом деле метод <code>yield</code> лишь передаёт некоторую рекомендацию планировщику потоков Java, что данному потоку можно дать меньше времени исполнения. Но что будет на самом деле, услышит ли планировщик рекомендацию и что вообще он будет делать — зависит от реализации JVM и операционной системы. А может и ещё от каких-то других факторов. Вся путаница сложилась, скорее всего, из-за переосмысления многопоточности в процессе развития языка Java.
+
+Подробнее можно прочитать в обзоре "<a href="https://www.baeldung.com/java-thread-yield" target="_blank" rel="nofollow">Brief Introduction to Java Thread.yield()</a>".
+<h2>Sleep - Засыпание потока</h2>Поток в процессе своего выполнения может засыпать. Это самой простой тип взаимодействия с другими потоками.
+В операционной системе, на которой установлена виртуальная Java машина, где выполняется Java код, есть свой планировщик потоков, называемый Thread Scheduler. Именно он решает, какой поток когда запускать. 
+
+Программист не может взаимодействовать с этим планировщиком напрямую из Java кода, но он может через JVM попросить планировщик на какое-то время поставить поток на паузу, "усыпить" его. Подробнее можно прочитать в статьях "<a href="https://www.javamex.com/tutorials/threads/sleep.shtml" target="_blank" rel="nofollow">Thread.sleep()</a>" и "<a href="https://www.j2eeonline.com/java-programmers-certification/module7/multithreading-theory.jsp" target="_blank" rel="nofollow">How Multithreading works</a>". Более того, можно узнать, как устроены потоки в Windows OS: "<a href="https://www.codeproject.com/Articles/662735/Internals-of-Windows-Thread" target="_blank" rel="nofollow">Internals of Windows Thread</a>".
+
+А теперь увидим это воочию. Сохраним в файл <code>HelloWorldApp.java</code> следующий код:
+
+<pre class="lang-java line-numbers"><code>
+class HelloWorldApp {
+    public static void main(String []args) {
+        Runnable task = () -&gt; {
+            try {
+                int secToWait = 1000 * 60;
+                Thread.currentThread().sleep(secToWait);
+                System.out.println("Waked up");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        };
+        Thread thread = new Thread(task);
+        thread.start();
+    }
+}
+</code></pre>
+Как видно, у нас есть некоторая задача (task), в которой выполняется ожидание в 60 секунд, после чего завершается программа.
+
+Выполняем компиляцию <code>javac HelloWorldApp.java</code> и запуск <code>java HelloWorldApp</code>. 
+
+Запуск лучше выполнить в отдельном окне. Например, в Windows это будет так: <code>start java HelloWorldApp</code>.
+
+При помощи команды jps узнаем PID процесса и откроем список потоков при помощи <code>jvisualvm --openpid pidПроцесса</code>:
+<img data-max-width="800" data-id="d8198a66-0664-4140-8b61-9623d01250ab" src="/images/article/d8198a66-0664-4140-8b61-9623d01250ab/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть II — синхронизация - 3">Как видно, наш поток перешёл в статус Sleeping.
+
+На самом деле, сон текущего потока можно сделать более красиво:
+
+<pre class="lang-java line-numbers"><code>
+try {
+	TimeUnit.SECONDS.sleep(60);
+	System.out.println("Waked up");
+} catch (InterruptedException e) {
+	e.printStackTrace();
+}
+</code></pre>
+Вы наверно заметили, что мы везде обрабатываем <code>InterruptedException</code>? Давайте поймём, зачем.
+<h2>Прерывание потока или Thread.interrupt</h2>Всё дело в том, что пока поток ожидает во сне, кто-то может захотеть прервать это ожидание. На этот случай мы обрабатываем такое исключение. Сделано это было после того, как метод <code>Thread.stop</code> объявили Deprecated, т.е. устаревшим и нежелательным к использованию. Причиной тому было то, что при вызове метода <code>stop</code> поток просто "убивался", что было очень непредсказуемо. Мы не могли знать, когда поток будет остановлен, не могли гарантировать консистентность данных. 
+
+Представте, что вы пишете данные в файл и тут поток уничтожают. Поэтому, решили, что логичнее будет поток не убивать, а информировать его о том, что ему следует прерваться. Как на это реагировать — дело самого потока. Более подробно можно прочитать у Oracle в "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/concurrency/threadPrimitiveDeprecation.html" target="_blank" rel="nofollow">Why is Thread.stop deprecated?</a>". Посмотрим на пример:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args) {
+	Runnable task = () -&gt; {
+		try {
+			TimeUnit.SECONDS.sleep(60);
+		} catch (InterruptedException e) {
+			System.out.println("Interrupted");
+		}
+	};
+	Thread thread = new Thread(task);
+	thread.start();
+	thread.interrupt();
+}
+</code></pre>
+В этом примере мы не будем ждать 60 секунд, а сразу напечатаем 'Interrupted'. Всё потому, что мы вызвали у потока метод <code>interrupt</code>. Данный метод выставляет "internal flag called interrupt status". То есть у каждого потока есть внутренний флаг, недоступный напрямую. Но у нас есть native методы для взаимодействия с этим флагом.
+
+Но это не единственный способ. Поток может быть в процессе выполнения, не ждать чего-то, а просто выполнять действия. Но может предусмотреть, что его захотят завершить в определённый момент его работы. Например:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args) {
+	Runnable task = () -&gt; {
+		while(!Thread.currentThread().isInterrupted()) {
+			//Do some work
+		}
+		System.out.println("Finished");
+	};
+	Thread thread = new Thread(task);
+	thread.start();
+	thread.interrupt();
+}
+</code></pre>
+В примере выше видно, что цикл <code>while</code> будет выполняться до тех пор, пока поток не прервут снаружи.
+
+Про флаг <strong>isInterrupted</strong> важно знать то, что если мы поймали <code>InterruptedException</code>, флаг <code>isInterrupted</code> сбрасывается, и тогда <code>isInterrupted</code> будет возвращать false. Есть также статический метод у класса Thread, который относится только к текущему потоку — <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html#interrupted--" target="_blank" rel="nofollow">Thread.interrupted()</a>, но данный метод сбрасывает значение флага на false!
+
+Подробнее можно прочитать в главе "<a href="https://www.oreilly.com/library/view/java-threads-second/1565924185/ch04s05.html" target="_blank" rel="nofollow">Thread Interruption</a>".
+<h2>Join — Ожидание завершения другого потока</h2>Самым простым типом ожидания является ожидание завершения другого потока.
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args) throws InterruptedException {
+	Runnable task = () -&gt; {
+		try {
+			TimeUnit.SECONDS.sleep(5);
+		} catch (InterruptedException e) {
+			System.out.println("Interrupted");
+		}
+	};
+	Thread thread = new Thread(task);
+	thread.start();
+	thread.join();
+	System.out.println("Finished");
+}
+</code></pre>
+В данном примере новый поток будет спать 5 секунд. В то же время, главный поток main будет ждать, пока спящий поток не проснётся и не завершит свою работу. Если посмотреть через JVisualVM, то состояние потока будет выглядеть так:
+<img data-max-width="800" data-id="aea73753-db78-4fec-b749-3e6db829a134" src="/images/article/aea73753-db78-4fec-b749-3e6db829a134/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть II — синхронизация - 4">Благодаря средствам мониторинга можно увидеть, что просиходит с потоком. Метод <code>join</code> довольно прост, потому что является просто методом с java кодом, который выполняет <code>wait</code>, пока поток, на котором он вызван, живёт. Как только поток умирает (при завершении), ожидание прерывается. Вот и вся магия метода <code>join</code>. Поэтому, перейдём к самому интересному.
+<h2>Понятие Монитор</h2>В многопоточности есть такое понятие, как Monitor. Вообще, слово монитор с латинского переводится как "надзиратель" или "надсмотрщик".
+
+В рамках данной статьи попытаемся вспомнить суть, а кто хочет — за подробностями прошу погрузиться в материал из ссылок. Начнём наш путь со спецификации языка Java, то есть с JLS: "<a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-17.html#jls-17.1" target="_blank" rel="nofollow">17.1. Synchronization</a>". Там сказано следующее:
+<img data-max-width="1024" data-id="82298e2f-5e85-482b-8cd8-bf663ba779c4" src="/images/article/82298e2f-5e85-482b-8cd8-bf663ba779c4/1024.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть II — синхронизация - 5">Получается, что для целей синхронизации между потоками Java использует некий механизм, который называется "Монитор". С каждым объектом ассоциирован некоторый монитор, а потоки могут его заблокировать "lock" или разблокировать "unlock".
+
+Далее, найдём на сайте Oracle обучающий tutorial: "<a href="https://docs.oracle.com/javase/tutorial/essential/concurrency/locksync.html" target="_blank" rel="nofollow">Intrinsic Locks and Synchronization</a>".
+
+В данном туториале говорится, что синхронизация в Java построена вокруг внутренней сущности (internal entity), известной как intrinsic lock или monitor lock. Часто такой лок называют просто "монитор".
+
+Также мы опять видим, что каждый объект в Java имеет ассоциированный с ним intrinsic lock. Почитать можно "<a href="https://www.logicbig.com/tutorials/core-java-tutorial/java-multi-threading/java-intrinsic-locks.html" target="_blank" rel="nofollow">Java - Intrinsic Locks and Synchronization</a>". 
+
+Далее важно понять, каким образом объект в Java может быть связан с монитором. У каждого объекта в Java есть заголовок (header) — своего рода внутренние метаданные, которые недоступны программисту из кода, но которые нужны виртуальной машине, чтобы работать с объектами правильно.
+
+В состав заголовка объекта входит MarkWord, которое выглядит следующим образом:
+<img data-max-width="512" data-id="e7dca828-f5f9-4bdd-8383-cb40f079e3f0" src="/images/article/e7dca828-f5f9-4bdd-8383-cb40f079e3f0/512.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть II — синхронизация - 6"><center><p><small><em>https://edu.netbeans.org/contrib/slides/java-overview-and-java-se6.pdf</em></small></p></center>Тут очень пригодится статья с хабра: "<a href="https://m.habr.com/post/143237/" target="_blank" rel="nofollow">А как же всё-таки работает многопоточность? Часть I: синхронизация</a>".
+
+К этой статье стоит прибавить описание из Summary блока таска с багтекера JDK: "<a href="https://bugs.openjdk.java.net/browse/JDK-8183909" target="_blank" rel="nofollow">JDK-8183909</a>". Можно тоже самое прочитать в "<a href="https://openjdk.java.net/jeps/8183909" target="_blank" rel="nofollow">JEP-8183909</a>".
+
+Итак, в Java с объектом ассоциирован монитор и поток получается заблокировать этот поток или ещё говорят "получить лок". Самый простой пример:
+
+<pre class="lang-java line-numbers"><code>
+public class HelloWorld{
+    public static void main(String []args){
+        Object object = new Object();
+        synchronized(object) {
+            System.out.println("Hello World");
+        }
+    }
+}
+</code></pre>
+Итак, при помощи ключевого слова <code>synchronized</code> текущий поток (в котором выполняются эти строки кода) пытается использовать монитор, ассоциированный с объектом <code>object</code> и "получить лок" или "захватить монитор" (второй вариант даже предпочтетельнее). Если за монитор нет соперничества (т.е. никто больше не хочет выполнить synchronized по такому же объекту), Java может попытаться выполнить оптимизацию, называемую "biased locking". В заголовке объекта в Mark Word выставится соответствующий тэг и запись о том, к какому потоку привязан монитор. Это позволяет сократить накладные расходы при захватывании монитора.
+
+Если монитор уже ранее был привязан к другому потоку, тогда такой блокировки недостаточно. JVM переключается на следующий тип блокировки — basic locking. Она использует compare-and-swap (CAS) операции. При этом в заголовке в Mark Word уже хранится не сам Mark Word, а ссылка на его хранение + изменяется тэг, чтобы JVM поняла, что у нас используется базовая блокировка.
+
+Если же возникает соперничество (contention) за монитор нескольких потоков (один захватил монитор, а второй ждёт освобождение монитора), тогда тэг в Mark Word меняется, и в Mark Word начинает храниться ссылка уже на монитор как объект — некоторую внутреннюю сущность JVM. Как сказано в JEP, в таком случае требуется место в Native Heap области памяти на хранение этой сущности. Ссылка на место хранения этой внутренней сущности и будет находиться в Mark Word объекта.
+
+Таким образом, как мы видим, монитор — это действительно механизм обеспечения синхронизации доступа нескольких потоков к общим ресурсам. Существует несколько реализаций этого механизма, между которыми переключается JVM. Поэтому для простоты, говоря про монитор, мы говорим на самом деле про локи.
+<img data-max-width="800" data-id="b85a9a98-a848-4eef-b240-6d3060980d1e" src="/images/article/b85a9a98-a848-4eef-b240-6d3060980d1e/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть II — синхронизация - 7"><h2>Synchronized и ожидание по локу</h2>С понятием монитора, как мы ранее видели, тесно связано понятие "блок синхронизации" (или как ещё называют — критическая секция).
+
+Взглянем на пример:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) throws InterruptedException {
+	Object lock = new Object();
+
+	Runnable task = () -&gt; {
+		synchronized (lock) {
+			System.out.println("thread");
+		}
+	};
+
+	Thread th1 = new Thread(task);
+	th1.start();
+	synchronized (lock) {
+		for (int i = 0; i &lt; 8; i++) {
+			Thread.currentThread().sleep(1000);
+			System.out.print("  " + i);
+		}
+		System.out.println(" ...");
+	}
+}
+</code></pre>
+Здесь главный поток сначала отправляет задачу task в новый поток, а потом сразу же "захватывает" лок и выполняет с ним долгую операцию (8 секунд). Всё это время task не может для своего выполнения зайти в блок <code>synchronized</code>, т.к. лок уже занят.
+
+Если поток не может получить лок, он будет ждать этого у монитора. Как только получит — продолжит выполнение. Когда поток выходит из-под монитора, он освобождает лок. В JVisualVM это будет выглядеть следующим образом:
+<img data-max-width="800" data-id="e3494727-ce3a-46f8-bdf9-baef35491b3c" src="/images/article/e3494727-ce3a-46f8-bdf9-baef35491b3c/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть II — синхронизация - 8">Как видно, статус в JVisualVM называется "Monitor", потому что поток заблокирован и не может занять монитор. В коде тоже можно узнать состояние потока, но название этого состояния не совпадает с терминами JVisualVM, хотя они и схожи. В данном случае <code>th1.getState()</code> в цикле <code>for</code> будет возвращать <span class="tetx-bold">BLOCKED</span>, т.к. пока выполняется цикл, монитор <code>lock</code> занят <code>main</code> потоком, а поток <code>th1</code> заблокирован и не может продолжать работу, пока лок не вернут. 
+
+Кроме блоков синхронизации может быть синхронизирован целый метод. Например, метод из класса <code>HashTable</code>:
+
+<pre class="lang-java line-numbers"><code>
+public synchronized int size() {
+	return count;
+}
+</code></pre>
+В одну единицу времени данный метод будет выполняться только одним потоком. Но ведь нам нужен лок? Да, нужен. В случае методов объекта локом будет выступать <code>this</code>. На эту тему есть интересное обсуждение: "<a href="https://stackoverflow.com/questions/574240/is-there-an-advantage-to-use-a-synchronized-method-instead-of-a-synchronized-blo" target="_blank" rel="nofollow">Is there an advantage to use a Synchronized Method instead of a Synchronized Block?</a>".
+
+Если метод статический, то локом будет не <code>this</code> (т.к. для статического метода не может быть <code>this</code>), а объект класса (Например, <code>Integer.class</code>).
+<h2>Wait и ожидание по монитору. Методы notify и notifyAll</h2>У Thread есть ещё один метод ожидания, который при этом связан с монитором. В отличие от <code>sleep</code> и <code>join</code>, его нельзя просто так вызвать. И зовут его <code>wait</code>.
+
+Выполняется метод <code>wait</code> на объекте, на мониторе которого мы хотим выполнить ожидание. Посмотрим пример:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args) throws InterruptedException {
+	    Object lock = new Object();
+	    // task будет ждать, пока его не оповестят через lock
+	    Runnable task = () -&gt; {
+	        synchronized(lock) {
+	            try {
+	                lock.wait();
+	            } catch(InterruptedException e) {
+	                System.out.println("interrupted");
+	            }
+	        }
+	        // После оповещения нас мы будем ждать, пока сможем взять лок
+	        System.out.println("thread");
+	    };
+	    Thread taskThread = new Thread(task);
+	    taskThread.start();
+        // Ждём и после этого забираем себе лок, оповещаем и отдаём лок
+	    Thread.currentThread().sleep(3000);
+	    System.out.println("main");
+	    synchronized(lock) {
+	        lock.notify();
+	    }
+}
+</code></pre>
+В JVisualVM это будет выглядеть следующим образом:
+<img data-max-width="800" data-id="4968dab6-3f7a-4d6e-8ec2-0afed15736a0" src="/images/article/4968dab6-3f7a-4d6e-8ec2-0afed15736a0/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть II — синхронизация - 10">Чтобы разобраться, как это работает, следует вспомнить, что методы <code>wait</code> и <code>notify</code> относятся к <code>java.lang.Object</code>. Кажется странным, что методы, относящиеся к потокам, находятся в классе <code>Object</code>. Но тут то и кроется ответ. 
+
+Как мы помним, каждый объект в Java имеет заголовок. В заголовке содержится различная служебная информация, в том числе и информация о мониторе — данные о состоянии блокировки. И как мы помним, каждый объект (т.е. каждый instance) имеет ассоциацию с внутренней сущностью JVM, называемой локом (intrinsic lock), который так же называют монитором. 
+
+В примере выше в задаче task описано, что мы входим в блок синхронизации по монитору, ассоциированному с <code>lock</code>. Если удаётся получить лок по этому монитору, то выполняется <code>wait</code>. Поток, выполняющий этот task, будет освобождать монитор <code>lock</code>, но становиться в очередь потоков, ожидающих уведомления по монитору <code>lock</code>. Эта очередь потоков называется WAIT-SET, что более правильно отражает суть. Это скорее набор, а не очередь.
+
+Поток <code>main</code> создаёт новый поток с задачей task, запускает его и ждёт 3 секунды. Это позволяет с большой долей вероятности новому потоку захватить лок прежде, чем поток <code>main</code>, и встать в очередь по монитору. После чего поток <code>main</code> сам входит в блок синхронизации по <code>lock</code> и выполняет уведомление потока по монитору. После того, как уведомление отправлено, поток <code>main</code> освобождает монитор <code>lock</code>, а новый поток (который ранее ждал) дождавшись освобождения монитора <code>lock</code>, продолжает выполнение.
+
+Существует возможность отправить уведомление только одному из потоков (<code>notify</code>) или сразу всем потокам из очереди (<code>notifyAll</code>).
+ Подробнее можно прочитать в "<a href="https://www.geeksforgeeks.org/difference-notify-notifyall-java/" target="_blank" rel="nofollow">Difference between notify() and notifyAll() in Java</a>".
+
+Важно отметить, что порядок уведомления зависит от реализации JVM. Подробнее можно прочитать в "<a href="https://stackoverflow.com/questions/17063426/how-to-solve-starvation-with-notify-and-notifyall" target="_blank" rel="nofollow">How to solve starvation with notify and notifyall?</a>".
+
+Синхронизация может выполняться без указания объекта. Это можно сделать, когда синхронизирован не отдельный участок кода, а целый метод.
+
+Например, для статических методов локом будет объект класса (полученный через <code>.class</code>):
+
+<pre class="lang-java line-numbers"><code>
+public static synchronized void printA() {
+	System.out.println("A");
+}
+public static void printB() {
+	synchronized(HelloWorld.class) {
+		System.out.println("B");
+	}
+}
+</code></pre>
+С точки зрения использования локов оба метода одинаковы. 
+
+Если метод не статический, то синхронизация будет выполняться по текущему <code>instance</code>, то есть по <code>this</code>.	
+
+Кстати, ранее мы говорили, что при помощи метода <code>getState</code> можно получить статус потока. Так вот поток, который становится в очередь по монитору, статус будет WAITING или TIMED_WAITING, если в методе <code>wait</code> было указано ограничение по времени ожидания.
+<img data-max-width="800" data-id="cda1e7a1-bdf1-4ff8-8a0b-250a0ccfb52e" src="/images/article/cda1e7a1-bdf1-4ff8-8a0b-250a0ccfb52e/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть II — синхронизация - 11"><h2>Жизненный цикл потока</h2>Как мы видели, поток в процессе жизни меняет свой статус. По сути эти изменения и являются жизненным циклом потока.
+
+Когда поток только создан, то он имеет статус NEW. В таком положении он ещё не запущен и планировщик потоков Java (Thread Scheduler) ещё не знает ничего о новом потоке.
+
+Для того, чтобы о потоке узнал планировщик потоков, необходимо вызвать метод <code>thread.start()</code>. Тогда поток перейдёт в состояние RUNNABLE. В интернете есть много неправильных схем, где разделяют состояния Runnable и Running. Но это ошибка, т.к. Java не отличает статус "готов к работе" и "работает (выполняется)".
+
+Когда поток жив, но не активен (не Runnable), он находится в одном из двух состояний:
+<ul>
+<li>BLOCKED — ожидает захода в защищённую (protected) секцию, т.е. в <code>synchonized</code> блок.</li>
+<li>WAITING — ожидает другой поток по условию. Если условие выполняется, планировщик потоков запускает поток.</li>
+</ul>Если поток ожидает по времени, он находится в статусе TIMED_WAITING. 
+
+Если поток больше не выполняется (завершился успешно или с exception), он переходит в статус TERMINATED.
+
+Чтобы узнать состояние потока (его state), используется метод <code>getState</code>.
+
+У потоков также есть метод <code>isAlive</code>, который возвращает true, если поток не Terminated.
+<h2>LockSupport и парковка потоков</h2>Начиная с Java 1.6 появился интересный механизм, называемый <a href="https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/locks/LockSupport.html" target="_blank" rel="nofollow">LockSupport</a>.
+<img data-max-width="800" data-id="001421d4-934e-4669-9831-0d2c3e714a27" src="/images/article/001421d4-934e-4669-9831-0d2c3e714a27/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть II — синхронизация - 12">Данный класс ассоциирует с каждым потоком, который его использует, "permit" или разрешение. 
+
+Вызов метода <code>park</code> возвращается немедленно, если permit доступен, занимая этот самый permit в процессе вызова. Иначе он блокируется.
+
+Вызов метода <code>unpark</code> делает permit доступным, если он ещё недоступен.
+
+Permit есть всего 1.
+
+В Java API для <code>LockSupport</code> ссылаются на некий <code>Semaphore</code>. Давайте посмотрим на простой пример:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.concurrent.Semaphore;
+public class HelloWorldApp{
+    
+    public static void main(String[] args) {
+        Semaphore semaphore = new Semaphore(0);
+        try {
+            semaphore.acquire();
+        } catch (InterruptedException e) {
+            // Просим разрешение и ждём, пока не получим его
+            e.printStackTrace();
+        }
+        System.out.println("Hello, World!");
+    }
+}
+</code></pre>
+Данный код будет вечно ждать, потому что в семафоре сейчас 0 permit. А когда в коде вызывается <code>acquire</code> (т.е. запросить разрешение), то поток ожидает, пока разрешение не получит.
+
+Так как мы ждём, то обязаны обработать <code>InterruptedException</code>.
+
+Интересно, что семафор реализует отдельное состояние потока. Если мы посмотрим в JVisualVM, то увидим, что у нас состояние не Wait, а Park.
+<img data-max-width="800" data-id="27894d03-baf4-4321-8e3b-4c7002a8a1e4" src="/images/article/27894d03-baf4-4321-8e3b-4c7002a8a1e4/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть II — синхронизация - 13">Посмотрим на ещё один пример:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) throws InterruptedException {
+        Runnable task = () -&gt; {
+            //Запаркуем текущий поток
+            System.err.println("Will be Parked");
+            LockSupport.park();
+            // Как только нас распаркуют - начнём действовать
+            System.err.println("Unparked");
+        };
+        Thread th = new Thread(task);
+        th.start();
+        Thread.currentThread().sleep(2000);
+        System.err.println("Thread state: " + th.getState());
+        
+        LockSupport.unpark(th);
+        Thread.currentThread().sleep(2000);
+}
+</code></pre>
+Статус потока будет WAITING, но JVisualVM различает <code>wait</code> от <code>synchronized</code> и <code>park</code> от <code>LockSupport</code>. 
+
+Почему так важен этот <code>LockSupport</code>? Обратимся снова к Java API и посмотрим про <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.State.html#WAITING" target="_blank" rel="nofollow">Thread State WAITING</a>. 
+
+Как видим, в него можно попасть только тремя способами. 2 способа — это <code>wait</code> и <code>join</code>. А третий — это <code>LockSupport</code>.
+
+Локи в Java построены так же на <code>LockSupport</code> и представляют более высокоуровневые инструменты. Давайте попробуем воспользоваться таковым.
+
+Посмотрим, например, на <code>ReentrantLock</code>:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+public class HelloWorld{
+
+    public static void main(String []args) throws InterruptedException {
+        Lock lock = new ReentrantLock();
+        Runnable task = () -&gt; {
+            lock.lock();
+            System.out.println("Thread");
+            lock.unlock();
+        };
+        lock.lock();
+
+        Thread th = new Thread(task);
+        th.start();
+        System.out.println("main");
+        Thread.currentThread().sleep(2000);
+        lock.unlock();
+    }
+}
+</code></pre>
+Как и в прошлых примерах, тут всё просто. <code>lock</code> ожидает, пока кто-то освободит ресурс. Если посмотреть в JVisualVM, мы увидим, что новый поток будет запаркован, пока <code>main</code> поток не отдаст ему лок.
+
+Подробнее про локи можно прочитать здесь: "<a href="https://tproger.ru/translations/java8-concurrency-tutorial-2/" target="_blank" rel="nofollow">Многопоточное программирование в Java 8. Часть вторая. Синхронизация доступа к изменяемым объектам</a>" и "<a href="https://javadevblog.com/java-lock-teoriya-i-primer-ispol-zovaniya-concurrency-lock.html" target="_blank" rel="nofollow">Java Lock API. Теория и пример использования</a>".
+
+Чтобы лучше понять реализацию локов, полезно прочитать про Phazer в обзоре "<a href="https://metanit.com/java/tutorial/8.8.php" target="_blank" rel="nofollow">Класс Phaser</a>". А говоря про различные синхронизаторы, обязательна к прочтению статья на хабре "<a href="https://habr.com/post/277669/" target="_blank" rel="nofollow">Справочник по синхронизаторам java.util.concurrent.*</a>".
+<h2>Итого</h2>В данном обзоре мы рассмотрели основные способы взаимодействия потоков в Java. Дополнительный материал:
+<ul>
+<li><a href="https://www.programcreek.com/2011/12/monitors-java-synchronization-mechanism/" target="_blank" rel="nofollow">Monitors – The Basic Idea of Java Synchronization</a></li>
+<li><a href="https://habr.com/post/277669/" target="_blank" rel="nofollow">Справочник по синхронизаторам java.util.concurrent.*</a></li>
+<li><a href="https://jsehelper.blogspot.com/2016/01/multithreading-1.html" target="_blank" rel="nofollow">Ответы на вопросы по multithreading на собеседовании</a></li>
+</ul>#Viacheslav
+<table>
+<tbody><tr>
+<th>Что еще почитать:
+</th>
+</tr>
+<tr><td><a href="https://javarush.com/groups/posts/2047-threadom-java-ne-isportishjh--chastjh-i---potoki" target="_blank">Thread'ом Java не испортишь: Часть I — потоки</a><br>
+<a href="https://javarush.com/groups/posts/2060-threadom-java-ne-isportishjh--chastjh-iii---vzaimodeystvie" target="_blank">Thread'ом Java не испортишь: Часть III - взаимодействие<br>
+</a><a href="https://javarush.com/groups/posts/2065-threadom-java-ne-isportishjh--chastjh-iv---callable-future-i-druzjhja" target="_blank">Thread'ом Java не испортишь: Часть IV - Callable, Future и друзья</a><br>
+<a href="https://javarush.com/groups/posts/2078-threadom-java-ne-isportishjh--chastjh-v---executor-threadpool-fork-join-pool" target="_blank">Thread'ом Java не испортишь: Часть V - Executor, ThreadPool, Fork Join</a><br>
+<a href="https://javarush.com/groups/posts/2111-threadom-java-ne-isportishjh--chastjh-vi---k-barjheru" target="_blank">Thread'ом Java не испортишь: Часть VI - К барьеру!</a></td></tr></tbody></table>

@@ -1,0 +1,400 @@
+Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 3)
+<p>----------------------------------------</p>
+Добрый день. В этой статье я хотел бы поделиться своим первым знакомством с такими вещами как Maven, Spring, Hibernate, MySQL и Tomcat в процессе создания простого CRUD приложения. Это третья часть из 4...
+<p>----------------------------------------</p>
+Добрый день.
+
+В этой статье я хотел бы поделиться своим первым знакомством с такими вещами как Maven, Spring, Hibernate, MySQL и Tomcat в процессе создания простого CRUD приложения. Это третья часть из 4. Статья рассчитана в первую очередь на тех, кто уже прошел здесь 30-40 уровней, но за пределы чистой джавы пока не выбирался и только начинает (или собирается начинать) выходить в открытый мир со всеми этими технологиями, фреймворками и прочими незнакомыми словами.
+
+<img data-id="7c9fbe88-e26f-4586-b7c0-8969ac1d6b09" data-max-width="850" alt="Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 3) - 1" src="https://cdn.javarush.com/images/article/7c9fbe88-e26f-4586-b7c0-8969ac1d6b09/1024.jpeg">Это третья часть статьи "Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение".
+
+Предыдущие части можно увидеть перейдя по ссылкам: 
+<ul>
+<li><a href="https://javarush.com/groups/posts/2253-znakomstvo-s-maven-spring-mysql-hibernate-i-pervoe-crud-prilozhenie-chastjh-1" target="_blank" rel="nofollow">Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 1)</a></li>
+<li><a href="https://javarush.com/groups/posts/2252-znakomstvo-s-maven-spring-mysql-hibernate-i-pervoe-crud-prilozhenie-chastjh-2" target="_blank" rel="nofollow">Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 2)</a></li>
+</ul><h3>Содержание:</h3><ul>
+<li><a href="#Создание-и-подключение-базы-данных" rel="nofollow">Создание и подключение базы данных</a></li>
+<li><a href="#ORM-и-JPA" rel="nofollow">ORM и JPA</a></li>
+<li><a href="#Entity" rel="nofollow">Entity</a></li>
+<li><a href="#Свойства-Hibernate" rel="nofollow">Свойства Hibernate</a></li>
+<li><a href="#Конфигурация-Hibernate" rel="nofollow">Конфигурация Hibernate</a></li>
+<li><a href="#Слой-доступа-к-данным" rel="nofollow">Слой доступа к данным</a></li>
+</ul><h2 id="Создание-и-подключение-базы-данных">Создание и подключение базы данных</h2>Ну что ж, пришло время заняться базой данных. Прежде чем подключать <strong>Hibernate</strong> и думать как оно все должно там работать, для начала разберемся с самой базой данных, т.е. создадим ее, подключим, сделаем и заполним табличку.
+
+Использовать мы будем СУБД (Система Управления Базами Данных) <strong>MySQL</strong> (разумеется нужно сначала скачать и установить).
+
+<strong>SQL</strong> (Structured Query Language — язык структурированных запросов) — декларативный язык программирования, применяемый для создания, модификации и управления данными в реляционной базе данных. В таких базах данные хранятся в виде таблиц.
+
+Каким же образом приложение общается с базой данных (передача SQL запросов в БД и возврат результатов). Для этого в Java есть такая штука как <strong>JDBC (Java DataBase Connectivity)</strong>, которая, попросту говоря, представляет собой набор интерфейсов и классов для работы с базами данных. Чтобы взаимодействовать с БД необходимо создать соединение, для в этого в пакете <code>java.sql</code> есть класс <code>Connection</code>. Существует несколько способов установления соединения, например можно использовать метод <code>getConnection</code> класса <code>DriverManager</code>. 
+
+Однако взаимодействие с БД осуществляется не напрямую, ведь баз данных много, и они разные. Так что для каждой из них существует свой JDBC Driver По средствам этого драйвера и устанавливается соединение с базой. Поэтому первым делом, чтоб потом на это не отвлекаться, установим драйвер <strong>MySQL</strong>. Добавим в <code>pom.xml</code> следующую зависимость:
+
+<pre class="lang-java line-numbers"><code>
+&lt;dependency&gt;
+    &lt;groupId&gt;mysql&lt;/groupId&gt;
+    &lt;artifactId&gt;mysql-connector-java&lt;/artifactId&gt;
+    &lt;version&gt;8.0.11&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+Теперь создадим базу данных.
+
+<em>View -> Tool Windows -> Database</em> — откроется панель базы данных.
+
+<em>New (зеленый +) -> Data Source -> MySQL</em> — откроется окно, в котором нужно указать имя пользователя и пароль, мы задавали их при установке MySQL (для примера я использовал root и root). Порт (для MySQL по умолчанию 3306), имя и т.д. оставляем как есть. Можно проверить соединение кнопкой "<em>Test Connection</em>".
+<img data-id="eb55246c-ef67-4688-8dbd-7cd082800b4f" data-max-width="850" alt="Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 3) - 2" src="https://cdn.javarush.com/images/article/eb55246c-ef67-4688-8dbd-7cd082800b4f/1024.jpeg">Жмем <em>ОК</em> и вот мы подключились к серверу MySQL.
+
+Далее создадим базу данных. Для этого можно в открывшейся консоли написать скрипт:
+
+<pre class="lang-java line-numbers"><code>
+CREATE DATABASE test
+</code></pre>
+Жмем <em>Execute</em> и база данных готова, теперь ее можно подключить, для этого возвращаемся в Data Source Properties и в поле Database вводим имя базы (test), затем снова вводим имя пользователя с паролем и жмем ОК.
+
+Теперь нужно сделать таблицу. Можно использовать графические инструменты, но для первого раза, пожалуй, стоит ручками написать скрипт, посмотреть хоть как оно выглядит:
+
+<pre class="lang-java line-numbers"><code>
+USE test;
+
+CREATE TABLE films
+(
+  id int(10) PRIMARY KEY AUTO_INCREMENT,
+  title VARCHAR(100) NOT NULL,
+  year int(4),
+  genre VARCHAR(20),
+  watched BIT DEFAULT false  NOT NULL
+)
+COLLATE='utf8_general_ci';
+CREATE UNIQUE INDEX films_title_uindex ON films (title);
+
+INSERT INTO `films` (`title`,`year`,`genre`, watched)
+VALUES
+  ("Inception", 2010, "sci-fi", 1),
+  ("The Lord of the Rings: The Fellowship of the Ring", 2001, "fantasy", 1),
+  ("Tag", 2018, "comedy", 0),
+  ("Gunfight at the O.K. Corral", 1957, "western", 0),
+  ("Die Hard", 1988, "action", 1);
+</code></pre>
+Создается таблица с названием <code>films</code> со столбцами <code>id</code>, <code>title</code> и т.д. Для каждого столбца указывается тип (в скобках максимальный размер вывода). 
+<ul>
+<li><strong><code>PRIMARY KEY</code></strong> — это первичный ключ, служит для однозначной идентификации записи в таблице (что подразумевает уникальность)</li>
+<li><strong><code>AUTO_INCREMENT</code></strong> — значение будет генерироваться автоматически (само собой оно будет ненулевое, так что это можно не указывать)</li>
+<li><strong><code>NOT NULL</code></strong> — тут тоже все очевидно, не может быть пустым</li>
+<li><strong><code>DEFAULT</code></strong> — установить значение по-умолчанию</li>
+<li><strong><code>COLLATE</code></strong> — кодировка</li>
+<li><strong><code>CREATE UNIQUE INDEX</code></strong> — сделать поле уникальным</li>
+<li><strong><code>INSERT INTO</code></strong> — добавить запись в таблицу</li>
+</ul>В результате получилась вот такая табличка:
+<img data-id="802cab24-6052-4a17-b983-199ebae33af4" data-max-width="850" alt="" src="https://cdn.javarush.com/images/article/802cab24-6052-4a17-b983-199ebae33af4/1024.jpeg">Пожалуй, стоит попробовать подключиться к ней, пока что просто так, отдельно от нашего веб-приложения. Вдруг какие-то косяки возникнут с этим, тогда сразу разберемся. А то позже будем <strong>Hibernate</strong> подключать, делать что-то, настраивать, ковырять, и если там где-то накосячим, то хоть будем знать что проблема не тут. 
+
+Ну и чтобы проверить соединение создадим метод <code>main</code>, временно. Его, в принципе, куда угодно можно засунуть, хоть в класс контроллера, хоть модели или конфигурации, без разницы, нужно просто убедиться с его помощью что все нормально с соединением и можно его удалять. Но чтоб было аккуратнее создадим для него отдельный класс <code>Main</code>:
+
+<pre class="lang-java line-numbers"><code>
+package testgroup.filmography;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+public class Main {
+    public static void main(String[] args) {
+        String url = "jdbc:mysql://localhost:3306/test";
+        String username = "root";
+        String password = "root";
+        System.out.println("Connecting...");
+
+        try (Connection connection = DriverManager.getConnection(url, username, password)) {
+            System.out.println("Connection successful!");
+        } catch (SQLException e) {
+            System.out.println("Connection failed!");
+            e.printStackTrace();
+        }
+    }
+}
+</code></pre>
+Тут все просто, задаем параметры подключения к нашей БД и пытаемся создать соединение. Запускаем этот <code>main</code> и смотрим. 
+
+Итак, у меня выскочило исключение, какие-то проблемы с часовым поясом, и еще какое-то предупреждение насчет SSL. Погуляв по просторам интернета можно выяснить, что это достаточно распространенная проблема, причем при использовании разных версий драйвера (mysql-connector-java) может ругаться по-разному. К примеру, опытным путем я выяснил, что при использовании версии 5.1.47 исключений из-за часового пояса нет, соединение нормально создается, только все равно выскакивает предупреждение SSL. Еще с какими-то версиями вроде было что и по поводу SSL было исключение, а не просто предупреждение. 
+
+Ну ладно, не суть. Можно отдельно попробовать разобраться с этим вопросом, но сейчас не будем в это углубляться. Решается это все довольно просто, нужно указать в <em>url</em> дополнительные параметры, а именно <code>serverTimezone</code>, если проблема с часовым поясом, и <code>useSSL</code>, если проблема с SSL:
+
+<pre class="lang-java line-numbers"><code>
+String url = "jdbc:mysql://localhost:3306/test<strong>?serverTimezone=Europe/Minsk&useSSL=false</strong>";
+</code></pre>
+Теперь мы задали часовой пояс и отключили SSL. Снова запускаем <code>main</code> и вуаля — Connection successful!
+
+Ну что ж, отлично, как создавать соединение разобрались. Класс <code>Main</code> свою задачу в принципе выполнил, можно его удалять.
+<h2 id="ORM-и-JPA">ORM и JPA</h2>По-хорошему, для лучшего понимания, начинать ознакомление с базами данных лучше по порядку, с самого начала, без всяких там гибернейтов и прочего. Поэтому здесь не лишним будет найти какие-то гайды и сначала попробовать поработать с помощью классов JDBC, ручками писать SQL-запросы ну и все такое. Ну а тут пожалуй сразу перейдем к <strong>ORM</strong> модели.
+
+Что же это значит. Об этом конечно опять же желательно почитать отдельно, но я попробую вкратце описать. <strong>ORM</strong> (Object-Relational Mapping или объектно-реляционное отображение) — это технология для отображения объектов в структуры реляционных баз данных, ну т.е. чтобы представить наш джава-объект в виде строки таблицы. Благодаря ORM можно не заботиться написанием SQL-скриптов и сосредоточиться на работе с объектами.
+
+Как этим пользоваться. В  Java есть еще одна замечательная штука, JPA (Java Persistence API), которая реализует ORM концепцию. JPA — это такая спецификация, она описывает требования к объектам, в ней определены различные интерфейсы и аннотации для работы с БД. JPA является по сути описанием, стандартом. Поэтому есть множество конкретных реализаций, одной из которых (причем одной из самых популярных) является Hibernate, в этом собственно и заключается суть этого фреймворка. Hibernate — реализация спецификации JPA, предназначенная для решения задач объектно-реляционного отображения (ORM).
+
+Надо подключить все это дело к нашему проекту. Кроме того, для того, чтобы наш Spring не стоял себе в сторонке а тоже участвовал во всей этой движухе с базами данных, нужно подключить еще пару модулей, т.к. все что мы получили от зависимости <em>spring-webmvc</em> для этого уже не достаточно. Нам еще понадобится <em>spring-jdbc</em>, для работы с базой данных, <em>spring-tx</em>, для поддержки транзакций, и <em>spring-orm</em>, для работы с Hibernate. Добавим зависимости в <code>pom.xml</code>:
+
+<pre class="lang-java line-numbers"><code>
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-orm&lt;/artifactId&gt;
+    &lt;version&gt;5.1.1.RELEASE&lt;/version&gt;
+&lt;/dependency&gt;
+
+&lt;dependency&gt;
+    &lt;groupId&gt;org.hibernate&lt;/groupId&gt;
+    &lt;artifactId&gt;hibernate-core&lt;/artifactId&gt;
+    &lt;version&gt;5.3.7.Final&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+Достаточно этих двух зависимостей. <code>javax.persistence-api</code> подъедет вместе с <em>hibernate-core</em>, а <em>spring-jdbc</em> и <em>spring-tx</em> вместе со <em>spring-orm</em>.
+<h2 id="Entity">Entity</h2>Итак, мы хотим, чтобы объекты класса <code>Film</code> могли быть сохранены в базе данных. Для этого класс должен удовлетворять ряду условий. В JPA для этого есть такое понятие как <em>Сущность (Entity)</em>. Класс-сущность это обыкновенный <em>POJO</em> класс, с приватными полями и геттерами и сеттерами для них. У него обязательно должен быть не приватный конструктор без параметров (или конструктор по-умолчанию), и он должен иметь первичный ключ, т.е. то что будет однозначно идентифицировать каждую запись этого класса в БД. Обо всех требованиях к такому классу также можно почитать отдельно. Сделаем наш класс <code>Film</code> сущностью при помощи JPA аннотаций:
+
+<pre class="lang-java line-numbers"><code>
+package testgroup.filmography.model;
+
+import javax.persistence.*;
+
+@Entity
+@Table(name = "films")
+public class Film {
+
+    @Id
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+
+    @Column(name = "title")
+    private String title;
+
+    @Column(name = "year")
+    private int year;
+
+    @Column(name = "genre")
+    private String genre;
+
+    @Column(name = "watched")
+    private boolean watched;
+
+    // + getters and setters
+}
+</code></pre>
+<ul>
+<li><strong><code>@Entity</code></strong> — указывает на то, что данный класс является сущностью.</li>
+<li><strong><code>@Table</code></strong> — указывает на конкретную таблицу для отображения этой сущности. </li>
+<li><strong><code>@Id</code></strong> — указывает, что данное поле является первичным ключом, т.е. это свойство будет использоваться для идентификации каждой уникальной записи.</li>
+<li><strong><code>@Column</code></strong> — связывает поле со столбцом таблицы. Если имена поля и столбца таблицы совпадают, можно не указывать.</li>
+<li><strong><code>@GeneratedValue</code></strong> — свойство будет генерироваться автоматически, в скобках можно указать каким образом. Не будем сейчас разбираться как именно работают разные стратегии. Достаточно знать, что в данном случае каждое новое значение будет увеличиваться на 1 от предыдущего.</li>
+</ul>Можно для каждого свойства еще дополнительно указать много чего еще, например, что должно быть не нулевое, или уникальное, указать значение по-умолчанию, максимальный размер и т.д. Это пригодится если нужно сгенерировать таблицу на основании этого класса, с Hibernate есть такая возможность. Но мы таблицу уже сами создали и все свойства настроили, так что обойдемся без этого.
+
+<mark>Небольшое замечание.</mark> В документации Hibernate применять аннотации рекомендуется не к полям, а к геттерам. Однако разница между этими подходами довольно тонкая и в нашем простеньком приложении это никак не повлияет. Кроме того, большинство людей все равно ставят аннотации над полями. Поэтому, оставим так, выглядит аккуратнее.
+<h2 id="Свойства-Hibernate">Свойства Hibernate</h2>Ну что ж, приступим к настройке нашего Hibernate. И первым делом вынесем кое-какую информацию, такую как имя пользователя и пароль, url и еще кое-что в отдельный файл. Можно конечно указывать их обычной строкой прямо в классе, как мы делали это когда проверяли соединение (<code>String username = "root";</code> и потом передавали это в метод для создания соединения). Но все таки правильнее хранить такие статические данные в каком-нибудь <code>property</code> файле. И если, например, понадобится изменить базу данных, тогда не придется лазить по всем классам и искать где это используется, достаточно будет один раз изменить значение в этом файле. 
+
+Создадим файл <em>db.properties</em> в директории <em>resources</em>:
+
+<pre class="lang-java line-numbers"><code>
+jdbc.driverClassName=com.mysql.cj.jdbc.Driver
+jdbc.url=jdbc:mysql://localhost:3306/test?serverTimezone=Europe/Minsk&useSSL=false
+jdbc.username=root
+jdbc.password=root
+
+hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+hibernate.show_sql=true
+</code></pre>
+Ну сверху все понятно, параметры для подключения к бд, т.е. имя класса драйвера, урл, имя пользователя и пароль.
+
+<code><strong>hibernate.dialect</strong></code> — это свойство нужно для того, чтобы указать Hibernate какой именно вариант языка SQL используется. Дело в том, что в каждой СУБД для того чтобы расширить возможности, добавить какой-то функционал или что-то оптимизировать, обычно слегка модернизируют язык. В результате получается, что у каждой СУБД свой SQL диалект. Это как с английским, вроде язык один, но в Австралии, США или Британии он будет чуть-чуть отличаться, и какие-то слова могут иметь различное значение. И для того, чтобы не было никаких проблем с пониманием, нужно прямо сообщить Hibernate с чем именно ему предстоит иметь дело.
+
+<code><strong>hibernate.show_sql</strong></code> — благодаря этому свойству в консоли будут отображаться запросы к БД. Это не обязательно, но с этой штукой хоть можно глянуть что происходит, а то иначе может показаться что Hibernate какую-то магию творит. Ну, оно конечно не совсем понятно будет выводить, лучше для этого какой-то логгер использовать, но это как-нибудь в другой раз, пока и так сойдет.
+<h2 id="Конфигурация-Hibernate">Конфигурация Hibernate</h2>Перейдем к настройке конфигурации. Создадим в пакете <code>config</code> класс <code>HibernateConfig</code>: 
+
+<pre class="lang-java line-numbers"><code>
+package testgroup.filmography.config;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.env.Environment;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.orm.hibernate5.HibernateTransactionManager;
+import org.springframework.orm.hibernate5.LocalSessionFactoryBean;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
+
+import javax.sql.DataSource;
+import java.util.Properties;
+
+@Configuration
+@ComponentScan(basePackages = " testgroup.filmography")
+@EnableTransactionManagement
+@PropertySource(value = "classpath:db.properties")
+public class HibernateConfig {
+    private Environment environment;
+
+    @Autowired
+    public void setEnvironment(Environment environment) {
+        this.environment = environment;
+    }
+
+    private Properties hibernateProperties() {
+        Properties properties = new Properties();
+        properties.put("hibernate.dialect", environment.getRequiredProperty("hibernate.dialect"));
+        properties.put("hibernate.show_sql", environment.getRequiredProperty("hibernate.show_sql"));
+        return properties;
+    }
+
+    @Bean
+    public DataSource dataSource() {
+        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        dataSource.setDriverClassName(environment.getRequiredProperty("jdbc.driverClassName"));
+        dataSource.setUrl(environment.getRequiredProperty("jdbc.url"));
+        dataSource.setUsername(environment.getRequiredProperty("jdbc.username"));
+        dataSource.setPassword(environment.getRequiredProperty("jdbc.password"));
+        return dataSource;
+    }
+
+    @Bean
+    public LocalSessionFactoryBean sessionFactory() {
+        LocalSessionFactoryBean sessionFactory = new LocalSessionFactoryBean();
+        sessionFactory.setDataSource(dataSource());
+        sessionFactory.setPackagesToScan("testgroup.filmography.model");
+        sessionFactory.setHibernateProperties(hibernateProperties());
+        return sessionFactory;
+    }
+
+    @Bean
+    public HibernateTransactionManager transactionManager() {
+        HibernateTransactionManager transactionManager = new HibernateTransactionManager();
+        transactionManager.setSessionFactory(sessionFactory().getObject());
+        return transactionManager;
+    }
+}
+</code></pre>
+Тут довольно много всего нового, поэтому лучше всего по каждому пункту дополнительно поискать информацию в разных источниках. Здесь же вкратце пройдемся.
+<ul>
+<li>С <strong><code>@Configuration</code></strong> и <strong><code>@ComponentScan</code></strong> уже разобрались когда делали класс <code>WebConfig</code>.</li>
+<li><strong><code>@EnableTransactionManagement</code></strong> — позволяет использовать <code>TransactionManager</code> для управления транзакциями. Hibernate работает с БД с помощью транзакций, они нужны чтобы какой-то набор операций выполнялся как единое целое, т.е. если в методе возникнут проблемы с какой-то одной операцией, тогда не выполнятся и все остальные, чтобы не было как в классическом примере с переводом денег, когда операция снятия денег с одного счета свершилась, а операция записи на другой не сработала, в итоге деньги исчезли.</li>
+<li><strong><code>@PropertySource</code></strong> — подключение файла свойств, который мы недавно создавали.</li>
+<li><strong><code>Environment</code></strong> — для того, чтобы получить свойства из <code>property</code> файла.</li>
+<li><strong><code>hibernateProperties</code></strong> — этот метод нужен чтобы представить свойства Hibernate в виде объекта Properties</li>
+<li><strong><code>DataSource</code></strong> — используется для создания соединения с БД. Это альтернатива <em>DriverManager</em>, которой мы использовали ранее, когда создавали для проверки подключения метод <code>main</code>. В документации сказано, что <code>DataSource</code> использовать предпочтительнее. Так и поступим, естественно не забыв почитать в интернете в чем разница и преимущества. В частности, одним из преимуществ является возможность создания пула соединений Database Connection Pool (DBCP).</li>
+<li><strong><code>sessionFactory</code></strong> — для создания сессий, с помощью которых осуществляются операции с объектами-сущностями. Здесь мы устанавливаем источник данных, свойства Hibernate и в каком пакете нужно искать классы-сущности.</li>
+<li><strong><code>transactionManager</code></strong> — для настройки менеджера транзакций.</li>
+</ul>Небольшое замечание насчет <code>DataSource</code>. В документации сказано, что использовать стандартную реализацию, а именно <code>DriverManagerDataSource</code>, не рекомендуется, т.к. это только замена нормального пула соединений и в целом подходит только для тестов и всего такого. Для нормального приложения предпочтительнее использовать какую-нибудь DBCP библиотеку. 
+
+Ну, для нашего приложения конечно хватит и того, что есть, но для полноты картины, пожалуй, все-таки используем другую реализацию как советуют. Добавим в <code>pom.xml</code> следующую зависимость:
+
+<pre class="lang-java line-numbers"><code>
+&lt;dependency&gt;
+            &lt;groupId&gt;org.apache.tomcat&lt;/groupId&gt;
+            &lt;artifactId&gt;tomcat-dbcp&lt;/artifactId&gt;
+            &lt;version&gt;9.0.10&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+И в методе <code>dataSource</code> класса <code>HibernateConfig</code> заменим <code>DriverManagerDataSource</code> на <code>BasicDataSource</code> из пакета <code>org.apache.tomcat.dbcp.dbcp2</code>:
+
+<pre class="lang-java line-numbers"><code>
+BasicDataSource dataSource = new BasicDataSource();
+</code></pre>
+Ну вроде все, конфигурация готова, осталось добавить ее в наш <em>AppInitializer</em>:
+
+<pre class="lang-java line-numbers"><code>
+protected Class&lt;?&gt;[] getRootConfigClasses() {
+        return new Class[]{HibernateConfig.class};
+    }
+</code></pre><h2 id="Слой-доступа-к-данным">Слой доступа к данным</h2>Пришло время заняться наконец нашим DAO. Переходим в класс <code>FilmDAOImpl</code> и первым делом удаляем оттуда пробный список, он нам больше не нужен. Добавляем фабрику сессий и будем работать через нее.
+
+<pre class="lang-java line-numbers"><code>
+private SessionFactory sessionFactory;
+
+    @Autowired
+    public void setSessionFactory(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
+    }
+</code></pre>
+Для начала сделаем метод для отображения страницы со списком фильмов, в нем мы будем получать сессию и делать запрос к бд (вытаскивать все записи и формировать список):
+
+<pre class="lang-java line-numbers"><code>
+public List&lt;Film&gt; allFilms() {
+        Session session = sessionFactory.getCurrentSession();
+        return session.createQuery("from Film").list();
+    }
+</code></pre>
+Тут есть 2 момента.
+
+Во-первых, высветилось предупреждение. Это связано с тем, что мы хотим получить параметризованный <code>List&lt;Film&gt;</code>, но метод возвращает просто <code>List</code>, потому что во время компиляции неизвестно какой тип вернет запрос. Так что идея нас предупреждает, что мы делаем небезопасное преобразование, в следствие чего могут возникнуть неприятности. Есть несколько более правильных способов как это сделать, чтоб такого вопроса не возникало. Можно поискать информацию в интернете. Но сейчас не будем с этим заморачиваться. Дело в том, что мы то точно знаем какой тип будет возвращен, так что никаких проблем тут не возникнет, можно просто не обращать на предупреждение внимание. Но, чтоб глаза не мозолило, можно повесить над методом аннотацию <code>@SupressWarning("unchecked")</code>. Этим мы как бы скажем компилятору, мол спасибо, дружище, за беспокойство, но я знаю, что делаю и держу все под контролем, поэтому можешь расслабиться и не беспокоиться на счет этого метода.
+
+Во-вторых, идея подчеркивает красным "<code>from Film</code>". Просто это HQL (Hibernate Query Language) запрос и идея не понимает, правильно там все или есть ошибка. Можно зайти в настройки идеи и вручную все отрегулировать (ищем в интернете если интересно). Либо можно просто добавить поддержку Hibernate фреймворка, для этого жмем правой кнопкой по проекту, выбираем <em>Add Framework Support</em>, ставим галочку для <em>Hibernate</em> и жмем ОК. 
+
+После этого скорее всего в классе-сущности (<code>Film</code>) тоже много всего подчеркнет красным, например там где аннотация <code>@Table(name = "films")</code> выдаст предупреждение <em>Cannot resolve table 'films'</em>. Здесь опять же ничего страшного, это не ошибка проекта, все скомпилируется и будет работать. Идея подчеркивает потому что ничего не знает про нашу базу. Чтобы это исправить сделаем интеграцию идеи с БД. <em>View </em>-> <em>Tool Windows</em> -> <em>Persistense</em> (откроется вкладка) -> <em>правая кнопка мыши выбираем Assign Data Sources</em> -> <em>в Data Source указываем соединение с БД</em> и <em>жмем ОК</em>.
+<img data-id="405085ea-a1df-410d-a53a-20d0af6b187f" data-max-width="850" alt="Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 3) - 3" src="https://cdn.javarush.com/images/article/405085ea-a1df-410d-a53a-20d0af6b187f/1024.jpeg">Когда это все исправили осталось еще кое-что. Переходим на уровень выше, в сервис. В классе <code>FilmServiceImpl</code> помечаем метод <code>allFilms</code> spring аннотацией <code>@Transactional</code>, которая укажет на то, что метод должен выполняться в транзакции (без этого Hibernate работать откажется):
+
+<pre class="lang-java line-numbers"><code>
+@Transactional
+public List&lt;Film&gt; allFilms() {
+    return filmDAO.allFilms();
+}
+</code></pre>
+Так, тут все готово, в контроллере вроде ничего трогать не нужно. Ну что ж, похоже настал момент истины, жмем <em>Run</em> и смотрим что получится.
+<img data-id="e459debd-1973-4671-b065-9a92fb419e5e" data-max-width="850" alt="Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 3) - 4" src="https://cdn.javarush.com/images/article/e459debd-1973-4671-b065-9a92fb419e5e/1024.jpeg">И вот она наша табличка, и на этот раз полученная не из списка, который мы сами же сделали прямо в классе, а из базы данных. Замечательно, похоже все работает. Теперь таким же макаром делаем все остальные CRUD операции с помощью методов сессии. В результате класс выглядит так:
+
+<pre class="lang-java line-numbers"><code>
+package testgroup.filmography.dao;
+
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+import testgroup.filmography.model.Film;
+
+import java.util.List;
+
+@Repository
+public class FilmDAOImpl implements FilmDAO {
+    private SessionFactory sessionFactory;
+
+    @Autowired
+    public void setSessionFactory(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public List&lt;Film&gt; allFilms() {
+        Session session = sessionFactory.getCurrentSession();
+        return session.createQuery("from Film").list();
+    }
+
+    @Override
+    public void add(Film film) {
+        Session session = sessionFactory.getCurrentSession();
+        session.persist(film);
+    }
+
+    @Override
+    public void delete(Film film) {
+        Session session = sessionFactory.getCurrentSession();
+        session.delete(film);
+    }
+
+    @Override
+    public void edit(Film film) {
+        Session session = sessionFactory.getCurrentSession();
+        session.update(film);
+    }
+
+    @Override
+    public Film getById(int id) {
+        Session session = sessionFactory.getCurrentSession();
+        return session.get(Film.class, id);
+    }
+}
+</code></pre>
+Теперь осталось только не забыть зайти в сервис и повесить на методы аннотацию <code>@Transactional</code>.
+
+Вот и все, готово. Можно теперь запустить и проверить. Понажимать ссылки и кнопки, попробовать добавить/удалить/изменить записи. Если все сделано правильно должно работать. Теперь это уже полноценное CRUD приложение с использованными Hibernate, Spring, MySQL.
+
+Продолжение следует...
+
+<a href="https://javarush.com/groups/posts/2253-znakomstvo-s-maven-spring-mysql-hibernate-i-pervoe-crud-prilozhenie-chastjh-1" target="_blank" rel="nofollow">Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 1)</a>
+<a href="https://javarush.com/groups/posts/2252-znakomstvo-s-maven-spring-mysql-hibernate-i-pervoe-crud-prilozhenie-chastjh-2" target="_blank" rel="nofollow">Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 2)</a>
+Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 3)
+<a href="https://javarush.com/groups/posts/2250-znakomstvo-s-maven-spring-mysql-hibernate-i-pervoe-crud-prilozhenie-chastjh-4" target="_blank" rel="nofollow">Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 4)</a>

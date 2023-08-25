@@ -1,0 +1,212 @@
+Почему NULL - это плохо?
+<p>----------------------------------------</p>
+Почему NULL – это плохо?
+
+Вот простой пример использования NULL  в Java:
+
+public Employee getByName(String name) {
+  int id = database.find(name);
+  if (i
+<p>----------------------------------------</p>
+<h4>Почему NULL – это плохо?</h4>
+
+Вот простой пример использования NULL  в Java:
+
+<code>public Employee getByName(String name) {
+  int id = database.find(name);
+  if (id == 0) {
+    return null;
+  }
+  return new Employee(id);
+}
+</code>
+Что не так с этим методом?
+
+Он может вернуть NULL вместо объекта – вот что не так. Использование NULL – ужасная практика в ООП, и этого стоит избегать всеми способами. По данному вопросу уже опубликовано достаточно разных мнений, в том числе презентация Tony Hoare <a href="http://www.infoq.com/presentations/Null-References-The-Billion-Dollar-Mistake-Tony-Hoare" rel="nofollow" >«Нулевые ссылки: Ошибка на миллиард долларов»</a> и целая книга David West <a href="http://www.amazon.com/gp/product/0735619654/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0735619654&linkCode=as2&tag=yegor256com-20&linkId=NQQHJZPHOKM6BTCT" rel="nofollow" >«Объектно ориентированное мышление».</a>
+
+Здесь я попытаюсь суммировать все доводы и показать примеры того, как можно избежать использования  NULL, заменив его подходящими объектно-ориентированными конструкциями.
+
+Сначала рассмотрим две возможные альтернативы NULL.<cut>
+
+Первая – это паттерн проектирования <a href="http://en.wikipedia.org/wiki/Null_Object_pattern" rel="nofollow" >«Нулевой Объект»</a> (лучше всего реализовывать его с помощью константы):
+
+<code>public Employee getByName(String name) {
+  int id = database.find(name);
+  if (id == 0) {
+    return Employee.NOBODY;
+  }
+  return Employee(id);
+}
+</code>
+Вторая возможная альтернатива – <a href="http://martinfowler.com/ieeeSoftware/failFast.pdf" rel="nofollow" >«быстрое поражение»</a> через выбрасывание исключения в случае, если вернуть объект невозможно:
+
+<code>public Employee getByName(String name) {
+  int id = database.find(name);
+  if (id == 0) {
+    throw new EmployeeNotFoundException(name);
+  }
+  return Employee(id);
+}
+</code>
+
+А теперь давайте познакомимся с доводами против использования NULL
+
+Перед написанием этого поста я познакомился, кроме вышеупомянутых презентации Tony Hoare
+И книги David West, с целым рядом публикаций. Это <a href="http://www.amazon.com/dp/0132350882/" rel="nofollow" >«Чистый код»</a> Robert Martin, <a href="http://www.amazon.com/dp/0735619670/" rel="nofollow" >«Совершенный код»</a> Steve McConnell, <a href="http://elegantcode.com/2010/05/01/say-no-to-null/" rel="nofollow" >«Скажите «Нет» NULL»</a> John Sonmez и дискуссией на StackOverflow под названием <a href="http://stackoverflow.com/questions/1274792/is-returning-null-bad-design" rel="nofollow" >«Возвращать NULL – плохая практика?»</a>
+
+<h5>Обработка ошибок вручную</h5>
+Каждый раз, когда вы на входе получаете объект, вы должны проверять, является он ссылкой на действительный объект или NULL’ом. Если вы забудете проверить, ваша программа может быть прервана прямо во время исполнения выброшенным <a href="http://docs.oracle.com/javase/7/docs/api/java/lang/NullPointerException.html " rel="nofollow" >NullPointerExeption</a> (NPE).
+
+Из-за этого ваш код начинает наполняться многочисленными проверками и разветвлениями if/then/else.
+
+<code>// this is a terrible design, don't reuse
+Employee employee = dept.getByName("Jeffrey");
+if (employee == null) {
+  System.out.println("can't find an employee");
+  System.exit(-1);
+} else {
+  employee.transferTo(dept2);
+}
+</code>
+
+Именно так исключительные ситуации должны обрабатываться в <a href="http://en.wikipedia.org/wiki/C_%28programming_language%29" rel="nofollow" >С</a>   и других строго процедурных языках программирования. В ООП <a href="http://en.wikipedia.org/wiki/Exception_handling" rel="nofollow" >обработка исключений</a> введена главным образом как раз для того, чтобы избавиться от вручную написанных блоков обработки. В ООП мы позволяем исключениям всплывать пока они не достигнут обработчика ошибок всего приложения, и благодаря этому наш код становится намного чище и короче:
+
+<code>dept.getByName("Jeffrey").transferTo(dept2);
+</code>
+
+Считайте NULL ссылки пережитками процедурного стиля программирования и используйте 
+1) Нулевые Объекты или 
+2) Исключения вместо них.
+
+<h5>Неоднозначное понимание</h5>
+Чтобы точно передать в названии смысл происходящего, метод  <code>getByName()</code>   должен быть переименован в  <code>getByNameOrNullIfNotFound()</code>. То же самое нужно сделать для каждого метода, который возвращает объект или NULL, иначе при чтении кода не избежать неоднозначности. Таким образом, для того, чтобы названия методов были точны, вы должны давать методам более длинные имена.
+
+Чтобы избежать неоднозначности всегда возвращайте реальный объект, нулевой объект или выбрасывайте исключение.
+
+Кто-то может возразить, что иногда нам просто необходимо возвратить NULL чтобы добиться нужного результата. Например, метод <code>get()</code> интерфейса <a href="http://docs.oracle.com/javase/7/docs/api/java/util/Map.html" rel="nofollow" >Map</a> в Java возвращает NULL, когда в Map нет больше объектов.
+
+<code>Employee employee = employees.get("Jeffrey");
+if (employee == null) {
+  throw new EmployeeNotFoundException();
+}
+return employee;
+</code>
+
+Благодаря использованию NULL в Map этому коду хватает всего одного цикла поиска для получения результата. Если мы перепишем Map таким образом, чтобы метод get() выбрасывал исключение в случае, если ничего не найдено, наш код будет выглядеть так:
+
+<code>if (!employees.containsKey("Jeffrey")) { // first search
+  throw new EmployeeNotFoundException();
+}
+return employees.get("Jeffrey"); // second search
+</code>
+
+Очевидно, что этот метод в два раза медленнее, чем исходный. Что же делать?
+В интерфейсе Map (без намерения обидеть разработчиков) есть недостаток проектирования. Его метод get() должен был бы возвращать Iterator, и тогда наш код выглядел бы так:
+
+<code>Iterator found = Map.search("Jeffrey");
+if (!found.hasNext()) {
+  throw new EmployeeNotFoundException();
+}
+return found.next();
+</code>
+
+Кстати, именно так спроектирован метод STL <a href="http://en.cppreference.com/w/cpp/container/map/find" rel="nofollow" >map::find()</a> в С++.
+
+<h5>Компьютерное мышление против объектно-ориентированного</h5>
+Строка кода  <code>if (employee == null)</code>   вполне понятна тому, кто знает, что объект в Java – это указатель на структуру данных, а NULL – это указатель на ничто (в процессорах Intel x86 – 0x00000000).
+
+Однако если вы начнете мыслить в объектном стиле, эта строка становится намного менее осмысленной. Вот как наш код выглядит с объектной точки зрения:
+
+<blockquote>- Здравствуйте, это отдел разработки ПО?
+- Да.
+- Будьте добры, пригласите к телефону вашего сотрудника Джефри.
+- Подождите минутку...
+- Здравствуйте.
+- Вы NULL?</blockquote>
+
+Последний вопрос звучит немного странно, не так ли?
+
+Если вместо этого после вашей просьбы пригласить к телефону Джефри на том конце просто повесят трубку, это вызовет для нас определенные сложности (Исключение). В этом случае мы можем попробовать перезвонить или же доложим нашему начальнику о том, что мы не смогли поговорить с Джефри, и завершим свою основную задачу.
+
+Кроме этого, на той стороне вам могут предложить поговорить с другим человеком, который, хоть и не является Джефри, может либо помочь вам с большинством ваших вопросов, либо отказаться помогать, если нам нужно узнать что-то, что знает только Джефри (Нулевой Объект).
+
+<h5>Медленный провал</h5>
+Вместо <a href="http://martinfowler.com/ieeeSoftware/failFast.pdf" rel="nofollow" >быстрого завершения работы</a>, код выше пытается умереть медленно, убивая других на своем пути. Вместо того, чтобы дать всем понять, что что-то пошло не так и нужно немедленно начинать обработку исключительного события, он пытается скрыть свой провал от клиента.
+
+Это очень похоже на ручную обработку исключений, о которой мы говорили выше.
+
+Делать свой код как можно более хрупким и позволять ему прерываться, если это нужно – хорошая практика. 
+
+Делайте свои методы предельно требовательными к данным, с которыми они работают. Позволяйте им жаловаться, выкидывая исключения, если данных, которые им предоставили, недостаточно, или же данные просто не подходят для использования в этом методе по задуманному сценарию.
+
+В противном случае возвращайте Нулевой Объект, который ведет себя каким-то общепринятым способоы и выбрасывает исключения во всех других случаях.
+
+<code>public Employee getByName(String name) {
+  int id = database.find(name);
+  Employee employee;
+  if (id == 0) {
+    employee = new Employee() {
+      @Override
+      public String name() {
+        return "anonymous";
+      }
+      @Override
+      public void transferTo(Department dept) {
+        throw new AnonymousEmployeeException(
+          "I can't be transferred, I'm anonymous"
+        );
+      }
+    };
+  } else {
+    employee = Employee(id);
+  }
+  return employee;
+}
+</code>
+
+<h5>Изменяемые и незавершенные объекты</h5>
+Вообще, <a href="http://www.yegor256.com/2014/06/09/objects-should-be-immutable.html" rel="nofollow" >строго рекомендуется</a> проектировать объекты так, чтобы они были неизменяемыми. Это значит, объект должен получить все необходимые данные при его создании и никогда не менять своего состояния в течение всего жизненного цикла.
+
+Значения NULL очень часто используются в паттерне проектирования <a href="http://en.wikipedia.org/wiki/Lazy_loading" rel="nofollow" >«Ленивая загрузка»</a> для того, чтобы сделать объекты незавершенными и изменяемыми. 
+
+Пример:
+
+<code>public class Department {
+  private Employee found = null;
+  public synchronized Employee manager() {
+    if (this.found == null) {
+      this.found = new Employee("Jeffrey");
+    }
+    return this.found;
+  }
+}
+</code>
+
+Несмотря на то, что эта технология широко распространена, для ООП она является антипаттерном. И главным образом потому, что заставляет объект нести ответственность за проблемы с производительностью у вычислительной платформы, а это как раз то, о чем объект Employee не может быть осведомлен.
+
+Вместо того, чтобы управлять своим состоянием и вести себя соответствующим своему предназначению образом, объект вынужден заботиться о кэшировании своих собственных результатов – вот к чему приводит «ленивая загрузка».
+А ведь кэширование – это вовсе не то, чем занимается сотрудник в офисе, не так ли?
+
+Выход? Не используйте «ленивую загрузку» таким примитивным способом, как в вышеприведенном примере. Вместо этого переместите кэширование проблем на другой уровень своего приложения.
+
+Например, в Java вы можете использовать возможности аспектно-ориентированного программирования. Например, в <a href="http://aspects.jcabi.com/" rel="nofollow" >jcabi-aspects</a> есть аннотация <a href="http://aspects.jcabi.com/annotation-cacheable.html" rel="nofollow" >@Cacheable</a>, которая кэширует значение, возвращаемое методом. 
+
+<code>import com.jcabi.aspects.Cacheable;
+public class Department {
+  @Cacheable(forever = true)
+  public Employee manager() {
+    return new Employee("Jacky Brown");
+  }
+}
+</code>
+
+Надеюсь, этот анализ был достаточно убедителен, чтобы вы прекратили обNULLять свой код :)
+
+Оригинал статьи <a href="http://www.yegor256.com/2014/05/13/why-null-is-bad.html#ambiguous-semantic" rel="nofollow" >здесь</a>.
+
+Вам также могут быть интересны такие темы как:
+•	<a href="http://www.yegor256.com/2014/10/03/di-containers-are-evil.html" rel="nofollow" >DI Containers are Code Polluters</a>
+•	<a href="http://www.yegor256.com/2014/09/16/getters-and-setters-are-evil.html" rel="nofollow" >Getters/Setters. Evil. Period.</a>
+•	<a href="http://www.yegor256.com/2014/09/16/getters-and-setters-are-evil.html" rel="nofollow" >Anti-Patterns in OOP</a>
+•	<a href="http://www.yegor256.com/2014/06/19/avoid-string-concatenation.html" rel="nofollow" >Avoid String Concatenation</a>
+•	<a href="http://www.yegor256.com/2014/06/09/objects-should-be-immutable.html" rel="nofollow" >Objects Should Be Immutable</a>

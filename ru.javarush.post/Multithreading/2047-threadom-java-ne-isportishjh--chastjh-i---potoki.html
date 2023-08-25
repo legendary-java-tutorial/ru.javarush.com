@@ -1,0 +1,191 @@
+Thread'ом Java не испортишь: Часть I — потоки
+<p>----------------------------------------</p>
+Данный обзор предлагает вспомнить, откуда берутся потоки, как они связаны с процессами. Как их увидеть и как вообще потоки организованы. Многопоточность в Java заложена была с самых первых дней. Поэтому давайте кратко ознакомимся с тем, про что это — многопоточность ...
+<p>----------------------------------------</p>
+<h2>Вступление</h2>Многопоточность в Java была заложена с самых первых дней. Поэтому давайте кратко ознакомимся с тем, про что это — многопоточность.
+<img data-max-width="800" data-id="d11b1a73-0135-42f8-a780-056b8d124192" src="/images/article/d11b1a73-0135-42f8-a780-056b8d124192/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть I — потоки - 1">Возьмём за точку отсчёта официальный урок от Oracle: "<a href="https://docs.oracle.com/javase/tutorial/getStarted/cupojava/index.html" target="_blank" rel="nofollow">Lesson: The "Hello World!" Application</a>". 
+
+Код нашего Hello World приложения немного изменим на следующий:
+
+<pre class="lang-java line-numbers"><code>
+class HelloWorldApp {
+    public static void main(String[] args) {
+        System.out.println("Hello, " + args[0]);
+    }
+}
+</code></pre>
+<code>args</code> — это массив входных параметров, передаваемых при запуске программы. Сохраним данный код в файл с именем, которое совпадает с именем класса и с расширением <code>.java</code>. Скомпилируем при помощи утилиты <a href="https://docs.oracle.com/javase/8/docs/technotes/tools/windows/javac.html" target="_blank" rel="nofollow">javac</a>: <code>javac HelloWorldApp.java</code>
+
+После этого вызовем наш код с каким-нибудь параметром, например, Roger: <code>java HelloWorldApp Roger</code>
+<img data-max-width="512" data-id="4096999d-c3f3-4ca8-9bf0-2e3a4b72b0a6" src="/images/article/4096999d-c3f3-4ca8-9bf0-2e3a4b72b0a6/512.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть I — потоки - 2">У нашего кода сейчас есть серьёзный изъян. Если не передать никакой аргумент (т.е. выполнить просто java HelloWorldApp), мы получим ошибку:
+
+<pre class="lang-java line-numbers"><code>
+Exception in thread "main" java.lang.ArrayIndexOutOfBoundsException: 0
+        at HelloWorldApp.main(HelloWorldApp.java:3)
+</code></pre>
+Возникло исключение (т.е. ошибка) в thread (в потоке) с именем <code>main</code>.
+
+Получается, в Java есть какие-то потоки? Отсюда начинается наш путь.
+<h2>Java и потоки</h2>Чтобы разобраться, что такое поток, надо понять, как происходит запуск Java приложения.
+
+Давайте изменим наш код следующим образом:
+
+<pre class="lang-java line-numbers"><code>
+class HelloWorldApp {
+    public static void main(String[] args) {
+		while (true) { 
+			//Do nothing
+		}
+	}
+}
+</code></pre>
+Теперь давайте скомпилируем это снова при помощи javac.
+
+Далее для удобства запустим наш Java код в отдельном окне. В Windows это можно сделать так: <code>start java HelloWorldApp</code>.
+
+Теперь при помощи утилиты <a href="https://docs.oracle.com/javase/8/docs/technotes/tools/unix/jps.html" target="_blank" rel="nofollow">jps</a> посмотрим, какую информацию нам сообщит Java:
+<img data-max-width="512" data-id="11a50b18-bd63-4cbf-b69c-539be300aefc" src="/images/article/11a50b18-bd63-4cbf-b69c-539be300aefc/512.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть I — потоки - 3">Первое число — это PID или Process ID, идентификатор процесса. Что такое процесс?
+
+<pre class="lang-java line-numbers"><code>
+Процесс — это совокупность кода и данных, разделяющих общее виртуальное адресное пространство.
+</code></pre> 
+При помощи процессов выполнение разных программ изолировано друг от друга: каждое приложение использует свою область памяти, не мешая другим программам. Более подробно советую ознакомиться в статье: "<a href="https://habr.com/post/164487/" target="_blank" rel="nofollow">https://habr.com/post/164487/</a>".
+
+Процесс не может существовать без потоков, поэтому если существует процесс, в нём существует хотя бы один поток.
+
+Как же это происходит в Java? Когда мы запускаем Java программу, ее выполнение начинается с метода <code>main</code>. Мы как бы входим в программу, поэтому этот особый метод <code>main</code> называется точкой входа, или "entry point". Метод <code>main</code> всегда должен быть <code>public static void</code>, чтобы виртуальная машина Java (JVM) смогла начать выполнение нашей программы. Подробнее см. "<a href="https://stackoverflow.com/questions/146576/why-is-the-java-main-method-static/151666#151666" target="_blank" rel="nofollow">Why is the Java main method static?</a>". 
+
+Получается, что java launcher (java.exe или javaw.exe) — это простое приложение (simple C application): оно загружает различные DLL, которые на самом деле являются JVM. 
+
+Java launcher выполняет определённый набор Java Native Interface (JNI) вызовов. JNI — это механизм, соединяющий мир виртуальной машины Java и мир C++. Получается, что launcher — это не JVM, а её загрузчик. Он знает, какие правильные команды нужно выполнить, чтобы запустилась JVM. Знает, как организовать всё необходимое окружение при помощи JNI вызовов.
+
+В эту организацию окружения входит и создание главного потока, который обычно называется <code>main</code>.
+
+Чтобы нагляднее рассмотреть, какие живут потоки в java процессе, используем программу <a href="https://visualvm.github.io/" target="_blank" rel="nofollow">jvisualvm</a>, которая входит в поставку JDK.
+
+Зная pid процесса, мы можем открыть данные сразу по нему: <code>jvisualvm --openpid айдипроцесса</code>
+<img data-max-width="800" data-id="701b8cbb-5750-4efc-bdea-c2d19f629339" src="/images/article/701b8cbb-5750-4efc-bdea-c2d19f629339/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть I — потоки - 4">Интересно, что каждый поток имеет свою обособленную область в памяти, выделенной для процесса. Эту структуру памяти называют стеком.
+
+Стек состоит из фрэймов. Фрэйм — это точка вызова метода, execution point. Также фрэйм может быть представлен как StackTraceElement (см. Java API для <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/StackTraceElement.html" target="_blank" rel="nofollow">StackTraceElement</a>). 
+
+Подробнее про память, выделяемую каждому потоку, можно прочитать <a href="https://stackoverflow.com/questions/36898701/how-does-java-jvm-allocate-stack-for-each-thread" rel="nofollow" target="_blank">тут</a>.  
+
+Если посмотреть на <a href="https://docs.oracle.com/javase/8/docs/api/" target="_blank" rel="nofollow">Java API</a> и поискать там слово Thread, мы увидим, что есть класс <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html" target="_blank" rel="nofollow">java.lang.Thread</a>.
+
+Именно этот класс представляет в Java поток, и с ним нам и предстоит работать.
+<img data-max-width="512" data-id="989d7446-4d6f-4b26-98b4-c2ab6243885f" src="/images/article/989d7446-4d6f-4b26-98b4-c2ab6243885f/512.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть I — потоки - 5"><div class="email-subscription"><iframe frameborder="0" src="https://secure.esputnik.com.ua/4Q0Ef6d2SOs" width="100%" height="200" scrolling="no"></iframe></div><h2>java.lang.Thread</h2>Поток в Java представлен в виде экземпляра класса <code>java.lang.Thread</code>. Стоит сразу понимать, что экземпляры класса Thread в Java сами по себе не являются потоками. Это лишь своего рода API для низкоуровневых потоков, которыми управляет JVM и операционная система. Когда при помощи java launcher'а мы запускаем JVM, она создает главный поток с именем <code>main</code> и ещё несколько служебных потоков.
+
+Как сказано в JavaDoc класса Thread:
+
+<code>When a Java Virtual Machine starts up, there is usually a single non-daemon thread</code>
+
+Существует 2 типа потоков: демоны и не демоны. Демон-потоки — это фоновые потоки (служебные), выполняющие какую-то работу в фоне. Такой интересный термин — это отсылка к "демону Максвелла", о чём подробнее можно прочитать в википедии в статье про "<a href="https://ru.wikipedia.org/wiki/Демон_(программа)" target="_blank" rel="nofollow">демонов</a>".
+
+Как сказано в документации, JVM продолжает выполнение программы (процесса), до тех пор, пока:
+<ul>
+<li>Не вызван метод <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Runtime.html#exit-int-" target="_blank" rel="nofollow">Runtime.exit</a></li>
+<li>Все НЕ демон-потоки завершили свою работу (как без ошибок, так и с выбрасыванием исключений)</li>
+</ul>Отсюда и важная деталь: демон-потоки могут быть завершены на любой выполняемой команде. Поэтому целостность данных в них не гарантируется. Поэтому, демон потоки подходят для каких-то служебных задач. Например, в Java есть поток, который отвечает за обработку методов finalize или потоки, относящиеся к сборщику мусора (Garbage Collector, GC).
+
+Каждый поток входит в какую-то группу (<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/ThreadGroup.html" target="_blank" rel="nofollow">ThreadGroup</a>).
+
+А группы могут входит друг в друга, образовывая некоторую иерархию или структуру.
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args){
+	Thread currentThread = Thread.currentThread();
+	ThreadGroup threadGroup = currentThread.getThreadGroup();
+	System.out.println("Thread: " + currentThread.getName());
+	System.out.println("Thread Group: " + threadGroup.getName());
+	System.out.println("Parent Group: " + threadGroup.getParent().getName());
+}
+</code></pre>
+Группы позволяют упорядочить управление потоками и вести их учёт.
+
+Помимо групп, у потоков есть свой обработчик исключений. Взглянем на пример:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args) {
+	Thread th = Thread.currentThread();
+	th.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+		@Override
+		public void uncaughtException(Thread t, Throwable e) {
+			System.out.println("Возникла ошибка: " + e.getMessage());
+		}
+	});
+    System.out.println(2/0);
+}
+</code></pre>
+Деление на ноль вызовет ошибку, которая будет перехвачена обработчиком. Если обработчик не указывать самому, отработает реализация обработчика по умолчанию, которая будет в StdError выводить стэк ошибки. Подробнее можно прочитать в обзоре <a href="http://pro-java.ru/java-dlya-opytnyx/obrabotchik-neperexvachennyx-isklyuchenij-java/" target="_blank" rel="nofollow">http://pro-java.ru/java-dlya-opytnyx/obrabotchik-neperexvachennyx-isklyuchenij-java/</a>".
+
+Кроме того, у потока есть приоритет. Подробнее про приоритеты можно прочитать в статье "<a href="https://www.geeksforgeeks.org/java-thread-priority-multithreading/" target="_blank" rel="nofollow">Java Thread Priority in Multithreading</a>".
+<h2>Создание потока</h2>Как и сказано в документации, у нас 2 способа создать поток.
+
+Первый — создать своего наследника. Например:
+
+<pre class="lang-java line-numbers"><code>
+public class HelloWorld{
+    public static class MyThread extends Thread {
+        @Override
+        public void run() {
+            System.out.println("Hello, World!");  
+        }
+    }
+    
+    public static void main(String []args){
+        Thread thread = new MyThread();
+        thread.start();
+    }
+}
+</code></pre>
+Как видим, запуск задачи выполняется в методе <code>run</code>, а запуск потока в методе <code>start</code>. Не стоит их путать, т.к. если мы запустим метод <code>run</code> напрямую, никакой новый поток не будет запущен. Именно метод <code>start</code> просит JVM создать новый поток.
+
+Вариант с потомком от Thread плох уже тем, что мы в иерархию классов включаем Thread. Второй минус — мы начинаем нарушать принцип "Единственной ответственности" SOLID, т.к. наш класс становится одновременно ответственным и за управление потоком и за некоторую задачу, которая должна выполняться в этом потоке.
+
+Как же правильно? Ответ находится в том самом методе <code>run</code>, который мы переопределяем:
+
+<pre class="lang-java line-numbers"><code>
+public void run() {
+	if (target != null) {
+		target.run();
+	}
+}
+</code></pre>
+Здесь <code>target</code> — это некоторый <code>java.lang.Runnable</code>, который мы можем передать для Thread при создании экземпляра класса. Поэтому, мы можем сделать так:
+
+<pre class="lang-java line-numbers"><code>
+public class HelloWorld{
+    public static void main(String []args){
+        Runnable task = new Runnable() {
+            public void run() {
+                System.out.println("Hello, World!");
+            } 
+        };
+        Thread thread = new Thread(task);
+        thread.start();
+    }
+}
+</code></pre>
+А ещё <code>Runnable</code> является функциональным интерфейсом начиная с Java 1.8. Это позволяет писать код задач для потоков ещё красивее:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args){
+	Runnable task = () -&gt; { 
+		System.out.println("Hello, World!");
+	};
+	Thread thread = new Thread(task);
+	thread.start();
+}
+</code></pre><h2>Итого</h2>Итак, надеюсь, из сего повестования понятно, что такое поток, как они существуют и какие базовые операции с ними можно выполнять. 
+
+В <a href="https://javarush.com/groups/posts/2048-threadom-java-ne-isportishjh--chastjh-ii---sinkhronizacija" target="_blank">следующей части</a> стоит разобраться, как потоки взаимодействуют друг с другом и какой у них жизненный цикл.
+
+#Viacheslav
+<table>
+<tbody><tr>
+<th>Что еще почитать:</th></tr><tr>
+<td><a href="https://javarush.com/groups/posts/2048-threadom-java-ne-isportishjh--chastjh-ii---sinkhronizacija" target="_blank">Thread'ом Java не испортишь: Часть II — синхронизация</a><br>
+<a href="https://javarush.com/groups/posts/2060-threadom-java-ne-isportishjh--chastjh-iii---vzaimodeystvie" target="_blank">Thread'ом Java не испортишь: Часть III - взаимодействие</a><br>
+<a href="https://javarush.com/groups/posts/2065-threadom-java-ne-isportishjh--chastjh-iv---callable-future-i-druzjhja" target="_blank">Thread'ом Java не испортишь: Часть IV - Callable, Future и друзья</a><br>
+<a href="https://javarush.com/groups/posts/2078-threadom-java-ne-isportishjh--chastjh-v---executor-threadpool-fork-join-pool" target="_blank">Thread'ом Java не испортишь: Часть V - Executor, ThreadPool, Fork Join</a><br>
+<a href="https://javarush.com/groups/posts/2111-threadom-java-ne-isportishjh--chastjh-vi---k-barjheru" target="_blank">Thread'ом Java не испортишь: Часть VI - К барьеру!</a></td></tr></tbody></table>

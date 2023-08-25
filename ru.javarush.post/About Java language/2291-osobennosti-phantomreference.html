@@ -1,0 +1,246 @@
+PhantomReference в Java
+<p>----------------------------------------</p>
+Привет! На сегодняшнем занятии мы подробно поговорим о «фантомных ссылках» (PhantomReference) в Java. Что это за ссылки такие, почему называются «фантомными» и как ими пользоваться? Как ты помнишь, в Java есть 4 вида ссылок...
+<p>----------------------------------------</p>
+Привет! На сегодняшнем занятии мы подробно поговорим о «фантомных ссылках» (PhantomReference) в Java. Что это за ссылки такие, почему называются «фантомными» и как ими пользоваться?
+
+Как ты помнишь, в Java есть 4 вида ссылок:
+<ol>
+<li><p><span class="code">StrongReference</span> (обычные ссылки, которые мы создаем при создании объекта):</p>
+<pre class="inline-block language-java"><code>Cat cat = new Cat()</code></pre>
+<p><span class="code">cat</span> в этом примере — Strong-ссылка.</p></li>
+<li><p><span class="code">SoftReference</span> (мягкая ссылка). У нас была <a href="https://javarush.com/quests/lectures/questcollections.level04.lecture03" target="_blank">лекция</a> про эти ссылки.</p></li>
+<li><p><span class="code">WeakReference</span> (слабая ссылка). Про них тоже была лекция, <a href="https://javarush.com/quests/lectures/questcollections.level04.lecture05" target="_blank">вот</a>.</p></li>
+<li><p><span class="code">PhantomReference</span> (фантомная ссылка).</p></li>
+</ol>Объекты трех последних видов типизированные (например, <span class="code">SoftReference&lt;Integer&gt;</span>, <span class="code">WeakReference&lt;MyClass&gt;</span>).
+
+Классы <code>SoftReference</code>, <code>WeakReference</code> и <code>PhantomReference</code> наследуются от класса <code><strong>Reference</strong></code>.
+
+Наиболее важные методы при работе с этими классами:
+<ul>
+<li><p><code><strong>get()</strong></code> — возвращает объект, на который ссылается эта ссылка;</p></li>
+<li><code><strong>clear()</strong></code> — удаляет ссылку на объект.<p></p></li>
+</ul>Эти методы ты помнишь по лекциям о <code>SoftReference</code> и <code>WeakReference</code>. Важно помнить, что они работают по-разному с разными видами ссылок.
+
+Мы сегодня не будем подробно рассматривать первые три типа, а поговорим о фантомных ссылках. Остальные виды ссылок мы тоже затронем, но только в той части, где будем говорить, чем фантомные ссылки от них отличаются.
+
+Поехали! :)
+
+Начнем с того, зачем нам вообще нужны фантомные ссылки.
+
+Как ты знаешь, освобождением памяти от ненужных объектов Java занимается <strong>сборщик мусора</strong> (Garbage Collector или gc).
+
+<strong>Сборщик удаляет объект в два «прохода».</strong>
+
+В первый проход он только смотрит на объекты, и, если надо, помечает его как «ненужный, подлежащий удалению». Если у этого объекта был переопределен метод <code>finalize()</code>, он вызывается. Или не вызывается — как повезет. Ты наверняка помнишь, что <code>finalize()</code> — штука непостоянная :)
+
+Во второй проход сборщика объект  удаляется, и память освобождается.
+
+Такое непредсказуемое поведение сборщика мусора создает для нас ряд проблем.
+
+Мы не знаем когда именно начнется работа сборщика мусора. Мы не знаем будет ли вызван метод <code>finalize()</code>. Плюс ко всему, во время работы <code>finalize()</code> может быть создана strong-ссылка на объект, и тогда он вообще не будет удален. В системах, требовательных к объему свободной памяти, это может легко привести к <code><strong>OutOfMemoryError</strong></code>.
+
+Все это подталкивает нас к использованию <strong>фантомных ссылок</strong>.
+
+Дело в том, что это меняет поведение сборщика мусора. Если на объект остались только фантомные ссылки, то у него:
+<ul>
+<li><p>вызывается метод <code>finalize()</code> (если он переопределен);</p></li>
+<li><p>если после работы <code>finalize()</code> ничего не изменилось и объект все еще может быть удален, фантомная ссылка на объект помещается в специальную очередь — <code><strong>ReferenceQueue</strong></code>.</p></li>
+</ul>Самое важное, что нужно понимать при работе с фантомными ссылками, — <strong>объект не удаляется из памяти до тех пор, пока его фантомная ссылка находится в этой очереди</strong>.
+
+Он будет удален только после того, как у фантомной ссылки будет вызван метод <code><strong>clear()</strong></code>.
+
+Давай рассмотрим пример. Для начала создадим тестовый класс, который будет хранить в себе какие-то данные.
+
+<pre class="lang-java line-numbers"><code>
+public class TestClass {
+   private StringBuffer data;
+   public TestClass() {
+       this.data = new StringBuffer();
+       for (long i = 0; i &lt; 50000000; i++) {
+           this.data.append('x');
+       }
+   }
+   @Override
+   protected void finalize() {
+       System.out.println("У объекта TestClass вызван метод finalize!!!");
+   }
+}
+</code></pre>
+Мы специально как следует «загружаем» объекты данными при создании (добавляем в каждый объект по 50 миллионов символов «х»), чтобы занять побольше памяти.
+
+Кроме того, мы специально переопределяем метод <code>finalize()</code>, чтобы увидеть, что он сработал.
+
+Далее нам понадобится класс, который будет наследоваться от <code>PhantomReference</code>. Зачем нам нужен такой класс?
+
+Все просто. Так мы сможем добавить дополнительную логику к методу <code>clear()</code>, чтобы увидеть, что очистка фантомной ссылки действительно произошла (а значит, объект удален).
+
+<pre class="lang-java line-numbers"><code>
+import java.lang.ref.PhantomReference;
+import java.lang.ref.ReferenceQueue;
+
+public class MyPhantomReference&lt;TestClass&gt; extends PhantomReference&lt;TestClass&gt; {
+
+   public MyPhantomReference(TestClass obj, ReferenceQueue&lt;TestClass&gt; queue) {
+
+       super(obj, queue);
+
+       Thread thread = new QueueReadingThread&lt;TestClass&gt;(queue);
+
+       thread.start();
+   }
+
+   public void cleanup() {
+       System.out.println("Очистка фантомной ссылки! Удаление объекта из памяти!");
+       clear();
+   }
+}
+</code></pre>
+Далее, нам понадобится отдельный поток, который будет ждать, пока сборщик мусора сделает свое дело, и в нашей очереди <code>ReferenceQueue</code> появятся фантомные ссылки. Как только такая ссылка попадет в очередь, у нее будет вызван метод <code>cleanup()</code>:
+
+<pre class="lang-java line-numbers"><code>
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
+
+public class QueueReadingThread&lt;TestClass&gt; extends Thread {
+
+   private ReferenceQueue&lt;TestClass&gt; referenceQueue;
+
+   public QueueReadingThread(ReferenceQueue&lt;TestClass&gt; referenceQueue) {
+       this.referenceQueue = referenceQueue;
+   }
+
+   @Override
+   public void run() {
+
+       System.out.println("Поток, отслеживающий очередь, стартовал!");
+       Reference ref = null;
+
+       //ждем, пока в очереди появятся ссылки
+       while ((ref = referenceQueue.poll()) == null) {
+
+           try {
+               Thread.sleep(50);
+           }
+
+           catch (InterruptedException e) {
+               throw new RuntimeException("Поток " + getName() + " был прерван!");
+           }
+       }
+
+       //как только в очереди появилась фантомная ссылка - очистить ее
+       ((MyPhantomReference) ref).cleanup();
+   }
+}
+</code></pre>
+И, наконец, нам понадобится метод <code>main()</code>: вынесем его в отдельный класс <code>Main</code>.
+
+В нем мы создадим объект <code>TestClass</code>, фантомную ссылку на него и очередь для фантомных ссылок. После этого мы вызовем сборщик мусора и посмотрим, что будет :)
+
+<pre class="lang-java line-numbers"><code>
+import java.lang.ref.*;
+
+public class Main {
+
+   public static void main(String[] args) throws InterruptedException {
+       Thread.sleep(10000);
+
+       ReferenceQueue&lt;TestClass&gt; queue = new ReferenceQueue&lt;&gt;();
+       Reference ref = new MyPhantomReference&lt;&gt;(new TestClass(), queue);
+
+       System.out.println("ref = " + ref);
+
+       Thread.sleep(5000);
+
+       System.out.println("Вызывается сборка мусора!");
+
+       System.gc();
+       Thread.sleep(300);
+
+       System.out.println("ref = " + ref);
+
+       Thread.sleep(5000);
+
+       System.out.println("Вызывается сборка мусора!");
+
+       System.gc();
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<em>ref = MyPhantomReference@4554617c
+Поток, отслеживающий очередь, стартовал!
+Вызывается сборка мусора!
+У объекта TestClass вызван метод finalize!!!
+ref = MyPhantomReference@4554617c
+Вызывается сборка мусора!
+Очистка фантомной ссылки! Удаление объекта из памяти!</em>
+
+Что же мы здесь видим?
+
+Все произошло, как мы и планировали!
+
+У нашего класса объекта был переопределен метод <code>finalize()</code>, и он был вызван во время работы сборщика.
+
+Далее, фантомная ссылка была помещена в очередь <code>ReferenceQueue</code>. Там у нее был вызван метод <code><strong>clear()</strong></code> (из которого мы сделали <code>cleanup()</code>, чтобы добавить вывод в консоль).
+
+В итоге объект был удален из памяти. 
+
+Теперь ты видишь, как именно это работает :)
+
+Конечно, тебе не нужно зазубривать наизусть всю связанную с фантомными ссылками теорию.  Но будет хорошо, если ты будешь помнить хотя бы главные моменты.
+
+<strong>Во-первых</strong>, это самые слабые ссылки из всех. Они вступают в работу только когда на объект не осталось никаких других ссылок.
+
+Список ссылок, которые мы привели выше, идет по «убыванию силы»:
+
+<code><strong>StrongReference</strong></code> -&gt; <code><strong>SoftReference</strong></code> -&gt; <code><strong>WeakReference</strong></code> -&gt; <code><strong>PhantomReference</strong></code>
+
+Фантомная ссылка вступит в бой только когда на наш объект не будет ни Strong, ни Soft, ни Weak ссылок :)
+
+<strong>Во-вторых</strong>, метод <code>get()</code> для фантомной ссылки всегда возвращает <code>null</code>.
+
+Вот простой пример, где мы создаем три разных типа ссылок для трех разных видов автомобилей:
+
+<pre class="lang-java line-numbers"><code>
+import java.lang.ref.PhantomReference;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.SoftReference;
+import java.lang.ref.WeakReference;
+
+public class Main {
+
+   public static void main(String[] args) {
+
+       Sedan sedan = new Sedan();
+       HybridAuto hybrid = new HybridAuto();
+       F1Car f1car = new F1Car();
+
+       SoftReference&lt;Sedan&gt; softReference = new SoftReference&lt;&gt;(sedan);
+       System.out.println(softReference.get());
+
+       WeakReference&lt;HybridAuto&gt; weakReference = new WeakReference&lt;&gt;(hybrid);
+       System.out.println(weakReference.get());
+      
+       ReferenceQueue&lt;F1Car&gt; referenceQueue = new ReferenceQueue&lt;&gt;();
+
+       PhantomReference&lt;F1Car&gt; phantomReference = new PhantomReference&lt;&gt;(f1car, referenceQueue);
+       System.out.println(phantomReference.get());
+
+   }
+}
+</code></pre>
+<strong>Вывод в консоль:
+
+<em>Sedan@4554617c
+HybridAuto@74a14482
+null</em></strong>
+
+Метод <code>get()</code> вернул вполне нормальные объекты для мягкой ссылки и слабой ссылки, но вернул <code>null</code> для фантомной. 
+
+<strong>В-третьих</strong>, основная область использование фантомных ссылок -— сложные процедуры удаления объектов из памяти.
+
+Вот и все! :) На этом наше сегодняшнее занятие окончено.
+
+Но на одной теории далеко не уедешь, поэтому пора возвращаться к решению задач! :)

@@ -1,0 +1,260 @@
+Интерфейс Externalizable в Java
+<p>----------------------------------------</p>
+Привет! Сегодня мы продолжим знакомство с сериализацией и десериализацией объектов Java. В прошлой лекции мы познакомились с интерфейсом-маркером Serializable, рассмотрели примеры его использования, а также узнали, как можно управлять процессом ...
+<p>----------------------------------------</p>
+Привет! Сегодня мы продолжим знакомство с сериализацией и десериализацией объектов Java.
+
+В прошлой лекции мы познакомились с интерфейсом-маркером <span class="code">Serializable</span>, рассмотрели примеры его использования, а также узнали, как можно управлять процессом сериализации с помощью ключевого слова <span class="code">transient</span>.
+
+Ну, «управлять процессом», конечно, громко сказано. У нас есть одно ключевое слово, один идентификатор версии, и в общем-то все. Остальной процесс «зашит» внутрь Java, и к нему доступа нет. 
+
+С точки зрения удобства это, конечно, хорошо. Но программист в работе должен ориентироваться не только на собственный комфорт, так ведь? :) 
+Есть другие факторы, которые нужно учитывать.
+
+Поэтому <span class="code">Serializable</span> — не единственный инструмент для сериализации-десериализации в Java. Сегодня познакомимся с интерфейсом <span class="code">Externalizable</span>.
+
+Но еще до того, как мы перешли к его изучению, у тебя мог возникнуть резонный вопрос: а зачем нам еще один инструмент? <code>Serializable</code> справлялся со своей работой, да и автоматическая реализация всего процесса не может не радовать. Примеры, которые мы рассмотрели, тоже не были сложными. Так в чем же дело? Зачем еще один интерфейс для, по сути, той же задачи?
+
+Дело в том, что <code>Serializable</code> обладает рядом недостатков. Перечислим некоторые их них:
+<ol>
+<li><p><strong>Производительность.</strong> У интерфейса <code>Serializable</code> много плюсов, но высокая производительность явно не из их числа.</p></li></ol><img data-id="907267fe-57bb-475e-835c-bf4be46d1291" data-max-width="850" alt="Знакомство с интерфейсом Externalizable - 2" src="https://cdn.javarush.com/images/article/907267fe-57bb-475e-835c-bf4be46d1291/1024.jpeg"><p style="margin-left:46px;"><strong>Во-первых</strong>, внутренний механизм <code>Serializable</code> во время работы генерирует большой объем служебной информации и разного рода временных данных.<br>
+<strong>Во-вторых</strong> (в это можешь сейчас не углубляться и почитать на досуге, если интересно), работа <code>Serializable</code> основана на использовании Reflection API. Эта штуковина позволяет делать, казалось бы, невозможные в Java вещи: например, менять значения приватных полей. На JavaRush есть отличная <a href="https://javarush.com/groups/posts/513-reflection-api-refleksija-temnaja-storona-java" target="_blank">статья про Reflection API</a>, можешь почитать о ней здесь.</p><ol><li value="2"><p><strong>Гибкость.</strong>Мы вообще не управляем процессом сериализации-десериализации при использовании интерфейса <code>Serializable</code>.</p>
+<p>С одной стороны, это очень удобно, ведь если нас не особо волнует производительность, возможность не писать код кажется удобной. Но что если нам действительно необходимо добавить какие-то свои фичи (пример одной из них будет ниже) в логику сериализации?</p>
+<p>По сути, все что у нас есть для управления процессом, — это ключевое слово <code>transient</code> для исключения каких-либо данных, и все. Такой себе «инструментарий» :/</p></li>
+<li><p><strong>Безопасность.</strong>Этот пункт частично вытекает из предыдущего.</p>
+<p>Мы раньше особо над этим не задумывались, но что делать, если какая-то информация в твоем классе не предназначена для «чужих ушей» (точнее, глаз)? Простой пример — пароль или другие персональные данные пользователя, которые в современном мире регулируются кучей законов.</p>
+<p>Используя <code>Serializable</code>, мы по факту ничего с этим сделать не можем. Сериализуем все как есть.</p>
+<p>А ведь, по-хорошему, такого рода данные мы должны зашифровать перед записью в файл или передачей по сети. Но <code>Serializable</code> этой возможности не дает.</p></li></ol><img data-id="18b6e742-a064-4d9e-84de-60f92cda200e" data-max-width="850" alt="Знакомство с интерфейсом Externalizable - 3" src="https://cdn.javarush.com/images/article/18b6e742-a064-4d9e-84de-60f92cda200e/1024.jpeg">Что ж, давай наконец посмотрим, как будет выглядеть класс с использованием интерфейса <code>Externalizable</code>.
+
+<pre class="lang-java line-numbers"><code>
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+
+public class UserInfo implements Externalizable {
+
+   private String firstName;
+   private String lastName;
+   private String superSecretInformation;
+
+private static final long SERIAL_VERSION_UID = 1L;
+  
+   //...конструктор, геттеры, сеттеры, toString()...
+  
+   @Override
+   public void writeExternal(ObjectOutput out) throws IOException {
+      
+   }
+
+   @Override
+   public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+
+   }
+}
+</code></pre>
+Как видишь, у нас появились существенные изменения!
+
+Главное из них очевидно: при имплементации интерфейса <code>Externalizable</code> ты должен реализовать два обязательных метода — <code><strong>writeExternal()</strong></code> и <code><strong>readExternal()</strong></code>.
+
+Как мы и говорили ранее, вся ответственность за сериализацию и десериализацию будет лежать на программисте.
+
+Однако теперь ты можешь решить проблему отсутствия контроля над этим процессом! Весь процесс программируется напрямую тобой, что, конечно, создает гораздо более гибкий механизм.
+
+Кроме того, решается проблема и c безопасностью. Как видишь, у нас в классе есть поле: персональные данные, которые нельзя хранить в незашифрованном виде. 
+
+Теперь мы легко можем написать код, соответствующий этому ограничению.
+
+К примеру, добавить в наш класс два простых приватных метода для шифрования и дешифрования секретных данных. Записывать их в файл и вычитывать из файла мы будем именно в зашифрованном виде. А остальные данные будем записывать и считывать как есть :)
+
+В результате наш класс будет выглядеть примерно так:
+
+<pre class="lang-java line-numbers"><code>
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Base64;
+
+public class UserInfo implements Externalizable {
+
+   private String firstName;
+   private String lastName;
+   private String superSecretInformation;
+
+   private static final long serialVersionUID = 1L;
+
+   public UserInfo() {
+   }
+
+   public UserInfo(String firstName, String lastName, String superSecretInformation) {
+       this.firstName = firstName;
+       this.lastName = lastName;
+       this.superSecretInformation = superSecretInformation;
+   }
+
+   @Override
+   public void writeExternal(ObjectOutput out) throws IOException {
+       out.writeObject(this.getFirstName());
+       out.writeObject(this.getLastName());
+       out.writeObject(this.encryptString(this.getSuperSecretInformation()));
+   }
+
+   @Override
+   public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+       firstName = (String) in.readObject();
+       lastName = (String) in.readObject();
+       superSecretInformation = this.decryptString((String) in.readObject());
+   }
+
+   private String encryptString(String data) {
+       String encryptedData = Base64.getEncoder().encodeToString(data.getBytes());
+       System.out.println(encryptedData);
+       return encryptedData;
+   }
+
+   private String decryptString(String data) {
+       String decrypted = new String(Base64.getDecoder().decode(data));
+       System.out.println(decrypted);
+       return decrypted;
+   }
+
+   public String getFirstName() {
+       return firstName;
+   }
+
+   public String getLastName() {
+       return lastName;
+   }
+
+   public String getSuperSecretInformation() {
+       return superSecretInformation;
+   }
+}
+</code></pre>
+Мы реализовали два метода, которые в качестве параметров используют те же <code><strong>ObjectOutput</strong> out</code> и <code><strong>ObjectInput</strong></code>, с которыми мы уже встречались в лекции о <code>Serializable</code>.
+
+В нужный момент мы шифруем или расшифровываем необходимые данные, и в таком виде используем их для сериализации нашего объекта.
+
+Посмотрим, как это будет выглядеть на практике:
+
+<pre class="lang-java line-numbers"><code>
+import java.io.*;
+
+public class Main {
+
+   public static void main(String[] args) throws IOException, ClassNotFoundException {
+
+       FileOutputStream fileOutputStream = new FileOutputStream("C:\\Users\\Username\\Desktop\\save.ser");
+       ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
+
+       UserInfo userInfo = new UserInfo("Ivan", "Ivanov", "Ivan Ivanov's passport data");
+
+       objectOutputStream.writeObject(userInfo);
+
+       objectOutputStream.close();
+      
+   }
+}
+</code></pre>
+В методах <code><strong>encryptString()</strong></code> и <code><strong>decryptString()</strong></code> мы специально добавили вывод в консоль, чтобы проверить, в каком виде будут записаны и прочитаны секретные данные.
+
+<strong>Код выше вывел в консоль строку:
+
+<em>SXZhbiBJdmFub3YncyBwYXNzcG9ydCBkYXRh</em></strong>
+
+Шифрование удалось!
+
+<strong>Полное содержание файла выглядит так:
+
+<em>¬н sr UserInfoГ!}ҐџC‚ћ  xpt Ivant Ivanovt $SXZhbiBJdmFub3YncyBwYXNzcG9ydCBkYXRhx</em></strong>
+
+Теперь попробуем использовать написанную нами логику десериализации.
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) throws IOException, ClassNotFoundException {
+
+       FileInputStream fileInputStream = new FileInputStream("C:\\Users\\Username\\Desktop\\save.ser");
+       ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
+
+
+       UserInfo userInfo = (UserInfo) objectInputStream.readObject();
+       System.out.println(userInfo);
+
+       objectInputStream.close();
+
+   }
+}
+</code></pre>
+Ну, вроде ничего сложного тут нет, должно работать!
+<strong>Запускаем…
+
+<em>Exception in thread "main" java.io.InvalidClassException: UserInfo; no valid constructor</em></strong>
+<img data-id="e6228cd8-1dc0-4259-abc0-1f8ecf902dcc" data-max-width="850" alt="Знакомство с интерфейсом Externalizable - 4" src="https://cdn.javarush.com/images/article/e6228cd8-1dc0-4259-abc0-1f8ecf902dcc/1024.jpeg">Упс :(
+
+Все оказалось не так просто! Механизм десериализации выбросил исключение и потребовал от нас создать конструктор по умолчанию. Интересно, зачем? В <code>Serializable</code> мы обходились и без него… :/
+
+Здесь мы подошли к еще одному важному нюансу. Разница между <code>Serializable</code> и <code>Externalizable</code> заключается не только в «расширенном» доступе для программиста и возможность более гибко управлять процессом, но и в самом процессе. Прежде всего, <strong>в механизме десериализации</strong>.
+
+При использовании <code>Serializable</code> под объект просто выделяется память, после чего из потока считываются значения, которыми заполняются все его поля.
+
+Если мы используем <code>Serializable</code>, конструктор объекта не вызывается! Вся работа производится через рефлексию (Reflection API, который мы мельком упоминали в прошлой лекции).
+
+В случае с <code>Externalizable</code> механизм десериализации будет иным. В начале вызывается конструктор по умолчанию. И только потом у созданного объекта <code>UserInfo</code> вызывается метод <code>readExternal()</code>, который и отвечает за заполнение полей объекта.
+
+Именно поэтому <strong>любой класс, имплементирующий интерфейс <code>Externalizable</code>, обязан иметь конструктор по умолчанию</strong>.
+
+Добавим его в наш класс <code>UserInfo</code> и перезапустим код:
+
+<pre class="lang-java line-numbers"><code>
+import java.io.*;
+
+public class Main {
+
+   public static void main(String[] args) throws IOException, ClassNotFoundException {
+
+       FileInputStream fileInputStream = new FileInputStream("C:\\Users\\Username\\Desktop\\save.ser");
+       ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
+
+
+       UserInfo userInfo = (UserInfo) objectInputStream.readObject();
+       System.out.println(userInfo);
+
+       objectInputStream.close();
+   }
+}
+</code></pre>
+<strong>Вывод в консоль:
+
+<em>Ivan Ivanov's passport data
+UserInfo{firstName='Ivan', lastName='Ivanov', superSecretInformation='Ivan Ivanov's passport data'}</em></strong>
+
+Совсем другое дело! В консоль сначала была выведена дешифрованная строка с секретными данными, а после — наш восстановленный из файла объект в строковом формате!
+
+Вот так мы успешно разрешили все проблемы :)
+
+Тема сериализации и десериализации, казалось бы, несложная, но лекции у нас получились, как видишь, большими.
+
+И это далеко не все! Есть еще множество тонкостей при использовании каждого из этих интерфейсов, но, чтобы сейчас у тебя не взрывался мозг от объема новой информации, я кратко перечислю еще несколько важных моментов и дам ссылки на дополнительное чтение.
+
+Итак, что еще тебе нужно знать?
+
+<strong>Во-первых</strong>, при сериализации (неважно, используешь ты <code>Serializable</code> или <code>Externalizable</code>) обращай внимание на переменные <code>static</code>. 
+
+При использовании <code>Serializable</code> эти поля вообще не сериализуются (и, соответственно, их значение не меняется, т.к. <code>static</code> поля принадлежат классу, а не объекту). А вот при использовании <code>Externalizable</code> ты управляешь процессом сам, поэтому технически сделать это можно. Но не рекомендуется, так как это чревато трудноуловимыми ошибками. 
+
+<strong>Во-вторых</strong>, внимание стоит также обратить на переменные с модификатором <code>final</code>. При использовании <code>Serializable</code> они сериализуются и десериализуются как обычно, а вот <strong>при использовании <code>Externalizable</code> десериализовать <code>final</code>-переменную невозможно</strong>!
+
+Причина проста: все <code>final</code>-поля инициализируются при вызове конструктора по умолчанию, и после этого их значение уже невозможно изменить. Поэтому для сериализации объектов, содержащих <code>final</code>-поля, используй стандартную сериализацию через <code>Serializable</code>.
+
+<strong>В-третьих</strong>, при использовании наследования, все классы-наследники, происходящие от какого-то <code>Externalizable</code>-класса, тоже должны иметь конструкторы по умолчанию.
+
+Вот несколько ссылок на хорошие статьи про механизмы сериализации:
+<ul>
+<li><a href="http://www.skipy.ru/technics/serialization.html#performance" rel="nofollow" target="_blank">Сериализация как она есть</a>;</li>
+<li><a href="https://habr.com/post/319604/" rel="nofollow" target="_blank">Сериализация данных: тест производительности и описание применения;</a></li>
+<li><a href="https://java2blog.com/serialversionuid-in-java-serialization/" rel="nofollow" target="_blank">serialVersionUID in java Serialization</a></li>
+</ul>
+До встречи! :)

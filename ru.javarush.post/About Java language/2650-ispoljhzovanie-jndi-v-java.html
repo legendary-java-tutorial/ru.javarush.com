@@ -1,0 +1,271 @@
+Использование JNDI в Java
+<p>----------------------------------------</p>
+Привет! Сегодня мы познакомимся с тобой с JNDI. Узнаем, что это такое, для чего оно нужно, как работает, как нам с ним работать. А затем напишем Spring Boot юнит тест, внутри которого будем играться с этим самым JNDI. Прежде чем погружаться в JNDI, разберемся с тем, что же такое службы...
+<p>----------------------------------------</p>
+Привет! Сегодня мы познакомимся с тобой с JNDI. Узнаем, что это такое, для чего оно нужно, как работает, как нам с ним работать. А затем напишем Spring Boot юнит тест, внутри которого будем играться с этим самым JNDI. 
+
+<img data-max-width="800" data-id="a3259e80-13ea-4e15-a815-c3931e1df2ea" src="/images/article/a3259e80-13ea-4e15-a815-c3931e1df2ea/800.webp" class="img-fluid" alt="Использование JNDI в Java - 1"><h2>Введение. Службы имен и каталогов</h2>Прежде чем погружаться в JNDI, разберемся с тем, что же такое службы имен и каталогов. Наиболее наглядным примером такой службы является файловая система на любом ПК, ноутбуке или же смартфоне. Файловая система управляет (как это ни странно) файлами. Файлы в таких системах сгруппированы в древовидную структуру. У каждого файла есть уникальное полное имя, например: C:\windows\notepad.exe.
+
+Обрати внимание: полное имя файла представляет собой путь от некоторой корневой точки (диск C) до самого файла (notepad.exe). Промежуточными узлами в такой цепи являются каталоги (каталог windows).  
+
+Файлы внутри каталогов обладают атрибутами. Например "Скрытый", "Только для чтения" и др. 
+
+Подробное описание такой простой вещи как файловая система поможет лучше понять определение службы имен и каталогов.
+
+Итак, <span class="text-bold">служба имен и каталогов</span> — это система, которая управляет отображением множества имен во множестве объектов. В нашей файловой системе мы взаимодействуем с именами файлов, за которыми скрываются объекты — сами файлы в различных форматах. 
+
+В службе имен и каталогов именованные объекты собраны в древовидную структуру. А объекты каталога обладают атрибутами. 
+
+Еще одним примером службы имен и каталогов является DNS (англ. — Domain Name System, "система доменных имён"). Данная система управляет соответствием между понятными человеку доменными именами (например, https://javarush.com/) и понятными компьютеру IP-адресами (например, 18.196.51.113). 
+
+Помимо DNS и файловых систем, есть еще уйма других служб, таких как:
+<ul>
+<li><a href="https://ru.wikipedia.org/wiki/LDAP" rel="nofollow" target="_blank">Lightweight Directory Access Protocol (LDAP)</a>;</li>
+<li><a href="https://ru.wikipedia.org/wiki/CORBA" rel="nofollow" target="_blank">сервис именования CORBA</a>;</li>
+<li><a href="https://ru.wikipedia.org/wiki/Network_Information_Service" rel="nofollow" target="_blank">Network Information Service (NIS)</a>;</li>
+<li>И прочие. </li>
+</ul><h2>JNDI</h2>JNDI, или же Java Naming and Directory Interface, представляет собой Java API для доступа к службам имен и каталогов. 
+
+JNDI — это API, которое предоставляет единообразный механизм взаимодействия Java-программы с различными службами имен и каталогов. “Под капотом” интеграция между JNDI и любой конкретной службой осуществляется с помощью интерфейса поставщика услуг (Service Provider Interface, SPI).
+
+SPI позволяет прозрачно подключать различные службы именования и каталогов, что позволяет Java-приложению использовать JNDI API для доступа к подключенным службам. 
+
+Рисунок ниже иллюстрирует архитектуру JNDI: 
+<img data-max-width="512" data-id="bba8e179-d07d-4971-9757-01b9724c5e5a" src="/images/article/bba8e179-d07d-4971-9757-01b9724c5e5a/512.webp" class="img-fluid" alt="Использование JNDI в Java - 2" border="0"><center><p><small><em>Источник: <a href="https://docs.oracle.com/javase/tutorial/jndi/overview/index.html" rel="nofollow" target="_blank">Oracle Java Tutorials</a></em></small></p></center><h2>JNDI. Смысл простыми словами</h2>Главный вопрос: зачем нужен JNDI? 
+
+JNDI нужен для того, чтобы мы могли из Java-кода получить Java-объект из некоторой "Регистратуры" объектов по имени объекта, привязанного к этому объекту. 
+
+Разобьем утверждение выше на тезисы, дабы обилие повторяющихся слов не сбило нас с толку:
+<ol>
+<li>В конечном итоге нам нужно получить Java-объект.</li>
+<li>Мы получим этот объект из некоторой регистратуры.</li>
+<li>В этой регистратуре есть куча объектов.</li>
+<li>Каждый объект в этой регистратуре обладает уникальным именем.</li>
+<li>Чтобы получить некоторый объект из регистратуры, мы должны в своем запросе передать имя. Как бы сказать: "Дайте мне, пожалуйста, то, что у вас лежит под таким то именем".</li>
+<li>Мы можем не только считывать объекты по их имени из регистратуры, но и сохранять в данной регистратуре объекты под определенными именами (как-то ведь они туда попадают).</li></ol>Итак, у нас есть какая-то регистратура, или же хранилище объектов, или же JNDI Tree. Далее, на примере, попробуем понять смысл JNDI.
+
+Стоит отметить, что по большей части JNDI используется в Enterprise-разработке. А подобные приложения работают внутри некоторого application сервера. Этим сервером может быть какой-нибудь Java EE Application Server или же контейнер сервлетов, вроде Tomcat, либо любой другой контейнер.
+
+Сама регистратура объектов, то есть, JNDI Tree, обычно находится внутри этого application сервера. Последнее не всегда обязательно (такое дерево можно иметь локально), но наиболее типично. JNDI Tree может управляться специальным человеком (системный администратор или DevOps специалист), который будет “сохранять в регистратуре” объекты с их именами. 
+
+Когда наше приложение и JNDI Tree находятся совместно внутри одного контейнера, мы безо всяких проблем можем получить доступ к любому Java-объекту, который хранится в такой регистратуре. 
+
+Более того, регистратура и наше приложения могут находиться в разных контейнерах и даже на разных физических машинах. JNDI даже в таком случае позволяет получать доступ к Java-объектам удаленно. 
+
+Типичный кейс. Администратор Java EE сервера кладет в регистратуру объект, в котором хранится необходимая информация для подключения к базе данных. Соответственно, для работы с БД мы просто запросим нужный объект из JNDI tree и будем с ним работать. Это очень удобно. Удобство заключается еще и в том, что в enterprise-разработке существуют различные окружения. Есть продакшн сервера, есть тестовые (и часто тестовых бывает более 1 шт.). Тогда, разместив на каждом сервере внутри JNDI объект для подключения к БД и используя этот объект внутри нашего приложения, нам не придется ничего менять при деплое нашего приложения с одного сервера (тестового, релизного) на другой. Везде будет доступ к базе данных. 
+
+Пример, конечно, в какой то мере упрощенный, но, надеюсь, он поможет лучше понять, зачем нужен JNDI. 
+
+Далее будем знакомиться c JNDI in Java ближе, с некоторыми элементами рукоприкладства. 
+<h2>JNDI API</h2>JNDI поставляется внутри платформы Java SE. Для использования JNDI необходимо импортировать JNDI классы, а также один или более поставщиков услуг для доступа к службам именования и каталогов. JDK включает в себя поставщиков услуг к следующим службам: 
+<ul>
+<li>Lightweight Directory Access Protocol (LDAP);</li>
+<li>Common Object Request Broker Architecture (CORBA);</li>
+<li>Common Object Services (COS) name service;</li>
+<li>Java Remote Method Invocation (RMI) Registry;</li>
+<li>Domain Name Service (DNS).</li>
+</ul>Код JNDI API разделен на несколько пакетов:
+<ul>
+<li>javax.naming;</li>
+<li>javax.naming.directory;</li>
+<li>javax.naming.ldap;</li>
+<li>javax.naming.event;</li>
+<li>javax.naming.spi.</li>
+</ul>Знакомство с JNDI мы начнем с двух интерфейсов — Name и Context, которые содержат ключевую функциональность JNDI
+<h2>Интерфейс Name</h2>С помощью интерфейса Name можно управлять именами компонентов, а также синтаксисом имен в JNDI. 
+
+В JNDI все операции с именами и каталогами выполняются относительно контекста. Абсолютных корней нет. Поэтому JNDI определяет InitialContext, который обеспечивает отправную точку для именования и операций с каталогами. После получения доступа к начальному контексту, его можно использовать для поиска объектов и других контекстов.
+
+<pre class="lang-java line-numbers"><code>
+Name objectName = new CompositeName("java:comp/env/jdbc");
+</code></pre>
+В коде выше мы определили некоторое имя, под которым находится некоторый объект (возможно, и не находится, но мы рассчитываем на это). Наша конечная цель — получить ссылку на этот объект и использовать её в нашей программе.
+
+Итак, имя состоит из нескольких частей (или токенов), разделенных слэшем. Такие токены называют контекстами (context). Самый первый — просто context, все последующие — sub-context (далее по тексту — подконтекст). Контексты проще понимать, если рассматривать их как аналогию каталогов или директорий, или просто обычных папок. Корневой контекст — корневая папка. Подконтекст — вложенная папка.  
+ 
+Мы можем увидеть все составные части (контекст и подконтексты) данного имени, выполнив следующий код:
+
+<pre class="lang-java line-numbers"><code>
+Enumeration&lt;String&gt; elements = objectName.getAll();
+while(elements.hasMoreElements()) {
+  System.out.println(elements.nextElement());
+}
+</code></pre>
+Вывод будет следующим: 
+
+<pre><code>
+java:comp
+env
+jdbc
+</code></pre>
+Вывод демонстрирует, что токены в имени отделяются друг от друга слэшем (впрочем, мы это упоминали). 
+
+Каждый токен имени имеет свой индекс. Индексация токенов начинается с 0. Нулевым индексом обладает корневой контекст, следующий контекст имеет индекс 1, следующий 2, и т.д. 
+
+Мы можем получить имя подконтекста по его индексу:
+
+<pre class="lang-java line-numbers"><code>
+System.out.println(objectName.get(1)); // -&gt; env
+</code></pre>
+Можем также добавлять дополнительные токены (либо в конец, либо в определенное место по индексу):
+
+<pre class="lang-java line-numbers"><code>
+objectName.add("sub-context"); // Добавит sub-context в конец
+objectName.add(0, "context"); // Добавит context в налачо
+</code></pre>
+С полным перечнем методов можно ознакомиться <a href="https://docs.oracle.com/javase/8/docs/api/javax/naming/Name.html" rel="nofollow" target="_blank">официальной в документации</a>.
+<h2>Интерфейс Context</h2>Данный интерфейс содержит набор констант для инициализации контекста, а также набор методов для создания и удаления контекстов, привязки объектов к имени, а также для поиска и получения объектов. 
+
+Рассмотрим некоторые операции, которые выполняются с помощьюа данного интерфейса. 
+
+Наиболее частое действие — поиск объекта по имени. Осуществляется с помощью методов:
+<ul>
+<li><code>Object lookup(String name)</code></li>
+<li><code>Object lookup(Name name)</code></li>
+</ul>Привязка объекта к имени осуществляется с помощью методов <code>bind</code>:
+<ul>
+<li><code>void bind(Name name, Object obj)</code></li>
+<li><code>void bind(String name, Object obj)</code></li>
+</ul>Оба метода привяжут имя name к объекту <code>Object</code>
+
+Обратная операция привязке — отвязка объекта от имени, осуществляется с помощью методов <code>unbind</code>:
+<ul>
+<li><code>void unbind(Name name)</code></li>
+<li><code>void unbind(String name)</code></li>
+</ul>Полный список методов есть на <a href="https://docs.oracle.com/javase/8/docs/api/javax/naming/Context.html" rel="nofollow" target="_blank">сайте официальной документации</a>.
+<h2>InitialContext</h2><code>InitialContext</code> — это класс, который представляет из себя корневой элемент JNDI tree и реализует интерфейс <code>Context</code>. Искать объекты по имени внутри JNDI tree нужно относительно некоторого узла. Таким узлом может служить корневой узел дерева — <code>InitialContext</code>. 
+
+Типичным сценарием использования JNDI является: 
+<ul>
+<li>Получить <code>InitialContext</code>.</li>
+<li>Использовать <code>InitialContext</code> для извлечения объектов по имени из JNDI tree.</li>
+</ul>Способов получить <code>InitialContext</code> бывает несколько. Все зависит от окружения, в котором находится Java-программа. К примеру, если Java-программа и JNDI tree запущены внутри одного и того же application сервера, получить <code>InitialContext</code> довольно просто: 
+
+<pre class="lang-java line-numbers"><code>
+InitialContext context = new InitialContext();
+</code></pre>
+Если же это не так, получить контекст становится немного сложнее. Порой бывает необходимо передать список пропертей окружения для инициализации контекста:
+
+<pre class="lang-java line-numbers"><code>
+Hashtable env = new Hashtable();
+env.put(Context.INITIAL_CONTEXT_FACTORY, 
+    "com.sun.jndi.fscontext.RefFSContextFactory");
+
+Context ctx = new InitialContext(env);
+</code></pre>
+Пример выше демонстрирует один из возможных способов инициализации контекста и иной смысловой нагрузки в себе не несет. Детально погружаться в код не нужно. 
+<h2>Пример использования JNDI внутри SpringBoot unit теста</h2>Выше мы говорили о том, что для взаимодействия JNDI со службой имен и каталогов необходимо иметь под рукой SPI (Service Provider Interface), с помощью которого будет осуществляться интеграция между Джавой и службой имен. 
+
+Стандартная JDK поставляется с несколькими различными SPI (выше мы их перечисляли), каждый из которых не вызывает большого интереса для демонстрационных целей. 
+
+Поднять JNDI и Java приложение внутри какого-нибудь контейнера в какой-то мере интересно. Однако автор этой статьи — человек ленивый, поэтому для демонстрации работы JNDI избрал путь наименьшего сопротивления: запустить JNDI внутри юнит-теста SpringBoot приложения и получить доступ к контексту JNDI с помощью небольшого хака от Spring Framework. 
+
+Итак, наш план: 
+<ul>
+<li>Напишем пустой Spring Boot проект.</li>
+<li>Внутри этого проекта создадим юнит-тест.</li>
+<li>Внутри теста продемонстрируем работу с JNDI:
+<ul>
+<li>получим доступ к контексту;</li>
+<li>привяжем (bind) некоторый объект под некоторым именем в JNDI;</li>
+<li>получим объект по его имени (lookup);</li>
+<li>проверим, что объект не null.</li></ul></li></ul>Начнем по порядку. 
+
+<em>File-&gt;New-&gt;Project...</em>
+<img data-max-width="800" data-id="b91c7249-661a-41da-a482-b045db2f53d8" src="/images/article/b91c7249-661a-41da-a482-b045db2f53d8/800.webp" class="img-fluid" alt="Использование JNDI в Java - 3">Далее выберем пункт <em>Spring Initializr</em>:
+<img data-max-width="800" data-id="7916acb5-6f97-41b7-add8-21e74aad6f70" src="/images/article/7916acb5-6f97-41b7-add8-21e74aad6f70/800.webp" class="img-fluid" alt="Использование JNDI в Java - 4">Заполним метаданные о проекте:
+<img data-max-width="800" data-id="a1707760-212c-4084-ab25-fcab1a527da2" src="/images/article/a1707760-212c-4084-ab25-fcab1a527da2/800.webp" class="img-fluid" alt="Использование JNDI в Java - 5">После чего выберем необходимы компоненты Spring Framework. Мы будем привязывать какие-нибудь DataSource-объекты, поэтому нам нужны компоненты для работы с БД:
+<ul>
+<li>JDBC API;</li>
+<li>H2 DDatabase.</li>
+</ul><img data-max-width="1024" data-id="e9d47924-d95c-432c-a988-2989a1807615" src="/images/article/e9d47924-d95c-432c-a988-2989a1807615/1024.webp" class="img-fluid" alt="Использование JNDI в Java - 6">Определим расположение в файловой системе:
+<img data-max-width="800" data-id="1f9706fb-4dd4-4431-89df-11ab6eecd148" src="/images/article/1f9706fb-4dd4-4431-89df-11ab6eecd148/800.webp" class="img-fluid" alt="Использование JNDI в Java - 7">И проект создан. На самом деле за нас автоматически был сгенерирован один юнит тест, которым мы и воспользуемся для демонстрационных целей. Ниже — структура проекта и нужный нам тест: 
+<img data-max-width="800" data-id="9b81a366-06b5-4259-9033-be6efde79f3f" src="/images/article/9b81a366-06b5-4259-9033-be6efde79f3f/800.webp" class="img-fluid" alt="Использование JNDI в Java - 8">Приступим к написанию кода внутри теста contextLoads.
+
+Небольшой хак от спринга, речь о котором шла выше - это класс <code>SimpleNamingContextBuilder</code>. Данный класс предназначен для того, чтобы легко поднимать JNDI внутри юнит-тестов или же stand-alone приложений. 
+
+Напишем код для получения контекста: 
+
+<pre class="lang-java line-numbers"><code>
+final SimpleNamingContextBuilder simpleNamingContextBuilder
+       = new SimpleNamingContextBuilder();
+simpleNamingContextBuilder.activate();
+
+final InitialContext context = new InitialContext();
+</code></pre>
+Первые две строки кода позволят нам в дальнейшем простым образом инициализировать контекст JNDI. Без них при создании экземпляра <code>InitialContext</code> будет выброшено исключение: <code>javax.naming.NoInitialContextException</code>.
+
+Дисклеймер. Класс <code>SimpleNamingContextBuilder</code> является Deprecated классом. И данный пример призван показать, как можно поработать с JNDI. Это не лучшие практики по использованию JNDI внутри юнит-тестов. Это можно сказать костыль для построения контекста и демонстрации привязки и получения объектов из JNDI.
+
+Получив контест, мы можем извлекать из него объекты или же искать объекты в контексте. Пока что в JNDI объектов нет, поэтому логично будет положить туда что-нибудь. Например, <code>DriverManagerDataSource</code>:
+
+<pre class="lang-java line-numbers"><code>
+context.bind("java:comp/env/jdbc/datasource", new DriverManagerDataSource("jdbc:h2:mem:mydb"));
+</code></pre>
+В данной строке мы привязали объект класса <code>DriverManagerDataSource</code> к имени <code>java:comp/env/jdbc/datasource</code>.
+
+Далее мы можем получить объект из контекста по имени. Нам ничего другого не остается, кроме как получить объект, который мы положили только что, потому что других объектов в контексте нет =(
+
+<pre class="lang-java line-numbers"><code>
+final DataSource ds = (DataSource) context.lookup("java:comp/env/jdbc/datasource");
+</code></pre>
+Теперь проверим, что наш DataSource имеет коннекшн (коннекшн, connection или соединение — это Java-класс, который предназначен для работы с базой данных): 
+
+<pre class="lang-java line-numbers"><code>
+assert ds.getConnection() != null;
+System.out.println(ds.getConnection());
+</code></pre>
+Если мы все сделали правильно, вывод будет примерно таким: 
+
+<pre><code>
+conn1: url=jdbc:h2:mem:mydb user=
+</code></pre>
+Стоит сказать, что некоторые строки кода могут бросить исключения.
+
+Следующие строки бросают <code>javax.naming.NamingException</code>:
+<ul>
+<li><code>simpleNamingContextBuilder.activate()</code></li>
+<li><code>new InitialContext()</code></li>
+<li><code>context.bind(...)</code></li>
+<li><code>context.lookup(...)</code></li>
+</ul>А при работе с классом <code>DataSource</code> может быть брошено <code>java.sql.SQLException</code>.
+
+В связи с этим необходимо выполнять код внутри блока <code>try-catch</code>, либо указывать в сигнатуре юнит теста, что он может выбросить исключения.
+
+Приведем полный код тестового класса: 
+
+<pre class="lang-java line-numbers"><code>
+@SpringBootTest
+class JndiExampleApplicationTests {
+
+    @Test
+    void contextLoads() {
+        try {
+            final SimpleNamingContextBuilder simpleNamingContextBuilder
+                    = new SimpleNamingContextBuilder();
+            simpleNamingContextBuilder.activate();
+
+            final InitialContext context = new InitialContext();
+
+            context.bind("java:comp/env/jdbc/datasource", new DriverManagerDataSource("jdbc:h2:mem:mydb"));
+
+            final DataSource ds = (DataSource) context.lookup("java:comp/env/jdbc/datasource");
+
+            assert ds.getConnection() != null;
+            System.out.println(ds.getConnection());
+
+        } catch (SQLException | NamingException e) {
+            e.printStackTrace();
+        }
+    }
+}
+</code></pre>
+После запуска теста можно наблюдать следующие логи: 
+
+<pre><code>
+o.s.m.jndi.SimpleNamingContextBuilder    : Activating simple JNDI environment
+o.s.mock.jndi.SimpleNamingContext        : Static JNDI binding: [java:comp/env/jdbc/datasource] = [org.springframework.jdbc.datasource.DriverManagerDataSource@4925f4f5]
+conn1: url=jdbc:h2:mem:mydb user=
+</code></pre><h2>Заключение</h2>Сегодня мы разбирали JNDI. Узнали о том что такое службы имен и каталогов, и что JNDI — это Java API , которое позволяет единообразно взаимодействовать с разными службами из Java программы. А именно с помощью JNDI мы можем записывать объекты в JNDI tree под некоторым именем и получать эти самые объекты по имени. 
+
+В качестве бонусного задания можно запустить пример работы JNDI. Привязать в контекст какой-нибудь другой объект, а затем считать этот объект по имени. 

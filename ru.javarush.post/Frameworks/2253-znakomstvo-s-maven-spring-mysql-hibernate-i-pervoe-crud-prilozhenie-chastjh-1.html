@@ -1,0 +1,217 @@
+Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 1)
+<p>----------------------------------------</p>
+Добрый день. В этой статье я хотел бы поделиться своим первым знакомством с такими вещами как Maven, Spring, Hibernate, MySQL и Tomcat в процессе создания простого CRUD приложения. Это первая часть из 4..
+<p>----------------------------------------</p>
+Добрый день.
+
+В этой статье я хотел бы поделиться своим первым знакомством с такими вещами как Maven, Spring, Hibernate, MySQL и Tomcat в процессе создания простого CRUD приложения. Это первая часть из 4. Статья рассчитана в первую очередь на тех, кто уже прошел здесь 30-40 уровней, но за пределы чистой джавы пока не выбирался и только начинает (или собирается начинать) выходить в открытый мир со всеми этими технологиями, фреймворками и прочими незнакомыми словами.
+
+<img data-id="0caeb7d5-9b00-4c3e-be38-347ec1793208" data-max-width="850" alt="Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 1) - 1" src="https://cdn.javarush.com/images/article/0caeb7d5-9b00-4c3e-be38-347ec1793208/1024.jpeg"><h3>Содержание:</h3><ul>
+<li><a href="#Введение" rel="nofollow">Введение</a></li>
+<li><a href="#Создание-проекта" rel="nofollow">Создание проекта</a></li>
+<li><a href="#Подключение-Spring-MVC" rel="nofollow">Подключение Spring MVC</a></li>
+<li><a href="#Создание-страниц-и-контроллера" rel="nofollow">Создание страниц и контроллера</a></li>
+<li><a href="#Конфигурация" rel="nofollow">Конфигурация</a></li>
+<li><a href="#Модель" rel="nofollow">Модель</a></li>
+<li><a href="#Model-View-Controller" rel="nofollow">Model-View-Controller</a></li>
+</ul><h2 id="Введение">Введение</h2>Знакомство с новыми для меня технологиями и фреймворками я начинал с изучения различных примеров, в которых они использовались, потому что обычно я лучше всего что-то понимаю, когда вижу работу на примере полноценного приложения. Обычно в качестве таких примеров выступают <strong>CRUD</strong>-приложения (<strong>C</strong>reate, <strong>R</strong>ead, <strong>U</strong>pdate, <strong>D</strong>elete), в интернете полно таких примеров разной степени сложности. Проблема в том, что там обычно не объясняют подробно как, что и зачем там сделано, почему добавлена такая-то зависимость, почему нужен именно такой класс и т.д. В большинстве случаев берут уже полностью готовое приложение, с итоговым POM файлом, с конечными вариантами классов и просто пробегают по каждому, не заостряя внимания на мелочах, которые для опытного человека, наверное, кажутся очевидными. Я много таких примеров разобрал и обычно вроде как и понятно, как там все работает, но вот как к этому пришли не совсем ясно.
+
+Поэтому я решил будет не лишним такой пример не с позиции опытного разработчика, а с позиции новичка, который ни разу не имел дело со Spring, Hibernate и прочими вещами. 
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="00848041-84c5-4b7c-be7d-d52950aec902" data-max-width="431" alt="Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 1) - 2" src="https://cdn.javarush.com/images/article/00848041-84c5-4b7c-be7d-d52950aec902/1024.jpeg"></div></div>Я постараюсь как можно подробнее (насколько позволит мне мое понимание) описать весь свой путь создания CRUD приложения, начиная с чего-то простейшего уровня Hello World. В первую очередь я это делаю для самого себя, ибо когда что-то пытаешься описать, рассказать, объяснить, оно и в своей голове гораздо лучше усваивается и упорядочивается. Но если кому-то это будет полезно и поможет с чем-нибудь разобраться буду очень рад.
+
+В этом примере попробуем создать простое CRUD приложение с использованием <strong>Maven</strong>, <strong>Tomcat</strong>, <strong>Spring</strong>, <strong>Hibernate</strong> и <strong>MySQL</strong>. Предварительные шаги, такие как установка <strong>Maven</strong>, <strong>MySQL</strong>, использование <strong>Ultimate</strong> версии идеи и т.д. думаю нет нужды подробно расписывать, с этим проблем возникнуть не должно. Стоит отметить, что в этом примере настройка конфигурации будет происходить при помощи джава классов (что называется JavaConfig) без использования xml.
+<h2 id="Создание-проекта">Создание проекта</h2>Итак, поскольку я новичек, то использовать какие-то непонятные архетипы не будем. Spring initializr так и вовсе пока звучит слишком страшно. Поэтому создадим самый обычный простой Maven проект. У меня нет доменного имени, так что в groupid напишу просто <code>testgroup</code>, а в artifactid напишу название, ну например, <code>filmography</code> (это будет список фильмов). Создаем проект и выбираем <code>Enable auto-import</code> когда идея это предложит. Благодаря этому каждый раз, когда мы будем вносить какие-либо изменения в POM файл (Project Object Model, в этом файле описывается вся структура Maven проекта) все сразу же автоматически будем применяться к проекту. 
+
+Библиотеки будут браться из нашего локального репозитория, если они уже имеются у нас в наличии, либо, если будем использовать какие-то новые зависимости, с которыми раньше дел не имели, то Maven просто скачает их через интернет из центрального репозитория. Еще у Maven есть функция загружать исходники и документацию (Download Sources and/or Documentation). Тоже очень удобно, если что-то не понятно с каким-то классом или методом, можно зайти в исходники и посмотреть, как оно там все внутри устроено.
+
+Добавим пару деталей. Это будет веб-приложение, и мы будем использовать <strong>Tomcat</strong>. Для развертывания (deploy) приложения в Tomcat нужно передать его туда в виде war архива (Web Application Resource, специальный формат для веб-приложений). Для этого добавим в POM файл такую строчку, чтобы приложение собиралось в war архив:
+
+<pre class="inline-block language-java"><code>&lt;packaging&gt;war&lt;/packaging&gt;</code></pre>
+
+Ну и еще понадобится специальная директория для веб-исходников, в нашем случае там будут лежать <strong>jsp</strong> страницы, какие-то веб-ресурсы. Создадим в <code>main</code> директорию <code>webapp</code>. Она должна называться именно так и находиться именно в <code>main</code>, так же как <code>java</code> и <code>resources</code>, потому что это стандартная структура каталогов Maven. Когда мы установили упаковку в <code>war</code> и тем самым определили, что это веб-проект, директория <code>webapp</code> будет автоматически помечена как Web application sources (на ней будет голубая точка) и все, что касается веб, будет искаться в этой папке.
+
+И еще один момент. По-умолчанию Maven использует версию языка 1.5, но я хочу использовать, например, версию 1.8 – Java 8 (Можно и 10 взять, или 11, но все равно никакие фишки оттуда использовать не планируется, так что пускай 8 будет). Решается это очень просто, пишем в гугле что-то вроде "Maven java 8" и смотрим что нужно добавить в POM файл, чтобы Maven компилировал наши классы для нужной версии. 
+
+В итоге имеем следующее:
+<img data-id="0fdea46a-ef86-426f-8b52-4777a3987605" data-max-width="850" alt="Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 1) - 3" src="https://cdn.javarush.com/images/article/0fdea46a-ef86-426f-8b52-4777a3987605/1024.jpeg"><h2 id="Подключение-Spring-MVC">Подключение Spring MVC</h2>Нужно с чего-то начать. По плану мы будем подключать базу данных, использовать Hibernate, но это все пока звучит как-то слишком страшно. Нужно сперва заняться чем-нибудь попроще. Spring MVC, это уже получше, с MVC паттерном уже давным-давно знакомы, он использовался в половине больших задач курса. Отсюда и начнем плясать. Для создания веб приложения со Spring MVC нам также понадобится Servlet-API, т.е. та штука, с помощью которой будет происходить взаимодействие запрос-ответ. Попробуем подключить это. Заходим в гугл, ищем нужные зависимости в <a href="https://mvnrepository.com/" target="_blank" rel="nofollow">репозитории Maven</a> и добавляем их в <code>pom.xml</code>.
+<img data-id="7337bd9c-7fec-4697-a312-dc44cda36052" data-max-width="850" alt="Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 1) - 4" src="https://cdn.javarush.com/images/article/7337bd9c-7fec-4697-a312-dc44cda36052/1024.jpeg">В разделе External Libraries видно, что подгрузилась не только <em>spring-webmvc</em>, но и куча чего еще. Т.е. нам не нужно дополнительно подключать зависимости для <em>spring core</em>, <em>context</em>, <em>beans</em> и т.д. которые нам понадобятся, все необходимое подтянулось само вместе со <em>spring-webmvc</em>. 
+<table class="table table--striped">
+<tr>
+<td><p>Нужно сделать небольшую оговорку. Обычно рекомендуется все равно отдельно добавлять зависимость для каждой используемой библиотеки, даже если они и так идут в комплекте с уже добавленными, т.к. это может помочь избежать некоторых проблем и глюков.</p>
+
+<p>Простой пример. Допустим мы добавили зависимость, которая использует какое-то API, и заодно она подтянет для этого API какую-то реализацию. А потом мы добавили другую зависимость, которая использует тоже самое API и тоже подтягивает для этого какую-то его реализацию, но уже другую. Таким образом у нас в наличие будет 2 разные реализации одного и того же API. И если мы сами захотим где-то использовать какие-то методы этого API, тогда и возникнет проблема, ведь система не будет знать, какую именно реализацию нужно использовать, она выберет случайно, возможно не ту, что мы ожидали. А если явно указать зависимость для одной из реализаций, то приоритет будет отдан именно ей.</p>
+
+<p>Однако это не такая строгая рекомендация, это касается в основном крупных проектов, где используется множество рзличных библиотек от разных компаний. Тут мы так делать не будем, дабы не загружать слишком сильно POM файл, каких-то проблем не предвидится. Но тем не менее все же стоит иметь это ввиду.<p>
+</td>
+</tr>
+</table>Еще одно замечание. Что означает <code>provided</code> в зависимости <code>javax.servlet-api</code>. <strong>Scope</strong> — это область действия зависимости, <code>provided</code> означает что зависимость будет доступна на этапе компиляции и тестирования приложения, но в архив она помещена не будет. Дело в том, что для развертывания (deploy) приложения мы будем использовать контейнер сервлетов, Tomcat, а у него внутри уже есть такие библиотеки, поэтому нет нужды передавать их туда и утяжелять архив лишним грузом. Забегая вперед, по той же причине мы обойдемся без привычного метода <code>main</code>, потому что он уже есть внутри Tomcat.
+<h2 id="Создание-страниц-и-контроллера">Создание страниц и контроллера</h2>Попробуем теперь состряпать что-нибудь простенькое. Для начала создадим в <code>webapp</code> дополнительную директорию, например <code>pages</code>, в которой будут храниться наши представления (view), т.е. jsp-страницы, и создадим пару страниц. Нам понадобится страница, на которой в будущем будет отображаться список фильмов, допустим <code>films.jsp</code>, и еще, пожалуй, можно сделать отдельную страницу для редактирования, пускай это будет <code>editPage.jsp</code>. Пока ничем серьезным их заполнять не будем, просто для пробы сделаем на одной странице ссылку на другую.
+<img data-id="893b3d7c-f355-418b-b064-750bbcea7744" data-max-width="850" alt="" src="https://cdn.javarush.com/images/article/893b3d7c-f355-418b-b064-750bbcea7744/1024.jpeg">Теперь нужен класс, который будет обрабатывать запросы, т.е. контроллер. Добавим новый пакет <code>controller</code> и создадим в нем класс <code>FilmController</code> (вообще не обязательно расфасовывать все по разным пакетам, это приложение будет очень маленькое и простое, но в нормальном проекте может быть много контроллеров, классов конфигурации, моделей и т.д., поэтому даже начиная с маленьких проектов лучше сразу привыкать делать все упорядоченно и структурировано, чтобы не было каши). В этом классе создадим методы, которые будут возвращать наши представления в ответ на запросы.
+
+<pre class="lang-java line-numbers"><code>
+package testgroup.filmography.controller;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.servlet.ModelAndView;
+
+@Controller
+public class FilmController {
+
+    @RequestMapping(value = "/", method = RequestMethod.GET)
+    public ModelAndView allFilms() {
+        ModelAndView modelAndView = new ModelAndView();
+        modelAndView.setViewName("films");
+        return modelAndView;
+    }
+
+    @RequestMapping(value = "/edit", method = RequestMethod.GET)
+    public ModelAndView editPage() {
+        ModelAndView modelAndView = new ModelAndView();
+        modelAndView.setViewName("editPage");
+        return modelAndView;
+    }
+}
+</code></pre>
+Что тут к чему. У Spring MVC есть такая штука, как <code>DispatcherServlet</code>. Это как бы главный контроллер, все входящие запросы проходят через него и он уже дальше передает их конкретному контроллеру. Аннотация <code>@Controller</code> как раз и сообщает Spring MVC, что данный класс является контроллером (ну логично в общем-то), диспетчер будет проверять аннотации <code>@RequestMapping</code> чтобы вызвать подходящий метод. Аннотация <code>@RequestMapping</code> позволяет задать адреса методам контроллера, по которым они будут доступны в клиенте (браузер). Ее можно применять также и к классу контроллера, чтобы задать, так сказать, корневой адрес для всех методов. 
+
+Для метода <code>allFilms()</code> параметр <code>value</code> установлен "<code>/</code>", поэтому он будет вызван сразу, когда в браузере будет набрана комбинация <em>http://host:port/</em> (т.е. по-умолчанию это <em>http://localhost:8080/</em> или <em>http://127.0.0.1:8080/</em>). Параметр <code>method</code> указывает кокой тип запроса поддерживается (GET, POST, PUT и т.д.). Поскольку тут мы только получаем данные то используется GET. Позднее, когда появятся методы для добавления и редактирования там уже будут POST запросы. (Кстати вместо аннотации <code>@RequestMapping</code> с указанием метода, можно использовать аннотации <code>@GetMapping</code>, <code>@PostMapping</code> и т.д. <code>@GetMapping</code> эквивалентно <code>@RequestMapping(method = RequestMethod.GET</code>)). В наших методах создаем объект <code>ModelAndView</code> и устанавливаем имя представления, которое нужно вернуть.
+<h2 id="Конфигурация">Конфигурация</h2>Перейдем к настройке конфигурации. Создадим в пакете <code>config</code> класс <code>WebConfig</code>. В нем будет только один метод возвращающий объект типа <code>ViewResolver</code>, это такой интерфейс, необходимый для нахождения представления по имени.
+
+<pre class="lang-java line-numbers"><code>
+package testgroup.filmography.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.ViewResolver;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.springframework.web.servlet.view.InternalResourceViewResolver;
+
+@Configuration
+@EnableWebMvc
+@ComponentScan(basePackages = "testgroup.filmography")
+public class WebConfig {
+
+    @Bean
+    ViewResolver viewResolver() {
+        InternalResourceViewResolver viewResolver = new InternalResourceViewResolver();
+        viewResolver.setPrefix("/pages/");
+        viewResolver.setSuffix(".jsp");
+        return viewResolver;
+    }
+}
+</code></pre>
+<code>@Configuration</code> сообщает Spring что данный класс является конфигурационным и содержит определения и зависимости <code>bean</code>-компонентов. <strong>Бины (bean)</strong> — это объекты, которые управляются Spring'ом. Для определения бина используется аннотация <code>@Bean</code>.
+
+<code>@EnableWebMvc</code> позволяет импортировать конфигурацию Spring MVC из класса <code>WebMvcConfigurationSupport</code>. Можно также реализовать, например, интерфейс <code>WebMvcConfigurer</code>, у которого есть целая куча методов, и настроить все по своему вкусу, но нам незачем пока в это углубляться, хватит и стандартных настроек.
+
+<code>@ComponentScan</code> сообщает Spring где искать компоненты, которыми он должен управлять, т.е. классы, помеченные аннотацией <code>@Component</code> или ее производными, такими как <code>@Controller</code>, <code>@Repository</code>, <code>@Service</code>. Эти аннотации автоматически определяют бин класса.
+
+В методе <code>viewResolver()</code> мы создаем его реализацию и определяем где именно искать представления в <code>webapp</code>. Поэтому когда в методе контроллера мы устанавливали имя "<code>films</code>" представление найдется как "<code>/pages/films.jsp</code>"
+
+Итак, класс конфигурации у нас есть, но пока что это просто какой-то отдельный класс, он сам по себе и на наше приложение никак не влияет. Нам нужно зарегистрировать эту конфигурацию в контексте Spring. Для этого нужен класс <code>AbstractAnnotationConfigDispatcherServletInitializer</code>. В пакете <code>config</code> создаем его наследника, допустим <em>AppInitializer</em>, и реализуем его методы.
+
+<pre class="lang-java line-numbers"><code>
+package testgroup.filmography.config;
+
+import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
+
+public class AppInitializer extends AbstractAnnotationConfigDispatcherServletInitializer {
+    @Override
+    protected Class&lt;?&gt;[] getRootConfigClasses() {
+        return new Class[0];
+    }
+
+    @Override
+    protected Class&lt;?&gt;[] getServletConfigClasses() {
+        return new Class[]{WebConfig.class};
+    }
+
+    @Override
+    protected String[] getServletMappings() {
+        return new String[]{"/"};
+    }
+}
+</code></pre>
+В последнем методе регистрируются адреса и еще есть 2 метода для регистрации классов конфигурации. Веб-конфигурации, где определяются <code>ViewResolver</code>'ы и тому подобное, помещаем в <code>getServletConfigClasses()</code>. Обо всем этом лучше почитать в документации и разных гайдах, но в нашем случае не обязательно пока в это углубляться, наш <code>WebConfig</code> в принципе можно и в <code>RootClasses</code> определить, можно даже и в оба сразу, все равно будет работать. 
+
+Еще один момент. Возможно будут проблемы с кодировкой, когда при отправке с формы значений с русскими символами в результате будут получаться каракули. Для решения этой проблемы добавим фильтр, который будет заниматься предварительной обработкой запросов. Заходим в класс <em>AppInitializer</em> и переопределяем метод <code>getServletFilters</code>, в котором укажем нужную кодировку, она разумеется должна быть такой же как и везде, как на страницах и в базе данных:
+
+<pre class="lang-java line-numbers"><code>
+protected Filter[] getServletFilters() {
+        CharacterEncodingFilter characterEncodingFilter = new CharacterEncodingFilter();
+        characterEncodingFilter.setEncoding("UTF-8");
+        characterEncodingFilter.setForceEncoding(true);
+        return new Filter[] {characterEncodingFilter};
+    }
+</code></pre>
+Ну вроде все настроили, можно попробовать запустить и посмотреть, что получилось.
+
+<em>Run</em> -> <em>Run</em> -> <em>Edit Configurations</em> -> <em>Add New Configuration</em> -> <em>Tomcat Server</em> -> <em>Local</em>
+
+Далее нужно выбрать артефакт для развертывания. Идея сама даст подсказку <em>Warning: No artifacts marked for deployment</em>. Жмем кнопку <em>fix</em> и выбираем <em>...: war exploded</em>. Либо можно зайти в <em>Deployment</em> -> <em>add</em> -> <em>Artifact</em> -> <em>...: war exploded</em>.
+<img data-id="57eaadff-20ae-4ed5-8794-0853b0163512" data-max-width="850" alt="Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 1) - 5" src="https://cdn.javarush.com/images/article/57eaadff-20ae-4ed5-8794-0853b0163512/1024.jpeg">И еще нужно зайти в <em>Deployment</em> и установить в поле <em>Applecation context</em> (это будет частью url адреса, по которому приложение будет доступно в браузере) значение "<code>/</code>".
+<img data-id="c835d547-f45b-492e-bb43-5f40574773c2" data-max-width="850" alt="Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 1) - 6" src="https://cdn.javarush.com/images/article/c835d547-f45b-492e-bb43-5f40574773c2/1024.jpeg">Тогда наше приложение будет сразу доступно по адресу <em>http://localhost:8080/</em> (но также можно указать там что-то, ну например "<code>/filmography</code>", и тогда просто нужно будет добавлять это ко всем адресам, т.е. например будет не <em>"http://localhost:8080/edit"</em>, а будет <em>"http://localhost:8080/filmography/edit"</em>).
+
+Нажимаем <em>Run</em> и ждем пока запустится. Вот что у меня получилось:
+<img data-id="1af1d654-f8f1-4400-925b-7d6f3326ab71" data-max-width="850" alt="Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 1) - 7" src="https://cdn.javarush.com/images/article/1af1d654-f8f1-4400-925b-7d6f3326ab71/1024.jpeg">Вроде бы все хорошо, но есть тут один нюанс. Дело в том, что наши страницы сейчас общедоступны и доступ к ним можно получить напрямую, написав путь в адресной строке. Вводим <em>http://localhost:8080/pages/films.jsp</em> и вот мы без ведома контроллера получили нашу страницу. Как-то это не очень правильно, поэтому мы создадим в <code>webapp</code> специальную директорию <code>WEB-INF</code>. То, что внутри, будет скрыто для публики и получить доступ можно будет только через контроллер. Помещаем директорию с нашими представлениями (<code>pages</code>) в <code>WEB-INF</code>, а в <code>ViewResolver</code> соответственно добавляем ее в префикс: 
+
+<pre class="lang-java line-numbers"><code>
+viewResolver.setPrefix("/WEB-INF/pages/");
+</code></pre>
+Теперь по адресу <em>http://localhost:8080</em> получаем нашу страницу, а если попытаться напрямую <em>http://localhost:8080/WEB-INF/pages/films.jsp</em> то получим ошибку 404.
+
+Ну вот, замечательно, у нас получилось простейшее веб-приложение, Hello World что называется. Структура проекта на данный момент выглядит так:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="1b42e7ce-b6a0-4bc9-bad9-1b4d874cff9b" data-max-width="293" alt="Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 1) - 8" src="https://cdn.javarush.com/images/article/1b42e7ce-b6a0-4bc9-bad9-1b4d874cff9b/1024.jpeg"></div></div><h2 id="Модель">Модель</h2>У нас уже есть представления и контроллер, но в MVC есть еще и 3-я буква, поэтому для полноты картины добавим еще и модель. В пакете <code>model</code> создадим класс <code>Film</code> ну, например, c такими полями: <code>int id</code>, <code>String title</code> (название), <code>int year</code> (год выхода), <code>String genre</code> (жанр) и <code>boolean watched</code> (т.е. смотрели уже этот фильм или нет). 
+
+<pre class="lang-java line-numbers"><code>
+package testgroup.filmography.model;
+
+public class Film {
+    private int id;
+    private String title;
+    private int year;
+    private String genre;
+    private boolean watched;
+// + Getters and setters
+}
+</code></pre>
+Ничего особенного, самый обыкновенный класс, приватные поля, геттеры и сеттеры. Объекты таких классов еще называют <code>POJO</code> (Plain Old Java Object), ну т.е. "простой джава объект".
+
+Попробуем теперь создать такой объект и вывести его на странице. Пока не будем особо париться как его создавать, инициализировать. Для пробы просто тупо создадим его прямо в контроллере, например, вот так:
+
+<pre class="lang-java line-numbers"><code>
+public class FilmController {
+    private static Film film;
+
+    static {
+        film = new Film();
+        film.setTitle("Inception");
+        film.setYear(2010);
+        film.setGenre("sci-fi");
+        film.setWatched(true);
+    }
+</code></pre>
+И добавим этот объект в наш <code>ModelAndView</code> с помощью метода <code>addObject</code>:
+
+<pre class="lang-java line-numbers"><code>
+@RequestMapping(method = RequestMethod.GET)
+    public ModelAndView allFilms() {
+        ModelAndView modelAndView = new ModelAndView();
+        modelAndView.setViewName("films");
+        <strong>modelAndView.addObject("film", film);</strong>
+        return modelAndView;
+    }
+</code></pre>
+Теперь мы сможем на нашей странице вывести этот объект. В <code>films.jsp</code> вместо Hello World напишем <code>${film}</code> и сюда подставится объект, которому соответствует имя атрибута "<code>film</code>". Попробуем запустить и посмотреть что получилось (для понятного вывода объекта у класса <code>Film</code> был переопределен <code>toString()</code>):
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="0f14ca97-1438-4f8a-84f9-24c6b6079f55" data-max-width="385" alt="Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 1) - 9" src="https://cdn.javarush.com/images/article/0f14ca97-1438-4f8a-84f9-24c6b6079f55/1024.jpeg"></div></div><h2 id="Model-View-Controller">Model-View-Controller</h2>На данном этапе мы уже, вроде как, имеем полноценное Spring MVC приложение. Прежде чем двигаться дальше хорошо бы еще раз окинуть все взглядом и разобраться как оно все работает. В интернете по этому поводу можно найти множество картинок и схем, мне нравится вот эта:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="1cd58636-db65-43f5-9dee-fb4dbe172c11" data-max-width="602" alt="Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 1) - 10" src="https://cdn.javarush.com/images/article/1cd58636-db65-43f5-9dee-fb4dbe172c11/1024.jpeg"></div></div>Когда мы пишем в строке браузера запрос, его принимает <code>Dispatcher Servlet</code>, далее он находит для обработки этого запроса подходящий контроллер с помощью <code>HandlerMapping</code> (это такой интерфейс для выбора контроллера, проверяет в каком из имеющихся контроллеров есть метод, принимающий такой адрес), вызывается подходящий метод и <code>Controller</code> возвращает информацию о представлении, затем диспетчер находит нужное представления по имени при помощи <code>ViewResolver</code>'а, после чего на это представление передаются данные модели и на выход мы получаем нашу страничку. Как-то так.
+
+<em><strong>Продолжение следует...</strong></em>
+
+Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 1)
+<a href="https://javarush.com/groups/posts/2252-znakomstvo-s-maven-spring-mysql-hibernate-i-pervoe-crud-prilozhenie-chastjh-2" target="_blank" rel="nofollow">Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 2)</a>
+<a href="https://javarush.com/groups/posts/2251-znakomstvo-s-maven-spring-mysql-hibernate-i-pervoe-crud-prilozhenie-chastjh-3" target="_blank" rel="nofollow">Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 3)</a>
+<a href="https://javarush.com/groups/posts/2250-znakomstvo-s-maven-spring-mysql-hibernate-i-pervoe-crud-prilozhenie-chastjh-4" target="_blank" rel="nofollow">Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 4)</a>

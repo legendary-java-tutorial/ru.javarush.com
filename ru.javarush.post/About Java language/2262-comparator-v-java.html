@@ -1,0 +1,350 @@
+Comparator в Java
+<p>----------------------------------------</p>
+Привет! Сегодня мы поговорим о сравнении объектов.  Хм… Но мы, вроде как, уже об этом не раз разговаривали? :/  Мы знаем как работает оператор “==”, а также о методах equals() и hashCode(). Сравнение — не совсем об этом. Раньше мы имели в виду скорее «проверку объектов на равенство».
+<p>----------------------------------------</p>
+Привет! Сегодня мы поговорим о сравнении объектов. Хм… Но мы, вроде как, уже об этом не раз разговаривали? :/ 
+
+Мы знаем как работает оператор “<code>==</code>”, а также о методах <code>equals()</code> и <code>hashCode()</code>.
+
+Сравнение — не совсем об этом. Раньше мы имели в виду скорее «проверку объектов на равенство». <img data-max-width="800" data-id="c4815d02-d536-466d-824e-8bd8bb01a1e5" src="/images/article/c4815d02-d536-466d-824e-8bd8bb01a1e5/800.jpeg" class="img-fluid" alt="Comparator в Java - 1">А у сравнения объектов друг с другом могут быть совсем другие цели! Самая очевидная из них — сортировка.
+
+Я думаю, если тебе скажут отсортировать список <code>ArrayList&lt;&gt;</code> чисел или строк, ты с этим справишься без проблем:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+public class Main {
+
+   public static void main(String[] args) {
+
+       String name1 = "Маша";
+       String name2 = "Саша";
+       String name3 = "Даша";
+
+       List&lt;String&gt; names = new ArrayList&lt;&gt;();
+       names.add(name1);
+       names.add(name2);
+       names.add(name3);
+
+       Collections.sort(names);
+       System.out.println(names);
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+[Даша, Маша, Саша]
+</code></pre>
+Отлично, если ты вспомнил о классе <code>Collections</code> и его методе <code>sort()</code>. С числами, думаю, тоже проблем не возникнет.
+
+А вот тебе задача посложнее:
+
+<pre class="lang-java line-numbers"><code>
+public class Car {
+  
+   private int manufactureYear;
+   private String model;
+   private int maxSpeed;
+
+   public Car(int manufactureYear, String model, int maxSpeed) {
+       this.manufactureYear = manufactureYear;
+       this.model = model;
+       this.maxSpeed = maxSpeed;
+   }
+  
+   //...геттеры, сеттеры, toString()
+  
+}
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Main {
+
+   public static void main(String[] args) {
+
+       List&lt;Car&gt; cars = new ArrayList&lt;&gt;();
+
+       Car ferrari = new Car(1990, "Ferrari 360 Spider", 310);
+       Car lambo = new Car(2012, "Lamborghini Gallardo", 290);
+       Car bugatti = new Car(2010, "Bugatti Veyron", 350);
+      
+       cars.add(ferrari);
+       cars.add(bugatti);
+       cars.add(lambo);
+   }
+}
+</code></pre>
+Вот очень просто: класс <code>Car</code> и 3 его объекта. Будь так добр, отсортируй автомобили в списке!
+
+Ты наверняка спросишь: «А как их надо отсортировать?». По названию, по году выпуска, по максимальной скорости?
+
+Отличный вопрос. Мы не знаем на данный момент, как надо сортировать объекты класса <code>Car</code>.
+
+И, вполне естественно, Java тоже этого не знает! При попытке передать в метод <code>Collections.sort()</code> список объектов <code>Car</code> мы получим ошибку:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+public class Main {
+
+   public static void main(String[] args) {
+
+       List&lt;Car&gt; cars = new ArrayList&lt;&gt;();
+
+       Car ferrari = new Car(1990, "Ferrari 360 Spider", 310);
+       Car lambo = new Car(20012, "Lamborghini Gallardo", 290);
+       Car bugatti = new Car(2010, "Bugatti Veyron", 350);
+
+       cars.add(ferrari);
+       cars.add(bugatti);
+       cars.add(lambo);
+
+       //ошибка компилятора!
+       Collections.sort(cars);
+   }
+}
+</code></pre>
+И действительно, откуда языку знать, как именно сортировать написанные тобой объекты?
+
+Это зависит от задач твоей программы.
+
+Мы должны как-то научить Java сравнивать эти объекты. Причем сравнивать так, как это нужно нам.
+
+Для этого в Java есть специальный инструмент — интерфейс <code>Comparable</code>.
+
+С английского языка это переводится как «сравнимый». Чтобы наши объекты <code>Car</code> можно было сравнивать друг с другом и как-то сортировать, класс должен имплементировать этот интерфейс и реализовать его единственный метод — <code>compareTo()</code>:
+
+<pre class="lang-java line-numbers"><code>
+public class Car implements Comparable&lt;Car&gt; {
+
+   private int manufactureYear;
+   private String model;
+   private int maxSpeed;
+
+   public Car(int manufactureYear, String model, int maxSpeed) {
+       this.manufactureYear = manufactureYear;
+       this.model = model;
+       this.maxSpeed = maxSpeed;
+   }
+
+   @Override
+   public int compareTo(Car o) {
+       return 0;
+   }
+
+   //...геттеры, сеттеры, toString()
+
+}
+</code></pre>
+<mark>Обрати внимание:</mark> мы указали интерфейс <code>Comparable&lt;Car&gt;</code>, а не просто <code>Comparable</code>. Это типизированный интерфейс, то есть, требует указания конкретного класса, с которым он связан.
+
+В принципе, <code>&lt;Car&gt;</code> можно из интерфейса и убрать, но тогда он по умолчанию сравнивает объекты <code>Object</code>. Вместо метода <code>compareTo(Car o)</code> у нас в классе будет:
+
+<pre class="lang-java line-numbers"><code>
+@Override
+   public int compareTo(Object o) {
+       return 0;
+   }
+</code></pre>
+Нам, конечно, гораздо проще работать с <code>Car</code>.
+
+Внутри метода <code>compareTo()</code> мы реализуем логику сравнения машин.
+Допустим, нам нужно отсортировать их по году выпуска.
+
+Наверное, ты обратил внимание, что метод <code>compareTo()</code> возвращает значение <code>int</code>, а не <code>boolean</code>. 
+
+Пусть тебя это не удивляет. Дело в том, что сравнение двух объектов дает нам 3 возможных варианта:
+<ul>
+<li><code>а &lt; b</code></li>
+<li><code>a &gt; b</code></li>
+<li><code>a == b</code>.</li>
+</ul> У <code>boolean</code> же есть всего 2 значения — true и false, что неудобно для сравнения объектов. 
+
+С <code>int</code> все намного проще. Если возвращаемое значение <code>&gt; 0</code>, значит <code>a &gt; b</code>. 
+Если результат <code>compareTo &lt; 0</code>, значит <code>а &lt; b</code>. 
+Ну а если результат <code>== 0</code>, значит два объекта равны: <code>a == b</code>.
+
+Научить наш класс сортировать машины по году выпуска — проще простого:
+
+<pre class="lang-java line-numbers"><code>
+@Override
+public int compareTo(Car o) {
+   return this.getManufactureYear() - o.getManufactureYear();
+}
+</code></pre>
+Что здесь происходит?
+
+Мы берем один объект машины (<code>this</code>), год выпуска этой машины и вычитаем из него год выпуска другой машины (той, с которой сравниваем объект).
+Если год выпуска первой машины больше, метод вернет <code>int &gt; 0</code>.
+А значит, машина <code>this &gt;</code> машины <code>о</code>.
+
+Если наоборот — год выпуска второй машины (<code>о</code>) больше, значит метод вернет отрицательное число, а следовательно, <code>о &gt; this</code>.
+
+Ну а если они равны, метод вернет <code>0</code>.
+
+Такого простого механизма уже достаточно, чтобы сортировать коллекции объектов <code>Car</code>! Больше ничего делать не нужно.
+
+Вот, пожалуйста:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+public class Main {
+
+   public static void main(String[] args) {
+
+       List&lt;Car&gt; cars = new ArrayList&lt;&gt;();
+
+       Car ferrari = new Car(1990, "Ferrari 360 Spider", 310);
+       Car lambo = new Car(2012, "Lamborghini Gallardo", 290);
+       Car bugatti = new Car(2010, "Bugatti Veyron", 350);
+
+       cars.add(ferrari);
+       cars.add(bugatti);
+       cars.add(lambo);
+
+       //тут раньше была ошибка
+       Collections.sort(cars);
+       System.out.println(cars);
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+[Car{manufactureYear=1990, model='Ferrari 360 Spider', maxSpeed=310}, 
+Car{manufactureYear=2010, model='Bugatti Veyron', maxSpeed=350}, 
+Car{manufactureYear=2012, model='Lamborghini Gallardo', maxSpeed=290}]
+</code></pre>
+Машины отсортированы как надо! :)
+<img data-max-width="800" data-id="b8db97e9-c185-4111-99f7-c711b6d7035f" src="/images/article/b8db97e9-c185-4111-99f7-c711b6d7035f/800.jpeg" class="img-fluid" alt="Comparator в Java - 2">В каких случаях надо использовать <code>Comparable</code>?
+
+Реализованный в <code>Comparable</code> метод сравнения называют «natural ordering» — естественной сортировкой. Это потому, что в методе <code>compareTo()</code> ты описываешь наиболее распространенный способ сравнения, который будет использоваться для объектов этого класса в твоей программе.
+
+Natural Ordering уже присутствует в Java. Например, Java знает, что строки чаще всего сортируют по алфавиту, а числа — по возрастанию их значения. Поэтому если вызвать на списке чисел или строк метод <code>sort()</code>, так они и будут отсортированы.
+
+Если в нашей программе машины в большинстве случаев будут сравниваться и сортироваться по году выпуска, значит, стоит определить для них натуральную сортировку с помощью интерфейса <code>Comparable&lt;Car&gt;</code> и метода <code>compareTo()</code>.
+
+Но что, если нам этого недостаточно?
+
+Давай представим, что наша программа не так проста.
+
+В большинстве случаев натуральная сортировка машин (мы установили ее по году выпуска) нас устраивает.
+
+Но иногда среди наших клиентов попадаются любители быстрой езды. Если мы готовим для них каталог автомобилей на выбор, их нужно упорядочить по максимальной скорости.
+<img data-max-width="800" data-id="4b2c1197-d7ac-46fc-92c5-dd03e2ffc019" src="/images/article/4b2c1197-d7ac-46fc-92c5-dd03e2ffc019/800.jpeg" class="img-fluid" alt="Comparator в Java - 3">К примеру, такая сортировка нам нужна в 15% случаев. Этого явно недостаточно, чтобы установить натуральную сортировку для <code>Car</code> по скорости вместо года выпуска.
+
+Но и игнорировать 15% клиентов мы не можем. Что же нам делать?
+
+Здесь нам приходит на помощь другой интерфейс — <code>Comparator</code>. Так же, как и <code>Comparable</code>, он типизированный.
+А в чем же разница?
+
+<code>Comparable</code> делает наши объекты «сравнимыми» и создает для них наиболее естественный порядок сортировки, который будет использоваться в большинстве случаев.
+
+<code>Comparator</code> — это отдельный класс-«сравниватель» (перевод немного корявый, но зато понятный).
+
+Если нам нужно реализовать какую-то специфическую сортировку, нам необязательно лезть в класс <code>Car</code> и менять логику <code>compareTo()</code>.
+
+Вместо этого мы можем создать отдельный класс-comparator в нашей программе и научить его делать нужную нам сортировку!
+
+<pre class="lang-java line-numbers"><code>
+import java.util.Comparator;
+
+public class MaxSpeedCarComparator implements Comparator&lt;Car&gt; {
+  
+   @Override
+   public int compare(Car o1, Car o2) {
+       return o1.getMaxSpeed() - o2.getMaxSpeed();
+   }
+}
+</code></pre>
+Как видишь, наш <code>Comparator</code> довольно прост.
+
+Всего один метод <code>compare()</code> — это метод интерфейса <code>Comparator</code>, который обязательно нужно реализовать. Он принимает на вход два объекта <code>Car</code> и привычным нам образом (вычитанием) сравнивает их максимальную скорость. Как и <code>compareTo()</code>, он возвращает число <code>int</code>, принцип сравнения тот же.
+
+Как же нам пользоваться этим?
+
+Очень просто:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
+public class Main {
+
+   public static void main(String[] args) {
+
+       List&lt;Car&gt; cars = new ArrayList&lt;&gt;();
+
+       Car ferrari = new Car(1990, "Ferrari 360 Spider", 310);
+       Car lambo = new Car(2012, "Lamborghini Gallardo", 290);
+       Car bugatti = new Car(2010, "Bugatti Veyron", 350);
+
+       cars.add(ferrari);
+       cars.add(bugatti);
+       cars.add(lambo);
+
+       Comparator speedComparator = new MaxSpeedCarComparator();
+       Collections.sort(cars, speedComparator);
+
+       System.out.println(cars);
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+[Car{manufactureYear=2012, model='Lamborghini Gallardo', maxSpeed=290}, 
+Car{manufactureYear=1990, model='Ferrari 360 Spider', maxSpeed=310}, 
+Car{manufactureYear=2010, model='Bugatti Veyron', maxSpeed=350}]
+</code></pre>
+Мы просто создаем объект-компаратор и передаем его в метод <code>Collections.sort()</code> вместе со списком, который надо отсортировать.
+
+Получив на вход компаратор, метод <code>sort()</code> не будет использовать естественную сортировку, определенную в методе <code>compareTo()</code> класса <code>Car</code>. Вместо этого он применит алгоритм сортировки из переданного ему компаратора.
+
+Какие плюсы нам это дает?
+
+Во-первых, совместимость с написанным кодом. Мы создали новый, специфический метод сортировки, и при этом сохранили действующий, который будет использоваться в большинстве случаев.
+
+Мы вообще не трогали класс <code>Car</code>.
+Он как был <code>Comparable</code>, так и остался:
+
+<pre class="lang-java line-numbers"><code>
+public class Car implements Comparable&lt;Car&gt; {
+
+   private int manufactureYear;
+   private String model;
+   private int maxSpeed;
+
+   public Car(int manufactureYear, String model, int maxSpeed) {
+       this.manufactureYear = manufactureYear;
+       this.model = model;
+       this.maxSpeed = maxSpeed;
+   }
+
+   @Override
+   public int compareTo(Car o) {
+       return this.getManufactureYear() - o.getManufactureYear();
+   }
+
+   //...геттеры, сеттеры, toString()
+
+}
+</code></pre>
+Во-вторых, гибкость. Мы можем добавлять сколько угодно сортировок.
+
+Скажем, отсортировать машины по цвету, скорости, весу, или по тому, сколько раз эта машина использовалась в фильмах про Бэтмена. Достаточно только создать дополнительный <code>Comparator</code>.
+
+Вот и все! Сегодня ты изучил два очень важных механизма, которые часто будешь использовать в реальных проектах на работе.
+
+Но, как известно, теория без практики — ничто. Поэтому, самое время закрепить знания и решить несколько задач! :)

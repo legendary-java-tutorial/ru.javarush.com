@@ -1,0 +1,188 @@
+Новая Java… Опять… Встречаем Java 10
+<p>----------------------------------------</p>
+Это раньше разработчики ждали новой Java по нескольку лет, кто — с ужасом, а кто и с надеждой. Времена изменились, и новые версии JDK будут радовать нас раз в полгода. Если вам пока неясно, к чему это приведёт, ознакомьтесь с мнением эксперта, а здесь мы ...
+<p>----------------------------------------</p>
+Это раньше разработчики ждали новой Java по нескольку лет, кто — с ужасом, а кто и с надеждой. Времена изменились, и новые версии JDK будут радовать нас раз в полгода. Если вам пока неясно, к чему это приведёт, ознакомьтесь с <a href='https://javarush.com/groups/posts/541-bezvremennihy-konec-ehpokhi-jdk-8' target='_blank'>мнением эксперта</a>, а здесь мы перечислим основные изменения в Java 10 — самой новой версии нашего с вами любимого языка. 
+<img data-id="b4d3701f-93b2-4595-a4c0-a866e66c3844" data-max-width="850" alt="Новая Java… Опять… Встречаем Java 10 - 1" src="https://cdn.javarush.com/images/article/b4d3701f-93b2-4595-a4c0-a866e66c3844/1024.jpeg">В квадратных скобках перед новой «фичей» указан номер JEP, то есть, «JDK Enchancement Proposal». JEP — это предложение по улучшению OpenJDK, которое могут утвердить, отложить или отклонить. То есть, по сути, сборник JEP’ов — стратегия развития OpenJDK.
+<h3>Важные фичи Java 10</h3><a href='http://openjdk.java.net/jeps/286' target='_blank'>[286] Local-Variable Type Inference</a> — предложение по введению в Java ключевого слова var, что избавляет от необходимости указывать тип локальной переменной явно. То есть теперь вы можете не указывать тип проинициализированной переменной, а писать что-то вроде: 
+
+<pre class='lang-java line-numbers'><code>
+var list = new ArrayList&ltString&gt();  //перед нами ArrayList&ltString&gt
+var stream = list.stream();          // перед нами Stream&ltString&gt
+</code></pre>
+Это устраняет дублирование определения типа ArrayList &ltString&gt, которое нам пришлось бы использовать раньше. Интересно отметить, что var не становится ключевым словом, а является зарезервированным типом. То есть вы можете использовать var в качестве имени переменной, метода или пакета. А вот назвать так класс вы не сможете (какая потеря!). 
+
+<a href='http://openjdk.java.net/jeps/296' target='_blank'>[296] Объединение «леса» JDK в единый репозиторий</a>. В JDK 9 есть восемь репозиториев — root, corba, hotspot, jaxp, jaxws, jdk, langtools, nashorn. В Java 10 весь этот лес объединят в единый репозиторий, чтобы появилась возможность выполнять атомарные коммиты в репозиториях взаимозависимых наборов изменений. 
+
+<a href='http://openjdk.java.net/jeps/304' target='_blank'>[304] Garbage-Collector Interface</a> — это не интерфейс, который может быть использован разработчиками для управления сборкой мусора. Вместо этого мы получаем чистый интерфейс сборщика мусора в исходном коде JVM, позволяющий быстро и легко интегрировать альтернативные сборщики.
+
+Больше всего этому улучшению обрадуются те, кто мечтал добавить в JVM свой собственный сборщик мусора.  
+
+<a href='http://openjdk.java.net/jeps/307' target='_blank'>[307] Parallel Full GC для сборщика мусора G1</a>. В JDK 9 сборщиком мусора по умолчанию стал G1, в то время как раньше базовым сборщиком был Parallel GC, который мог собирать мусор в нескольких потоках. Теперь это сможет и G1, раньше он делал это в одном потоке, что иногда вызывало сложности. Кстати, разработчики смогут настраивать количество потоков с помощью параметра -<code>XX:ParallelGCThreads.</code>
+
+<a href='http://openjdk.java.net/jeps/310' target='_blank'>[310] Application Class-Data Sharing</a> — эта наработка, принятая в версии Java 10, предлагает улучшить загрузку и отслеживание, расширить существующую функцию разделения классов (CDS), чтобы позволить классам приложений размещаться в общем архиве.
+
+<em><strong>Class-Data Sharing</strong></em> или сокращённо CDS работает с файлами расширения *class. Эта функция позволяет выбрать некое подмножество классов, обработать и сжать в специальный архив. Всё это сделано для экономии памяти. Часто разные экземпляры JVM загружают одни и те же классы, входящие в стандартную библиотеку. А CDS позволяет всем этим экземплярам JVM совместно использовать единый архив с помещёнными в него классами. Это уменьшает и время загрузки программ, и используемую память. 
+
+На самом деле CDS повышает производительность запуска JVM и уменьшает объем ресурсов, когда несколько JVM работают на одной физической или виртуальной машине, начиная с пятой версии. Но раньше использование CDS ограничивалось только загрузчиком bootstrap. Теперь же расширенная версия под названием Application CDS позволяет загружать специальные архивы с классами и другим загрузчикам. 
+ 
+<a href='http://openjdk.java.net/jeps/312' target='_blank'>[312] Thread-Local Handshakes</a> — довольно низкоуровневое изменение внутри JVM, которое позволит выполнять обратный вызов по потокам без выполнения глобальной точки безопасности VM. Это позволит без лишних затрат останавливать отдельные потоки, а не все сразу (или ни одного).
+
+<a href='http://openjdk.java.net/jeps/313' target='_blank'>[313] Remove the Native-Header Generation Tool (javah)</a>. Ещё в Java 9 разработчики языка начали активно убирать ненужные инструменты, и JEP 313 продолжает это благое дело. 
+
+Инструмент javah генерирует JNI-header’ы, если в коде есть native-методы. Полезно? Конечно, но родной компилятор javac начиная с JDK 8 сам умеет генерировать JNI-header’ы. Так что от javah теперь решили избавиться. К слову, в настоящее время ведутся разработки проекта <a href='http://openjdk.java.net/projects/panama/' target='_blank'>Panama</a>, который, в частности, может заменить JNI.  
+
+<a href='http://openjdk.java.net/jeps/314' target='_blank'>[314] Additional Unicode Language-Tag Extensions</a> данное изменение призвано улучшить класс java.util.Locale и связанные с ним API для реализации дополнительных расширений Unicode тегов языка BCP 47. В частности, теперь будут поддерживаться теги для типа валюты (cu), первого дня недели (fw), переопределения региона (rg) и часового пояса (tz). 
+
+<a href='http://openjdk.java.net/jeps/316' target='_blank'>[316] Heap Allocation on Alternative Memory Devices</a> это нововведение поможет тем, кто использует другие, отличные от DRAM, типы памяти. Поскольку технологии постоянно меняются, то использование энергонезависимой памяти с тем же интерфейсом и сходными с DRAM характеристиками производительности — объективная реальность на сегодняшний день. Так вот, JEP 316 позволяет JVM размещать кучу (heap) в других типах памяти.   
+
+<a href='http://openjdk.java.net/jeps/317' target='_blank'>[317] Experimental Java-Based JIT Compiler</a>. Недавно был анонсирован проект Metropolis, в котором предлагается переписать большую часть JVM на Java. Если вы вдруг не знали, текущая версия написана на C++. Ну а если вы уже в курсе, вероятно, в первый момент подобная идея покажется вам странной. Раз JVM написана на Java, разве вам не понадобится JVM для запуска JVM? Такая вот рекурсия, напоминающая о зеркалах напротив друг друга. 
+
+Однако в реальности всё немного иначе: если JVM написана на Java, это не означает, что вы должны скомпилировать её в байт-коды. На самом деле вы можете использовать AOT-компиляцию, а затем JIT компилирует код, поскольку он работает для повышения производительности.
+<table>
+<tr>
+<td>
+<p>Для компиляции Java-кода обычно используется такой инструмент, как javac. Он преобразует программу на Java в набор класс-файлов с байт-кодами. Далее JVM запускает ваш байт-код и её интерпретатор преобразует их в инструкции процессора. Кроме интерпретатора у JVM есть и встроенный компилятор, и он тоже может создать инструкции для процессора из байт-кода. Это так называемая runtime compilation, компиляция во время запуска. Обычно такой компиляции подвергают тот код, который чаще всего использовать — это улучшает производительность.</p>
+
+<p>Компилятор может выполнять действия по-разному: JIT-компиляция (just-in-time) — динамическая, прямо во время выполнения программы или AOT-компиляция (ahead-of-time) — перед выполнением.  </p>
+
+<p>AOT-компилятор jaotc появился в JDK 9. В настоящее время Hotspot JVM содержит два JIT-компилятора, C1 (для скорости) и C2 (для оптимизации).</p>
+</td>
+</tr>
+</table>JEP 317 представляет проект исследований Graal — компилятора для JDK. Это некий базис, который поможет реализовать Metropolis реальностью и дать возможность JVM соответствовать (а лучше — превзойти) по производительности текущую версию, написанную на C ++.
+ 
+<a href='http://openjdk.java.net/jeps/319' target='_blank'>[319] Root Certificates</a> — набор стандартных сертификатов Certification Authority (CA) по умолчанию в JDK. Теперь в сборках OpenJDK критические компоненты безопасности, такие как TLS, будут работать по умолчанию. Это полезное дополнение, скорее всего, относится к тем действиям Oracle, которые компания предпринимает, чтобы гарантировать, что двоичные файлы OpenJDK и двоичные файлы Oracle JDK функционально одинаковы.
+
+<a href='http://openjdk.java.net/jeps/322' target='_blank'>[322] Time-Based Release Versioning</a> — в Java 10 в Feature releases будут добавляться новые фичи, а  в Update Releases — устраняться ошибки. По сути перед нами новый способ задания форматов строки версии JDK. Он устраняет довольно странную ситуацию с JDK 9. Первым обновлением значился JDK 9.0.1, что вполне логично. Второе обновление — JDK 9.0.4, что нелогично. Логика заключается в том, что в рамках схемы нумерации версий JDK 9 пространство остается между обновлениями в случае необходимости экстренного, незапланированного обновления. Поскольку обновление не было необходимым, почему бы просто не назвать его JDK 9.0.2?  
+
+А вот как выглядит новый формат версий Java: 
+
+<pre class='lang-java line-numbers'><code>
+[1-9][0-9]*((\.0)*\.[1-9][0-9]*)* 
+</code></pre>
+<h3>Новые API</h3>В стандартные библиотеки классов JDK 10 добавлено 73 дополнения.
+<ul>
+<li><p><strong>java.awt.Toolkit</strong></p>
+<p><code>int getMenuShortcutKeyMaskEx ()</code>: определяет, какой расширенный ключ-модификатор является соответствующим ключом ускорителя для меню ярлыков.</p></li>
+
+<li><p><strong>java.awt.geom.Path2D:</strong></p>
+<p><code>void trimToSize ()</code>: Обрезает емкость этого экземпляра <code>Path2D</code> до его текущего размера. Приложение может использовать эту операцию для минимизации хранения пути. Этот же метод добавлен во внутренние классы <code>Path2D.Double</code> и <code>Path2D.Float</code>.</p></li>
+
+<li><p><strong>java.io.ByteArrayOutputStream:</strong></p>
+<p><code>String toString (Charset)</code>: перегруженный <code>toString</code>, преобразует содержимое буфера в строку путем декодирования байтов с использованием указанной кодировки.</p></li>
+
+<li><p><strong>java.io.PrintStream и lang.io.PrintWriter:</strong></p>
+<p>Оба этих класса получили три новых конструктора, которые принимают дополнительный аргумент <code>charset</code>.</p></li>
+
+<li><p><strong>java.io.Reader:</strong></p>
+<p><code>long transferTo (Writer)</code>: считывает все символы из этого ридера и записывает символы в заданный райтер в том порядке, в котором они читаются.</p></li>
+
+<li><p><strong>java.lang.Runtime.Version:</strong></p>
+<p>Четыре новых метода, которые возвращают целочисленное значение для новой версии (JEP 322) строковых полей: <code>feature ()</code>, <code>interim ()</code>, <code>patch ()</code> и <code>update ()</code>.</p></li>
+
+<li><p><strong>java.lang.StackWalker.StackFrame:</strong></p></li>
+
+<li><p><strong>String getDescriptor (): </strong></p>
+<p>возвращает дескриптор метода, представленного этим фреймом стека, как определено Спецификацией виртуальной машины Java.</p></li>
+
+<li><p><strong>String getMethodType (): </strong></p>
+<p>возвращает <code>MethodType</code>, представляющий типы параметров, и тип возвращаемого значения для метода, представленного фреймом стека.</p></li>
+
+<li><p><strong>java.lang.invoke.MethodType:</strong></p>
+<p>Class &lt?&gt LastParameterType (): возвращает последний тип параметра этого типа метода. Если этот тип не имеет параметров, вместо него возвращается значение <code>sentinel void.class</code>.</p></li>
+
+<li><p><strong>java.lang.management.RuntimeMXBean:</strong></p>
+<p><code>long getPid ()</code> возвращает <code>pid</code> запущенной виртуальной машины Java.</p></li>
+
+<li><p><strong>java.lang.management.ThreadMXBean:</strong></p>
+<p><code>ThreadInfo [] dumpAllThreads (boolean, boolean, int):</code> возвращает информацию о потоке для всех потоков в реальном времени с трассировкой стека с указанным максимальным количеством элементов и информацией о синхронизации.</p></li>
+
+<li><p><strong>ThreadInfo [] getThreadInfo (long [], boolean, boolean, int):</strong></p>
+<p>возвращает информацию о потоке для каждого потока, чья идентификация находится во входном массиве, с трассировкой стека указанного максимального количества элементов и информацией о синхронизации.</p></li>
+
+<li><p><strong>java.lang.reflect.MalformedParameterizedTypeException: </strong></p>
+<p>добавлен новый конструктор, который принимает подробное сообщение в виде строки в качестве параметра.</p></li>
+
+<li><p><strong>java.net.URLDecoder и java.net.URLEncoder:</strong></p>
+<p>оба этих класса получили новые перегруженные методы раскодирования и кодирования, которые используют <code>charset</code> в качестве дополнительного параметра.</p></li>
+
+<li><p><strong>java.nio.channels.Channels:</strong></p>
+<p>Два новых статических перегруженных метода, <code>newReader (ReadByteChannel, Charset)</code> и <code>newWriter (WriteByteChannel, Charset)</code>, которые позволяют использовать <code>charset</code>.</p></li> 
+
+<li><p><strong>java.nio.file.FileStore:</strong></p>
+<p><code>long getBlockSize ()</code>: возвращает количество байтов на блок в этом хранилище файлов.</p></li>
+
+<li><p><strong>java.time.chrono: </strong></p>
+<p>три класса в этом пакете, <code>HijrahEra</code>, <code>MiinguoEra</code> и <code>ThaiBuddhistEra</code>, получили метод
+<code>String getDisplayName (TextStyle, Locale)</code>. Он возвращает текстовое имя, используемое для идентификации эпохи, подходящее для представления пользователю.</p></li>
+
+<li><p><strong>java.time.format.DateTimeFormatter:</strong></p>
+<p><code>localizedBy (Locale)</code>: возвращает копию этого форматтера с локализованными значениями языка, календаря, региона, десятичного стиля и / или часового пояса, которые заменяют значения в этом формате.</p></li>
+
+<li><p><strong>java.util: </strong></p>
+<p><code>DoubleSummaryStatistics</code>, <code>IntSummaryStatistics</code> и <code>LongSummaryStatistics</code> получили новый конструктор, который принимает четыре числовых значения. Он создает непустой экземпляр с указанным счетчиком, минимумом, максимумом и суммой.<p></li>
+
+<li><p><strong>java.util.List, java.util.Map и java.util.Set: </strong></p>
+<p>каждый из этих интерфейсов обзавёлся новым статическим методом <code>copyOf (Collection)</code>. Они возвращают неизменяемые <code>List</code>, <code>Map</code> или <code>Set</code>, содержащие элементы данной коллекции, в своем порядке итерации.</p></li>
+
+<li><p><strong>java.util.Optional, java.util.OptionalDouble, java.util.OptionalInt, java.util.OptionalLong: </strong></p>
+<p>каждый из этих классов получает новый метод <code>orElseThrow ()</code>, который по существу делает то же самое, что и <code>get ()</code>, то есть если условие выполняется, значение возвращается. В противном случае генерируется исключение <code>NoSuchElementException</code>.</p></li>
+
+<li><p><strong>java.util.Formatter и java.util.Scanner:</strong></p>
+<p>Оба этих класса получили три новых конструктора, которые на вход получают <code>charset</code> в дополнение к другим аргументам.</p></li>
+
+<li><p><strong>java.util.Properties: </strong></p>
+<p>Здесь появился новый конструктор, который принимает аргумент <code>int</code>. Это создает пустой список свойств без значений по умолчанию и с начальным размером, содержащим указанное количество элементов без необходимости динамического изменения размера. Также появилась новая, перегруженная версия метода <code>replace</code>, которая принимает три параметра <code>Object</code> и возвращает логическое значение. </p></li>
+
+<li><p><strong>java.SplittableRandom:</strong></p>
+<p><code>void nextBytes (byte [])</code>: заполняет предоставленный пользователем массив байтов с генерируемыми псевдослучайными байтами.</p></li>
+
+<li><p><strong>java.util.concurrent.FutureTask: </strong></p>
+<p>добавлен метод <code>toString ()</code>, который возвращает строку, идентифицирующую <code>FutureTask</code>, а также ее состояние завершения. Состояние (в скобках) содержит одну из строк: «Completed Normally» (нормальное завершение), «Completed Exceptionally» (завершение с исключением), «Cancelled» (отменено) или «Not completed» (не завершено). </p></li>
+
+<li><p><strong>java.util.concurrent.locks.StampedLock:</strong></p>
+<p>новые методы <code>boolean isLockStamp (long)</code>, <code>boolean isOptimisticReadStamp (long)</code>, <code>boolean isReadLockStamp (long)</code> и <code>boolean isWriteLockStamp (long)</code>. </p></li>
+
+<li><p><strong>java.jar.JarEntry:</strong></p>
+<p><code>String getRealName ()</code>: возвращает настоящее имя этого <code>JarEntry</code>. Если <code>JarEntry</code> является записью мультирелизного jar-файла, настроенного для обработки, тогда имя, возвращаемое этим методом — имя пути версии, которую представляет <code>JarEntry</code>. Иначе <code>JarEntry</code> возвращает то же имя, что и <code>ZipEntry.getName ()</code>.</p></li>
+
+<li><p><strong>java.util.jar.JarFile:</strong></p>
+<p><code>Stream &ltJarEntry&gt versionedStream ()</code>: возвращает поток записей в файле с версией jar. Подобно методу <code>getRealName</code> для <code>JarEntry</code>, связан с мультирелизными jar-файлами.</p></li>
+
+<li><p><strong>java.util.spi.LocaleNameProvider:</strong></p>
+<p><code>getDisplayUnicodeExtensionKey (String, Locale)</code>: возвращает локализованное имя для данного <code>Unicode extension key</code>.
+<code>getDisplayUnicodeExtensionType (String, String, Locale)</code>: возвращает локализованное имя для данного <code>Unicode extension key</code>.</p></li>
+
+<li><p><strong>java.util.stream.Collectors:</strong></p>
+<p><code>toUnmodifiableList ()</code>, <code>toUnmodifiableSet ()</code>, <code>toUnmodifiableMap (Function, Function)</code>, <code>toUnmodifiableMap (Function, Function, BinaryOperator)</code> — эти четыре новых метода возвращают коллекторы (Collectors), которые накапливают входные элементы в соответствующую немодифицируемую коллекцию.</p></li>
+
+<li><p><strong>java.lang.model.SourceVersion: </strong></p>
+<p>теперь это поле RELEASE_10 для представления версии JDK 10.</p></li>
+
+<li><p><strong>java.lang.model.util.TypeKindVisitor6 и javax.lang.model.util.TypeKindVisitor9:</strong></p>
+<p>что-то не вполне понятное:). </p></li>
+
+<li><p><strong>R visitNoTypeAsModule (NoType, P):</strong></p>
+<p>посещает псевдо-тип <code>MODULE</code>.</p></li>
+
+<li><p><strong>javax.remote.management.rmi.RMIConnectorServer:</strong></p>
+<p>У этого класса было добавлено два поля: <code>CREDENTIALS_FILTER_PATTERN и SERIAL_FILTER_PATTERN</code>.</p></li>
+
+<li><p><strong>javax.ButtonModel: </strong></p>
+<p>Представляете, Swing все еще обновляется!</p></li>
+
+<li><p><strong>ButtonGroup getGroup ():</strong></p>
+<p>возвращает группу, к которой принадлежит кнопка. Обычно используется с <code>radio buttons</code>, которые являются взаимоисключающими в своей группе.</p></li>
+
+<li><p><strong>javax.plaf.basic.BasicMenuUI:</strong></p>
+<p><code>Dimension getMinimumSize (JComponent)</code>: возвращает минимальный размер указанного компонента, подходящий для внешнего вида.</p></li>
+</ul><table>
+<tr><th>Что еще почитать?</th>
+</tr>
+<tr>
+<td>
+<p><a href='https://javarush.com/groups/posts/479-chem-poraduet-novaja-versija-jdk' target='_blank'>Чем порадует новая версия JDK</a></p>
+<p><a href='https://javarush.com/groups/posts/541-bezvremennihy-konec-ehpokhi-jdk-8' target='_blank'>К чему приведёт частый выпуск новых версий JDK</a></p>
+</td>
+</tr>
+</table>

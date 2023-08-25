@@ -1,0 +1,228 @@
+Кофе-брейк #177. Подробное руководство по Java Stream в Java 8
+<p>----------------------------------------</p>
+В этой публикации изложено подробное руководство по работе с Java Stream вместе с примерами кода и пояснениями.
+<p>----------------------------------------</p>
+Источник: <a href="https://hackernoon.com/an-in-depth-guide-on-java-streams-in-java-8" rel="nofollow" target="_blank">Hackernoon</a>
+
+<em>В этой публикации изложено подробное руководство по работе с Java Stream вместе с примерами кода и пояснениями.</em>
+<img data-max-width="800" data-id="f5e7af6e-aab4-4aa1-a255-9789c1a20b39" src="https://cdn.javarush.com/images/article/f5e7af6e-aab4-4aa1-a255-9789c1a20b39/800.jpeg" alt="Кофе-брейк #177. Подробное руководство по Java Stream в Java 8 - 1"><h2>Введение в потоки Java в Java 8</h2>Потоки Java (Streams), представленные как часть Java 8, используются для работы с коллекциями данных. Сами по себе они не являются структурой данных, но могут использоваться для ввода информации из других структур данных путем упорядочивания и конвейерной обработки для получения окончательного результата.
+
+<em>Примечание: Важно не путать Stream и Thread, поскольку в русском языке оба термина часто упоминаются в одинаковом переводе “поток”. Stream обозначает объект для выполнения операций (чаще всего передача данных или их накопление), тогда как Thread (дословный перевод — нить) обозначает объект, который позволяет выполнить определенный программный код параллельно с другими ветками кода.</em>
+
+Поскольку Stream — это не отдельная структура данных, она никогда не изменяет источник данных. Потоки Java имеют следующие особенности:<ol>
+
+<li><p>Java Stream можно использовать с помощью пакета “java.util.stream”. Его можно импортировать в скрипт с помощью кода:</p>
+
+<pre class="language-java line-numbers"><code>
+import java.util.stream.* ;
+</code></pre>
+
+<p>Используя этот код, мы также можем легко реализовать несколько встроенных функций в Java Stream.</p></li>
+<li><p>Java Stream может принимать входные данные из коллекций данных, таких как коллекции и массивы в Java.</p></li>
+<li><p>Java Stream не требует изменения структуры входных данных.</p></li>
+<li><p>Java Stream не изменяет источник. Вместо этого он генерирует выходные данные с помощью соответствующих конвейерных методов.</p></li>
+<li><p>Java Stream подвергаются промежуточным и терминальным операциям, которые мы обсудим в следующих разделах.</p></li>
+<li><p>В Java Stream промежуточные операции конвейеризированы и происходят в формате отложенных или “ленивых” вычислений (lazy evaluation). Они завершаются терминальными функциями. Это формирует базовый формат использования Java Stream.</p></li>
+
+</ol>В следующем разделе мы рассмотрим различные способы, используемые в Java 8 для создания Java Stream по мере необходимости.
+<h2>Создание Java Stream в Java 8</h2>Потоки Java можно создавать несколькими способами:
+<h3>1. Создание пустого потока с помощью метода Stream.empty()</h3>Можно создать пустой поток для использования на более поздних этапах кода. Если использовать метод <span class="code">Stream.empty()</span>, то будет сгенерирован пустой поток, не содержащий значений. Этот пустой поток может пригодиться, если мы хотим пропустить исключение нулевого указателя во время выполнения. Для этого можно использовать следующую команду:
+
+<pre class="language-java line-numbers"><code>
+Stream&lt;String&gt; str = Stream.empty();
+</code></pre>
+Приведенный выше оператор сгенерирует пустой поток с именем <span class="code">str</span> без каких-либо элементов внутри него. Чтобы убедиться в этом достаточно проверить количество или размер потока с помощью термина <span class="code">str.count()</span>. Например,
+
+<pre class="language-java line-numbers"><code>
+System.out.println(str.count());
+</code></pre>
+В результате получим на выводе <span class="code">0</span>.
+<h3>2. Создание потока с использованием метода Stream.builder() с экземпляром Stream.Builder</h3>Мы также можем использовать <span class="code">Stream Builder</span> для создания потока с помощью шаблона проектирования builder. Он предназначен для пошагового построения объектов. Давайте посмотрим, как мы можем создать экземпляр потока с помощью <span class="code">Stream Builder</span>.
+
+<pre class="language-java line-numbers"><code>
+Stream.Builder&lt;Integer&gt; numBuilder = Stream.builder();
+
+numBuilder.add(1).add(2).add( 3);
+
+Stream&lt;Integer&gt; numStream = numBuilder.build();
+</code></pre>
+Используя этот код, можно создать поток с именем <span class="code">numStream</span>, содержащий элементы <span class="code">int</span>. Все выполняется достаточно быстро благодаря экземпляру <span class="code">Stream.Builder</span> под именем <span class="code">numBuilder</span>, который создается первым.
+<h3>3. Создание потока с указанными значениями с помощью метода Stream.of()</h3>Еще один способ создания потока предполагает использование метода <span class="code">Stream.of()</span>. Это простой способ создания потока с заданными значениями. Он объявляет, а также инициализирует поток. Пример использования метода <span class="code">Stream.of()</span> для создания потока:
+
+<pre class="language-java line-numbers"><code>
+Stream&lt;Integer&gt; numStream = Stream.of(1, 2, 3);
+</code></pre>
+Этот код создаст поток, содержащий элементы <span class="code">int</span>, как мы уже сделали в предыдущем методе с использованием <span class="code">Stream.Builder</span>. Здесь мы напрямую создали поток, используя <span class="code">Stream.of()</span> с заранее заданными значениями <span class="code">[1, 2 и 3]</span>.
+<h3>4. Создание потока из существующего массива с использованием метода Arrays.stream()</h3>Другой распространенный метод создания потока предполагает использование массивов в Java. Поток здесь создается из существующего массива с помощью метода <span class="code">Arrays.stream()</span>. Все элементы массива преобразуются в элементы потока. Вот наглядный пример:
+
+<pre class="language-java line-numbers"><code>
+Integer[] arr = {1, 2, 3, 4, 5};
+
+Stream&lt;Integer&gt; numStream = Arrays.stream(arr);
+</code></pre>
+Этот код будет генерировать поток <span class="code">numStream</span>, содержащий содержимое массива с именем arr, который представляет собой целочисленный массив (integer array).
+<h3>5. Объединение двух существующих потоков с помощью метода Stream.concat()</h3>Еще один метод, который можно использовать для создания потока, — это метод <span class="code">Stream.concat()</span>. Он используется для объединения двух потоков с целью создания единого потока. 
+
+Оба потока объединяются по порядку. Это означает, что первым идет первый поток, за которым следует второй поток, и так далее. Пример такой конкатенации выглядит следующим образом:
+
+<pre class="language-java line-numbers"><code>
+Stream&lt;Integer&gt; numStream1 = Stream.of(1, 2, 3, 4, 5);
+
+Stream&lt;Integer&gt; numStream2 = Stream.of(1, 2, 3);
+
+Stream&lt;Integer&gt; combinedStream = Stream.concat( numStream1, numStream2);
+</code></pre>
+Приведенный выше оператор создаст окончательный поток с именем <span class="code">combinedStream</span>, содержащий один за другим элементы первого потока <span class="code">numStream1</span> и второго потока <span class="code">numStream2</span>.
+<h2>Типы операций с Java Stream</h2>Как уже упоминалось, с Java Stream в Java 8 можно выполнять два типа операций: промежуточные (intermediate) и терминальные (terminal). Рассмотрим каждую из них более подробно.
+<h3>Промежуточные операции</h3>Промежуточные операции генерируют выходной поток (output stream) и выполняются только при встрече с терминальной операцией. Это означает, что промежуточные операции выполняются “лениво”, конвейерно и могут быть завершены только терминальной операцией. О ленивом вычислении и конвейерной обработке вы узнаете чуть позже.
+
+Примерами промежуточных операций являются следующие методы: <span class="code">filter()</span>, <span class="code">map()</span>, <span class="code">different()</span>, <span class="code">peek()</span>, <span class="code">sorted()</span> и некоторые другие.
+<h3>Терминальные операции </h3>Терминальные операции завершают выполнение промежуточных операций, а также возвращают окончательные результаты выходного потока. Поскольку терминальные операции сигнализируют о завершении ленивого выполнения и конвейерной обработки, этот поток нельзя использовать снова после того, как он подвергся терминальной операции.
+
+Примерами терминальных операций являются следующие методы: <span class="code">forEach()</span>, <span class="code">collect()</span>, <span class="code">count()</span>, <span class="code">reduce()</span> и так далее.
+<h2>Примеры операций с Java Stream</h2><h3>Промежуточные операции</h3>Вот несколько примеров некоторых промежуточных операций, которые можно применять к Java Stream:
+<h4><span class="code">filter()</span></h4>Этот метод используется для фильтрации элементов из потока, которые соответствуют определенному предикату в Java. Затем эти отфильтрованные элементы составляют новый поток. Давайте взглянем на пример, чтобы лучше понять лучше.
+
+<pre class="language-java line-numbers"><code>
+Stream&lt;Integer&gt; numStream = Stream.of(43, 65, 1, 98, 63); List&lt;Integer&gt; even = numStream.filter(n -&gt; n % 2 == 0) .collect(Collectors.toList()); System.out.println(even);
+</code></pre>
+Вывод:
+
+<div class="terminal">[98]</div>
+Объяснение:
+В этом примере видно, что четные элементы (делящиеся на 2) фильтруются с помощью метода <span class="code">filter()</span> и сохраняются в целочисленном списке <span class="code">numStream</span>, содержимое которого печатается позже. Поскольку 98 — единственное четное целое число в потоке, оно печатается в выводе.
+<h4><span class="code">map()</span></h4>Этот метод используется для создания нового потока путем выполнения сопоставленных функций над элементами исходного входного потока. Возможно, новый поток имеет другой тип данных. Пример выглядит следующим образом:
+
+<pre class="language-java line-numbers"><code>
+Stream&lt;Integer&gt; numStream = Stream.of(43, 65, 1, 98, 63); List&lt;Integer&gt; d = numStream.map(n -&gt; n*2) .collect(Collectors.toList()); System.out.println(d);
+</code></pre>
+Вывод:
+
+<div class="terminal">[86, 130, 2, 196, 126]</div>
+Объяснение:
+Здесь мы видим, что метод <span class="code">map()</span> используется для простого удвоения каждого элемента потока <span class="code">numStream</span>. Как видно из вывода, каждый из элементов в потоке успешно удвоен.
+<h4><span class="code">distinct()</span></h4>Этот метод используется для извлечения только отдельных элементов в потоке путем фильтрации дубликатов. Пример того же выглядит следующим образом:
+
+<pre class="language-java line-numbers"><code>
+Stream&lt;Integer&gt; numStream = Stream.of(43,65,1,98,63,63,1); List&lt;Integer&gt; numList = numStream.distinct() .collect(Collectors.toList()); System.out.println(numList);
+</code></pre>
+Вывод:
+
+<div class="terminal">[43, 65, 1, 98, 63]</div>
+Объяснение:
+В этом случае для <span class="code">numStream</span> используется метод <span class="code">different()</span>. Он извлекает все отдельные элементы в списке <span class="code">numList</span> путем удаления дубликатов из потока. Как видно из выводных данных, дубликатов нет, в отличие от входного потока, который изначально имел два дубликата (63 и 1).
+<h4><span class="code">peek()</span></h4>Этот метод используется для отслеживания промежуточных изменений перед выполнением терминальной операции. Это означает, что <span class="code">peek()</span> можно использовать для выполнения операции над каждым элементом потока для создания потока, над которым могут выполняться дальнейшие промежуточные операции.
+
+<pre class="language-java line-numbers"><code>
+Stream&lt;Integer&gt; numStream = Stream.of(43, 65, 1, 98, 63); List&lt;Integer&gt; nList = numStream.map(n -&gt; n*10) .peek(n-&gt;System.out.println("Mapped: "+ n)) .collect(Collectors.toList()); System.out.println(nList);
+</code></pre>
+Вывод:
+
+<div class="terminal">Mapped: 430 Mapped: 650 Mapped: 10 Mapped: 980 Mapped: 630 [430, 650, 10, 980, 630]</div>
+Объяснение:
+Здесь метод <span class="code">peek()</span> используется для генерации промежуточных результатов, поскольку метод <span class="code">map()</span> применяется к элементам потока. Здесь мы можем заметить, что даже до применения терминальной операции <span class="code">collect()</span> для печати окончательного содержимого списка в операторе <span class="code">print</span> результат для каждого сопоставления элемента потока печатается последовательно заранее.
+<h4><span class="code">sorted()</span></h4>Метод <span class="code">sorted()</span> используется для сортировки элементов потока. По умолчанию он сортирует элементы в порядке возрастания. Также можно указать конкретный порядок сортировки в качестве параметра. Пример реализации этого метода выглядит следующим образом:
+
+<pre class="language-java line-numbers"><code>
+Stream&lt;Integer&gt; numStream = Stream.of(43, 65, 1, 98, 63); numStream.sorted().forEach(n -&gt; System.out.println(n));
+</code></pre>
+Вывод:
+
+<div class="terminal">1 43 ​​63 65 98</div>
+Объяснение:
+Здесь метод <span class="code">sorted()</span> используется для сортировки элементов потока в порядке возрастания по умолчанию (поскольку конкретный порядок не указан). Можно увидеть, что элементы, напечатанные в выводе, упорядочены в возрастающем порядке.
+<h3>Терминальные операции</h3>Вот несколько примеров некоторых терминальных операций, которые можно применять к потокам Java:
+<h4><span class="code">forEach()</span></h4>Метод <span class="code">forEach()</span> используется для перебора всех элементов потока и выполнения функции для каждого элемента один за другим. Это действует как альтернатива операторам цикла, таким как <span class="code">for</span>, <span class="code">while</span> и другим. Пример:
+
+<pre class="language-java line-numbers"><code>
+Stream&lt;Integer&gt; numStream = Stream.of(43, 65, 1, 98, 63); numStream.forEach(n -&gt; System.out.println(n));
+</code></pre>
+Вывод:
+
+<div class="terminal">43 65 1 98 63</div>
+Объяснение:
+Здесь метод <span class="code">forEach()</span> используется для печати каждого элемента потока один за другим.
+<h4><span class="code">count()</span></h4>Метод <span class="code">count()</span> используется для извлечения общего количества элементов, присутствующих в потоке. Он похож на метод <span class="code">size()</span>, который часто используется для определения общего количества элементов в коллекции. Пример использования метода <span class="code">count()</span> с Java Stream выглядит следующим образом:
+
+<pre class="language-java line-numbers"><code>
+Stream&lt;Integer&gt; numStream = Stream.of(43, 65, 1, 98, 63); System.out.println(numStream.count());
+</code></pre>
+Вывод:
+
+<div class="terminal">5</div>
+Объяснение:
+Поскольку поток <span class="code">numStream</span> содержит 5 целочисленных элементов, то при использовании для него метода <span class="code">count()</span> вывод будет 5.
+<h4><span class="code">collect()</span></h4>Метод <span class="code">collect()</span> используется для выполнения изменяемых сокращений элементов потока. Его можно использовать для удаления содержимого из потока после завершения обработки. Для проведения редукций он использует класс <span class="code">Collector</span>.
+
+<pre class="language-java line-numbers"><code>
+Stream&lt;Integer&gt; numStream = Stream.of(43, 65, 1, 98, 63); List&lt;Integer&gt; odd = numStream.filter(n -&gt; n % 2 == 1) .collect(Collectors.toList()); System.out.println(odd);
+</code></pre>
+Вывод:
+
+<div class="terminal">[43, 65, 1, 63]</div>
+Объяснение:
+В этом примере все нечетные элементы в потоке фильтруются и собираются/сокращаются в список с именем <span class="code">odd</span> (нечетные). В конце печатается список нечетных.
+<h4><span class="code">min()</span> и <span class="code">max()</span></h4>Метод <span class="code">min()</span>, как следует из названия, может использоваться в потоке для поиска в нем минимального элемента. Точно так же метод <span class="code">max()</span> можно использовать для поиска максимального элемента в потоке. Давайте попробуем понять, как их можно использовать, на примере:
+
+<pre class="language-java line-numbers"><code>
+Stream&lt;Integer&gt; numStream = Stream.of(43, 65, 1, 98, 63); int smallest = numStream.min((m, n) -&gt; Integer.compare(m, n)).get(); System.out.println("Smallest element: " + smallest);
+</code></pre>
+<pre class="language-java line-numbers"><code>
+numStream = Stream.of(43, 65, 1, 98, 63); int largest = numStream.max((m, n) -&gt; Integer.compare(m, n)).get(); System.out.println("Largest element: " + largest);
+</code></pre>
+Вывод:
+
+<div class="terminal">Smallest element: 1 Largest element: 98</div>
+Объяснение:
+В этом примере мы напечатали наименьший элемент в потоке <span class="code">numStream</span> с помощью метода <span class="code">min()</span> и самый большой элемент с помощью метода <span class="code">max()</span>.
+
+Обратите внимание, что здесь перед применением метода <span class="code">max()</span> мы снова добавили элементы в поток <span class="code">numStream</span>. Это связано с тем, что <span class="code">min()</span> является терминальной операцией и уничтожает содержимое исходного потока, возвращая только окончательный результат (который в данном случае был целочисленным “smallest”).
+<h4><span class="code">findAny()</span> и <span class="code">findFirst()</span></h4><span class="code">findAny()</span> возвращает любой элемент потока как <span class="code">Optional</span>. Если поток пуст (empty), он вернет также значение <span class="code">Optional</span>, которое будет пустым.
+
+<span class="code">findFirst()</span> возвращает первый элемент потока как <span class="code">Optional</span>. Как и в случае с методом <span class="code">findAny()</span>, метод <span class="code">findFirst()</span> также возвращает пустой параметр <span class="code">Optional</span>, если соответствующий поток пуст. Давайте взглянем на следующий пример, основанный на этих методах:
+
+<pre class="language-java line-numbers"><code>
+Stream&lt;Integer&gt; numStream = Stream.of(43, 65, 1, 98, 63); Optional&lt;Integer&gt; opt = numStream.findFirst();System.out.println(opt); numStream = Stream.empty(); opt = numStream.findAny();System.out.println(opt);
+</code></pre>
+Вывод:
+
+<div class="terminal">Optional[43] Optional.empty</div>
+Объяснение:
+Здесь, в первом случае, метод <span class="code">findFirst()</span> возвращает первый элемент потока как <span class="code">Optional</span>. Затем, когда поток переназначается как пустой поток, метод <span class="code">findAny()</span> возвращает пустой <span class="code">Optional</span>.
+<h4><span class="code">allMatch()</span>, <span class="code">anyMatch()</span> и <span class="code">noneMatch()</span></h4>Метод <span class="code">allMatch()</span> используется для проверки того, соответствуют ли все элементы в потоке определенному предикату, и возвращает логическое значение <em>true</em>, если это так, в противном случае возвращается <em>false</em>. Если поток пуст, он возвращает <em>true</em>.
+
+Метод <span class="code">anyMatch()</span> используется для проверки того, соответствует ли какой-либо из элементов в потоке определенному предикату. Он возвращает <em>true</em>, если это так, и <em>false</em> в противном случае. Если поток пуст, он возвращает <em>false</em>.
+
+Метод <span class="code">noneMatch()</span> возвращает <em>true</em>, если ни один элемент потока не соответствует предикату, и <em>false</em> в противном случае.
+
+Пример, иллюстрирующий это, выглядит следующим образом:
+
+<pre class="language-java line-numbers"><code>
+Stream&lt;Integer&gt; numStream = Stream.of(43, 65, 1, 98, 63); boolean flag = numStream.allMatch(n -&gt; n1); System.out.println(flag); numStream = Stream.of(43, 65, 1, 98, 63); flag = numStream.anyMatch(n -&gt; n1); System.out.println(flag); numStream = Stream.of(43, 65, 1, 98, 63); flag = numStream.noneMatch(n -&gt; n==1);System.out.println(flag);
+</code></pre>
+Вывод:
+
+<div class="terminal">false true false</div>
+Объяснение:
+Для потока <span class="code">numStream</span>, содержащего 1 в качестве элемента, метод <span class="code">allMatch()</span> возвращает <em>false</em>, так как все элементы не равны 1, а только один из них. Метод <span class="code">anyMatch()</span> возвращает <em>true</em>, поскольку хотя бы один из элементов равен 1. Метод <span class="code">noneMatch()</span> возвращает <em>false</em>, поскольку 1 действительно существует как элемент в этом потоке.
+<h2>Lazy Evaluations (ленивые вычисления) в Java Stream</h2>Ленивые вычисления приводят к оптимизации при работе с Java Streams в Java 8. Они в основном связаны с задержкой выполнения промежуточных операций до тех пор, пока не встретится терминальная операция.
+
+Ленивые вычисления отвечают за предотвращение ненужной траты ресурсов на вычисления до тех пор, пока результат действительно не понадобится.
+
+Выходной поток, полученный в результате промежуточных операций, генерируется только после выполнения терминальной операции. Ленивые вычисления работают со всеми промежуточными операциями в потоках Java.
+
+Очень полезное применение ленивых вычислений проявляется при работе с бесконечными потоками (infinite streams). В этом случае предотвращается много ненужной обработки.
+<h2>Конвейеры в Java Stream</h2>Конвейер (pipeline) в Java Stream включает в себя входной поток, ноль или несколько промежуточных операций, выстроенных одна за другой, и, наконец, терминальную операцию. 
+
+Промежуточные операции в Java Streams выполняются “лениво”. Это делает конвейерные промежуточные операции неизбежными. С помощью конвейеров, которые в основном представляют собой промежуточные операции, объединенные по порядку, ленивое выполнение становится возможным.
+
+Конвейеры помогают отслеживать промежуточные операции, которые необходимо выполнить после того, как наконец встретится терминальная операция.
+<h2>Заключение</h2>Давайте теперь подведем итог тому, что мы сегодня изучили. В этой статье:<ol>
+
+<li>Мы кратко рассмотрели, что такое потоки Java (Java Stream).</li>
+<li>Затем мы узнали множество различных методов создания потоков Java в Java 8.</li>
+<li>Мы изучили два основных типа операций (промежуточные операции и терминальные операции), которые можно выполнять с потоками Java.</li>
+<li>Затем мы подробно рассмотрели несколько примеров как промежуточных, так и терминальных операций.</li>
+<li>В итоге мы более подробно узнали о ленивых вычислениях и, наконец, изучили конвейерную обработку в потоках Java.</li>
+
+</ol>

@@ -1,0 +1,244 @@
+Java 14: что нового?
+<p>----------------------------------------</p>
+Мировые проблемы — мировыми проблемами, а новая Java — по расписанию. То есть ровно раз в полгода. Релизная версия Java 14 вышла 17 марта, и привнесла в язык несколько интересных новшеств, ориентированных на разработчиков...
+<p>----------------------------------------</p>
+Мировые проблемы — мировыми проблемами, а новая Java — по расписанию. То есть ровно раз в полгода. Релизная версия Java 14 вышла 17 марта, и привнесла в язык несколько интересных новшеств, ориентированных на разработчиков.
+
+<img data-max-width="800" src="/images/article/861cb809-1788-4a5b-99c5-40442df69a17/original.jpeg" class="img-fluid" alt="Java 14: что нового? - 1">Среди них — экспериментальная поддержка ключевого слова <span class="text-bold">record</span>, поддержка сопоставления c образцом в операторе "<span class="text-bold">instanceof</span>", более дружественно настроенные <span class="text-bold">NullPointerExceptions</span>, расширенная “превьюшка” <span class="text-bold">текстовых блоков</span>, обновлённый <span class="text-bold">switch</span> по умолчанию и многое другое. 
+
+Напомним, все новшества в Java начинаются с предложений по расширению (<span class="text-bold">JEP, Java Enhancement Proposals</span>). Разработчики предлагают изменения, их рассматривают “официальные” родители Java, а затем принимают некоторые из этих изменений, после чего те становятся частью JDK.   
+
+А теперь — обо всём по порядку.  
+<h2><a href="https://openjdk.java.net/jeps/359" rel="nofollow" target="_blank">JEP 359: Records</a></h2>Записи, они же — Records доступны для JDK 14 в превью-режиме, и это — нечто совершенно новое для Java. По сути перед нами — новый тип, который был разработан в ходе проекта <a href="https://openjdk.java.net/projects/valhalla/" rel="nofollow" target="_blank">Valhalla</a>. Записи похожи на перечисления и позволяют упростить код. По сути, они заменяют классы, у которых есть состояние, но нет поведения. Проще говоря, есть поля, нет методов. 
+
+В случае классов нам порой приходится писать много повторяющегося не всегда нужного кода: конструкторы, методы доступа, <span class="text-bold">equals(), hashCode(), toString()</span> и т. д. Чтобы избежать этого повторяющегося кода, Java планируется использовать record. Вот классический вариант: 
+
+<pre class="lang-java line-numbers"><code>
+final class Triangle {
+ 	public final int x;
+public final int y;
+public final int z;
+ 
+    public Triangle(int x, int y, int z) {
+         this.x = x;
+         this.y = y;
+    this.z = z;
+    }
+    // equals, hashCode, toString
+</code></pre>
+Переходим в Java 14 и используем record: 
+ 
+<pre class="lang-java line-numbers"><code>
+public record Triangle(int x, int y, int z){}
+</code></pre>
+Вот и всё. Учтите, что записи пока что существуют в форме превью, поэтому чтобы опробовать их на практике нужно загрузить jdk14 и ввести команду:
+
+<pre class="lang-java line-numbers"><code>
+javac —enable-preview —release 14 Triangle.java
+</code></pre>
+Записи — это классы, пускай и с ограничениями. Они не могут расширять другие классы или объявлять поля (кроме private final которые соответствуют компонентам описания состояния).
+
+Записи неявно являются final и не могут быть абстрактными. Записи отличаются от обычных классов тем, что они не могут отделить свой API от его представления. Но потеря свободы компенсируется повышенной точностью. Компоненты записи также неявно являются final.
+<h2><a href="http://openjdk.java.net/jeps/305" rel="nofollow" target="_blank">JEP 305: Pattern Matching для instanceof (Preview)</a></h2>Фича <span class="text-bold">Pattern Matching</span>, представленная в Java 14 в превью, призвана объединить в операторе <span class="text-bold">instanceof</span> проверку типа объекта и его преобразование.
+
+Иными словами до Java 14 был бы, например, такой код: 
+ 
+<pre class="lang-java line-numbers"><code>
+Object object = Violin;
+ 
+if (object instanceof Instrument) {
+    Instrument instrument = (Instrument) object;
+    System.out.println(instrument.getMaster());
+}
+</code></pre>
+Как видим, мы должны привести объект к классу, методы которого хотим использовать. Теперь Java 14 и подключённой фичей Pattern Matching позволяет сократить код до следующего: 
+ 
+<pre class="lang-java line-numbers"><code>
+Object object = Violin;
+ 
+if (object instanceof Instrument instrument){
+    System.out.println(instrument.getMaster());
+}
+</code></pre><h2><a href="http://openjdk.java.net/jeps/343" rel="nofollow" target="_blank">JEP 343: Packaging Tool (Incubator)</a></h2>В JDK 8 был инструмент <span class="text-bold">javapackager</span>, предназначенный для JavaFX. Однако после отделения JavaFX от Java вместе с выпуском JDK 11, популярный javapackager оказался более не доступным.
+
+<span class="text-bold">Javapackager</span> представлял собой инструмент упаковки. Он позволял упаковывать приложения Java таким образом, чтобы их можно было установить, как и все другие “нормальные” программы. Например, создавать exe-файлы для пользователей Windows и запускать Java-приложение по-человечески — двойным щелчком мыши.
+
+Разумеется, такого инструмента очень не хватает, поэтому в <span class="text-bold">JEP 343</span> предложили новый инструмент <span class="text-bold">jpackage</span>, который собирает Java-приложение в пакет для конкретной платформы, содержащий все необходимые зависимости. Поддерживаемые форматы пакетов для конкретной платформы:
+<ul>
+<li>Linux: deb и rpm</li>
+<li>macOS: pkg и dmg</li>
+<li>Windows: MSI и EXE</li>
+</ul><table class="table table--striped">
+<tbody><tr>
+<td>Хотите узнать больше о том, как развивалась Java?  Читайте статьи о предыдущих версиях!<br>
+<a href="https://javarush.com/groups/posts/2353-java-13-novihe-vozmozhnosti" target="_blank">Java 13: новые возможности</a><br>
+<a href="https://javarush.com/groups/posts/2171-java-12-uzhe-zdesjh-chto-novogo" target="_blank">Java 12 уже здесь: что нового?</a><br>
+<a href="https://javarush.com/groups/posts/1961-vihshla-java-11-novihe-fichi-i-vozmozhnosti-" target="_blank">Вышла Java 11: новые фичи и возможности</a><br>
+<a href="https://javarush.com/groups/posts/2547-iz-8-v-13-polnihy-obzor-versiy-java-chastjh-1" target="_blank">Из 8 в 13: полный обзор версий Java. Часть 1</a><br>
+<a href="https://javarush.com/groups/posts/2549-iz-8-v-13-polnihy-obzor-versiy-java-chastjh-2" target="_blank">Из 8 в 13: полный обзор версий Java. Часть 2</a></td></tr></tbody></table><h2><a href="http://openjdk.java.net/jeps/345" rel="nofollow" target="_blank">JEP 345: NUMA-Aware Memory Allocation для G1</a></h2>JEP 345 служит исключительно для реализации поддержки NUMA (Non-uniform memory access). Это архитектуры с неоднородным доступом к памяти, способом настройки кластера микропроцессора в многопроцессорную систему, при которой память может быть распределена локально: каждое ядро процессора получает небольшой объем локальной памяти, при этом другие ядра имеют к ней доступ. 
+
+JEP 345 планирует оснастить сборщик мусора G1 возможностью рационально использовать такие архитектуры. Помимо всего прочего, такой подход помогает повысить производительность на очень мощных машинах.
+<h2><a href="https://openjdk.java.net/jeps/349" rel="nofollow" target="_blank">JEP 349: JFR Event Streaming</a></h2><span class="text-bold">Java Flight Recorder (JFR)</span> теперь является частью OpenJDK и поэтому находится в свободном доступе. В JDK 14 добавлен API для отслеживания на лету событий JFR (JDK Flight Recorder), в частности — для организации непрерывного мониторинга активных и неактивных приложений. Записываются те же события, что и для не-потокового варианта, с накладными расходами менее 1%. Таким образом, потоковая передача событий будет осуществляться одновременно с вариантом без потоковой передачи.
+
+Однако JEP 349 не должен разрешать синхронные callback’и для соответствующего потребителя. Даже данные из записей, хранящихся в промежуточной памяти, не должны быть доступны. Технически пакет jdk.jfr.consumer в модуле jdk.jfr будет расширен функциональностью для асинхронного доступа к событиям.
+<h2><a href="https://openjdk.java.net/jeps/352" rel="nofollow" target="_blank">JEP 352: Non-Volatile Mapped Byte Buffers</a></h2>Как известно, <span class="text-bold">Java NIO (New IO) File API</span> существует с JDK 1.4,, а затем было представлено новое усовершенствование под названием Path. Path — это интерфейс, который заменяет класс java.io.File как представление файла или каталога, когда мы работаем в Java NIO.
+
+JEP 352 расширяет MappedByteBuffer для загрузки части файловых данных в энергонезависимую память (NVM). Эта память компьютера, данные в которой не будут потеряны даже в случае отключения питания (её часто называют постоянной памятью) используется для постоянного хранения данных. 
+
+Это предложение по улучшению Java предоставляет новый модуль и класс для JDK API:  модуль jdk.nio.mapmode, предлагает новые режимы (READ_ONLY_SYNC, WRITE_ONLY_SYNC) для создания отображаемых байтовых буферов (MappedByteBuffer), ссылающихся на NVM.
+<h2><a href="https://openjdk.java.net/jeps/358" rel="nofollow" target="_blank">JEP 358: Helpful NullPointerExceptions</a></h2>Теперь исключения <span class="text-bold">NullPointerExceptions</span> будут более дружественными к программисту. В том смысле, что описание исключения будет гораздо более информативным, чем раньше. А всё потому, что JVM научили более точно анализировать инструкции байт-кода программы, и она может указать, какая именно переменная приводит к нулевому значению. Допустим, у нас есть код:
+
+<pre class="lang-java line-numbers"><code>
+a.getMessage().getUserInfo().getName()
+</code></pre>
+В любой из последних Java мы получим обычный лог ошибки, который не отвечает на вопрос, кто именно null: 
+ 
+<pre class="lang-java line-numbers"><code>
+Exception in thread "main" java.lang.NullPointerException
+	at Main.main(Main.java:12)
+</code></pre>
+А вот что выдаст Java 14, если вы решитесь испробовать данную превью-фичу: 
+
+<pre class="lang-java line-numbers"><code>
+Exception in thread "main" java.lang.NullPointerException: Cannot invoke "UserInfo().getName()" because the return value of "Message().getUserInfo()" is null
+	at Main.main(Main.java:12)
+</code></pre>
+Такая цепочка гораздо более понятна, и позволяет гораздо быстрее взяться за устранение ошибки. 
+<h2><a href="http://openjdk.java.net/jeps/361" rel="nofollow" target="_blank">JEP 361: Switch Expressions (Standard)</a></h2>Обновлённый оператор Switch был доступен ещё в предыдущих Java 12 и 13, но только как превью-функция, то есть, она не была включена по умолчанию. Теперь в JDK 14 всё работает “из коробки”.
+
+Java 14 представляет новую упрощенную форму блока switch с метками case L -&gt; .... Новая форма в некоторых случаях упрощает код. Вот пара примеров.
+
+Предположим, что у нас есть enum, который описывает дни недели. Мы можем написать классический код (до Java 14): 
+
+<pre class="lang-java line-numbers"><code>
+switch (day) {
+    case MONDAY:
+    case FRIDAY:
+    case SUNDAY:
+        System.out.println(6);
+        break;
+    case TUESDAY:
+        System.out.println(7);
+        break;
+    case THURSDAY:
+    case SATURDAY:
+        System.out.println(8);
+        break;
+    case WEDNESDAY:
+        System.out.println(9);
+        break;
+}
+</code></pre>
+А вот — вариант с использованием Java 14:  
+
+<pre class="lang-java line-numbers"><code>
+switch (day) {
+    case MONDAY, FRIDAY, SUNDAY -&gt; System.out.println(6);
+    case TUESDAY                -&gt; System.out.println(7);
+    case THURSDAY, SATURDAY     -&gt; System.out.println(8);
+    case WEDNESDAY              -&gt; System.out.println(9);
+}
+</code></pre>
+Также можно писать многострочные блоки и возвращать значение с новым ключевым словом yield:
+ 
+<pre class="lang-java line-numbers"><code>
+int result = switch (s) {
+    case "Working from Home" -&gt; 1;
+    case "Working from Office" -&gt; 2;
+    default    -&gt; {
+        System.out.println("Neither Home nor Office… Cafe? Car? Park?...");
+        yield 0;
+    }
+};
+</code></pre>
+Есть ещё несколько важных вещей, которые нужно иметь в виду при использовании новых <span class="text-bold">switch</span>. В частности, нужно помнить, что варианты должны быть исчерпывающими. То есть для всех возможных значений должна быть соответствующая switch-метка. 
+
+Поскольку <span class="text-bold">yield</span> теперь является ключевым словом, класс с именем yield — возможен в Java 14.
+
+А вообще, если хотите научиться использовать обновлённые “свичи”, переходите на <a href="https://openjdk.java.net/jeps/361" rel="nofollow" target="_blank">JEP 361</a>, и изучайте. Там много интересной информации. 
+<h2><a href="https://openjdk.java.net/jeps/362" rel="nofollow" target="_blank">JEP 362: Deprecate the Solaris and SPARC Ports</a></h2>Вряд ли многие наши читатели помнят об операционной системе <span class="text-bold">Solaris</span>. Эта операционка на базе UNIX, созданная родителями Java — компанией Sun Microsystems, использовалась преимущественно для серверов на SPARC-архитектуре… Слишком много незнакомых слов на квадратный сантиметр? Ничего страшного: JEP 362 прекращает  поддержку платформ Solaris/SPARC, Solaris/x64 и Linux/SPARC. То есть их порты теперь Deprecated, а в будущем они, скорее всего, будут удалены из OpenJDK. Однако старые версии Java (до JDK 14) относительно портов Solaris/SPARC, Solaris/x64 и Linux/SPARC должны работать без изменений. 
+
+Если вы — любитель истории и интересуетесь технологиями не такого уж далёкого прошлого — гоу в “Википедию” читать об архитектуре <a href="https://ru.wikipedia.org/wiki/SPARC" rel="nofollow" target="_blank">SPARС</a>.  
+<h2><a href="https://openjdk.java.net/jeps/363" rel="nofollow" target="_blank">JEP 363: Remove the Concurrent Mark Sweep (CMS) Garbage Collector</a></h2>Сборщик мусора CMS (Concurrent Mark Sweep) направлен на удаление, поскольку ещё два года назад был помечен как устаревший и остался без сопровождения. 
+
+Однако пользователи старых версий Java, использующие CMS GC, могут выдохнуть — цель этого JEP’а не в том, чтобы удалить сборщик из более ранних выпусков JDK. 
+
+Кроме того, объявлено устаревшим применение комбинации алгоритмов сборки мусора ParallelScavenge и SerialOld (запуск с опциями "-XX:+UseParallelGC -XX:-UseParallelOldGC").
+<h2><a href="https://openjdk.java.net/jeps/364" rel="nofollow" target="_blank">JEP 364: ZGC on macOS</a> и <a href="https://openjdk.java.net/jeps/365" rel="nofollow" target="_blank">JEP 365: ZGC on Windows</a></h2>Есть такой интересный сборщик мусора по имени <span class="text-bold">Z Garbage Collector (ZGC)</span>. Он работает в пассивном режиме, и старается максимально сократить задержки из-за сборки мусора: время остановки при использовании ZGC не превышает 10 мс. Он может работать с маленькими кучами (heap) и с гигантскими (теми, что занимают много терабайт).
+
+JEP 364 и JEP 365 — практически близнецы. JEP 364 переносит Z Garbage Collector на MacOS. Часть JEP также описывает функциональность сборщика для освобождения неиспользуемой памяти устройства, как указано в <a href="https://openjdk.java.net/jeps/351" rel="nofollow" target="_blank">JEP 351</a>, это происходит с Java 13. Реализация ZGC в macOS состоит из двух частей:
+<ul>
+<li>Поддержка multi-mapping memory на macOS</li>
+<li>Поддержка в ZGC непрерывного резервирования памяти</li></ul>JEP 365 обеспечивает поддержку ZGC уже на Windows, и тоже в экспериментальном режиме. Она заключается в следующем:
+<ul>
+<li>Поддержка multi-mapping memory</li>
+<li>Поддержка маппинга памяти на основе файла подкачки в зарезервированное адресное пространство</li>
+<li>Поддержка маппинга и анмаппинга произвольных частей кучи</li>
+<li>Поддержка коммита и анкоммита произвольных частей кучи</li></ul><h2><a href="https://openjdk.java.net/jeps/366" rel="nofollow" target="_blank">JEP 366: Deprecate the ParallelScavenge + SerialOld GC Combination</a></h2>Этот JEP объявляет устаревшим использование комбинации алгоритмов для сборки мусора Parallel Scavenge и Serial Old. Такую комбинацию нужно было включать вручную с помощью параметров командной строки -XX: + UseParallelGC -XX: -UseParallelOldGC. Авторы считают, что комбинация очень специфична, но при этом требует существенных усилий по обслуживанию. Так что теперь опция -XX: UseParallelOldGC устарела, и в случае использования будет появляться предупреждение. 
+<h2><a href="http://openjdk.java.net/jeps/367" rel="nofollow" target="_blank">JEP 367: Remove the Pack200 Tools and API</a></h2><a href="https://docs.oracle.com/en/java/javase/13/docs/specs/pack-spec.html" rel="nofollow" target="_blank">Pack200</a> — это формат архива, оптимизированный для хранения скомпилированных файлов Java-классов. Этот инструмент был помечен словом deprecated (устаревший) ещё со времён Java 11. Теперь инструменты pack200, unpack200 а также Pack200 API официально заявлены на удаление из <span class="text-bold">java.util.jar package</span>. Данная технология была введена ещё в Java 5, как средство борьбы с весьма ограниченной пропускной способностью (модемы, страшно сказать и вспомнить, 56k) и недостаточным пространством для хранения на жестких дисках. Какое-то время назад в Java 9 были представлены новые схемы сжатия. Разработчикам рекомендуется использовать <span class="text-bold">jlink</span>.
+<h2><a href="https://jaxenter.com/jep-368-text-blocks-second-preview-163817.html" rel="nofollow" target="_blank">JEP 368: Text Blocks (Second Preview)</a></h2><span class="text-bold">Текстовые блоки</span> впервые появились в Java 13. Это многострочные строковые литералы, которые предотвращают необходимость в большинстве escape-последовательностей, автоматически форматируют строку, а также позволяют разработчику форматировать строку при необходимости. Теперь эта полезная функция доступна в Java 14 (вторая, предварительная версия). 
+
+Главная задача текстовых блоков — улучшить работу с запутанными многострочными литералами. Это существенно упрощает чтение и написание SQL-запросов, HTML- и XML-кода, JSON. Пример HTML без текстовых блоков: 
+
+<pre class="lang-java line-numbers"><code>
+String html = "&lt;html&gt;\n" +
+              "    &lt;body&gt;\n" +
+              "        &lt;p&gt;Hello, JavaRush Student&lt;/p&gt;\n" +
+              "    &lt;/body&gt;\n" +
+              "&lt;/html&gt;\n";
+</code></pre>
+Как представить то же самое с текстовыми блоками:
+
+<pre class="lang-java line-numbers"><code>
+String html = """
+              &lt;html&gt;
+                  &lt;body&gt;
+                      &lt;p&gt;Hello, JavaRush Student&lt;/p&gt;
+                  &lt;/body&gt;
+              &lt;/html&gt;
+              """;
+</code></pre>
+<span class="text-bold">Открывающий разделитель</span> — это последовательность из трех символов двойных кавычек ("" "), за которыми следуют ноль или более пробелов, а затем — разделитель строки. Содержимое начинается с первого символа после разделителя строки открывающего разделителя.
+
+<span class="text-bold">Закрывающий разделитель</span> представляет собой последовательность из трех символов двойных кавычек. Содержимое заканчивается на последнем символе перед первой двойной кавычкой закрывающего разделителя.
+
+<span class="text-bold">Содержимое</span> может непосредственно вмещать символы двойных кавычек, в отличие от символов в строковом литерале. Использование \ в текстовом блоке разрешено, но не обязательно или не рекомендуется. Жирные разделители (" "") были выбраны таким образом, чтобы символы могли отображаться без экранирования, а также визуально отличать текстовый блок от строкового литерала.
+
+В начале 2019 года в JEP 355 предложили текстовые блоки в качестве продолжения JEP 326 (Raw String literals), однако их отозвали.
+
+Позднее в том же году, в JDK 13 представили функцию предварительного просмотра текстового блока, и теперь в Java 14 в неё добавили две новые escape-последовательности. Это символ новой строки (line-terminator), обозначенный \, и вторая — для пробела (single space), обозначается /s.
+
+Пример использования символов новой строки без текстовых блоков:
+
+<pre class="lang-java line-numbers"><code>
+String literal = "This is major Tom to Ground Control " +
+"I am stepping through the door... " +
+"Wait… What???";
+</code></pre>
+А теперь — с эскейп-последовательностью \&lt;line-terminator&gt;:  
+ 
+<pre class="lang-java line-numbers"><code>
+String text = """
+                This is major Tom to Ground Control \
+                I am stepping through the door... \
+                Wait… What???\
+                """;
+</code></pre>
+Эскейп-последовательность <span class="text-bold">\s</span> используется для учета завершающих пробелов, которые по умолчанию игнорируются компилятором. Он сохраняет все имеющиеся перед ним пробелы.
+
+Пример:
+
+<pre class="lang-java line-numbers"><code>
+String text1 = """
+               line1
+               line2 \s
+               line3
+               """;
+  
+String text2 = "line1\nline2 \nline3\n";
+</code></pre>
+<code>text1</code> и <code>text2</code> — идентичны.   
+<h2><a href="https://openjdk.java.net/jeps/370" rel="nofollow" target="_blank">JEP 370: Foreign-Memory Access API (Incubator)</a></h2>Многие популярные библиотеки и программы Java имеют доступ к внешней памяти. Например, Ignite, MapDB, Memcached и Netty ByteBuf API. При этом они могут избежать затрат и непредсказуемости, связанных со сборкой мусора (особенно при обслуживании больших кэшей), совместно использовать память между несколькими процессами, а также сериализовать и десериализовать содержимое памяти путем сопоставления файлов в памяти (например, с помощью mmap). Однако Java API до сих пор не обзавелась подходящим решением для доступа ко внешней памяти.
+
+В JDK 14 можно подключить предварительный вариант <span class="text-bold">API Foreign-Memory Access</span>, который позволяет приложениям Java безопасно и эффективно получить доступ к областям памяти, вне кучи виртуальной машины Java, с помощью новых абстракций MemorySegment, MemoryAddress и MemoryLayout.
+<h2>Выводы</h2>Ну как вам? По сравнению с Java 13, новая Java 14 предлагает гораздо больше важных улучшений в самых разных областях. Скорее всего, наиболее важными для разработчиков окажутся обновлённые switch, расширенные исключения NullPointerExceptions и records. Или нет?.. Не забудьте опробовать новые фичи Java 14, это очень полезно даже для новичков. Удачи в обучении!

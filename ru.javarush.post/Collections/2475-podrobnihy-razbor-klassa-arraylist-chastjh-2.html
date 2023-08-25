@@ -1,0 +1,169 @@
+Подробный разбор класса ArrayList [Часть 2]
+<p>----------------------------------------</p>
+Вторая часть статьи, посвященная детальному разбору класса ArrayList. Будут рассмотрены оставшиеся методы и реализован свой динамический массив для чисел...
+<p>----------------------------------------</p>
+К сожалению, в одну статью вся информация не поместилась, поэтому продолжаем разбираться с оставшимися методами класса ArrayList. 
+
+<span class="text-bold">Отсортировать коллекцию:</span>
+
+<pre class="lang-java line-numbers"><code>
+
+public void sort(Comparator&lt; ? super E&gt; c)
+</code></pre>
+Осуществляет сортировку списка по заданному правилу. Правило сортировки представляет собой реализованный интерфейс <a href="https://javarush.com/groups/posts/2262-comparator-v-java" target="_blank" rel="nofollow">Comparator</a> с переопределенным методом <code>compare()</code>. Переопределение нужно, если коллекция содержит объекты собственного класса. При работе со стандартными классами (Integer, String и так далее) переопределение compare обычно требуется только для нестандартной сортировки.
+
+Создадим класс <code>Student</code>:
+
+<pre class="lang-java line-numbers"><code>
+class Student{
+ String student_name;
+ int id;
+  
+ Student(int id, String  student_name){
+  this.id = id;
+  this.student_name = student_name;
+ } 
+ 
+ public String toString(){
+  return id + " " + student_name;
+ }
+}
+</code></pre>
+Напишем простой компаратор, который будет сравнивать id студентов:
+
+<pre class="lang-java line-numbers"><code>
+class StudentIdComparator implements Comparator&lt;student&gt;{
+
+ public int compare(Student e1, Student e2) {
+  return e1.id.compareTo(e2.id);
+ }
+}
+</code></pre>
+Создадим список для студентов и объект класса, реализующего <code>Comparator</code>:
+
+<pre class="lang-java line-numbers"><code>
+ArrayList&lt;Student&gt; myList = new ArrayList&lt;&gt; ();
+StudentIdComparator comparator = new StudentIdComparator();
+</code></pre>
+Вызовем метод <code>sort</code> для нашего списка и передадим в него компаратор:
+
+<pre class="lang-java line-numbers"><code>
+myList.sort(comparator);
+</code></pre>
+В результате исходный список [4 David, 2 Tom, 5 Rohit, 1 Paul, 3 Vishal] превратится в [1 Paul, 2 Tom, 3 Vishal, 4 David, 5 Rohit].
+
+<span class="text-bold">Напоследок я оставил очень интересный, но редко кем используемый метод:</span>
+
+<pre class="lang-java line-numbers"><code>
+public List&lt;E&gt; subList(int fromIndex, int toIndex)
+</code></pre>
+Он возвращает не новый список, как может показаться, а вид (view) списка (подсписок), для которого этот метод был вызван, таким образом, что оба списка станут разделять хранимые элементы. subList — полнофункциональный список, он работает и на запись, внося соответствующие изменения в родительский список. Из этого вытекают прекрасные свойства:
+
+<pre class="lang-java line-numbers"><code>
+someList.subList(3, 7).clear(); 
+</code></pre>
+В данном примере из списка <code>someList</code> будут удалены четыре элемента, с третьего по седьмой (не включительно). Указываем диапазон для работы со списком и вперед. 
+
+Внутри метода, по сути, происходит обращение к классу SubList, у которого есть собственные реализации известных методов, а в результате работы метода возвращается объект этого класса. Саму реализацию класса можно посмотреть в исходном <a href="http://hg.openjdk.java.net/jdk8/jdk8/jdk/file/tip/src/share/classes/java/util/ArrayList.java" target="_blank" rel="nofollow">коде</a>.
+
+Для закрепления материала я предлагаю Вам написать свою реализацию динамического массива. Это будет очень полезно в будущем. В качестве примера я представляю свою реализацию динамического массива только для чисел с комментариями в коде.
+
+<pre class="lang-java line-numbers"><code>
+public class IntegerArrayList {
+
+    private int [] elements;  //массив, для хранения чисел
+    private int size;  //поле-счетчик, которое указывает на количество элементов в массиве
+    private static final int DEFAULT_CAPACITY = 10;  //размер массива по умолчанию
+
+    //конструктор без параметров, который создает массив на 10 элементов, если размер не был указан
+    public IntegerArrayList(){  // 
+        this.elements = new int[DEFAULT_CAPACITY];
+    }
+
+    //создает массив указанной емкости
+    public IntegerArrayList(int initialCapacity){
+        if (initialCapacity &gt;= 0){  
+            this.elements = new int[initialCapacity]; 
+        }
+        else {
+            throw new IllegalStateException("Capacity can't be less than 0!");
+        }
+    }
+
+    //получает элемент по указанному индексу
+    public int get(int index){
+        isIndexExist(index);  //проверка корректности введенного индекса
+        return elements[index];
+    }
+
+    //возвращает количество элементов в списке
+    public int size (){
+        return size;
+    }
+
+    //добавляем элемент в конец списка
+    public boolean add(int value){
+        if (size == elements.length){  //если в массиве места нет 
+            elements = increaseCapacity(); //вызываем метод, который отвечает за увеличение массива
+        }
+        elements[size] = value; //записываем в конец списка новое значение
+        size++;  //увеличиваем значение переменной размера списка
+        return true;
+    }
+
+    //дополнительный закрытый метод для увеличения емкости массива 
+    private int [] increaseCapacity(){
+        int [] temp = new int[(elements.length * 2)];  //создаем новый массив большего размера 
+        System.arraycopy(elements, 0, temp, 0, elements.length);  //копируем в новый массив элементы из старого массива
+        return temp;
+    }
+
+    //устанавливает элемент на указанную позицию
+    public int set(int value, int index){
+        isIndexExist(index);
+        int temp = elements[index];
+        elements[index] = value;
+        return temp;
+    }
+
+    //переопределил метод для красивого вывода списка на экран, иначе будут выводиться значения незаполненных ячеек [1, 10] вместо [1, 10, 0, 0...]
+    @Override
+    public String toString(){
+        int [] temp = new int[size];
+        System.arraycopy(elements, 0, temp, 0, size);
+        return Arrays.toString(temp);
+    }
+
+    //проверяем индексы, не выходят ли они за границы массива
+    private int isIndexExist(int index){
+        if (index &gt;= size || index &lt; 0){
+            throw new IndexOutOfBoundsException("Element can't be found! "
+                    + "Number of elements in array = " + size
+                    + ". Total size of array = " + elements.length);
+        }
+        return index;
+    }
+
+    //проверяем, есть ли элементы в списке
+    public boolean isEmpty(){
+        return (size == 0);
+    }
+
+    //удаляем элемент по индексу
+    public int remove (int index){
+        isIndexExist(index);  //проверяем индекс
+        int [] temp = elements;  //во временный массив заносим ссылку на текущий массив
+        elements = new int [temp.length-1];  //полю elements присваиваем ссылку на новый массив размером меньше на 1
+        int value = temp[index];  //сохраняем в доп. переменную значение удаляемого элемента
+        System.arraycopy(temp, 0, elements, 0, index);  //копируем левую часть массива до указанного индекса 
+        System.arraycopy(temp, index + 1, elements, index, temp.length - index - 1);  //копируем правую часть массива после указанного индекса
+        size--;  //уменьшаем значение переменной
+        return value;
+    }
+}
+</code></pre><span class="text-bold">Список использованных источников:</span>
+<ol>
+<li>Исходный код ArrayList (актуальность - JDK 12);</li>
+<li>Большинство иллюстраций брал <a href="https://www.w3resource.com/java-tutorial/arraylist/index.php" target="_blank" rel="nofollow">отсюда</a> и некоторых статей с JavaRush;</li>
+<li>Статья на <a href="https://habr.com/ru/post/128269/" target="_blank" rel="nofollow">хабре</a>.</li>
+</ol>

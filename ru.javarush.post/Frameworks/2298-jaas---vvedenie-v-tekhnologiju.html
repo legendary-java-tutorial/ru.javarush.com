@@ -1,0 +1,339 @@
+JAAS — Введение в технологию (часть 1)
+<p>----------------------------------------</p>
+Обеспечение безопасности доступа реализована в Java довольно давно и архитектура обеспечения этой безопасности называется JAAS — Java Authentication and Authorization Service. Данный обзор попытается раскрыть тайну, что такое аутентификация, авторизация и при чём тут JAAS...
+<p>----------------------------------------</p>
+Обеспечение безопасности доступа реализована в Java довольно давно и архитектура обеспечения этой безопасности называется JAAS — Java Authentication and Authorization Service. Данный обзор попытается раскрыть тайну, что такое аутентификация, авторизация и при чём тут JAAS. Как JAAS дружит с Servlet API, а где у них во взаимоотношениях проблемы.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="f92c6cd0-6377-4ce6-a833-d8cb84c690dc" data-max-width="291" alt="JAAS — Введение в технологию (часть 1) - 1" src="https://cdn.javarush.com/images/article/f92c6cd0-6377-4ce6-a833-d8cb84c690dc/1024.jpeg"></div></div><h2>Введение</h2>Хотелось бы в данном обзоре обсудить такую тему, как безопасность веб-приложений.
+
+В Java есть несколько технологий, которые обеспечивают безопасность:
+<ul>
+<li><p>"<strong>Java SE Platform Security Architecture</strong>", подробнее про которую можно прочитать в Guide от Oracle: "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/spec/security-specTOC.fm.html" target="_blank" rel="nofollow">JavaTM SE Platform Security Architecture</a>". Эта архитектура описывает то, как необходимо защищать наши Java приложения в Java SE среде выполнения. Но это не является темой нашего сегодняшнего разговора.</p></li>
+<li><p>"<strong>Java Cryptography Architecture</strong>" — расширение (Java Extension), которое описывает шифрование данных. Подробнее про это расширение можно прочитать на JavaRush в обзоре "<a href="https://javarush.com/groups/posts/2277-java-cryptography-architecture--pervoe-znakomstvo" target="_blank" rel="nofollow">Java Cryptography Architecture : Первое знакомство</a>" или в Guide от Oracle: "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html" target="_blank" rel="nofollow">Java Cryptography Architecture (JCA) Reference Guide</a>".</p></li>
+</ul>Но наш сегодняшний разговор будет про другую технологию, которая получило название "Java Authentication and Authorization Service (JAAS)". Именно она описывает такие важные вещи, как аутентификация и авторизация. Давайте разберёмся с этим подробнее.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="cfb4e490-9aba-4a40-af51-abe4e80aab26" data-max-width="267" alt="JAAS — Введение в технологию (часть 1) - 2" src="https://cdn.javarush.com/images/article/cfb4e490-9aba-4a40-af51-abe4e80aab26/1024.jpeg"></div></div><h2>JAAS</h2><strong>JAAS</strong> — это расширение Java SE и оно описано в документе "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/jaas/JAASRefGuide.html" target="_blank" rel="nofollow">Java Authentication and Authorization Service (JAAS) Reference Guide</a>".
+
+Как следует из названия технологии, JAAS описывает то, как нужно выполнять аутентификацию и авторизацию:
+<ul>
+<li><p>"<strong>Аутентификация</strong>": в переводе с греческого "authentikos" означает "реальный, подлинный". То есть аутентификация — это проверка подлинности. Что тот, кто проходит аутентификацию, действительно тот, за кого себя выдаёт.</p></li>
+<li><p>"<strong>Авторизация</strong>" : в переводе с английского означает "разрешение". То есть авторизация — это контроль доступа, выполняемый после успешного прохождения аутентификации.</p></li></ul>
+То есть JAAS — это про определние того, кто запрашивает доступ к ресурсу, и про вынесение решения, а может ли он этот доступ получить.
+
+<u>Небольшая аналогия из жизни:</u> вы едете по дороге и Вас останавливает инспектор. Просьба предоставить документы — аутентификация. Можете ли Вы водить автомобиль по документам — авторизация. Или например в магазине Вы хотите купить алкоголь. Сначала, у Вас просят паспорт — аутентификация. Далее на основе вашего возраста решается, есть ли у Вас право покупать алкоголь. Это авторизация. В веб-приложениях, вход под пользователем (ввод логина и пароля) является аутентификацией. А определение того, какие Вам можно открывать страницы — авторизацией. В этом нам и помогает "The Java Authentication and Authorization Service (JAAS)".
+
+Рассматривая JAAS важно понимать несколько ключевых понятий, которые описывает JAAS: Subject, Principals, Credentials.
+
+<strong>Subject</strong> — это субъект аутентификации. То есть это носитель или обладатель прав. В документации Subject определён как источник (source) запроса (request) на выполнение некоторого действия. 
+
+Субъект или источник необходимо как-то описать и для этого используется Principal, который на русском тоже иногда называют принципалом. То есть каждый Principal является представлением Subject с определённой точки зрения. 
+
+Чтобы стало понятнее, приведём пример:
+
+Определённый человек является Subject. А в качестве Principal'ов могут выступать:
+<ul>
+<li>его водительское удостоверение, как представление человека в качестве участника дорожного движения</li>
+<li>его паспорт, как  представление человека в качестве гражданина своей страны</li>
+<li>его заграничный паспорт, как представление человека в качестве участника международных отношений</li>
+<li>его читательский билет в библиотеке, как представление человека в качестве прикреплённого к библиотеке читателя</li>
+</ul>Кроме того, Subject имеет набор "Credential", что в переводе с английского означает "удостоверение". Это то, чем Subject подтверждает, что он это он. Например, в качестве Credential может выступать пароль пользователя. Или любой объект, которым пользователь может подтвердить, что он это действительно он.
+
+Давайте теперь посмотрим, как JAAS используется в веб-приложениях.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="fa90a210-ae9b-42e0-a8ff-f63f3bb4849d" data-max-width="301" alt="JAAS — Введение в технологию (часть 1) - 3" src="https://cdn.javarush.com/images/article/fa90a210-ae9b-42e0-a8ff-f63f3bb4849d/1024.jpeg"></div></div><h2>Веб-приложение</h2>Итак, нам понадобится веб-приложение. В его создании нам поможет система автоматической сборки проектов Gradle. Благодаря использования Gradle мы сможем при помощи выполнения небольших команд собирать Java проект в нужном нам формате, создавать автоматически нужную структуру каталогов и многое другое.
+
+Подробнее про Gradle можно прочитать в кратком обзоре: "<a href="https://javarush.com/groups/posts/2126-kratkoe-znakomstvo-s-gradle" target="_blank" rel="nofollow">Краткое знакомство с Gradle</a>" или в официальной документации "<a href="https://docs.gradle.org/current/userguide/getting_started.html" target="_blank" rel="nofollow">Gradle Getting Started</a>".
+
+Нам нужно выполнить инициализацию проекта (Initialization), а для этого в Gradle есть специальный плагин: "<a href="https://docs.gradle.org/current/userguide/build_init_plugin.html#sec:build_init_types" target="_blank" rel="nofollow">Gradle Init Plugin</a>" (Init - сокращение от Initialization, легко запомнить).
+
+Чтобы воспользоваться этим плагином, выполним в командной строке команду:
+
+<pre class="inline-block language-java"><code>gradle init --type java-application</code></pre>
+
+После успешного выполнения у нас появится Java проект. 
+
+Откроем теперь на редактирование билд скрипт нашего проекта. Билд скрипт — это файл с названием <code>build.gradle</code>, который описывает нюансы сборки (билда) приложения. Отсюда и название такое, билд скрипт. Можно сказать, что это скрипт сборки проекта.
+
+Gradle — это такой универсальный инструмент, базовые возможности которого расширяются благодаря плагинам. Поэтому, в первую очередь обратим внимание на блок "plugins" (плагины):
+
+<pre class="lang-java line-numbers"><code>
+plugins {
+    id 'java'
+    id 'application'
+}
+</code></pre>
+По умолчанию Gradle, в соответствии с указанным нами "<code>--type java-application</code>", выставил набор некоторых базовых плагинов (core plugins), то есть тех плагинов, которые входят в поставку самого Gradle. Если перейти на сайте <a href="https://gradle.org/" target="_blank" rel="nofollow">gradle.org</a> в раздел "Docs" (то есть документация), то слева в списке тем в разделе "Reference" мы видим раздел "<a href="https://docs.gradle.org/current/userguide/plugin_reference.html" target="_blank" rel="nofollow">Core Plugins</a>", т.е. раздел с описанием этих самых базовых плагинов. Давайте выберем именно те плагины, которые нам нужны, а не те, которые нам сгенерировал Gradle.
+
+Согласно документации, "<a href="https://docs.gradle.org/current/userguide/java_plugin.html" target="_blank" rel="nofollow">Gradle Java Plugin</a>" обеспечивает базовые операции с Java кодом, такие как компиляция исходного кода. Так же, согласно документации, "<a href="https://docs.gradle.org/current/userguide/application_plugin.html" target="_blank" rel="nofollow">Gradle application plugin</a>" обеспечивает нас средствами для работы с "executable JVM application", т.е. с java приложением, которые можно запустить как самостоятельное приложение (например, консольное приложение или приложение с собственным UI). Получается, что плагин "application" нам не нужен, т.к. нам не нужно самостоятельное приложение, нам нужно веб-приложение. Удалим его. А так же настройку "mainClassName", которая известна только этому плагину.
+
+Далее, в том же разделе "<a href="https://docs.gradle.org/current/userguide/plugin_reference.html#packaging_and_distribution" target="_blank" rel="nofollow">Packaging and distribution</a>", где была приведена ссылка на документацию по Application Plugin, есть ссылка на Gradle War Plugin. 
+<a href="https://docs.gradle.org/current/userguide/war_plugin.html" target="_blank" rel="nofollow">Gradle War Plugin</a>, как сказано в документации, предоставляет поддержку создания Java веб-приложений в формате war. В формате WAR означает, что вместо JAR архива будет создан WAR архив. Кажется, это то, что нам нужно. Кроме того, как сказано в документации, "The War plugin extends the Java plugin". То есть мы можем заменить плагин java на плагин war. Следовательно, наш блок плагинов в итоге будет иметь следующий вид:
+
+<pre class="lang-java line-numbers"><code>
+plugins {
+    id 'war'
+}
+</code></pre>
+Так же в документации к "Gradle War Plugin" сказано, что плагин использует дополнительный "Project Layout". Layout с английского переводится как расположение. То есть war plugin по умолчанию рассчитывает на существование некоторого расположение файлов, которые он будет использовать для своих задач. Использовать для хранения файлов веб-приложения он будет следующий каталог: <code>src/main/webapp</code>
+
+Поведения плагина описано так:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="d90d8b3a-96d6-4345-88c8-e5cf0094c710" data-max-width="759" alt="JAAS — Введение в технологию (часть 1) - 4" src="https://cdn.javarush.com/images/article/d90d8b3a-96d6-4345-88c8-e5cf0094c710/1024.jpeg"></div></div>То есть плагин будет учитывать файлы из этого расположения при сборке WAR архива нашего веб-приложения.
+
+Кроме того, в документации Gradle War Plugin'а сказано, что данный каталог будет "root of the archive". И уже в нём мы можем создать каталог WEB-INF и добавить туда файл web.xml. Что это за файл такой?
+
+<code>web.xml</code> — это "Deployment Descriptor" или "описатель развёртывания". Это такой файл, который описывает, как нужно настроить наше веб-приложение для работы. В этом файле указывается, какие запросы будет обрабатывать наше приложение, настройки безопасности и многое другое. По своей сути он чем-то похож на manifest файл из JAR файла (см. "<a href="https://docs.oracle.com/javase/tutorial/deployment/jar/manifestindex.html" target="_blank" rel="nofollow">Working with Manifest Files: The Basics</a>"). Manifest файл рассказывает, как работать с Java Application (т.е. с JAR архивом), а web.xml рассказывает, как работать с Java Web Application (т.е. с WAR архивом).
+
+Само понятие "Deployment Descriptor" возникло не само по себе, а описано в документе "<a href="https://javaee.github.io/servlet-spec/downloads/servlet-3.1/Final/servlet-3_1-final.pdf#page=173&amp;zoom=100,0,188" target="_blank" rel="nofollow">Servlet API Specification</a>". 
+
+Любое Java веб-приложение зависит от этого "Servlet API". Важно понимать, что это API — то есть это описание некоторого контракта взаимодействия. Веб-приложения — это не самостоятельные приложения. Они запускаются на веб-сервере, который обеспечивает сетевое взаимодействие с пользователями. То есть веб-сервер это некоторый "контейнер" для веб-приложений. Это логично, т.к. мы хотим писать логику веб-приложения, т.е. какие странички увидит пользователь и как они должны реагировать на действия пользователя. И мы не хотим писать код того, как будет отправляться сообщение пользователю, как будут передаваться байты информации и другие низкоуровневые и очень требовательные к качеству реализации вещи. Кроме того, получается, что веб-приложения все разные, а передача данных одинакова. То есть миллиону программистов пришлось бы писать для одной и той же цели код снова и снова. Поэтому за часть взаимодействия с пользователем и за обмен данными отвечает веб-сервер, а за формирование этих данных отвечает веб-приложение и разработчик.
+
+А чтобы связать эти две части, т.е. веб-сервер и веб-приложение, нужен контракт их взаимодействия, т.е. по каким правилам они это будут делать. Чтобы как-то описать контракт, как должно выглядеть взаимодействие между веб-приложением и веб-сервером и придуман Servlet API. Интересно, что даже если вы используете фрэймворки вроде Spring, то "под капотом" всё равно работает Servlet API. То есть вы используете Spring, а Spring за Вас работает с Servlet API.
+
+Получается, что наш проект веб-приложения должен зависеть (depends on) от Servlet API. В этом случае Servlet API будет зависимостью (dependency). Как мы знаем, Gradle в том числе позволяет декларативным образом описывать зависимости проекта. А то, каким образом можно управлять зависимостями, описывают плагины.
+
+Например, Java Gradle Plugin вводит способ управления зависимостями "testImplementation", который говорит, что такая зависимость нужна только для тестов. А вот  Gradle War Plugin добавляет способ управления зависимостями "providedCompile", который говорит, что такая зависимость не будет включена в WAR архив нашего веб-приложения. 
+
+Почему мы не включаем Servlet API в наш WAR архив? Потому что Servlet API будет предоставлен нашему веб-приложению самим веб-сервером. Если веб-сервер предоставляет Servlet API, тогда такой сервер называют контейнер сервлетов. Поэтому предоставить нам Servlet API — это обязанность веб-сервера, а наша обязанность предоставить ServletAPI только на момент компиляции кода. Поэтому и <code>providedCompile</code>.
+
+Таким образом, блок зависимостей (dependencies) будет иметь следующий вид:
+
+<pre class="lang-java line-numbers"><code>
+dependencies {
+    providedCompile 'javax.servlet:javax.servlet-api:3.1.0'
+    testImplementation 'junit:junit:4.12'
+}
+</code></pre>
+Итак, вернёмся к web.xml файлу. По умолчанию, Gradle не создаёт никакой Deployment Descriptor, поэтому нам нужно сделать это самостоятельно.
+
+Создадим каталог <code>src/main/webapp/WEB-INF</code>, а в нём создадим XML файл с названием <code>web.xml</code>.
+
+Теперь давайте откроем саму спецификацию "Java Servlet Specification" и главу "<a href="https://javaee.github.io/servlet-spec/downloads/servlet-3.1/Final/servlet-3_1-final.pdf#page=175&amp;zoom=100,0,246" target="_blank" rel="nofollow">CHAPTER 14 Deployment Descriptor</a>".
+
+Как сказано в "14.3 Deployment Descriptor", XML документ Deployment Descriptor'а описан схемой <a href="http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd" target="_blank" rel="nofollow">http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd</a>. XML схема описывает, из каких элементов может состоять документ, в каком порядке они должны идти. Какие обязательные, а какие нет. В общем, описывает структуру документа и позволяет проверить, правильно ли XML документ составлен.
+
+Теперь воспользуемся примером из главы "<a href="https://javaee.github.io/servlet-spec/downloads/servlet-3.1/Final/servlet-3_1-final.pdf#page=198&amp;zoom=100,0,465" target="_blank" rel="nofollow">14.5 Examples</a>", но схему нужно указать для версии 3.1, т.е. 
+
+<pre class="inline-block language-java"><code>http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd</code></pre>
+
+Наш пустой <code>web.xml</code> будет выглядеть следующим образом:
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="ISO-8859-1"?&gt;
+&lt;web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+         http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1"&gt;
+    &lt;display-name&gt;JAAS Example&lt;/display-name&gt;
+&lt;/web-app&gt;
+</code></pre>
+Давайте теперь опишем сервлет, который мы будем защищать при помощи JAAS.
+
+Ранее нам Gradle сгенерировал класс App. Давайте превратим его в сервлет. Как сказано в специфкиации в "<a href="https://javaee.github.io/servlet-spec/downloads/servlet-3.1/Final/servlet-3_1-final.pdf#page=25&amp;zoom=100,0,188" target="_blank" rel="nofollow">CHAPTER 2 The Servlet Interface</a>", чтобы "<em>For most purposes, Developers will extend HttpServlet to implement their servlets</em>", то есть чтобы сделать класс сервлетом необходимо унаследовать этот класс от <code>HttpServlet</code>:
+
+<pre class="lang-java line-numbers"><code>
+public class App extends HttpServlet {
+	public String getGreeting() {
+        return "Secret!";
+    }
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.getWriter().print(getGreeting());
+    }
+}
+</code></pre>
+Как мы и говорили, Servlet API — это контракт между сервером и нашим веб-приложением. Это контракт позволяет описать, что когда пользователь обратиться к серверу, сервер сформирует запрос от пользователя в виде объекта <code>HttpServletRequest</code> и передаст его в сервлет. А так же предоставит сервлету объект <code>HttpServletResponse</code>, чтобы сервлет смог записать в него ответ для пользователя. Когда сервлет отработает, сервер сможет на основе <code>HttpServletResponse</code> предоставить пользователю ответ. То есть сервлет напрямую не общается с пользователем, а только с сервером.
+
+Чтобы сервер знал, что у нас есть сервлет и для каких запросов его нужно задействовать, нужно серверу об этом рассказать в деплоймент дескрипторе:
+
+<pre class="lang-java line-numbers"><code>
+&lt;servlet&gt;
+	&lt;servlet-name&gt;app&lt;/servlet-name&gt;
+	&lt;servlet-class&gt;jaas.App&lt;/servlet-class&gt;
+&lt;/servlet&gt;
+&lt;servlet-mapping&gt;
+	&lt;servlet-name&gt;app&lt;/servlet-name&gt;
+	&lt;url-pattern&gt;/secret&lt;/url-pattern&gt;
+&lt;/servlet-mapping&gt;
+</code></pre>
+В данном случае все запросы на <code>/secret</code> будут адресованы нашему одному сервлету по имени <code>app</code>, которое соответствует классу <code>jaas.App</code>.
+
+Как мы ранее говорили, веб-приложение может быть развёрнуто только на веб-сервере. Веб-сервер может быть установлен отдельно (standalone). Но для целей данного обзора подойдёт альтернативный вариант — запуск на встроенном (embedded) сервере. Это значит, что сервер будет создан и запущен программно (за нас это сделает плагин), а вместе с этим на нём будет развёрнуто наше веб-приложение.
+
+Система сборки Gradle позволяет для этих целей использовать плагин "<a href="https://gretty-gradle-plugin.github.io/gretty-doc/" target="_blank" rel="nofollow">Gradle Gretty Plugin</a>":
+
+<pre class="lang-java line-numbers"><code>
+plugins {
+    id 'war'
+    id 'org.gretty' version '2.2.0'
+}
+</code></pre>
+Кроме того, плагин Gretty имеет хорошую <a href="https://akhikhl.github.io/gretty-doc/" target="_blank" rel="nofollow">документацию</a>.
+
+Начнём с того, что плагин Gretty позволяет переключаться между разными веб-серверами. Подробнее это описано в документации: "<a href="http://akhikhl.github.io/gretty-doc/Switching-between-servlet-containers.html" target="_blank" rel="nofollow">Switching between servlet containers</a>". Переключимся на Tomcat, т.к. он является одним из самых популярных в использовании, а так же имеет хорошую документацию и множество примеров и разобранных проблем:
+
+<pre class="lang-java line-numbers"><code>
+gretty {
+    // Переключаемся с дефолтного Jetty на Tomcat
+    servletContainer = 'tomcat8'
+    // Укажем Context Path, он же Context Root
+    contextPath = '/jaas'
+}
+</code></pre>
+Теперь мы можем выполнить "gradle appRun" и тогда наше веб-приложение будет доступно по адресу http://localhost:8080/jaas/secret
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="be858cb8-068d-4ee8-a711-22dc58f75f2e" data-max-width="525" alt="JAAS — Введение в технологию (часть 1) - 5" src="https://cdn.javarush.com/images/article/be858cb8-068d-4ee8-a711-22dc58f75f2e/1024.jpeg"></div></div>Важно проверить, что контейнер сервлетов выбран Tomcat (см. #1) и проверить, по каком адресу доступно наше веб-приложение (см. #2).
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="b4421a27-5620-428f-906b-8541aadc6b19" data-max-width="312" alt="JAAS — Введение в технологию (часть 1) - 6" src="https://cdn.javarush.com/images/article/b4421a27-5620-428f-906b-8541aadc6b19/1024.jpeg"></div></div><h2>Аутентификация</h2>Настройки аутентификации зачастую состоят из двух частей: настроек на стороне сервера и настроек на стороне веб-приложения, которое на этом сервере работает. Настройки безопасности веб-приложения не могут не взаимодействовать с настройками безопасности веб-сервера хотя бы по той причине, что веб-приложение не может не взаимодействовать с веб-сервером.
+
+Мы с Вами не зря переключились на Tomcat, т.к. Tomcat имеет хорошо описанную архитектуру (см. "<a href="https://tomcat.apache.org/tomcat-8.0-doc/architecture/overview.html" target="_blank" rel="nofollow">Apache Tomcat 8 Architecture</a>"). Из описания этой архитектуры видно, что Tomcat как веб-сервер представляет веб-приложение как некоторый контекст, который и называют "<a href="https://tomcat.apache.org/tomcat-8.0-doc/config/context.html" target="_blank" rel="nofollow">Tomcat Context</a>". Этот контекст позволяет каждому веб-приложению иметь свои настройки, изолированные от других веб-приложений. Кроме того, веб-приложение может влиять на настройки этого контекста. Гибко и удобно. Для более глубокого понимания рекомендуется к прочтению статья "<a href="https://www.mulesoft.com/tcat/tomcat-context" target="_blank" rel="nofollow">Understanding Tomcat Context Containers</a>" и раздел документации Tomcat "<a href="https://tomcat.apache.org/tomcat-8.0-doc/config/context.html" target="_blank" rel="nofollow">The Context Container</a>".
+
+Как выше было сказано, наше веб-приложение может влиять на Tomcat Context нашего приложения при помощи файла <code>/META-INF/context.xml</code>. И одной из очень важных настроек, на которую мы можем повлиять, является Security Realms.
+
+<strong>Security Realms</strong> — это некоторая "область безопасности". Область, для которой указаны определенные настройки безопасности. Соответственно, используя Security Realm мы применяем настройки безопасности, определённые для этого Realm. Security Realms управляются контейнером, т.е. веб-сервером, а не нашим веб-приложением. Мы можем только рассказать серверу, какую из областей безопасности нужно распространить на наше приложение. Документация Tomcat в разделе "<a href="https://tomcat.apache.org/tomcat-8.0-doc/config/realm.html" target="_blank" rel="nofollow">The Realm Component</a>" описывает Realm как набор данных о пользователях и их ролях для выполнения аутентификации. Tomcat предоставляет набор различных реализаций Security Realm'ов, одним из которых является "<a href="https://tomcat.apache.org/tomcat-8.0-doc/config/realm.html#JAAS_Realm_-_org.apache.catalina.realm.JAASRealm" target="_blank" rel="nofollow">Jaas Realm</a>".
+
+Разобравшись немного с терминологией, давайте опишем Tomcat Context в файле <code>/META-INF/context.xml</code>:
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;Context&gt;
+    &lt;Realm className="org.apache.catalina.realm.JAASRealm"
+           appName="JaasLogin"
+           userClassNames="jaas.login.UserPrincipal"
+           roleClassNames="jaas.login.RolePrincipal"
+           configFile="jaas.config" /&gt;
+&lt;/Context&gt;
+</code></pre>
+<code>appName</code> — имя приложение (application name). Tomcat попробует сопоставить это имя с именами, указанными в <code>configFile</code>.
+
+<code>configFile</code> — это "login configuration file". Его пример можно увидеть в документации JAAS: "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/jaas/JAASRefGuide.html#AppendixB" target="_blank" rel="nofollow">Appendix B: Example Login Configurations</a>". Кроме того, важно, что данный файл будет искаться сначала в ресурсах. Поэтому, наше веб приложение может само предоставить этот файл.
+
+Атрибуты <code>userClassNames</code> и <code>roleClassNames</code> содержат указание на классы, представляющие собой принципал пользователя. 
+JAAS разделяет понятие "пользователь" и "роль" как два разных <code>java.security.Principal</code>.
+ 
+Давайте опишем указанные выше классы. Создадим простейшую реализацию для принципала пользователя:
+
+<pre class="lang-java line-numbers"><code>
+public class UserPrincipal implements Principal {
+    private String name;
+    public UserPrincipal(String name) {
+        this.name = name;
+    }
+    @Override
+    public String getName() {
+        return name;
+    }
+}
+</code></pre>
+Точно такую же реализацию повторим и для <code>RolePrincipal</code>. Как Вы могли увидеть по интерфейсу, главное для Principal — хранить и возвращать некоторое имя (или ID), представляющие Principal.
+
+Теперь, у нас есть Security Realm, есть классы принципалов. Осталось заполнить файл из атрибута "<code>configFile</code>", он же <code>login configuration file</code>. Его описание можно найти в документации к Tomcat: "<a href="https://tomcat.apache.org/tomcat-8.0-doc/config/realm.html" target="_blank" rel="nofollow">The Realm Component</a>".
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="089987fe-c778-40ed-b2cb-2659b36cb0e2" data-max-width="1024" alt="JAAS — Введение в технологию (часть 1) - 7" src="https://cdn.javarush.com/images/article/089987fe-c778-40ed-b2cb-2659b36cb0e2/1024.jpeg"></div></div>То есть мы можем поместить настройку JAAS Login Config в ресурсы своего веб-приложения и благодаря Tomcat Context'у мы сможем его использовать. Данный файл должен быть доступен как ресурс для ClassLoader'а, поэтому его путь должен быть такой: <code>\src\main\resources\jaas.config</code>
+
+Зададим содержимое данного файла:
+
+<pre class="lang-java line-numbers"><code>
+JaasLogin {
+    jaas.login.JaasLoginModule required debug=true;
+};
+</code></pre>
+Стоит обратить внимание, что здесь и в <code>context.xml</code> использовано одинаковое имя. Таким образом Security Realm сопоставляется с LoginModule.
+
+Итак, Tomcat Context сообщил, какие классы представляют принципалы, а так же какой LoginModule использовать. Нам осталось только реализовать этот LoginModule. 
+
+<strong>LoginModule</strong> — это, пожалуй, одна из самых интересных вещей в JAAS. В разработке LoginModule нам поможет официальная документация: "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/jaas/JAASLMDevGuide.html#Step_1" target="_blank" rel="nofollow">Java Authentication and Authorization Service (JAAS): LoginModule Developer's Guide</a>".
+
+Давайте реализуем логин модуль. Создадим класс, который реализует интерфейс <code>LoginModule</code>:
+
+<pre class="lang-java line-numbers"><code>
+public class JaasLoginModule implements LoginModule {
+}
+</code></pre>
+Сначала опишем метод инициализации <code>LoginModule</code>:
+
+<pre class="lang-java line-numbers"><code>
+private CallbackHandler handler;
+private Subject subject;
+@Override
+public void initialize(Subject subject, CallbackHandler callbackHandler, &lt;String, ?&gt; sharedState, Map&lt;String, ?&gt; options) {
+	handler = callbackHandler;
+	this.subject = subject;
+}
+</code></pre>
+Данный метод сохранит <code>Subject</code>, который мы далее аутентифицируем и заполним информацией о принципалах. А так же сохраним для дальнейшего использования <code>CallbackHandler</code>, который нам передают. 
+
+При помощи <code>CallbackHandler</code> мы сможем запросить различную информацию о субъекте аутентификации чуть позже. Подробнее про <code>CallbackHandler</code> можно прочитать в соответствующем разделе документации: "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/jaas/JAASRefGuide.html#CallbackHandler" target="_blank" rel="nofollow">JAAS Reference Guide : CallbackHandler</a>".
+
+Далее выполняется метод <code>login</code> для аутентификации <code>Subject</code>. Это является первой фазой аутентификации:
+
+<pre class="lang-java line-numbers"><code>
+@Override
+public boolean login() throws LoginException {
+	// Добавляем колбэки
+	Callback[] callbacks = new Callback[2];
+	callbacks[0] = new NameCallback("login");
+	callbacks[1] = new PasswordCallback("password", true);
+	// При помощи колбэков получаем через CallbackHandler логин и пароль
+	try {
+		handler.handle(callbacks);
+		String name = ((NameCallback) callbacks[0]).getName();
+		String password = String.valueOf(((PasswordCallback) callbacks[1]).getPassword());
+		// Далее выполняем валидацию.
+		// Тут просто для примера проверяем определённые значения
+		if (name != null &amp;&amp; name.equals("user123") &amp;&amp; password != null &amp;&amp; password.equals("pass123")) {
+			// Сохраняем информацию, которая будет использована в методе commit
+			// Не "пачкаем" Subject, т.к. не факт, что commit выполнится
+			// Для примера проставим группы вручную, "хардкодно".
+			login = name;
+			userGroups = new ArrayList&lt;String&gt;();
+			userGroups.add("admin");
+			return true;
+		} else {
+			throw new LoginException("Authentication failed");
+		}
+	} catch (IOException | UnsupportedCallbackException e) {
+		throw new LoginException(e.getMessage());
+	}
+}
+</code></pre>
+Важно, что в <code>login</code> мы не должны изменять объект <code>Subject</code>. Такие изменения должны происходить только в методе подтверждения <code>commit</code>.
+
+Далее мы должны описать метод подтверждения успешной аутентификации:
+
+<pre class="lang-java line-numbers"><code>
+@Override
+public boolean commit() throws LoginException {
+	userPrincipal = new UserPrincipal(login);
+	subject.getPrincipals().add(userPrincipal);
+	if (userGroups != null &amp;&amp; userGroups.size() &gt; 0) {
+		for (String groupName : userGroups) {
+			rolePrincipal = new RolePrincipal(groupName);
+			subject.getPrincipals().add(rolePrincipal);
+		}
+	}
+	return true;
+}
+</code></pre>
+Может показаться странным разделение метода <code>login</code> и <code>commit</code>. Но дело в том, что login модули могут быть объединены. И для успешной аутентификации может быть необходимо, чтобы отработало успешно несколько логин модулей. И только если отработают все нужные модули — тогда сохранять изменения.
+
+Это является второй фазой аутентификации. Завершим методами <code>abort</code> и <code>logout</code>:
+
+<pre class="lang-java line-numbers"><code>
+@Override
+public boolean abort() throws LoginException {
+	return false;
+}
+@Override
+public boolean logout() throws LoginException {
+	subject.getPrincipals().remove(userPrincipal);
+	subject.getPrincipals().remove(rolePrincipal);
+	return true;
+}
+</code></pre>
+Метод <code>abort</code> вызывается тогда, когда завершилась неудачей первая фаза аутентификации. Метод <code>logout</code> вызывается при выходе из системы.
+
+Реализовав свой <code>Login Module</code> и настроив <code>Security Realm</code>, Теперь нам надо указать в <code>web.xml</code> тот факт, что мы хотим использовать определённый <code>Login Config</code>:
+
+<pre class="lang-java line-numbers"><code>
+&lt;login-config&gt;
+  &lt;auth-method&gt;BASIC&lt;/auth-method&gt;
+  &lt;realm-name&gt;JaasLogin&lt;/realm-name&gt;
+&lt;/login-config&gt;
+</code></pre>
+Мы указали имя нашего Security Realm и указали Authentication Method — BASIC. Это один из видов аутентификации, описанных в Servlet API в разделе "<a href="https://javaee.github.io/servlet-spec/downloads/servlet-3.1/Final/servlet-3_1-final.pdf#page=158&amp;zoom=100,0,185" target="_blank" rel="nofollow">13.6 Authentication</a>".
+
+Остался п

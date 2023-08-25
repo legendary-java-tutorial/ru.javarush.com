@@ -1,0 +1,210 @@
+Reverse string в Java: учимся реверсировать строки разными способами
+<p>----------------------------------------</p>
+Можно ли стать хорошим программистом без знания алгоритмов? Весьма и весьма спорно. Да, вы сможете найти работу в наших аутсорс-компаниях, ведь в них на собеседованиях задают вопросы в большей степени по...
+<p>----------------------------------------</p>
+Можно ли стать хорошим программистом без знания алгоритмов? Весьма и весьма спорно. Да, вы сможете найти работу в наших аутсорс-компаниях, ведь в них на собеседованиях задают вопросы в большей степени по технологиям. 
+
+<img data-max-width="800" data-id="e090c02d-569b-47e7-a35e-c0055749f953" src="/images/article/e090c02d-569b-47e7-a35e-c0055749f953/800.jpeg" class="img-fluid" alt="Reverse string в Java: учимся реверсировать строки разными способами - 1">Но будете ли вы хорошим специалистом, если ваши решения будут вовсю напичканы костылями? Если вы захотите перейти в более серьезную зарубежную компанию, столкнетесь с собеседованиями, ориентированными в первую очередь на алгоритмы.
+
+Так или иначе, стоит взять на вооружение самые базовые алгоритмы, ведь <strong>алгоритм — друг программиста</strong>. Сегодня мы затронем одну из таких тем и обсудим способы реверсирования строки.
+
+Тут все просто. <strong>Реверсирование строки</strong> — это получение строки задом наперёд. Например: JavaRush forever -&gt;reverof hsuRavaJ
+
+Итак, как же можно перевернуть строку в Java?
+<h2>1. StringBuilder/StringBuffer</h2>Самый банальный и простой способ — использовать <a href="https://javarush.com/groups/posts/2351-znakomstvo-so-string-stringbuffer-i-stringbuilder-v-java" target="_blank">StringBuilder/StringBuffer</a>:
+
+<pre class="lang-java line-numbers"><code>
+public static String reverseString(String str) {
+  return new StringBuilder(str).reverse().toString();
+}
+</code></pre>
+Лучшее решение = самое простое. При вопросе о том, как перевернуть строку (reverse string в Java) это первое, что должно приходить в голову. Но мы ранее говорили об алгоритмах, не правда ли? Давайте взглянем на решения не “из коробки”.
+<h2>2. Решение с массивом</h2><pre class="lang-java line-numbers"><code>
+public static String reverseString(String str) {
+  char[] array = str.toCharArray();
+  String result = "";
+  for (int i = array.length - 1; i &gt;= 0; i--) {
+     result = result + array[i];
+  }
+  return result;
+}
+</code></pre>
+Переводим нашу строку в массив с помощью метода <strong>toCharArray</strong>.
+Пробежимся циклом <strong>for</strong> по данному массиву с его конца, попутно добавляя символы в результирующую строку. 
+<h2>3. Решение с charAt</h2><pre class="lang-java line-numbers"><code>
+public static String reverseString(String str) {
+  String result = "";
+  for (int i = 0; i &lt; str.length(); i++) {
+     result = str.charAt(i) + result;
+  }
+  return result;
+}
+</code></pre>
+В данном случаем нам даже строку на массив разбивать не придется, так как каждый символ мы вытягиваем с помощью метода класса <a href="https://javarush.com/groups/posts/2347-klass-string-v-java" target="_blank">String</a> — <strong>charAt</strong> (цикл for, опять же, у нас обратный, что позволяет нам брать символы последовательно задом-наперёд).
+<h2>4. Решение со Stack</h2>Класс <a href="https://javarush.com/groups/posts/2321-strukturih-dannihkh--stek-i-ocheredjh" target="_blank">Stack</a> давно никто не использует, и он считается устаревшим, но тем не менее, для ознакомления будет полезно взглянуть на решение с его использованием:
+ 
+<pre class="lang-java line-numbers"><code>
+public static String reverseString(String str) {
+  Stack&lt;Character&gt; stack = new Stack&lt;&gt;();
+  String result = "";
+  for (Character character : str.toCharArray()) {
+     stack.add(character);
+  }
+  while (!stack.isEmpty()) {
+     result = result + stack.pop();
+  }
+  return result;
+}
+</code></pre>
+Здесь опять же используем <strong>toCharArray</strong> для разбивки строки на массив и кладем всё это в наш <strong>Stack</strong> с <a href="https://javarush.com/quests/lectures/questsyntax.level07.lecture07" target="_blank">дженерик</a> типом <strong>Character</strong>.
+
+Далее начинаем брать элементы с верхушки стека. Из-за особенностей стека как структуры <strong>LIFO</strong> — <strong>L</strong>ast <strong>I</strong>n <strong>F</strong>irst <strong>O</strong>ut (первый вошел, последний вышел), элементы будут браться задом-наперед и следствие сохранятся в результирующую строку.
+<h2>5. Решение рекурсией</h2>Почти каждую задачу на алгоритмы можно решить с помощью рекурсии. И тут мы тоже не обойдемся без нее. Или даже без них. Ведь сегодня мы рассмотрим даже не один способ решения рекурсией, а несколько.
+<ul><li><p><strong>способ первый</strong></p>
+<pre class="lang-java line-numbers"><code>
+public static String reverseString(String str) {
+  String rightStr;
+  String leftStr;
+  int length = str.length();
+
+  if (length &lt;= 1) {
+     return str;
+  }
+ 
+  leftStr = str.substring(0, length / 2);
+  rightStr = str.substring(length / 2, length);
+ 
+  return reverseString(rightStr) + reverseString(leftStr);
+}
+</code></pre>
+<p>Переменные <strong>rightStr</strong> и <strong>leftStr</strong> мы используем для разбивки пришедшей строки на две равные части. Далее с помощью такой разбивки мы дробим строку на наименьшие делимые части (1 символ). После рекурсия начинает сворачиваться, возвращая символы в противоположном порядке (те, что были справа — поставили слева; те, что были слева — вправо)</p>
+<p>Нельзя забывать, что каждая рекурсия — это многократный вызов метода, и как следствие — немалые затраты ресурсов. Ну а если мы говорим о рекурсии с недостижимым условием выхода, то это путь в бесконечность и к StackOverflowError.</p></li>
+<li><p><strong>способ второй</strong></p>
+<p>Здесь нам понадобится дополнительный аргумент в методе — index.</p>
+<p>При запуске этого метода он задается длиной строки -1:</p>
+<pre class="lang-java line-numbers"><code>
+String str = "JavaRush forever";
+System.out.println(reverseString(str, str.length()-1));
+</code></pre>
+<p>И сам метод:</p>
+<pre class="lang-java line-numbers"><code>
+public static String reverseString(String str, int index) {
+  if(index == 0){
+     return str.charAt(0) + "";
+  }
+ 
+  char letter = str.charAt(index);
+  return letter + reverseString(str, index-1);
+}
+</code></pre>
+<p>Индекс у нас служит индикатором того, какой элемент строки мы будем использовать сейчас (а элементы мы будем использовать с конца).</p>
+<p>Поэтому задаём условия выхода при достижении индексом первого элемента.</p></li>
+<p>Складываем значения полученного с помощью индекса <strong>letter</strong> с результатом предыдущего выполнения метода и возвращаем результат.</p><p>
+</p><li><strong>способ третий</strong><p></p>
+<pre class="lang-java line-numbers"><code>
+public static String reverseString(String str) {
+  if (str.length() &lt;= 1) {
+     return str;
+  }
+  return reverseString(str.substring(1)) + str.charAt(0);
+}
+</code></pre>
+<p>Данный способ по сути является самым простым из рекурсивных. А как мы помним, простое = лучшее.</p>
+<p>Во время каждого запуска мы задаем ту же строку, но без первого элемента. При достижении условия выхода (когда у нас останется один символ) рекурсия начинает сворачиваться, и к каждому последующему результату будет добавляться предыдущий неиспользованный символ.</p></li></ul><h2>6. При помощи  XOR</h2><strong>XOR</strong> — логическая побитовая операция. В случае двух переменных результат выполнения операции истинен тогда и только тогда, когда один из аргументов истинен, а другой — ложен.
+<table class="table table--striped" style="text-align:center;">
+<tbody><tr>
+<th>A</th>
+<th>B</th>
+<th>Y</th>
+</tr>
+<tr>
+</tr><tr>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+</tr>
+</tbody></table>Подробнее о побитовых операциях можно почитать в <a href="https://javarush.com/groups/posts/1925-pobitovihe-operacii" target="_blank">этой статье</a>.
+Следующее решение будет опираться на то, что:
+
+<pre><code>
+(A XOR B) XOR B = A
+(A XOR B) XOR A = B
+</code></pre>
+Как будет выглядеть метод:
+
+<pre class="lang-java line-numbers"><code>
+public static String reverseString(String str) {
+  char[] arr = str.toCharArray();
+  int low = 0;
+  int high = arr.length - 1;
+  String result = "";
+  while (low &lt; high) {
+     arr[low] = (char) (arr[low] ^ arr[high]);
+     arr[high] = (char) (arr[low] ^ arr[high]);
+     arr[low] = (char) (arr[low] ^ arr[high]);
+     low++;
+     high--;
+  }
+  for (int i = 0; i &lt; arr.length; i++) {
+     result = result + arr[i];
+  }
+  return result;
+}
+</code></pre>
+Давайте разбираться с тем, что тут происходит. 
+
+Мы создаём массив из входящей строки. Создаём две переменные, <strong>low</strong> и <strong>high</strong>, хранящие индексы для прохода по массиву. Соответственно, один будет двигаться с начала в конец — ему задаём значение 0, второй — с конца в начало, ему задаем <strong>arr.length - 1</strong>. Заходим в цикл, который будет воспроизводиться, пока индекс <strong>high</strong> больше, чем <strong>low</strong>.
+
+Тут начинает происходить самое интересное — использование исключающего ИЛИ.
+
+Давайте разберем на примере <strong>x</strong> и <strong>y</strong>.
+
+Предположим, что <strong>arr[high] = 'x';</strong>
+Двоичный код у него будет 1 1 1 1 0 0 0
+В это время <strong>arr[high] = 'n';</strong>
+Двоичный код — 1 1 0 1 1 1 0
+
+Что мы будем иметь в XOR операциях в цикле:
+<ol>
+<li><p><strong>arr[low] = (char) (arr[low] ^ arr[high]);</strong></p>
+<pre><code>
+arr[low] = 1 1 0 1 1 1 0
+arr[high] =1 1 1 1 0 0 0
+arr[low] = 0 0 1 0 1 1 0
+</code></pre></li>
+<li><p><strong>arr[high] = (char) (arr[low] ^ arr[high]);</strong></p>
+<pre><code>
+arr[low] =  0 0 1 0 1 1 0
+arr[high] = 1 1 1 1 0 0 0
+arr[high] = 1 1 0 1 1 1 0
+</code></pre></li>
+<li><p><strong>arr[low] = (char) (arr[low] ^ arr[high]);</strong></p>
+<pre><code>
+arr[low] =  0 0 1 0 1 1 0
+arr[high] = 1 1 0 1 1 1 0
+arr[low] =  1 1 1 1 0 0 0
+</code></pre></li></ol>В итоге благодаря этим операциям мы поменяли местами значения двух ячеек массива.
+<strong>arr[high]</strong> отдален от конца массива на столько же элементов, на сколько <strong>arr[low]</strong> отдален от начала. Поэтому мы просто меняем элементы с этими индексами местами.
+
+Например, при первом выполнении в предложении <strong>"JavaRush forever"</strong> <strong>J</strong> и <strong>r</strong> поменяются местами, при втором — <strong>a</strong> и <strong>e</strong> и т. д.
+
+Если у нас нечетное количество символов, то при достижении элемента, который находится посередине, нас выбросит из цикла (т.к. средний элемент менять и не нужно).
+
+Если чётное — нас выбросит после обработки всех элементов.
+
+Ну а после мы заходим в обычный цикл и строим строку из элементов массива.

@@ -1,0 +1,145 @@
+Регулярные выражения в Java, часть 3
+<p>----------------------------------------</p>
+Предлагаем вашему вниманию перевод краткого руководства по регулярным выражениям в языке Java, написанного Джеффом Фрисеном (Jeff Friesen) для сайта javaworld. Для простоты чтения мы разделили статью на несколько частей. 
+<p>----------------------------------------</p>
+Предлагаем вашему вниманию перевод краткого руководства по регулярным выражениям в языке Java, написанного Джеффом Фрисеном (Jeff Friesen) для сайта <a href=" https://www.javaworld.com/article/3195301/learn-java/java-101-regular-expressions-in-java-part-2.html" target="_blank" rel="nofollow">javaworld</a>. Для простоты чтения мы разделили статью на несколько частей. 
+<img data-max-width="800" data-id="c20d7218-52bd-479a-ac66-cf328fdb387c" src="/images/article/c20d7218-52bd-479a-ac66-cf328fdb387c/800.jpeg" class="img-fluid" alt="Регулярные выражения в Java, часть 3 - 1"><a href="https://javarush.com/groups/posts/136-reguljarnihe-vihrazhenija-v-java-chastjh-1" target="_blank">Регулярные выражения в Java, часть 1</a>
+<a href="https://javarush.com/groups/posts/154-reguljarnihe-vihrazhenija-v-java-chastjh-2" target="_blank">Регулярные выражения в Java, часть 2</a>
+<h2>Упрощаем решение распространенных задач программирования при помощи API Regex</h2>В первой и второй частях этой статьи вы познакомились с регулярными выражениями и API Regex. Вы узнали о существовании класса <code>Pattern</code>, прошлись по примерам, демонстрирующим конструкции регулярных выражений, от простейшего поиска по шаблону на основе литеральных строк до более сложного поиска при помощи диапазонов, граничных сопоставителей и квантификаторов.
+
+В этой и последующих частях мы рассмотрим не охваченные в первой части вопросы, изучим соответствующие методы классов <code>Pattern</code>, <code>Matcher</code> и <code>PatternSyntaxException</code>. Вы также познакомитесь с двумя утилитами, использующими <a href="https://javarush.com/groups/posts/2013-reguljarnihe-vihrazhenija-v-java" target="_blank">регулярные выражения</a> для упрощения решения распространенных задач программирования. Первая из них извлекает комментарии из кода для документации. Вторая представляет собой библиотеку многоразового кода, предназначенную для выполнения лексического анализа — существенный компонент ассемблеров, компиляторов и тому подобного программного обеспечения.
+<h4>ЗАГРУЗКА ИСХОДНОГО КОДА</h4>Получить весь исходный код (созданный Джеффом Фризеном для сайта JavaWorld) демо-приложений из данной статьи можно <a href="http://images.techhive.com/assets/2017/04/11/jw-j101-regexp1-src.zip" target="_blank">отсюда</a>.
+<h2>Изучаем API Regex</h2><code>Pattern</code>, <code>Matcher</code> и <code>PatternSyntaxException</code> – три класса, составляющих API Regex. Каждый из них предоставляет методы, позволяющие использовать регулярные выражения в вашем коде.
+<h2>Методы класса Pattern</h2>Экземпляр класса <code>Pattern</code> представляет собой скомпилированное регулярное выражение, известное также как шаблон. Регулярные выражения компилируются с целью повышения производительности операций поиска по шаблону. Следующие статические методы поддерживают компиляцию.
+<ul>
+<li><code>Pattern compile(String regex)</code> компилирует содержимое <code>regex</code> в промежуточное представление, сохраняемое в новом объекте <code>Pattern</code>. Этот метод или возвращает ссылку на объект, в случае успешного выполнения, или генерирует исключение <code>PatternSyntaxException</code> в случае обнаружения некорректного синтаксиса регулярного выражения. Любой объект класса <code>Matcher</code>, используемый этим объектом <code>Pattern</code> или возвращаемый из него, использует его настройки по умолчанию, например, поиск с учетом регистра. В качестве примера, фрагмент кода <code>Pattern p = Pattern.compile("(?m)^\\.");</code>  создает объект <code>Pattern</code>, хранящий скомпилированное представление регулярного выражения для поиска строк, начинающихся с символа точки.</li><br>
+<li><code>Pattern compile(String regex, int flags)</code> решает ту же задачу, что и <code>Pattern compile(String regex)</code>, но с учетом <code>flags</code>: набора битовых констант для побитовых флагов типа ИЛИ. В классе <code>Pattern</code> объявлены константы <code>CANON_EQ, CASE_INSENSITIVE, COMMENTS, DOTALL, LITERAL, MULTILINE, UNICODE_CASE, UNICODE_CHARACTER_CLASS и UNIX_LINES</code>, которые можно комбинировать при помощи побитового ИЛИ (например, <code>CASE_INSENSITIVE | DOTALL</code>) и передать в аргументе <code>flags</code>.</li><br>
+За исключением <code>CANON_EQ, LITERAL и UNICODE_CHARACTER_CLASS</code>, эти константы являются альтернативой вложенных флаговым выражениям, продемонстрированным в части 1. При обнаружении флаговой константы, отличающейся от определенных в классе <code>Pattern</code>, метод <code>Pattern compile(String regex, int flags) </code>генерирует исключение <code>java.lang.IllegalArgumentException</code>. Например, <code>Pattern p = Pattern.compile("^\\.", Pattern.MULTILINE);</code> эквивалентно предыдущему примеру, причем константа <code>Pattern.MULTILINE</code> и вложенное флаговое выражение <code>(?m)</code> делают одно и то же.
+</ul>Иногда бывает необходимо получить копию исходной строки регулярного выражения, скомпилированного в объект <code>Pattern</code>, вместе с используемыми им флагами. Для этого можно вызвать следующие методы:
+<ul>
+<li><code>String pattern()</code> возвращает исходную строку регулярного выражения, скомпилированную в объект <code>Pattern</code>.</li><br>
+<li><code>int flags()</code> возвращает флаги объекта <code>Pattern</code>.</li>
+</ul>После получения объекта <code>Pattern</code>, он обычно используется для получения объекта <code>Matcher</code>, для выполнения операций поиска по шаблону. Метод <code>Matcher matcher(Charsequence input)</code> создает объект <code>Matcher</code>, ищущий в тексте <code>input</code> соответствие шаблону объекта <code>Pattern</code>. При вызове он возвращает ссылку на этот объект <code>Matcher</code>. Например, команда <code>Matcher m = p.matcher(args[1]);</code> возвращает <code>Matcher</code> для объекта <code>Pattern</code>, на который ссылается переменная <code>p</code>.
+<table>
+<thead>
+<tr>
+<th>Одноразовый поиск</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Метод <code>static boolean matches(String regex, CharSequence input)</code> класса <code>Pattern</code> позволяет сэкономить на создании объектов <code>Pattern</code> и <code>Matcher</code> при одноразовом поиске по шаблону. Этот метод возвращает true, если в <code>input</code> находится соответствие шаблону <code>regex</code>, в противном случае он возвращает false. Если в регулярном выражении содержится синтаксическая ошибка, метод генерирует исключение <code>PatternSyntaxException</code>. Например, <code>System.out.println(Pattern.matches("[a-z[\\s]]*", "all lowercase letters and whitespace only"));</code> выводит <code>true</code>, подтверждая, что во фразе <code>all lowercase letters and whitespace only</code> содержатся только пробелы и символы в нижнем регистре.
+</td>
+</tr>
+</tbody>
+</table><img data-max-width="800" data-id="f15849fd-cf74-4260-911a-19b8e0013c93" src="/images/article/f15849fd-cf74-4260-911a-19b8e0013c93/800.jpeg" class="img-fluid" alt="Регулярные выражения в Java, часть 3 - 2"><h2>Разбиение текста</h2>Большинству разработчиков приходилось хоть раз писать код для разбиения входного текста на составные части, например, преобразовывать текстовую учетную запись сотрудника в набор полей. Класс <code>Pattern</code> предоставляет возможность более удобного решения этой утомительной задачи, при помощи двух методов разбиения текста:
+<ul>
+<li><p>Метод <code>String[] split(CharSequence text, int limit)</code> разбивает <code>text</code> в соответствии с найденными соответствиями шаблону объекта <code>Pattern</code> и возвращает результаты в массиве. Каждый элемент массива задает текстовую последовательность, отделенную от следующей последовательности соответствующим шаблону фрагментом текста (или концом текста). Элементы массива находятся в том же порядке, в котором они встречаются в <code>text</code>.</p>
+<p>В этом методе, количество элементов массива зависит от параметра <code>limit</code>, контролирующего также и число искомых соответствий.
+</p><ul>
+<li>При положительном значении выполняется поиск не более чем <code>limit-1</code> соответствий, а длина массива не превышает <code>limit</code> элементов.</li>
+<li>При отрицательном значении выполняется поиск всех возможных соответствий, и длина массива может быть произвольной.</li>
+<li>При равном нулю значении выполняется поиск всех возможных соответствий, длина массива может быть произвольной, а пустые строки в конце отбрасываются.</li>
+</ul><p></p></li>
+<li>Метод <code>String[] split(CharSequence text)</code> вызывает предыдущий метод с 0 в качестве аргумента limit и возвращает результат его вызова.</li>
+</ul>Ниже приведены результаты работы метода <code>split(CharSequence text)</code> по решению задачи расщепления учетной записи сотрудника на отдельные поля имени, возраста, почтового адреса и зарплаты:
+
+<pre class="lang-java line-numbers"><code>
+Pattern p = Pattern.compile(",\\s");
+String[] fields = p.split("John Doe, 47, Hillsboro Road, 32000");
+for (int i = 0; i &lt; fields.length; i++)
+   System.out.println(fields[i]);
+</code></pre>
+В вышеприведенном коде описано регулярное выражение для поиска знака запятой, за которым непосредственно следует одиночный символ пробела. Вот результаты его выполнения:
+
+<pre class="lang-java line-numbers"><code>
+John Doe
+47
+Hillsboro Road
+32000
+</code></pre><h2>Предикаты шаблонов и API Streams</h2>В Java 8 в классе <code>Pattern</code> появился метод <code>Predicate<string> asPredicate()</string></code>. Этот метод создает предикат (функцию с булевым значением), используемый для поиска по шаблону. Использование этого метода показано в следующем фрагменте кода:
+
+<pre class="lang-java line-numbers"><code>
+List<string> progLangs = Arrays.asList("apl", "basic", "c", "c++", "c#", "cobol", "java", "javascript", "perl", "python", "scala");
+Pattern p = Pattern.compile("^c");
+progLangs.stream().filter(p.asPredicate()).forEach(System.out::println);
+</string></code></pre>
+Этот код создает список названий языков программирования, затем компилирует шаблон для поиска всех названий, начинающихся с буквы <code>c</code>. Последняя из вышеприведенных строк кода реализует получение последовательного потока данных с этим списком в качестве источника. Он устанавливает фильтр, использующий булеву функцию <code>asPredicate()</code>, которая возвращает true, когда название начинается с буквы <code>c</code> и выполняет итерацию по потоку, выводя подходящие названия в стандартный поток вывода.
+
+Эта последняя строка эквивалентна следующему обычному циклу, знакомому вам по приложению RegexDemo из части 1:
+
+<pre class="lang-java line-numbers"><code>
+for (String progLang: progLangs) 
+   if (p.matcher(progLang).find())
+      System.out.println(progLang);
+</code></pre><h2>Методы класса Matcher</h2>Экземпляр класса <code>Matcher</code> описывает механизм выполнения операций поиска по шаблону в последовательности символов путем интерпретации скомпилированного регулярного выражения класса <code>Pattern</code>. Объекты класса <code>Matcher</code> поддерживают различные виды операций поиска по шаблону:
+<ul>
+<li><p>Метод <code>boolean find()</code> ищет во входном тексте следующее совпадение. Этот метод начинает просмотр или в начале заданного текста, или на первом символе после предыдущего совпадения. Второй вариант возможен только если предыдущий вызов этого метода вернул true и сопоставитель не был сброшен. В любом случае, в случае успешного поиска возвращается булево значение true. Пример этого метода вы можете найти в <code>RegexDemo</code> из части 1.</p></li>
+<li><p>Метод <code>boolean find(int start)</code> сбрасывает сопоставитель и ищет в тексте следующее совпадение. Просмотр начинается с позиции, задаваемой параметром <code>start</code>. В случае успешного поиска возвращается булево значение true. Например, <code>m.find(1);</code> просматривает текст, начиная с позиции <code>1</code> (позиция 0 игнорируется). Если параметр <code>start</code> содержит отрицательное значение или значение, превышающее длину текста сопоставителя, метод генерирует исключение <code>java.lang.IndexOutOfBoundsException</code>.</p></li>
+<li><p>Метод <code>boolean matches()</code> пытается сопоставить с шаблоном весь текст. Он возвращает булево значение true, если весь текст соответствует шаблону. Например, код <code>Pattern p = Pattern.compile("\\w*"); Matcher m = p.matcher("abc!"); System.out.println(p.matches());</code> выводит <code>false</code>, поскольку символ <code>!</code> не является словообразующим символом.</p></li>
+<li><p>Метод <code>boolean lookingAt()</code> пытается сопоставить с шаблоном заданный текст. Этот метод возвращает true, если любая часть текста соответствует шаблону. В отличие от метода <code>matches();</code>, весь текст не должен соответствовать шаблону. Например, <code>Pattern p = Pattern.compile("\\w*"); Matcher m = p.matcher("abc!"); System.out.println(p.lookingAt());</code> выведет <code>true</code>, поскольку начало текста <code>abc!</code> состоит только из словообразующих символов.</p></li>
+</ul>В отличие от объектов класса <code>Pattern</code>, объекты класса <code>Matcher</code> сохраняют информацию о состоянии. Иногда может понадобиться сбросить сопоставитель, чтобы очистить эту информацию после окончания поиска по шаблону. Для сброса сопоставителя существуют следующие методы:
+<ul>
+<li><p>Метод <code>Matcher reset()</code> сбрасывает состояние сопоставителя, включая позицию для добавления в конец (сбрасываемую в 0). Следующая операция поиска по шаблону начинается в начале текста сопоставителя. Возвращается ссылка на текущий объект <code>Matcher</code>. Например, <code>m.reset();</code> сбрасывает сопоставитель, на который ссылается <code>m</code>.</p></li>
+<li><p>Метод <code>Matcher reset(CharSequence text)</code> сбрасывает состояние сопоставителя и задает новый текст сопоставителя, равный <code>text</code>. Следующая операция поиска по шаблону начинается в начале нового текста сопоставителя. Возвращается ссылка на текущий объект <code>Matcher</code>. Например, <code>m.reset("new text");</code> сбрасывает сопоставитель, на который ссылается <code>m</code> и задает в качестве нового текста сопоставителя значение <code>"new text"</code>.</p></li>
+</ul><img data-max-width="800" data-id="2918bc5f-b713-49c7-932d-518f1a675234" src="/images/article/2918bc5f-b713-49c7-932d-518f1a675234/800.jpeg" class="img-fluid" alt="Регулярные выражения в Java, часть 3 - 3"><h2>Добавление текста в конец</h2>Позиция сопоставителя для добавления в конец задает начало текста сопоставителя, добавляемого в конец объекта типа <code>java.lang.StringBuffer</code>. Эту позицию используют следующие методы:
+<ul>
+<li><p>Метод <code>Matcher appendReplacement(StringBuffer sb, String replacement)</code> читает символы текста сопоставителя и присоединяет их в конец объекта <code>StringBuffer</code>, на который ссылается аргумент <code>sb</code>. Этот метод прекращает чтение на последнем символе, предшествующем предыдущему соответствию шаблону. Далее, метод добавляет символы из объекта типа <code>String</code>, на который ссылается аргумент <code>replacement</code>, в конец объекта <code>StringBuffer</code> (строка <code>replacement</code> может содержать ссылки на текстовые последовательности, захваченные во время предыдущего поиска; они указываются при помощи символов <code>($)</code> и номеров захватываемых групп). Наконец, метод устанавливает значение позиции сопоставителя для добавления в конец равным позиции последнего совпавшего символа плюс единица, после чего возвращает ссылку на текущий сопоставитель.</p></li>
+<p></p><p>Метод <code>Matcher appendReplacement(StringBuffer sb, String replacement)</code> генерирует исключение <code>java.lang.IllegalStateException</code>, если сопоставитель еще не находил соответствия или предыдущая попытка поиска завершилась неудачно. Он генерирует исключение <code>IndexOutOfBoundsException</code>, если строка <code>replacement</code> задает отсутствующую в шаблоне захватываемую группу).</p>
+<li><p>Метод <code>StringBuffer appendTail(StringBuffer sb)</code> добавляет весь текст в объект <code>StringBuffer</code> и возвращает ссылку на этот объект. После последнего вызова метода <code>appendReplacement(StringBuffer sb, String replacement)</code>, вызовите метод <code>appendTail(StringBuffer sb)</code>, чтобы скопировать оставшийся текст в объект <code>StringBuffer</code>.</p></li>
+</ul><table>
+<thead>
+<tr>
+<th>Захватываемые группы</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Как вы помните из части 1, захватываемая группа — это последовательность символов, заключенная в метасимволы круглых скобок (<code>()</code>). Цель этой конструкции состоит в сохранении найденных символов для дальнейшего повторного использования во время поиска по шаблону. Все символы из захватываемой группы рассматриваются во время поиска по шаблону как единое целое.
+</td>
+</tr>
+</tbody>
+</table>В следующем коде выполняется вызов методов <code>appendReplacement(StringBuffer sb, String replacement)</code> и <code>appendTail(StringBuffer sb</code> для замены в исходном тексте всех вхождений последовательности символов <code>cat</code> на <code>caterpillar</code>:
+
+<pre class="lang-java line-numbers"><code>
+Pattern p = Pattern.compile("(cat)");
+Matcher m = p.matcher("one cat, two cats, or three cats on a fence");
+StringBuffer sb = new StringBuffer();
+while (m.find())
+   m.appendReplacement(sb, "$1erpillar");
+m.appendTail(sb);
+System.out.println(sb);
+</code></pre>
+Использование захватываемой группы и ссылки на неё в замещающем тексте указывает программе вставлять <code>erpillar</code> после каждого вхождения <code>cat</code>. Результат выполнения данного кода выглядит следующим образом:
+
+<code>one caterpillar, two caterpillars, or three caterpillars on a fence</code>
+<h2>Замена текста</h2>Класс <code>Matcher</code> предоставляет нам два метода для текстовой замены, дополняющих метод <code>appendReplacement(StringBuffer sb, String replacement)</code>. С помощью этих методов можно заменять или первое вхождение [замещаемого текста] или все вхождения:
+<ul>
+<li><p>Метод <code>String replaceFirst(String replacement)</code> сбрасывает сопоставитель, создает новый объект <code>String</code>, копирует в эту строку все символы текста сопоставителя (вплоть до первого совпадения), добавляет в её конец символы из <code>replacement</code>, копирует в строку оставшиеся символы и возвращает объект <code>String</code> (в строке <code>replacement</code> можно указывать ссылки на захваченные во время предыдущего поиска текстовые последовательности, при помощи символов доллара и номеров захватываемых групп).</p></li>
+<li><p>Метод <code>String replaceAll(String replacement)</code> действует аналогично методу <code>String replaceFirst(String replacement)</code>, но заменяет символами из строки <code>replacement</code> всё найденные совпадения.</p></li>
+</ul>Регулярное выражение <code>\s+</code> служит для поиска одного или более пробельных символов во входном тексте. Ниже, мы воспользуемся этим регулярным выражением и вызовем метод <code>replaceAll(String replacement)</code> для удаления дублирующихся пробелов:
+
+<pre class="lang-java line-numbers"><code>
+Pattern p = Pattern.compile("\\s+");
+Matcher m = p.matcher("Удаляем      \t\t лишние пробелы.   ");
+System.out.println(m.replaceAll(" "));
+</code></pre>
+Вот результаты:
+
+<code>Удаляем лишние пробелы.</code>
+
+<a href="https://javarush.com/groups/posts/229-reguljarnihe-vihrazhenija-v-java-chastjh-4" target="_blank">Регулярные выражения в Java, часть 4</a>
+<a href="https://javarush.com/groups/posts/247-reguljarnihe-vihrazhenija-v-java-chastjh-5" target="_blank">Регулярные выражения в Java, часть 5</a>
+<table>
+<tbody><tr>
+<th><p>Что еще почитать:
+</p>
+</th>
+</tr>
+<tr>
+<td><ul>
+<li><a href="https://javarush.com/groups/posts/72-kak-praviljhno-nachatjh-razrabotku-pod-subd-oracle" target="_blank">Как правильно начать разработку под СУБД Oracle</a></li>
+<li><a href="https://javarush.com/groups/posts/254-top-5-bibliotek-mashinnogo-obuchenija-dlja-java" target="_blank">Топ 5 библиотек машинного обучения для Java</a></li>
+<li><a href="https://javarush.com/groups/posts/264-populjarno-o-ljambda-vihrazhenijakh-v-java-s-primerami-i-zadachami-chastjh-1-" target="_blank">Популярно о лямбда-выражениях в Java. С примерами и задачами. Часть 1</a></li></ul></td>
+</tr>
+</tbody></table>

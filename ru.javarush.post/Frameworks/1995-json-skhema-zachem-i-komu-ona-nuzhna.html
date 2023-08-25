@@ -1,0 +1,372 @@
+Json схема: зачем и кому она нужна
+<p>----------------------------------------</p>
+Однажды я открыл для себя магию схем и хочу поделиться ею с тобой, читатель. Заходи. Привет, странник. Сегодня я поведаю тебе о небольшой магии. Ты наверно уже слышал про json. Это такой универсальный язык: его понимает машина и легко читает человек ...
+<p>----------------------------------------</p>
+Привет, странник. Сегодня я хочу поведать тебе о небольшой магии. Ты наверно уже слышал про json. Это такой универсальный язык: его понимает машина и легко читает человек. 
+
+Вот типичный пример json сообщения:
+
+<pre class="lang-java line-numbers"><code>
+{  
+   "помещение":{  
+      "название":"избушка",
+      "разумна":true
+   },
+   "основание":{  
+      "тип":"курьи ноги",
+      "количество":2
+   },
+   "проживающие":[  
+      {  
+         "имя":"Баба Яга",
+         "профиль":"ведьма"
+      }
+   ],
+   "местоположение":{  
+      "адрес":"граница леса"
+   }
+}
+</code></pre>
+
+Удобно ведь так общаться, правда? Если до этого ты не знал, что такое json, теперь знаешь.
+
+Как это использовать в java коде?
+
+Json стал универсальным форматом. Расшифровывается он как JavaScript Object Notation, но уже давно вышел за пределы javascript и используется почти везде. В java есть несколько библиотек, упрощающих работу с json. Вот самые известные:
+ <ul>
+<li><a href="https://github.com/google/gson" target="_blank" rel="nofollow">gson</a></li>
+<li><a href="https://github.com/FasterXML/jackson" target="_blank" rel="nofollow">Jackson</a></li>
+</ul>
+Я буду использовать вторую. Там их 2 версии <em>codehaus</em> и <em>fasterxml</em>, отличий в них не замечал, так что тут можете использовать любую.
+
+Вот такой кусок кода:
+
+<pre class="lang-java line-numbers"><code>
+ObjectMapper mapper = new ObjectMapper();
+return mapper.readValue("сюда json", "сюда класс");
+</code></pre>
+поможет перевести json в объект. И мы приближаемся к самому главному. Написанию класса для этого json. Можно это делать руками, создать структуру примерно такую:
+
+<pre class="lang-java line-numbers"><code>
+-----------------------------------com.fairytale.Base.java-----------------------------------
+
+package com.fairytale;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({
+"type",
+"quantity"
+})
+public class Base {
+
+@JsonProperty("type")
+public String type = "";
+@JsonProperty("quantity")
+public int quantity = 0;
+
+}
+-----------------------------------com.fairytale.Hut.java-----------------------------------
+
+package com.fairytale;
+
+import java.util.ArrayList;
+import java.util.List;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({
+"room",
+"base",
+"residents",
+"location"
+})
+public class Hut {
+
+@JsonProperty("room")
+public Room room;
+@JsonProperty("base")
+public Base base;
+@JsonProperty("residents")
+public List&lt;Resident&gt; residents = new ArrayList&lt;Resident&gt;();
+@JsonProperty("location")
+public Location location;
+
+}
+-----------------------------------com.fairytale.Location.java-----------------------------------
+
+package com.fairytale;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({
+"address"
+})
+public class Location {
+
+@JsonProperty("address")
+public String address = "";
+
+}
+-----------------------------------com.fairytale.Resident.java-----------------------------------
+
+package com.fairytale;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({
+"name",
+"profile"
+})
+public class Resident {
+
+@JsonProperty("name")
+public String name = "";
+@JsonProperty("profile")
+public String profile = "";
+
+}
+-----------------------------------com.fairytale.Room.java-----------------------------------
+
+package com.fairytale;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({
+"name",
+"reasonable"
+})
+public class Room {
+
+@JsonProperty("name")
+public String name = "";
+@JsonProperty("reasonable")
+public boolean reasonable = false;
+
+}
+</code></pre>
+Я специально опустил геттеры, сеттеры, конструкторы и прочие атрибуты pojo, иначе ты устал бы проматывать =)
+
+А теперь посмотри сюда:
+
+<pre class="lang-java line-numbers"><code>
+{
+  "definitions": {},
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "http://example.com/root.json",
+  "type": "object",
+  "title": "The Root Schema",
+  "required": [
+    "room",
+    "base",
+    "residents",
+    "location"
+  ],
+  "properties": {
+    "room": {
+      "$id": "#/properties/room",
+      "type": "object",
+      "title": "The Room Schema",
+      "required": [
+        "name",
+        "reasonable"
+      ],
+      "properties": {
+        "name": {
+          "$id": "#/properties/room/properties/name",
+          "type": "string",
+          "title": "The Name Schema",
+          "default": "",
+          "examples": [
+            "избушка"
+          ],
+          "pattern": "^(.*)$"
+        },
+        "reasonable": {
+          "$id": "#/properties/room/properties/reasonable",
+          "type": "boolean",
+          "title": "The Reasonable Schema",
+          "default": false,
+          "examples": [
+            true
+          ]
+        }
+      },
+	"additionalProperties": false
+    },
+    "base": {
+      "$id": "#/properties/base",
+      "type": "object",
+      "title": "The Base Schema",
+      "required": [
+        "type",
+        "quantity"
+      ],
+      "properties": {
+        "type": {
+          "$id": "#/properties/base/properties/type",
+          "type": "string",
+          "title": "The Type Schema",
+          "default": "",
+          "examples": [
+            "курьи ноги"
+          ],
+          "pattern": "^(.*)$"
+        },
+        "quantity": {
+          "$id": "#/properties/base/properties/quantity",
+          "type": "integer",
+          "title": "The Quantity Schema",
+          "default": 0,
+          "examples": [
+            2
+          ]
+        }
+      },
+	"additionalProperties": false
+    },
+    "residents": {
+      "$id": "#/properties/residents",
+      "type": "array",
+      "title": "The Residents Schema",
+      "items": {
+        "$id": "#/properties/residents/items",
+        "type": "object",
+        "title": "The Items Schema",
+        "required": [
+          "name",
+          "profile"
+        ],
+        "properties": {
+          "name": {
+            "$id": "#/properties/residents/items/properties/name",
+            "type": "string",
+            "title": "The Name Schema",
+            "default": "",
+            "examples": [
+              "Баба Яга"
+            ],
+            "pattern": "^(.*)$"
+          },
+          "profile": {
+            "$id": "#/properties/residents/items/properties/profile",
+            "type": "string",
+            "title": "The Profile Schema",
+            "default": "",
+            "examples": [
+              "ведьма"
+            ],
+            "pattern": "^(.*)$"
+          }
+        },
+	    "additionalProperties": false
+      }
+    },
+    "location": {
+      "$id": "#/properties/location",
+      "type": "object",
+      "title": "The Location Schema",
+      "required": [
+        "address"
+      ],
+      "properties": {
+        "address": {
+          "$id": "#/properties/location/properties/address",
+          "type": "string",
+          "title": "The Address Schema",
+          "default": "",
+          "examples": [
+            "граница леса"
+          ],
+          "pattern": "^(.*)$",
+		  "additionalProperties": false
+        }
+      },
+	"additionalProperties": false
+    }
+  },
+	"additionalProperties": false
+}
+</code></pre>
+Это json схема структуры выше. Теперь пора объяснить, зачем она тебе.
+
+Она избавит  от необходимости писать классы и поддерживать их. Есть такой хороший проект <a href="http://www.jsonschema2pojo.org/" target="_blank" rel="nofollow">jsonschema2pojo</a>. Он предлагает плагины для сборщиков проекта (мавен, грейдл), которые напишут эти классы для тебя во время сборки.
+
+Приведу пример из моего проекта:
+
+<pre class="lang-java line-numbers"><code>
+&lt;plugin&gt;
+    &lt;groupId&gt;org.jsonschema2pojo&lt;/groupId&gt;
+    &lt;artifactId&gt;jsonschema2pojo-maven-plugin&lt;/artifactId&gt;
+    &lt;version&gt;0.4.37&lt;/version&gt;
+
+    &lt;executions&gt;
+        &lt;execution&gt;
+            &lt;id&gt;jsonschema2opjo&lt;/id&gt;
+            &lt;configuration&gt;
+                &lt;sourceDirectory&gt;${project.basedir}/src/main/resources/json-schema/&lt;/sourceDirectory&gt;
+                &lt;targetPackage&gt;tester.model&lt;/targetPackage&gt;
+                &lt;outputDirectory&gt;${project.basedir}/target/generated-sources/jsonschema/&lt;/outputDirectory&gt;
+                &lt;useCommonsLang3&gt;true&lt;/useCommonsLang3&gt;
+                &lt;includeConstructors&gt;true&lt;/includeConstructors&gt;
+                &lt;generateBuilders&gt;true&lt;/generateBuilders&gt;
+                &lt;includeToString&gt;true&lt;/includeToString&gt;
+                &lt;usePrimitives&gt;true&lt;/usePrimitives&gt;
+            &lt;/configuration&gt;
+            &lt;goals&gt;
+                &lt;goal&gt;generate&lt;/goal&gt;
+            &lt;/goals&gt;
+            &lt;phase&gt;generate-sources&lt;/phase&gt;
+        &lt;/execution&gt;
+    &lt;/executions&gt;
+&lt;/plugin&gt;
+</code></pre>
+Это его настройка. Самое интересное тут:
+
+<pre class="lang-java line-numbers"><code>
+&lt;useCommonsLang3&gt;true&lt;/useCommonsLang3&gt;
+&lt;includeConstructors&gt;true&lt;/includeConstructors&gt;
+&lt;generateBuilders&gt;true&lt;/generateBuilders&gt;
+&lt;includeToString&gt;true&lt;/includeToString&gt;
+&lt;usePrimitives&gt;true&lt;/usePrimitives&gt;
+</code></pre>
+Это указание, как писать класс:
+
+<em>useCommonsLang3 </em>– использовать библиотеку CommonsLang3
+<em>includeConstructors </em>– напишет конструктор
+<em>generateBuilders </em>– встроит паттерн билдер
+<em>includeToString </em>– добавит toString
+<em>usePrimitives </em>– указание использовать примитивы
+
+Чем это лучше самописного кода?
+<ol>
+<li><p>Вы можете кастомизировать классы одной строчкой. Например, надо добавить суффикс Pojo к каждому классу. Достаточно добавить  &lt;classNameSuffix&gt;Pojo&lt;/classNameSuffix&gt; собирать проект — и готово. Иначе пришлось бы менять имена каждому класс руками.</p>
+<p>Этих параметров очень много, обо всех стоит почитать в <a href="https://joelittlejohn.github.io/jsonschema2pojo/site/0.5.1/generate-mojo.html" target="_blank" rel="nofollow">доках </a></p></li>
+<li><p>Если у твоего проекта есть потребитель, намного проще будет отдать ему json схемы, а не java классы. Как я уже говорил, схемы универсальны и потребитель просто сгенерит pojo на своем языке.</p></li>
+<li><p>Они гораздо меньше. Пример сверху содержит много не всегда нужной информации, скажем, паттерны и примеры. Но если вернуть их в java код, он тоже сильно вырастет. И не забудь про шаблонный код, который в схемах указывается парой настроек в плагине, а в коде его надо писать самому. И да, я знаю про ломбок, тут альтернатива.</p></li>
+<li><p>Никакой логики в pojo. Когда ваши классы самописные, кто-то может соблазниться и добавить удобный ему метод. В json схемы метод добавить нельзя, как и в сгенерированный класс.</p></li></ol>
+Наверно, на этом все. 
+
+<h2>Вывод:</h2>Я старался донести, что json схемы очень хороший формат взаимодействия между проектами. Однажды я с ним встретился на одном проекте, и он запал мне в сердце. Я использую их почти везде. Да, это не всегда удобно, ведь чтобы посмотреть исходники, надо собирать проект. Но это pojo, а значит, логики там быть не может, со схемами и не будет.
+
+
+PS.. я иногда объясняю плохо, так что вот видео с хорошим докладом:
+<a href="https://www.youtube.com/watch?v=9mF0zFW7cDQ&amp;index=8&amp;list=PLsVTVVvrKX9t7a0_KpweUSfEt7XeRDzM-" target="_blank" rel="nofollow">Кирилл Меркушев — Кодогенерация как способ решения проблем автоматизатора.</a>

@@ -1,0 +1,114 @@
+Как развернуть Postgres в Docker и подключить к Spring-Boot приложению
+<p>----------------------------------------</p>
+Перед этим необходимо:
+
+- Установить Docker;  
+- Установить IntelliJ IDEA Ultimate, как получить бесплатно на 30 дней;
+- В Intellij IDEA  установить плагин Docker.
+
+<p>----------------------------------------</p>
+Перед этим необходимо:
+
+- Установить <a href="https://www.docker.com/products/docker-desktop" target="_blank" rel="nofollow">Docker;</a>
+- Установить <a href="https://www.jetbrains.com/ru-ru/idea/" target="_blank" rel="nofollow">IntelliJ IDEA Ultimate</a>  как <a href="https://javarush.com/forum/346" target="_blank" rel="nofollow">получить бесплатно на 30 дней; </a>
+- В Intellij IDEA  установить плагин Docker.
+
+Например, вы создали Spring-Boot приложение с сущностью:
+<pre class="language-java line-numbers"><code>
+@Entity
+public class Person {
+
+    @Id
+    @Column
+    @GenericGenerator(name = "generator", strategy = "increment")
+    @GeneratedValue(generator = "generator")
+    Long id;
+
+    @Column
+    String name;
+
+//конструктор, геттеры, сеттеры
+}
+</code></pre>
+
+Что бы реализовать подключение к Postgres выполняем следующие шаги:
+
+1.	В pom.xml вставляем зависимость
+<pre class="language-java line-numbers"><code>
+&lt;!-- https://mvnrepository.com/artifact/org.postgresql/postgresql --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.postgresql&lt;/groupId&gt;
+    &lt;artifactId&gt;postgresql&lt;/artifactId&gt;
+    &lt;version&gt;42.3.1&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+
+2.	В корневой папке проекта создаем файл: <em>docker-compose.yaml</em> (на скриншотах опечатка)
+На картинке корневая папка <strong>java-rush-docker</strong>
+<img data-id="76d00a4b-f579-4651-9903-a6a5f8123416" src="https://cdn.javarush.com/images/article/76d00a4b-f579-4651-9903-a6a5f8123416/1024.jpeg" alt="Как развернуть Postgres в Docker и подключить ее к Spring-Boot приложению. - 1">
+
+Содержимое файла:
+<pre class="language-java line-numbers"><code>
+version: '3'
+
+services:
+  postgres:
+    image: 'postgres:13'
+    container_name: 'java-postgres'
+    ports:
+    - 5432:5432
+    environment:
+      - 'POSTGRES_USER=sa'
+      - 'POSTGRES_HOST_AUTH_METHOD=trust'
+      - 'POSTGRES_DB=java'
+</code></pre>
+
+На одной строке с <em>postgres:</em> будет зеленая стрелочка, ее надо нажать.
+В нижней части <em>IntelliJ IDEA</em> во вкладке <em>Services</em> будет отображаться процесс, после выполнения должна появиться запись:
+
+<em>Status: Downloaded newer image for postgres:13
+Creating java-postgres ... 
+'Compose: docker-compouse.yaml' has been deployed successfully.</em>
+
+Значит все хорошо.
+
+В левом окне появиться примерно следующее:
+<img data-id="2175b9fa-fc9c-431c-8bf8-cb087ca55123" src="https://cdn.javarush.com/images/article/2175b9fa-fc9c-431c-8bf8-cb087ca55123/1024.jpeg" alt="Как развернуть Postgres в Docker и подключить ее к Spring-Boot приложению. - 2">
+
+Это значит, что в сервисе <em>postgres</em> поднялся контейнер <em>java-postgres</em>. В папке <em>Images</em> должен быть образ <em>postgres 13</em>. 
+
+3.	В файле <em>application.yaml</em> (или <em>application.properties</em>) должны быть указаны следующие настройки:
+
+<pre class="language-java line-numbers"><code>
+spring:
+  datasource:
+    driverClassName: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: sa
+    password:
+
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+</code></pre>
+Теперь можно запускать Spring-Boot проект. 
+
+4.	После того как проект запустился настраиваем подключение:
+<img data-id="b4f92c95-2ba7-43de-9d32-714587eeacfa" src="https://cdn.javarush.com/images/article/b4f92c95-2ba7-43de-9d32-714587eeacfa/1024.jpeg" alt="Как развернуть Postgres в Docker и подключить ее к Spring-Boot приложению. - 3">
+
+Нажимаем вкладку <em>Database</em>, нажимаем «+» в выпавшем списке выбираем <em>Postgres</em>, в поле <em>user</em> вписываем имя пользователя (username: <em>sa</em>), проверяем есть ли коннекшен. Если все хорошо, то нажимаем <em>Apply</em> и <em>Ok</em>.
+
+ Появится следующее окно:
+<img data-id="deed0997-b51d-48f6-a76f-0dff59a4fbb2" src="https://cdn.javarush.com/images/article/deed0997-b51d-48f6-a76f-0dff59a4fbb2/1024.jpeg" alt="Как развернуть Postgres в Docker и подключить ее к Spring-Boot приложению. - 4">
+
+База данных развернута и подключена. 
+
+
+Если захотелось узнать больше про Docker:
+
+В этой <a href="https://javarush.com/groups/posts/3684-videouikend-105-znakomimsja-s-rabotoy-konteynerov-na-java-i-tipichnihmi-zadachami-dlja-dzhunior" target="_blank" rel="nofollow">статье</a> найдите видео про Docker и реализуйте то, что там показывается.
+Прочитайте <a href="https://habr.com/ru/company/ruvds/blog/438796/ " target="_blank" rel="nofollow">мануал по основам Docker.</a>
+Прихраните <a href="https://timeweb.com/ru/community/articles/osnovnye-komandy-docker" target="_blank" rel="nofollow">Основные команды Docker.</a> 
+
+

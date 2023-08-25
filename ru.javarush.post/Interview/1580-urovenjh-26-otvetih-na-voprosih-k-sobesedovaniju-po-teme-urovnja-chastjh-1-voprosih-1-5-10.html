@@ -1,0 +1,202 @@
+Уровень 26. Ответы на вопросы к собеседованию по теме уровня. Часть 1. Вопросы 1-5, 10.
+<p>----------------------------------------</p>
+Конспект получился довольно громоздким, поэтому разделил его на две части. Во второй части собраны ответы на вопросы касательно канкаренси и многопоточности. В первой части остальные...
+<p>----------------------------------------</p>
+
+<img data-id="466391e3-10bd-4454-8857-6a28e0975724" data-max-width="850" alt="Уровень 26. Ответы на вопросы к собеседованию по теме уровня. Часть 1. Вопросы 1-5, 10. - 1" src="https://cdn.javarush.com/images/article/466391e3-10bd-4454-8857-6a28e0975724/1024.jpeg"><em>Конспект получился довольно громоздким, поэтому разделил его на две части. Во <a href='https://javarush.com/groups/posts/1582-urovenjh-26-otvetih-na-voprosih-k-sobesedovaniju-po-teme-urovnja-chastjh-2-voprosih-6-9-11-12' target='_blank'>второй части</a> собраны ответы на вопросы касательно канкаренси и многопоточности. В первой части остальные.
+Написание далось довольно-таки тяжело. Многого все равно не понимаю, поэтому как всегда, комментарии, замечания, дополнения - приветствуются)</em>
+<h2>1. Как пользоваться интерфейсом Comparable?</h2>В интерфейсе <code>Comparable</code> объявлен всего один метод <code>compareTo(Object obj)</code>, предназначенный для реализации упорядочивания объектов класса. Его удобно использовать при сортировке упорядоченных списков или массивов объектов.
+
+Данный метод сравнивает вызываемый объект с <copde>obj</code>. В отличие от метода <code>equals</code>, который возвращает <em>true</em> или <em>false</em>, <code>compareTo</code> возвращает:
+<ul>
+    <li>0, если значения равны;</li>
+    <li>Отрицательное значение, если вызываемый объект меньше параметра;</li>
+    <li>Положительное значение ,  если вызываемый объект больше параметра.</li>
+</ul>Прежде всего он удобен для сортировки упорядоченных списков (<code>java.util.List</code>) и массивов объектов. Если список/массив содержит элементы, реализующие этот интерфейс, то они могут быть отсортированы автоматически методами <code>java.util.Collections.sort(List)/Arrays.sort(Object[])</code>.
+
+С интерфейсом <code>Comparable</code> связано понятие натурального упорядочивания, потому как он устанавливает натуральный порядок следования экземпляров любого класса, реализующего этот интерфейс. Иначе говоря, порядок (x, y) соответствует выполнению условия <code>x.compareTo(y) <= 0</code>.
+
+Правила реализации <code>Comparable</code>, а вернее, его метода <code>compareTo(Object)</code> следующие (x и y – экземпляры класса, реализующего <code>Comparable</code>):
+<ul>
+    <li><code>x.compareTo(y)</code> возвращает -1 или 1, если x должен находиться, соответственно, раньше или позже y. Если метод возвращает 0, то порядки (x, y) и (y, x) эквивалентны.</li>
+    <li>Если <code>sign(a)</code> – функция, возвращающая -1,0,1 для а, соответственно, меньше 0, равного 0 и больше 0, то должно выполняться равенство <code>sign(x.compareTo(y))==-sign(y.compareTo(x))</code>. Что логично: если x идет раньше y, то y должен идти позже x, и наоборот.</li>
+    <li>Если <code>x.compareTo(y) > 0</code> и <code>y.compareTo(z) > 0</code>, то <code>x.compareTo(z) > 0</code> – соотношение транзитивности неравенств.</li>
+    <li>Если <code>x.compareTo(y) == 0</code>, то <code>sign(x.compare(z)) == sign(y.compareTo(z))</code>, для любых z.</li>
+    <li>Вызов <code>x.compareTo(null)</code> должен бросать исключение <code>NullPointerException</code>. В этом есть расхождение с логикой реализации <code>equals</code> (напомню, <code>x.equals(null)</code> возвращает <em>false</em>).</li>
+    <li>Если y по своему типу не может быть сравнен с x, то вызов <code>x.compareTo(y)</code> должен бросать исключение <code>ClassCastException</code>.</li>
+    <li><code>(x.compareTo(y) == 0) == x.equals(y)</code>, т.е. вызов <code>x.compareTo(y)</code> должен возвращать 0 тогда и только тогда, когда <code>x.equals(y)</code> возвращает<em> true</em>. Это правило непротиворечивости, и его очень важно учитывать.</li> 
+</ul><strong>Источники:</strong>
+<ul>
+<li><a href='http://echuprina.blogspot.ru/2012/02/comparable-comparator.html' rel='nofollow' target='_blank'>Сортировка и упорядочивание. Интерфейсы Comparable и Comparator</a></li>
+<li><a href='http://www.skipy.ru/technics/objCompTh.html#comparable' rel='nofollow' target='_blank'>Упорядочивание – интерфейс java.lang.Comparable</a></li>
+</ul><h2>2. Как пользоваться интерфейсом Comparator?</h2>В интерфейсе <code>Comparator</code> объявлено два метода <code>compare(Object obj1, Object obj2)</code> и <code>equals(Object obj)</code>.
+
+При использовании интерфейса <code>Comparator</code>, логика сравнения пары объектов не прячется внутрь класса/объекта, а реализуется в отдельном классе.
+
+Метод <code>compare(x,y)</code> в точности соответствует по своей сути вызову <code>x.compareTo(y)</code>. Точно так же должны выполняться все правила, что и правила для реализации метода <code>compareTo(Object)</code> интерфейса <code>Comparable</code>.
+
+<code>Comparator</code> может использоваться в любом месте, где нужна сортировка. При этом, во-первых, появляется необходимая гибкость – возможность реализации нескольких правил сортировки. А во-вторых, сортируемые объекты могут не реализовывать интерфейс <code>Comparable</code>. В случае, если они его все-таки реализуют, <code>Comparator</code> имеет приоритет.
+
+Интерфейс <code>Comparator</code> определяет еще и метод <code>equals(Object)</code>, как это ни парадоксально. Этот метод служит для сравнения самих экземпляров интерфейса <code>Comparator</code> и должен возвращать <em>true</em> только в том случае, если сравниваемые объекты обеспечивают одинаковый порядок сортировки. Однако всегда безопасно оставлять исходную реализацию <code>Object.equals(Object)</code> нетронутой
+
+<strong>Источник:</strong>
+<ul>
+<li> <a href='http://echuprina.blogspot.com/2012/02/comparable-comparator.html' rel='nofollow' target='_blank'>Сортировка и упорядочивание. Интерфейсы Comparable и Comparator</a></li>
+<li><a href='http://www.skipy.ru/technics/objCompTh.html#comparable' rel='nofollow' target='_blank'>Упорядочивание – интерфейс java.lang.Comparable</a></li>
+</ul><h2>3. Какие методы есть у класса Collections?</h2><code><strong>public static &lt;T&gt; boolean addAll(Collection&lt;? super T&gt; c, T... elements)</strong></code>
+
+Метод добавляет элементы массива <code>elements</code> в коллекцию <code>Collection&lt;? super T&gt; c</code>. Элементы могут быть указаны по одиночке, либо как массив. Когда элементы указанны по отдельности данный метод предоставляет возможность удобно добавить все элементы в имеющуюся коллекцию:
+
+<code>Collections.addAll(flavors, "Peaches 'n Plutonium", "Rocky Racoon");</code>
+
+<code><strong>public static &lt;T&gt; int binarySearch(List&lt;? extends Comparable&lt;? super T&gt;&gt; list, T key)</strong></code>
+<code><strong>public static &lt;T&gt; int binarySearch(List&lt;? extends T&gt; list, T key, Comparator&lt;? super T&gt; c)</strong></code>
+
+Оба метода ищут в списке переданном в параметре объект переданный в параметре используя алгоритм двоичного поиска. Возвращают индекс элемента, если такой элемент в списке есть, иначе индекс первого элемента списка большего <code>key</code>, если все элементы меньше <code>key</code>, возвращает <code>list.size()</code>. 
+
+Перед использованием данных методов списки должны быть отсортированы. В первом случае отсортированы по возрастанию в "естественном" порядке следования элементов списка (такой же, как при использовании <code>Collections.sort(list)</code>). Во втором случае список должен быть отсортирован по возрастанию в порядке следования, который обеспечивает переданный компаратор (такой же порядок, как при использовании <code>Collections.sort(list, c)</code>[здесь "с" - компаратор из параметров описываемого метода])
+
+<code><strong>public static &lt;E&gt; Collection&lt;E&gt; checkedCollection(Collection&lt;E&gt; c, Class&lt;E&gt; type)</strong></code>
+
+<em>Преамбула: механизм дженериков в языке обеспечивает проверку типов во время компиляции. Обычно этого и достаточно, однако бывают случаи, когда все-таки нет. К примеру мы нашу коллекцию передаем в код библиотеки, куда-нибудь на сторону, нам неизвестную, и нам очень сильно хочется, чтоб код этой "third-party library" не вставил в нашу коллекцию элемент неправильного типа. Это вот возможная проблема номер 1. 
+
+Возможная проблема номер 2 следующая. Предположим наша программа выдает нам</em> <code>ClassCastException</code><em>, который оповещает нас о том, что в коллекцию был вставлен элемент неправильного типа. К сожалению данное исключение может вылететь в любой момент, после того, как неправильный элемент был вставлен, и обычно предоставляет нам совсем немного или вообще ноль информации об источнике проблемы.</em>
+
+Используя метод метод <code>checkedCollection</code> мы можем избавить себя от проблемы один и два, т.к. этот метод создает коллекцию проверяемую на этапе выполнения. 
+
+Решение проблемы номер два, с помощью данного метода:  К примеру мы имеем вот это, и у нас вываливается <code>ClassCastException</code>.
+
+<pre class='lang-java line-numbers'><code>
+Collection&lt;String&gt; c = new HashSet&lt;String&gt;();
+</code></pre>
+Код выше можно временно заменить на:
+
+<pre class='lang-java line-numbers'><code>
+Collection&lt;String&gt; c = Collections.checkedCollection(
+         new HashSet&lt;String&gt;(), String.class);
+</code></pre>
+При запуске программы снова мы локализуем строку кода, которая вставляет элемент неправильного типа в нашу коллекцию. 
+
+Родственные на мой взгляд методы: 
+
+<code><strong>public static &lt;E&gt; List&lt;E&gt; checkedList(List&lt;E&gt; list,Class&lt;E&gt; type)</strong></code>
+<code><strong>public static &lt;K,V&gt; Map&lt;K,V&gt; checkedMap(Map&lt;K,V&gt; m, Class&lt;K&gt; keyType,Class&lt;V&gt; valueType)</strong></code>
+<code><strong>public static &lt;E&gt; Set&lt;E&gt; checkedSet(Set&lt;E&gt; s,Class&lt;E&gt; type)</strong></code>
+<code><strong>public static &lt;K,V&gt; SortedMap&lt;K,V&gt; checkedSortedMap(SortedMap&lt;K,V&gt; m,Class&lt;K&gt; keyType,Class&lt;V&gt; valueType)</strong></code>
+<code><strong>public static &lt;E&gt; SortedSet&lt;E&gt; checkedSortedSet(SortedSet&lt;E&gt; s,Class&lt;E&gt; type)</strong></code>
+
+<code><strong>public static &lt;T&gt; void copy(List&lt;? super T&gt; dest,List&lt;? extends T&gt; src)</strong></code>
+
+Метод копирует элементы src в dest. индексы у копированных элементов будут совпадать. 
+
+<code><strong>public static &lt;T extends Object & Comparable&lt;? super T&gt;&gt; T min(Collection&lt;? extends T&gt; coll)</strong></code>
+<code><strong>public static &lt;T extends Object & Comparable&lt;? super T&gt;&gt; T max(Collection&lt;? extends T&gt; coll)</strong></code>
+<code><strong>public static &lt;T&gt; T min(Collection&lt;? extends T&gt; coll,Comparator&lt;? super T&gt; comp)</strong></code>
+<code><strong>public static &lt;T&gt; T max(Collection&lt;? extends T&gt; coll,Comparator&lt;? super T&gt; comp)</strong></code>
+
+методы возвращают минимальный\максимальный элемент в коллекции с точки зрения "естественного порядка"(интерфейс Comparable) либо порядка переданного компаратора.
+
+<code><strong>public static boolean disjoint(Collection&lt;?&gt; c1,Collection&lt;?&gt; c2)</strong></code>
+
+Возвращает <em>true</em> если у коллекций нет одинаковых элементов. 
+
+<code><strong>&lt;T&gt; List &lt;T&gt; emptyList(), &lt;K,V&gt; Map &lt;K,V&gt; emptyMap(),</strong></code>
+<code><strong>&lt;T&gt; Set &lt;T&gt; emptySet()</strong></code> – возвращают пустой список, карту отображения
+и множество соответственно;
+
+<code><strong>&lt;T&gt; void fill(List&lt;? super T&gt; list, T obj)</strong></code> – заполняет список заданным элементом ;
+
+<code><strong>int frequency(Collection&lt;?&gt; c, Object o)</strong></code> – возвращает количество вхождений в коллекцию заданного элемента;
+
+<code><strong>&lt;T&gt; List &lt;T&gt; nCopies(int n, T o)</strong></code> – возвращает список из <em>n</em> заданных элементов;
+
+<code><strong>&lt;T&gt; boolean replaceAll(List&lt;T&gt; list, T oldVal, T newVal)</strong></code> – заменяет все заданные элементы новыми;
+
+<code><strong>void reverse(List&lt;?&gt; list)</strong></code> – “переворачивает” список;
+
+<code><strong>void rotate(List&lt;?&gt; list, int distance)</strong></code> – сдвигает список циклически на заданное число элементов;
+
+<code><strong>void shuffle(List&lt;?&gt; list)</strong></code> – перетасовывает элементы списка;
+
+<code><strong>&lt;T&gt; Set &lt;T&gt; singleton(T o), singletonList(T o), singletonMap(K key, V value)</strong></code> – создают множество, список и карту отображения, состоящие из одного элемента;
+
+<code><strong>&lt;T extends Comparable&lt;? super T&gt;&gt; void sort(List&lt;T&gt; list),</strong></code>
+<code><strong>&lt;T&gt; void sort(List&lt;T&gt; list, Comparator&lt;? super T&gt; c)</strong></code> – сортировка списка, естественным порядком и используя <code>Comparator</code> соответственно;
+
+<code><strong>void swap(List&lt;?&gt; list, int i, int j)</strong></code> – меняет местами элементы списка стоящие на заданных позициях.
+
+<strong>Источники:</strong>
+<ul>
+<li><a href='http://crypto.pp.ua/2010/06/klass-collections-v-java/' rel='nofollow' target='_blank'>Класс Collections в Java</a></li>
+<li><a href='https://docs.oracle.com/javase/7/docs/api/java/util/Collections.html' rel='nofollow' target='_blank'>Class Collections</a></li>
+</ul><h2>4. Какие методы есть у класса Arrays?</h2>Полный перечень методов класса Arrays можно увидеть в <a href='https://docs.oracle.com/javase/7/docs/api/java/util/Arrays.html' rel='nofollow' target='_blank'>документации</a>. В данном конспекте приведу лишь некоторые из них. [переводил методы из документации, и к сожалению потерял большую часть своего перевода. Обидно, и тратить время на тоже самое не хочется, так что вставлю нагугленное]
+
+<code><strong>public static  &lt;T&gt;  List&lt;T&gt; asList(T... a)</strong></code>
+
+формирует список на основе массива. Массив при этом используется для внутреннего представления списка. Таким образом сохраняется связь между списком и исходным массивом:
+
+изменения в массиве отразятся на списке:
+
+<pre class='lang-java line-numbers'><code>
+String[] a = { "foo", "bar", "baz"};
+List&lt;String&gt; list = Arrays.asList(a);
+System.out.println(list); // [foo, bar, baz]
+
+a[0] = "aaa";
+System.out.println(list); // [aaa, bar, baz]
+</code></pre>
+изменения в списке отразятся на массиве:
+
+<pre class='lang-java line-numbers'><code>
+String[] a = { "foo", "bar", "baz"};
+List&lt;String&gt; list = Arrays.asList(a);
+System.out.println(list); // [foo, bar, baz]
+
+list.set(0, "bbb");
+System.out.println(Arrays.toString(a)); // [bbb, bar, baz]
+</code></pre>
+Если массив содержит объекты, очевидно, и массив и список будут ссылаться на одни и те же экземпляры:
+
+<pre class='lang-java line-numbers'><code>
+Object[] a = { new Object(), new Object(), new Object()};
+List&lt;Object&gt; list = Arrays.asList(a);
+System.out.println(a[0] == list.get(0)); // true
+</code></pre>
+<codE><strong>int binarySearch(параметры)</strong></code> – перегруженный метод организации бинарного поиска значения в массивах примитивных и объектных типов. Возвращает позицию первого совпадения;
+
+<code><strong>void fill(параметры)</strong></code> – перегруженный метод для заполнения массивов значениями различных типов и примитивами;
+
+<strong>void sort(параметры)</strong> – перегруженный метод сортировки массива или его части с использованием интерфейса Comparator и без него;
+
+<code><strong>static &lt;T&gt; T[] copyOf(T[] original, int newLength)</strong></code> –заполняет массив определенной длины, отбрасывая элементы или заполняя null при необходимости;
+
+<code><strong>static &lt;T&gt; T[] copyOfRange(T[] original, int from, int to)</strong></code> – копирует заданную область массива в новый массив;
+
+<code><strong>&lt;T&gt; List&lt;T&gt; asList(T… a)</strong></code> – метод, копирующий элементы массива в объект типа List&lt;T&gt;.
+
+<strong>Источник:</strong>
+<ul>
+<li><a href='http://crypto.pp.ua/2010/06/klass-arrays-v-java/' rel='nofollow' target='_blank'>Класс Arrays в java</a></li>
+</ul><h2>5. Как называется сортировка, которая используется при вызове Collections.sort()?</h2><a href='https://docs.oracle.com/javase/7/docs/api/java/util/Collections.html#sort(java.util.List)' rel='nofollow' target='_blank'>Из документации</a>:
+Реализация является адаптированным вариантом сортировки списка для Python Тима Петерса (TimSort). Данная реализация сбрасывает список в массив, сортирует массив, затем проходит по списку и перезагружает каждый элемент списка из соответствующего элемента массива. Это позволяет избежать сложности n*n log(n), которая возникла бы при попытки отсортировать связный список напрямую
+
+<a href='https://ru.wikipedia.org/wiki/Timsort' rel='nofollow' target='_blank'>Из вики</a>:
+Timsort — гибридный алгоритм сортировки, сочетающий сортировку вставками и сортировку слиянием, опубликованный в 2002 году Тимом Петерсом. В настоящее время Timsort является стандартным алгоритмом сортировки в Python, OpenJDK 7 и реализован в Android JDK 1.5. Основная идея алгоритма в том, что в реальном мире сортируемые массивы данных часто содержат в себе упорядоченные подмассивы. На таких данных Timsort существенно быстрее многих алгоритмов сортировки.
+<h2>10. Что такое итератор?</h2>Представленный в релизе JDK 1.2 языка Java интерфейс <code>java.util.Iterator</code> обеспечивает итерацию контейнерных классов. Каждый Iterator реализует методы <code>next()</code> и <code>hasNext()</code> и дополнительно может поддерживать метод <code>remove()</code>. Итераторы создаются соответствующими контейнерными классами, как правило методом <code>iterator()</code>.
+
+Метод <code>next()</code> переводит итератор на следующее значение и возвращает указываемое значение итератору. При первоначальном создании итератор указывает на специальное значение, находящееся перед первым элементом, поэтому первый элемент можно получить только после первого вызова <code>next()</code>. Для определения момента, когда все элементы в контейнере были перебраны, используется тестовый метод <code>hasNext()</code>. Следующий пример демонстрирует простое использование итераторов:
+
+<pre class='lang-java line-numbers'><code>
+Iterator iter = list.iterator();
+//Iterator&lt;MyType&gt; iter = list.iterator(); в J2SE 5.0
+while (iter.hasNext())
+    System.out.println(iter.next());
+</code></pre>
+Для коллекции типов, поддерживающей подобное, метод итератора <code>remove()</code> удаляет последний 'посещенный' элемент из контейнера. Почти все остальные типы модификации контейнера во время итерации являются небезопасными.
+
+Кроме того, для <code>java.util.List</code> существует <code>java.util.ListIterator</code> со схожим API, но позволяющем прямую и обратную итерации, обеспечивая определение текущего индекса в списке и переход к элементу по его позиции.
+
+<strong>Источник:</strong>
+<ul>
+<li><a href='https://ru.wikipedia.org/wiki/%D0%98%D1%82%D0%B5%D1%80%D0%B0%D1%82%D0%BE%D1%80#Java' rel='nofollow' target='_blank'>https://ru.wikipedia.org/wiki/%D0%98%D1%82%D0%B5%D1%80%D0%B0%D1%82%D0%BE%D1%80#Java</a></li>
+</ul><a href='https://javarush.com/groups/posts/1582-urovenjh-26-otvetih-na-voprosih-k-sobesedovaniju-po-teme-urovnja-chastjh-2-voprosih-6-9-11-12' target='_blank'>Часть 2</a>

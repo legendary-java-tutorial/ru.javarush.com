@@ -1,0 +1,209 @@
+Работа с методами hashCode() и equals() в языке Java
+<p>----------------------------------------</p>
+В этом посте я изложу свое понимание методов hashCode() и equals(). Я хочу рассказать об их реализации по умолчанию, а также о том как корректно переопределить их. Я также напишу о реализации этих методов, используя Apache Common package’s вспомогательные классы ...
+<p>----------------------------------------</p>
+В этом посте я изложу свое понимание методов <code>hashCode()</code> и <code>equals()</code>. Я хочу рассказать об их реализации по умолчанию, а также о том как корректно переопределить их. Я также напишу о реализации этих методов, используя Apache Common package’s вспомогательные классы.
+<img data-id="27f0db45-7c24-4d76-832e-88f203cd1300" data-max-width="850" alt="Работа с методами hashCode() и equals() в языке Java - 1" src="https://cdn.javarush.com/images/article/27f0db45-7c24-4d76-832e-88f203cd1300/1024.jpeg"><strong>Содержание этого поста:</strong>
+<ol>
+<li>Использование <code>hashCode()</code> и <code>equals()</code>.</li>
+<li>Переопределение поведения по умолчанию.</li>
+<li>Переопределение <code>hashCode()</code> и <code>equals()</code>, используя Apache Commons Lang.</li>
+<li>То, что важно помнить.</li>
+<li>Особое Внимание При Использовании ORM.</li>
+</ol>Методы <code>hashCode()</code> и <code>equals()</code> были определены в классе <code>Object</code>, который является родительским классом для объектов java. Поэтому все java объекты наследуют от этих методов реализацию по умолчанию.<h2>Использование hashCode() и equals()</h2>Метод <code>hashCode()</code> используется для получения уникального целого номера для данного объекта. Когда необходимо сохранить объект как структуру данных в некой хэш-таблице (такой объект также называют корзиной — bucket), этот номер используется для определения его местонахождения в этой таблице. По умолчанию, метод <code>hashCode()</code> для объекта возвращает номер ячейки памяти, где объект сохраняется.
+
+Метод <code>equals()</code>, как  и следует из его названия, используется для простой проверки равенства двух объектов. Реализация этого метода  по умолчанию просто проверяет по ссылкам два объекта на предмет их эквивалентности.
+<h2>Переопределение поведения по умолчанию</h2>Все работает отлично до тех пор, пока вы не переопределяете ни один из этих методов в своих классах. Но иногда в приложениях необходимо изменять поведение по умолчанию  некоторых объектов.
+
+Давайте возьмем пример, где в вашем приложении имеется объект <code>Employee</code>. Давайте напишем минимально возможную структуру такого класса.
+
+<pre class='lang-java line-numbers'><code>
+public class Employee
+{
+    private Integer id;
+    private String firstname;
+    private String lastName;
+    private String department;
+
+    public Integer getId() {
+        return id;
+    }
+    public void setId(Integer id) {
+        this.id = id;
+    }
+    public String getFirstname() {
+        return firstname;
+    }
+    public void setFirstname(String firstname) {
+        this.firstname = firstname;
+    }
+    public String getLastName() {
+        return lastName;
+    }
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+    public String getDepartment() {
+        return department;
+    }
+    public void setDepartment(String department) {
+        this.department = department;
+    }
+}
+</code></pre>
+Описанный выше класс <code>Employee</code> имеет некоторые основные атрибуты и методы доступа. Сейчас рассмотрим простую ситуацию, где необходимо сравнить два объекта класса <code>Employee</code>.
+
+<pre class='lang-java line-numbers'><code>
+public class EqualsTest {
+    public static void main(String[] args) {
+        Employee e1 = new Employee();
+        Employee e2 = new Employee();
+
+        e1.setId(100);
+        e2.setId(100);
+        //Печатает false в консоли
+        System.out.println(e1.equals(e2));
+    }
+}
+</code></pre>
+Не нужно быть ясновидящим, чтобы догадаться, что написанный выше метод вернет “false”. Но правильно ли это на самом деле, учитывая, что эти оба объекта одинаковые? В real time application метод должен вернуть true.
+
+Чтобы достигнуть корректного поведения, нам нужно переопределить метод <code>equals()</code>, как и сделано ниже:
+
+<pre class='lang-java line-numbers'><code>
+public boolean equals(Object o) {
+        if(o == null)
+        {
+            return false;
+        }
+        if (o == this)
+        {
+           return true;
+        }
+        if (getClass() != o.getClass())
+        {
+            return false;
+        }
+        Employee e = (Employee) o;
+        return (this.getId() == e.getId());
+}
+</code></pre>
+Добавьте этот метод в свой класс <code>Employee</code>, и проверка на эквивалентность вернет “true”. Однако, всё ли мы сделали? Пока нет. Давайте проверим наш модифицированный класс еще одним способом.
+
+<pre class='lang-java line-numbers'><code>
+import java.util.HashSet;
+import java.util.Set;
+
+public class EqualsTest
+{
+    public static void main(String[] args)
+    {
+        Employee e1 = new Employee();
+        Employee e2 = new Employee();
+
+        e1.setId(100);
+        e2.setId(100);
+
+        //Печатает 'true'
+        System.out.println(e1.equals(e2));
+
+        Set employees = new HashSet();
+        employees.add(e1);
+        employees.add(e2);
+        //Печатает два объекта
+        System.out.println(employees);
+    }
+}
+</code></pre>
+Команда <code>System.out.println(employee)</code> распечатывает два объекта. Если оба объекта были эквивалентны, а в <code>Set</code> содержатся только уникальные объекты, то внутри <code>HashSet</code> должен быть только один экземпляр, т.е. оба объекта ссылаются на одинаковые экземпляры класса <code>Employee</code>. Что же мы упустили? 
+
+Мы упустили второй важный метод <code>hashCode()</code>. Как сказано в документации java, если вы  переопределяете метод <code>equals()</code>, то вы обязаны переопределить метод <code>hashCode()</code>. Итак, давайте добавим ещё один метод в наш класс <code>Employee</code>.
+
+<pre class='lang-java line-numbers'><code>
+@Override
+ public int hashCode()
+ {
+    final int PRIME = 31;
+    int result = 1;
+    result = PRIME * result + getId();
+    return result;
+ }
+</code></pre>
+Мы добавили один раз этот метод в наш класс, и на печать будет выведен только один объект, и, таким образом, проверка эквивалентности е1 и е2 показала true. 
+<h2>Переопределение <code>hashCode()</code> и <code>equals()</code>, используя Apache Commons Lang</h2>Apache Commons предоставляет два замечательных вспомогательных класса для вызова методов <code>hashCode()</code> и <code>equals()</code>. Ниже смотрим использование:
+
+<pre class='lang-java line-numbers'><code>
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+public class Employee
+{
+ private Integer id;
+ private String firstname;
+ private String lastName;
+ private String department;
+public Integer getId() {
+    return id;
+ }
+ public void setId(Integer id) {
+    this.id = id;
+ }
+ public String getFirstname() {
+    return firstname;
+ }
+ public void setFirstname(String firstname) {
+    this.firstname = firstname;
+ }
+ public String getLastName() {
+    return lastName;
+ }
+ public void setLastName(String lastName) {
+    this.lastName = lastName;
+ }
+ public String getDepartment() {
+    return department;
+ }
+ public void setDepartment(String department) {
+    this.department = department;
+ }
+@Override
+ public int hashCode()
+ {
+    final int PRIME = 31;
+    return new HashCodeBuilder(getId()%2==0?getId()+1:getId(), PRIME).
+           toHashCode();
+ }
+@Override
+ public boolean equals(Object o) {
+    if (o == null)
+       return false;
+    if (o == this)
+       return true;
+    if (o.getClass() != getClass())
+       return false;
+    Employee e = (Employee) o;
+       return new EqualsBuilder().
+              append(getId(), e.getId()).
+              isEquals();
+    }
+ }
+</code></pre>
+С другой стороны,  если вы используете один из редакторов кода, они также должны быть способны вызывать некоторые хорошие структуры для вас. Например, если в Eclipse IDE кликнуть правой клавишей на <em>class >> sourse > Generating hashCode() and equals() …</em> будет сгенерирована очень хорошая реализация для вас. 
+<img data-id="d56dbce5-b4b8-4f42-a7d5-7c64f833f10c" data-max-width="300" alt="Работа с методами hashCode() и equals() в языке Java - 2" src="https://cdn.javarush.com/images/article/d56dbce5-b4b8-4f42-a7d5-7c64f833f10c/1024.jpeg"><strong>То, что важно помнить.</strong>
+<ol>
+<li>Всегда используйте те же атрибуты объекта для вызова  и <code>hashCode()</code> и <code>equals()</code>. Как раз в нашем случае, мы использовали <code>employee id</code>.</li>
+<li>Метод <code>equals()</code> должен быть устойчивым (если объект не изменялся, метод должен возвращать то же самое значение).</li>
+<li>Всякий раз, когда <code>a.equals(b)</code>, то <code>a.hashCode()</code> должно быть таким же, как <code>b.hashCode()</code>.</li>
+<li>Если вы переопределили один метод, то обязательно должны переопределить второй.</li>
+</ol><h2>Особое Внимание При Использовании ORM</h2>Если вы имеете дело с ORM (ru.wikipedia.org/wiki/ORM), то всегда используйте геттеры и никогда не используйте в <code>hashCode()</code> и <code>equals()</code> ссылки на поля. Это потому, что в ORM, время от времени поля загружаются при помощи отложенной загрузки (lazy load) и не доступны, пока не вызваны их геттеры.
+
+Например, в нашем классе <code>Employee</code>, мы используем <code>e1.id == e2.id</code>. Вполне возможно, что поля <code>i</code>d загружены с помощью отложенной загрузки. Одно из полей может быть равно 0 или null и мы получим некорректное поведение.
+
+Но, если используется <code>e1.getId() == e2.getId()</code>, мы можем быть уверены, даже если поля были загружены с помощью отложенной загрузки; вызов геттера первым заполнит поле.
+
+Это всё, что я знаю о методах <code>hashCode()</code> и <code>equals()</code>. Надеюсь, что это где-нибудь кому-нибудь поможет.
+
+Удачи в учебе!!
+
+p.s. Это моя первая попытка перевода. Постаралась передать всё как можно ближе к тому, что хотел сказать автор. Если есть замечания, пожалуйста, напишите в комментариях. Строго не судите :-)))
+
+<a href='http://howtodoinjava.com/2012/10/09/working-with-hashcode-and-equals-methods-in-java/' rel='nofollow' target='_blank'>Oригинал статьи</a>

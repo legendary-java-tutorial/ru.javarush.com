@@ -1,0 +1,476 @@
+Сохранение файлов в приложение и данных о них на БД
+<p>----------------------------------------</p>
+Сегодня мы рассмотрим работу с файлами, так как в наше время уже и не встретить сайта, который не взаимодействует с ними (например всякие там веб-шопы, соцсети и так далее). Обзор будет проводиться на примере методов upload/download/delete, сохранять мы будем в папку...
+<p>----------------------------------------</p>
+
+<img data-max-width="650" alt="Сохранение файлов в приложение и данных о них на БД - 1" src="https://cdn.javarush.com/images/article/7684bcd1-f565-4884-89ac-a26df969e65a/original.jpeg">
+Давай представим, что ты работаешь над своим веб-приложением. В своих статьях я рассматриваю отдельные кусочки этой мозаики, как например:
+<ul>
+<li><a href="https://javarush.com/groups/posts/2414-integracionnoe-testirovanie-bd-s-pomojshjhju-mariadb-dlja-podmenih-mysql" target="_blank">Интеграционное тестирование БД с помощью MariaDB для подмены MySql</a></li>
+<li><a href="https://javarush.com/groups/posts/2436-realizacija-muljhtijazihchnosti-prilozhenija" target="_blank">Реализация мультиязычности приложения</a></li>
+</ul>Чем эти темы полезны? А тем, что эти примеры очень близки к работе над реальными проектами, и прощупать эти темы будет ну очень полезно для тебя.
+
+Сегодня мы возьмём следующий кусочек данной мозаики — работу с файлами, так как в наше время уже и не встретить сайта, который не взаимодействует с ними (например всякие там веб-шопы, соцсети и так далее).
+
+Обзор будет проводиться на примере методов <span class="text-bold">upload/download/delete</span>, сохранять мы будем в папку (в resource) в нашем приложении, чтобы не усложнять.
+<img data-max-width="450" alt="Сохранение файлов в приложение и данных о них на БД - 2" src="https://cdn.javarush.com/images/article/1579a969-bdf3-4aa3-8753-7bd460c2b045/original.jpeg">Задумка состоит в том, что мы будем сохранять, помимо самого файла в наше так называемое file storage (хранилище), сущность с информацией о нашем файле (size, name и т.д.) в нашу БД — предварительно созданную таблицу.
+
+То есть при загрузке файла нам эта сущность очень даже пригодится, ну и при delete о ней нельзя никоим образом забывать.
+
+Пробежимся взглядом по  этой таблице:
+<img data-max-width="650" alt="Сохранение файлов в приложение и данных о них на БД - 3" src="https://cdn.javarush.com/images/article/8b53c204-7815-4d69-8a45-10052b705e0e/original.jpeg">И давайте уже как взрослые поставим на id AUTO_INCREMENT, для автогенерирования индефикатора на уровне БД.
+
+Для начала взглянем на нашу структуру:
+<img data-max-width="300" alt="Сохранение файлов в приложение и данных о них на БД - 4" src="https://cdn.javarush.com/images/article/6de35712-07fe-4d4f-afed-88ba27358494/original.jpeg">Сущность под продемонстрированную выше таблицу:
+
+<pre class="lang-java line-numbers"><code>
+@Builder(toBuilder = true)
+@Getter
+@ToString
+public class FileInfo {
+
+   private Long id;
+
+   private String name;
+
+   private Long size;
+
+   private String key;
+
+   private LocalDate uploadDate;
+}
+</code></pre><h2>Upload</h2>Смотрим контроллер:
+
+<pre class="lang-java line-numbers"><code>
+@RestController
+@RequestMapping("/file")
+@RequiredArgsConstructor
+public class FileController {
+
+   private final FileService fileService;
+
+   @PostMapping
+   public ResponseEntity&lt;FileInfo&gt; upload(@RequestParam MultipartFile attachment) {
+       try {
+           return new ResponseEntity&lt;&gt;(fileService.upload(attachment), HttpStatus.CREATED);
+       } catch (IOException e) {
+           return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);
+       }
+   }
+</code></pre>
+Из интересного:
+
+9 — Принимаем файл в виде <code>MultipartFile</code>. Можно принимать и в виде массива байтов, но этот вариант мне нравится больше, так как мы с <code>MultipartFile</code> можем вытягивать различные свойства переданного файла.
+10 - 14 — оборачиваем наши действия в <code>try catch</code>, чтобы если на более низком уровне возникнет исключение, мы его пробросили выше и отправили 400 ошибку ответом.
+
+Далее — уровень сервиса:
+
+<pre class="lang-java line-numbers"><code>
+public interface FileService {
+
+   FileInfo upload(MultipartFile resource) throws IOException;
+</code></pre>
+Смотрим реализацию:
+
+<pre class="lang-java line-numbers"><code>
+@Service
+@RequiredArgsConstructor
+public class FileServiceImpl implements FileService {
+
+   private final FileDAO fileDAO;
+   private final FileManager fileManager;
+
+   @Transactional(rollbackFor = {IOException.class})
+   @Override
+   public FileInfo upload(MultipartFile resource) throws IOException {
+       String key = generateKey(resource.getName());
+       FileInfo createdFile = FileInfo.builder()
+               .name(resource.getOriginalFilename())
+               .key(key)
+               .size(resource.getSize())
+               .build();
+       createdFile = fileDAO.create(createdFile);
+       fileManager.upload(resource.getBytes(), key);
+
+       return createdFile;
+   }
+</code></pre>
+8 — в случае падения IOException, все наши сохранения в БД откатятся.
+11 — генерируем ключ, который будет уникальным для файла, когда он будет соохранен (даже если будут сейвиться два файла с одинаковыми именами, путаницы не возникнет).
+12 — строим сущность для сохранения в БД.
+17 — загоняем сущность с инфой в БД.
+18 — сохраняем файл с за хешированным именем.
+20 — возвращаем созданую сущность <code>FileInfo</code>, но со сгенерированным id в БД (об этом речь пойдёт чуть ниже) и датой создания.
+
+Метод генерации ключа к файлу:
+
+<pre class="lang-java line-numbers"><code>
+private String generateKey(String name) {
+   return DigestUtils.md5Hex(name + LocalDateTime.now().toString());
+}
+</code></pre>
+Здесь мы хешируем имя + дата создания, что и обеспечит нам уникальность.
+
+Интерфейс dao слоя:
+
+<pre class="lang-java line-numbers"><code>
+public interface FileDAO {
+
+   FileInfo create(FileInfo file);
+</code></pre>
+Его имплементация:
+
+<pre class="lang-java line-numbers"><code>
+@Repository
+@RequiredArgsConstructor
+public class FileDAOImpl implements FileDAO {
+
+   private static final String CREATE_FILE = "INSERT INTO files_info(file_name, file_size, file_key, upload_date) VALUES (?, ?, ?, ?)";
+
+   private final JdbcTemplate jdbcTemplate;
+
+   @Override
+   public FileInfo create(final FileInfo file) {
+       LocalDate uploadDate = LocalDate.now();
+       GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
+       jdbcTemplate.update(x -&gt; {
+           PreparedStatement preparedStatement = x.prepareStatement(CREATE_FILE, Statement.RETURN_GENERATED_KEYS);
+           preparedStatement.setString(1, file.getName());
+           preparedStatement.setLong(2, file.getSize());
+           preparedStatement.setString(3, file.getKey());
+           preparedStatement.setDate(4, Date.valueOf(uploadDate));
+           return preparedStatement;
+       }, keyHolder);
+
+       return file.toBuilder()
+               .id(keyHolder.getKey().longValue())
+               .uploadDate(uploadDate)
+               .build();
+   }
+</code></pre>
+11 — создаём дату которую и сохраним.
+12 - 21 — сохраняем  сущность, но более сложным путем, с явным созданием объекта <code>PreparedStatement</code>, чтобы можно было вытащить сгенерированный id (он его вытягивает не отдельным запросом, а в виде ответных метаданных).
+22 - 26 — достраиваем нашу многострадальную сущность и отдаем наверх (на самом деле он его не достраивает, а создаёт новый объект, заполняя переданные поля и копируя остальные с изначального).
+
+Давайте посмотрим, как будут сохраняться наши файлы в <code>FileManager</code>:  
+
+<pre class="lang-java line-numbers"><code>
+public void upload(byte[] resource, String keyName) throws IOException {
+   Path path = Paths.get(DIRECTORY_PATH, keyName);
+   Path file = Files.createFile(path);
+   FileOutputStream stream = null;
+   try {
+       stream = new FileOutputStream(file.toString());
+       stream.write(resource);
+   } finally {
+       stream.close();
+   }
+}
+</code></pre>
+1 — принимаем файл в виде массива байтов и отдельно имя, под которым он будет сохранен (наш сгенерированный ключ).
+2 - 3 — создаем путь (а в пути прописываем путь плюс наш ключ) и файл по нему.
+6 - 7 — создаем поток и пишем туда наши байты (и оборачиваем это все добро в <code>try-finally</code> чтобы быть уверенными, что поток точно закроется).
+
+Тем не менее, многие из методов могут нам выкинуть IOException. В таком случае, благодаря прописанной в шапке метода проброске, мы прокинем его в контроллер и отдадим 400 статус.
+
+Давайте протестируем все это дело в Postman:
+<img data-max-width="650" alt="Сохранение файлов в приложение и данных о них на БД - 5" src="https://cdn.javarush.com/images/article/5de83ca8-5179-4f19-8b5a-fe45b25b9859/original.jpeg">Как видим, все отлично, ответ 201, ответный JSON пришел в виде нашей сохраняемой сущности в БД, и если заглянем в наше хранилище:
+
+БД:
+<img data-max-width="650" alt="Сохранение файлов в приложение и данных о них на БД - 6" src="https://cdn.javarush.com/images/article/881e3d68-6f40-44e5-b6d6-bae453bcdd26/original.jpeg">увидим, что у нас появилось новое значение. (=*;*=)
+<h2>Download</h2>Controller:
+
+<pre class="lang-java line-numbers"><code>
+@GetMapping(path = "/{id}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+public ResponseEntity&lt;Resource&gt; download(@PathVariable("id") Long id) {
+   try {
+       FileInfo foundFile = fileService.findById(id);
+       Resource resource = fileService.download(foundFile.getKey());
+       return ResponseEntity.ok()
+               .header("Content-Disposition", "attachment; filename=" + foundFile.getName())
+               .body(resource);
+   } catch (IOException e) {
+       return new ResponseEntity&lt;&gt;(HttpStatus.NOT_FOUND);
+   }
+}
+</code></pre>
+Так же оборачиваем в <code>try-catch</code> и в случае IOException отправляем 404 статус ответа (не найдено).
+
+4 — вытягиваем из БД прилежащую сущность FileInfo.
+5 — по ключу из сущности скачиваем файл
+6-8 — отправляем назад файл, при этом добавив в хедер имя файла (опять же, полученное из сущности с информацией о файле).
+
+Давайте посмотрим глубже.
+
+Интерфейс сервиса: 
+
+<pre class="lang-java line-numbers"><code>
+Resource download(String key) throws IOException;
+
+FileInfo findById(Long fileId);
+</code></pre>
+Реализация:
+
+<pre class="lang-java line-numbers"><code>
+@Override
+public Resource download(String key) throws IOException {
+   return fileManager.download(key);
+}
+
+@Transactional(readOnly = true)
+@Override
+public FileInfo findById(Long fileId) {
+   return fileDAO.findById(fileId);
+}
+</code></pre>
+Тут особо интересного ничего нет: метод поиска сущности по id и загрузка файла, разве что 46 — помечаем, что транзакция у нас для чтения.
+
+Уровень dao:
+
+<pre class="lang-java line-numbers"><code>
+FileInfo findById(Long fileId);
+</code></pre>
+Имплементация:
+
+<pre class="lang-java line-numbers"><code>
+private static final String FIND_FILE_BY_ID = "SELECT id, file_name, file_size, file_key, upload_date FROM files_info WHERE id = ?";
+
+@Override
+public FileInfo findById(Long fileId) {
+   return jdbcTemplate.queryForObject(FIND_FILE_BY_ID, rowMapper(), fileId);
+}
+
+private RowMapper&lt;FileInfo&gt; rowMapper() {
+   return (rs, rowNum) -&gt; FileInfo.builder()
+           .id(rs.getLong("id"))
+           .name(rs.getString("file_name"))
+           .size(rs.getLong("file_size"))
+           .key(rs.getString("file_key"))
+           .uploadDate(rs.getObject("upload_date", LocalDate.class))
+           .build();
+}
+</code></pre>
+4 — поиск по id c использованием <code>jdbcTemplate</code> и <code>RowMapper</code>.
+8 - 15 — реализация <code>RowMapper</code> для нашего конкретного случая, для сопоставления данных из БД и полей модели.
+
+Идем в <code>FileManager</code> и смотрим, как загружается наш файл:
+
+<pre class="lang-java line-numbers"><code>
+public Resource download(String key) throws IOException {
+   Path path = Paths.get(DIRECTORY_PATH + key);
+   Resource resource = new UrlResource(path.toUri());
+   if (resource.exists() || resource.isReadable()) {
+       return resource;
+   } else {
+       throw new IOException();
+   }
+}
+</code></pre>
+Возвращаем файл в виде объекта <code>Resource</code>, а искать будем по ключу.
+
+3 — создаем <code>Resource</code> по пути  + ключ.
+4 - 8 — проверяем, что файл по заданному пути не пуст и читаем. Если всё ОК, возвращаем его, а если нет, прокидываем IOException наверх.
+
+Проверяем наш метод в Postman:
+<img data-max-width="650" alt="Сохранение файлов в приложение и данных о них на БД - 7" src="https://cdn.javarush.com/images/article/931e2732-e166-46b3-8f30-361e203f8815/original.jpeg">Как видим, он отработал на ОК))
+<h2>Delete</h2><pre class="lang-java line-numbers"><code>
+@DeleteMapping(value = "/{id}")
+public ResponseEntity&lt;Void&gt; delete(@PathVariable("id") Long id) {
+   try {
+       fileService.delete(id);
+       return new ResponseEntity&lt;&gt;(HttpStatus.OK);
+   } catch (IOException e) {
+       return new ResponseEntity&lt;&gt;(HttpStatus.NOT_FOUND);
+   }
+}
+</code></pre>
+Тут ничего особенного: также возвращаем 404 в случае неудачи с помощью <code>try-catch</code>.
+
+Интерфейс сервиса:
+
+<pre class="lang-java line-numbers"><code>
+void delete(Long fileId) throws IOException;
+</code></pre>
+Implementation:
+
+<pre class="lang-java line-numbers"><code>
+@Transactional(rollbackFor = {IOException.class})
+@Override
+public void delete(Long fileId) throws IOException {
+   FileInfo file = fileDAO.findById(fileId);
+   fileDAO.delete(fileId);
+   fileManager.delete(file.getKey());
+}
+</code></pre>
+1 — также откат изменения данных (удаления) при падении IOException.
+5 — удаляем информацию о файле из БД.
+6 — удаляем сам файл из нашего “хранилища”.
+
+Интерфейс dao:
+
+<pre class="lang-java line-numbers"><code>
+void delete(Long fileId);
+</code></pre>
+Реализация:
+
+<pre class="lang-java line-numbers"><code>
+private static final String DELETE_FILE_BY_ID = "DELETE FROM files_info WHERE id = ?";
+
+@Override
+public void delete(Long fileId) {
+   jdbcTemplate.update(DELETE_FILE_BY_ID, fileId);
+}
+</code></pre>
+Ничего такого — просто delete.
+
+Удаление самого файла:
+
+<pre class="lang-java line-numbers"><code>
+public void delete(String key) throws IOException {
+       Path path = Paths.get(DIRECTORY_PATH + key);
+       Files.delete(path);
+   }
+}
+</code></pre>
+Юзаем в Postman:
+<img data-max-width="650" alt="Сохранение файлов в приложение и данных о них на БД - 8" src="https://cdn.javarush.com/images/article/40a0caa1-e30f-4cd2-ae54-6e5cc93bd5b2/original.jpeg">Смотрим в хранилище:
+<img data-max-width="350" alt="Сохранение файлов в приложение и данных о них на БД - 9" src="https://cdn.javarush.com/images/article/ded6a3ec-dda4-42cf-a815-4f15b4c30823/original.jpeg">Пусто :) Теперь в БД:
+<img data-max-width="550" alt="Сохранение файлов в приложение и данных о них на БД - 10" src="https://cdn.javarush.com/images/article/216eb83e-a8b0-4a52-b3b2-8bba20c18140/original.jpeg">Видим, что все good))
+<h2>Test</h2>Давайте попробуем написать тест под наш <code>FileManager</code>. Для начала взглянем на структуру тестовой части:
+mockFile.txt — это файл, с помощью которого мы будем тестить наши операции с file storage. testFileStorage будет заменой нашего хранилища.
+
+<code>FileManagerTest</code>:
+
+<pre class="lang-java line-numbers"><code>
+public class FileManagerTest {
+
+   private static MultipartFile multipartFile;
+
+   private static FileManager manager;
+
+   private static FileInfo file;
+
+   @BeforeClass
+   public static void prepareTestData() throws IOException {
+       file = FileInfo.builder()
+               .id(9L)
+               .name("mockFile.txt")
+               .key("mockFile.txt")
+               .size(38975L)
+               .uploadDate(LocalDate.now())
+               .build();
+       multipartFile = new MockMultipartFile("mockFile", "mockFile.txt", "txt",
+               new FileInputStream("src/test/resources/mockFile.txt"));
+       manager = new FileManager();
+   }
+</code></pre>
+Здесь мы видим задание тестовых данных.
+
+Тест сохранения файла:
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void uploadTest() throws IOException {
+   ReflectionTestUtils.setField(manager, "DIRECTORY_PATH", "src/test/resources/testFileStorage/");
+
+   manager.upload(multipartFile.getBytes(), "mockFile.txt");
+
+   Path checkFile = Paths.get("src/test/resources/testFileStorage/mockFile.txt");
+   assertThat(Files.exists(checkFile)).isTrue();
+   assertThat(Files.isRegularFile(checkFile)).isTrue();
+   assertThat(Files.size(checkFile)).isEqualTo(multipartFile.getSize());
+   Files.delete(checkFile);
+}
+</code></pre>
+3 — с помощью тестовой рефлексии меняем нашу константу в сервисе для задания пути сохранения файла.
+5 — вызываем проверяемый метод.
+7 - 10 — проверяем правильность исполнения сохранения.
+11 — удаляем сохраненный файл (мы не должны оставить никаких следов).
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void downloadTest() throws IOException {
+   ReflectionTestUtils.setField(manager, "DIRECTORY_PATH", "src/test/resources/");
+
+   Resource resource = manager.download(file.getKey());
+
+   assertThat(resource.isFile()).isTrue();
+   assertThat(resource.getFilename()).isEqualTo(file.getName());
+   assertThat(resource.exists()).isTrue();
+}
+</code></pre>
+Тест загрузки файла:
+
+3 — опять же, меняем путь для нашего <code>FileManager</code>.
+5 — юзаем проверяемый метод.
+7 - 9 — проверяем результат исполнения.
+
+Тест удаления файла:
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void deleteTest() throws IOException {
+   Path checkFile = Paths.get("src/test/resources/testFileStorage/mockFile.txt");
+   Files.createFile(checkFile);
+   assertThat(Files.exists(checkFile)).isTrue();
+   assertThat(Files.isRegularFile(checkFile)).isTrue();
+   ReflectionTestUtils.setField(manager, "DIRECTORY_PATH", "src/test/resources/testFileStorage/");
+
+   manager.delete(file.getKey());
+
+   assertThat(Files.notExists(checkFile)).isTrue();
+}
+</code></pre>
+9 - 3 - 4  — задаем путь и создаем файл.
+5 - 6 — проверяем его существование.
+9 — используем проверяемый метод.
+77 — проверяем, что обьекта уже нет.
+
+И смотрим, что там у нас по зависимостям:
+
+<pre class="lang-java line-numbers"><code>
+&lt;dependencies&gt;
+   &lt;dependency&gt;
+       &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+       &lt;artifactId&gt;spring-boot-starter-data-jdbc&lt;/artifactId&gt;
+   &lt;/dependency&gt;
+   &lt;dependency&gt;
+       &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+       &lt;artifactId&gt;spring-boot-starter-web&lt;/artifactId&gt;
+   &lt;/dependency&gt;
+   &lt;dependency&gt;
+       &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+       &lt;artifactId&gt;spring-boot-starter-test&lt;/artifactId&gt;
+       &lt;scope&gt;test&lt;/scope&gt;
+       &lt;exclusions&gt;
+           &lt;exclusion&gt;
+               &lt;groupId&gt;org.junit.vintage&lt;/groupId&gt;
+               &lt;artifactId&gt;junit-vintage-engine&lt;/artifactId&gt;
+           &lt;/exclusion&gt;
+       &lt;/exclusions&gt;
+   &lt;/dependency&gt;
+   &lt;dependency&gt;
+       &lt;groupId&gt;org.projectlombok&lt;/groupId&gt;
+       &lt;artifactId&gt;lombok&lt;/artifactId&gt;
+       &lt;version&gt;1.18.10&lt;/version&gt;
+       &lt;scope&gt;provided&lt;/scope&gt;
+   &lt;/dependency&gt;
+   &lt;dependency&gt;
+       &lt;groupId&gt;mysql&lt;/groupId&gt;
+       &lt;artifactId&gt;mysql-connector-java&lt;/artifactId&gt;
+       &lt;version&gt;8.0.18&lt;/version&gt;
+   &lt;/dependency&gt;
+   &lt;dependency&gt;
+       &lt;groupId&gt;commons-codec&lt;/groupId&gt;
+       &lt;artifactId&gt;commons-codec&lt;/artifactId&gt;
+       &lt;version&gt;1.9&lt;/version&gt;
+   &lt;/dependency&gt;
+   &lt;dependency&gt;
+       &lt;groupId&gt;junit&lt;/groupId&gt;
+       &lt;artifactId&gt;junit&lt;/artifactId&gt;
+       &lt;version&gt;4.13-rc-2&lt;/version&gt;
+       &lt;scope&gt;test&lt;/scope&gt;
+   &lt;/dependency&gt;
+&lt;/dependencies&gt;
+</code></pre>
+На этом у меня сегодня всё))

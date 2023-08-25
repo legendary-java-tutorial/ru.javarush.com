@@ -1,0 +1,502 @@
+Telegram bot — напоминалка через webHook на Java или скажи нет Google-календарю! Часть 2
+<p>----------------------------------------</p>
+Вторая часть проекта
+<p>----------------------------------------</p>
+Вторая часть проекта - вот <a href="https://javarush.com/groups/posts/3493-telegram-bot--napominalka-cherez-webhook-na-java-ili-skazhi-net-google-kalendarju" target="_blank" rel="nofollow">ссылка</a> на первую:
+ И так класс <strong>BotState</strong>:
+
+Для того, чтобы наш бот понимал, что от него ожидают в определенным момент времени, например удаление напоминания, нам необходимо как-то дать знать нашему боту что введенные и отправленные сейчас цифры стоит воспринимать как ID напоминания из списка, и его надо удалить. Поэтому после нажатия на кнопку <em>«Удалить»</em> бот переходит в состояние <strong>BotState.ENTERNUMBEREVENT</strong>, это специально созданный класс Enum с состояниями бота. 
+
+<pre class="language-java line-numbers"><code>
+public enum BotState {
+    ENTERDESCRIPTION,//the bot will wait for the description to be entered.
+    START,
+    MYEVENTS, //the bot show to user list events.
+    ENTERNUMBEREVENT,//the bot will wait for the number of event to be entered.
+    ENTERDATE, //the bot will wait for the date to be entered
+    CREATE, //the bot run created event
+    ENTERNUMBERFOREDIT, //the bot will wait for the number of event to be entered
+    EDITDATE, //the bot will wait for the date to be entered
+    EDITDESCRIPTION,//the bot will wait for the description to be entered
+    EDITFREQ,//the bot will wait callbackquery
+    ALLUSERS, // show all users
+    ALLEVENTS, //show all events
+    ENTERNUMBERUSER,//the bot will wait for the number of user to be entered.
+    ENTERTIME,//the bot will wait for the hour to be entered.
+    ONEVENT // state toggle
+}
+
+</code></pre>
+
+И теперь от нас ожидают ввод цифр - "<em>Введите номер напоминания из списка</em>." После ввода которых они попадут в нужный метод для обработки.
+
+Вот наш переключатель состояния:
+
+<pre class="language-java line-numbers"><code>
+public class BotStateCash {
+    private final Map&lt;long, botstate=""&gt; botStateMap = new HashMap&lt;&gt;();
+
+    public void saveBotState(long userId, BotState botState) {
+        botStateMap.put(userId, botState);
+    }
+}
+
+&lt;/long,&gt;</code></pre>
+
+Обычная мапа с ID пользователя и его состоянием.
+
+Поле <em>int adminId</em> это для меня )
+
+Дальше логика метода <em>handleUpdate</em> проверят что это за сообщение? <strong>Сallbackquery</strong> или просто текст?
+
+Если это обычный текст, то мы отправляемся в метод <em>handleInputMessage</em>, где мы обрабатываем кнопки основного меню, и, если на них нажали, то устанавливаем нужное состояние, если же не нажали и это незнакомый текст, то устанавливаем состояние из кэша, если его нет, то устанавливаем стартовое состояние. Дальше текст уже переходит в обработку метода handle с нужным нам состоянием.
+ 
+Теперь приведем логику класса <strong>MessageHandler</strong>, который отвечает за обработку сообщений в зависимости от состояния бота:
+
+
+<pre class="language-java line-numbers"><code>
+public class MessageHandler {
+
+    private final UserDAO userDAO;
+    private final MenuService menuService;
+    private final EventHandler eventHandler;
+    private final BotStateCash botStateCash;
+    private final EventCash eventCash;
+
+    public MessageHandler(UserDAO userDAO, MenuService menuService, EventHandler eventHandler, BotStateCash botStateCash, EventCash eventCash) {
+        this.userDAO = userDAO;
+        this.menuService = menuService;
+        this.eventHandler = eventHandler;
+        this.botStateCash = botStateCash;
+        this.eventCash = eventCash;
+    }
+
+    public BotApiMethod&lt;!--?--&gt; handle(Message message, BotState botState) {
+        long userId = message.getFrom().getId();
+        long chatId = message.getChatId();
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.setChatId(String.valueOf(chatId));
+        //if new user
+        if (!userDAO.isExist(userId)) {
+            return eventHandler.saveNewUser(message, userId, sendMessage);
+        }
+        //save state in to cache
+        botStateCash.saveBotState(userId, botState);
+        //if state =...
+        switch (botState.name()) {
+            case ("START"):
+                return menuService.getMainMenuMessage(message.getChatId(),
+                        "Воспользуйтесь главным меню", userId);
+            case ("ENTERTIME"):
+                //set time zone user. for correct sent event
+                return eventHandler.enterLocalTimeUser(message);
+            case ("MYEVENTS"):
+                //list events of user
+                return eventHandler.myEventHandler(userId);
+            case ("ENTERNUMBEREVENT"):
+                //remove event
+                return eventHandler.removeEventHandler(message, userId);
+            case ("ENTERDESCRIPTION"):
+                //enter description for create event
+                return eventHandler.enterDescriptionHandler(message, userId);
+            case ("ENTERDATE"):
+                //enter date for create event
+                return eventHandler.enterDateHandler(message, userId);
+            case ("CREATE"):
+                //start create event, set state to next step
+                botStateCash.saveBotState(userId, BotState.ENTERDESCRIPTION);
+                //set new event to cache
+                eventCash.saveEventCash(userId, new Event());
+                sendMessage.setText("Введите описание события");
+                return sendMessage;
+            case ("ENTERNUMBERFOREDIT"):
+                //show to user selected event
+                return eventHandler.editHandler(message, userId);
+            case ("EDITDESCRIPTION"):
+                //save new description in database
+                return eventHandler.editDescription(message);
+            case ("EDITDATE"):
+                //save new date in database
+                return eventHandler.editDate(message);
+            case ("ALLEVENTS"):
+                //only admin
+                return eventHandler.allEvents(userId);
+            case ("ALLUSERS"):
+                //only admin
+                return eventHandler.allUsers(userId);
+            case ("ONEVENT"):
+                // on/off notification
+                return eventHandler.onEvent(message);
+            case ("ENTERNUMBERUSER"):
+                //only admin
+                return eventHandler.removeUserHandler(message, userId);
+            default:
+                throw new IllegalStateException("Unexpected value: " + botState);
+        }
+    }
+}
+
+</code></pre>
+
+в методе handle мы проверяем с каким состоянием к нас поступило сообщения и направляем его в обработчик событий – класс <strong>EventHandler.</strong>
+
+Тут у нас появилось два новых класса, <strong>MenuService и EventCash</strong>.
+
+<strong>MenuService</strong> – здесь мы создаем все наши менюшки.
+
+<strong>EventCash</strong> – аналогично как и <strong>BotStateCash</strong> будет сохранять части нашего события после ввода и когда ввод будет завершен, то мы сохраним событие в базе.
+
+<pre class="language-java line-numbers"><code>
+@Service
+@Setter
+@Getter
+// used to save entered event data per session
+public class EventCash {
+
+    private final Map&lt;long, event=""&gt; eventMap = new HashMap&lt;&gt;();
+
+    public void saveEventCash(long userId, Event event) {
+        eventMap.put(userId, event);
+    }
+}
+&lt;/long,&gt;</code></pre>
+
+Ну т.е. когда мы наживаем создать событие, в кэш создается новый объект <em>Event -eventCash.saveEventCash(userId, new Event());</em>
+
+Потом мы вводим описание события, и добавляем его в кэш:
+
+<pre class="language-java line-numbers"><code>
+<em>Event event = eventCash.getEventMap().get(userId);
+event.setDescription(description);
+//save to cache
+eventCash.saveEventCash(userId, event);</em>
+</code></pre>
+
+Потом вводим число: 
+
+<pre class="language-java line-numbers"><code>
+Event event = eventCash.getEventMap().get(userId);
+event.setDate(date);
+//save data to cache
+eventCash.saveEventCash(userId, event);
+</code></pre>
+
+Класс CallbackQueryHandler аналогичен <strong>MessageHandler</strong>, только мы обрабатываем там callbackquery- сообщения.
+
+Полностью разбирать логику работы с событиями – <strong>EventHandler</strong> не имеет смысла, уже и так слишком много букав, она понятна по названиям методов и комментариям в коде. И полностью его выкладывать текстом смысла не вижу, там больше 300 строк. Вот ссылка на класс в <a href="https://github.com/papoff8295/webHookBotForHabr/blob/master/src/main/java/ru/popov/telegrambot/model/handler/EventHandler.java" target="_blank" rel="nofollow">Github</a>.
+Тоже самое касается и класса <strong>MenuService</strong>, где мы создаем наши меню. Про них можно подробно почитать на сайте производителя библиотеки telegram -https://github.com/rubenlagus/TelegramBots/blob/master/TelegramBots.wiki/FAQ.md
+Либо в справочнике Telegram - https://tlgrm.ru/docs/bots/api
+Теперь нам осталось самое вкусное. Это класс для обработки сообщений <strong>EventService</strong>:
+
+<pre class="language-java line-numbers"><code>
+@EnableScheduling
+@Service
+public class EventService {
+    private final EventDAO eventDAO;
+    private final EventCashDAO eventCashDAO;
+
+    @Autowired
+    public EventService(EventDAO eventDAO, EventCashDAO eventCashDAO) {
+        this.eventDAO = eventDAO;
+        this.eventCashDAO = eventCashDAO;
+    }
+
+    //start service in 0:00 every day
+    @Scheduled(cron = "0 0 0 * * *")
+    // @Scheduled(fixedRateString = "${eventservice.period}")
+    private void eventService() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
+        int day = calendar.get(Calendar.DAY_OF_MONTH);
+        int month = calendar.get(Calendar.MONTH);
+        int year = calendar.get(Calendar.YEAR);
+
+        //get event list is now date
+        List&lt;event&gt; list = eventDAO.findAllEvent().stream().filter(event -&gt; {
+            if (event.getUser().isOn()) {
+                EventFreq eventFreq = event.getFreq();
+
+                //set user event time
+                Calendar calendarUserTime = getDateUserTimeZone(event);
+
+                int day1 = calendarUserTime.get(Calendar.DAY_OF_MONTH);
+                int month1 = calendarUserTime.get(Calendar.MONTH);
+                int year1 = calendarUserTime.get(Calendar.YEAR);
+                switch (eventFreq.name()) {
+                    case "TIME": //if one time - remove event
+                        if (day == day1 &amp;&amp; month == month1 &amp;&amp; year == year1) {
+                            eventDAO.remove(event);
+                            return true;
+                        }
+                    case "EVERYDAY":
+                        return true;
+                    case "MONTH":
+                        if (day == day1) return true;
+                    case "YEAR":
+                        if (day == day1 &amp;&amp; month == month1) return true;
+                    default: return false;
+                }
+            } else return false;
+        }).collect(Collectors.toList());
+
+        for (Event event : list) {
+            //set user event time
+            Calendar calendarUserTime = getDateUserTimeZone(event);
+            int hour1 = calendarUserTime.get(Calendar.HOUR_OF_DAY);
+            calendarUserTime.set(year, month, day, hour1, 0, 0);
+
+            String description = event.getDescription();
+            String userId = String.valueOf(event.getUser().getId());
+
+            //save the event to the database in case the server reboots.
+            EventCashEntity eventCashEntity = EventCashEntity.eventTo(calendarUserTime.getTime(), event.getDescription(), event.getUser().getId());
+            eventCashDAO.save(eventCashEntity);
+
+            //create a thread for the upcoming event with the launch at a specific time
+            SendEvent sendEvent = new SendEvent();
+            sendEvent.setSendMessage(new SendMessage(userId, description));
+            sendEvent.setEventCashId(eventCashEntity.getId());
+
+            new Timer().schedule(new SimpleTask(sendEvent), calendarUserTime.getTime());
+        }
+    }
+
+    private Calendar getDateUserTimeZone(Event event) {
+        Calendar calendarUserTime = Calendar.getInstance();
+        calendarUserTime.setTime(event.getDate());
+        int timeZone = event.getUser().getTimeZone();
+
+        //set correct event time with user timezone
+        calendarUserTime.add(Calendar.HOUR_OF_DAY, -timeZone);
+        return calendarUserTime;
+    }
+}
+
+&lt;/event&gt;</code></pre>
+
+<em>@EnableScheduling</em> – включаем работу по рассписанию в Spring.
+<em>@Scheduled(cron = "0 0 0 * * *")</em> – настраиваем запуск метода  в 0:00 каждый день
+<em>calendar.setTime(new Date());</em> - устанавливаемт серверное время.
+Получаем список напоминаний на сегодня, посредством магии стримов и лямбда.
+Проходим по полученному списку, устанавливаем верное время отправки <em>calendarUserTime</em> и…
+Вот тут я решил извернуться и запускать процессы отложено по времени. За это у нас отвечает в java класс <strong>Time</strong>.
+<em>new Timer().schedule(new SimpleTask(sendEvent), calendarUserTime.getTime());</em>
+Для него нам необходимо создать нить:
+<pre class="language-java line-numbers"><code>
+public class SendEvent extends Thread {
+
+
+    private long eventCashId;
+    private SendMessage sendMessage;
+
+    public SendEvent() {
+    }
+
+    @SneakyThrows
+    @Override
+    public void run() {
+        TelegramBot telegramBot = ApplicationContextProvider.getApplicationContext().getBean(TelegramBot.class);
+        EventCashDAO eventCashDAO = ApplicationContextProvider.getApplicationContext().getBean(EventCashDAO.class);
+        telegramBot.execute(sendMessage);
+        //if event it worked, need to remove it from the database of unresolved events
+        eventCashDAO.delete(eventCashId);
+    }
+}
+</code></pre>
+
+и реализацию <strong>TimerTask</strong>
+
+<pre class="language-java line-numbers"><code>
+public class SimpleTask extends TimerTask {
+    private final SendEvent sendEvent;
+
+    public SimpleTask(SendEvent sendEvent) {
+        this.sendEvent = sendEvent;
+    }
+
+    @Override
+    public void run() {
+        sendEvent.start();
+    }
+}
+</code></pre>
+
+Да, я прекрасно понимаю, что можно каждые 20 минут проходить по базе и рассылать сообщения, но я в самом начале все написал про это ))
+Тут еще мы сталкиваемся с жмотством Heroku №1. 
+
+На бесплатном тарифе Вам дается некие 550 dino, это что-то вроде часов работы вашего приложения в месяц. На полный месяц работы приложения этого не хватит, а вот если привязать карту, то Вам дается еще 450 dino, что хватает за глаза. Если переживаете за карту, можете привязать какую-то пустую, но чтобы там было 0,6$.. Это проверочная сумма, она просто должна быть на счету. Никаких скрытых списаний не проводится, только если вы сами не смените тариф.
+
+На бесплатном тарифе, есть еще одно небольшое поджмотство, назовем его №1а..Они постоянно перезагружают сервера, или просто присылают команду на перезапуск приложение, в общем оно перезагружается каждый день где-то в полночь по МСК, а бывает и в другое время.  От этого все наши процессы в памяти удаляются. Для решения этой проблемы я придумал таблицу EventCash. 
+
+Перед отправкой события сохраняются в отдельную таблицу:
+<pre class="language-java line-numbers"><code>
+EventCashEntity eventCashEntity = EventCashEntity.eventTo(calendarUserTime.getTime(), event.getDescription(), event.getUser().getId());
+eventCashDAO.save(eventCashEntity);
+</code></pre>
+А после отправления, удаляются: 
+<pre class="language-java line-numbers"><code>
+@Override
+public void run() {
+    TelegramBot telegramBot = ApplicationContextProvider.getApplicationContext().getBean(TelegramBot.class);
+    EventCashDAO eventCashDAO = ApplicationContextProvider.getApplicationContext().getBean(EventCashDAO.class);
+    telegramBot.execute(sendMessage);
+    //if event it worked, need to remove it from the database of unresolved events
+    eventCashDAO.delete(eventCashId);
+}
+</code></pre>
+
+<strong>ApplicationContextProvider</strong> – это специальный класс для получения контекста на лету:
+
+<pre class="language-java line-numbers"><code>
+@Component
+//wrapper to receive Beans
+public class ApplicationContextProvider implements ApplicationContextAware {
+
+    private static ApplicationContext context;
+
+    public static ApplicationContext getApplicationContext() {
+        return context;
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext ac)
+            throws BeansException {
+        context = ac;
+    }
+}
+</code></pre>
+
+Для проверки на неотработанные события я сделал специальный сервис, в котором есть метод, помеченный <em>@PostConstruct</em> – он запускается после каждого старта приложения. Он поднимает все неотработанные события из базы и возвращает их в память. Вот тебе вредный Heroku!
+<pre class="language-java line-numbers"><code>
+@Component
+public class SendEventFromCache {
+
+    private final EventCashDAO eventCashDAO;
+    private final TelegramBot telegramBot;
+
+    @Value("${telegrambot.adminId}")
+    private int admin_id;
+
+    @Autowired
+    public SendEventFromCache(EventCashDAO eventCashDAO, TelegramBot telegramBot) {
+        this.eventCashDAO = eventCashDAO;
+        this.telegramBot = telegramBot;
+    }
+
+    @PostConstruct
+    @SneakyThrows
+    //after every restart app  - check unspent events
+    private void afterStart() {
+        List&lt;eventcashentity&gt; list = eventCashDAO.findAllEventCash();
+
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.setChatId(String.valueOf(admin_id));
+        sendMessage.setText("Произошла перезагрузка!");
+        telegramBot.execute(sendMessage);
+
+        if (!list.isEmpty()) {
+            for (EventCashEntity eventCashEntity : list) {
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTime(eventCashEntity.getDate());
+                SendEvent sendEvent = new SendEvent();
+                sendEvent.setSendMessage(new SendMessage(String.valueOf(eventCashEntity.getUserId()), eventCashEntity.getDescription()));
+                sendEvent.setEventCashId(eventCashEntity.getId());
+                new Timer().schedule(new SimpleTask(sendEvent), calendar.getTime());
+            }
+        }
+    }
+}
+&lt;/eventcashentity&gt;</code></pre>
+
+Наша приложение готово, и пора нам получить адрес на Heroku для приложения и базы данных.
+Ваше приложение должно быть выложено на Github!!!
+Заходим на Heroku.com Нажимаем <strong>Create New App</strong>, вводим свое название приложения, выбираем <strong>Europe, create app</strong>. Все, место для приложения готово. Если нажметe <strong>open App,</strong> то браузер перенаправит вас на адрес вашего приложения, это и есть ваш адрес webhook - <em>https://ваше_название.herokuapp.com/</em>
+Регистрируйте его в telegram, а в настройках <em>application.propertie</em>s меняйте <em>telegrambot.webHookPath=https://telegrambotsimpl.herokuapp.com/</em> на свой
+<em>server.port=5000</em>  можно удалить или закомментировать.
+
+Теперь давайте подключим базу данных. Заходим во вкладку <strong>Resources</strong> на Heroku, нажимаем:
+
+<img data-id="6349441e-4bf5-4244-af1f-a7c962ef262b" src="https://cdn.javarush.com/images/article/6349441e-4bf5-4244-af1f-a7c962ef262b/1024.jpeg" alt="Telegram bot — напоминалка через webHook на Java или скажи нет Google-календарю! Часть 2: - 1">
+
+Находим там <strong>Heroku Postgres</strong>, нажимаем<strong> install</strong>: 
+Вас перенаправит на страницу кабинета вашей базы данных. Найдите там в Settings/ 
+
+<img data-id="f0917fce-5dcc-49f3-9a71-0201c58537d6" src="https://cdn.javarush.com/images/article/f0917fce-5dcc-49f3-9a71-0201c58537d6/1024.jpeg" alt="Telegram bot — напоминалка через webHook на Java или скажи нет Google-календарю! Часть 2: - 2">
+
+Там будут все необходимые данные от вашей базы. В <em>application.properties</em> теперь все должно быть вот так:
+
+<pre class="language-java line-numbers"><code>
+#server.port=5000
+
+telegrambot.userName=@calendar_event_bot
+telegrambot.botToken=1731265488:AAFDjUSk3vu5SFfgdfh556gOOFmuml7SqEjwrmnEF5Ak
+telegrambot.webHookPath=https://telegrambotsimpl.herokuapp.com/
+#telegrambot.webHookPath=https://f5d6beeb7b93.ngrok.io
+
+
+telegrambot.adminId=39376213
+
+eventservice.period =600000
+
+#spring.datasource.driver-class-name=org.postgresql.Driver
+#spring.datasource.url=jdbc:postgresql://localhost:5432/telegramUsers
+#spring.datasource.username=postgres
+#spring.datasource.password=password
+
+spring.datasource.url=jdbc:postgresql:ec2-54-247-158-179.eu-west-1.compute.amazonaws.com:5432/d2um26le5notq?ssl=true&amp;sslmode=require&amp;sslfactory=org.postgresql.ssl.NonValidatingFactory
+spring.datasource.username=ulmbeymwyvsxa
+spring.datasource.password=4c7646c69dbgeacbk98fa96e8daa6d9b1bl4894e67f3f3ddd6a27fe7b0537fd
+</code></pre>
+
+Замените данные из кабинета на свои:
+
+В поле jdbc:postgresql:ec2-54-247-158-179.eu-west-1.compute.amazonaws.com:5432/d2um26le5notq?ssl=true&amp;sslmode=require&amp;sslfactory=org.postgresql.ssl.NonValidatingFactory нужно заменить выделенное жирным шрифтом на соответствующие данные из кабинета (Host, Database)
+Поля username, password не трудно догадаться.
+
+Теперь нам нужно создать таблицы в базе, я это делал из IDEA. Пригодится наш скрипт для создания базы. 
+Добавляем базу данных как это было написано Выше:
+
+<img data-id="07c4e13a-4b59-4602-ae47-6fc7b1bc7f02" src="https://cdn.javarush.com/images/article/07c4e13a-4b59-4602-ae47-6fc7b1bc7f02/1024.jpeg" alt="Telegram bot — напоминалка через webHook на Java или скажи нет Google-календарю! Часть 2: - 3">
+
+Поле <em>Host, User, Password, Database</em> берем из кабинета.
+Поле <em>URl</em> – это наше поле spring.datasource.url до знака вопроса.
+Заходим во вкладку <strong>Advanced</strong>, там должно быть так:
+
+<img data-id="cfb9d4ce-e697-4abb-8f5b-ae1c3c6e6f51" src="https://cdn.javarush.com/images/article/cfb9d4ce-e697-4abb-8f5b-ae1c3c6e6f51/1024.jpeg" alt="Telegram bot — напоминалка через webHook на Java или скажи нет Google-календарю! Часть 2: - 4">
+
+Если Вы все сделали правильно, то после нажатия на test, будет зелененькая галочка. Нажимаем ОК. 
+Нажимаем правой кнопкой на нашу базу и выбираем <strong>Jump to query console</strong>. Копируйте туда наш script, и нажимайте на <em>execute</em>. База должна создаться. Вам доступны 10 000 строк нахаляву!
+
+Все готово для Deploy.
+
+Переходим в наше приложение на Heroku в раздел Deploy. Выбираем там раздел Github:
+
+<img data-id="0a5e3fdb-c956-4e0e-8aba-8962f6666b52" src="https://cdn.javarush.com/images/article/0a5e3fdb-c956-4e0e-8aba-8962f6666b52/1024.jpeg" alt="Telegram bot — напоминалка через webHook на Java или скажи нет Google-календарю! Часть 2: - 5">
+
+Привязываем свой репозиторий к Heroku. Теперь Ваши ветки будут видны. Не забудьте сделать push Ваших последних изменений в .properties. 
+
+Ниже выбираете ветку, которая будет загружаться, и нажимаем <strong>Deploy branch</strong>. 
+
+Если все сделано верно, то Вам будет сообщено, что приложение успешно развернуто. Не забудьте включить <strong>Automatic deploys from</strong>.. Чтобы Ваше приложение запускалось автоматически. 
+
+Кстати говоря, когда Вы будете делать push изменений на GitHub, heroku будет автоматически перезапускать приложение. Осторожно к этому относитесь, заведите отдельную ветку для издевательств, а основную используйте только для рабочего приложения.
+
+Теперь Жмотство №2! Заключается во всем известном минусе бесплатного тарифа на heroku. При отсутствии поступающих сообщений приложение переходит в режим standby, и после поступления сообщение будет довольно длительное время запускаться, что не приятно. Для этого существует простое решение - <a href="https://uptimerobot.com/ " target="_blank" rel="nofollow">https://uptimerobot.com/ 
+</a>
+И нет, примочки с пингом Google не помогут, вообще не знаю откуда эта инфа взялась, я гуглил этот вопрос, и уже лет 10 как не работает эта тема точно, если вообще работала.
+
+Данное приложение будет на установленное вами время отсылать HEAD-запросы на указанный вами адрес и в случае, если оно не отвечает, присылать сообщение на email. Разобраться не составит Вам трудности, там мало кнопок, чтобы запутаться ))
+
+Поздравляю!! Если я ничего не забыл и Вы были внимательны, то у Вас собственное приложение, работающее на халяву и никогда не падающее. Перед Вами открывается возможность для издевательств и экспериментов.
+
+В любом случае я готов отвечать на вопросы и приму любую критику!
+
+Код: https://github.com/papoff8295/webHookBotForHabr
+ 
+Использованные материалы:
+https://tlgrm.ru/docs/bots/api - о ботах.
+https://en.wikibooks.org/wiki/Java_Persistence - об отношениях в базах данных.
+https://stackoverflow.com/questions/11432498/how-to-call-a-thread-to-run-on-specific-time-in-java - класс Time и TimerTask
+https://www.youtube.com/watch?v=CUDgSbaYGx4 – как выложить код на Github
+https://github.com/rubenlagus/TelegramBots - библиотека telegram и куча полезного про это.
+

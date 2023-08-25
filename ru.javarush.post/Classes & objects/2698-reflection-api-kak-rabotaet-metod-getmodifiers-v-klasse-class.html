@@ -1,0 +1,136 @@
+Reflection API. Как работает метод getModifiers() в классе Class
+<p>----------------------------------------</p>
+Reflection API. Как связаны метод public native int getModifiers() в классе Class и некоторые константы в классе Modifier. Как связаны метод public native int getModifiers() из класса Class и некоторые константы из класса Modifier. Допустим, у нас имеется класс...
+<p>----------------------------------------</p>
+Как связаны метод <code>public native int getModifiers()</code> из класса <code>Class</code> и некоторые константы из класса <code>Modifier</code>.
+<img data-id="77505b2c-f2dd-4058-9c94-551d10972f05" src="/images/article/77505b2c-f2dd-4058-9c94-551d10972f05/800.jpeg" alt="Reflection API. Как работает метод getModifiers() в классе Class - 1">Допустим, у нас имеется класс:
+
+<pre class="lang-java line-numbers"><code>
+public static abstract class NestedClass{ 
+}
+</code></pre>
+Метод <code>getModifiers()</code> возвращает результат в виде числа, в котором как бы зашифрованы модификаторы доступа того класса или метода, у которого он вызван.
+
+Чтобы вызвать <code>getModifiers()</code> для класса, например для <code>NestedClass</code>, нужно создать объект класса <code>Class</code> для класса <code>NestedClass</code>. А уже на объекте класса <code>Class&lt;NestedClass&gt;</code> вызвать <code>getModifiers()</code>. 
+
+<pre class="lang-java line-numbers"><code>
+Class&lt;NestedClass&gt; c = NestedClass.class;
+int classModifiers = c.getModifiers();
+</code></pre>
+Либо в одну строку и выведем на экран результат и его двоичное представление: 
+
+<pre class="lang-java line-numbers"><code>
+int classModifiers = NestedClass.class.getModifiers();
+System.out.printf("classModifier = %d%n",classModifiers);
+System.out.printf("classModifier в двоичной системе счисления = %s%n",Integer.toBinaryString(classModifiers));
+</code></pre>
+На экране:
+
+<pre><code>
+classModifiers = 1033
+classModifiers в двоичной системе счисления = 10000001001
+</code></pre>
+Хорошо, но почему именно это число? Давайте разбираться на примере класса <code>NestedClass</code>.
+
+Допустим, у нас есть метод: 
+
+<pre class="lang-java line-numbers"><code>
+public static boolean isModifierSet(int allModifiers, int specificModifier) {
+}
+</code></pre>
+В его параметры будут поступать: 
+
+<code>int allModifiers = NestedClass.class.getModifiers()</code>, как из примера выше. 
+
+А <code>int specificModifier</code> будет равен какой-нибудь из констант класса <code>Modifier</code>: <code>Modifier.PUBLIC</code>, <code>Modifier.STATIC</code> и т.п. (остальные константы рассмотрим ниже). 
+
+И метод будет возвращать нам <code>true</code>, если класс содержит модификатор доступа, переданный в <code>specificModifier</code>. Если нет - <code>false</code>.
+
+Код в тестовом классе будет выглядеть следующим образом:
+
+<pre class="lang-java line-numbers"><code>
+boolean isPublic = isModifierSet(classModifiers, Modifier.PUBLIC);
+boolean isInterface = isModifierSet(classModifiers, Modifier.INTERFACE);
+boolean isAbstract = isModifierSet(classModifiers, Modifier.ABSTRACT);
+
+System.out.printf("\"Is NestedClass public?\" - %b%n", isPublic); //true
+System.out.printf("\"Is NestedClass interface?\" - %b%n", isInterface); //false
+System.out.printf("\"Is NestedClass abstract?\" - %b%n", isAbstract); //true
+</code></pre>
+Как же реализовать логику метода <code>isModifierSet</code>?
+
+Представим в двоичной системе модификаторы в классе <code>Modifier</code>: (например, <code>Modifier.FINAL</code> = 0x00000010, или в 10-ной системе - 16. 16 в двоичной = 00010000)
+<ul>
+<li><code>Modifier.PUBLIC</code>  = 1 =                                           0000 0001</li>
+<li><code>Modifier.PRIVATE</code> = 2 =                                          0000 0010</li>
+<li><code>Modifier.PROTECTED</code> = 4 =                                   0000 0100</li>
+<li><code>Modifier.STATIC</code> = 8 =                                             0000 1000</li>
+<li><code>Modifier.FINAL</code> = 16 =                                             0001 0000</li>
+<li><code>Modifier.SYNCHRONIZED</code> = 32 =                          0010 0000</li>
+<li><code>Modifier.VOLATILE</code> = 64 =                                      0100 0000</li>
+<li><code>Modifier.TRANSIENT</code> = 128 =                                1000 0000</li>
+<li><code>Modifier.NATIVE</code> = 256 =                                     1 0000 0000</li>
+<li><code>Modifier.INTERFACE</code> = 512 =                            10 0000 0000</li>
+<li><code>Modifier.ABSTRACT </code>= 1024 =                         100 0000 0000</li>
+<li><code>NestedClass.class.getModifiers()</code> =  1033 =    100 0000 1001</li>
+</ul>И что мы видим? Для каждого модификатора взято такое число в 10-ной, чтобы в 2-ной у них 1 двигалась на разряд влево.
+
+А <code>getModifiers()</code> высчитывается таким образом, что если класс содержит определённый модификатор доступа, то такой же разряд, как и в модификаторе доступа, становится равным 1.
+
+В <code>NestedClass</code> следующие модификаторы доступа: <code>public</code> <code>static</code> <code>abstract</code>. В <code>PUBLIC</code> единице равен 0 разряд(крайний справа). В <code>STATIC</code> - 3. В <code>ABSTRACT</code> - 10. И теперь смотрим на наш <code>NestedClass.class.getModifiers()</code>: В 0, 3 и 10 разрядах у него единица! А все остальные ноль.
+
+Далее переходим к решению задачи. Мы должны понять, содержит ли наш <code>getModifiers()</code> определённый модификатор.
+
+Рассмотрим случай для модификатора <code>final</code>. <code>Modifier.FINAL</code> = 16 =  0001 0000, таким образом единице равен 4 разряд.
+
+По аналогии с примером выше, смотрим, содержит ли наш <code>NestedClass.class.getModifiers()</code> = 100 0000 1001 <code>Modifier.FINAL</code>. Здесь 4 разряд равен 0. Значит не содержит, что соответствует действительности(<code>NestedClass</code> не <code>final</code>).
+
+Но какую логику писать в методе? Нужно применить логическое <code>AND (&amp;)</code>, которое равно 1, если оба бита равны 1. В остальных случаях 0.  Наш метод окончательно будет выглядеть так:
+
+<pre class="lang-java line-numbers"><code>
+public static boolean isModifierSet(int allModifiers, int specificModifier) {
+        return (allModifiers &amp; specificModifier) &gt; 0;
+    }
+</code></pre>
+Убедимся, что код работает и покажем почему он работает. 
+
+Вычисляем <code>NestedClass.class.getModifiers() &amp; Modifier.FINAL</code>: 
+<ul>
+<li>100 0000 1001 - <code>NestedClass.class.getModifiers()</code></li>
+<li>000 0001 0000 - <code>Modifier.FINAL</code> (добавили слева 3 нуля для удобства)</li>
+<li>000 0000 0000 - ответ 0. У нас нет ни одной единицы, т.к. только 1 &amp; 1 = 1. 1 &amp; 0 = 0, 0 &amp; 1 = 0, 0 &amp; 0 = 0;</li>
+</ul>Значит наше выражение в <code>return</code> вернёт <code>false</code>, т.к. 0 &gt; 0 - <code>false</code>. Значит такого модификатора доступа нет.
+
+Смотрим <code>Modifier.ABSTRACT &amp; NestedClass.class.getModifiers()</code>:
+<ul>
+<li>100 0000 0000 - <code>Modifier.ABSTRACT</code></li>
+<li>100 0000 1001 - <code>NestedClass.class.getModifiers()</code></li>
+<li>100 0000 0000 - Совпали крайние единицы слева. Переводим в 10-ную: ответ 1024.</li>
+</ul>Значит наше выражение в <code>return</code> вернёт <code>true</code>, т.к. 1024 &gt; 0 - <code>true</code>. Значит такой модификатор доступа есть.
+<a href="https://javarush.com/welcome" target="_blank" rel="nofollow"><img data-id="c9d3e9df-ca93-448a-96f9-21f93371515a" src="/images/article/c9d3e9df-ca93-448a-96f9-21f93371515a/1024.jpeg" alt="Reflection API. Как работает метод getModifiers() в классе Class - 2"></a>Таким же образом этот метод можно применять и к методам класса, и к полям класса. Код для поля будет выглядеть следующим образом:
+
+<pre class="lang-java line-numbers"><code>
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+
+public class A {
+    private static transient volatile String name = "Bob";
+
+    public static void main(String[] args) throws NoSuchFieldException {
+
+        Field field = A.class.getDeclaredField("name");
+        int fieldModifiers = field.getModifiers();
+        
+        boolean isPublic = isModifierSet(fieldModifiers, Modifier.PUBLIC);
+        boolean isFinal = isModifierSet(fieldModifiers, Modifier.FINAL);
+        boolean isVolatile = isModifierSet(fieldModifiers, Modifier.VOLATILE);
+
+        System.out.printf("\"Is A.name public?\" - %b%n", isPublic); //false
+        System.out.printf("\"Is A.name final?\" - %b%n", isFinal); //false
+        System.out.printf("\"Is A.name volatile?\" - %b%n", isVolatile); //true
+    }
+    public static boolean isModifierSet(int allModifiers, int specificModifier) {
+        return (allModifiers &amp; specificModifier) &gt; 0;
+    }
+}
+</code></pre>

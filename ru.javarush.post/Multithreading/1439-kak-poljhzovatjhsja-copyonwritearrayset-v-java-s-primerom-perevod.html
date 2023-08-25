@@ -1,0 +1,104 @@
+Как пользоваться CopyOnWriteArraySet в Java с примером (перевод)
+<p>----------------------------------------</p>
+CopyOnWriteArraySet это младший брат класса CopyOnWriteArrayList. Это специализированный набор классов, добавленных в JDK 1.5 вместе с их более популярным двоюродным братом ConcurrentHashMap ...
+<p>----------------------------------------</p>
+<code>CopyOnWriteArraySet</code> это младший брат класса <code>CopyOnWriteArrayList</code>. Это специализированный набор классов, добавленных в JDK 1.5 вместе с их более популярным двоюродным братом <code>ConcurrentHashMap</code>. Они являются частью <code>concurrent collection framework</code> и расположены в пакете <code>java.util.concurrent</code>.
+<img data-id="46fdb1db-cf3d-4745-97f7-21b6bc70ac6a" data-max-width="850" alt="Как пользоваться CopyOnWriteArraySet в Java с примером (перевод) - 1" src="https://cdn.javarush.com/images/article/46fdb1db-cf3d-4745-97f7-21b6bc70ac6a/1024.jpeg"><code>CopyOnWriteArraySet</code> лучше всего подходит для read-only коллекций, размер которых достаточно мал, чтобы их скопировать, если произойдут некоторые изменяющие операции. Например, вы можете использовать <code>CopyOnWriteArraySet</code> для хранения объекта при запуске приложения, и дать множеству других потоков доступ к этому объекту на протяжении жизненного цикла приложения. Если новое состояние или объект приходят в течение этого времени, он также может быть добавлен в этот <code>Set</code>, со стоимостью создания нового массива.
+
+Одна из самых важных вещей, которую стоит знать о <code>CopyOnWriteArraySet</code> это то, что он реализован при помощи <code>CopyOnWriteArrayList</code>. Это означает, что <code>CopyOnWriteArraySet</code> также разделяет все основные свойства <code>CopyOnWriteArrayList</code>. Еще одна важная вещь, которую стоит запомнить: итераторы этого класса коллекции не поддерживают операцию <code>remove()</code>. Попытка удалить элемент во время интегрирования приведет к выбросу <code>UnsupportedOperationException</code>. Это сделано чтобы гарантировать скорость во время обхода. Обход этой реализации <code>Set</code>, используя итератор, осуществляется достаточно быстро, и во время него исключены вмешательства других потоков. В своей работе итераторы опираются на моментальный снимок массива, который был сделан во время создания итератора.
+
+Короче говоря, используйте <code>CopyOnWriteArraySet</code> если <code>set</code> достаточно мал, чтобы копировать его при добавлении, задании значения или удалении объектов, и основной целью является чтение обновляемых от случая к случаю данных. Кроме того, если вы хотите удалить элементы во  время итерации, не используйте эту реализацию, потому что ее итератор не поддерживает <code>remove()</code>, и бросает <code>java.lang.UnsupportedOperationException</code>, как показано ниже:
+
+<pre class='lang-java line-numbers'><code>
+[RAJ] Event received : FOUR 
+Exception in thread "main" java.lang.UnsupportedOperationException
+    at java.util.concurrent.CopyOnWriteArrayList$COWIterator.remove(Unknown Source)
+    at Publisher.notifySubs(HelloHP.java:43)
+    at HelloHP.main(HelloHP.java:23)
+</code></pre><h2>CopyOnWriteArraySet пример на Java</h2>Вот готовая программа на Java показывающая, как использовать <code>CopyOnWriteArraySet</code>. В нашем примере мы использовали шаблон проектирования "Издатель-подписчик" (англ. <em>publisher-subscriber pattern</em>), чтобы продемонстрировать его использование. Большинство подписчиков подписаны во время пуска приложения и главной задачей издателя является их перебор и уведомление о каких-либо обновлениях. Время от времени может случаться добавление и удаление подписчика . Так как нам нужен быстрый обход, <code>CopyOnWriteArraySet</code> является хорошим выбором, особенно в многопоточной среде, где один поток может добавить абонента, а другой поток обрабатывает обновления.
+
+<pre class='lang-java line-numbers'><code>
+import java.util.Iterator;
+import java.util.concurrent.CopyOnWriteArraySet;
+
+/**
+ * Java program to demonstrate how to use CopyOnWriteArraySet in Java. Remember,
+ * CopyOnWriteArraySet doesn't support remove() operation.
+ *
+ * @author Javin Paul
+ */
+public class CopyOnWriteArraySetDemo{
+
+    public static void main(String args[]) {
+        Publisher cricNext = new Publisher();
+
+        SubScriber raj = new SubScriber("RAJ");
+        SubScriber adom = new SubScriber("ADOM");
+
+        cricNext.addSubscriber(raj);
+        cricNext.addSubscriber(adom);
+
+        cricNext.notifySubs("FOUR");
+        cricNext.notifySubs("SIX");
+
+    }
+
+}
+
+class Publisher {
+
+    private CopyOnWriteArraySet setOfSubs = new CopyOnWriteArraySet();
+
+    public void addSubscriber(SubScriber sub) {
+        setOfSubs.add(sub);
+    }
+
+    public void notifySubs(String score) {
+        Iterator itr = setOfSubs.iterator();
+        while (itr.hasNext()) {
+            SubScriber sub = itr.next();
+            sub.receive(score);
+
+            //itr.remove(); // not allowed, throws UnsupportedOperationException
+        }
+    }
+}
+
+class SubScriber {
+
+    private String _name;
+
+    public SubScriber(String name) {
+        this._name = name;
+    }
+
+    public void receive(String score) {
+        System.out.printf("[%s] Event received : %s %n", _name, score);
+    }
+}
+</code></pre>
+<strong>Output:</strong>
+
+<pre class='lang-java line-numbers'><code>
+[RAJ] Event received : FOUR 
+[ADOM] Event received : FOUR 
+[RAJ] Event received : SIX
+[ADOM]Event received : SIX
+</code></pre><h2>Что нужно запомнить</h2><code>CopyOnWriteArraySet</code> реализует интерфейсы <code>Collection</code> и <code>Set</code>, а также, добавленный в JDK 1.5, вместе с другой специальной реализацией <code>Set</code>'а, <code>EnumSet</code>. Это также <code>Set</code>, который использует внутренний <code>CopyOnWriteArrayList</code> для всех своих операций. Таким образом, он разделяет те же основные свойства этого класса. Так как это не <code>SortedSet</code>, порядок элементов не гарантируется в течение итерации.
+<img data-id="d3c21b91-1eeb-4137-b423-9cc1d88b1b34" data-max-width="650" alt="Как пользоваться CopyOnWriteArraySet в Java с примером (перевод) - 2" src="https://cdn.javarush.com/images/article/d3c21b91-1eeb-4137-b423-9cc1d88b1b34/1024.jpeg">
+<ol>
+<li><p><strong><code>CopyOnWriteArraySet</code> лучше всего подходит для приложений, в которых:</p></strong>
+<ul>
+    <li>Размеры <code>Set</code>'ов, как правило остаются небольшими.</li>
+    <li>Операции <code>read-only</code> значительно превосходят операции, изменяющие объекты.</li>
+    <li>Вы должны предотвратить помехи между потоками во время обхода <code>Set</code>'а.</li>
+</ul></li>
+<li><strong>Еще одним преимуществом <code>CopyOnWriteArraySet</code> является потокобезопасность. Эта коллекция поддерживает параллелизм.</strong></li>
+<li><strong>Мутативные операции (добавление, изменение, удаление и т.д.) являются дорогостоящими, так как они, как правило, требуют копирования всего базового массива.</strong></li>
+<li><strong>Итераторы не поддерживают мутативную операцию удаления.</strong></li>
+<li><strong>Обход используя итератор достаточно быстр и во время него исключены вмешательства других потоков. В своей работе итераторы опираются на моментальный снимок массива, который был сделан во время создания итератора.</strong></li>
+</ol>На этом все об использовании <code>CopyOnWriteArraySet</code> в Java. Как я сказал, он является младшим братом <code>CopyOnWriteArrayList</code>. Так что если вы понимаете хотя бы один из них, то сможете использовать и другой. Единственное отличие в том, что один является <code>List</code>'ом а другой <code>Set</code>'ом, таким образом это влечет за собой унаследование всех отличий между этими структурами данных в Java. Например, в <code>List</code> важен порядок расположения элементов, и он может содержать дубликаты. В то время как <code>Set</code> является неупорядоченным, но не позволяет дублирование объектов.
+
+Всегда помните, что <code>CopyOnWriteArraySet</code> это специализированный <code>Collection</code> класс. Его стоит использовать только когда условия являются благоприятными. В любом другом случае можно пользоваться реализациями общего назначения. Например, <code>HashSet</code>, <code>LinkedHashSet</code> или синхронизированными классами коллекций.
+
+Оригинал: <a href='https://www.javacodegeeks.com/2014/06/how-to-use-copyonwritearrayset-in-java-with-example.html' rel='nofollow' target='_blank'>How to use CopyOnWriteArraySet in Java with Example</a>

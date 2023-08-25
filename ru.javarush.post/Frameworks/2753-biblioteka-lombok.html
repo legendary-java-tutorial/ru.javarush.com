@@ -1,0 +1,200 @@
+Библиотека Lombok
+<p>----------------------------------------</p>
+Обзор и примеры использования. Библиотека Lombok сокращает количество написанного кода, улучшая читаемость. Lombok генерирует код  на этапе компиляции. Сама библиотека lombok отсутствует в рантайме. Ее использование не увеличивает размер программы...
+<p>----------------------------------------</p>
+Библиотека Lombok сокращает количество написанного кода, улучшая читаемость.
+
+<img data-id="858d11a9-6477-403d-b52c-dece536c21c4" src="/images/article/858d11a9-6477-403d-b52c-dece536c21c4/800.jpeg" alt="Библиотека Lombok - 1">Пример использования. Обычный класс <code>Person</code> c тремя полями:
+
+<pre class="lang-java line-numbers"><code>
+public class Person {
+
+    private String name;
+    private int age;
+    private Cat cat;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public Cat getCat() {
+        return cat;
+    }
+
+    public void setCat(Cat cat) {
+        this.cat = cat;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Person person = (Person) o;
+        return age == person.age &amp;&amp;
+                Objects.equals(name, person.name) &amp;&amp;
+                Objects.equals(cat, person.cat);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, age, cat);
+    }
+
+    @Override
+    public String toString() {
+        return "Person{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                ", cat=" + cat +
+                '}';
+    }
+}
+</code></pre>
+Тоже самое с lombok
+
+<pre class="lang-java line-numbers"><code>
+@Data
+public class Person {
+    private String name;
+    private int age;
+    private Cat cat;
+}
+</code></pre>
+Мы убрали кучу кода, однако, все методы и модификаторы остались.
+
+Как это работает. Lombok генерирует код  на этапе компиляции. Сама библиотека lombok отсутствует в рантайме. Ее использование не увеличивает размер программы.
+
+При использовании Lombok наш исходный код не будет валидным кодом Java. Поэтому потребуется установить плагин для IDE, иначе среда разработки не поймёт, с чем имеет дело. Lombok поддерживает все основные Java IDE. Интеграция бесшовная. Все функции вроде «показать использования» и «перейти к реализации» продолжают работать как и раньше, перемещая вас к соответствующему полю/классу.
+
+Итак, для простых классов можно воспользоваться аннотацией <code>@Data</code>.
+
+<code>@Data</code> - генерирует конструктор, геттеры, сеттеры, методы <code>equals</code>, <code>hashCode</code>, <code>toString</code>.
+
+Чтобы сделать объекты неизменяемыми  есть <code>@Value</code>.
+
+<code>@Value</code> - генерирует конструктор, только геттеры, методы <code>equals</code>, <code>hashCode</code>, <code>toString</code>. А также делает все поля <code>private</code> и <code>final</code>.
+
+<pre class="lang-java line-numbers"><code>
+@Value
+public class Cat {
+    String name;
+    int age;
+    Person person;
+}
+</code></pre>
+С неизменяемыми классами хорошо сочетаются аннотации <code>@With</code> и <code>@Builder</code>.
+
+<pre class="lang-java line-numbers"><code>
+@With
+@Builder
+@Value
+public class Cat {
+    String name;
+    int age;
+    Person person;
+}
+</code></pre>
+Если мы хотим у неизменяемого объекта поменять поле, то нам нужно сделать клон этого объекта с одним измененным параметром.
+
+<code>@With</code> - добавляет методы для каждого поля, которые делают клон объекта с одним измененным полем.
+
+<pre class="lang-java line-numbers"><code>
+ Cat anotherCat = cat.withName("Вася");
+</code></pre>
+<code>anotherCat</code> - новый объект у которого значения полей такие же как у <code>cat</code>, кроме поля <code>name</code>.
+
+<code>@Builder</code> - генерирует методы, которыми мы инициализируем объект по цепочке. Это удобно когда мы не хотим использовать конструктор со всеми параметрами (Если у нас класс неизменяемый, то в нем единственный конструктор со всеми параметрами).
+
+<pre class="lang-java line-numbers"><code>
+Cat cat = Cat.builder()
+                .name("Мурка")
+                .age(3)
+                .person(person)
+                .build();
+</code></pre>
+<strong>Цикличный вызов методов</strong>
+Если объекты имеют двунаправленную связь, т.е. ссылки друг на друга, то использование методов  <code>toString</code>, <code>equals</code> и <code>hashCode</code> приведет к ошибке <code>StackOverflowError</code>. Т.к.  будет цикличный вызов методов вложенных объектов.
+
+Данный код приведет к ошибке:
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+    public static void main(String[] args) {
+        Person person = new Person();
+
+        Cat cat = Cat.builder()
+                .name("Мурка")
+                .age(3)
+                .person(person)
+                .build();
+
+        person.setName("Иван");
+        person.setAge(26);
+        person.setCat(cat);
+
+        System.out.println(person);
+        System.out.println(cat);
+    }
+}
+</code></pre>
+Решение проблемы - прервать цикличный вызов, убрав из метода поле.
+
+<code>@ToString.Exclude</code> - Исключить поле в методе <code>toString</code>
+<code>@EqualsAndHashCode.Exclude</code> - Исключить поле в методе <code>equals</code> и <code>hashCode</code>
+
+<pre class="lang-java line-numbers"><code>
+@Value
+@With
+@Builder
+public class Cat {
+    String name;
+    int age;
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    Person person;
+}
+</code></pre>
+Еще пара полезных аннотаций
+<code>@Slf4j</code> - добавляет в класс логгер log
+<code>@SneakyThrows</code> - делает проверяемые исключения непроверяемыми
+<pre class="lang-java line-numbers"><code>
+@Slf4j
+public class Main {
+
+    @SneakyThrows
+    public static void main(String[] args) {
+        log.info("start");
+        Files.readAllBytes(Paths.get(""));
+    }
+}
+</code></pre>
+<strong>Аннотации по отдельности</strong>
+Если по каким-либо причинам вам нужны только определенные методы
+
+<pre class="lang-java line-numbers"><code>
+@NoArgsConstructor //добавляет конструктор без аргументов
+@AllArgsConstructor //добавляет конструктор со всеми параметрами
+@RequiredArgsConstructor //добавляет конструктор для final полей
+@Getter //добавляет геттеры для всех параметров класса
+@Setter //добавляет сеттеры для всех параметров класса
+@EqualsAndHashCode //добавляет реализации методов equals и hashCode
+@ToString //добавляет реализацию метода toString
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true) //делает все поля private и final
+</code></pre><a href="https://javarush.com/welcome" target="_blank" rel="nofollow"><img data-id="91d07156-f4eb-49f3-b5dc-5b8a110a531b" src="/images/article/91d07156-f4eb-49f3-b5dc-5b8a110a531b/1024.jpeg" alt="Библиотека Lombok - 2"></a>&lt;h2&gt;Заключение&lt;/h2&gt;Это только основные аннотации lombok, но они чаще всего используются и дают максимальный эффект. Слишком сильно увлекаться генерацией кода тоже не стоит.
+&lt;h2&gt;Ссылки&lt;/h2&gt;<ul>
+<li><a href="https://projectlombok.org/" target="_blank" rel="nofollow">https://projectlombok.org/</a></li>
+<li><a href="https://habr.com/ru/post/345520/" target="_blank" rel="nofollow">https://habr.com/ru/post/345520/</a></li>
+</ul>

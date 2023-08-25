@@ -1,0 +1,264 @@
+Уровень 37. Ответы на вопросы к собеседованию по теме уровня
+<p>----------------------------------------</p>
+Здравствуйте. Опять-таки, не нашёл ответов и на эти вопросы. Решил выложить ответы, которые я составил для себя. Вопросы к собеседованию: Что такое паттерны проектирования? 
+<p>----------------------------------------</p>
+Здравствуйте. Опять-таки, не нашёл ответов и на эти вопросы. Решил выложить ответы, которые я составил для себя.
+
+<img data-id="ebe9ad42-2f8e-4573-bab5-a85410d8e448" data-max-width="850" alt="Уровень 37. Ответы на вопросы к собеседованию по теме уровня - 1" src="https://cdn.javarush.com/images/article/ebe9ad42-2f8e-4573-bab5-a85410d8e448/1024.jpeg">Вот, собственно вопросы:
+
+<strong>Вопросы к собеседованию:</strong>
+<ol>
+    <li>Что такое паттерны проектирования?</li>
+    <li>Какие паттерны проектирования вы знаете?</li>
+    <li>Расскажите про паттерн Singleton? Как сделать его потокобезопасным?</li>
+    <li>Расскажите про паттерн Factory?</li>
+    <li>Расскажите про паттерн AbstractFactory</li>
+    <li>Расскажите про паттерн Adaper, его отличия от Wrapper?</li>
+    <li>Расскажите про паттерн Proxy</li>
+    <li>Что такое итератор? Какие интерфейсы, связанные с итератором, вы знаете?</li>
+    <li>Зачем нужен класс Arrays?</li>
+    <li>Зачем нужен класс Collections?</li>
+</ol>А вот мои ответы:
+
+<strong>Мои ответы:</strong>
+<ol>
+<li><p>Паттерны проектирования — это устоявшиеся удачные решения самых распространнёх проблем, возникающих при проектировании и разработке программ или их частей.</p></li>
+<li><p><code>Singleton</code>, <code>Factory</code>, <code>Abstract Factory</code>, <code>Template method</code>, <code>Strategy</code>, <code>Pool</code>, <code>Adapter</code>, <code>Proxy</code>, <code>Bridge</code>, <code>MVC</code>.</p></li>
+<li><p>Когда нужно, чтобы в программе существовал только один экземпляр какого-то класса, то применяют паттерн <code>Singleton</code>. Он выглядит так (lazy initialization):</p>
+<pre class='lang-java line-numbers'><code>
+clas Singleton {
+	private Singleton instance;
+	
+	private Singleton() {}
+	
+	public static Singletot getInstance() {
+		if (instance == null)
+			instance = new Singleton();
+		return instance;
+	}
+}
+</code></pre>
+<p>Чтобы сделать его потокобезопасным, можно добавить к методу <code>getInstance()</code> модификатор <code>synchronized</code>. Но это будет не самым лучшим решением (зато самым простым). Гораздно лучшее решение — это написать метод <code>getInstance</code> таким образом (double-checked locking):</p>
+<pre class='lang-java line-numbers'><code>
+	public static synchronized Singleton getInstance() {
+		if (instance == null)
+			synchronized(Singleton.class) {
+				instance = new Singleton();
+			}
+		return instance;
+	}
+</code></pre></li><br />
+<li><p>Паттерн <code>Factory</code> — это порождающий паттерн. Он позволяет создавать объекты по требованию (например, при определённых условиях). Выглядит это так:</p>
+<pre class='lang-java line-numbers'><code>
+class Factory{
+	public static Object1 getObject1() {
+		return new Object1();
+	}
+
+	public static Object2 getObject2() {
+		return new Object2();
+	}
+
+	public static Object3 getObject3() {
+		return new Object3();
+	}
+}
+</code></pre>
+<p>Также существует разновидность этого паттерна под названием <code>FactoryMethod</code>. Согласно этому паттерну, в одном методе создаются разные объекты, в завимости от поступающих входных данных (значений параметров). Все эти объекты должны иметь общего предка (или один общий реализуемый интерфейс). Выглядит он так:</p>
+
+<pre class='lang-java line-numbers'><code>
+class FactoryMethod {
+	public enum TypeObject {
+		TYPE1,
+		TYPE2,
+		TYPE3
+	}
+
+	public static CommonClass getObject(TypeObject type) {
+		switch(type) {
+			case TYPE1:
+				return new Object1();
+			case TYPE2:
+				return new Object2();
+			case TYPE3:
+				return new Object3();
+			default:
+				return null;
+		}
+	}
+}
+</code></pre>
+<p>Классы <code>Object1</code>, <code>Object2</code> и <code>Object3</code> наследуются от класса <code>CommonClass</code>.</p></li>
+<li><p>Паттерн <code>Abstract Factory</code> — это также порождающий шаблон проектирования. Согласно этому паттерну, создаётся некоторая абстрактная фабрика, служащая шаблоном для нескольких конкретных фабрик. Можно привести такой пример:</p>
+<pre class='lang-java line-numbers'><code>
+class Human {}
+
+class Boy extends Human {}
+class TeenBoy extends Human {}
+class Man extends Human {}
+class OldMan extends Human {}
+
+class Girl extends Human {}
+class TeenGirl extends Human {}
+class Woman extends Human {}
+class OldWoman extends Human {}
+
+interface AbstractFactory {
+	Human getPerson(int age);
+}
+
+class FactoryMale implements AbstractFactory {
+	public Human getPerson(int age) {
+		if (age &lt; 12)
+			return new Boy();
+		if (age &gt;= 12 && age &lt;= 20)
+			return new TeenBoy();
+		if (age &gt; 20 && age &lt; 60)
+			return new Man();
+		return new OldMan();
+	}
+}
+
+сlass FactoryFemale implements AbstractFactory {
+	public Human getPerson(int age) {
+		if (age &lt; 12)
+			return new Girl();
+		if (age &gt;= 12 && age &lt;= 20)
+			return new TeenGirl();
+		if (age &gt; 20 && age &lt; 60)
+			return new Woman();
+		return new OldWoman();
+	}
+}
+</code></pre></li><br />
+<li><p>Паттерн <code>Adapter</code> — это структурный паттерн. Его реализация позволяет использовать объект одного типа там, где требуется объект другого типа (обычно это абстрактные типы). Пример реализации этого паттерна:</p>
+<pre class='lang-java line-numbers'><code>
+interface TotalTime {
+	int getTotalSeconds();
+}
+interface Time {
+	int getHours();
+	int getMinutes();
+	int getSeconds();
+}
+
+class TimeAdapter extends TotalTime {
+	private Time time;
+	public TimeAdapter(Time time) {
+		this.time = time;
+	}
+	public int getTotalTime() {
+		return time.getSeconds + time.getMinutes * 60 + time.getHours * 60 * 60;
+	}
+}
+
+class TotalTimeAdapter extends Time {
+	private TotalTime totalTime;
+	public TotalTimeAdapter(TotalTime totalTime) {
+		this.totalTime = totalTime;
+	}
+
+	public int getSeconds() {
+		return totalTime % 60;
+	}
+
+	public int getMinutes() {
+		return (totalTime / 60) % 60;
+	}
+
+	public int getHours() {
+		return totaltime/ (60 * 60) ;
+	}
+}
+
+class Main {
+	public static void main(String[] args) {
+		Time time = new Time() {
+			public int getSeconds() {
+				return LocalTime.now().getSecond();
+			}
+
+			public int getMinutes() {
+				return LocalTime.now().getMinute();
+			}
+
+			public int getHours() {
+				return LocalTime.now().getHour() ;
+			}
+		};
+
+		TotalTime totalTime = new TimeAdapter(time);
+		System.out.println(totalTime.getTotalSeconds());
+
+		TotalTime totalTime2 = new TotalTime() {
+			public int getTotalSeconds() {
+				LocalTime currTime = LocalTime.now();
+				return currTime.getSecond() + currTime.getMinute * 60 + currTime.getHour * 60 * 60;
+			}
+		};
+
+		Time time2 = new TotalTimeAdapter(totalTime2);
+		System.out.println(time2.getHours + ":" + time2.getMinutes() + ":" + time2.getSeconds());
+	}
+}
+</code></pre><br />
+<p>При реализации паттерна <code>Wrapper</code> создаётся класс, который оборачивает исходный класс и реализует тот же интерфейс, который реализует исходный класс. Таким образом, это позволяет расширить функциональность исходного класса и использовать новый класс там, где ожидается использование исходного класса. Это отличается от реализации паттерна <code>Adapter</code> тем, что в данном случае используется один интерфейс (тот же, что есть у исходного класса). В паттерне <code>Adapter</code> же используется два интерфейса, и класс, который оборачивает экземпяр исходного класса, реализует совсем другой инферфейс, не интерфейс исходного класса.</p></li>
+<li><p>Паттерн <code>Proxy</code> — это структурный паттерн проектирования. Он нужен для того, чтобы контролировать доступ  к какому-то объекту. Для этого пишется класс по типу "обёртка", то есть внутрь класса передаётся исходный объект, реализующий некий интерфейс, сам класс тоже реализует этот интерфейс, и в каждом методе этого класса вызывается похожий метод у исходного объекта. Реализация того же интерфейса, что и у исходного объекта, позволяет подменить исходный объект прокси-объектом. Также это позволяет, не меняя исходного объекта, "навешивать" на его методы какую-то специальную дополнительную функциональность (например, логирование, проверка прав доступа, кэширование и т.д.). Пример:</p>
+<pre class='lang-java line-numbers'><code>
+interface Bank { 
+	void setUserMoney(User user, double money);
+	double getUserMoney(User user);
+}
+
+class CitiBank implements Bank { //оригинальный класс
+	public void setUserMoney(User user, double money) {
+		UserDAO.update(user,money);
+	}
+
+	public double getUserMoney(User user) {
+		UserDAO.getUserMoney(user);
+	}
+}
+
+class SecurityProxyBank implements Bank {
+	private Bank bank;
+
+	public SecurityProxyBank(Bank bank) {
+		this.bank = bank;
+	}
+	
+	public void setUserMoney(User user, double money) {
+		if (!SecurityManager.authorize(user,BankAccounts.Manager)
+			throw new SecurityException("User can't change money value");
+
+		UserDAO.update(user,money);
+	}
+
+	public double getUserMoney(User user) {
+		if (!SecurityManager.authorize(user,BankAccounts.Manager)
+			throw new SecurityException("User can't get money value");
+
+		UserDAO.getUserMoney(user);
+	}
+</code></pre></li><br />
+<li><p>Итератор — это специальный внутренний объект коллекции, который позволяет последовательно перебирать элементы этой коллекций. Этот объект должен реализовывать интерфейс <code>Iterator&lt;E&gt;</code>, либо <code>ListIterator&lt;E&gt;</code> (для списков). Также, для того, чтобы перебирать элементы коллекции, коллекция должна поддерживать интерфейс <code>Iterable&lt;E&gt;</code>. Интерфейс <code>Iterable&lt;E&gt;</code> содержит всего один метод — <code>iterator()</code>, который позволяет извне получить доступ к итератору коллекции.</p>
+<p>Интерфейс <code>Iterator&lt;E&gt;</code> содержит следующие методы:</p>
+<ul>
+<li><p><code>boolean hasNext()</code> — проверяет, есть ли в коллекции ещё какой-то элемент</p></li>
+<li><p><code>E next()</code> — позволяет получить очередной элемент коллекции (после получения элемента, внутренний курсор итератора передвигается на следующий элемент коллекции)</p></li>
+<li><p><code>void remove()</code> — удаляет текущий элемент из коллекции</p></li></ul>
+<p>Интерфейс же <code>ListIterator&lt;E&gt;</code> содержит такие методы:</p>
+<ul>
+<li><p><code>boolean hasNext()</code> — проверяет, существуют ли ещё один элемент в коллекции (следующий за текущим)</p></li>
+<li><p><code>E next()</code> — возвращает очередной элемент коллекции (и передвигает внутренний курсок итератора на следующий элемент)</p></li>
+<li><p><code>int nextIndex()</code> — возвращает индекс следующего элемента</p></li>
+<li><p><code>void set(E e)</code> — устанавливает значение текущего элемента <code>void add(E e)</code>. Добавляет элемент в конец списка.</p></li>
+<li><p><code>boolean hasPrevious()</code> — проверяет, существует ли какой-то элемент в коллекции перед данным элементом</p></li>
+<li><p><code>E previous()</code> — возвращает текущий элемент коллекции и переводит курсор на предыдущий элемент коллекции</p></li>
+<li><p><code>int previousIndex</code> — возвращает индекс предыдущего элемента коллекции</p></li>
+<li><p><code>void remove()</code> — удаляет текущий элемент коллекции</p></li>
+<li><p><code>void add(E e)</code> — добавляет элемент e после текущего элемента коллекции</p></li>
+</ul>
+<li><p>Класс <code>Arrays</code> — это утилитарный класс, предназначенный для разнообразных манипуляций с массивами. В этом классе есть методы превращения массива в список, поиска по массиву, копирования массива, сравнения массивов, получения хешкода массива, представление массива в виде строки и др.</p></li>
+<li><p>Класс <code>Collections</code> — это утилитарный класс для работы с коллекциями. В этом классе есть методы добавления элементов в коллекцию, наполнения коллекции элементами, поиска по коллекции, копировании коллекции, сравнения коллекции, нахождения максимального и минимального элементов коллекции, а также методы получения специфический модификаций коллекций известных типов (например, можно получить потокобезопасную коллекции или неизменяемую коллекцию с одним элементом).</p></li>
+</ol>

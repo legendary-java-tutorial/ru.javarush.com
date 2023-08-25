@@ -1,0 +1,313 @@
+Replace string в Java
+<p>----------------------------------------</p>
+В работе программиста довольно часто некоторые задачи или их составляющие могут повторяться. Поэтому сегодня хотелось бы затронуть тему, которая часто встречается в повседневной работе любого Java-разработчика. 
+<p>----------------------------------------</p>
+В работе программиста довольно часто некоторые задачи или их составляющие могут повторяться. Поэтому сегодня хотелось бы затронуть тему, которая часто встречается в повседневной работе любого Java-разработчика. 
+
+<img data-max-width="800" data-id="d81f2c04-c20b-426d-a92b-95b2fcb3d0dc" src="/images/article/d81f2c04-c20b-426d-a92b-95b2fcb3d0dc/800.jpeg" alt="Replace string в Java - 1">Предположим, что вам из некоторого метода приходит некоторая строка. И всё в ней вроде бы хорошо, но есть какая-то мелочь, которая вас не устраивает. Например, не подходит разделитель, и вам нужен какой-то другой (или вовсе не нужен). 
+
+Что можно сделать в такой ситуации?
+
+Естественно, воспользоваться методами <code>replace</code> класса <code>String</code>.<h2>Java string replace</h2>У объекта типа <code>String</code> есть четыре вариации метода замены — <code>replace</code>:
+<ul>
+	<li><code>replace(char, char);</code></li>
+	<li><code>replace(CharSequence, CharSequence);</code></li>
+	<li><code>replaceFirst(String, String);</code></li>
+	<li><code>replaceAll(String, String).</code></li>
+</ul>Предназначение всех этих методов одно — замена части строки на другую строку.
+
+Давайте рассмотрим их подробнее. 
+
+<span class="text-bold">1. <code>replace(char, char)</code></span>
+
+<code>String replace(char oldChar, char newChar)</code> — заменяет все вхождения символа первого аргумента <code>oldChar</code> вторым — <code>newChar</code>.
+
+В этом примере мы заменим запятую на точку с запятой:
+
+<pre class="lang-java line-numbers"><code>
+String value = "In JavaRush, Diego the best, Diego is Java God".replace(',', ';');
+System.out.println(value);
+</code></pre>
+Вывод в консоль:
+
+<pre><code>In JavaRush; Diego the best; Diego is Java God</code></pre>
+
+<span class="text-bold">2. <code>replace(CharSequence, CharSequence)</code></span>
+
+Заменяет каждую подстроку строки, которая соответствует указанной последовательности символов, на последовательности символов замены.
+
+<pre class="lang-java line-numbers"><code>
+String value = "In JavaRush, Diego the best, Diego is Java God".replace("Java", "Rush");
+System.out.println(value);
+</code></pre>
+Вывод:
+
+<pre><code>In RushRush, Diego the best, Diego is Rush God</code></pre>
+
+<span class="text-bold">3. <code>replaceFirst(String, String)</code></span>
+
+<code>String replaceFirst(String regex, String replacement)</code> — заменяет первую подстроку, которая соответствует указанному регулярному выражению, замещающей строкой.
+
+При использовании недопустимого регулярного выражения можно словить <a href="https://docs.oracle.com/javase/8/docs/api/java/util/regex/PatternSyntaxException.html" rel="nofollow" target="_blank">PatternSyntaxException</a> (что не есть гуд).
+
+В этом примере давайте заменим имя робота-чемпиона:
+
+<pre class="lang-java line-numbers"><code>
+String value = "In JavaRush, Diego the best, Diego is Java God".replaceFirst("Diego", "Amigo");
+System.out.println(value);
+</code></pre>
+Вывод в консоль:
+
+<pre><code>In JavaRush, Amigo the best, Diego is Java God</code></pre>
+Как мы видим, изменилось только первое вхождение "Diego", ну а дальнейшие остались за бортом — то есть, нетронутыми.
+
+<span class="text-bold">4. <code>replaceAll()</code> в Java</span>
+
+<code>String replaceAll(String regex, String replacement)</code> — данный метод заменяет в строке все вхождения подстроки <code>regex</code> на <code>replacement</code>.
+
+В качестве первого аргумента <code>regex</code> возможно использование регулярного выражения.
+
+В качестве примера попробуем выполнить предыдущую замену с именами, но уже новым методом:
+
+<pre class="lang-java line-numbers"><code>
+String value = "In JavaRush, Diego the best, Diego is Java God".replaceAll("Diego", "Amigo");
+System.out.println(value);
+</code></pre>
+Вывод в консоль:
+
+<pre><code>In JavaRush, Amigo the best, Amigo is Java God</code></pre>
+Как мы видим, произошла полная замена всех символов на необходимые.
+
+Думаю, Амиго будет доволен =)<h2>Регулярные выражения</h2>Выше было сказано, что есть возможность замены по регулярному выражению.
+
+Для начала проясним для себя, что же такое регулярное выражение? 
+
+<span class="text-bold">Регулярные выражения</span> — это формальный язык для поиска и осуществления манипуляций с подстроками в тексте, основанный на использовании метасимволов (символов-джокеров).
+
+Проще говоря, это шаблон, состоящий из символов и метасимволов, задающий правило поиска.
+
+Например:
+
+<span class="text-bold"><code>\D</code></span> — шаблон, описывающий любой нецифровой символ;
+
+<span class="text-bold"><code>\d</code></span> — определяет любой цифровой символ, который также можно описать как <span class="text-bold"><code>[0-9]</code></span>;
+
+<span class="text-bold"><code>[a-zA-Z]</code></span> — шаблон, описывающий латинские символы от a до z, без учёта регистра;
+
+Рассмотрим применение в методе <code>replaceAll</code> класса <code>String</code>:
+
+<pre class="lang-java line-numbers"><code>
+String value = "In JavaRush, Diego the best, Diego is Java God".replaceAll("\\s[a-zA-Z]{5}\\s", " Amigo ");
+System.out.println(value);
+</code></pre>
+Вывод в консоль:
+
+<pre><code>In JavaRush, Amigo the best, Amigo is Java God</code></pre>
+<code>\\s[a-zA-Z]{5}\\s</code> — описывает слово из 5 латинских символов, окруженное пробелами.
+
+Соответственно, этот шаблон и заменяется на переданную нами строку.<h2>Java regex replace</h2>В основном для использования регулярных выражений в Java применяют возможности пакета <code>java.util.regex</code>.
+
+Ключевыми классами являются:
+<ol><li><code><span class="text-bold">Pattern</span></code> —  класс, предоставляющий скомпилированный вариант регулярного выражения.</li>
+<li><code><span class="text-bold">Matcher</span></code> — данный класс интерпретирует шаблон и определяет совпадения в пришедшей ему строке строке.</li></ol>Как правило эти два класса работают в связке.
+
+Итак, как же будет выглядеть наш предыдущий объект, но уже с помощью <code>Matcher</code> и <code>Pattern</code>:
+
+<pre class="lang-java line-numbers"><code>
+Pattern pattern = Pattern.compile("\\s[a-zA-Z]{5}\\s");
+Matcher matcher = pattern.matcher("In JavaRush, Diego the best, Diego is Java God");
+String value = matcher.replaceAll(" Amigo ");
+System.out.println(value);
+</code></pre>
+И вывод у нас будет всё тем же:
+
+<pre><code>In JavaRush, Amigo the best, Amigo is Java God</code></pre>
+Более детально с регулярными выражениями можно ознакомится <a href="https://javarush.com/groups/posts/regulyarnye-vyrazheniya-v-java" target="_blank">в этой статье</a>.<h2>Альтернатива replaceAll</h2>Спору нет, методы <code>replace</code> у <code>String</code> весьма впечатляющие, но нельзя не учитывать тот факт, что <code>String</code> — <code>immutable</code> объект, то есть он не может быть изменен после своего создания.
+
+Поэтому когда мы заменяем некоторые части строки с помощью методов <code>replace</code>, мы не меняем объект <code>String</code>, а каждый раз создаем новый, с необходимым содержимым.
+
+Но каждый раз создавать новый объект довольно долго, не правда ли? Особенно когда вопрос не в паре объектов, а в паре сотен, а то и тысяч.
+
+Волей-неволей начинаешь задумываться об альтернативах. 
+
+И какие у нас есть альтернативы?<img data-max-width="800" data-id="4940b345-5096-4cce-bff2-2082581f4dcf" src="/images/article/4940b345-5096-4cce-bff2-2082581f4dcf/800.jpeg" alt="Replace string в Java - 2">Хм... Когда речь заходит о <code>String</code> и его свойстве <code>immutable</code>, сразу вспоминаешь об альтернативах, но не <code>immutable</code>, а именно о <a href="https://javarush.com/groups/posts/2351-znakomstvo-so-string-stringbuffer-i-stringbuilder-v-java" target="_blank">StringBuilder/StringBuffer</a>.
+
+Как мы помним, эти классы фактически не различаются за исключением того, что <code>StringBuffer</code> оптимизирован под использование в многопоточной среде, поэтому в условиях однопоточного использования <code>StringBuilder</code> работает несколько быстрее.
+
+Исходя из этого, сегодня мы и будем использовать <code>StringBuilder.</code>
+
+У данного класса есть много интересных методов, но конкретно сейчас нас интересует <code>replace</code>.
+
+<code>StringBuilder replace(int start, int end, String str)</code> — данный метод заменяет символы в подстроке этой последовательности на символы в указанной строке. Подстрока начинается в указанном начале и продолжается до символа в конце индекса <code>-1</code> или до конца последовательности, если такого символа не существует.
+
+Давайте рассмотрим пример:
+
+<pre class="lang-java line-numbers"><code>
+StringBuilder strBuilder = new StringBuilder("Java Rush");
+strBuilder.replace(5, 9, "God");
+System.out.println(strBuilder);
+</code></pre>
+Вывод:
+
+<pre><code>Java God</code></pre>
+Как вы видите, мы указываем промежуток, в который хотим записать строку, и записываем подстроку поверх то, что имеется в промежутке.
+
+Так вот, с помощью <code>StringBuilder</code> воссоздадим аналог метода <code>replaceall java</code>.
+
+Как это будет выглядеть:
+
+<pre class="lang-java line-numbers"><code>
+public static String customReplaceAll(String str, String oldStr, String newStr) {
+
+   if ("".equals(str) || "".equals(oldStr) || oldStr.equals(newStr)) {
+       return str;
+   }
+   if (newStr == null) {
+       newStr = "";
+   }
+   final int strLength = str.length();
+   final int oldStrLength = oldStr.length();
+   StringBuilder builder = new StringBuilder(str);
+
+   for (int i = 0; i &lt; strLength; i++) {
+       int index = builder.indexOf(oldStr, i);
+
+       if (index == -1) {
+           if (i == 0) {
+               return str;
+           }
+           return builder.toString();
+       }
+       builder = builder.replace(index, index + oldStrLength, newStr);
+
+   }
+       return builder.toString();
+}
+</code></pre>
+На первый взгляд страшно, но немного разобравшись можно понять, что всё не так уж и сложно и вполне себе логично.<a href="https://javarush.com/welcome" target="_blank"><img id="click_banner3_2_articles" data-max-width="1080" data-id="5abc2912-d10d-4e1c-b2a1-2569f986e465" src="/images/article/5abc2912-d10d-4e1c-b2a1-2569f986e465/1080.jpeg" alt="Replace string в Java - 3"></a>У нас есть три аргумента: 
+<ul><li><code>str</code> — строка, в которой мы хотим заменить некоторые подстроки;</li>
+<li><code>oldStr</code> — представление подстрок, которые будем заменять;</li>
+<li><code>newStr</code> — то, на что мы будем заменять.</li></ul>Первый <code>if</code> нам необходим, чтобы проверить входящие данные, и если строка <code>str</code> или <code>oldStr</code> пусты, или же новая подстрока <code>newStr</code> равна старой <code>oldStr</code>, то выполнение метода будет бессмысленным. Поэтому возвращаем первоначальную строку — <code>str</code>.
+
+Далее проверяем <code>newStr</code> на <code>null</code>, и если это так, то преобразуем в более удобный для нас формат пустой строки — <code>""</code>.
+
+После у нас идёт объявление необходимых нам переменных:
+<ul><li>длины общей строки <code>str</code>;</li>
+<li>длины подстроки <code>oldStr</code>;</li>
+<li>объект <code>StringBuilder</code> из общей строки.</li></ul>Запускаем цикл, который должен отработать количество раз, равное длине общей строки (но, скорее всего, этого никогда не случится).
+
+С помощью метода класса <code>StringBuilder</code> — <code>indexOf</code> — узнаем индекс первого вхождения интересующей нас подстроки.
+
+С сожалением, хотелось бы отметить, что <code>indexOf</code> не работает с регулярными выражениями, поэтому наш итоговый метод будет работать только с вхождениями строк((
+
+Если этот индекс у нас равен <code>-1</code>, то данных вхождений в текущем объекте <code>StringBuilder</code> больше нет, поэтому выходим из метода с интересующим результатом: он содержится в нашем <code>StringBuilder</code>, который мы преобразуем к <code>String</code>, c помощью <code>toString</code>.
+
+Если у нас индекс равен <code>-1</code> в первой же итерации цикла, значит подстроки, которую нужно заменить, не было в общей строке изначально. Поэтому в такой ситуации просто вернем общую строку.
+
+Далее у нас и идёт использование вышеописанного метода <code>replace</code> для <code>StringBuilder</code> с использованием найденного индекса вхождения для обозначения координат заменяемой подстроки.
+
+Данный цикл отработает столько раз, сколько будет найдено подстрок, которые нужно заменить.
+
+Если строка состоит только из символа, который нужно заменить, то только в таком случае у нас цикл отработает полностью и мы получим результат <code>StringBuilder</code> преобразованный в строку.
+
+Нужно проверить корректность работы данного метода, не так ли?
+
+Напишем тест, который проверяет работу метода в различных ситуациях:
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void customReplaceAllTest() {
+   String str = "qwertyuiop__qwertyuiop__";
+
+   String firstCase = Solution.customReplaceAll(str, "q", "a");
+   String firstResult = "awertyuiop__awertyuiop__";
+   assertEquals(firstCase, firstResult);
+
+   String secondCase = Solution.customReplaceAll(str, "q", "ab");
+   String secondResult = "abwertyuiop__abwertyuiop__";
+   assertEquals(secondCase, secondResult);
+
+   String thirdCase = Solution.customReplaceAll(str, "rtyu", "*");
+   String thirdResult = "qwe*iop__qwe*iop__";
+   assertEquals(thirdCase, thirdResult);
+
+   String fourthCase = Solution.customReplaceAll(str, "q", "");
+   String fourthResult = "wertyuiop__wertyuiop__";
+   assertEquals(fourthCase, fourthResult);
+
+   String fifthCase = Solution.customReplaceAll(str, "uio", "");
+   String fifthResult = "qwertyp__qwertyp__";
+   assertEquals(fifthCase, fifthResult);
+
+   String sixthCase = Solution.customReplaceAll(str, "", "***");
+   assertEquals(sixthCase, str);
+
+   String seventhCase = Solution.customReplaceAll("", "q", "***");
+   assertEquals(seventhCase, "");
+}
+</code></pre>
+Можно разбить на 7 отдельных тестов, каждый из которых будет отвечать за свой тестовый случай.
+
+Запустив его мы увидим, что он зелёный, то есть успешный.
+
+Ну вот, вроде и всё.
+
+Хотя постойте, выше мы говорили, что данный метод будет значительно быстрее, чем <code>replaceAll</code> у <code>String</code>.
+
+Что ж, давайте посмотрим:
+
+<pre class="lang-java line-numbers"><code>
+String str = "qwertyuiop__qwertyuiop__";
+long firstStartTime = System.nanoTime();
+
+for (long i = 0; i &lt; 10000000L; i++) {
+   str.replaceAll("tyu", "#");
+}
+
+double firstPerformance = System.nanoTime() - firstStartTime;
+
+long secondStartTime = System.nanoTime();
+
+for (long i = 0; i &lt; 10000000L; i++) {
+   customReplaceAll(str, "tyu", "#");
+}
+
+double secondPerformance = System.nanoTime() - secondStartTime;
+
+System.out.println("Performance ratio  - " +  firstPerformance / secondPerformance);
+</code></pre>
+Далее, этот код был запущен трижды, и мы получили следующие результаты: 
+
+Вывод в консоль:
+
+<pre><code>Performance ratio  - 5.012148941181627
+ 
+Performance ratio  - 5.320637176017641
+ 
+Performance ratio  - 4.719192686500394</code></pre>
+Как мы видим, в среднем наш метод производительнее, чем классический <code>replaceAll</code> класса <code>String</code> в 5 раз!
+
+Что ж и напоследок давайте запустим эту же проверку, но, так сказать, вхолостую. Другими словами, в том случае когда совпадения найдено не будет.
+
+Заменим строку для поиска с <code>"tyu"</code> на <code>"--"</code>.
+
+При трёх запусках были получены следующие результаты:
+
+Вывод в консоль:
+
+<pre><code>Performance ratio  - 8.789647093542246
+ 
+Performance ratio  - 9.177105482660881
+ 
+Performance ratio  - 8.520964375227406</code></pre>
+В среднем производительность для случаев, когда совпадений не было найдено, выросла в 8.8 раз!
+<img data-max-width="800" data-id="fe356494-ada3-47ca-a5cb-3543ddafe78d" src="/images/article/fe356494-ada3-47ca-a5cb-3543ddafe78d/800.jpeg" alt="Replace string в Java - 4"><table>
+<tbody><tr>
+<th>Что почитать еще:</th>
+</tr>
+<tr>
+<td><ul>
+<li><a href="https://javarush.com/groups/posts/2347-klass-string-v-java" target="_blank">Класс String в Java</a></li>
+<li><a href="https://javarush.com/groups/posts/2757-chto-takoe-metodih-v-java" target="_blank">Что такое методы в Java?</a></li>
+<li><a href="https://javarush.com/groups/posts/2779-reverse-string-v-java-uchimsja-reversirovatjh-stroki-raznihmi-sposobami" target="_blank">Reverse string в Java: учимся реверсировать строки разными способами
+</a></li></ul></td></tr></tbody></table>

@@ -1,0 +1,312 @@
+Lambda-выражения на примерах
+<p>----------------------------------------</p>
+Java изначально полностью объектно-ориентированный язык. За исключением примитивных типов, все в Java – это объекты. Даже массивы являются объектами. Экземпляры каждого класса – объекты. Не существует ни единой возможности определить отдельно (вне класса – прим. перев.) ...
+<p>----------------------------------------</p>
+Java изначально полностью объектно-ориентированный язык. За исключением примитивных типов, все в Java – это объекты. Даже массивы являются объектами. Экземпляры каждого класса – объекты. Не существует ни единой возможности определить отдельно (вне класса – <em>прим. перев.</em>) какую-нибудь функцию. И нет никакой возможности передать метод как аргумент или вернуть тело метода как результат другого метода. Все так. Но так было до Java 8.
+<img data-id="213548a9-4f79-4b55-820c-59addf40069c" data-max-width="850" alt="Lambda-выражения на примерах - 1" src="https://cdn.javarush.com/images/article/213548a9-4f79-4b55-820c-59addf40069c/1024.jpeg">Со времен старого доброго Swing, надо было писать анонимные классы, когда нужно было передать некую функциональность в какой-нибудь метод. Например, так выглядело добавление обработчика событий:
+
+<pre class="lang-java line-numbers"><code>
+someObject.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                 
+                //Event listener implementation goes here...
+                 
+            }
+        });
+</code></pre>
+Здесь мы хотим добавить некоторый код в слушатель событий от мыши. Мы определили анонимный класс <code>MouseAdapter</code> и сразу создали объект из него. Таким способом мы передали дополнительную функциональность в метод <code>addMouseListener</code>.
+
+Короче говоря, не так-то просто передать простой метод (функциональность) в Java через аргументы. Это ограничение вынудило разработчиков Java 8 добавить в спецификацию языка такую возможность как Lambda-выражения.
+<h2>Зачем яве Lambda-выражения?</h2>С самого начала, язык Java особо не развивался, если не считать такие вещи как аннотации (Annotations), дженерики (Generics) и пр. В первую очередь, Java всегда оставался объектно-ориентированным. После работы с функциональными языками, такими как JavaScript, можно понять насколько Java строго объектно-ориентирован и строго типизирован. Функции в Java не нужны. Сами по себе их нельзя встретить в мире Java.
+ 
+В функциональных языках программирования на первый план выходят функции. Они существуют сами по себе. Можно присваивать их переменным и передавать через аргументы другим функциям. JavaScript один из лучших примеров функциональных языков программирования. На просторах Интернета можно найти хорошие статьи, в которых детально описаны преимущества JavaScript как функционального языка. Функциональные языки имеют в своем арсенале такие мощные инструменты как замыкания (Closure), которые обеспечивают ряд преимуществ на традиционными способами написания приложений. Замыкание – это функция с привязанной к ней средой — таблицей, хранящей ссылки на все нелокальные переменные функции. В Java замыкания можно имитировать через Lambda-выражения. Безусловно между замыканиями и Lambda-выражениями есть отличия и не малые, но лямбда выражения являются хорошей альтернативой замыканиям.
+
+В своем саркастичном и забавном блоге, Стив Иег (Steve Yegge) описывает насколько мир Java строго завязан на имена существительные (сущности, объекты – <em>прим. перев.</em>). Если вы не читали его блог, рекомендую. Он забавно и интересно описывает точную причину того, почему в Java добавили Lambda-выражения.
+
+Lambda-выражения привносят в Java функциональное звено, которого так давно не хватало. Lambda-выражения вносят в язык функциональность на равне с объектами. Хотя это и не на 100% верно, можно видеть, что Lambda-выражения не являясь замыканиями предоставляют схожие возможности. В функциональном языке lambda-выражения – это функции; но в Java, lambda-выражения – представляются объектами, и должны быть связаны с конкретным объектным типом, который называется функциональный интерфейс. Далее мы рассмотри, что он из себя представляет.
+
+В статье Марио Фаско (Mario Fusco) “Зачем в Java нужны Lambda-выражения” (“Why we need Lambda Expression in Java”) подробно описано, зачем всем современным языкам нужны возможности замыканий.
+<h2>Введение в Lambda-выражения</h2>Lambda-выражения – это анонимные функции (может и не 100% верное определение для Java, но зато привносит некоторую ясность). Проще говоря, это метод без объявления, т.е. без модификаторов доступа, возвращающие значение и имя.
+
+Короче говоря, они позволяют написать метод и сразу же использовать его. Особенно полезно в случае однократного вызова метода, т.к. сокращает время на объявление и написание метода без необходимости создавать класс.
+
+Lambda-выражения в Java обычно имеют следующий синтаксис <code><strong>(аргументы) -&gt; (тело)</strong></code>. Например:
+
+<pre class="lang-java line-numbers"><code>
+(арг1, арг2...) -&gt; { тело }
+ 
+(тип1 арг1, тип2 арг2...) -&gt; { тело }
+</code></pre>
+Далее идет несколько примеров настоящих Lambda-выражений:
+
+<pre class="lang-java line-numbers"><code>
+(int a, int b) -&gt; {  return a + b; }
+ 
+() -&gt; System.out.println("Hello World");
+ 
+(String s) -&gt; { System.out.println(s); }
+ 
+() -&gt; 42
+ 
+() -&gt; { return 3.1415 };
+</code></pre><h2>Структура Lambda-выражений</h2>Давайте изучим структуру lambda-выражений:
+<ul>
+<li>Lambda-выражения могут иметь от 0 и более входных параметров.</li>
+<li>Тип параметров можно указывать явно либо может быть получен из контекста. Например (<code>int a</code>) можно записать и так (<code>a</code>)</li>
+<li>Параметры заключаются в круглые скобки и разделяются запятыми. Например (<code>a, b</code>) или (<code>int a, int b</code>) или (<code>String a</code>, <code>int b</code>, <code>float c</code>)</li>
+<li>Если параметров нет, то нужно использовать пустые круглые скобки. Например <code>() -&gt; 42</code></li>
+<li>Когда параметр один, если тип не указывается явно, скобки можно опустить. Пример: <code>a -&gt; return a*a</code></li>
+<li>Тело Lambda-выражения может содержать от 0 и более выражений.</li>
+<li>Если тело состоит из одного оператора, его можно не заключать в фигурные скобки, а возвращаемое значение можно указывать без ключевого слова <code>return</code>.</li>
+<li>В противном случае фигурные скобки обязательны (блок кода), а в конце надо указывать возвращаемое значение с использованием ключевого слова <code>return</code> (в противном случае типом возвращаемого значения будет <code>void</code>).</li>
+</ul><h2>Что такое функциональный интерфейс</h2>В Java, маркерные интерфейсы (Marker interface) – это интерфейсы без объявления методов и полей. Другими словами маркерные интерфейсы – это пустые интерфейсы. Точно также, функциональные интерфейсы (Functional Interface) – это интерфейсы только с одним абстрактным методом, объявленным в нем.
+
+<code>java.lang.Runnable</code> – это пример функционального интерфейса. В нем объявлен только один метод <code>void run()</code>. Также есть интерфейс <code>ActionListener</code> – тоже функциональный. Раньше нам приходилось использовать анонимные классы для создания объектов, реализующих функциональный интерфейс. С Lambda-выражениями, все стало проще.
+
+Каждое lambda-выражение может быть неявно привязано к какому-нибудь функциональному интерфейсу. Например, можно создать ссылку на <code>Runnable</code> интерфейс, как показано в следующем примере:
+
+<pre class="lang-java line-numbers"><code>
+Runnable r = () -&gt; System.out.println("hello world");
+</code></pre>
+Подобное преобразование всегда осуществляется неявно, когда мы не указываем функциональный интерфейс:
+
+<pre class="lang-java line-numbers"><code>
+new Thread(
+    () -&gt; System.out.println("hello world")
+).start();
+</code></pre>
+В примере выше, компилятор автоматически создает lambda-выражение как реализацию <code>Runnable</code> интерфейса из конструктора класса <code>Thread</code>: <code>public Thread(Runnable r) { }</code>.
+
+Приведу несколько примеров lambda-выражений и соответствующих функциональных интерфейсов:
+
+<pre class="lang-java line-numbers"><code>
+Consumer&lt;Integer&gt; c = (int x) -&gt; { System.out.println(x) };
+ 
+BiConsumer&lt;Integer, String&gt; b = (Integer x, String y) -&gt; System.out.println(x + " : " + y);
+ 
+Predicate&lt;String&gt; p = (String s) -&gt; { s == null };
+</code></pre>
+Аннотация <code>@FunctionalInterface</code>, добавленная в Java 8 согласно Java Language Specification, проверяет является ли объявляемый интерфейс функциональным. Кроме того, в Java 8 включен ряд готовых функциональных интерфейсов для использования с Lambda-выражениями. <code>@FunctionalInterface</code> выдаст ошибку компиляции, если объявляемый интерфейс не будет функциональным.
+
+Далее приводится пример определения функционального интерфейса:
+
+<pre class="lang-java line-numbers"><code>
+@FunctionalInterface
+public interface WorkerInterface {
+ 
+    public void doSomeWork();
+ 
+}
+</code></pre>
+Как следует из определения, функциональный интерфейс может иметь только один абстрактный метод. Если попытаться добавить еще один абстрактный метод, то вылезет ошибка компиляции. Пример:
+
+<pre class="lang-java line-numbers"><code>
+@FunctionalInterface
+public interface WorkerInterface {
+ 
+    public void doSomeWork();
+     
+    public void doSomeMoreWork();
+ 
+}
+</code></pre>
+<strong>Error</strong>
+
+<pre class="lang-java line-numbers"><code>
+Unexpected @FunctionalInterface annotation 
+    @FunctionalInterface ^ WorkerInterface is not a functional interface multiple 
+    non-overriding abstract methods found in interface WorkerInterface 1 error</code>
+После определения функционального интерфейса, мы можем его использовать и получать все преимущества Lambda-выражений. Пример:
+<code>// определении функционального интерфейса
+@FunctionalInterface
+public interface WorkerInterface {
+ 
+    public void doSomeWork();
+ 
+}
+</code></pre>
+<pre class="lang-java line-numbers"><code>
+public class WorkerInterfaceTest {
+ 
+    public static void execute(WorkerInterface worker) {
+        worker.doSomeWork();
+    }
+ 
+    public static void main(String [] args) {
+ 
+      // вызов метода doSomeWork через анонимный класс
+      // (классический способ)
+      execute(new WorkerInterface() {
+            @Override
+            public void doSomeWork() {
+               System.out.println("Worker вызван через анонимный класс");
+            }
+        });
+     
+      // вызов метода doSomeWork через Lambda-выражения
+      // (нововведение Java 8)
+      execute( () -&gt; System.out.println("Worker вызван через Lambda") );
+    }
+ 
+}
+</code></pre>
+<strong>Вывод:</strong>
+
+<pre class="lang-java line-numbers"><code>
+Worker вызван через анонимный класс
+Worker вызван через Lambda
+</code></pre>
+Здесь мы определили свой собственный функциональный интерфейс и воспользовались lambda-выражением. Метод <code>execute()</code> способен принимать lambda-выражения в качестве аргумента.
+<table>
+<tbody><tr>
+<th>Что еще почитать:</th>
+</tr>
+<tr>
+<td>
+<p><a href="https://javarush.com/groups/java-developer" target="_blank"><em><strong>Группа Java Developer:</strong></em></a></p><ul>
+<li><p><a href="https://javarush.com/groups/posts/264-populjarno-o-ljambda-vihrazhenijakh-v-java-s-primerami-i-zadachami-chastjh-1-" target="_blank">Популярно о лямбда-выражениях в Java. С примерами и задачами. Часть 1</a></p></li>
+<li><p><a href="https://javarush.com/groups/posts/136-reguljarnihe-vihrazhenija-v-java-chastjh-1" target="_blank">Регулярные выражения в Java, часть 1</a></p></li></ul>
+</td>
+</tr>
+</tbody></table><h2>Примеры Lambda-выражений</h2>Лучший способ вникнуть в Lambda-выражения – это рассмотреть несколько примеров:
+
+Поток <code>Thread</code> можно проинициализировать двумя способами:
+
+<pre class="lang-java line-numbers"><code>
+// Старый способ:
+new Thread(new Runnable() {
+    @Override
+    public void run() {
+        System.out.println("Hello from thread");
+    }
+}).start();
+</code></pre>
+<pre class="lang-java line-numbers"><code>
+// Новый способ:
+new Thread(
+    () -&gt; System.out.println("Hello from thread")
+).start();
+</code></pre>
+Управление событиями в Java 8 также можно осуществлять через Lambda-выражения. Далее представлены два способа добавления обработчика события <code>ActionListener</code> в компонент пользовательского интерфейса:
+
+<pre class="lang-java line-numbers"><code>
+// Старый способ:
+button.addActionListener(new ActionListener() {
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        System.out.println("Кнопка нажата. Старый способ!");
+    }
+});
+</code></pre>
+<pre class="lang-java line-numbers"><code>
+// Новый способ:
+button.addActionListener( (e) -&gt; {
+        System.out.println("Кнопка нажата. Lambda!");
+});
+</code></pre>
+Простой пример вывода всех элементов заданного массива. Заметьте, что есть более одного способа использования lambda-выражения. Ниже мы создаем lambda-выражение обычным способом, используя синтаксис стрелки, а также мы используем оператор двойного двоеточия <code>(::)</code>, который в Java 8 конвертирует обычный метод в lambda-выражение:
+
+<pre class="lang-java line-numbers"><code>
+// Старый способ:
+List&lt;Integer&gt; list = Arrays.asList(1, 2, 3, 4, 5, 6, 7);
+for(Integer n: list) {
+    System.out.println(n);
+}
+</code></pre>
+<pre class="lang-java line-numbers"><code>
+// Новый способ:
+List&lt;Integer&gt; list = Arrays.asList(1, 2, 3, 4, 5, 6, 7);
+list.forEach(n -&gt; System.out.println(n));
+</code></pre>
+<pre class="lang-java line-numbers"><code>
+// Новый способ с использованием оператора двойного двоеточия ::
+list.forEach(System.out::println);
+</code></pre>
+В следующем примере мы используем функциональный интерфейс <code>Predicate</code> для создания теста и печати элементов, прошедших этот тест. Таким способом вы можете помещать логику в lambda-выражения и делать что-либо на ее основе.
+
+<pre class="lang-java line-numbers"><code>
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Predicate;
+ 
+public class Main {
+   
+    public static void main(String [] a)  {
+ 
+        List&lt;Integer&gt; list = Arrays.asList(1, 2, 3, 4, 5, 6, 7);
+ 
+        System.out.print("Выводит все числа: ");
+        evaluate(list, (n)-&gt;true);
+ 
+        System.out.print("Не выводит ни одного числа: ");
+        evaluate(list, (n)-&gt;false);
+ 
+        System.out.print("Вывод четных чисел: ");
+        evaluate(list, (n)-&gt; n%2 == 0 );
+ 
+        System.out.print("Вывод нечетных чисел: ");
+        evaluate(list, (n)-&gt; n%2 == 1 );
+ 
+        System.out.print("Вывод чисел больше 5: ");
+        evaluate(list, (n)-&gt; n &gt; 5 );
+ 
+    }
+ 
+    public static void evaluate(List&lt;Integer&gt; list, Predicate&lt;Integer&gt; predicate) {
+        for(Integer n: list)  {
+            if(predicate.test(n)) {
+                System.out.print(n + " ");
+            }
+        }
+        System.out.println();
+    }
+ 
+}
+</code></pre>
+<strong>Вывод:</strong>
+ 
+<pre class="lang-java line-numbers"><code>
+Выводит все числа: 1 2 3 4 5 6 7 
+Не выводит ни одного числа: 
+Вывод четных чисел: 2 4 6 
+Вывод нечетных чисел: 1 3 5 7 
+Вывод чисел больше 5: 6 7
+</code></pre>
+Поколдовав над Lambda-выражениями можно вывести квадрат каждого элемента списка. Заметьте, что мы используем метод <code>stream()</code>, чтобы преобразовать обычный список в поток. Java 8 предоставляет шикарный класс <code>Stream</code> (<code>java.util.stream.Stream</code>). Он содержит тонны полезных методов, с которыми можно использовать lambda-выражения. Мы передаем lambda-выражение <code>x -&gt; x*x</code> в метод <code>map()</code>, который применяет его ко всем элементам в потоке. После чего мы используем <code>forEach</code> для печати всех элементов списка.
+
+<pre class="lang-java line-numbers"><code>
+// Старый способ:
+List&lt;Integer&gt; list = Arrays.asList(1,2,3,4,5,6,7);
+for(Integer n : list) {
+    int x = n * n;
+    System.out.println(x);
+}
+</code></pre>
+<pre class="lang-java line-numbers"><code>
+// Новый способ:
+List&lt;Integer&gt; list = Arrays.asList(1,2,3,4,5,6,7);
+list.stream().map((x) -&gt; x*x).forEach(System.out::println);
+</code></pre>
+Дан список, нужно вывести сумму квадратов всех элемента списка. Lambda-выражения позволяет достигнуть этого написанием всего одной строки кода. В этом примере применен метод свертки (редукции) <code>reduce()</code>. Мы используем метод <code>map()</code> для возведения в квадрат каждого элемента, а потом применяем метод <code>reduce()</code> для свертки всех элементов в одно число.
+
+<pre class="lang-java line-numbers"><code>
+// Старый способ:
+List&lt;Integer&gt; list = Arrays.asList(1,2,3,4,5,6,7);
+int sum = 0;
+for(Integer n : list) {
+    int x = n * n;
+    sum = sum + x;
+}
+System.out.println(sum);
+</code></pre>
+<pre class="lang-java line-numbers"><code>
+// Новый способ:
+List&lt;Integer&gt; list = Arrays.asList(1,2,3,4,5,6,7);
+int sum = list.stream().map(x -&gt; x*x).reduce((x,y) -&gt; x + y).get();
+System.out.println(sum);
+</code></pre><h2>Отличие Lambda-выражений от анонимных класов</h2>Главное отличие состоит в использовании ключевого слова <code><strong>this</strong></code>. Для анонимных классов ключевое слово ‘<code><strong>this</strong></code>’ обозначает объект анонимного класса, в то время как в lambda-выражении ‘<code><strong>this</strong></code>’ обозначает объект класса, в котором lambda-выражение используется.
+
+Другое их отличие заключается в способе компиляции. Java компилирует lambda-выражения с преобразованием их в <code>private</code>-методы класса. При этом используется инструкция <strong>invokedynamic</strong>, появившаяся в Java 7 для динамической привязки метода. Тал Вайс (Tal Weiss) описал в своем блоге как Java компилирует lambda-выражения в байт-код
+<h2>Заключение</h2>Марк Рейнхолд (Mark Reinhold - Oracle’s Chief Architect), назвал Lambda-выражения самым значительным изменением в модели программирования, которое когда-либо происходило — даже более значительным, чем дженерики (generics). Должно быть он прав, т.к. они дают Java программистам возможности функциональных языков программирования, которых так давно все ждали. Наряду с такими новшествами как методы виртуального расширения (Virtual extension methods), Lambda-выражения позволяют писать очень качественный код.
+
+Я надеюсь, что это статья позволила вам взглянуть под капот Java 8. Удачи :)

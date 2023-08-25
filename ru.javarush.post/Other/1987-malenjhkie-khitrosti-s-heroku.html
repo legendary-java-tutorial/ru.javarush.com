@@ -1,0 +1,35 @@
+Маленькие хитрости с Heroku
+<p>----------------------------------------</p>
+У вас уже есть демо-приложение на Heroku, но оно сильно долго стартует в самый ответственный момент? Эти маленькие хитрости заставят его работать 24/7. Представим ситуацию. Вы прошли курс JavaRush, прошли онлайн-стажировку, и у вас красуется ваш первый проект на ...
+<p>----------------------------------------</p>
+Представим ситуацию. Вы прошли курс JavaRush, прошли онлайн-стажировку, и у вас красуется первый проект на PaaS платформе <a href="https://www.heroku.com/" target="_blank" rel="nofollow">Heroku</a>. Вы рассылаете резюме и начинаете ходить по собеседованиям. И вот на одном из них вас просят показать ваш проект (или же его захотят быстро глянуть еще до собеседования, перейдя по ссылке из резюме). Открывается браузер, и начинает дооолго грузиться ваш сайт. Да, можно обьяснить, что это бесплатный Heroku и он так работает, но впечатление испорчено. В причинах данного поведения и методах борьбы с ним мы и попытаемся разобраться в этой статье.
+<div class='row justify-content-center jr-image-wrap'><div class='col-12 col-sm-10 col-md-8'><img data-id="f0c85ece-faa7-43c6-9fbe-d1288a1e56d5" data-max-width="710" alt="Маленькие хитрости с Heroku - 1" src="https://cdn.javarush.com/images/article/f0c85ece-faa7-43c6-9fbe-d1288a1e56d5/1024.jpeg"></div></div>Начать стоит с понятия <strong>dyno hours</strong>. Согласно <a href="https://devcenter.heroku.com/articles/free-dyno-hours" target="_blank" rel="nofollow">документации</a>, Dyno hours — это, по сути, время работы вашего приложения/приложений, выраженное в часах/месяц. Сразу после регистрации бесплатного аккаунта вам дается 550 часов в месяц. Проведя несложные калькуляции, получаем около 17 часов в день для одного приложения. Маловато будет. Посему привязываем кредитную карту в <em>Account settings — Billing</em> и получаем еще 450 бесплатных часов (32 часа в сутки уже с головой). Эту проблему решили. Есть еще одна.
+
+В вышеупомянутом документе указано также о <strong>"засыпании" (dyno sleeping)</strong> приложения при отсутствии активности на протяжении 30 минут. На просторах интернета встречается три основных подхода :
+
+<ol>
+<li><p><em>Регулярно (к примеру, раз в 5 минут) отсылать запросы приложению изнутри самого приложения.</em></p>
+<p>С помощью JavaScript это будет выглядеть так:</p>
+<pre class="lang-java line-numbers"><code>
+var http = require("http");
+setInterval(function() {
+    http.get("http://&lt;your app name&gt;.herokuapp.com");
+}, 300000); // every 5 minutes (300000)
+</code></pre></li>
+<li><p>Использовать внешние сайты "пингалки", которые будут с заданной периодичностью проверять ваш сайт.</p>
+<p>Примером таких сайтов является <a href="https://www.pingdom.com/" target="_blank" rel="nofollow">Pingdom</a>, <a href="http://uptimerobot.com/" target="_blank" rel="nofollow">Uptime Robot</a>, <a href="http://kaffeine.herokuapp.com/" target="_blank" rel="nofollow">Kaffeine</a> и другие. Принцип прост. Заходим, регистрируемся (если надо), указываем сайт и интервал времени и применяем настройки.</p></li>
+<li><p>Использовать <a href="http://addons.heroku.com/newrelic" target="_blank" rel="nofollow">Heroku Newrelic addon</a>
+Данный плагин предназначен для мониторинга и уведомления о падениях сайта, но как полезный "побочный эффект" он не даст заснуть приложению. На этом методе, как на самом, на мой взгляд, красивом, я и остановился. Опишу его подробнее.</p>
+<p>Чтобы установить addon, нужно перейти по <a href="https://elements.heroku.com/addons/newrelic" target="_blank" rel="nofollow">данной</a> ссылке и нажать кнопку <strong>"Install New Relic APM"</strong>. В открывшемся окне нужно выбрать тарифный план и название приложения, к которому будет применен данный addon.</p>
+ <div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="dc977485-514a-4775-942f-856f87c6f47d" data-max-width="910" alt="Маленькие хитрости с Heroku - 2" src="https://cdn.javarush.com/images/article/dc977485-514a-4775-942f-856f87c6f47d/1024.jpeg"></div></div>
+<p>После чего нажать кнопку <strong>"Provision add-on"</strong>.</p>
+<p>После установки New Relic станет доступен на странице настройки приложения в списке установленных аддонов.</p>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="5ef6f4b7-e3e3-4483-83c1-543b17d1860d" data-max-width="766" alt="Маленькие хитрости с Heroku - 3" src="https://cdn.javarush.com/images/article/5ef6f4b7-e3e3-4483-83c1-543b17d1860d/1024.jpeg"></div></div>
+<p>Клацаем на ссылку и попадаем на страницу настроек дополнения.</p>
+<p>Переходим на вкладку <strong>"Synthetics"</strong> и нажимаем кнопку "Add new".</p>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="f378262d-f135-4b95-bcaa-3e4ff8e1d11a" data-max-width="1024" alt="Маленькие хитрости с Heroku - 4" src="https://cdn.javarush.com/images/article/f378262d-f135-4b95-bcaa-3e4ff8e1d11a/1024.jpeg"></div></div>
+<p>В открывшемся окне в разделе <em>"Enter the details"</em> указываем произвольное название монитора и адрес сайта, который будем мониторить.
+Выбираем локацию, откуда будет сайт проверяться в <em>"Select monitoring locations"</em>.</p>
+<p>Периодичность проверки указываем в "Set the shedule" (я ставил 15 минут) и email для уведомлений в "Get notified".</p>
+<p>После всех настроек не забываем нажать кнопку "Create monitor".</p></li></ol>
+Вуаля, монитор создан и теперь ваше <a href="http://chumak-calories.herokuapp.com/" target="_blank" rel="nofollow">приложение</a> будет работать 24/7 и не подведет в самый ответственный момент :)

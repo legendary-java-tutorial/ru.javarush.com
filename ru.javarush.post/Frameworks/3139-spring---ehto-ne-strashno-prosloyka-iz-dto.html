@@ -1,0 +1,242 @@
+Spring — это не страшно, прослойка из DTO
+<p>----------------------------------------</p>
+Сегодня будем разбирать паттерн DTO, для понимания можно почитать тут.  Самое сложное в DTO — это понять, зачем оно нужно. Давайте займемся спекуляцией овощей, и заодно попишем код, может, по ходу дела что-то и прояснится...
+<p>----------------------------------------</p>
+<a href="https://javarush.com/groups/posts/3092-spring-ehto-nestrashno" target="_blank" rel="nofollow"><strong>СОДЕРЖАНИЕ ЦИКЛА СТАТЕЙ</strong></a>
+
+Продолжаем говорить про Spring.
+Сегодня будем разбирать паттерн DTO, для понимания <a href="https://habr.com/ru/post/513072/" target="_blank" rel="nofollow">можно почитать тут</a>. 
+Самое сложное в DTO - это понять, зачем оно нужно.
+Давайте займемся спекуляцией овощей, и заодно, попишем код, может по ходу дела что то и проясниться.
+
+Создайте <a href="https://javarush.com/groups/posts/3092-spring-ehto-nestrashno" target="_blank" rel="nofollow">spring-boot проект</a> , <a href="https://javarush.com/groups/posts/3093-spring-ehto-nestrashno-ili-kak-podkljuchitjh-bazu-dannihkh-dlja-studencheskogo-proekta-za-5-min" target="_blank" rel="nofollow">подключите h2</a>   и <a href="https://javarush.com/groups/posts/3124-spring--ehto-ne-strashno-koroche-lombok" target="_blank" rel="nofollow">Lombok</a>. Создайте пакеты: entities, repositories, services, utils.
+В entities создайте сущность Product:
+<pre class="language-java line-numbers"><code>
+package ru.java.rush.entities;
+
+import lombok.Data;
+import lombok.experimental.Accessors;
+import org.hibernate.annotations.GenericGenerator;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+
+@Accessors(chain = true)
+@Entity
+@Data
+public class ProductEntity {
+
+    @Id
+    @Column
+    @GenericGenerator(name = "generator", strategy = "increment")
+    @GeneratedValue(generator = "generator")
+    Integer id;
+
+    @Column
+    String name;
+
+    @Column
+    Integer purchasePrice;//закупочная цена
+
+}
+</code></pre>
+Реализуйте классы ProducRepository, ProducService и класс ItiiateUtil (<a href="https://javarush.com/groups/posts/3095-spring-ehto-ne-strashno-prodolzhaem-napolnjatjh-bd" target="_blank" rel="nofollow">аналогично прошлой статье</a>).
+Допустим мы прикупли картофель по оптовой цене 20 рублей за кг., и морковки по 14 рублей за кг. Приобретенные продукты положим в хранилище. 
+
+Дополним БД записями:
+<em>[Id =1, name= “Картофель”, purchasePrice = 20]
+[Id =2, name= “Морковь”, purchasePrice = 14]</em>
+
+Как порядочные спекулянты, мы должны выгодно впарить свой товар, для этого давайте красиво упакуем его и накрутим цену. То есть, были у нас грязные и не красивые овощи, наваленные кучей, а станут чистенькие премиум-веган продукты сегмента лакшери. Согласитесь, это будет уже не тот продукт(объект) который мы купили оптом.
+Для нового продукта создадим пакет dto и в нем <em>класс ProductDto</em>
+<pre class="language-java line-numbers"><code>
+package ru.java.rush.dto;
+
+import lombok.Data;
+
+@Data
+public class ProductDto {
+    Integer id;
+    String name;
+    Integer purchasePrice;
+    String  packaging;//упаковка
+    Integer salePrice;//цена реализации
+}
+</code></pre>
+У ProductDto есть две  переменные,  которых нет у ProductEntity: «упаковка» и «цена реализации». Объект dto может содержать точно такие же переменные, как и entity, или их может быть больше, или меньше.
+
+Мы помним, что конвертация одного объекта в другой – это дело маппинга.
+В пакете utils создадим класс MappingUtils 
+<pre class="language-java line-numbers"><code>
+package ru.java.rush.utils;
+
+import org.springframework.stereotype.Service;
+import ru.java.rush.dto.ProductDto;
+import ru.java.rush.entities.ProductEntity;
+
+@Service
+public class MappingUtils {
+//из entity в dto
+    public ProductDto mapToProductDto(ProductEntity entity){
+        ProductDto dto = new ProductDto();
+        dto.setId(entity.getId());
+        dto.setName(entity.getName());
+        dto.setPurchasePrice(entity.getPurchasePrice());
+        return dto;
+    }
+//из dto в entity
+    public ProductEntity mapToProductEntity(ProductDto dto){
+        ProductEntity entity = new ProductEntity();
+        entity.setId(dto.getId());
+        entity.setName(dto.getName());
+        entity.setPurchasePrice(dto.getPurchasePrice());
+        return entity;
+    }
+}
+</code></pre>
+Просто заполняем поля из одного объекта, аналогичными полями из другого объекта. 
+
+В классе ProductService реализуем методы для поиска одного продукта или списка продуктов, но перед эти мы конвертируем entity в dto с помощь написанного выше метода.
+<pre class="language-java line-numbers"><code>
+private final ProductRepository productRepository;
+private final MappingUtils mappingUtils;
+
+
+//для листа продуктов мы использовали стрим
+public List&lt;ProductDto&gt; findAll() {
+    return productRepository.findAll().stream() //создали из листа стирим
+            .map(mappingUtils::mapToProductDto) //оператором из streamAPI map, использовали для каждого элемента метод mapToProductDto из класса MappingUtils          
+.collect(Collectors.toList()); //превратили стрим обратно в коллекцию, а точнее в лист
+}
+
+//для одиночного продукта обошлись проще
+public ProductDto findById(Integer id) {
+    return mappingUtils.mapToProductDto( //в метод mapToProductDto
+            productRepository.findById(id) //поместили результат поиска по id
+                    .orElse(new ProductEntity()) //если ни чего не нашли, то вернем пустой entity
+    );
+}
+</code></pre> 
+Что будет если мы сейчас положим эти овощи на витрину? А давайте посмотрим. Для этого в ItiiateUtil напишем следующий код и запустим.
+<pre class="language-java line-numbers"><code>
+System.out.println("\nВитрина магазина");
+for (ProductDto dto : productService.findAll()) {
+    System.out.println(dto);
+}
+</code></pre>
+На выходе получим: 
+<em>Витрина магазина
+ProductDto(id=1, name=Картофель, purchasePrice=20, packaging=null, salePrice=null)
+ProductDto(id=2, name=Морковь, purchasePrice=14, packaging=null, salePrice=null)</em>
+
+Ну уж, нет! Такие овощи никто не купит: грязные, не упакованы, да и цена продажи не известна.
+Настало время бизнес логики. Ее реализуем в классе  ProductService. Добавим ка сначала в этот класс пару переменных:
+
+<pre class="language-java line-numbers"><code>
+private final Integer margin = 5;//это наша накрутка на цену
+private final String packaging = "Упаковано в лучшем виде";//так будет выглядеть упаковка
+</code></pre>
+Для каждого действия: упаковка и накрутка цены – создадим в этом же классе по отдельному методу:
+<pre class="language-java line-numbers"><code>
+// упаковываем товар
+public void pack(List&lt;ProductDto&gt; list) {
+    list.forEach(productDto -&gt;
+            productDto.setPackaging(packaging)
+    );
+}
+
+// делаем деньги
+public void makeMoney(List&lt;ProductDto&gt; list) {
+    list.forEach(productDto -&gt;
+            productDto.setSalePrice(productDto.getPurchasePrice() * margin)
+    );
+}
+</code></pre>
+Возвращаемся в ItiiateUtil и выкладывание на витрину заменяем на следующий код
+<pre class="language-java line-numbers"><code>
+List&lt;ProductDto&gt; productDtos = productService.findAll();
+
+productService.pack(productDtos);
+productService.makeMoney(productDtos);
+
+System.out.println("\nВитрина магазина");
+for (ProductDto dto : productDtos)) {
+    System.out.println(dto);
+}
+</code></pre>
+Выполняем:
+<em>Витрина магазина
+ProductDto(id=1, name=Картофель, purchasePrice=20, packaging=Упаковано в лучшем виде, salePrice=100)
+ProductDto(id=2, name=Морковь, purchasePrice=14, packaging=Упаковано в лучшем виде, salePrice=70)</em>
+
+Товар красиво упакован, есть цена, но вы где-нибудь видели, что бы на витрине писали цену за которую купили оптом и еще id  какой-то. 
+Дорабатываем напильником, написанный выше код: 
+<pre class="language-java line-numbers"><code>
+List&lt;ProductDto&gt; productDtos = productService.findAll();
+
+productService.pack(productDtos);
+productService.makeMoney(productDtos);
+
+System.out.println("\nВитрина магазина");
+for (ProductDto dto : productDtos) {
+    System.out.println(String.format(
+            "Купите: %s , по цене:  %d", dto.getName(), dto.getSalePrice()
+    ));
+}
+</code></pre>
+
+class InitiateUtils в итоге должен быть таким:
+<pre class="language-java line-numbers"><code>
+@Service
+@RequiredArgsConstructor
+public class InitiateUtils implements CommandLineRunner {
+
+    private final ProductService productService;
+
+    @Override
+    public void run(String... args) throws Exception {
+
+        List&lt;ProductEntity&gt; products = new ArrayList&lt;&gt;(
+                Arrays.asList(
+                        new ProductEntity()
+                                .setName("Картофель")
+                                .setPurchasePrice(20),
+                        new ProductEntity()
+                                .setName("Морковь")
+                                .setPurchasePrice(14)
+                ));
+
+        productService.saveAll(products);
+
+        List&lt;ProductDto&gt; productDtos = productService.findAll();
+
+        productService.pack(productDtos);
+        productService.makeMoney(productDtos);
+
+        System.out.println("\nВитрина магазина");
+        for (ProductDto dto : productDtos) {
+            System.out.println(String.format(
+                    "Купите: %s , по цене:  %d", dto.getName(), dto.getSalePrice()
+            ));
+        }
+    }
+}
+</code></pre>
+Запускаем:
+<em>Витрина магазина
+Купите: Картофель , по цене:  100
+Купите: Морковь , по цене:  70</em>
+
+Другое дело!
+
+Теперь по думаем, что  dto принесло хорошего, кроме кучи дополнительного кода:
+1.	Мы можем совершать бизнес-логику не меняя объекты в БД(допустим ну ненужно нам в этой таблице иметь поля про упаковку и цену продажи). Картофель отлично пролежит в хранилище и без упаковки с ценником, они там даже лишние.
+2.	В этой строчке <em>List&lt;ProductDto&gt; productDtos = productService.findAll()</em> мы создали кэш из объектов с которыми удобно работать в рамках бизнес-логики. Это, если бы мы положили часть товара в подсобку магазина.
+3.	Это нам позволило, совершить два бизнес действия: упаковка и наценка, но запрос  в базу сделали только один раз (запросы в базу довольно тяжелы в плане производительности). Товар можно упаковывать, клеить ценник и выкладывать на витрину - постепенно набирая его из подсобки, а не бегать за ним каждый раз в хранилище.
+
+На вопрос: «Зачем так сложно?»,  люди тоже пытаются найти ответ, <a href="https://ru.stackoverflow.com/questions/456623/Наглядный-пример-различия-dto-poco-pojo-и-value-object" target="_blank" rel="nofollow">почитайте</a>.
+
+<a href="https://javarush.com/groups/posts/3160-spring---ehto-ne-strashno-kontroliruem-svoy-rest" target="_blank" rel="nofollow">Следующая статья</a>
+

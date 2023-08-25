@@ -1,0 +1,371 @@
+Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 12
+<p>----------------------------------------</p>
+Привет! Знания — сила. Чем больше знаний будет у вас к первому вашему собеседованию, тем увереннее на нем будете себя чувствовать. С хорошим багажом знаний вас будет...
+<p>----------------------------------------</p>
+Привет!
+ 
+Знания — сила.
+
+Чем больше знаний будет у вас к первому вашему собеседованию, тем увереннее на нем будете себя чувствовать. 
+
+<img data-max-width="800" data-id="22a91827-1d65-4758-905b-3a110e9a9e2d" src="https://cdn.javarush.com/images/article/22a91827-1d65-4758-905b-3a110e9a9e2d/800.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 12 - 1">С хорошим багажом знаний вас будет сложно сбить с толку, и в то же время вы сможете приятно удивить вашего интервьюера.
+ 
+Поэтому сегодня мы без лишних предисловий продолжим усиливать вашу теоретическую базу, разбирая <a href="https://dou.ua/lenta/articles/interview-questions-java-developer/" rel="nofollow" target="_blank">250+ вопросов для Java-разработчика</a>.
+<img data-max-width="512" data-id="65de589d-55f3-41b0-9d20-80ac3e0d10e4" src="https://cdn.javarush.com/images/article/65de589d-55f3-41b0-9d20-80ac3e0d10e4/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 12 - 2"><h4>103. Какие есть правила для проверки исключений при наследовании?</h4>Если я правильно понимаю вопрос, тут спрашивают про правила работы с исключениями при наследовании, и они таковы:<ul>
+
+<li>Переопределяемый или реализуемый метод в наследнике / реализации не может выбрасывать контролируемые исключения, которые выше по иерархии чем исключения в методе суперкласса / интерфейса.</li>
+
+</ul>То есть если у нас есть некий интерфейс <span class="code">Animal</span> с методом, бросающим <span class="text-bold">IOException</span>:
+ 
+<pre class="language-java line-numbers"><code>
+public  interface Animal {
+   void voice() throws IOException;
+}
+</code></pre>
+ В реализации данного интерфейса мы не можем выставить более общее бросаемое исключение (например, <span class="text-bold">Exception</span>, <span class="text-bold">Throwable</span>), но можем заменить его на исключение наследника, как, например, на <span class="text-bold">FileNotFoundException</span>:
+ 
+<pre class="language-java line-numbers"><code>
+public class Cat implements Animal {
+   @Override
+   public void voice() throws FileNotFoundException {
+// некоторая реализация
+   }
+}
+</code></pre><ul>
+
+<li>Конструктор подкласса должен включить в свой блок <span class="code">throws</span> все классы исключений пробрасываемым конструктором суперкласса, к которому идет обращение при создании объекта.</li>
+
+</ul>Предположим, что конструктор класса <span class="code">Animal</span> бросает множество исключений: 
+ 
+<pre class="language-java line-numbers"><code>
+ public class Animal {
+   public Animal() throws ArithmeticException, NullPointerException, IOException {
+   }
+</code></pre>
+Тогда наследник класса в конструкторе также обязан их указать:
+ 
+<pre class="language-java line-numbers"><code>
+public class Cat extends Animal {
+   public Cat() throws ArithmeticException, NullPointerException, IOException {
+       super();
+   }
+</code></pre>
+Либо, как и в случае с методами — можно указать не те же исключения, а более общие. 
+ 
+В нашем случае достаточно будет указать более общее исключение — <span class="text-bold">Exception</span>, так как это общий предок всех рассмотренных трех исключений:
+ 
+<pre class="language-java line-numbers"><code>
+public class Cat extends Animal {
+   public Cat() throws Exception {
+       super();
+   }
+</code></pre><h4>104. Могли бы вы написать код, когда блок finally не будет выполнен?</h4>Для начала вспомним, что же такое <span class="code">finally</span>. Ранее мы рассматривали механизм перехвата исключений: блок <span class="code">try</span> очерчивает зону перехвата, в то же время блок (блоки) <span class="code">catch</span> — это код, который сработает при падении определенного исключения. 
+ 
+<span class="code">Finally</span> — третий блок кода после слова <span class="code">finally</span>, который является взаимозаменяемым с <span class="code">catch</span>, но не взаимоисключающим. Суть данного блока в том, что код в нем срабатывает всегда, независимо от результата срабатывания <span class="code">try</span> или <span class="code">catch</span> (независимо от того упало ли исключение или нет).
+ 
+Случаи его несрабатывания весьма редки и они являются нештатными.
+ 
+Самый простой случай несрабатывания — это когда в коде выше будет вызван метод <span class="code">System.exit(0)</span>, который завершает программу (тушит ее):
+ 
+<pre class="language-java line-numbers"><code>
+try {
+   throw new IOException();
+} catch (IOException e) {
+   System.exit(0);
+} finally {
+   System.out.println("Данное сообщение не будет выведенно в консоль");
+}
+</code></pre>
+Также есть некоторые другие ситуации, в которых <span class="code">finally</span> не сработает:<ul>
+
+<li>Аварийное завершение программы, вызванное критическими неполадками системы, либо падение некоторой Error, которая “уронит” приложение (примером error может стать та же <span class="text-bold">StackOwerflowError</span> возникающая при переполнении памяти стека).</li>
+<li>Когда через блок <span class="code">ry…finally</span> проходит <span class="code">deamon</span>-поток и параллельно с этим программа завершается. Ведь <span class="code">deamon</span>-поток — это поток для фоновых действий, то есть он не является приоритетным и обязательным и приложение не будет ждать окончания его работы. </li>
+<li>Самый банальный бесконечный цикл, в <span class="code">try</span> или <span class="code">catch</span>, попав в который поток там останется навсегда:
+<p></p><pre class="language-java line-numbers"><code>
+try {
+   while (true) {
+   }
+} finally {
+   System.out.println("Данное сообщение не будет выведенно в консоль");
+}
+</code></pre><p></p></li>
+ 
+</ul>Данный вопрос весьма популярен на собеседованиях новичков, поэтому парочку этих исключительных ситуаций стоит помнить.
+<img data-max-width="512" data-id="81ef834f-1b54-420a-a492-62cd881ee96c" src="https://cdn.javarush.com/images/article/81ef834f-1b54-420a-a492-62cd881ee96c/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 12 - 3"><h4>105. Напишите пример обработки нескольких исключений в одном блоке catch</h4><em><span class="text-bold">1) Возможно вопрос был задан некорректно.</span></em>
+
+Насколько я понимаю в данном вопросе имеется в виду множество <span class="code">catch</span> для одного блока <span class="code">try</span>:
+
+<pre class="language-java line-numbers"><code>
+try {
+  throw new FileNotFoundException();
+} catch (FileNotFoundException e) {
+   System.out.print("Упс, у вас упало исключение - " + e);
+} catch (IOException e) {
+   System.out.print("Упс, у вас упало исключение - " + e);
+} catch (Exception e) {
+   System.out.print("Упс, у вас упало исключение - " + e);
+}
+</code></pre>
+Если в блоке <span class="code">try</span> падает исключение, то блоки <span class="code">catch</span> поочередно сверху вниз пытаются его перехватить, если у некоторого блока <span class="code">catch</span> это получается, он получает право на обработку исключения, в то время когда остальные блоки ниже уже не смогут попытаться перехватить и по своему обработать его.
+ 
+Поэтому, более узкие исключения ставятся в цепочке <span class="code">catch</span> блоков выше, а более широкие — пониже. К примеру, если у нас в первом <span class="code">catch</span> блоке отлавливается исключение класса <span class="text-bold">Exception</span>, то в остальные блоки проверяемые исключения попасть никак не смогут (остальные блоки с наследниками <span class="text-bold">Exception</span> будут абсолютно бесполезны).
+
+<em><span class="text-bold">2) Вопрос был задан корректно</span></em>
+
+В таком случае наша обработка будет иметь вид вроде следующего:
+ 
+<pre class="language-java line-numbers"><code>
+try {
+  throw new NullPointerException();
+} catch (Exception e) {
+   if (e instanceof FileNotFoundException) {
+       // некоторая обработка с сужением типа (FileNotFoundException)e
+   } else if (e instanceof ArithmeticException) {
+       // некоторая обработка с сужением типа (ArithmeticException)e
+   } else if(e instanceof NullPointerException) {
+       // некоторая обработка с сужением типа (NullPointerException)e
+   }
+</code></pre>
+Словив исключение через <span class="code">catch</span>, мы пытаемся выяснить его конкретный тип через метод <span class="code">instanceof</span>, который используется для проверки — принадлежит ли объект определенному типу, чтобы потом без негативных последствий можно было сузить его до этого типа.
+ 
+Оба рассмотренных подхода могут применяться в одной и той же ситуации, но 
+про некорректность вопроса я сказал из-за того, что второй вариант я бы не назвал хорошим и в своей практике ни разу не встречал, в то же время первый способ с мультикетчами получил широкое распространение.
+<img data-max-width="512" data-id="d2ddf472-f48d-4221-86e3-ab9a3bffd82b" src="https://cdn.javarush.com/images/article/d2ddf472-f48d-4221-86e3-ab9a3bffd82b/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 12 - 4"><h4>106. Какой оператор позволяет принудительно выбросить исключение? Напишите пример</h4>Выше я уже неоднократно использовал, тем не менее повторю это ключевое слово — <span class="code">throw</span>.
+ 
+Пример использования (принудительная выброска исключения):
+ 
+<pre class="language-java line-numbers"><code>
+throw new NullPointerException();
+</code></pre><h4>107. Может метод main выбросить throws-исключение? Если да, то куда передаст?</h4>В первую очередь хочу отметить, то что <span class="code">main</span> это не более чем обычный метод, и да, он вызывается виртуальной машиной для начала выполнения программы, но кроме этого он может быть вызван и из любого другого кода.
+ 
+То есть на него также распространяются обычные правила указания выбрасываемых проверяемых исключений (checked exceptions) после <span class="code">throws</span>: 
+ 
+<pre class="language-java line-numbers"><code>
+public static void main(String[] args) throws IOException {
+</code></pre>
+Соответственно в нем тоже могут падать исключения.
+ 
+Если <span class="code">main</span> не был вызван в каком-то методе, а был запущен как точка запуска программы, то выброшенное им исключение будет обрабатываться перехватчиком <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.UncaughtExceptionHandler.html" rel="nofollow" target="_blank">.UncaughtExceptionHandler</a>. 
+ 
+Данный обработчик один на свой поток (то есть по одному обработчику в каждом потоке). При надобности можно создать свой обработчик и задать его с помощью метода <span class="code">setDefaultUncaughtExceptionHandler</span>, вызванного у объекта <span class="code">Thread</span>.
+<h3>Многопоточность</h3><img data-max-width="512" data-id="d28c1698-d371-4f1a-bd24-6ca578363625" src="https://cdn.javarush.com/images/article/d28c1698-d371-4f1a-bd24-6ca578363625/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 12 - 5"><h4>108. Какие средства для работы с многопоточностью знаете?</h4>Основные/базовые средства для использования многопоточности в Java:<ul>
+
+<li><span class="text-bold">Synchronized</span> — механизм закрытия (блокирования) метода / блока при вхождении в него потока, от других потоков.</li>
+<li><span class="text-bold">Volatile</span> — механизм обеспечения согласованного доступа к переменной разными потокам, то есть с наличием данного модификатора у переменной все операции присвоения и чтения ее должны быть атомарными. Другими словами потоки не будут копировать эту переменную в свою локальную память и изменять ее, а будут изменять ее изначальное значение.</li>
+
+</ul>Подробнее про volatile читайте вот <a href="https://javarush.com/groups/posts/1998-upravlenie-potokami-metodih-volatile-i-yield" target="_blank">тут</a>.<ul>
+
+<li><span class="text-bold">Runnable</span> — интерфейс, реализовав который (в частности его метод run) в некотором классе:</li>
+
+</ul><pre class="language-java line-numbers"><code>
+public class CustomRunnable implements Runnable {
+   @Override
+   public void run() {
+       // некоторая логика
+   }
+}
+</code></pre>
+ И создав объект этого класса, можно запустить новый поток, задав этот объект в конструктор нового объекта <span class="code">Thread</span>, и вызвав у него метод <span class="code">start()</span>:
+ 
+<pre class="language-java line-numbers"><code>
+Runnable runnable = new CustomRunnable();
+new Thread(runnable).start();
+</code></pre>
+Метод <span class="code">start</span> запускает реализованный метод <span class="code">run()</span> в отдельном потоке.<ul>
+ 
+<li><span class="text-bold">Thread</span> — класс, наследовав от которого (при этом переопределив метод <span class="code">run</span>):</li>
+
+</ul><pre class="language-java line-numbers"><code>
+public class CustomThread extends Thread {
+   @Override
+   public void run() {
+       // некоторая логика
+   }
+}
+</code></pre>
+И создав объект данного класса и запустив его с помощью метода <span class="code">start()</span>, запустим тем самым новый поток:
+ 
+<pre class="language-java line-numbers"><code>
+new CustomThread().start();
+</code></pre><ul>
+ 
+<li><span class="text-bold">Concurrency</span> — пакет с инструментами для работы в многопоточной среде.</li>
+
+</ul>Он состоит из:<ul>
+<li><span class="text-bold">Concurrent Collections</span> — набор коллекций, специализированных под работу в многопоточной среде.</li>
+<li><span class="text-bold">Queues</span> — специализированные очереди для многопоточной среды (блокирующие и неблокирующие).</li>
+<li><span class="text-bold">Synchronisers</span> — специализированные утилиты для работы в многопоточной среде.</li>
+<li><span class="text-bold">Executors</span> — механизмы для создания пулов потоков.
+</li><li><span class="text-bold">Locks</span> — механизмы синхронизации потоков (более гибкие нежели стандартные — synchronized, wait, notify, notifyAll).</li>
+<li><span class="text-bold">Atomics</span> — классы оптимизированные под многопоточное выполнение,  именно у них каждая операция — атомарная.</li>
+
+</ul>Подробнее о concurrent пакете читайте вот <a href="https://habr.com/ru/company/luxoft/blog/157273/" rel="nofollow" target="_blank">тут</a>. 
+<h4>109. Расскажите о синхронизации между потоками. Для чего используют методы wait (), notify () — notifyAll () join ()?</h4>Насколько я понял вопрос, синхронизация между потоками — это о ключевом модификаторе — <span class="code">synhronized</span>.
+ 
+Данный модификатор можно поставить либо непосредственно у блока:
+ 
+<pre class="language-java line-numbers"><code>
+synchronized (Main.class) {
+   // некоторая логика
+}
+</code></pre>
+Либо непосредственно в сигнатуре метода:
+ 
+<pre class="language-java line-numbers"><code>
+public synchronized void move() {
+   // некоторая логика}
+</code></pre>
+Как я и сказал ранее, <span class="code">synhronized</span> это механизм, позволяющий закрывать блок / метод от других потоков, когда в него уже зашел один поток.
+ 
+Представим блок / метод как комнату. Некоторый поток, придя к ней, зайдет в нее и закроет ее на ключ, другие потоки, придя к комнате и увидев, что она закрыта, будут ждать возле нее пока она не освободится. Сделав свои дела, первый поток выходит из комнаты и освобождает ключ.
+ 
+ И я не зря постоянно говорил о ключе, ведь он действительно существует. Это специальный объект, который имеет состояние занято / свободно. Этот объект прикреплен к каждому объекту Java, поэтому при использовании <span class="code">synhronized</span> блока нам нужно в скобках указывать объект, на чей мьютекс мы хотим закрывать дверь:
+ 
+<pre class="language-java line-numbers"><code>
+Cat cat = new Cat();
+synchronized (cat) {
+   // некоторая логика
+}
+</code></pre>
+Также можно использовать мьютекс класса, как я это сделал в первом примере (<span class="code">Main.class</span>).
+ 
+Когда мы используем <span class="code">synhronized</span> на методе, мы ведь не указываем объект на которым хотим закрыть верно? 
+ 
+В таком случае для нестатического метода будет закрываться на мьютекс объекта <span class="code">this</span>, то есть текущий объект данного класса. Статический будет закрываться на мьютекс текущего класса (<span class="code">this.getClass();</span>).
+
+Подробнее про мьютекс можно почитать вот <a href="https://javarush.com/groups/posts/2174-v-chem-raznica-mezhdu-mjhjuteksom-monitorom-i-semaforom" target="_blank">тут</a>. Ну а про <span class="code">synhronized</span> читать вот <a href="https://javarush.com/groups/posts/1994-sinkhronizacija-potokov-operator-synchronized" target="_blank">тут</a>.
+ 
+<span class="code">Wait()</span> — метод, который освобождает мьютекс и переводит текущий поток в режим ожидания как бы прикрепляясь к текущему монитору (что-то вроде якоря). Из-за этого данный метод может быть вызван только из <span class="code">synhronized</span> блока или метода (иначе что ему освобождать и чего ему ожидать).
+ 
+Также отмечу, что это метод класса <span class="code">Object</span>.
+
+Точнее не один, а даже три:<ul>
+<li><p><span class="code">Wait()</span> — переводит текущий поток в режим ожидания пока другой поток не вызовет метод <span class="code">notify()</span> или <span class="code">notifyAll()</span> для этого объекта (об этих методах поговорим дальше).</p></li>
+<li><p><span class="code">Wait (long timeout)</span> — переводит текущий поток в режим ожидания пока другой поток не вызовет метод <span class="code">notify()</span> или <span class="code">notifyAll()</span> для этого объекта или не истечет указанное время — <span class="code">timeout</span>.</p></li>
+<li><p><span class="code">Wait (long timeout, int nanos)</span> — аналогичен предыдущему, только <span class="code">nanos</span> позволяет указать наносекунды (более точная настройка времени).</p></li>
+<li><p><span class="code">Notify()</span> — метод позволяющий пробудить один рандомный поток текущего блока синхронизации. Опять же, может быть вызван только в <span class="code">synhronized</span> блоке или методе (ведь в других местах ему не будет кого размораживать).</p></li>
+<li><p><span class="code">NotifyAll()</span> — метод, пробуждающий все ожидающие потоки на текущем мониторе (тоже используется только в <span class="code">synhronized</span> блоке или методе).</p></li>
+ 
+</ul><h4>110. Как остановить поток?</h4>Первое, что нужно сказать — это то, что при полном выполнении метода <span class="code">run()</span> поток автоматически уничтожается. Но иногда нужно убить его досрочно, до завершения данного метода.
+
+И что тогда делать? Возможно, у объекта <span class="code">Thread</span> использовать метод <span class="code">stop()</span>?
+
+Как бы не так! 
+
+Данный метод считается устаревшим и может привести к сбоям системы.
+<img data-max-width="512" data-id="4fa7b937-b813-4aca-819d-44e3181305a9" src="https://cdn.javarush.com/images/article/4fa7b937-b813-4aca-819d-44e3181305a9/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 12 - 6">Ну а что тогда? 
+ 
+Есть два способа сделать это:
+ 
+<span class="text-bold">Первый</span> — это использование своего внутреннего логического флага.
+
+Давайте рассмотрим на примере.
+ 
+У нас есть своя реализация потока, который должен выводить на экран некую фразу до его полной остановки:
+ 
+<pre class="language-java line-numbers"><code>
+public class CustomThread extends Thread {
+private boolean isActive;
+ 
+   public CustomThread() {
+       this.isActive = true;
+   }
+ 
+   @Override
+   public void run() {
+       {
+           while (isActive) {
+               System.out.println("Поток выполняет некую логику...");
+           }
+           System.out.println("Поток остановлен!");
+       }
+   }
+ 
+   public void stopRunningThread() {
+       isActive = false;
+   }
+}
+</code></pre>
+При использовании метода <span class="code">stopRunning()</span> внутренний флаг становится false и метод <span class="code">run</span> прекращает свою работу.
+ 
+Давайте запустим его в <span class="code">main</span>:
+ 
+<pre class="language-java line-numbers"><code>
+System.out.println("Начало выполнения программы");
+CustomThread thread = new CustomThread();
+thread.start();
+Thread.sleep(3);
+// пока наш основной поток спит, вспомогательный  CustomThread работает и выводит в коноль своё сообщение
+thread.stopRunningThread();
+System.out.println("Конец выполнения программы");
+</code></pre>
+В итоге в консоли мы увидим что-то вроде этого:
+ 
+<div class="terminal">Начало выполнения программы
+Поток выполняет некую логику...
+Поток выполняет некую логику...
+Поток выполняет некую логику...
+Поток выполняет некую логику...
+Поток выполняет некую логику...
+Поток выполняет некую логику...
+Конец выполнения программы
+Поток остановлен!</div>
+А это значит, что наш поток отработал, вывел некоторое количество сообщений в консоль и был успешно остановлен.
+ 
+Отмечу, что количество выведенных сообщений от запуска к запуску будет разным, иногда дополнительный поток даже и не выводил ничего.
+ 
+Как я заметил, это зависит от времени сна основного потока, чем оно больше, тем меньше шанс что дополнительный поток ничего не выведет. При времени сна 1мс вывода сообщений почти никогда не происходит, но если выставить 20мс, почти всегда срабатывает. 
+ 
+Возможно, при малом времени поток просто не успевает запуститься и начать свою работу, а его сразу же останавливают.
+ 
+<span class="text-bold">Второй</span> способ заключается в использовании на объекте <span class="code">Thread</span> метода <span class="code">interrupted()</span>, который возвращает значение внутреннего флага прерывания (по умолчанию этот флаг <span class="text-bold">false</span>) и другого его метода <span class="code">interrupt()</span> — ставящего этот флаг в true (когда этот флаг <span class="text-bold">true</span> поток должен остановить свою работу).
+ 
+Смотрим пример:
+ 
+<pre class="language-java line-numbers"><code>
+public class CustomThread extends Thread {
+ 
+   @Override
+   public void run() {
+       {
+           while (!Thread.interrupted()) {
+               System.out.println("Поток выполняет некую логику...");
+           }
+           System.out.println("Поток остановлен!");
+       }
+   }
+}
+</code></pre>
+Запуск в <span class="code">main</span>:
+
+<pre class="language-java line-numbers"><code>
+System.out.println("Начало выполнения программы");
+Thread thread = new CustomThread();
+thread.start();
+Thread.sleep(3);
+thread.interrupt();
+System.out.println("Конец выполнения программы");
+</code></pre>
+Итог выполнения будет таким же, как и в первом случае, но данный подход мне нравится больше: мы пишем меньше кода и больше используем уже готовый, стандатный функционал.
+<img data-max-width="512" data-id="ae095341-54e0-4a83-8eac-9fcc6afcef16" src="https://cdn.javarush.com/images/article/ae095341-54e0-4a83-8eac-9fcc6afcef16/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 12 - 7">На этом сегодня и остановимся.<img data-max-width="512" data-id="d0cc1122-d82e-4d63-9c01-60b642930fdb" src="https://cdn.javarush.com/images/article/d0cc1122-d82e-4d63-9c01-60b642930fdb/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 12 - 8"><table><tbody>
+<tr><th>
+Другие материалы серии:
+</th></tr><tr><td>
+<ul>
+<li><a href="https://javarush.com/groups/posts/3243-razbor-voprosov-i-otvetov-na-sobesedovanii-chastjh-1" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 1</a></li>
+<li><a href="https://javarush.com/groups/posts/3252-razbor-voprosov-i-otvetov-na-sobesedovanii-chastjh-2" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 2</a></li>
+<li><a href="https://javarush.com/groups/posts/3273-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-3" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 3</a></li>
+<li><a href="https://javarush.com/groups/posts/3284-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-4" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 4</a></li>
+<li><a href="https://javarush.com/groups/posts/3296-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-5" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 5</a></li>
+<li><a href="https://javarush.com/groups/posts/3341-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-6" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 6</a></li>
+<li><a href="https://javarush.com/groups/posts/3386-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-7" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 7</a></li>
+<li><a href="https://javarush.com/groups/posts/3415-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-8" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 8</a></li>
+<li><a href="https://javarush.com/groups/posts/3434-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-9" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 9</a></li>
+<li><a href="https://javarush.com/groups/posts/3452-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-10" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 10</a></li>
+<li><a href="https://javarush.com/groups/posts/3464-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-11" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 11</a></li>
+<li><a href="https://javarush.com/groups/posts/3507-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-13" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 13</a></li>
+<li><a href="https://javarush.com/groups/posts/3558-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-14" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 14</a></li>
+<li><a href="https://javarush.com/groups/posts/3592-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-15" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 15</a></li>
+<li><a href="https://javarush.com/groups/posts/3621-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-16" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 16</a></li>
+</ul>
+</td></tr></tbody></table><a href="https://javarush.com/login/signup" target="_blank"><img data-max-width="1080" id="click_banner5_articles" data-id="c11da258-625d-43d0-a00a-7f80367b4279" src="https://cdn.javarush.com/images/article/c11da258-625d-43d0-a00a-7f80367b4279/1080.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 12 - 9"></a>

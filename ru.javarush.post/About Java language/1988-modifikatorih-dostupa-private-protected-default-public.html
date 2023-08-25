@@ -1,0 +1,298 @@
+Модификаторы доступа. Private, protected, default, public
+<p>----------------------------------------</p>
+Привет! В сегодняшней лекции мы познакомимся с понятием «модификаторы доступа» и рассмотрим примеры работы с ними. Хотя слово «познакомимся» будет не совсем правильным: с большинством из них ты уже знаком по предыдущим лекциям. На всякий случай освежим в памяти ...
+<p>----------------------------------------</p>
+Привет! В сегодняшней лекции мы познакомимся с понятием «<strong>модификаторы доступа</strong>» и рассмотрим примеры работы с ними.
+<img data-id="eee9cba7-b5a5-48dc-8627-3d2c15e4c73a" data-max-width="850" alt="Модификаторы доступа. Private, protected, default, public - 1" src="https://cdn.javarush.com/images/article/eee9cba7-b5a5-48dc-8627-3d2c15e4c73a/1024.jpeg">Хотя слово «познакомимся» будет не совсем правильным: с большинством из них ты уже знаком по предыдущим лекциям. На всякий случай освежим в памяти главное. 
+
+<strong>Модификаторы доступа</strong> — это чаще всего ключевые слова, которые регулируют уровень доступа к разным частям твоего кода. Почему «чаще всего»? Потому что один из них установлен по умолчанию и не обозначается ключевым словом :)
+
+Всего в Java есть четыре модификатора доступа. Перечислим их в порядке от самых строгих до самых «мягких»:
+<ul>
+<li><strong>private;</strong></li>
+<li><strong>protected;</strong></li>
+<li><strong>default (package visible);</strong></li>
+<li><strong>public.</strong></li></ul>Давай рассмотрим каждый из них, определимся, когда они могут нам пригодиться и приведем примеры :)
+<h2>Модификатор private</h2><img data-id="6a8c0181-8bbe-442e-b040-c74c62501986" data-max-width="850" alt="Модификаторы доступа. Private, protected, default, public - 2" src="https://cdn.javarush.com/images/article/6a8c0181-8bbe-442e-b040-c74c62501986/1024.jpeg"><code><strong>Private</strong></code> — наиболее строгий модификатор доступа. Он ограничивает видимость данных и методов пределами одного класса.
+
+Этот модификатор тебе известен из лекции про геттеры и сеттеры. Помнишь этот пример?
+
+<pre class="lang-java line-numbers"><code>
+public class Cat {
+
+   public String name;
+   public int age;
+   public int weight;
+
+   public Cat(String name, int age, int weight) {
+       this.name = name;
+       this.age = age;
+       this.weight = weight;
+   }
+
+   public Cat() {
+   }
+
+   public void sayMeow() {
+       System.out.println("Мяу!");
+   }
+}
+
+public class Main {
+
+   public static void main(String[] args) {
+
+       Cat cat = new Cat();
+       cat.name = "";
+       cat.age = -1000;
+       cat.weight = 0;
+   }
+}
+</code></pre>
+Мы рассматривали его в одной из статей раньше.
+
+Здесь мы допустили серьезную ошибку: открыли наши данные, в результате чего коллеги-программисты получили доступ напрямую к полям класса и изменению их значения. Более того, эти значения присваивались без проверок, в результате чего в нашей программе можно создать кота с возрастом -1000 лет, именем «» и весом 0.
+
+Для решения этой проблемы мы использовали <strong>геттеры и сеттеры</strong>, а также ограничили доступ к данным с помощью модификатора <code>private</code>.
+
+<pre class="lang-java line-numbers"><code>
+public class Cat {
+
+   private String name;
+   private int age;
+   private int weight;
+
+   public Cat(String name, int age, int weight) {
+       this.name = name;
+       this.age = age;
+       this.weight = weight;
+   }
+
+   public Cat() {
+   }
+
+   public void sayMeow() {
+       System.out.println("Мяу!");
+   }
+
+   public String getName() {
+       return name;
+   }
+
+   public void setName(String name) {
+       // проверка входящего параметра
+       this.name = name;
+   }
+
+   public int getAge() {
+       return age;
+   }
+
+   public void setAge(int age) {
+       // проверка входящего параметра
+       this.age = age;
+   }
+
+   public int getWeight() {
+       return weight;
+   }
+
+   public void setWeight(int weight) {
+       // проверка входящего параметра
+       this.weight = weight;
+   }
+}
+</code></pre>
+Собственно, <strong>ограничение доступа к полям и реализация геттеров-сеттеров — самый распространенный пример использования <code>private</code> в реальной работе.</strong>
+
+То есть <strong>реализация инкапсуляции в программе — главное предназначение этого модификатора.</strong>
+
+Это касается не только полей, кстати. Представь, что в твоей программе существует метод, который реализует какую-то ОЧЕНЬ сложную функциональность.
+
+Что бы придумать такого для примера…
+
+Скажем, твой метод <code>readDataFromCollider()</code> принимает на вход адрес с данными, считывает данные из Большого Адронного Коллайдера в байтовом формате, преобразует эти данные в текст, записывает в файл и распечатывает его.
+
+Даже описание метода выглядит жутковато, что уж говорить про код :)
+
+Чтобы повысить читаемость кода, было бы хорошо не писать сложную логику метода в одном месте, а наоборот — разбить функциональность на отдельные методы.
+
+Например, метод <code>readByteData()</code> отвечает за считывание данных, <code>convertBytesToSymbols()</code> конвертирует считанные с коллайдера данные в текст, <code>saveToFile()</code> сохраняет полученный текст в файл, а <code>printColliderData()</code> — распечатывает наш файл с данными.
+
+Метод <code>readDataFromCollider()</code> в итоге стал бы намного проще:
+
+<pre class="lang-java line-numbers"><code>
+public class ColliderUtil {
+
+   public void readDataFromCollider(Path pathToData) {
+       byte[] colliderData = readByteData(pathToData);
+       String[] textData = convertBytesToSymbols(colliderData);
+       File fileWithData = saveToFile(textData);
+       printColliderData(fileWithData);
+   }
+  
+   public byte[] readByteData(Path pathToData) {
+
+       // считывает данные в байтах
+   }
+
+   public String[] convertBytesToSymbols(byte[] colliderDataInBytes) {
+
+       // конвертирует байты в символы
+   }
+
+   public File saveToFile(String[] colliderData) {
+
+       // сохраняет считанные данные в файл
+   }
+
+   public void printColliderData(File fileWithColliderData) {
+
+       // печатает данные из файла
+   }
+}
+</code></pre>
+Однако, как ты помнишь из лекции про интерфейсы, пользователь получает доступ только к конечному интерфейсу. А наши 4 метода не являются его частью. Они <strong>вспомогательные</strong>: мы создали их, чтобы улучшить читаемость кода и не засовывать четыре разные задачи в один метод.
+
+Давать доступ пользователю к этим методам не нужно. Если у пользователя при работе с коллайдером появится доступ к методу <code>convertBytesToSymbols()</code>, он скорее всего просто не поймет, что это за метод и зачем нужен. Какие байты конвертируются? Откуда они взялись? Зачем их конвертировать в текст?
+
+<strong>Логика, которая выполняется в этом методе, не является частью интерфейса для пользователя.</strong> Только метод <code>readDataFromCollider()</code> — часть интерфейса.
+
+Что же делать с этими четырьмя «внутренними» методами? Правильно! Ограничить доступ к ним модификатором <code>private</code>.
+
+Так они смогут спокойно выполнять свою работу внутри класса и не вводить в заблуждение пользователя, которому логика каждого из них по отдельности не нужна.
+
+<pre class="lang-java line-numbers"><code>
+public class ColliderUtil {
+
+   public void readDataFromCollider(Path pathToData) {
+       byte[] colliderData = readByteData(pathToData);
+       String[] textData = convertBytesToSymbols(colliderData);
+       File fileWithData = saveToFile(textData);
+       printColliderData(fileWithData);
+   }
+
+   private byte[] readByteData(Path pathToData) {
+       // считывает данные в байтах
+   }
+
+   private String[] convertBytesToSymbols(byte[] colliderDataInBytes) {
+       // конвертирует байты в символы
+   }
+
+   private File saveToFile(String[] colliderData) {
+       // сохраняет считанные данные в файл
+   }
+
+   private void printColliderData(File fileWithColliderData) {
+       // печатает данные из файла
+   }
+}
+</code></pre>
+<h2>Модификатор protected</h2>Следующий по строгости модификатор доступа — <code><strong>protected</strong></code>.
+<img data-id="8d4b98ea-fbf8-4bd6-89ff-7447166ab7c7" data-max-width="850" alt="Модификаторы доступа. Private, protected, default, public - 3" src="https://cdn.javarush.com/images/article/8d4b98ea-fbf8-4bd6-89ff-7447166ab7c7/1024.jpeg">
+Поля и методы, обозначенные модификатором доступа <code>protected</code>, будут видны:
+<ul>
+<li>в пределах всех классов, находящихся в том же пакете, что и наш;</li>
+<li>в пределах всех классов-наследников нашего класса.</li>
+</ul>Сходу трудно представить, когда это может понадобиться. Не удивляйся: случаев применения <code>protected</code> гораздо меньше, чем <code>private</code>, и они специфические.
+
+Представь, что у нас есть абстрактный класс <code>AbstractSecretAgent</code>, обозначающий секретного агента какой-то спецслужбы, а также пакет <code>top_secret</code>, в котором лежит этот класс и его наследники. От него наследуются конкретные классы — <code>FBISecretAgent</code>, <code>MI6SecretAgent</code>, <code>MossadSecretAgent</code> и т.п.
+
+Внутри абстрактного класса мы хотим реализовать счетчик агентов. При создании где-то в программе нового объекта-агента он будет увеличиваться. 
+
+<pre class="lang-java line-numbers"><code>
+package top_secret;
+
+public abstract class AbstractSecretAgent {
+
+   public static int agentCount = 0;
+}
+</code></pre>
+Но агенты-то у нас секретные! А значит, об их числе должны знать только они и никто другой.
+
+Мы легко можем добавить модификатор <code>protected</code> к полю <code>agentCount</code>, и тогда получить его значение смогут либо объекты других классов секретных агентов, либо те классы, которые расположены в нашем «секретном» пакете <code>top_secret</code>.
+
+<pre class="lang-java line-numbers"><code>
+public abstract class AbstractSecretAgent {
+
+   protected static int agentCount = 0;
+}
+</code></pre>
+Вот для таких специфических задач и нужен модификатор <code>protected</code> :)<h2>Модификатор package visible</h2>Дальше у нас по списку идет модификатор <code><strong>default</strong></code> или, как его еще называют, <code><strong>package visible</strong></code>. Он не обозначается ключевым словом, поскольку установлен в Java по умолчанию для всех полей и методов.
+
+Если написать в твоем коде —
+
+<pre class="lang-java line-numbers"><code>
+int x = 10;
+</code></pre>
+… у переменной <code>x</code> будет этот самый <code>package visible</code> доступ.
+
+Если метод (или переменная) не помечены никаким модификатором, считается, что они помечены «модификатором по умолчанию». Переменные или методы с таким модификатором (т.е. вообще без какого-нибудь) видны всем классам пакета, в котором они объявлены. И только им.
+
+Случаи его применения ограничены, как и у модификатора <code>protected</code>. Чаще всего <code>default</code>-доступ используется в пакете, где есть какие-то классы-утилиты, не реализующие функциональность всех остальных классов в этом пакете. 
+
+Приведем пример. Представь, что у нас есть пакет «<strong>services</strong>». Внутри него лежат различные классы, которые работают с базой данных. Например, есть класс <code>UserService</code>, считывающий данные пользователей из БД, класс <code>CarService</code>, считывающий из этой же БД данные об автомобилях, и другие классы, каждый из которых работает со своим типом объектов и читает данные о них из базы.
+
+<pre class="lang-java line-numbers"><code>
+package services;
+
+public class UserService {
+}
+
+package services;
+
+public class CarService {
+}
+</code></pre>
+Однако легко может случиться ситуация, когда данные в базе данных лежат в одном формате, а нам они нужны в другом. 
+
+Представь, что дата рождения пользователя в БД хранится в формате TIMESTAMP WITH TIME ZONE...
+
+<pre class="lang-java line-numbers"><code>
+2014-04-04 20:32:59.390583+02
+</code></pre>
+ ...нам вместо этого нужен самый простой объект — <code>java.util.Date</code>.
+
+Для этой цели можем создать внутри пакета <code>services</code> специальный класс <code>Mapper</code>. Он будет отвечать за конвертацию данных из базы в привычные нам Java-объекты. Простой вспомогательный класс.
+
+Обычно мы создаем все классы как <code>public class ClassName</code>, но это не обязательно.
+
+Мы можем объявить наш вспомогательный класс просто как <code>class Mapper</code>. В таком случае он все равно делает свою работу, но не виден никому за пределами пакета <code>services</code>! 
+
+<pre class="lang-java line-numbers"><code>
+package services;
+
+class Mapper {
+}
+
+
+package services;
+
+public class CarService {
+  
+   Mapper mapper;
+}
+</code></pre>
+А это, по сути, правильная логика: зачем кому-то за пределами пакета видеть вспомогательный класс, работающий только с классами этого же пакета?<h2>Модификатор public</h2>И последний по списку, но не по значимости — модификатор <code><strong>public</strong></code>! С ним ты познакомился в первый день учебы на JavaRush, впервые в жизни запустив <code>public static void main(String[] args)</code>.
+<img data-id="4323b90c-193c-444c-88e4-cfd8af695107" data-max-width="850" alt="Модификаторы доступа. Private, protected, default, public - 4" src="https://cdn.javarush.com/images/article/4323b90c-193c-444c-88e4-cfd8af695107/1024.jpeg">
+Теперь, когда ты изучил лекции об интерфейсах, для тебя очевидно его предназначение :) Ведь <code>public</code> создан для того, чтобы отдавать что-то пользователям. Например, интерфейс твоей программы.
+
+Допустим, ты написал программу-переводчик, и она умеет переводить русский текст в английский. Ты создал метод <code>translate(String textInRussian)</code>, внутри которого реализована необходимая логика. 
+
+Этот метод ты отметил словом <code>public</code>, и теперь он станет частью интерфейса: 
+
+<pre class="lang-java line-numbers"><code>
+public class Translator {
+
+   public String translate(String textInRussian) {
+
+       // переводит текст с русского на английский
+   }
+}
+</code></pre>
+Можно связать вызов этого метода с кнопкой «перевести» на экране программы — и все! Кто угодно может этим пользоваться. 
+
+Части кода, помеченные модификатором <code>public</code>, предназначаются для конечного пользователя.
+
+Если привести пример из жизни, <code>private</code> — это все процессы, происходящие внутри телевизора, когда он работает, а <code>public</code> — это кнопки на пульте телевизора, с помощью которых пользователь может им управлять. При этом ему не нужно знать как устроен телевизор и за счет чего он работает. Пульт — это набор <code>public</code>-методов: <code>on()</code>, <code>off()</code>, <code>nextChannel()</code>, <code>previousChannel()</code>, <code>increaseVolume()</code>, <code>decreaseVolume()</code> и т.д. 

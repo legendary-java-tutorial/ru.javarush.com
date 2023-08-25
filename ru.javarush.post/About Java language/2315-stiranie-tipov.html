@@ -1,0 +1,325 @@
+Стирание типов
+<p>----------------------------------------</p>
+Привет! Мы продолжаем серию лекций о дженериках. Ранее мы разобрались в общих чертах, что это такое, и зачем нужно. Сегодня поговорим о некоторых особенностях дженериков и рассмотрим некоторые подводные камни при работе с ними. Поехали!
+
+<p>----------------------------------------</p>
+Привет!
+
+Мы продолжаем серию лекций о дженериках. <a href="https://javarush.com/groups/posts/2295-chto-takoe-dzheneriki-v-java" target="_blank">Ранее</a> мы разобрались в общих чертах, что это такое, и зачем нужно. Сегодня поговорим о некоторых особенностях дженериков и рассмотрим некоторые подводные камни при работе с ними. Поехали!
+<img data-max-width="800" data-id="cafe3789-b973-439c-826b-b2f1a3965858" src="/images/article/cafe3789-b973-439c-826b-b2f1a3965858/800.jpeg" class="img-fluid" alt="Стирание типов - 1">В <a href="https://javarush.com/groups/posts/2313-ispoljhzovanie-varargs-pri-rabote-s-dzhenerikami" target="_blank">прошлой лекции</a> мы говорили о разнице между <span class="text-bold">Generic Types</span> и <span class="text-bold">Raw Types</span>. Если ты забыл, Raw Type — это класс-дженерик, из которого удалили его тип.
+
+<pre class="lang-java line-numbers"><code>
+List list = new ArrayList();
+</code></pre>
+Вот пример. Здесь мы не указываем, какого именно типа объекты будут помещаться в наш <code>List</code>.
+
+Если попытаться создать такой <code>List</code> и добавить в него какие-то объекты мы увидим в IDEa предупреждение:
+
+<pre><code>
+“Unchecked call to add(E) as a member of raw type of java.util.List”.
+</code></pre>
+Но также мы говорили о том, что дженерики появились только в версии языка Java 5. К моменту ее выхода программисты успели написать кучу кода с использованием Raw Types, и чтобы он не перестал работать, возможность создания и работы Raw Types в Java сохранилась.
+
+Однако эта проблема оказалась гораздо обширнее.
+
+Java-код, как ты знаешь, преобразуется в специальный байт-код, который потом выполняется виртуальной машиной Java.
+
+И если бы в процессе перевода мы помещали в байт-код информацию о типах-параметрах, это сломало бы весь ранее написанный код, ведь до Java 5 никаких типов-параметров не существовало!
+
+При работе с дженериками есть одна очень важная особенность, о которой необходимо помнить. Она называется “стирание типов” (type erasure).
+
+Ее суть заключается в том, что внутри класса не хранится никакой информации о его типе-параметре.
+
+Эта информация доступна только на этапе компиляции и стирается (становится недоступной) в runtime.
+
+Если ты попытаешься положить объект не того типа в свой <code>List&lt;String&gt;</code>, компилятор выдаст ошибку. Этого как раз и добивались создатели языка, создавая дженерики — проверки на этапе компиляции.
+
+Но когда весь написанный тобой Java-код превратится в байт-код, в нем не будет информации о типах-параметрах.
+
+Внутри байт-кода твой список <code>List&lt;Cat&gt;</code> cats не будет отличаться от <code>List&lt;String&gt;</code> strings. В байт-коде ничто не будет говорить о том, что <code>cats</code> — это список объектов <code>Cat</code>. Информация об этом сотрется во время компиляции, и в байт код попадет только информация о том, что у тебя в программе есть некий список <code>List&lt;Object&gt; cats</code>.
+
+Давай посмотрим как это работает:
+
+<pre class="lang-java line-numbers"><code>
+public class TestClass&lt;T&gt; {
+
+   private T value1;
+   private T value2;
+
+   public void printValues() {
+       System.out.println(value1);
+       System.out.println(value2);
+   }
+
+   public static &lt;T&gt; TestClass&lt;T&gt; createAndAdd2Values(Object o1, Object o2) {
+       TestClass&lt;T&gt; result = new TestClass&lt;&gt;();
+       result.value1 = (T) o1;
+       result.value2 = (T) o2;
+       return result;
+   }
+
+   public static void main(String[] args) {
+       Double d = 22.111;
+       String s = "Test String";
+       TestClass&lt;Integer&gt; test = createAndAdd2Values(d, s);
+       test.printValues();
+   }
+}
+</code></pre>
+Мы создали собственный дженерик-класс <code>TestClass</code>. 
+
+Он довольно прост: по сути это небольшая “коллекция” на 2 объекта, которые помещаются туда сразу же при создании объекта.  В качестве полей у него 2 объекта <code>T</code>.
+
+При выполнении метода <code>createAndAdd2Values()</code> должно произойти приведение двух переданных объектов <code>Object a</code> и <code>Object b</code> к нашему типу <code>T</code>, после чего они будут добавлены в объект <code>TestClass</code>.
+
+В методе <code>main()</code> мы создаем <code>TestClass&lt;Integer&gt;</code>, то есть в качестве <code>T</code> у нас будет <code>Integer</code>.
+
+Но при этом в метод <code>createAndAdd2Values()</code> мы передаем число <code>Double</code> и объект <code>String</code>.
+
+Как ты думаешь, сработает ли наша программа? Ведь в качестве типа-параметра мы указали <code>Integer</code>, а <code>String</code> точно нельзя привести к <code>Integer</code>!
+
+Давай запустим метод <code>main()</code> и проверим. 
+
+Вывод в консоль:
+
+<em>22.111
+Test String</em>
+
+Неожиданный результат! Почему такое произошло?
+
+<span class="text-bold">Именно из-за стирания типов.</span>
+
+Во время компиляции кода информация о типе-параметре <code>Integer</code> нашего объекта <code>TestClass&lt;Integer&gt; test</code> стерлась.
+
+Он превратился в <code>TestClass&lt;Object&gt; test</code>.
+
+Наши параметры <code>Double</code> и <code>String</code> без проблем преобразовались в <code>Object</code> (а не в <code>Integer</code>, как мы того ожидали!) и спокойно добавились в <code>TestClass</code>.
+
+Вот еще один простой, но очень показательный пример стирания типов:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.ArrayList;
+import java.util.List;
+
+public class Main {
+
+   private class Cat {
+
+   }
+
+   public static void main(String[] args) {
+
+       List&lt;String&gt; strings = new ArrayList&lt;&gt;();
+       List&lt;Integer&gt; numbers = new ArrayList&lt;&gt;();
+       List&lt;Cat&gt; cats = new ArrayList&lt;&gt;();
+
+       System.out.println(strings.getClass() == numbers.getClass());
+       System.out.println(numbers.getClass() == cats.getClass());
+
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<em>true
+true</em>
+
+Казалось бы, мы создали коллекции с тремя разными типами-параметрами — <code>String</code>, <code>Integer</code>, и созданный нами класс <code>Cat</code>.
+
+Но во время преобразования в байт-код все три списка превратились в <code>List&lt;Object&gt;</code>, поэтому при выполнении программа говорит нам, что во всех трех случаях у нас используется один и тот же класс.
+<h2>Стирание типов при работе с массивами и дженериками</h2>Есть один очень важный момент, который необходимо четко понимать при работе с массивами и дженериками (например, <code>List</code>). Также его стоит учитывать при выборе структуры данных для твоей программы.
+
+Дженерики подвержены стиранию типов. Информация о типе-параметре недоступна во время выполнения программы.
+
+В отличие от них, массивы знают и могут использовать информацию о своем типе данных во время выполнения программы.
+
+Попытка поместить в массив значение неверного типа приведет к исключению:
+
+<pre class="lang-java line-numbers"><code>
+public class Main2 {
+
+   public static void main(String[] args) {
+
+       Object x[] = new String[3];
+       x[0] = new Integer(222);
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+Exception in thread "main" java.lang.ArrayStoreException: java.lang.Integer
+</code></pre>
+Из-за того, что между массивами и дженериками есть такая большая разница, у них могут возникнуть проблемы с совместимостью.
+
+Прежде всего, ты не можешь создать массив объектов-дженериков или даже просто типизированный массив.
+
+Звучит немного непонятно?
+
+Давай рассмотрим наглядно.
+
+К примеру, ты не сможешь сделать в Java ничего из этого:
+
+<pre class="lang-java line-numbers"><code>
+new List&lt;T&gt;[]
+new List&lt;String&gt;[]
+new T[]
+</code></pre>
+Если мы попытаемся создать массив списков <code>List&lt;String&gt;</code>, получим ошибку компиляции generic array creation:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.List;
+
+public class Main2 {
+
+   public static void main(String[] args) {
+
+       //ошибка компиляции! Generic array creation
+       List&lt;String&gt;[] stringLists = new List&lt;String&gt;[1];
+   }
+}
+</code></pre>
+Но для чего это сделано? Почему создание таких массивов запрещено? Это все — для обеспечения типобезопасности.
+
+Если бы компилятор позволял нам создавать такие массивы из объектов-дженериков, мы могли бы заработать кучу проблем.
+
+Вот простой пример из книги Джошуа Блоха “Effective Java”:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   List&lt;String&gt;[] stringLists = new List&lt;String&gt;[1];  //  (1)
+   List&lt;Integer&gt; intList = Arrays.asList(42, 65, 44);  //  (2)
+   Object[] objects = stringLists;  //  (3)
+   objects[0] = intList;  //  (4)
+   String s = stringLists[0].get(0);  //  (5)
+}
+</code></pre>
+Давай представим, что создание массива <code>List&lt;String&gt;[] stringLists</code> было бы разрешено, и компилятор бы не ругался.
+
+Вот каких дел мы могли бы наворотить в этом случае:
+
+В строке 1 мы создаем массив листов <code>List&lt;String&gt;[] stringLists</code>. 
+Наш массив вмещает в себя один <code>List&lt;String&gt;</code>.
+
+В строке 2 мы создаем список чисел <code>List&lt;Integer&gt;</code>.
+
+В строке 3 мы присваиваем наш массив <code>List&lt;String&gt;[]</code> в переменную <code>Object[] objects</code>. Язык Java позволяет это делать: в массив объектов <code>X</code> можно помещать и объекты <code>X</code>, и объекты всех дочерних классов <code>Х</code>. Соответственно, в массив <code>Objects</code> можно поместить вообще все что угодно.
+
+В строке 4 мы подменяем единственный элемент массива <code>objects (List&lt;String&gt;)</code> на список <code>List&lt;Integer&gt;</code>. 
+
+В результате мы поместили <code>List&lt;Integer&gt;</code> в наш массив, который предназначался только для хранения <code>List&lt;String&gt;</code>!
+
+С ошибкой же мы столкнемся только когда код дойдет до строки 5. Во время выполнения программы будет выброшено исключение <code>ClassCastException</code>.
+
+Поэтому запрет на создание таких массивов и был введен в язык Java — это позволяет нам избегать подобных ситуаций.
+<h2>Как можно обойти стирание типов?</h2>Что ж, стирание типов мы изучили. Давай попробуем обмануть систему! :)
+
+<span class="text-bold">Задача:</span>
+
+У нас есть класс-дженерик <code>TestClass&lt;T&gt;</code>.  Нам нужно создать в нем метод <code>createNewT()</code>, который будет создавать и возвращать новый объект типа <code>Т</code>.
+
+Но ведь это невозможно сделать, так? Вся информация о типе <code>Т</code> будет стерта во время компиляции, и в процессе работы программы мы не сможем узнать, объект какого именно типа нам нужно создать.
+
+На самом деле, есть один хитрый способ.
+
+Ты наверняка помнишь, что в Java есть класс <code>Class</code>. Используя его, мы можем получить класс любого нашего объекта:
+
+<pre class="lang-java line-numbers"><code>
+public class Main2 {
+
+   public static void main(String[] args) {
+
+       Class classInt = Integer.class;
+       Class classString = String.class;
+
+       System.out.println(classInt);
+       System.out.println(classString);
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+class java.lang.Integer
+class java.lang.String
+</code></pre>
+Но вот одна особенность, о которой мы не говорили. В документации Oracle ты увидишь, что класс Class — это дженерик!
+<img data-max-width="850" alt="Стирание типов - 3" src="https://cdn.javarush.com/images/article/35a1fa7a-c631-400f-bc41-81e46b91942f/original.jpeg">В документации написано: “Т — это тип класса, моделируемого этим объектом Class”.
+
+Если перевести это с языка документации на человеческий, это означает, что классом для объекта <code>Integer.class</code> является не просто <code>Class</code>, а <code>Class&lt;Integer&gt;</code>. Типом объекта <code>string.class</code> является не просто <code>Class</code>, <code>Class&lt;String&gt;</code>, и т.д.
+
+Если все еще непонятно, попробуй добавить тип-параметр к предыдущему примеру:
+
+<pre class="lang-java line-numbers"><code>
+public class Main2 {
+
+   public static void main(String[] args) {
+
+       Class&lt;Integer&gt; classInt = Integer.class;
+       //ошибка компиляции!
+       Class&lt;String&gt; classInt2 = Integer.class;
+      
+      
+       Class&lt;String&gt; classString = String.class;
+       //ошибка компиляции!
+       Class&lt;Double&gt; classString2 = String.class;
+   }
+}
+</code></pre>
+И вот теперь, используя это знание, мы можем обойти стирание типов и решить нашу задачу!
+
+Попробуем получить информацию о типе-параметре. Его роль будет играть класс <code>MySecretClass</code>:
+
+<pre class="lang-java line-numbers"><code>
+public class MySecretClass {
+
+   public MySecretClass() {
+
+       System.out.println("Объект секретного класса успешно создан!");
+   }
+}
+</code></pre>
+А вот как мы используем на практике наше решение:
+
+<pre class="lang-java line-numbers"><code>
+public class TestClass&lt;T&gt; {
+
+   Class&lt;T&gt; typeParameterClass;
+
+   public TestClass(Class&lt;T&gt; typeParameterClass) {
+       this.typeParameterClass = typeParameterClass;
+   }
+
+   public T createNewT() throws IllegalAccessException, InstantiationException {
+       T t = typeParameterClass.newInstance();
+       return t;
+   }
+
+   public static void main(String[] args) throws InstantiationException, IllegalAccessException {
+
+       TestClass&lt;MySecretClass&gt; testString = new TestClass&lt;&gt;(MySecretClass.class);
+       MySecretClass secret = testString.createNewT();
+
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+Объект секретного класса успешно создан!
+</code></pre>
+Мы просто передали нужный класс-параметр в конструктор нашего класса-дженерика:
+
+<pre class="lang-java line-numbers"><code>
+TestClass&lt;MySecretClass&gt; testString = new TestClass&lt;&gt;(MySecretClass.class);
+</code></pre>
+Благодаря этому мы сохранили информацию о типе-параметре и уберегли ее от стирания. В итоге мы смогли создать объект <code>T</code>! :)
+
+На этом сегодняшняя лекция подходит к концу.
+
+О стирании типов всегда необходимо помнить при работе с дженериками. Выглядит это дело не очень удобно, но нужно понимать — дженерики не были частью языка Java при его создании. Это позже прикрученная возможность, которая помогает нам создавать типизированные коллекции и отлавливать ошибки на этапе компиляции.
+
+В некоторых других языках, где дженерики появлялись с первой версии, стирание типов отсутствует (например, в C#).
+
+Впрочем, мы не закончили изучение дженериков! На следующей лекции ты познакомишься с еще несколькими особенностями работы с ними. А пока было бы неплохо решить пару задач! :)

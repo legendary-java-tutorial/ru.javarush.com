@@ -1,0 +1,229 @@
+Рефакторим и ретроспективим - "Java-проект от А до Я"
+<p>----------------------------------------</p>
+Всем привет, дорогие друзья. Это последняя статья в нашей серии по созданию Java-проекта от А до Я. Сегодня поговорим о том, что хорошо бы отрефакторить, а также обсудим результат нашей работы и поговорим о планах на будущее проекта JavaRushTelegramBot. Создадим под это дело...
+<p>----------------------------------------</p>
+Всем привет, дорогие друзья.
+
+Это последняя статья в нашей серии по созданию Java-проекта от А до Я. Сегодня поговорим о том, что хорошо бы отрефакторить, а также обсудим результат нашей работы и поговорим о планах на будущее проекта JavaRushTelegramBot.
+
+<img data-max-width="800" data-id="1f1e0359-18d7-4aca-a4bb-487692b8d261" src="https://cdn.javarush.com/images/article/1f1e0359-18d7-4aca-a4bb-487692b8d261/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Рефакторим и ретроспективим - 1"><h2>Отрефакторим наш код</h2>Создадим под это дело новую ветку: STEP_10, в которую запишем все последние изменения до MVP. 
+
+Рефакторинг — это изменение кодовой базы без изменения ее поведения. 
+
+Что хочется изменить? В самом начале термином “статья” на проекте я выбрал слово <span class="text-bold">article</span> и пока не начал работать с клиентом Javarush API для статей, это было логично. Но в Javarush API используют термин <span class="text-bold">post</span>. И я думаю, что хорошо будет перейти на их стандарт, поэтому первым делом переименуем везде с article на post.
+
+Что будет нашей гарантией, что все осталось также? Гарантией будут наши тесты, которые мы написали. Именно теперь они нам понадобятся.
+
+Начнем изменения с БД. В таблице group_sub, нужно переименовать поле <span class="ctext-bold">lastArticleId</span> в <span class="text-bold">lastPostId</span>. Это очень просто, потому что у нас уже настроен Flyway и для того, чтобы обновить поле, нужно всего добавить еще одну миграцию, в которой мы выполним  ALTER TABLE операцию. 
+
+Создадим новую, третью, миграцию: <span class="text-bold">V00003__rename_last_article_id.sql</span> в котором будет:
+
+<pre class="language-java line-numbers"><code>
+ALTER TABLE group_sub CHANGE COLUMN last_article_id last_post_id INT;
+</code></pre>
+Эту миграцию нужно поместить в тоже место, где лежат и две предыдущие.
+
+Далее нужно переименовать имя переменной в сущности GroupSub с lastArticleId на lastPostId. Если работа идет через IDEA, то провести переименование очень просто, нужно воспользоваться горячей клавишей: shift + F6, когда курсор находится на имени класса/метода/поля, тогда среда разработки позволяет переименовать все места, где используется это поле. 
+
+Также переименует геттеры и сеттеры для этого поля.Это полезная вещь и должна быть в арсенале каждого разработчика.
+Я уверен, что такой же функционал есть и у эклипса, но подсказать не могу, я им не пользуюсь.<img data-max-width="512" data-id="05b8ca6c-712e-4955-b251-536095ea9a25" src="https://cdn.javarush.com/images/article/05b8ca6c-712e-4955-b251-536095ea9a25/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: Рефакторим и ретроспективим - 2">поэтому переименуем 
+
+<pre class="language-java line-numbers"><code>
+@Column(name = "last_article_id")
+private Integer lastArticleId;
+</code></pre>
+в 
+
+<pre class="language-java line-numbers"><code>
+@Column(name = "last_post_id")
+private Integer lastPostId;
+</code></pre>
+Далее при помощи поиска по всему проекту (ctrl+shift+f) найдем все места, где есть упоминания Article:<img data-max-width="512" data-id="edab456a-f3fe-47bc-9118-271283636765" src="https://cdn.javarush.com/images/article/edab456a-f3fe-47bc-9118-271283636765/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: Рефакторим и ретроспективим - 3">Видно из рисунка, что у нас еще есть имена классов и методов со словом Article. Их тоже нужно переименовать в Post. Используем уже известную команду shift+F6 для них:<ul>
+
+<li><p>класс <span class="code">FindNewArticlesJob</span> -&gt; <span class="code">FindNewPostsJob</span></p></li>
+<li><p>класс <span class="code">FindNewArticleService</span> -&gt; <span class="code">FindNewPostsService</span></p></li>
+<li><p>метод <span class="code">FindNewArticleService#findNewArticles</span> -&gt; <span class="code">FindNewPostsService#findNewPosts</span></p></li>
+<li><p>класс <span class="code">FindNewArticleServiceImpl</span> -&gt; <span class="code">FindNewPostsServiceImpl</span></p></li>
+<li><p>проперти <span class="code">bot.recountNewArticleFixedRate</span> -&gt; <span class="code">bot.recountNewPostFixedRate</span></p></li>
+<li><p>метод <span class="code">JavaRushGroupClient#findLastArticleId</span> -&gt; <span class="code">JavaRushGroupClient#findLastPostId</span></p></li>
+<li><p>метод <span class="code">FindNewPostsJob#findNewArticles</span> -&gt; <span class="code">FindNewPostsJob#findNewPosts</span></p></li>
+<li><p>И остальные места, где внутренние методы, где комментарии.</p></li>
+
+</ul>Также у нас еще есть BPMN модель, в которой описан процесс поиска новых статей. Его менять мы будем через специальную программу CamundaModeler, через нее и формирую новую картинку в README.
+
+В результате получим:<img data-max-width="1080" data-id="e28e3edc-39d3-4c51-9670-16708e362516" src="https://cdn.javarush.com/images/article/e28e3edc-39d3-4c51-9670-16708e362516/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: Рефакторим и ретроспективим - 4">Еще хочу привести к одному виду поиск чего-то. На данный момент у меня используется два глагола: <span class="text-bold">find</span> и <span class="text-bold">retrieve</span>. Хочу переименовать все <span class="text-bold">retrieve</span> в <span class="text-bold">find</span>:<ul>
+
+<li>метод <span class="code">CommandContainer#retrieveCommand</span> -&gt; <span class="code">CommandContainer#findCommand</span></li>
+<li>все джавадоки с <span class="text-bold">retrieve</span> в <span class="text-bold">find</span>.</li>
+
+</ul>Далее хочется решить поле <span class="text-bold">chatId</span>. Опираясь на <a href="https://core.telegram.org/bots/api#chat" rel="nofollow" target="_blank">доку из телеграма</a>, можем сказать, что это числовое значение. Поэтому я думаю будет хорошим тоном сделать также и в приложении. В базе данных оно стоит как строковое значение. 
+
+Сделали мы это потому, что по какой-то причине в нашей библиотеке работы с ботом при отправке сообщений <span class="text-bold">chatId</span> был именно строковым. 
+
+Поменяем все так, чтобы конвертировать в строку именно в тот момент. Первым делом обновляем интерфейс <span class="code">SendBotMessageService</span>:
+
+<pre class="language-java line-numbers"><code>
+/**
+* Service for sending messages via telegram-bot.
+*/
+public interface SendBotMessageService {
+
+   /**
+    * Send message via telegram bot.
+    *
+    * @param chatId  provided chatId in which would be sent.
+    * @param message provided message to be sent.
+    */
+   void sendMessage(Long chatId, String message);
+
+   /**
+    * Send messages via telegram bot.
+    *
+    * @param chatId  provided chatId in which would be sent.
+    * @param message collection of provided messages to be sent.
+    */
+   void sendMessage(Long chatId, List&lt;String&gt; message);
+}
+</code></pre>
+Теперь принимает интерфейс не <span class="code">String chatId</span>, а <span class="code">Long chatId</span>.
+
+Обновляем и реализацию, ставим просто <span class="code">chatId.toString()</span> в необходимом поле:
+
+<pre class="language-java line-numbers"><code>
+sendMessage.setChatId(chatId.toString());
+</code></pre>
+Далее идем в класс <span class="code">TelegramUser</span> и меняем тип переменной <span class="code">chatId</span> с <span class="code">String</span> на <span class="code">Long</span>:
+
+<pre class="language-java line-numbers"><code>
+@Id
+@Column(name = "chat_id")
+private Long chatId;
+</code></pre>
+В <span class="code">TelegramUserRepostiry</span> меняем в наследуемом интерфейсе также со <span class="code">String</span> на <span class="code">Long</span>:
+
+<pre class="language-java line-numbers"><code>
+/**
+* {@link Repository} for handling with {@link TelegramUser} entity.
+*/
+@Repository
+public interface TelegramUserRepository extends JpaRepository&lt;TelegramUser, Long&gt; {
+   List&lt;TelegramUser&gt; findAllByActiveTrue();
+   List&lt;TelegramUser&gt; findAllByActiveFalse();
+}
+</code></pre>
+Обновляем метод <span class="code">CommandUtils#getChatId</span>, чтобы он не приводил к строке:
+
+<pre class="language-java line-numbers"><code>
+/**
+* Get chatId from {@link Update} object.
+*
+* @param update provided {@link Update}
+* @return chatID from the provided {@link Update} object.
+*/
+public static Long getChatId(Update update) {
+   return update.getMessage().getChatId();
+}
+</code></pre>
+И во всех местах, где используется <span class="text-bold">chatId</span>, убираем приведение к строке. Там, где методы принимают <span class="code">String chatId</span>, меняем тип на <span class="code">Long</span>. Кстати, пока менял приведение к строке нашел, что утилитный метод <span class="code">getChatId(update)</span> не везде используется, так что обновил и те места.
+
+Последний этап — нужно обновить тип поля в таблице <span class="text-bold">tg_user</span>. Для этого создадим четвертую миграцию <span class="text-bold">V00004_change_chat_id_type_to_long.sql</span>:
+
+<pre class="language-java line-numbers"><code>
+ALTER TABLE tg_user MODIFY chat_id INT;
+</code></pre>
+После всех этих обновлений пришло время запустить тесты :D 
+
+В результате упал только один тест, могло быть и хуже. Оказалось, что падал тест из-за того, что JUnit позволяет компилировать сравнение разных типов при assert:<img data-max-width="800" data-id="52e7d655-d353-4541-b8a6-e62c628235ac" src="https://cdn.javarush.com/images/article/52e7d655-d353-4541-b8a6-e62c628235ac/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Рефакторим и ретроспективим - 5">Как только я вместо <span class="code">String.valueOf(i + 1)</span> сделал <span class="code">Long.valueOf(i + 1)</span>, то тест начал работать, как ожидается.
+
+Теперь нужно удостовериться, что бот запускается и работает, как ожидается. Попробую добавить подписку, посмотреть список подписок и удалить одну из них. Думаю, этого хватит для того, чтобы проверить на <a href="https://ru.wikipedia.org/wiki/Smoke_test" rel="nofollow" target="_blank">smoke test</a>. 
+
+Поклацал все, что мог, все работает. Это хорошо, значит, рефакторинг прошел именно так, как я хотел, — изменился код, но изменения никак не повлияли на поведение бота.
+
+Мы провели неплохой рефакторинг по проекту. Привели к общему знаменателю термины и убрали путаницу с типом переменной <span class="code">chatId</span>.<h2>Последние приготовления перед выходом в свет стабильной версии</h2>Теперь, когда уже написан весь код, который планировался, можно сделать последние приготовления.
+
+Обновим версию в приложении на стабильную <span class="text-bold">1.0.0</span>:
+
+<pre class="language-java line-numbers"><code>
+&lt;version&gt;1.0.0&lt;/version&gt;
+</code></pre>
+и добавим описание в RELEASE_NOTES:
+
+<div class="terminal"># Release Notes
+
+## 1.0.0
+Implemented all the logic, planned up to MVP:
+*   User can subscribe on group of posts
+*   User can view list of group subscriptions on which user subscribes
+*   User can unsubscribe from group of posts
+*   User can set an inactive bot and do not receive notifications
+*   User can restart getting notifications
+*   Admin has ability to see bot statistics</div>
+Все эти пункты я взял из README.md, думаю они как раз опишут результат работы, которая была проделана за эти 8 месяцев.
+
+Следующий этап — создаем коммит, в нем я дублирую данные из RELEASE_NOTES.
+
+Получим ПР с последними изменениями: <a href="https://github.com/javarushcommunity/javarush-telegrambot/pull/27" rel="nofollow" target="_blank">STEP_10: v1.0.0</a>.<h2>Создаем наш первый релиз: v1.0</h2>Весь код, который мы планировали уместить в MVP, готов, и теперь нужно подвести черту — создать релиз. Что такое релиз? Это опять калька из английского слова release, которое в нашем случае означает выход новой версии продукта. 
+
+Для этого у GitHub в репозитории есть секция <a href="https://github.com/javarushcommunity/javarush-telegrambot/releases" rel="nofollow" target="_blank">Releases</a>, в которой как раз будут храниться релизы. Только их нужно создавать.<img data-max-width="800" data-id="f94ff612-4e48-4cf6-b6db-081e3f9a3abe" src="https://cdn.javarush.com/images/article/f94ff612-4e48-4cf6-b6db-081e3f9a3abe/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Рефакторим и ретроспективим - 6">Смержим последний пулл-реквест и создадим свой первый релиз на основе последнего коммита в main ветке.
+
+Переходим и создаем новый релиз и заполняем данными:<img data-max-width="1080" data-id="6078e490-ebe1-461a-8d0e-fe524aa7a54c" src="https://cdn.javarush.com/images/article/6078e490-ebe1-461a-8d0e-fe524aa7a54c/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: Рефакторим и ретроспективим - 7">Все, можно нажимать Publish Release. И все, теперь у нас есть наш первый релиз приложения. Пришло время и для ретроспективы.<h2>Что дальше с ботом?</h2>Конечно, хочется, чтобы бот начал развиваться за счет сообщества. Чтобы молодые разработчики предлагали свои идеи по реализации новой функциональности. Но здесь насильно мил не будешь, пока таких нет, и я буду посильно развивать его. Есть несколько направлений, которые интересны для меня:<ul>
+
+<li><p>Создать джобу для ежедневного сбора и сохранения статистики бота, чтобы можно было отследить во времени его развитие.</p></li>
+<li><p>Настроить работу с бэкапами, в целом идея описана в предыдущей статье.</p></li>
+<li><p>Подумать над унитаризацией подхода в создании телеграм бота для получения уведомлений о новых статьях. В идеале (хотя я не знаю, получится ли такое) сделать так, чтобы был опубликованный Spring boot стартер, который бы требовал настройки базы данных, бота и реализации интерфейсов работы для получения данных о статьях, а остальное бы делала эта библиотека. Посмотрим что из этого может получиться, тут нужно хорошенько подумать.</p></li>
+<li><p>Расширить статистику для всех по авторам: сколько статей, количество просмотров статей, какая оценка статей. По понятным причинам JavaRush не является блогом для написания статей, и поэтому такого функционала у него попросту нет. А мне, как автору, это интересно. При помощи бота можно создать продуманную статистику и вести ее. </p></li>
+<li><p>Реализовать обработку исключений так, чтобы было пользователю было понятно, что произошло.</p></li>
+<li><p>Выделить отдельно Java-библиотеку с JavaRush API client.</p></li>
+<li><p>Добавить GitHub action, который бы создавал релиз автоматически каждый раз, когда обновляется ветка main.</p></li>
+<li><p>Добавить подписку на конкретного автора, а не на группу статей.</p></li>
+<li><p>Улучшить UI представление бота. Вместо уродливых команд создать красивые кнопки, которые бы помогли более приятно и элегантно управлять ботом.</p></li>
+<li><p>Так как информация о новых статьях может быть интересна еще каким-то каналам (как минимум у меня есть такой интерес к моим статьям и моему телеграм-каналу), то хорошо бы добавить возможность боту отправлять сообщения о новых статьях напрямую в какой-то канал, а не только в личных сообщениях.</p></li>
+<li><p>Изучить опыт ботов, которые работают в группах и посмотреть, что можно сделать с этим в нашем случае. Я уверен, что есть закрытые группы людей, изучающих Java, которым было бы интересно получать уведомления о новых статьях.</p></li>
+
+</ul>Это не все идеи, которые были у меня во время работы над проектом, а те, которые я успел записать, пока они не улетучились))
+
+Если есть идеи, пишите в комментариях, я с удовольствием поговорю о них.<h2>Ретроспектива (вместо окончания)</h2>Я часто повторяю это слово уже последние несколько статей. Что это значит? Для меня в рамках этой серии — это посмотреть на то, что я хотел сделать и что за эти 8 месяцев получилось.
+
+Было немало комментариев на тему того, что все это классно, хоть бы автор сделал это до конца:<img data-max-width="800" data-id="5d48bc94-63e3-42e9-a023-6ea9356ae2ac" src="https://cdn.javarush.com/images/article/5d48bc94-63e3-42e9-a023-6ea9356ae2ac/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Рефакторим и ретроспективим - 8"><img data-max-width="800" data-id="a9037098-8cd6-4428-87f8-c2a94ec70aa2" src="https://cdn.javarush.com/images/article/a9037098-8cd6-4428-87f8-c2a94ec70aa2/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Рефакторим и ретроспективим - 9"><img data-max-width="800" data-id="9ab55b64-a6ac-4d14-ab4d-e4ab7f047bea" src="https://cdn.javarush.com/images/article/9ab55b64-a6ac-4d14-ab4d-e4ab7f047bea/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Рефакторим и ретроспективим - 10">Теперь уже можно сказать, что да, я таки завершил. 
+
+Думал ли я, что это будет тааак долго? Нет, не думал. Ожидал, что сделаю до начала 2021 года. Но я понял, что нужно рассказать и о базах данных, которые вышли на <a href="https://t.me/romankh3/57" rel="nofollow" target="_blank">целую серию статей</a>, и  о многих технологиях. И это растянулось. Хотя могу сказать, что и результатом и объемом работы доволен. 
+
+Я вижу людей, которые учатся на этом, выражают свою благодарность, и это мотивирует меня идти дальше.
+
+Что это дало мне? 
+
+Прежде всего понимание, что такие проекты можно брать и они пользуются интересом. Я всегда с большим удовольствием читаю комментарии к статьями и в меру сил отвечаю на них. 
+
+Конечно, я стал опытнее и в написании статей, и в написании приложений, потому что процесс развертывания приложения потребовал от меня усовершенствование моих навыков. Да, я зналб что я хочу сделать в итоге, я зналб что это реально. И все равно потребовалось время на изучение реализации моих идей.
+
+В процессе написания этой серии захотелось как-то систематизировать свои материалы в одном местеб и для этого я создал свой <a href="https://t.me/romankh3" rel="nofollow" target="_blank">телеграм-канал</a>, в котором уже более 400 подписчиков. Для меня это шикарный результат. Новое направление развития. Теперь есть понимание, куда расти дальше. 
+
+Также в процессе родился новый продукт, которым уже пользуются люди и я в частности —  <a href="https://t.me/javarush_community_bot" rel="nofollow" target="_blank">Javarush Telegram Bot</a>. Да, пока что только 26 активных пользователей. Но я верю, что это будет востребовано и количество пользователей будет расти. 
+
+Чем хорош этот проект? Его еще развивать и развивать. Студенты из JavaRush, которые хотят отточить свои навыки, смогли бы предлагать новый функционал и реализовывать его. А я буду руководить этим проектом и проводить Code Review всех изменений.
+
+Финализируем то, что планировалось и что получилось:<ul>
+
+<li><p>Главной целью проекта было написание приложение с базой данных, в котором была бы настроена работа по развертыванию и управлению. Эта цель точно достигнута.</p></li>
+<li><p>Сроки разработки сдвинулись и были проблемы с выходом статей. Были моменты, когда не было статей по 2-3 недели. 
+</p></li><li><p>Полностью настроили работу с БД, добавили Flyway.</p></li>
+<li><p>Описали работу с Maven в нескольких статьях.</p></li>
+<li><p>Поговорили о Docker. Не так много и детально, как хотелось бы, но все же.</p></li>
+<li><p>Баш скрипты мы тоже затронули, у нас на этом настроен запуск всего развертывания.</p></li>
+<li><p>По планированию проекта можно сказать, что все прошло максимально реалистично. Только несколько задач были добавлены в процессе написания. </p></li>
+
+</ul>Что не сделали?<ul>
+
+<li><p>Полностью не рассмотрели сравнение двух решений —  Flyway и Liquibase.</p></li>
+<li><p>Как-то вскользь поговорили о Lombok’e. Так только на практике и все. Хотелось бы больше.</p></li>
+<li><p>Мало уделили время для UniRest решения.</p></li>
+
+</ul>Может, я что-то упустил? Пишите в комментариях.
+
+<span class="text-bold"><em>Спасибо всем, кто активно участвовал в процессе развития этого проекта.
+
+Жду от вас отзыва о том, что в итоге получилось. Обратная связь, так сказать)</em></span>
+
+Пока я писал эту серию, у меня накопилось много интересных тем, о которых я бы хотел поговорить, так что скоро будем писать свое резюме на GitHub!
+
+До встречи)<h4><a href="https://javarush.com/groups/posts/2935-java-proekt-ot-a-do-ja-pishem-realjhnihy-proekt-dlja-portfolio#articles" target="_blank">Список всех материалов серии в начале этой статьи.</a></h4>

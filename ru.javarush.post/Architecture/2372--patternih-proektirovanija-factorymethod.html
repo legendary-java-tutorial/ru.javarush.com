@@ -1,0 +1,398 @@
+Паттерны проектирования: FactoryMethod
+<p>----------------------------------------</p>
+Привет! Сегодня мы продолжим изучать паттерны проектирования и поговорим о фабричном методе (FactoryMethod). Ты узнаешь, что это такое и для решения каких задач подходит данный шаблон. Мы рассмотрим этот паттерн проектирования на практике и изучим его структуру...
+<p>----------------------------------------</p>
+Привет! Сегодня мы продолжим изучать паттерны проектирования и поговорим о фабричном методе (FactoryMethod).
+
+<img data-max-width="800" data-id="31ee8991-c5dd-4849-8d72-f7be4f2c80b8" src="/images/article/31ee8991-c5dd-4849-8d72-f7be4f2c80b8/800.jpeg" class="img-fluid" alt=" Паттерны проектирования: FactoryMethod - 1">Ты узнаешь, что это такое и для решения каких задач подходит данный шаблон. Мы рассмотрим этот паттерн проектирования на практике и изучим его структуру. 
+
+Чтобы все изложенное было тебе понятно, необходимо разбираться в следующих темах:
+<ol>
+<li>Наследование в Java.</li>
+<li>Абстрактные методы и классы в Java.</li>
+</ol><h2>Какую проблему решает фабричный метод</h2>Во всех фабричных паттернах проектирования есть две группы участников — создатели (сами фабрики) и продукты (объекты, создаваемые фабриками). 
+
+Представь ситуацию: у нас есть фабрика, выпускающая автомобили под маркой AutoRush. Она умеет создавать модели автомобилей с различными видами кузовов:
+<ul>
+<li>седаны</li>
+<li>универсалы</li>
+<li>купе</li>
+</ul>Дела у нас шли настолько хорошо, что в один прекрасный день мы поглотили концерн OneAuto. 
+
+Как здравомыслящие управленцы, мы не хотим терять клиентов OneAuto, и перед нами стоит задача реструктурировать производство таким образом, чтобы мы могли выпускать:
+<ul>
+<li>седаны AutoRush</li>
+<li>универсалы AutoRush</li>
+<li>купе AutoRush</li>
+<li>седаны OneAuto</li>
+<li>универсалы OneAuto</li>
+<li>купе OneAuto</li>
+</ul>Как видишь, вместо одной группы производных продуктов появилось две, которые различаются некоторыми деталями. 
+
+Шаблон проектирования <span class="text-bold">фабричный метод</span> решает проблему создания различных групп продуктов, каждая из которых обладает некоторой спецификой.
+
+Принцип данного шаблона мы рассмотрим на практике, постепенно переходя от простого к сложному, на примере нашей кофейни, которую мы создали в одной из <a href="https://javarush.com/groups/posts/2370-pattern-proektirovanija-factory" target="_blank">предыдущих лекций</a>. 
+<h2>Немного о шаблоне фабрика</h2>Напомню: мы построили с тобой небольшую виртуальную кофейню. В ней мы с помощью простой фабрики научились создавать различные виды кофе. Сегодня будем дорабатывать данный пример. 
+
+Давай вспомним, как выглядела наша кофейня с простой фабрикой.
+
+У нас был класс кофе:
+
+<pre class="lang-java line-numbers"><code>
+public class Coffee {
+    public void grindCoffee(){
+        // перемалываем кофе
+    }
+    public void makeCoffee(){
+        // делаем кофе
+    }
+    public void pourIntoCup(){
+        // наливаем в чашку
+    }
+}
+</code></pre>
+А также несколько его наследников — конкретные виды кофе, которые могла производить наша фабрика:
+
+<pre class="lang-java line-numbers"><code>
+public class Americano extends Coffee {}
+public class Cappuccino extends Coffee {}
+public class CaffeLatte extends Coffee {}
+public class Espresso extends Coffee {}
+</code></pre>
+Для удобства принятия заказов мы завели перечисления:
+
+<pre class="lang-java line-numbers"><code>
+public enum CoffeeType {
+    ESPRESSO,
+    AMERICANO,
+    CAFFE_LATTE,
+    CAPPUCCINO
+}
+</code></pre>
+Сама фабрика по производству кофе выглядела следующим образом:
+
+<pre class="lang-java line-numbers"><code>
+public class SimpleCoffeeFactory {
+    public Coffee createCoffee (CoffeeType type) {
+        Coffee coffee = null;
+
+        switch (type) {
+            case AMERICANO:
+                coffee = new Americano();
+                break;
+            case ESPRESSO:
+                coffee = new Espresso();
+                break;
+            case CAPPUCCINO:
+                coffee = new Cappuccino();
+                break;
+            case CAFFE_LATTE:
+                coffee = new CaffeLatte();
+                break;
+        }
+        
+        return coffee;
+    }
+}
+</code></pre>
+Ну и, наконец, сама кофейня:
+
+<pre class="lang-java line-numbers"><code>
+public class CoffeeShop {
+
+    private final SimpleCoffeeFactory coffeeFactory;
+
+    public CoffeeShop(SimpleCoffeeFactory coffeeFactory) {
+        this.coffeeFactory = coffeeFactory;
+    }
+
+    public Coffee orderCoffee(CoffeeType type) {
+        Coffee coffee = coffeeFactory.createCoffee(type);
+        coffee.grindCoffee();
+        coffee.makeCoffee();
+        coffee.pourIntoCup();
+
+        System.out.println("Вот ваш кофе! Спасибо, приходите еще!");
+        return coffee;
+    }
+}
+</code></pre><h2>Модернизация простой фабрики</h2>Наша кофейня работает хорошо. Настолько, что мы подумываем о расширении.
+
+Мы хотим открыть несколько новых точек. Как предприимчивые ребята, мы не будем штамповать однообразные кофейни. Хочется, чтобы у каждой была изюминка. 
+
+Поэтому для начала откроем две точки: в итальянском и американском стилях.
+
+Изменения затронут не только интерьер, но и напитки:
+<ul>
+<li>в итальянской кофейне мы будем использовать  исключительно итальянские кофейные бренды, с особым помолом и прожаркой.</li>
+<li>в американской порции будут чуточку больше, и к каждому заказу будем подавать плавленный зефир — маршмеллоу.</li>
+</ul>Единственное что останется неизменным — это наша бизнес-модель, которая хорошо зарекомендовала себя. 
+
+Если говорить на языке кода, то вот что получается. У нас было 4 класса продуктов:
+
+<pre class="lang-java line-numbers"><code>
+public class Americano extends Coffee {}
+public class Cappuccino extends Coffee {}
+public class CaffeLatte extends Coffee {}
+public class Espresso extends Coffee {}
+</code></pre>
+А станет 8:
+
+<pre class="lang-java line-numbers"><code>
+public class ItalianStyleAmericano extends Coffee {}
+public class ItalianStyleCappucino extends Coffee {}
+public class ItalianStyleCaffeLatte extends Coffee {}
+public class ItalianStyleEspresso extends Coffee {}
+
+public class AmericanStyleAmericano extends Coffee {}
+public class AmericanStyleCappucino extends Coffee {}
+public class AmericanStyleCaffeLatte extends Coffee {}
+public class AmericanStyleEspresso extends Coffee {}
+</code></pre>
+Раз мы желаем сохранить действующую бизнес-модель неизменной, нам хочется, чтобы метод <code>orderCoffee(CoffeeType type)</code> претерпел минимальное количество изменений.
+
+Взглянем на него: 
+
+<pre class="lang-java line-numbers"><code>
+public Coffee orderCoffee(CoffeeType type) {
+    Coffee coffee = coffeeFactory.createCoffee(type);
+    coffee.grindCoffee();
+    coffee.makeCoffee();
+    coffee.pourIntoCup();
+
+    System.out.println("Вот ваш кофе! Спасибо, приходите еще!");
+    return coffee;
+}
+</code></pre>
+Какие варианты у нас есть? Мы ведь уже умеем писать фабрику? Самое простое, что сходу приходит в голову — написать две аналогичные фабрики, а затем передавать нужную реализацию в нашу кофейню в конструкторе. Тогда класс кофейни не изменится. 
+
+Для начала нам нужно создать новый класс-фабрику, унаследоваться от нашей простой фабрики и переопределить метод <code>createCoffee (CoffeeType type)</code>. Напишем фабрики для создания кофе в итальянском и американском стилях:
+
+<pre class="lang-java line-numbers"><code>
+public class SimpleItalianCoffeeFactory extends SimpleCoffeeFactory {
+
+    @Override
+    public Coffee createCoffee (CoffeeType type) {
+        Coffee coffee = null;
+        switch (type) {
+            case AMERICANO:
+                coffee = new ItalianStyleAmericano();
+                break;
+            case ESPRESSO:
+                coffee = new ItalianStyleEspresso();
+                break;
+            case CAPPUCCINO:
+                coffee = new ItalianStyleCappuccino();
+                break;
+            case CAFFE_LATTE:
+                coffee = new ItalianStyleCaffeLatte();
+                break;
+        }
+        return coffee;
+    }
+}
+
+public class SimpleAmericanCoffeeFactory extends SimpleCoffeeFactory{
+
+    @Override
+    public Coffee createCoffee (CoffeeType type) {
+        Coffee coffee = null;
+
+        switch (type) {
+            case AMERICANO:
+                coffee = new AmericanStyleAmericano();
+                break;
+            case ESPRESSO:
+                coffee = new AmericanStyleEspresso();
+                break;
+            case CAPPUCCINO:
+                coffee = new AmericanStyleCappuccino();
+                break;
+            case CAFFE_LATTE:
+                coffee = new AmericanStyleCaffeLatte();
+                break;
+        }
+
+        return coffee;
+    }
+
+}
+</code></pre>
+Теперь мы можем передавать нужную реализацию фабрики в CoffeeShop. Давай посмотрим, как бы выглядел код для заказа кофе из разных кофеен. Например, капучино в итальянском и американском стилях:
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+    public static void main(String[] args) {
+        /*
+            Закажем капучино в итальянском стиле:
+            1. Создадим фабрику для приготовления итальянского кофе
+            2. Создадим новую кофейню, передав ей в конструкторе фабрику итальянского кофе
+            3. Закажем наш кофе
+         */
+        SimpleItalianCoffeeFactory italianCoffeeFactory = new SimpleItalianCoffeeFactory();
+        CoffeeShop italianCoffeeShop = new CoffeeShop(italianCoffeeFactory);
+        italianCoffeeShop.orderCoffee(CoffeeType.CAPPUCCINO);
+        
+        
+         /*
+            Закажем капучино в американском стиле
+            1. Создадим фабрику для приготовления американского кофе
+            2. Создадим новую кофейню, передав ей в конструкторе фабрику американского кофе
+            3. Закажем наш кофе
+         */
+        SimpleAmericanCoffeeFactory americanCoffeeFactory = new SimpleAmericanCoffeeFactory();
+        CoffeeShop americanCoffeeShop = new CoffeeShop(americanCoffeeFactory);
+        americanCoffeeShop.orderCoffee(CoffeeType.CAPPUCCINO);
+    }
+}
+</code></pre>
+Мы создали две различные кофейни, передав в каждую нужную фабрику. С одной стороны, мы достигли поставленной задачи, но с другой стороны... Что-то скребет неуемную душу предпринимателя… Давай разбираться, что не так. 
+
+Во-первых, обилие фабрик. Это что, каждый раз теперь под новую точку свою фабрику создавать и вдобавок следить за тем, чтобы при создании кофейни в конструктор передавалась нужная фабрика? 
+
+Во-вторых, это все еще простая фабрика. Просто немного модернизированная. Мы тут все-таки новый паттерн изучаем.
+
+В-третьих, а что, нельзя что ли по-другому? Вот было бы классно, если бы мы могли локализовать все вопросы по приготовлению кофе внутри класса <code>CoffeeShop</code>, связав процессы по созданию кофе и обслуживанию заказа, но при этом сохранив достаточную гибкость, чтобы делать кофе в различных стилях. 
+
+Ответ — да, можно. Это называется шаблон проектирования фабричный метод. 
+<h2>От простой фабрики к фабричному методу</h2>Чтобы решить поставленную задачу максимально эффективно, мы:
+<ol>
+<li>Вернем метод <code>createCoffee(CoffeeType type)</code> в класс <code>CoffeeShop</code>.</li> 
+<li>Данный метод сделаем абстрактным.</li>
+<li>Сам класс <code>CoffeeShop</code> станет абстрактным.</li>
+<li>У класса <code>CoffeeShop</code> появятся наследники.</li>
+</ol>Да, друг. Итальянская кофейня, это ничто иное, как наследник класса <code>CoffeeShop</code>, реализующий метод <code>createCoffee(CoffeeType type)</code> в соответствии с лучшими традициями итальянских бариста. 
+
+Итак, по порядку.
+
+Шаг 1. Сделаем класс <code>Coffee</code> абстрактным. У нас появилось целых два семейства различных продуктов. У итальянских и американских кофейных напитков по-прежнему есть общий предок — класс <code>Coffee</code>. Было бы правильно сделать его абстрактным: 
+
+<pre class="lang-java line-numbers"><code>
+public abstract class Coffee {
+    public void makeCoffee(){
+        // делаем кофе
+    }
+    public void pourIntoCup(){
+        // наливаем в чашку
+    }
+}
+</code></pre>
+Шаг 2. Делаем <code>CoffeeShop</code> абстрактным, с абстрактным методом <code>createCoffee(CoffeeType type)</code>
+
+<pre class="lang-java line-numbers"><code>
+public abstract class CoffeeShop {
+
+    public Coffee orderCoffee(CoffeeType type) {
+        Coffee coffee = createCoffee(type);
+
+        coffee.makeCoffee();
+        coffee.pourIntoCup();
+
+        System.out.println("Вот ваш кофе! Спасибо, приходите еще!");
+        return coffee;
+    }
+
+    protected abstract Coffee createCoffee(CoffeeType type);
+}
+</code></pre>
+Шаг 3. Создадим итальянскую кофейню, класс-потомок абстрактной кофейни. В нем мы реализуем метод <code>createCoffee(CoffeeType type)</code> с учетом итальянской специфики.
+ 
+<pre class="lang-java line-numbers"><code>
+public class ItalianCoffeeShop extends CoffeeShop {
+
+    @Override
+    public Coffee createCoffee (CoffeeType type) {
+        Coffee coffee = null;
+        switch (type) {
+            case AMERICANO:
+                coffee = new ItalianStyleAmericano();
+                break;
+            case ESPRESSO:
+                coffee = new ItalianStyleEspresso();
+                break;
+            case CAPPUCCINO:
+                coffee = new ItalianStyleCappuccino();
+                break;
+            case CAFFE_LATTE:
+                coffee = new ItalianStyleCaffeLatte();
+                break;
+        }
+        return coffee;
+    }
+}
+</code></pre>
+Шаг 4. Проделаем тоже самое, для кофейни в американском стиле
+
+<pre class="lang-java line-numbers"><code>
+public class AmericanCoffeeShop extends CoffeeShop {
+    @Override
+    public Coffee createCoffee (CoffeeType type) {
+        Coffee coffee = null;
+
+        switch (type) {
+            case AMERICANO:
+                coffee = new AmericanStyleAmericano();
+                break;
+            case ESPRESSO:
+                coffee = new AmericanStyleEspresso();
+                break;
+            case CAPPUCCINO:
+                coffee = new AmericanStyleCappuccino();
+                break;
+            case CAFFE_LATTE:
+                coffee = new AmericanStyleCaffeLatte();
+                break;
+        }
+
+        return coffee;
+    }
+}
+</code></pre>
+Шаг 5. Взглянем на то, как будет выглядеть заказ латте в американском и итальянском стиле:
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+    public static void main(String[] args) {
+        CoffeeShop italianCoffeeShop = new ItalianCoffeeShop();
+        italianCoffeeShop.orderCoffee(CoffeeType.CAFFE_LATTE);
+
+        CoffeeShop americanCoffeeShop = new AmericanCoffeeShop();
+        americanCoffeeShop.orderCoffee(CoffeeType.CAFFE_LATTE);
+    }
+}
+</code></pre>
+Поздравляю тебя. Мы только что реализовали шаблон проектирования фабричный метод на примере нашей кофейни. 
+<h2>Принцип работы фабричного метода</h2>Теперь рассмотрим подробнее, что же у нас получилось.
+ 
+На диаграмме ниже — получившиеся классы. Зеленые блоки — классы создатели, голубые — классы продукты. 
+<img data-max-width="800" data-id="5203ee0c-118e-4040-93df-bc23a32c756b" src="/images/article/5203ee0c-118e-4040-93df-bc23a32c756b/800.jpeg" class="img-fluid" alt=" Паттерны проектирования: FactoryMethod - 2">Какие выводы можно сделать?
+<ol>
+<li>Все продукты — реализации абстрактного класса <code>Coffee</code>.</li>
+<li>Все создатели — реализации абстрактного класса <code>CoffeeShop</code>.</li>
+<li>Мы наблюдаем две параллельные иерархии классов:
+<ul style="list-style-type:lower-alpha">
+<li>Иерархия продуктов. Мы видим итальянских потомков и американских потомков</li>
+<li>Иерархия создателей. Мы видим итальянских потомков и американских потомков</li>
+</ul></li>
+<li>У суперкласса <code>CoffeeShop</code> нет информации о том, какая конкретно реализация продукта (<code>Coffee</code>) будет создана.</li>
+<li>Суперкласс <code>CoffeeShop</code> делегирует создание конкретного продукта своим потомкам.</li>
+<li>Каждый потомок класса <code>CoffeeShop</code> реализует фабричный метод <code>createCoffee()</code> в соответствии со своей спецификой. Иными словами, внутри реализаций классов-создателей принимается решение о приготовлении конкретного продукта, исходя из специфики класса создателя.</li>
+</ol>Теперь ты готов к определению паттерна <span class="text-bold">фабричный метод</span>. 
+
+<span class="text-bold">Паттерн фабричный метод</span> определяет интерфейс создания объекта, но позволяет субклассам выбрать класс создаваемого экземпляра. Таким образом, Фабричный метод делегирует операцию создания экземпляра субклассам. 
+
+В общем, не столь важно помнить определение, как понимать, как все работает.
+<h2>Структура фабричного метода</h2><img data-max-width="800" data-id="75e252d6-559d-408b-9714-8243c5d8c37d" src="/images/article/75e252d6-559d-408b-9714-8243c5d8c37d/800.jpeg" class="img-fluid" alt=" Паттерны проектирования: FactoryMethod - 3">На схеме выше представлена общая структура паттерна фабричный метод. 
+
+Что еще здесь важно?
+<ol>
+<li>Класс Creator содержит реализации всех методов, взаимодействующих с продуктами, кроме фабричного метода.</li>
+<li>Абстрактный метод <code>factoryMethod()</code> должен быть реализован всеми потомками класса <code>Creator</code>.</li>
+<li>Класс <code>ConcreteCreator</code> реализует метод <code>factoryMethod()</code>, непосредственно производящий продукт.</li>
+<li>Данный класс отвечает за создание конкретных продуктов. Это единственный класс с информацией о создании этих продуктов.</li>
+<li>Все продукты должны реализовывать общий интерфейс — быть потомками общего класса-продукта. Это нужно, чтобы классы, использующие продукты, могли оперировать ими на уровне абстракций, а не конкретных реализаций.</li>
+</ol><h2>Домашнее задание</h2>Итак, сегодня мы провели довольно большую работу и изучили паттерн проектирования фабричный метод. Самое время закрепить пройденный материал!
+
+Задание 1. Поработать над открытием еще одной кофейни. Она может быть выполнена в английском стиле или испанском. Или даже в стиле космического корабля. Добавим пищевых красителей в кофе, чтоб блестело, и вообще, кофе будет просто космос!
+
+Задание 2. На <a href="https://javarush.com/groups/posts/2370-pattern-proektirovanija-factory" target="_blank">прошлой лекции</a> у тебя было задание создать виртуальный суши-бар либо виртуальную пиццерию. Твоя задача — не стоять на месте. Сегодня ты узнал, как с помощью шаблона фабричный метод можно придти к успеху. Пора воспользоваться этими знаниями и расширить собственный бизнес ;)

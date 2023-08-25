@@ -1,0 +1,400 @@
+JDBC или с чего всё начинается
+<p>----------------------------------------</p>
+В современном мире без хранения данных никак. И история работы с базами данных началась уже очень давно, с появления JDBC. Предлагаю вспомнить то, без чего не обходися ни один современный фрэймворк, построенный поверх JDBC. Кроме того, даже работая с ними временами...
+<p>----------------------------------------</p>
+В современном мире без хранения данных никак. И история работы с базами данных началась уже очень давно, с появления JDBC. Предлагаю вспомнить то, без чего не обходися ни один современный фрэймворк, построенный поверх JDBC. Кроме того, даже работая с ними временами может понадобится возможность "вернуться к корням". Надеюсь, обзор поможет как вступительное слово или поможет что-то освежить в памяти.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="243" alt="JDBC или с чего всё начинается - 1" src="https://cdn.javarush.com/images/article/369dbb2a-2fef-4c08-8f37-9bae3f21121d/original.jpeg"></div></div><h2>Вступление</h2>Одна из основных целей языка программирования - хранение и обработка информации. Чтобы лучше понять работу хранения данных стоит немного времени выделить на теорию и архитектуру приложений.
+
+Например, можно ознакомиться с литературой, а именно с книгой "<a href="https://goo.gl/aB3WLm" target="_blank" rel="nofollow">Software Architect's Handbook: Become a successful software architect by implementing effective arch...</a>" авторства Joseph Ingeno.
+
+Как сказано, есть некий Data Tier или "Слой данных". Он включает в себя место хранения данных (например, SQL базу данных) и средства для работы с хранилищем данных (например, JDBC, о котором и пойдёт речь).
+
+Так же на сайте Microsoft есть статья: "<a href="https://docs.microsoft.com/ru-ru/dotnet/standard/microservices-architecture/microservice-ddd-cqrs-patterns/infrastructure-persistence-layer-design" target="_blank" rel="nofollow">Проектирование уровня сохраняемости инфраструктуры</a>" в которой описывается архитектурное решение выделения из Data Tier дополнительного слоя — Persistence Layer. В таком случае Data Tier — это уровень хранения самих данных, в то время как Persistence Layer - это некоторый уровень абстракции для работы с данными из хранилища с уровня Data Tier. К уровню Persistence Layer можно отнести шаблон "DAO" или различные ORM. Но ORM — это тема отдельного разговора. 
+
+Как Вы могли уже понять, вначале появился Data Tier. Ещё с времён JDK 1.1 в Java мире появился JDBC (Java DataBase Connectivity — соединение с базами данных на Java). Это стандарт взаимодействия Java-приложений с различными СУБД, реализованный в виде пакетов java.sql и javax.sql, входящих в состав Java SE:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="44cc9e7c-7cc4-4300-a112-3eff003d1ec4" data-max-width="597" alt="JDBC или с чего всё начинается - 2" src="https://cdn.javarush.com/images/article/44cc9e7c-7cc4-4300-a112-3eff003d1ec4/1024.jpeg"></div></div>Данный стандарт описан специфкицией "<a href="http://download.oracle.com/otn-pub/jcp/jdbc-4_1-mrel-spec/jdbc4.1-fr-spec.pdf" target="_blank" rel="nofollow">JSR 221 JDBC 4.1 API</a>".
+
+Данная спецификация рассказывает нам о том, что JDBC API предоставляет программный доступ к реляционным базам данных из программ, написанных на Java. Так же рассказывает о том, что JDBC API является частью платформы Java и входит поэтому в Java SE и Java EE. JDBC API представлен двумя пакетами: java.sql and javax.sql.
+
+Давайте тогда с ними и познакомимся.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="224" alt="JDBC или с чего всё начинается - 3" src="https://cdn.javarush.com/images/article/2bd75bae-b172-4253-8267-7e92c84b7578/original.jpeg"></div></div><h2>Начало работы</h2>Чтобы понять что такое вообще JDBC API нам понадобится Java приложение. Удобнее всего воспользоваться одной из систем сборки проектов. Например, воспользуемся <a href="https://gradle.org/install/" target="_blank" rel="nofollow">Gradle</a>.
+
+Более подробно про Gradle можно прочитать в небольшом обзоре: "<a href="https://javarush.com/groups/posts/2126-kratkoe-znakomstvo-s-gradle" target="_blank" rel="nofollow">Краткое знакомство с Gradle</a>".
+
+Для начала инициализируем новый Gradle проект. Так как функциональность Gradle реализуется через плагины, то для инициализации нам нужно воспользоваться "<a href="https://docs.gradle.org/current/userguide/build_init_plugin.html" target="_blank" rel="nofollow">Gradle Build Init Plugin</a>":
+
+<pre class="lang-java line-numbers"><code>
+gradle init --type java-application
+</code></pre>
+Откроем после этого билд скрипт — файл <strong>build.gradle</strong>, где описывается наш проект и то, как с ним нужно работать. Нас интересует блок "<strong>dependencies</strong>", где описываются зависимости — то есть те библиотеки/фрэймворки/api, без которых мы не можем работать и от которых мы зависим. По умолчанию мы увидим что-то вроде:
+
+<pre class="lang-java line-numbers"><code>
+dependencies {
+    // This dependency is found on compile classpath of this component and consumers.
+    implementation 'com.google.guava:guava:26.0-jre'
+    // Use JUnit test framework
+    testImplementation 'junit:junit:4.12'
+}
+</code></pre>
+Почему мы тут это видим? Это зависимости нашего проекта, которые нам сгенерировал автоматически Gradle при создании проекта. А так же потому что guava - это отдельная библиотека, не входящая в комплект с Java SE. JUnit так же не входит в комплект с Java SE. Но JDBC у нас есть "из коробки", то есть входит в состав Java SE. Получается JDBC у нас есть. Отлично. Что же нам ещё надо?
+
+Есть такая замечательная схема:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="580edb2f-3ef8-4a06-abcc-54f9321cba8b" data-max-width="441" alt="JDBC или с чего всё начинается - 4" src="https://cdn.javarush.com/images/article/580edb2f-3ef8-4a06-abcc-54f9321cba8b/1024.jpeg"></div></div>Как мы видим, и это логично, база данных является внешним компонентом, которого нет изначально в Java SE. Это объясняется просто - существует огромное количество баз данных и работать вы можете захотеть с любой. Например, есть PostgreSQL, Oracle, MySQL, H2. Каждая из этих баз данных поставляется отдельной компанией, которые называются поставщиками баз данных или database vendors. Каждая база данных написана на каком-то своём языке программирования (не обязательно Java). Чтобы с базой данных можно было работать из Java приложения поставщик базы данных пишет особый драйвер, который является своего образа адаптером. Такие JDBC совместимые (то есть у которых есть JDBC драйвер) ещё называют "JDBC-Compliant Database".
+
+Тут можно провести аналогию с компьютерными устройствами. Например, в блокноте есть кнопка "Печать". Каждый раз когда вы её нажимаете программа сообщает операционной системе, что приложение блокнот хочет напечатать. И у Вас есть принтер. Чтобы научить разговаривать единообразно вашу операционную систему с принтером Canon или HP понадобятся разные драйверы. Но для Вас, как пользователя, ничего не изменится. Вы по прежнему будете нажимать одну и ту же кнопку. Так и с JDBC. Вы выполняете один и тот же код, просто "под капотом" могут работать разные базы данных. Думаю, тут очень понятный подход.
+
+Каждый такой JDBC драйвер — это некоторый артефакт, библиотека, jar файл. Он то и является зависимостью для нашего проекта. Например, мы можем выбрать базу данных "<a href="http://www.h2database.com/html/cheatSheet.html" target="_blank" rel="nofollow">H2 Database</a>" и тогда нам надо добавить зависимость следующим образом:
+
+<pre class="lang-java line-numbers"><code>
+dependencies {
+    implementation 'com.h2database:h2:1.4.197'
+</code></pre>
+То, как найти зависимость и как её описать указано на официальных сайтах поставщика БД или на "<a href="https://mvnrepository.com/repos/central" target="_blank" rel="nofollow">Maven Central</a>".
+
+JDBC драйвер не является базой данных, как Вы поняли. А лишь является проводником к ней. Но есть такое понятие, как "<a href="http://www.h2database.com/html/features.html#in_memory_databases" target="_blank" rel="nofollow">In memory databases</a>". Это такие базы данных, которые существуют в памяти на время жизни вашего приложения. Обычно, это часто используют для тестирования или для учебных целей. Это позволяет не ставить отдельный сервер баз данных на машине. Что нам очень даже подойдёт для знакомств с JDBC.
+
+Вот и готова наша песочница и мы приступаем.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="9a5233ae-4a8d-4cff-a6b4-b96ff5cc65ae" data-max-width="284" alt="JDBC или с чего всё начинается - 5" src="https://cdn.javarush.com/images/article/9a5233ae-4a8d-4cff-a6b4-b96ff5cc65ae/1024.jpeg"></div></div><h2>Connection</h2>Итак, у нас есть JDBC драйвер, есть JDBC API. Как мы помним, JDBC расшифровывается как Java DataBase Connectivity. Поэтому, всё начинается с Connectivity - возможности устанавливать подключение. А подключение — это Connection.
+
+Обратимся снова к тексту <a href="http://download.oracle.com/otn-pub/jcp/jdbc-4_1-mrel-spec/jdbc4.1-fr-spec.pdf" target="_blank" rel="nofollow">спецификации JDBC</a> и посмотрим на оглавление. В главе "<strong>CHAPTER 4 Overview</strong>" (overview - обзор) обратимся к разделу "<strong>4.1 Establishing a Connection</strong>" (установление соединения) сказано, что существует два способа подключения к БД:
+<ul>
+<li>Через DriverManager</li>
+<li>Через DataSource</li>
+</ul>Разберёмся с DriverManager'ом. Как сказано, DriverManager позволяет подключиться к базе данных по указанному URL, а так же загружает JDBC Driver'ы, который он нашёл в CLASSPATH (а раньше, до JDBC 4.0 загружать класс драйвера надо было самостоятельно).
+
+Про соединение с БД есть отдельная глава "CHAPTER 9 Connections". Нас интересует, как получить соединение через DriverManager, поэтому нам интересен раздел "9.3 The DriverManager Class". В нём указано, как мы можем получить доступ к БД:
+
+<pre class="lang-java line-numbers"><code>
+Connection con = DriverManager.getConnection(url, user, passwd);
+</code></pre>
+Параметры можно взять с сайта выбранной нами базы данных. В нашем случае это H2 — "<a href="http://www.h2database.com/html/cheatSheet.html" target="_blank" rel="nofollow">H2 Cheat Sheet</a>".
+
+Перейдём в подготовленный Gradle'ом класс AppTest. Он содержит JUnit тесты. JUnit тест — это метод, который помечен аннотацией <code>@Test</code>. Юнит тесты не являются темой данного обзора, поэтому просто ограничимся пониманием того, что это описанные определённым образом методы, цель которых что-то протестировать.
+
+Согласно специфкиации JDBC и сайту H2 проверим, что мы получили подключение к БД. Напишем метод получения подключения:
+
+<pre class="lang-java line-numbers"><code>
+private Connection getNewConnection() throws SQLException {
+	String url = "jdbc:h2:mem:test";
+	String user = "sa";
+	String passwd = "sa";
+	return DriverManager.getConnection(url, user, passwd);
+}
+</code></pre>
+Теперь напишем тест для этого метода, который проверит, что подключение действительно устанавливается:
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void shouldGetJdbcConnection() throws SQLException {
+	try(Connection connection = getNewConnection()) {
+		assertTrue(connection.isValid(1));
+		assertFalse(connection.isClosed());
+	}
+}
+</code></pre>
+Данный тест при выполнении проверит, что полученное подключение валидное (корректно созданное) и что оно не закрыто. Благодаря использованию конструкции <a href="https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html" target="_blank" rel="nofollow">try-with-resources</a> мы освободим ресурсы после того, как они нам больше не нужны. Это убережёт нас от "провисших" соединений и утечек памяти.
+
+Так как любые действия с БД требуют подключения, то давайте для остальных тестовых методов, помеченных @Test, обеспечим в начале теста Connection, который мы освободим после теста. Для этого нам понадобится две аннотации: @Before и @After
+
+Добавим в класс AppTest новое поле, которое будет хранить JDBC подключение для тестов:
+
+<pre class="lang-java line-numbers"><code>
+private static Connection connection;
+</code></pre>
+И добавим новые методы:
+
+<pre class="lang-java line-numbers"><code>
+@Before
+public void init() throws SQLException {
+	connection = getNewConnection();
+}
+@After
+public void close() throws SQLException {
+	connection.close();
+}
+</code></pre>
+Теперь, любому тестовому методу гарантируется наличие JDBC connection и он не должен каждый раз сам его создавать.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="200" alt="JDBC или с чего всё начинается - 6" src="https://cdn.javarush.com/images/article/91db5db3-2308-4d78-ae35-aced4ef73f8c/original.jpeg"></div></div><h2>Statements</h2>Далее нас интересует Statements или выражения. Они описаны в документации в главе "<strong>CHAPTER 13 Statements</strong>".
+
+Во-первых, там сказано, что существует несколько типов или видов statement'ов:
+<ul>
+<li>Statement: SQL выражение, которое не содержит параметров</li>
+<li>PreparedStatement : Подготовленное SQL выражение, содержащее входные параметры</li>
+<li>CallableStatement : SQL выражение с возможностью получить возвращаемое значение из хранимых процедур (SQL Stored Procedures).</li>
+</ul>Итак, имея подключение, мы можем в рамках этого подключения выполнить какой-нибудь запрос. Поэтому, логично, что экземпляр SQL выражения изначально мы получаем из Connection.
+
+Начать нужно с создания таблицы. Опишем запрос создания таблицы в виде переменной типа String. Как это сделать? Воспользуемся каким-нибудь обучающим руководством, вроде "<a href="http://www.sqltutorial.org/sql-create-table/" target="_blank" rel="nofollow">sqltutorial.org</a>", "<a href="https://sqlbolt.com/lesson/creating_tables" target="_blank" rel="nofollow">sqlbolt.com</a>", "<a href="http://www.postgresqltutorial.com/postgresql-create-table/" target="_blank" rel="nofollow">postgresqltutorial.com</a>", "<a href="https://www.codecademy.com/learn/learn-sql" target="_blank" rel="nofollow">codecademy.com</a>".
+
+Воспользуемся, например, примером из курса SQL на <a href="https://www.khanacademy.org/computing/computer-programming/sql/sql-basics/pt/creating-a-table-and-inserting-data" target="_blank" rel="nofollow">khanacademy.org</a>. Добавим метод выполнения выражения в БД:
+
+<pre class="lang-java line-numbers"><code>
+private int executeUpdate(String query) throws SQLException {
+	Statement statement = connection.createStatement();
+	// Для Insert, Update, Delete
+	int result = statement.executeUpdate(query);
+	return result;
+}
+</code></pre>
+Добавим метод создания тестовой таблицы с использованием прошлого метода:
+
+<pre class="lang-java line-numbers"><code>
+private void createCustomerTable() throws SQLException {
+	String customerTableQuery = "CREATE TABLE customers " +
+                "(id INTEGER PRIMARY KEY, name TEXT, age INTEGER)";
+	String customerEntryQuery = "INSERT INTO customers " +
+                "VALUES (73, 'Brian', 33)";
+	executeUpdate(customerTableQuery);
+	executeUpdate(customerEntryQuery);
+}
+</code></pre>
+Теперь протестируем это:
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void shouldCreateCustomerTable() throws SQLException {
+	createCustomerTable();
+	connection.createStatement().execute("SELECT * FROM customers");
+}
+</code></pre>
+Теперь давайте выполним запрос, да ещё и с параметром:
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void shouldSelectData() throws SQLException {
+ 	createCustomerTable();
+ 	String query = "SELECT * FROM customers WHERE name = ?";
+	PreparedStatement statement = connection.prepareStatement(query);
+	statement.setString(1, "Brian");
+	boolean hasResult = statement.execute();
+	assertTrue(hasResult);
+}
+</code></pre>
+JDBC не поддерживает именованные параметры для PreparedStatement, поэтому сами параметры указываются вопросами, а указывая значение мы указываем индекс вопроса (начиная с 1, а не с нуля). В последнем тесте мы получили true как признак того, есть ли результат. Но как представлен результат запроса в JDBC API? А представлен он как ResultSet.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="250" alt="JDBC или с чего всё начинается - 7" src="https://cdn.javarush.com/images/article/8fb69684-bfcd-4d0e-a2b8-25ea9d0a709c/original.jpeg"></div></div><h2>ResultSet</h2>Понятие ResultSet описано в спецификации JDBC API в главе "CHAPTER 15 Result Sets". Прежде всего, там сказано, что ResultSet предоставляет методы для получения и манипуляции результатами выполненных запросов.
+
+То есть если метод execute вернул нам true, значит мы можем получить и ResultSet. 
+
+Давайте вынесем вызов метода createCustomerTable() в метод init, который отмечен как @Before. Теперь доработаем наш тест shouldSelectData:
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void shouldSelectData() throws SQLException {
+	String query = "SELECT * FROM customers WHERE name = ?";
+	PreparedStatement statement = connection.prepareStatement(query);
+	statement.setString(1, "Brian");
+	boolean hasResult = statement.execute();
+	assertTrue(hasResult);
+	// Обработаем результат
+	ResultSet resultSet = statement.getResultSet();
+	resultSet.next();
+	int age = resultSet.getInt("age");
+	assertEquals(33, age);
+}
+</code></pre>
+Тут стоит отметить, что next — это метод, который двигает так называемый "курсор". Курсор в ResultSet указывает на некоторую строку. Таким образом, чтобы считать строку, на неё нужно этот самый курсор установить. Когда курсор перемещается, то метод перемещения курсора возвращает true, если курсор валидный (правильный, корректный), то есть указывает на данные. Если возвращает false, значит данных нет, то есть курсор не указывает на данные. Если попытаться получить данные с невалидным курсором, то мы получим ошибку: No data is available
+
+Ещё интересно, что через ResultSet можно обновлять или даже вставлять строки:
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void shouldInsertInResultSet() throws SQLException {
+	Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+	ResultSet resultSet = statement.executeQuery("SELECT * FROM customers");
+	resultSet.moveToInsertRow();
+	resultSet.updateLong("id", 3L);
+	resultSet.updateString("name", "John");
+	resultSet.updateInt("age", 18);
+	resultSet.insertRow();
+	resultSet.moveToCurrentRow();
+}
+</code></pre><h2>RowSet</h2>JDBC помимо ResultSet вводит такое понятие, как RowSet. Подробнее можно прочитать здесь: "<a href="https://docs.oracle.com/javase/tutorial/jdbc/basics/rowset.html" target="_blank" rel="nofollow">JDBC Basics: Using RowSet Objects</a>".
+
+Существуют различные вариации использования. Например, самый простой случай может выглядеть так:
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void shouldUseRowSet() throws SQLException {
+ 	JdbcRowSet jdbcRs = new JdbcRowSetImpl(connection);
+ 	jdbcRs.setCommand("SELECT * FROM customers");
+	jdbcRs.execute();
+	jdbcRs.next();
+	String name = jdbcRs.getString("name");
+	assertEquals("Brian", name);
+}
+</code></pre>
+Как видно, RowSet похож на симбиоз statement (мы указали через него command) и выполнили command. Через него же мы управляем курсором (вызывая метод next) и из него же получаем данные.
+
+Интересен не только такой подход, но и возможные реализации. Например, CachedRowSet. Он является "отключённым" (то есть не использует постоянное подключение к БД) и требует явного выполнения синхронизации с БД:
+
+<pre class="lang-java line-numbers"><code>
+CachedRowSet jdbcRsCached = new CachedRowSetImpl();
+jdbcRsCached.acceptChanges(connection);
+</code></pre>
+Подробнее можно прочитать в tutorial на сайте Oracle: "<a href="https://docs.oracle.com/javase/tutorial/jdbc/basics/cachedrowset.html" target="_blank" rel="nofollow">Using CachedRowSetObjects</a>".
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="94060f13-dab0-4210-b9e5-370cc4c03bf6" data-max-width="304" alt="JDBC или с чего всё начинается - 8" src="https://cdn.javarush.com/images/article/94060f13-dab0-4210-b9e5-370cc4c03bf6/1024.jpeg"></div></div><h2>Metadata</h2>Кроме запросов, подключение к БД (т.е. экземпляр класса Connection) предоставляет доступ к метаданным - данным о том, как настроена и как устроена наша база данных. Но для начала озвучим несколько ключевых моментов: URL подключения к нашей БД: "jdbc:h2:mem:test". test - это название нашей базы данных. Для JDBC API это каталог. И название будет в верхнем регистре, то есть TEST.
+
+Схема по умолчанию (<a href="http://www.h2database.com/html/grammar.html#set_schema" target="_blank" rel="nofollow">Default schema</a>) для H2 - PUBLIC.
+Теперь, напишем тест, который показывает все пользовательские таблицы. Почему пользовательские? Потому что в базах данных есть не только пользовательские (те, которые мы сами создали при помощи create table выражений), но и системные таблицы. Они необходимы, чтобы хранить системную информацию о структуре БД. У каждой БД такие системные таблицы могут храниться по-разному. Например, в H2 они хранятся в схеме "<a href="http://www.h2database.com/html/systemtables.html" target="_blank" rel="nofollow">INFORMATION_SCHEMA</a>".
+
+Интересно, что INFORMATION SCHEMA является общим подходом, но Oracle пошли иным путём. Подробнее можно прочитать здесь: "<a href="http://www.sql-tutorial.ru/ru/book_information_schema_and_oracle.html" target="_blank" rel="nofollow">INFORMATION_SCHEMA и Oracle</a>".
+
+Напишем тест, получающий метаданные по пользовательским таблицам:
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void shoudGetMetadata() throws SQLException {
+	// У нас URL = "jdbc:h2:mem:test", где test - название БД
+	// Название БД = catalog
+	DatabaseMetaData metaData = connection.getMetaData();
+	ResultSet result = metaData.getTables("TEST", "PUBLIC", "%", null);
+	List&lt;String&gt; tables = new ArrayList&lt;&gt;();
+	while(result.next()) {
+		tables.add(result.getString(2) + "." + result.getString(3));
+	}
+	assertTrue(tables.contains("PUBLIC.CUSTOMERS"));
+}
+</code></pre><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="783c4154-aa44-41f9-babf-64a35b76c027" data-max-width="812" alt="JDBC или с чего всё начинается - 9" src="https://cdn.javarush.com/images/article/783c4154-aa44-41f9-babf-64a35b76c027/1024.jpeg"></div></div><h2>Пул подключений</h2>Пулу подключений в спецификации JDBC отведен раздел "Chapter 11 Connection Pooling". В нём же и даётся главное обоснование необходимости пула подключений. Каждый Coonection - это физическое подключение к БД. Его создание и закрытие - довольно "дорогая" работа.
+
+JDBC предоставляет лишь API для пула соединений. Поэтому, выбор реализации остаётся за нами. Например, к таким реализациям относится <a href="https://github.com/brettwooldridge/HikariCP" target="_blank" rel="nofollow">HikariCP</a>.
+
+Соответственно, нам понадобится добавить пул к нам в зависимости проекта:
+
+<pre class="lang-java line-numbers"><code>
+dependencies {
+    implementation 'com.h2database:h2:1.4.197'
+    implementation 'com.zaxxer:HikariCP:3.3.1'
+    testImplementation 'junit:junit:4.12'
+}
+</code></pre>
+Теперь надо как-то пул этот задействовать. Для этого нужно выполнить инициализацию источника данных, он же Datasource:
+
+<pre class="lang-java line-numbers"><code>
+private DataSource getDatasource() {
+	HikariConfig config = new HikariConfig();
+	config.setUsername("sa");
+	config.setPassword("sa");
+	config.setJdbcUrl("jdbc:h2:mem:test");
+	DataSource ds = new HikariDataSource(config);
+	return ds;
+}
+</code></pre>
+И напишем тест на получение подключения из пула:
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void shouldGetConnectionFromDataSource() throws SQLException {
+	DataSource datasource = getDatasource();
+	try (Connection con = datasource.getConnection()) {
+		assertTrue(con.isValid(1));
+	}
+}
+</code></pre><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="3a5d6d7f-da70-4c4a-b3f4-6952f5bda7ba" data-max-width="303" alt="JDBC или с чего всё начинается - 10" src="https://cdn.javarush.com/images/article/3a5d6d7f-da70-4c4a-b3f4-6952f5bda7ba/1024.jpeg"></div></div><h2>Транзакции</h2>Один из самых интересных моментов, связанных с JDBC - это транзакции.  В спецификации JDBC им отведена глава "CHAPTER 10 Transactions". Прежде всего стоит понять, что же такое транзакция. Транзакция — это группа логически объединённых последовательных операций по работе с данными, обрабатываемая или отменяемая целиком.
+
+Когда начинается транзакция при использовании JDBC? Как гласит спецификация, это решает непосредственно JDBC Driver. Но обычно, новая транзакция начинается тогда, когда текущее SQL выражение (SQL statement) потребует транзакцию и транзакции ещё не создано.
+
+Когда заканчивается транзакция? Это регулируется атрибутом автокоммита (auto-commit). Если автокоммит включен, то транзакция будет завершена после того, как SQL выражение будет "выполнено". 
+
+Что такое "выполнено" зависит от типа SQL выражения:
+<ul>
+<li>Data Manipulation Language, он же DML (Insert, Update, Delete)<br>
+Транзакция завершается как только завершилось выполнение действия</li>Select Statements<br>
+Транзакция завершается тогда, когда ResultSet будет закрыт (<a href="https://docs.oracle.com/javase/8/docs/api/java/sql/ResultSet.html#close--" target="_blank" rel="nofollow">ResultSet#close</a>)
+<li>CallableStatement и выражения, возвращающие несколько результатов<br>
+Когда все ассоциированные ResultSets будут закрыты и все выходные данные получены (включая кол-во апдейтов)</li>
+</ul>Так ведёт себя именно JDBC API.
+
+Как обычно, напишем на это тест:
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void shouldCommitTransaction() throws SQLException {
+	connection.setAutoCommit(false);
+	String query = "INSERT INTO customers VALUES (1, 'Max', 20)";
+	connection.createStatement().executeUpdate(query);
+	connection.commit();
+	Statement statement = connection.createStatement();
+ 	statement.execute("SELECT * FROM customers");
+	ResultSet resultSet = statement.getResultSet();
+	int count = 0;
+	while(resultSet.next()) {
+		count++;
+	}
+	assertEquals(2, count);
+}
+</code></pre>
+Всё просто. Но это так, пока у нас всего одна транзакция. А что делать, когда их несколько? Нужно их изолировать друг от друга. Поэтому, поговорим об уровнях изоляции транзакции и как с ними справляется JDBC.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="aca63374-0e45-4a69-be8b-27f1c52cbe4a" data-max-width="363" alt="JDBC или с чего всё начинается - 11" src="https://cdn.javarush.com/images/article/aca63374-0e45-4a69-be8b-27f1c52cbe4a/1024.jpeg"></div></div><h2>Уровни изоляции</h2>Откроем подраздел "10.2 Transaction Isolation Levels" спецификации JDBC.
+
+Тут прежде чем дальше двигаться хочется всомнить про такую штуку, как ACID. ACID описывает требования к транзакционной системе.
+<ul>
+<li>Atomicity(Атомарность):<br>
+Никакая транзакция не будет зафиксирована в системе частично. Будут либо выполнены все её подоперации, либо не выполнено ни одной. </li>
+<li>Consistency(Согласованность):<br>
+Каждая успешная транзакция по определению фиксирует только допустимые результаты.</li>
+<li>Isolation(Изолированность):<br>
+Во время выполнения транзакции параллельные транзакции не должны оказывать влияния на её результат.</li>
+<li>Durability(Долговечность):<br>
+Если транзакция успешно завершенеа, сделанные в ней изменения не будут отменены из-за какого-либо сбоя.</li>
+</ul>Говоря про уровни изоляции транзакции мы говорим как раз про требование "Isolation". Изолированность — требование "дорогое", поэтому в реальных БД существуют режимы, не полностью изолирующие транзакцию (уровни изолированности Repeatable Read и ниже).
+
+На википедии есть отличное объяснение того, какие проблемы могут возникать при работе с транзакциями. Подробнее стоит прочитать здесь: "<a href="https://ru.wikipedia.org/wiki/Уровень_изолированности_транзакций#Проблемы_параллельного_доступа_с_использованием_транзакций" target="_blank" rel="nofollow">Проблемы параллельного доступа с использованием транзакций</a>".
+
+Прежде чем мы напишем наш тест, давайте чуть изменим наш Gradle Build Script: добавим блок с properties, то есть с настройками нашего проекта:
+
+<pre class="lang-java line-numbers"><code>
+ext {
+    h2Version = '1.3.176' // 1.4.177
+    hikariVersion = '3.3.1'
+    junitVersion = '4.12'
+}
+</code></pre>
+Далее, используем это в версиях:
+
+<pre class="lang-java line-numbers"><code>
+dependencies {
+    implementation "com.h2database:h2:${h2Version}"
+    implementation "com.zaxxer:HikariCP:${hikariVersion}"
+    testImplementation "junit:junit:${junitVersion}"
+}
+</code></pre>
+Вы могли заметить, что версия h2 стала ниже. Позже мы увидим, зачем. Итак, как же применять уровни изолированности? Давайте посмотрим сразу небольшой практический пример:
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void shouldGetReadUncommited() throws SQLException {
+	Connection first = getNewConnection();
+	assertTrue(first.getMetaData().supportsTransactionIsolationLevel(Connection.TRANSACTION_READ_UNCOMMITTED));
+	first.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+	first.setAutoCommit(false);
+	// Транзакиця на подключение. Поэтому первая транзакция с ReadUncommited вносит изменения
+	String insertQuery = "INSERT INTO customers VALUES (5, 'Max', 15)";
+	first.createStatement().executeUpdate(insertQuery);
+	// Вторая транзакция пытается их увидеть
+	int rowCount = 0;
+	JdbcRowSet jdbcRs = new JdbcRowSetImpl(getNewConnection());
+	jdbcRs.setCommand("SELECT * FROM customers");
+	jdbcRs.execute();
+	while (jdbcRs.next()) {
+		rowCount++;
+	}
+	assertEquals(2, rowCount);
+}
+</code></pre>
+Интересно, что данный тест может упасть на вендоре, который не поддерживает TRANSACTION_READ_UNCOMMITTED (например, sqlite или HSQL). А ещё уровень транзакции может просто не сработать. Помните мы указывали версию драйвера H2 Database? Если мы поднимем её до h2Version = '1.4.177' и выше, то READ UNCOMMITTED перестанет работать, хотя код мы не меняли. Это ещё раз доказывает, что выбор вендора и версии драйвера - это не просто буквы, от этого будет в реальности зависеть то, как будут выполняться ваши запросы.
+
+Про то, как исправить это поведение в версии 1.4.177 и как это не работает в версиях выше можно прочитать здесь: "<a href="https://github.com/h2database/h2database/issues/216" target="_blank" rel="nofollow">Support READ UNCOMMITTED isolation level in MVStore mode</a>".
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="131" alt="JDBC или с чего всё начинается - 12" src="https://cdn.javarush.com/images/article/6f38f710-4c47-47b0-8002-09b8cfe19cff/original.jpeg"></div></div><h2>Итог</h2>Как мы видим, JDBC — это мощный инструмент в руках Java для работы с базами данных. Надеюсь, данный небольшой обзор поможет стать для Вас отправной точкой или поможет освежить в памяти что-нибудь.
+
+Ну и на закуску немного дополнительных материалов:
+<ul>
+<li>Огненный доклад: "<a href="https://www.youtube.com/watch?v=5ZjhNTM8XU8" target="_blank" rel="nofollow">Transactions: myths, surprises and opportunities</a>" от Martin Kleppmann</li>
+<li>Юрий Ткач: "<a href="https://www.youtube.com/watch?v=4PKZRQAtf38&amp;t=90s" target="_blank" rel="nofollow">JPA. Транзакции</a>"</li>
+<li>Юрик Ткач: "<a href="https://www.youtube.com/watch?v=aje9gtFEyC4" target="_blank" rel="nofollow">JDBC - Java для тестировщиков</a>"</li>
+<li>Бесплатный курс на Udemy: "<a href="https://www.udemy.com/how-to-connect-java-jdbc-to-mysql" target="_blank" rel="nofollow">JDBC and MySQL</a>"</li>
+<li>"<a href="https://www.ibm.com/developerworks/ru/library/dm-0802tiwary/index.html" target="_blank" rel="nofollow">Обработка объектов CallableStatement</a>" </li>
+<li>IBM Developer: "<a href="https://developer.ibm.com/articles/j-5things10/" target="_blank" rel="nofollow">Java Database Connectivity</a>"</li>
+<li>IBM Knowledge Center: "<a href="https://www.ibm.com/support/knowledgecenter/en/ssw_ibm_i_71/rzaha/jdbcgets.htm" target="_blank" rel="nofollow">Getting started with JDBC</a>"</li>
+</ul>
+#Viacheslav
+
+<div class="email-subscription"><iframe frameborder="0" src="https://secure.esputnik.com.ua/4Q0Ef6d2SOs" width="100%" height="200" scrolling="no"></iframe></div>

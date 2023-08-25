@@ -1,0 +1,181 @@
+Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 4)
+<p>----------------------------------------</p>
+Добрый день. В этой статье я хотел бы поделиться своим первым знакомством с такими вещами как Maven, Spring, Hibernate, MySQL и Tomcat в процессе создания простого CRUD приложения. Это заключительная...
+<p>----------------------------------------</p>
+Добрый день.
+
+В этой статье я хотел бы поделиться своим первым знакомством с такими вещами как Maven, Spring, Hibernate, MySQL и Tomcat в процессе создания простого CRUD приложения. Это заключительная часть. Статья рассчитана в первую очередь на тех, кто уже прошел здесь 30-40 уровней, но за пределы чистой джавы пока не выбирался и только начинает (или собирается начинать) выходить в открытый мир со всеми этими технологиями, фреймворками и прочими незнакомыми словами.
+
+<img data-id="847ea948-d0b5-4476-8a22-5320bc34c646" data-max-width="850" alt="" src="https://cdn.javarush.com/images/article/847ea948-d0b5-4476-8a22-5320bc34c646/1024.jpeg">Это заключительная четвертая часть статьи "Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение".
+
+Предыдущие части можно увидеть перейдя по ссылкам:
+<ul>
+<li><a href="https://javarush.com/groups/posts/2253-znakomstvo-s-maven-spring-mysql-hibernate-i-pervoe-crud-prilozhenie-chastjh-1" target="_blank" rel="nofollow">Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 1)</a></li>
+<li><a href="https://javarush.com/groups/posts/2252-znakomstvo-s-maven-spring-mysql-hibernate-i-pervoe-crud-prilozhenie-chastjh-2" target="_blank" rel="nofollow">Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 2)</a></li>
+<li><a href="https://javarush.com/groups/posts/2251-znakomstvo-s-maven-spring-mysql-hibernate-i-pervoe-crud-prilozhenie-chastjh-3" target="_blank" rel="nofollow">Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 3)</a></li>
+</ul><h3>Содержание:</h3><ul>
+<li><a href="#Оформление-и-веб-ресурсы">Оформление и веб-ресурсы</a></li>
+<li><a href="#Разбиение-на-страницы">Разбиение на страницы</a></li>
+<li><a href="#Заключение">Заключение</a></li>
+</ul><h2 id="Оформление-и-веб-ресурсы">Оформление и веб-ресурсы</h2>Наше приложение работает, вот только без слез на него не взглянешь, скучные надписи, некрасивые ссылки, пустой белый фон. Нужно это исправить и добавить разных красивостей. Как нам это сделать. Ну, во-первых, можно просто поиграться со страницами и наделать всякой всячины с помощью возможностей <strong>HTML</strong>. Но если одним только HTML пытаться менять фоны, цвета, размеры, расположения элементов и т.д. и т.п. то в итоге можно из страницы такой бардак сделать, что потом уже ничего там не разберешь. Да и к тому же у HTML возможности для оформления довольно ограничены.
+
+Лучше использовать для этого <strong>CSS</strong> (Cascading Style Sheets — каскадные таблицы стилей). Тогда все, что касается оформления можно собрать в одном месте, а потом применять это к нужному элементу страницы. CSS код можно писать прямо на <strong>jsp</strong> странице в специальном теге, но гораздо удобнее вынести это в отдельный файл, а потом просто применить к нужным страницам.
+
+Для размещения файлов со стилями и прочих статических веб-ресурсов создадим отдельную директорию внутри <strong>webapp</strong>. Чтобы не путать веб-ресурсы с обычными ресурсами (где у нас лежит <strong>db.properties</strong>), назовем эту директорию просто <strong>res</strong> и будем туда помещать все CSS файлы, картинки и т.п:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="177" alt="Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 4) - 1" src="https://cdn.javarush.com/images/article/82388163-3a81-4dc9-b5b4-ab52934ae550/original.jpeg"></div></div>Чтобы использовать эти файлы нам нужно указать их расположение в конфигурации. Идем в наш класс <code>WebConfig</code>. Ранее мы использовали аннотацию <code>@EnableWebMvc</code> чтобы ничего не настраивать, а просто использовать дефолтную конфигурацию. Но теперь возникла необходимость кое-что настроить. Для этого используем интерфейс <code>WebMvcConfigurer</code>, который позволяет переопределять методы конфигурации. Т.о. мы можем использовать конфигурацию по-умолчанию, но при этом некоторые моменты настроить под себя. В данном случае нам нужен метод <code>addResourceHandlers</code>, с помощью которого укажем расположение статических веб-ресурсов. На всякий случай весь класс целиком в итоге выглядит так:
+
+<pre class="lang-java line-numbers"><code>
+package testgroup.filmography.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.ViewResolver;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.view.InternalResourceViewResolver;
+
+@Configuration
+@EnableWebMvc
+@ComponentScan(basePackages = "testgroup.filmography")
+public class WebConfig <strong>implements WebMvcConfigurer</strong> {
+
+    <strong>@Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/res/**").addResourceLocations("/res/");
+    }</strong>
+
+    @Bean
+    ViewResolver viewResolver() {
+        InternalResourceViewResolver viewResolver = new InternalResourceViewResolver();
+        viewResolver.setPrefix("/WEB-INF/pages/");
+        viewResolver.setSuffix(".jsp");
+        return viewResolver;
+    }
+}
+</code></pre>
+Теперь чтобы использовать наш CSS на странице нужно сделать на него ссылку внутри тега <code>head</code>:
+
+<pre class="lang-java line-numbers"><code>
+&lt;head&gt;
+    &lt;link href="&lt;c:url value="/res/style.css"/&gt;" rel="stylesheet" type="text/css"/&gt;
+&lt;/head&gt;
+</code></pre>
+Достаточно добавить эту строчку и сделать, например, вот такой вот простенький CSS файл:
+
+<pre class="lang-java line-numbers"><code>
+table {
+    border-spacing: 0 10px;
+    font:  bold 100% Georgia, serif;
+    margin: 40px auto;
+    text-shadow: 5px 5px 5px #3F3F7F;
+    background: #B1B9D9;
+    text-align: center;
+    vertical-align: middle;
+    width: 50%;
+    border: 10px solid blue;
+}
+</code></pre>
+И это уже полностью изменит нашу таблицу (глуповато конечно выглядить, но это так, для примера):
+<img data-id="4c1a8673-97dc-4b23-b0a8-3647e7845580" data-max-width="850" alt="Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 4) - 2" src="https://cdn.javarush.com/images/article/4c1a8673-97dc-4b23-b0a8-3647e7845580/1024.jpeg">Ну думаю нет нужды подробно рассказывать о CSS, тут все довольно просто. На просторах интернета можно найти массу уже готовых вариантов оформления таблиц и форм. Но лучше конечно сделать оформление самостоятельно, тут не нужно быть дизайнером, это ж все-таки не какой-то сложный сайт. Даже нескольких часов после первого знакомства хватит, чтобы сделать достаточно красивое и аккуратное оформление такой простой страницы. К тому же в интернете полно всяких уроков, примеров, есть специальные сайты, где одновременно на одном экране можно редактировать HTML, CSS и сразу видеть как это все выглядит. Немного практики и можно творить настоящее искусство.
+
+Правда тут тоже не стоит сильно увлекаться (если конечно нет планов стать дизайнером), а то оформление это такая штука, тут можно застрять очень на долго. Я как первый раз начал разбираться с CSS то конкретно завис. Все хотел попробовать, каждое свойство, что-то крутил, ковырял, экспериментировал, брал страницы каких-нибудь сайтов и переделывал их до неузнаваемости. Я, наверное, неделю развлекался с этой игрушкой, больше ничего не делая, пока меня не отпустило :) Ну а так вообще конечно не стоит переусердствовать и делать непонятное пестрое чудо-юдо, нужно делать простенько и со вкусом.
+
+Единственное стоит отметить. Нужно понимать, что <strong>CSS — это описание оформления</strong>, а <strong>HTML — это разметка</strong>. Не стоит стараться абсолютно все сделать через CSS, некоторые моменты будет сделать очень сложно, а некоторые просто невозможно, когда в HTML это же делается парой лишних строк, а то и вовсе каким-то одним атрибутом в теге. Нужно их комбинировать, всякие цвета, фоны, шрифты делать в CSS, а если например нужно объединить пару ячеек таблицы, проще использовать средства HTML.
+
+Ну вот к примеру что у меня получилось сделать со страницами за пару-тройку часов ковыряния с CSS и HTML (не буду тут уже расписывать, какую кашу я наворотил чтобы этого добиться, в конце будет ссылка на гитхаб этого проекта там можно будет посмотреть):
+<img data-id="0fe85c8f-a785-4edb-b1b4-5447f134cfd2" data-max-width="850" alt="Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 4) - 3" src="https://cdn.javarush.com/images/article/0fe85c8f-a785-4edb-b1b4-5447f134cfd2/1024.jpeg">Не знаю конечно, насколько грамотно я там все сделал, но учитывая что я впервые увидел CSS за неделю до этого, думаю вполне годно получилось.
+<h2 id="Разбиение-на-страницы">Разбиение на страницы</h2>Сейчас все работает, выглядит вроде неплохо, но в таблице пока только несколько записей. А что, если в ней будет сотня фильмов, или тысяча, не очень удобно проматывать такой длиннющий список. Гораздо удобнее, когда список выводится страницами, штук по 10 записей, например. Поэтому сейчас и попробуем реализовать разбиение списка на страницы (иногда это еще называют "пейджинг" или "пагинация" (<em>англ. pagination</em>)).
+
+Сделать это можно по-разному. Например, можно передавать полный список на jsp страницу и там уже формировать табличку на нужное кол-во записей. Или можно, допустим, в сервисе вытаскивать из общего списка нужные записи, а потом этот мини-список отправлять на jsp страницу для отображения. Но лучше всего конечно делать это на уровне базы данных. Идея в том, чтобы не брать из базы полный список и потом разбивать его на куски, а изначально доставать из базы нужный кусок, не трогая все остальное. Ведь зачем нам вытаскивать из базы все сотни или тысячи записей сразу, если нужная нам находится в первой десятке, лучше вытащим только одну эту десятку.
+
+Идем в <strong>DAO</strong> и добавим для метода <code>allFilms</code> параметр <code>int page</code>, который будет отвечать за номер страницы (в сервисе, естественно, делаем то же самое). И немного изменим реализацию этого метода, если раньше мы вытаскивали весь список, то теперь будем вытаскивать только часть. С этим нам помогут методы <code>setFirstResult</code> (с какой строчки таблицы начать) и <code>setMaxResults</code> (сколько записей вывести):
+
+<pre class="lang-java line-numbers"><code>
+@SuppressWarnings("unchecked")
+public List&lt;Film&gt; allFilms(int page) {
+    Session session = sessionFactory.getCurrentSession();
+    return session.createQuery("from Film").<strong>setFirstResult(10 * (page - 1)).setMaxResults(10)</strong>.list();
+}
+</code></pre>
+Т.е. если это 1-я страница, выводим максимум 10 записей, начиная с 0-ой, если это 5 страница, то 10 записей начиная с 40-й (не забываем, что нумерация в базе начинается с 0).
+
+А еще дополнительно создадим метод, который будет возвращать количество записей в таблице. Нам это понадобится для того, чтобы знать число всех страниц и сформировать для них ссылки на нашей jsp странице:
+
+<pre class="lang-java line-numbers"><code>
+public int filmsCount() {
+     Session session = sessionFactory.getCurrentSession();
+     return session.createQuery("select count(*) from Film", Number.class).getSingleResult().intValue();
+ }
+</code></pre>
+C помощью такого запроса мы получим количество всех записей в таблице (в виде <code>int</code> значения) не вытаскивая при этом сами записи.
+
+Теперь идем в контроллер и поработаем над методом, который возвращает главную страницу со списком фильмов:
+
+<pre class="lang-java line-numbers"><code>
+@RequestMapping(value = "/", method = RequestMethod.GET)
+public ModelAndView allFilms(@RequestParam(defaultValue = "1") int page) {
+    List&amp;ltFilm&gt; films = filmService.allFilms(page);
+    int filmsCount = filmService.filmsCount();
+    int pagesCount = (filmsCount + 9)/10;
+    ModelAndView modelAndView = new ModelAndView();
+    modelAndView.setViewName("films");
+    modelAndView.addObject("page", page);
+    modelAndView.addObject("filmsList", films);
+    modelAndView.addObject("filmsCount", filmsCount);
+    modelAndView.addObject("pagesCount", pagesCount);
+    return modelAndView;
+}
+</code></pre>
+Здесь появилась новая аннотация <code>@RequestParam</code>, которая указывает что данное значение мы получаем из параметра запроса. Теперь, если мы перейдем по адресу с параметром, например <em>http://localhost:8080/<strong>?page=4</strong></em>, то получим, соответственно, 4-ю страницу. Устанавливаем значение по умолчанию "<strong>1</strong>", чтобы при запуске приложения, когда мы переходим на адрес без параметра <em>http://localhost:8080/</em>, мы получали первую страницу. В методе мы получаем количество всех записей, потом таким вот нехитрым способом вычисляем количество страниц. Т.е. если у нас 10 записей, это 1 страница, а если 11, то это уже 2. Ну и передаем в модель все это дело. Количество страниц нужно знать, чтобы сформировать для них всех ссылки в цикле, а количество фильмов пусть будет на всякий случай, если, например, захочется вывести эту информацию где-то на странице.
+
+Теперь осталось только зайти в <strong>films.jsp</strong> и добавить ссылки на каждую страницу с помощью вот такой конструкции:
+
+<pre class="lang-java line-numbers"><code>
+&lt;c:forEach begin="1" end="${pagesCount}" step="1" varStatus="i"&gt;
+    &lt;c:url value="/" var="url"&gt;
+        &lt;c:param name="page" value="${i.index}"/&gt;
+    &lt;/c:url&gt;
+    &lt;a href="${url}"&gt;${i.index}&lt;/a&gt;
+&lt;/c:forEach&gt;
+</code></pre>
+Создаем ссылки по счетчику 1, 2, 3, ... и устанавливаем параметр по значению индекса.
+<table class="table table--striped">
+<tr>
+<td><p>Кстати таким же образом, как и с разбиением на страницы, можно добавить и другие фишки, например сортировку, фильтрацию, поиск. Просто передаем в метод DAO различные параметры и формируем с их помощью соответствующий запрос к бд, чтобы вытянуть нужные записи, в нужном порядке.</p>
+</td>
+</tr>
+</table>Сделаем еще один маленький штрих. 
+
+Возвращаемся в контроллер. В методах добавления, редактирования и удаления, после выполнения операции мы делаем перенаправление на главную страницу <em>"redirect:/"</em>. Т.о. если мы будем где-нибудь на 50-й странице и нажмем редактировать запись, то после выполнения мы перейдем по адресу "<strong>/</strong>", т.е. вернемся на 1 страницу. Это не очень удобно, хотелось бы вернуться туда же, откуда и пришли.
+
+Решим это очень просто. Создадим в классе <code>FilmController</code> переменную экземпляра <code>int page</code>
+
+<pre class="lang-java line-numbers"><code>
+private int page;
+</code></pre>
+Внутри метода <code>allFilms</code> будем присваивать этой переменной значение параметра <code>page</code>:
+
+<pre class="lang-java line-numbers"><code>
+this.page = page;
+</code></pre>
+Т.о. каждый раз, когда выполняется этот метод (т.е. когда мы перемещаемся по страницам), в переменную будет записываться значение текущей страницы. А затем мы используем это значение в наших методах, чтобы перенаправить обратно на эту же страницу.
+
+<pre class="lang-java line-numbers"><code>
+modelAndView.setViewName("redirect:/?page=" + this.page);
+</code></pre><h2 id="Заключение">Заключение</h2>На этом, пожалуй, и закончим. Получилось полноценное CRUD приложение. Оно конечно далеко от идеала (очень далеко), но его можно оптимизировать и доработать, исправить косяки и добавить функциональности. Можно использовать встроенные методы для crud операций; прикрутить фильтрацию, поиск, сортировку; добавить другие связанные таблицы; реализовать поддержку разных пользователей с авторизацией и аутентификацией и т.д. и т.п. Простор для фантазии безграничный, так что дерзайте.
+
+<a href="https://github.com/maxsouldrake/Filmography" target="_blank" rel="nofollow">Ссылка на github этого проекта</a>.
+
+Спасибо за внимание.
+
+<em>P.S. Это моя первая в жизни попытка написать статью, так что не судите строго :). Прошу прощения, что не добавил всяких разных ссылок на полезные ресурсы, к сожалению, все никак не могу выработать привычку сохранять ссылки на источники, откуда черпаю информацию. Ну и, конечно же, извиняюсь за много букв, краткость не мой талант, надеюсь кто-нибудь сможет это осилить.</em>
+
+<em><strong>Ссылки на все части</strong></em>
+<ul>
+<li><a href="https://javarush.com/groups/posts/2253-znakomstvo-s-maven-spring-mysql-hibernate-i-pervoe-crud-prilozhenie-chastjh-1" target="_blank" rel="nofollow">Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 1)</a></li>
+<li><a href="https://javarush.com/groups/posts/2252-znakomstvo-s-maven-spring-mysql-hibernate-i-pervoe-crud-prilozhenie-chastjh-2" target="_blank" rel="nofollow">Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 2)</a></li>
+<li><a href="https://javarush.com/groups/posts/2251-znakomstvo-s-maven-spring-mysql-hibernate-i-pervoe-crud-prilozhenie-chastjh-3" target="_blank" rel="nofollow">Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 3)</a></li>
+<li>Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 4)</li>
+</ul>

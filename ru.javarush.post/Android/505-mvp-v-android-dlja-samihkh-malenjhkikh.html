@@ -1,0 +1,181 @@
+MVP в Android для самых маленьких
+<p>----------------------------------------</p>
+Если ты много раз смотрел на эти три весёлых буквы, но так и не разобрался, что они означают - добро пожаловать под кат. Когда я начинал свой путь Android-разработчика, слова «Архитектура мобильного приложения» вызывали у меня глубокое недоумение, гугл и статьи ...
+<p>----------------------------------------</p>
+Когда я начинал свой путь Android-разработчика, слова «Архитектура мобильного приложения» вызывали у меня глубокое недоумение, гугл и статьи на Хабре вгоняли в ещё большую депрессию - смотрю в книгу, вижу фигу. Думаю, если ты читаешь эту статью, то уже не раз изучал эту картинку и пытался понять, что происходит:
+
+<img data-id="197f820a-daa9-43b4-9a4d-bb4e9d130ee7" data-max-width="850" alt="MVP в Android для самых маленьких - 1" src="https://cdn.javarush.com/images/article/197f820a-daa9-43b4-9a4d-bb4e9d130ee7/1024.jpeg">Проблема понимания архитектурного подхода в мобильной разработке, на мой взгляд, кроется в абстрактности самой архитектуры. У каждого разработчика своё видение того, как правильно реализовать тот или иной паттерн. Более-менее приличные примеры реализации MVP нашлись в англоязычном секторе интернета, что не удивительно.
+
+Кратенько разберём, что есть что, и перейдём к примеру.
+
+<strong>Model</strong> — уровень данных. Не люблю использовать термин «бизнес логика», поэтому в своих приложениях я называю его <strong>Repository</strong> и он общается с базой данных и сетью.
+
+<strong>View</strong> — уровень отображения. Это будет<strong> Activity</strong>, <strong>Fragment</strong> или <strong>Custom View</strong>, если вы не любите плясок с бубном и взаимодействия с жизненным циклом. Напомню, что изначально все Android приложения подчинены структуре <strong>MVC</strong>, где <strong>Controller</strong> это <strong>Activity</strong> или <strong>Fragment</strong>.
+
+<strong>Presenter</strong> — прослойка между View и Model. View передаёт ему происходящие события, презентер обрабатывает их, при необходимости обращается к Model и возращает View данные на отрисовку.
+
+Применительно к Android и конкретному примеру, выделю важную часть - Contract. Это интерфейс, который описывает все взаимодействия между вышеперечисленными компонентами.
+
+<strong>Резюмируя теоретическую часть:</strong>
+<ul>
+<li>View знает о Presenter;</li>
+<li>Presenter знает о View и Model (Repository);</li>
+<li>Model сама по себе;</li>
+<li>Contract регулирует взаимодействия между ними.</li>
+</ul>Собственно, сам пример, для простоты эксперимента будем по нажатию на кнопку загружать строку из БД и отображать в <strong>TextView</strong>. Например, БД содержит список лучших ресторанов города.
+
+<strong>Начнем с контракта:</strong>
+
+Создадим интерфейс <code>MainContract</code>:
+
+<pre class="lang-java line-numbers"><code>
+
+public interface MainContract {
+    interface View {
+        void showText();
+    }
+
+    interface Presenter {
+        void onButtonWasClicked();
+        void onDestroy();
+    }
+
+    interface Repository {
+        String loadMessage();
+    }
+}
+</code></pre>
+Пока что мы просто выделяем 3 компонента нашего будущего приложения и что они будут делать.
+
+<strong>Далее опишем Repository:</strong>
+
+<pre class="lang-java line-numbers"><code>
+
+public class MainRepository implements MainContract.Repository {
+
+    private static final String TAG = "MainRepository";
+    @Override
+    public String loadMessage() {
+        Log.d(TAG, "loadMessage()");
+        /** Здесь обращаемся к БД или сети.
+         * Я специально ничего не пишу, чтобы не загромождать пример
+         * DBHelper'ами и прочими не относяшимеся к теме объектами.
+         * Поэтому я буду возвращать строку Сосисочная =)
+         */
+        return "Сосисочная у Лёхи»;
+    }
+}
+</code></pre>
+С ним всё понятно, просто загрузка - выгрузка данных.
+
+<strong>Далее на очереди Presenter:</strong>
+
+<pre class="lang-java line-numbers"><code>
+
+public class MainPresenter implements MainContract.Presenter {
+    private static final String TAG = "MainPresenter";
+
+    //Компоненты MVP приложения
+    private MainContract.View mView;
+    private MainContract.Repository mRepository;
+
+    //Сообщение
+    private String message;
+
+
+    //Обрати внимание на аргументы конструктора - мы передаем экземпляр View, а Repository просто создаём конструктором.
+    public MainPresenter(MainContract.View mView) {
+        this.mView = mView;
+        this.mRepository = new MainRepository();
+        Log.d(TAG, "Constructor");
+    }
+
+    //View сообщает, что кнопка была нажата
+    @Override
+    public void onButtonWasClicked() {
+        message = mRepository.loadMessage();
+        mView.showText(message);
+        Log.d(TAG, "onButtonWasClicked()");
+    }
+
+    @Override
+    public void onDestroy() {
+        /**
+         * Если бы мы работали например с RxJava, в этом классе стоило бы отписываться от подписок
+         * Кроме того, при работе с другими методами асинхронного андроида,здесь мы боремся с утечкой контекста
+         */
+
+        Log.d(TAG, "onDestroy()");
+    }
+}
+</code></pre>
+Помнишь, я писал про пляски с бубном и жизненный цикл? Presenter живёт до тех пор пока живёт его View, при разработки сложных пользовательских сценариев, советую дублировать все колбеки View в Presenter’e и вызывать их в соответствующие моменты, дублируя ЖЦ Activity/Fragment, чтобы вовремя понять что нужно сделать с теми данными, которые висят в данный момент в «прослойке».  
+
+<strong>И наконец, View:</strong>
+
+<pre class="lang-java line-numbers"><code>
+
+public class MainActivity extends AppCompatActivity implements MainContract.View {
+
+    private static final String TAG = "MainActivity";
+
+    private MainContract.Presenter mPresenter;
+
+    private Button mButton;
+
+    private TextView myTv;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        //Создаём Presenter и в аргументе передаём ему this - эта Activity расширяет интерфейс MainContract.View
+        mPresenter = new MainPresenter(this);
+
+        myTv = (TextView) findViewById(R.id.text_view);
+        mButton = (Button) findViewById(R.id.button);
+
+        mButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mPresenter.onButtonWasClicked();
+            }
+        });
+        Log.d(TAG, "onCreate()");
+    }
+
+    @Override
+    public void showText(String message) {
+        myTv.setText(message);
+        Log.d(TAG, "showMessage()");
+    }
+
+    //Вызываем у Presenter метод onDestroy, чтобы избежать утечек контекста и прочих неприятностей.
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        mPresenter.onDestroy();
+        Log.d(TAG, "onDestroy()");
+    }
+}
+</code></pre>
+
+<strong>Что же происходит? </strong>
+<ul>
+<li>Activity, она же View, в методе <code>onCreate()</code> создаёт экзмпляр Presenter и передаёт ему в конструктор себя.</li>
+<li>Presenter при создании явно получает View и создаёт экзмепляр Repository (его, кстати, можно сделать Singleton)</li>
+<li>При нажатии на кнопку, View стучится презентеру и сообщает: «Кнопка была нажата».</li>
+<li>Presenter обращается к Repository: «Загрузи мне вот эту шнягу».</li>
+<li>Repository грузит и отдаёт «шнягу» Presenter’у.</li>
+<li>Presenter обращается к View: «Вот тебе данные, отрисуй»</li>
+</ul>Вот и всё, ребята.
+
+P.S.
+Важно чётко разграничить обязанности между компонентами. К примеру, в одном из моих учебных проектов по нажатию на кнопку необходимо было изменить данные в БД. Модель описывалась POJO - классом, я передавал информацию о расположении view, отвечающей за информацию об объекте на экране, Presenter искал этот объект в списке и отдавал его на запись в Repository. Кажется, всё логично?
+
+Но мой наставник обратил внимание на следующее: Repository должен заниматься ТОЛЬКО записью и чтением, он не должен вытаскивать из POJO нужную информацию и принимать решение, что ему нужно писать писать. Presenter должен отдать ему только информацию на запись и ничего более.
+
+Нет жёстких рамок реализации архитектуры: экспериментируй, пробуй, ищи то, что удобно лично тебе. И не забудь показать старшим товарищам на code review =)
+
+<strong>Пример доступен на GitHub: </strong><a href="https://github.com/admitrevskiy/MVP_Example" target="_blank" rel="nofollow">https://github.com/admitrevskiy/MVP_Example</a>

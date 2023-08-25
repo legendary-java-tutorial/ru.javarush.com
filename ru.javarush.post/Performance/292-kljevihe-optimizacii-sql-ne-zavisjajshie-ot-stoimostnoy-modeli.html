@@ -1,0 +1,490 @@
+Клёвые оптимизации SQL, не зависящие от стоимостной модели. Часть 1 
+<p>----------------------------------------</p>
+Пять простых оптимизаций, которые можно реализовать на основе одних лишь метаданных (т. е. ограничений) и самого запроса. Предлагаем вам адаптацию статьи Лукаса Эдера, рассчитанную на тех, кто имеет общее ...
+<p>----------------------------------------</p>
+Пять простых оптимизаций, которые можно реализовать на основе одних лишь метаданных (т. е. ограничений) и самого запроса
+
+<img data-id="8797c98b-90a5-455d-936e-8961fff0f2bc" data-max-width="850" alt="Клёвые оптимизации SQL, не зависящие от стоимостной модели. Часть 1  - 1" src="https://cdn.javarush.com/images/article/8797c98b-90a5-455d-936e-8961fff0f2bc/1024.jpeg">Предлагаем вам адаптацию статьи Лукаса Эдера, рассчитанную на тех, кто имеет общее представление о базах данных и SQL, а также небольшой практический опыт работы с СУБД. 
+
+<a href='https://ru.wikipedia.org/wiki/Оптимизация_запросов_СУБД' target='_blank'>Стоимостная оптимизация</a> – фактически стандартный способ оптимизации SQL-запросов в современных базах данных. Именно поэтому настолько сложно написать вручную сложный алгоритм на <a href='https://en.wikipedia.org/wiki/Third-generation_programming_language' target='_blank'>3GL (языках программирования третьего поколения)</a>, производительность которого превышала бы динамически рассчитываемый план выполнения, сгенерированный современным оптимизатором. 
+
+Сегодня мы не будем обсуждать стоимостную оптимизацию, то есть оптимизацию на основе стоимостной модели базы данных. Мы рассмотрим гораздо более простые оптимизации. Те,которые можно реализовать на основе одних лишь метаданных (т. е. ограничений) и самого запроса. Обычно их реализация для базы данных – не бином Ньютона, поскольку, в данном случае, любая оптимизация приведет к лучшему плану выполнения, независимо от наличия индексов, объемов данных и асимметрии распределения данных. "Не бином Ньютона" не в смысле легкости реализации оптимизации, а в том, следует ли это делать.
+
+Эти оптимизации устраняют [для базы данных] ненужную, дополнительную работу (<a href='https://javarush.com/groups/posts/273-problemih-s-proizvoditeljhnostjhju-sql-voznikajujshie-iz-za-nenuzhnoy-no-objazateljhnoy-rabotih' target='_blank'>в отличие от ненужной, обязательной работы, о которой я уже писал</a>).
+
+<h3>Для чего эти оптимизации применяются?</h3>Большинство из них применяется для:
+
+<ul>
+<li>исправления ошибок в запросах;</li>
+<li>обеспечения повторного использования представлений без фактического выполнения логики представления базой данных.</li>
+</ul>
+В первом случае, можно было бы заявить: "Ну и что, просто возьми, и исправь этот дурацкий SQL-запрос". Но пусть первым бросит в меня камень тот, кому не доводилось ошибаться.
+
+Второй случай особенно интересен: это дает нам возможность создания сложных библиотек представлений и табличных функций, допускающих многократное использование в нескольких слоях.
+
+<h3>Используемые базы данных</h3>В этой статье мы будет сравнивать 10 SQL-оптимизаций в пяти наиболее широко используемых СУБД (<a href='http://db-engines.com/en/ranking' target='_blank'>согласно рейтингу баз данных</a>):
+
+<ul>
+<li>Oracle 12.2;</li>
+<li>MySQL 8.0.2;</li>
+<li>SQL Server 2014;</li>
+<li>PostgreSQL 9.6;</li>
+<li>DB2 LUW 10.5.</li>
+</ul>
+Другой <a href='https://javarush.com/groups/posts/251-indeks-pypl-samaja-populjarnaja-subd--oracle-a-firebase-rastjet-pugajujshe-bihstro-' target='_blank'>рейтинг</a> почти вторит ему.
+
+Как обычно, в этой статье я буду выполнять запросы к базе данных <a href='https://www.jooq.org/sakila' target='_blank'>Sakila.</a>
+ 
+<center><img data-id="af419cdc-b676-4f36-a06b-5d79ab9e6eca" data-max-width="710" alt="Клёвые оптимизации SQL, не зависящие от стоимостной модели. Часть 1  - 2" src="https://cdn.javarush.com/images/article/af419cdc-b676-4f36-a06b-5d79ab9e6eca/1024.jpeg"></center>
+Вот список этих десяти разновидностей оптимизаций:
+
+<ol>
+<li>транзитивное замыкание;</li>
+<li>невозможные предикаты и ненужные обращения к таблицам;</li>
+<li>устранение JOIN;</li>
+<li>устранение "бессмысленных" предикатов;</li>
+<li>проекции в подзапросах EXISTS;</li>
+<li>cлияние предикатов;</li>
+<li>доказуемо пустые множества;</li>
+<li>oграничения CHECK;</li>
+<li>ненужные рефлексивные соединения;</li>
+<li>Pushdown предикатов</li>
+</ol>
+Сегодня мы обсудим пп. 1-3, во второй части — 4 и 5, а в части 3 – 6-10.
+
+<h3>1. Транзитивное замыкание</h3><p>Начнем с чего-нибудь попроще: <a href='https://ru.wikipedia.org/wiki/%D0%A2%D1%80%D0%B0%D0%BD%D0%B7%D0%B8%D1%82%D0%B8%D0%B2%D0%BD%D0%BE%D0%B5_%D0%B7%D0%B0%D0%BC%D1%8B%D0%BA%D0%B0%D0%BD%D0%B8%D0%B5' target='_blank'>транзитивного замыкания</a>. Это тривиальное понятие, применимое ко множеству математических операций, например, оператору равенства. Его можно сформулировать в этом случае следующим образом: если A = B и B = C, то A = C.</p>
+Несложно, правда? Но это влечет некоторые интересные последствия для оптимизаторов SQL.
+Рассмотрим пример. Извлечем все фильмы с ACTOR_ID = 1:
+
+<pre class='lang-java line-numbers'><code>
+SELECT first_name, last_name, film_id
+FROM actor a
+JOIN film_actor fa ON a.actor_id = fa.actor_id
+WHERE a.actor_id = 1;
+</code></pre>
+Результат следующий:
+
+<pre class='lang-java line-numbers'><code>
+FIRST_NAME      LAST_NAME  FILM_ID
+PENELOPE        GUINESS    1
+PENELOPE        GUINESS    23
+PENELOPE        GUINESS    25
+PENELOPE        GUINESS    106
+PENELOPE        GUINESS    140
+PENELOPE        GUINESS    166
+...
+</code></pre>
+Взглянем теперь на план выполнения этого запроса в случае СУБД Oracle:
+
+<pre class='lang-java line-numbers'><code>
+--------------------------------------------------------------
+| Id  | Operation                    | Name          | Rows  |
+--------------------------------------------------------------
+|   0 | SELECT STATEMENT             |               |       |
+|   1 |  NESTED LOOPS                |               |    19 |
+|   2 |   TABLE ACCESS BY INDEX ROWID| ACTOR         |     1 |
+|*  3 |    INDEX UNIQUE SCAN         | PK_ACTOR      |     1 |
+|*  4 |   INDEX RANGE SCAN           | PK_FILM_ACTOR |    19 |
+--------------------------------------------------------------
+Predicate Information (identified by operation id):
+---------------------------------------------------
+   3 - access("A"."ACTOR_ID"=1)
+   4 - access("FA"."ACTOR_ID"=1)
+</code></pre>
+Особенно тут интересен раздел предикатов. Предикат ACTOR_ID = 1, вследствие транзитивного замыкания применяется как к таблице ACTOR, так и таблице FILM_ACTOR. Если:
+
+<pre class='lang-java line-numbers'><code>
+• A.ACTOR_ID = 1 (из предиката WHERE) и…
+• A.ACTOR_ID = FA.ACTOR_ID (из предиката ON)
+  То:
+• FA.ACTOR_ID = 1
+</code></pre>
+В случае более сложных запросов это приводит к некоторым весьма приятным результатам. В частности, точность оценок кардинальности существенно повышается, так как появляется возможность подбора оценок на основе конкретного константного значения предиката, а не, например, среднего числа фильмов по актерам, как в следующем запросе (возвращающем такой же результат):
+
+<pre class='lang-java line-numbers'><code>
+SELECT first_name, last_name, film_id
+FROM actor a
+JOIN film_actor fa ON a.actor_id = fa.actor_id
+WHERE first_name = 'PENELOPE'
+AND last_name = 'GUINESS'
+</code></pre>
+Его план:
+
+<pre class='lang-java line-numbers'><code>
+----------------------------------------------------------------------------
+| Id  | Operation                            | Name                | Rows  |
+----------------------------------------------------------------------------
+|   0 | SELECT STATEMENT                     |                     |       |
+|   1 |  NESTED LOOPS                        |                     |     2 |
+|*  2 |   TABLE ACCESS BY INDEX ROWID BATCHED| ACTOR               |     1 |
+|*  3 |    INDEX RANGE SCAN                  | IDX_ACTOR_LAST_NAME |     3 |
+|*  4 |   INDEX RANGE SCAN                   | PK_FILM_ACTOR       |    27 |
+----------------------------------------------------------------------------
+Predicate Information (identified by operation id):
+---------------------------------------------------
+   2 - filter("A"."FIRST_NAME"='PENELOPE')
+   3 - access("A"."LAST_NAME"='GUINESS')
+   4 - access("A"."ACTOR_ID"="FA"."ACTOR_ID")
+</code></pre>
+Как вы можете видеть, оценка числа строк таблицы FILM_ACTOR завышена, а оценка для вложенных циклов (NESTED LOOP) занижена. Вот пару интересных значений:
+
+<pre class='lang-java line-numbers'><code>
+SELECT count(*) FROM film_actor WHERE actor_id = 1;
+SELECT avg(c) FROM (
+  SELECT count(*) c FROM film_actor GROUP BY actor_id
+);
+</code></pre>
+Результат:
+
+<pre class='lang-java line-numbers'><code>
+19
+27.315
+</code></pre>
+Отсюда и получаются оценки. Если база данных знает, что речь идет о ACTOR_ID = 1, то может собрать статистику по количеству фильмов для<em> этого конкретного актёра</em>. Если же <em>не знает</em> (поскольку стандартный механизм сбора статистики не соотносит FIRST_NAME/LAST_NAME с ACTOR_ID), то мы получим среднее число фильмов для всех <em>актеров</em>. Простая, несущественная ошибка в данном конкретном случае, но в сложном запросе она может распространяться дальше, накапливаться и приводить дальше в запросе (выше в плане) к неправильному выбору JOIN.
+
+Так что всегда, когда только можете, проектируйте свои соединения и простые предикаты так, что воспользоваться преимуществами транзитивного замыкания. Какие еще базы данных поддерживают эту возможность?
+
+<h4>DB2</h4>Да!
+
+<pre class='lang-java line-numbers'><code>
+Explain Plan                                               
+-----------------------------------------------------------
+ID | Operation              |                 Rows | Cost  
+ 1 | RETURN                 |                      |   13  
+ 2 |  NLJOIN                |              27 of 1 |   13  
+ 3 |   FETCH ACTOR          |     1 of 1 (100.00%) |    6  
+ 4 |    IXSCAN PK_ACTOR     |   1 of 200 (   .50%) |    0  
+ 5 |   IXSCAN PK_FILM_ACTOR | 27 of 5462 (   .49%) |    6  
+Predicate Information                                      
+ 4 - START (Q2.ACTOR_ID = 1)                               
+      STOP (Q2.ACTOR_ID = 1)                               
+ 5 - START (1 = Q1.ACTOR_ID)                               
+      STOP (1 = Q1.ACTOR_ID)
+</code></pre>
+Кстати, если вам нравятся крутые планы выполнения вроде этого, воспользуйтесь сценарием <a href='http://use-the-index-luke.com/s/last_explained' target='_blank'>Маркуса Винанда (Markus Winand)</a>.
+
+<h4>MySQL</h4>К сожалению, планы выполнения MySQL плохо подходят для подобного анализа. В выводимой информации отсутствует сам предикат:
+
+<pre class='lang-java line-numbers'><code>
+ID  SELECT TYPE  TABLE  TYPE   REF    ROWS
+------------------------------------------
+1   SIMPLE       a      const  const  1 
+1   SIMPLE       fa     ref    const  19
+</code></pre>
+Но тот факт, что в столбце REF два раза указано const показывает, что в обеих таблицах идет поиск по константному значению. В то же время, план запроса с FIRST_NAME / LAST_NAME выглядит следующим образом:
+
+<pre class='lang-java line-numbers'><code>
+ID  SELECT TYPE  TABLE  TYPE   REF         ROWS
+-----------------------------------------------
+1   SIMPLE       a      ref    const       3 
+1   SIMPLE       fa     ref    a.actor_id  27
+</code></pre>
+И, как вы можете видеть, в REF теперь указана ссылка на столбец из предиката JOIN. Оценка кардинальности практически такая же, как в Oracle.
+
+Так что да, MySQL тоже поддерживает транзитивное замыкание.
+
+<h4>PostgreSQL</h4>Да!
+
+<pre class='lang-java line-numbers'><code>
+QUERY PLAN                                                                          
+------------------------------------------------------------------------------------
+Nested Loop  (cost=4.49..40.24 rows=27 width=15)                                    
+  ->  Seq Scan on actor a  (cost=0.00..4.50 rows=1 width=17)                        
+        Filter: (actor_id = 1)                                                      
+  ->  Bitmap Heap Scan on film_actor fa  (cost=4.49..35.47 rows=27 width=4)         
+        Recheck Cond: (actor_id = 1)                                                
+        ->  Bitmap Index Scan on film_actor_pkey  (cost=0.00..4.48 rows=27 width=0) 
+              Index Cond: (actor_id = 1)
+</code></pre>
+<h4>SQL Server</h4>Да!
+
+<pre class='lang-java line-numbers'><code>
+  |--Nested Loops(Inner Join)
+       |--Nested Loops(Inner Join)
+       |    |--Index Seek (SEEK:([a].[actor_id]=(1)))
+       |    |--RID Lookup
+       |--Index Seek (SEEK:([fa].[actor_id]=(1)))
+</code></pre>
+<h4>Резюме</h4>Все наши базы данных поддерживают транзитивное замыкание.
+
+<table align="center">
+<tr>
+<thead>
+<th>База данных</th>
+<th>Транзитивное замыкание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DB2 LUW 10.5</td>
+<td>Да</td>
+</tr>
+<tr>
+<td>MySQL 8.0.2</td>
+<td>Да</td>
+</tr>
+<tr>
+<td>Oracle 12.2.0.1</td>
+<td>Да</td>
+</tr>
+<tr>
+<td>PostgreSQL 9.6</td>
+<td>Да</td>
+</tr>
+<tr>
+<td>SQL Server 2014</td>
+<td>Да</td>
+</tr>
+</tbody>
+</table>
+
+Однако дождитесь №6 в следующей части статьи. Существуют сложные случаи транзитивного замыкания, с которыми справляются не все базы данных.
+
+<h2>2. Невозможные предикаты и ненужные обращения к таблицам</h2>Эта совсем дурацкая оптимизация, но почему бы и нет? Если пользователи пишут невозможные предикаты, то зачем их вообще выполнять? Вот несколько примеров:
+
+<pre class='lang-java line-numbers'><code>
+-- "Очевидный"
+SELECT * FROM actor WHERE 1 = 0
+-- "Хитрый"
+SELECT * FROM actor WHERE NULL = NULL
+</code></pre>
+Первый запрос, очевидно, никогда не вернет никаких результатов, но то же самое утверждение справедливо и относительно второго. Ведь хотя NULL IS NULL всегда TRUE, результат вычисления NULL = NULL равен NULL, что, согласно <a href='https://ru.wikipedia.org/wiki/%D0%A2%D1%80%D0%BE%D0%B8%D1%87%D0%BD%D0%B0%D1%8F_%D0%BB%D0%BE%D0%B3%D0%B8%D0%BA%D0%B0' target='_blank'>трёхзначной логике</a>, эквивалентно FALSE.
+
+Это не требует особых пояснений, так что перейдем сразу к выяснению, какие из баз данных выполняют такую оптимизацию.
+
+<h4>DB2</h4>Да!
+
+<pre class='lang-java line-numbers'><code>
+Explain Plan                       
+-----------------------------------
+ID | Operation      |   Rows | Cost
+ 1 | RETURN         |        |    0
+ 2 |  TBSCAN GENROW | 0 of 0 |    0
+</code></pre>
+Как вы можете видеть, обращение к таблице ACTOR полностью исключено из плана. В нём присутствует только операция GENROW, генерирующая ноль строк. Идеально.
+
+<h4>MySQL</h4>Да!
+
+<pre class='lang-java line-numbers'><code>
+ID  SELECT TYPE  TABLE   EXTRAS
+-----------------------------------------
+1   SIMPLE         Impossible WHERE
+</code></pre>
+На этот раз, MySQL был столь любезен, что сообщил нам о невозможном предложении WHERE. Спасибо! Это сильно облегчает анализ, особенно по сравнению с другими базами данных.
+
+<h4>Oracle</h4>Да!
+
+<pre class='lang-java line-numbers'><code>
+---------------------------------------------------------------
+| Id  | Operation          | Name  | Starts | E-Rows | A-Rows |
+---------------------------------------------------------------
+|   0 | SELECT STATEMENT   |       |      1 |        |      0 |
+|*  1 |  FILTER            |       |      1 |        |      0 |
+|   2 |   TABLE ACCESS FULL| ACTOR |      0 |    200 |      0 |
+---------------------------------------------------------------
+Predicate Information (identified by operation id):
+---------------------------------------------------
+   1 - filter(NULL IS NOT NULL)
+</code></pre>
+Видим, что в плане по-прежнему упоминается обращение к таблице ACTOR, причем ожидаемое число строк по-прежнему 200, но присутствует и операция фильтрации (FILTER) при Id=1, где никогда не будет TRUE. В силу нелюбви Oracle к <a href='https://community.oracle.com/ideas/2633' target='_blank'>стандартному булевому типу данных SQL</a>, Oracle отображает в плане NULL IS NOT NULL, вместо простого FALSE. Ну что ж...
+
+Но если серьезно, следите за этим предикатом. Мне случалось отлаживать планы выполнения с поддеревьями в 1000 строк и крайне высокими значениями стоимости и лишь постфактум обнаруживать, что всё это поддерево "отсекалось" фильтром NULL IS NOT NULL. Немного обескураживающе, скажу я вам.
+
+<h4>PostgreSQL</h4>Да!
+
+<pre class='lang-java line-numbers'><code>
+QUERY PLAN                                 
+-------------------------------------------
+Result  (cost=0.00..0.00 rows=0 width=228) 
+  One-Time Filter: false
+</code></pre>
+Уже лучше. Никакого надоедливого обращения к таблице ACTOR и маленький аккуратный предикат FALSE.
+
+<h4>SQL Server?</h4>Да!
+
+<pre class='lang-java line-numbers'><code>
+  |--Constant Scan
+</code></pre>
+SQL Server называет это "<em><strong>константным</strong></em> просмотром", то есть просмотром, при котором ничего не происходит – аналогично DB2.
+
+Все наши базы данных умеют исключать невозможные предикаты:
+
+<table>
+<thead>
+<tr>
+<th>База данных</th>
+<th>Невозможные предикаты</th>
+<th>Ненужные обращения к таблицам</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DB2 LUW 10.5</td>
+<td>Да</td>
+<td>Да</td>
+</tr>
+<tr>
+<td>MySQL 8.0.2</td>
+<td>Да</td>
+<td>Да</td>
+</tr>
+<tr>
+<td>Oracle 12.2.0.1</td>
+<td>Да</td>
+<td>Да</td>
+</tr>
+<tr>
+<td>PostgreSQL 9.6</td>
+<td>Да</td>
+<td>Да</td>
+</tr>
+<tr>
+<td>SQL Server 2014</td>
+<td>Да</td>
+<td>Да</td>
+</tr>
+</tbody>
+</table>
+<h3>3. Устранение JOIN</h3>
+В предыдущем разделе мы наблюдали ненужные обращения к таблицам в однотабличных запросах. Но что произойдет, если в JOIN не требуется одно из нескольких обращений к таблицам?
+
+<a href='https://blog.jooq.org/2017/09/01/join-elimination-an-essential-optimiser-feature-for-advanced-sql-usage/' target='_blank'>Я уже писал про устранение JOIN в предыдущем посте из моего блога</a>. SQL-движок способен определить, на основе вида запроса, а также наличия первичных и внешних ключей, действительно ли конкретный JOIN необходим в данном запросе, или его устранение не повлияет на семантику запроса.
+
+Во всех следующих трёх примерах, JOIN не нужен.
+
+Внутреннее соединение типа "...-к-одному" можно устранить при наличии не допускающего неопределенного значения (NOT NULL) внешнего ключа
+
+Вместо вот этого:
+
+<pre class='lang-java line-numbers'><code>
+SELECT first_name, last_name
+FROM customer c
+JOIN address a ON c.address_id = a.address_id
+</code></pre>
+База данных может выполнить следующее:
+
+<pre class='lang-java line-numbers'><code>
+SELECT first_name, last_name
+FROM customer c
+</code></pre>
+Внутреннее соединение (INNER JOIN) типа "...-к-одному" можно заменить при наличии допускающего неопределенного значения внешнего ключа.
+
+Вышеприведенный запрос работает, если на внешний ключ наложено ограничение NOT NULL. Если же нет, например, как в этом запросе:
+
+<pre class='lang-java line-numbers'><code>
+SELECT title
+FROM film f
+JOIN language l ON f.original_language_id = l.language_id
+</code></pre>
+то JOIN все равно можно устранить, но придется добавить предикат NOT NULL, вот так:
+
+<pre class='lang-java line-numbers'><code>
+SELECT title
+FROM film
+WHERE original_language_id IS NOT NULL
+</code></pre>
+Внешнее соединение (OUTER JOIN) типа "...-к-одному" можно убрать при наличии уникального ключа.
+
+Вместо вот этого:
+
+<pre class='lang-java line-numbers'><code>
+SELECT first_name, last_name
+FROM customer c
+LEFT JOIN address a ON c.address_id = a.address_id
+</code></pre>
+База данных, опять же, может выполнить следующее:
+
+<pre class='lang-java line-numbers'><code>
+SELECT first_name, last_name
+FROM customer c
+</code></pre>
+... даже если внешнего ключа по CUSTOMER.ADDRESS_ID нет.
+
+Уникальное внешнее соединение (DISTINCT OUTER JOIN) типа "...-ко-многим" можно убрать.
+
+Вместо вот этого:
+
+<pre class='lang-java line-numbers'><code>
+SELECT DISTINCT first_name, last_name
+FROM actor a
+LEFT JOIN film_actor fa ON a.actor_id = fa.actor_id
+</code></pre>
+База данных может выполнить следующее:
+
+<pre class='lang-java line-numbers'><code>
+SELECT DISTINCT first_name, last_name
+FROM actor a
+</code></pre>
+Все эти примеры были подробно изучены в предыдущей статье, так что я не буду повторяться, а лишь подытожу всё, что могут устранять различные базы данных:
+
+<table>
+<thead>
+<tr>
+<th>База данных</th>
+<th>INNER JOIN:
+...-к-одному</th>
+<th>
+(может быть NULL):
+...-к-одному
+</th>
+<th>OUTER JOIN:
+...-к-одному
+</th>
+<th>OUTER JOIN DISTINCT:
+...-ко-многим
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DB2 LUW 10.5</td>
+<td>Да</td>
+<td>Да</td>
+<td>Да</td>
+<td>Да</td>
+</tr>
+<tr>
+<td>MySQL 8.0.2</td>
+<td>Нет</td>
+<td>Нет</td>
+<td>Нет</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>Oracle 12.2.0.1</td>
+<td>Да</td>
+<td>Да</td>
+<td>Да</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>PostgreSQL 9.6</td>
+<td>Нет</td>
+<td>Нет</td>
+<td>Да</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>SQL Server 2014</td>
+<td>Да</td>
+<td>Нет</td>
+<td>Да</td>
+<td>Да</td>
+</tr>
+</tbody>
+</table>
+К сожалению, не все базы данных могут устранять все виды соединений. DB2 и SQL Server тут – безусловные лидеры!
+
+<strong><em><a href='https://javarush.com/groups/posts/331-kljevihe-optimizacii-sql-ne-zavisjajshie-ot-stoimostnoy-modeli-chastjh-2' target='_blank'>Продолжение следует</a></em></strong>
+
+<table>
+<tr><th>Что еще почитать?</th>
+</tr>
+<tr>
+<td>
+<p><a href='https://javarush.com/groups/posts/273-problemih-s-proizvoditeljhnostjhju-sql-voznikajujshie-iz-za-nenuzhnoy-no-objazateljhnoy-rabotih' target='_blank'>Проблемы с производительностью SQL, возникающие из-за "ненужной, но обязательной работы"</a></p>
+<p><a href='https://javarush.com/groups/posts/72-kak-praviljhno-nachatjh-razrabotku-pod-subd-oracle' target='_blank'>Как правильно начать разработку под СУБД Oracle</a></p>
+<p><a href='https://javarush.com/groups/posts/331-kljevihe-optimizacii-sql-ne-zavisjajshie-ot-stoimostnoy-modeli-chastjh-2' target='_blank'>Клёвые оптимизации SQL, не зависящие от стоимостной модели. Часть 2</a></p>
+</td>
+</tr>
+</table>

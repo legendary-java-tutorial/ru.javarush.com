@@ -1,0 +1,357 @@
+Полиморфизм и его друзья
+<p>----------------------------------------</p>
+Полиморфизм — один из основных принципов объектно-ориентированного программирования. Он позволяет использовать всю мощь строгой типизации Java и писать удобный и поддерживаемый код. Про него сказано многое, но надеюсь из этого обзора каждый сможет вынести ...
+<p>----------------------------------------</p>
+Полиморфизм — один из основных принципов объектно-ориентированного программирования. Он позволяет использовать всю мощь строгой типизации Java и писать удобный и поддерживаемый код. Про него сказано многое, но надеюсь из этого обзора каждый сможет вынести что-то новое для себя.<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="98aa2806-5abf-4655-8c34-48f6cc14a0a6" data-max-width="632" alt="Полиморфизм и его друзья - 1" src="https://cdn.javarush.com/images/article/98aa2806-5abf-4655-8c34-48f6cc14a0a6/1024.jpeg"></div></div><h2>Вступление</h2>Думаю, все мы знаем, что язык программирования Java принадлежит компании Oracle. Поэтому, наш путь начинается с сайта: <a href="http://www.oracle.com" target="_blank" rel="nofollow">www.oracle.com</a>.
+
+На главной странице есть "Menu". В нём в разделе "Documentation" есть подраздел "Java". Всё, что относится к базовым функциям языка относится к "Java SE documentation", поэтому выбираем этот раздел. Раздел документации откроется для последней версии, но пока что в "Looking for a different release?" выберем вариант: JDK8.
+
+На странице мы увидим много различных вариантов. Но нас интересует Learn the Language : "<a href="https://docs.oracle.com/javase/tutorial/tutorialLearningPaths.html" target="_blank" rel="nofollow">Java Tutorials Learning Paths</a>". На этой странице мы найдём ещё один раздел: "<a href="https://docs.oracle.com/javase/tutorial/java/index.html" target="_blank" rel="nofollow">Learning the Java Language</a>". Это - святая из святых, tutorial по основам Java от Oracle.
+
+Java — объектно-ориентированный язык программирования (ООП), поэтому изучение языка даже на сайте Oracle начинается с обсуждения основных концепций "<a href="https://docs.oracle.com/javase/tutorial/java/concepts/index.html" target="_blank" rel="nofollow">Object-Oriented Programming Concepts</a>". Из самого названия понятно, что Java ориентирован на работу с объектами. Из подраздела "<a href="https://docs.oracle.com/javase/tutorial/java/concepts/object.html" target="_blank" rel="nofollow">What Is an Object?</a>" понятно, что объекты в Java состоят из состояния и поведения. Представьте, что у нас есть счёт в банке. Количество денег на счету - это состояние, а методы работы с этим состоянием - это поведение. Объекты надо как-то описывать (рассказывать, какое у них может быть состояние и поведение) и этим описанием является <a href="https://docs.oracle.com/javase/tutorial/java/concepts/class.html" target="_blank" rel="nofollow">класс</a>. Когда мы создаём объект какого-то класса, то мы указываем этот класс и это называется "<strong>типом объекта</strong>". Отсюда и говорится, что Java является строго типизированным языком, о чём сказано в спецификации яызка Java в разделе "<a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-4.html" target="_blank" rel="nofollow">Chapter 4. Types, Values, and Variables</a>". Язык Java следует концепциям ООП и поддерживает наследование (<a href="https://docs.oracle.com/javase/tutorial/java/concepts/inheritance.html" target="_blank" rel="nofollow">Inheritance</a>), используя ключевое слово extends (т.е. расширение типа). Почему расширение? Потому что при наследовании дочерний класс наследует поведение и состояние родительского класса и может их дополнить, т.е. расширить функциональность базового класса.
+
+Так же в описании класса может быть указан интерфейс (<a href="https://docs.oracle.com/javase/tutorial/java/concepts/interface.html" target="_blank" rel="nofollow">Interface</a>) при помощи ключевого слова implements. Когда класс реализует интерфейс, это значит, что класс соответствует некоторому контракту - декларации программиста остальному окружению, что класс имеет определённое поведение. Например, у плеера есть различные кнопки. Эти кнопки - интерфейс для управления поведением плеера, а поведение будет изменять внутреннее состояние плеера (например, громкость). При этом состояние и поведение как описание дадут класс. Если класс реализует интерфейс, то объект созданный по этому классу может быть описан типом не только по классу, но и по интерфейсу.
+
+Давайте уже посмотрим на пример:
+
+<pre class="lang-java line-numbers"><code>
+public class MusicPlayer {
+
+    public static interface Device {
+        public void turnOn();
+        public void turnOff();
+    }
+    
+    public static class Mp3Player implements Device {
+        public void turnOn() {
+            System.out.println("On. Ready for mp3.");
+        }
+        public void turnOff() {
+            System.out.println("Off");
+        }
+    }
+    
+    public static class Mp4Player extends Mp3Player {
+        @Override
+        public void turnOn() {
+            System.out.println("On. Ready for mp3/mp4.");
+        }
+    }
+    
+    public static void main(String []args) throws Exception{
+        // Какое-то устройство (Тип = Device)
+        Device mp3Player = new Mp3Player();
+        mp3Player.turnOn();
+        // У нас есть mp4 проигрыватель, но нам от него нужно только mp3
+        // Пользуемся им как mp3 проигрывателем (Тип = Mp3Player)
+        Mp3Player mp4Player = new Mp4Player();
+        mp4Player.turnOn();
+    }
+}
+</code></pre>
+<strong>Тип</strong> — это очень важное описание. Оно рассказывает, как мы собираемся работать с объектом, т.е. какое поведение от объекта ожидаем. Поведение - это методы. Поэтому, давайте разбираться с методами. На сайте Oracle методам отведён свой раздел в Oracle Tutorial : "<a href="https://docs.oracle.com/javase/tutorial/java/javaOO/methods.html" target="_blank" rel="nofollow">Defining Methods</a>".
+
+Первое, что стоит вынести из статьи: <strong>Сигнатура метода — это название метода и типы параметров</strong>:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="5a9a573d-ad3f-4d03-a3d5-1292438d2eb9" data-max-width="811" alt="Полиморфизм и его друзья - 2" src="https://cdn.javarush.com/images/article/5a9a573d-ad3f-4d03-a3d5-1292438d2eb9/1024.jpeg"></div></div>Например, объявляя метод public void method(Object o), сигнатурой будет название method и тип параметра Object. Тип возвращаемого значения НЕ входит в сигнатуру. Это важно!
+
+Далее выполним компиляцию нашего исходного кода. Как мы знаем, для этого код надо сохранить в файл с именем класса и с расширением java.
+
+Код на языке Java компилируется при помощи компилятора "<a href="https://docs.oracle.com/javase/8/docs/technotes/tools/windows/javac.html" target="_blank" rel="nofollow">javac</a>" в некоторый промежуточный формат, который умеет выполнять виртуальная машина Java (JVM). Этот промежуточный формат называется байткодом и содержится в файлах с расширением .class.
+
+Выполним команду для компиляции: <code>javac MusicPlayer.java</code>
+
+После того, как java код скомпилирован, мы можем его выполнять. Используя утилиту "<a href="https://docs.oracle.com/javase/8/docs/technotes/tools/windows/java.html" target="_blank" rel="nofollow">java</a>" для запуска будет запущен процесс виртуальный машины java для выполнения переданного в class файле байткода.
+
+Выполним команду для запуска приложения: <code>java MusicPlayer</code>.
+
+Мы увидим на экране текст, указанный во входном параметре метода println. Интересно, что имея байткод в файле с расширением .class мы можем его посмотреть при помощи утилиты "<a href="https://docs.oracle.com/javase/8/docs/technotes/tools/windows/javap.html" target="_blank" rel="nofollow">javap</a>".
+Выполним команду &lt;ocde&gt;javap -c MusicPlayer:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="2cce4865-f9cf-4c8d-8d4a-61721572e6a1" data-max-width="752" alt="Полиморфизм и его друзья - 3" src="https://cdn.javarush.com/images/article/2cce4865-f9cf-4c8d-8d4a-61721572e6a1/1024.jpeg"></div></div>Из байткода мы можем увидеть, что вызов метода через объект, типом которого был указан класс выполняется при помощи <code>invokevirtual</code>, а компилятор вычислил, какую сигнатуру метода надо использовать.
+
+Почему <code>invokevirtual</code>? Потому что идёт вызов(invoke переводится как вызывать) виртуального метода. 
+
+Что такое виртуальный метод? Это такой метод, тело которого может быть переопределено в момент выполнения программы. Представьте просто, что у вас есть некий список соответствий некоторого ключа (сигнатуры метода) и тела (кода) метода. И это соответствие ключа и тела метода во время выполнения программы может меняться. Поэтому метод виртуальный.
+
+По умолчанию в Java методы, которые НЕ static, НЕ final и НЕ private, являются виртуальными. Благодаря этому Java поддерживает такой принцип объектно-ориентированного программирования как полиморфизм. Как Вы уже могли понять, об этом наш сегодняшний обзор.
+<h2>Полиморфизм</h2>На сайте Oracle в их официальном Tutorial есть отдельный раздел: "<a href="https://docs.oracle.com/javase/tutorial/java/IandI/polymorphism.html" target="_blank" rel="nofollow">Polymorphism</a>". 
+
+Воспользуемся <a href="https://www.tutorialspoint.com/compile_java_online.php" target="_blank" rel="nofollow">Java Online Compiler</a>'ом чтобы увидеть, как работает полиморфизм в Java.
+
+Например, у нас есть некоторый абстрактный класс <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Number.html" target="_blank" rel="nofollow">Number</a>, представляющий число в Java.
+
+Что он позволяет? У него есть некоторые базовые методы, которые будут у всех наследников. Тот кто наследуется от Number буквально говорит - "Я число, со мной можно работать как с числом". Например, для любого наследника можно при помощи метода intValue() получить его Integer значение. Если посмотреть java api для Number, то видно, что метод abstract, то есть данный метод каждый наследник Number должен реализовать сам.
+
+Но что нам это даёт? Посмотрим на пример:
+
+<pre class="lang-java line-numbers"><code>
+public class HelloWorld {
+
+    public static int summ(Number first, Number second) {
+        return first.intValue() + second.intValue();
+    }
+    
+    public static void main(String []args){
+        System.out.println(summ(1, 2));
+        System.out.println(summ(1L, 4L));
+        System.out.println(summ(1L, 5));
+        System.out.println(summ(1.0, 3));
+    }
+}
+</code></pre>
+Как видно из примера, благодаря полиморфизму, мы можем написать метод, который на вход будет принимать аргументы любого типа, который будет наследником Number (Number мы не можем получить, т.к. это абстрактный класс). Как было в примере с плеером, в данном случае мы говорим, что хотим работать с чем-то, как с Number. Мы знаем, что любой, кто является Number, обязан уметь предоставить своё integer значение. И нам этого достаточно. Мы не хотим вдаваться в подробности реализации конкретного объекта и хотим работать с этим объектом через общие для всех наследников Number методы. 
+
+Список методов, которые нам будут доступны, будет определён по типу во время компиляции (как это мы видели ранее в байткоде). В данном случае у нас тип будет Number. Как видно из примера, мы передаём различные числа разного типа, то есть на вход метод summ будет получать и Integer, и Long, и Double. Но всех их объединяет то, что они наследники от абстрактного Number, а следовательно переопределили у себя поведение в методе intValue, т.к. каждый конкретный тип знает, как этот тип нужно приводить к Integer.
+
+Такой полиморфизм реализован через так называемое переопределение, по английски Overriding.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="240" alt="Полиморфизм и его друзья - 4" src="https://cdn.javarush.com/images/article/a02f675e-ec20-4c31-9612-1f123ff03d4c/original.jpeg"></div></div>Переопределение (Overriding) или динамический полиморфизм.
+
+Итак, начнём с того, что сохраним файл HelloWorld.java со следующим содержанием:
+
+<pre class="lang-java line-numbers"><code>
+public class HelloWorld {
+    public static class Parent {
+        public void method() {
+            System.out.println("Parent");
+        }
+    }
+    public static class Child extends Parent {
+        public void method() {
+            System.out.println("Child");
+        }
+    }
+
+    public static void main(String[] args) {
+        Parent parent = new Parent();
+        Parent child = new Child();
+        parent.method();
+        child.method();
+    }
+}
+</code></pre>
+Выполним <code>javac HelloWorld.java</code> и <code>javap -c HelloWorld</code>:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="3948b289-f788-4a26-ba53-04ea3411ba08" data-max-width="675" alt="Полиморфизм и его друзья - 5" src="https://cdn.javarush.com/images/article/3948b289-f788-4a26-ba53-04ea3411ba08/1024.jpeg"></div></div>Как видно, в байткоде для строчек с вызовом метода указана одинаковая ссылка на метод для вызова <code>invokevirtual (#6)</code>.
+
+Выполним <code>java HelloWorld</code>. Как мы видим, переменные parent и child объявлены c типом Parent, однако сама реализация вызвана согласно тому, какой объект был присвоен переменной (т.е. объект какого типа). Во время выполнения программы (ещё говорят в рантайме) JVM в зависимости от объекта при вызове методов по одной и той же сигнатуре выполняла разные методы. То есть по ключу соответствующей сигнатуры сначала получили одно тело метода, а потом получили другое. В зависимости от того, какой объект лежит в переменной.
+
+Такое вот определение в момент выполнения программы того, какой метод будет вызван, называется ещё поздним связыванием или Dynamic Binding. То есть соответствие сигнатуры и тела метода выполняется динамически, в зависимости от объекта, для которого вызывается метод.
+
+Естественно, нельзя переопределить статические члены класса (Class member), а так же члены класса с типом доступа private или final.
+
+На помощь разработчикам так же приходят аннотации @Override. Она помогает компилятору понять, что в этом месте мы собираемся переопределить поведение метод предка. Если мы ошиблись в сигнатуре метода, то компилятор нам сразу об этом скажет. Например:
+
+<pre class="lang-java line-numbers"><code>
+public static class Parent {
+        public void method() {
+            System.out.println("parent");
+        }
+}
+public static class Child extends Parent {
+        @Override
+        public void method(String text) {
+            System.out.println("child");
+        }
+}
+</code></pre>
+Не скомпилируется с ошибкой: error: method does not override or implement a method from a supertype
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="37eb78d1-5cdb-4b85-9dd1-d674517681ab" data-max-width="650" alt="Полиморфизм и его друзья - 6" src="https://cdn.javarush.com/images/article/37eb78d1-5cdb-4b85-9dd1-d674517681ab/1024.jpeg"></div></div>С переопределением так же связано такое понятие, как "<strong>ковариантность</strong>" (Covariance). Рассмотрим пример:
+
+<pre class="lang-java line-numbers"><code>
+public class HelloWorld {
+    public static class Parent {
+        public Number method() {
+            return 1;
+        }
+    }
+    public static class Child extends Parent {
+        @Override
+        public Integer method() {
+            return 2;
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println(new Child().method());
+    }
+}
+</code></pre>
+Несмотря на внешнюю заумность смысл сводится к тому, что при переопределении мы можем вернуть не только тот тип, который был указан в предке, но и более конкретный тип.
+
+Например, предок возвращал Number, а мы можем вернуть Integer - наследника от Number. Тоже касается и исключений, объявленных в throws у метода. Наследники могут переопределить метод и уточнить бросаемое исключение. Но не могут расширить. То есть если родитель бросает IOException, то мы можем бросать более точное EOFException, но не можем бросать Exception.
+
+Аналогично, нельзя сужать область видимости и нельзя накладывать дополнительные ограничения. Например, нельзя добавлять static.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="209" alt="Полиморфизм и его друзья - 7" src="https://cdn.javarush.com/images/article/2c531bd4-d53c-4a20-815d-6abf608e7b51/original.jpeg"></div></div><h2>Сокрытие (Hiding)</h2>Есть ещё такое понятие, как "<a href="https://docs.oracle.com/javase/tutorial/java/IandI/hidevariables.html" target="_blank" rel="nofollow">сокрытие</a>". Пример:
+
+<pre class="lang-java line-numbers"><code>
+public class HelloWorld {
+    public static class Parent {
+        public static void method() {
+            System.out.println("Parent");
+        }
+    }
+    public static class Child extends Parent {
+        public static void method() {
+            System.out.println("Child");
+        }
+    }
+
+    public static void main(String[] args) {
+        Parent parent = new Parent();
+        Parent child = new Child();
+        parent.method();
+        child.method();
+    }
+}
+</code></pre>
+Это довольно очевидная вещь, если подумать. Статические члены класса относятся к классу, т.е. к типу переменной. Поэтому, логично, что если child имеет тип Parent, то и метод будет вызван у Parent, а не у child.
+
+Если мы посмотрим байткод, как мы уже делали ранее, то увидим, что вызов статического метода осуществляется при помощи invokestatic. Это объясняет JVM, что надо смотреть на тип, а не по таблице методов, как это делал invokevirtual или invokeinterface.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="acbf49db-1ded-41f1-b0f5-d265c86589ef" data-max-width="311" alt="Полиморфизм и его друзья - 8" src="https://cdn.javarush.com/images/article/acbf49db-1ded-41f1-b0f5-d265c86589ef/1024.jpeg"></div></div><h2>Перегрузка методов (Overloading)</h2>Что мы видим ещё видим в Java Oracle Tutorial? В ранее изученном разделе "<a href="https://docs.oracle.com/javase/tutorial/java/javaOO/methods.html" target="_blank" rel="nofollow">Defining Methods</a>" есть что-то про Overloading. Что это такое?
+
+По-русски это "перегрузка методов", а такие методы называются "перегруженными".
+
+Итак, перегрузка методов. На первый взгляд, всё просто.
+
+Откроем онлайн компилятор Java, например <a href="https://www.tutorialspoint.com/compile_java_online.php" target="_blank" rel="nofollow">tutorialspoint online java compiler</a>.
+
+<pre class="lang-java line-numbers"><code>
+public class HelloWorld {
+
+	public static void main(String []args){
+		HelloWorld hw = new HelloWorld();
+		hw.say(1);
+		hw.say("1");
+	}
+     
+	public static void say(Integer number) {
+		System.out.println("Integer " + number);
+	}
+	public static void say(String number) {
+		System.out.println("String " + number);
+	}
+}
+</code></pre>
+Итак, тут всё кажется просто. Как и сказано в tutorial от Oracle, перегруженные методы (в данном случае это метод say) отличаются по количеству и типу аргументов, переданных в метод.
+
+Нельзя объявить одинаковые имя и одинаковое количество одинаковых типов аргументов, т.к. компилятор не сможет их отличить друг от друга.
+Тут стоит сразу отметить очень важную вещь:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="5b8418d8-5d70-44ab-b528-9c40b120fb92" data-max-width="905" alt="Полиморфизм и его друзья - 9" src="https://cdn.javarush.com/images/article/5b8418d8-5d70-44ab-b528-9c40b120fb92/1024.jpeg"></div></div>То есть при перегрузке компилятор проверяет корректность. Это важно.
+
+Но как же на самом деле компилятор определяет, что нужно вызывать определённый метод? Он использует правило "the Most Specific Method", описанного в спецификации языка Java : "<a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-15.html#jls-15.12.2.5" target="_blank" rel="nofollow">15.12.2.5. Choosing the Most Specific Method</a>".
+
+Чтобы продемонстрировать его работу, возьмём пример из Oracle Certified Professional Java Programmer:
+
+<pre class="lang-java line-numbers"><code>
+public class Overload{
+  public void method(Object o) {
+    System.out.println("Object");
+  }
+  public void method(java.io.FileNotFoundException f) {
+    System.out.println("FileNotFoundException");
+  }
+  public void method(java.io.IOException i) {
+    System.out.println("IOException");
+  }
+  public static void main(String args[]) {
+    Overload test = new Overload();
+    test.method(null);
+  }
+}
+</code></pre>
+Пример взять отсюда: <a href="https://github.com/stokito/OCPJP/blob/master/src/ru/habrahabr/blogs/java/OCPJP1/question1/Overload.java" target="_blank" rel="nofollow">https://github.com/stokito/OCPJP/blob/master/src/ru/habrahabr/blogs/java/OCPJP1/question1/Overload.j...</a>
+Как видно, мы передаём в метод null. Компилятор пытается определить наиболее специфичный тип. Object не подходит, т.к. от него наследуются все. Идём дальше. Есть 2 класса исключений. Посмотрим на <a href="https://docs.oracle.com/javase/8/docs/api/java/io/IOException.html" target="_blank" rel="nofollow">java.io.IOException</a> и увидим, что в "Direct Known Subclasses" есть FileNotFoundException. То есть выходит, что FileNotFoundException самый специфичный тип.
+
+Поэтому, результатом будет вывод строки "FileNotFoundException".
+
+А вот если заменить IOException на EOFException, то получится, что у нас два метода находятся на одном уровне иерархии по дереву типов, то есть для них обоих IOException является родителем. 
+
+Компилятор не сможет выбрать, какой метод нужно будет вызывать и выдаст ошибку компиляции: <code>reference to method is ambiguous</code>.
+
+Ещё один пример:
+
+<pre class="lang-java line-numbers"><code>
+public class Overload{
+    public static void method(int... array) {
+        System.out.println("1");
+    }
+  
+    public static void main(String args[]) {
+        method(1, 2);
+    }
+}
+</code></pre>
+Выведет 1. Тут вопросов нет. Тип int... является vararg https://docs.oracle.com/javase/8/docs/technotes/guides/language/varargs.html и на самом деле является не более чем "синтаксическим сахаром" и на самом деле int... array можно читать как int[] array.
+
+Если мы теперь добавим метод:
+
+<pre class="lang-java line-numbers"><code>
+public static void method(long a, long b) {
+	System.out.println("2");
+}
+</code></pre>
+То станет выводится не 1, а 2, т.к. мы передаём 2 числа, и 2 аргумента более точное совпадение, чем один массив.
+
+Если мы добавим метод:
+
+<pre class="lang-java line-numbers"><code>
+public static void method(Integer a, Integer b) {
+	System.out.println("3");
+}
+</code></pre>
+То мы по прежнему будем видеть 2. Потому что в данном случае примитивы более точное совпадение, чем боксинг в Integer.
+
+Однако, если мы выполним <code>method(new Integer(1), new Integer(2));</code> то будет выведено 3.
+
+<a href="https://docs.oracle.com/javase/tutorial/java/javaOO/constructors.html" target="_blank" rel="nofollow">Конструкторы</a> в Java похожи на методы, а так как по ним тоже можно получить сигнатуру, то для них действуют те же правила "overloading resolution", что и перегруженные методы. Спецификация языка Java нам так и сообщает в "<a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-8.html#jls-8.8.8" target="_blank" rel="nofollow">8.8.8. Constructor Overloading</a>".
+
+Перегруз методов = Раннее связывание (оно же Static Binding)
+
+Часто можно услышать про раннее и позднее связывание, он же Static Binding или Dynamic Binding. Различие в них очень простое. Рано - это компиляция, поздно - это момент выполнения программы. Поэтому, раннее связывание (static binding) - определение того, какой метод у кого будет вызван в момент компиляции. Ну а позднее связывание (dynamic binding) - определение того, какой метод вызывать, непосредственно в момент выполнения программы.
+
+Как мы видели раньше (когда меняли IOException на EOFException), если мы перегрузим методы так, что компилятор не сможет понять, где какой вызов выполнять, то мы получим ошибку во время компиляции: reference to method is ambiguous. Слово ambiguous в переводе с английского - двусмысленный или неопределённый, неточный. Получается, что перегрузка - это раннее связывание, т.к. проверка выполняется в момент компиляции.
+
+Чтобы подтвердить свои умозаключения откроем Java Language Specification на главе "<a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-8.html#jls-8.4.9" target="_blank" rel="nofollow">8.4.9. Overloading</a>" :
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="4e29858f-d202-4bb2-bdc9-8cdc364ec171" data-max-width="984" alt="Полиморфизм и его друзья - 10" src="https://cdn.javarush.com/images/article/4e29858f-d202-4bb2-bdc9-8cdc364ec171/1024.jpeg"></div></div>Получается, во время компиляции будет использована информация о типах и количестве аргументах (которая доступна на момент компиляции), чтобы определить сигнатуру метода. Если метод относится к методам объекта (т.е. instance method), реальный вызов метода будет определён в runtime, используя dynamic method lookup (то есть динамическое связывание).
+
+Чтобы стало понятнее, возьмём пример, который похож на ранее рассмотренный:
+
+<pre class='lang-java line-numbers'><code>
+public class HelloWorld {
+    public void method(int intNumber) {
+        System.out.println("intNumber");
+    }
+    public void method(Integer intNumber) {
+        System.out.println("Integer");
+    }
+    public void method(String intNumber) {
+        System.out.println("Number is: " + intNumber);
+    }
+
+    public static void main(String args[]) {
+        HelloWorld test = new HelloWorld();
+        test.method(2);
+    }
+}
+</code></pre>
+Сохраним этот код в файл HelloWorld.java и скомпилируем его при помощи <code>javac HelloWorld.java</code>
+
+Теперь посмотрим, что там написал компилятор наш в байткоде, выполнив команду: <code>javap -verbose HelloWorld</code>.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="65186013-bc4d-4c55-9e9b-caf2f92af408" data-max-width="560" alt="Полиморфизм и его друзья - 11" src="https://cdn.javarush.com/images/article/65186013-bc4d-4c55-9e9b-caf2f92af408/1024.jpeg"></div></div>Как указано, компилятор определил, что в будущем будет вызван некоторый виртуальный метод. То есть тело метода будет определено в runtime. Но на момент компиляции из всех трёх методов компилятор выбрал самый подходящий, поэтому указал номер: <code>"invokevirtual #13"</code>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="3e0dbd7c-ea64-48f2-b0c3-bd0eef427987" data-max-width="954" alt="Полиморфизм и его друзья - 12" src="https://cdn.javarush.com/images/article/3e0dbd7c-ea64-48f2-b0c3-bd0eef427987/1024.jpeg"></div></div>А что это за methodref такой? Это ссылка на метод. Грубо говоря, это некоторы ключ, по которому во время выполнения виртуальная Java машина сможет действительно определить, какой метод нужно искать для выполнения.
+
+Подробнее можно ознакомиться в супер статье: "<a href="https://programmingmitra.blogspot.com/2017/05/how-does-jvm-handle-method-overriding-internally.html" target="_blank" rel="nofollow">How Does JVM Handle Method Overloading And Overriding Internally</a>".
+<h2>Подведение итогов</h2>Итого, мы выяснили, что Java как объектно-ориентированный язык поддерживает полиморфизм.
+
+Полиморфизм бывает статическим (Static Binding) и динамическим (Dynamic Binding). При статическом полиморфизме, он же раннее связывание, компилятор определяет, какой метод и где нужно вызвать. Это позволяет использовать такой механизм, как перегрузка. При динамическом полиморфизме, он же позднее связывание, по ранее вычисленной сигнатуре метода в рантайме будет вычислен метод на основе того, какой объект используется (т.е. метод какого объекта вызывается). То, как эти механизмы работают можно увидеть при помощи байткода.
+
+Перегрузка смотрит на сигнатуры методов, а при разрешении перегрузки выбирается наиболее специфичный (наиболее точный) вариант. При переопределении смотрит на тип для определения, какие доступны методы, а сами методы вызываются на основе объекта.
+
+А так же материалы по теме:
+<ul>
+<li><a href="https://programmingmitra.blogspot.com/2017/05/how-does-jvm-handle-method-overriding-internally.html" target="_blank" rel="nofollow">How Does JVM Handle Method Overloading And Overriding Internally</a></li>
+<li><a href="https://cs.au.dk/~mis/dOvs/jvmspec/ref--35.html" target="_blank" rel="nofollow">Introduction to Compiler Construction in a Java World</a></li>
+<li><a href="https://javarush.com/groups/posts/439-razlichija-mezhdu-rannim-i-pozdnim-svjazihvaniem-v-java" target="_blank" rel="nofollow">Различия между ранним и поздним связыванием в Java</a></li>
+<li><a href="https://stackoverflow.com/questions/19017258/static-vs-dynamic-binding-in-java" target="_blank" rel="nofollow">Static vs Dynamic Binding in Java</a></li>
+<li>OCP question : <a href="https://github.com/stokito/OCPJP/blob/master/src/ru/habrahabr/blogs/java/OCPJP1/question1/Overload.java" target="_blank" rel="nofollow">Overload</a></li>
+<li><a href="https://zeroturnaround.com/rebellabs/java-bytecode-fundamentals-using-objects-and-calling-methods/" target="_blank" rel="nofollow">Java Bytecode Fundamentals: Using Objects and Calling Methods</a></li>
+</ul>
+#Viacheslav

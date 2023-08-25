@@ -1,0 +1,206 @@
+Множественное наследование в Java. Сравнение композиции и наследования
+<p>----------------------------------------</p>
+Некоторое время назад я написал несколько постов о наследовании, интерфейсах и композиции в Java. В этой статье мы рассмотрим  множественное наследование, а затем узнаем о преимуществах ...
+<p>----------------------------------------</p>
+Некоторое время назад я написал несколько постов о наследовании, интерфейсах и композиции в Java. В этой статье мы рассмотрим  множественное наследование, а затем узнаем о преимуществах композиции перед наследованием.
+<div class='row justify-content-center jr-image-wrap'><div class='col-12 col-sm-10 col-md-8'><img data-id="3169cceb-a50f-44c5-ab9d-214a4e2229ae" data-max-width="710" alt="Множественное наследование в Java. Сравнение композиции и наследования - 1" src="https://cdn.javarush.com/images/article/3169cceb-a50f-44c5-ab9d-214a4e2229ae/1024.jpeg"></div></div><h2>Множественное наследование в Java</h2>Множественное наследование – способность создавать классы с множеством классов-родителей. В отличии от других  популярных объектно-ориентированных языков, вроде С++,  язык Java не поддерживает множественное наследование классов. Не поддерживает он его из-за вероятности столкнуться с «проблемой алмаза» и вместо этого предпочитает обеспечивать некий комплексный подход для его решения, используя лучшие варианты из тех, которыми мы можем достичь  аналогичный результат наследования.<cut>
+<h2>«Проблема Алмаза»</h2>Для более простого  понимания проблемы алмаза допустим, что  множественное наследование поддерживается  в Java. В этом случае, мы можем получить  классы с иерархией показанной на рисунке ниже.
+<img data-id="c3a99477-cf8e-4344-8c37-867da7007b07" data-max-width="450" alt="иерархия классов &quot;алмаз&quot;" src="https://cdn.javarush.com/images/article/c3a99477-cf8e-4344-8c37-867da7007b07/1024.jpeg">Предположим ,что <code>SuperClass</codE> — это абстрактный класс,   описывающий некоторый метод, а классы <code>ClassA</code> и <code>ClassB</code> — реальные классы.   
+
+<code><strong>SuperClass.java</strong></code>
+
+<pre class='lang-java line-numbers'><code>
+package com.journaldev.inheritance; 
+public abstract class SuperClass { 
+   	public abstract void doSomething();
+}
+</code></pre>
+<strong><code>ClassA.java</code></strong>
+
+<pre class='lang-java line-numbers'><code>
+package com.journaldev.inheritance;
+public class ClassA extends SuperClass{
+    @Override
+ public void doSomething(){
+        System.out.println("Какая-то реализация класса A");
+    }
+  //собственный метод класса  ClassA 
+    public void methodA(){         
+    }
+}
+</code></pre>
+Теперь, давайте предположим, что класс <code>ClassC</code> наследуется от <code>ClassA</code> и <code>ClassB</code> одновременно, и при этом имеет следующую реализацию:
+
+<pre class='lang-java line-numbers'><code>
+package com.journaldev.inheritance; 
+public class ClassC extends ClassA, ClassB{ 
+    public void test(){
+        //вызов метода родительского класса
+        doSomething();
+    } 
+}
+</code></pre>
+Заметьте, что метод <code>test()</code> вызывает метод <code>doSomething()</code> родительского класса, что приведет к неопределенности, так как компилятор не знает о том, метод  какого именно суперкласса должен быть вызван. Благодаря очертаниям диаграммы наследования классов в этой ситуации, напоминающим очертания граненого алмаза проблема получила название «проблема Алмаза». Это и есть основная причина, почему в Java нет поддержки множественного наследования классов.
+
+Отметим, что  указанная проблема с множественным наследованием классов также может возникнуть с тремя классами, имеющими как минимум один общий метод.
+<h2>Множественное наследование и интерфейсы</h2>Вы могли обратить внимание, что я всегда говорю: «множественное наследование не поддерживается между классами», но оно поддерживается между интерфейсами. Ниже показан простой пример:
+
+<code><strong>InterfaceA.java</strong></code>
+
+<pre class='lang-java line-numbers'><code>
+package com.journaldev.inheritance;
+public interface InterfaceA {
+ 
+    public void doSomething();
+}
+</code></pre>
+<code><strong>InterfaceB.java</strong></code>
+
+<pre class='lang-java line-numbers'><code>
+package com.journaldev.inheritance;
+ 
+public interface InterfaceB {
+ 
+    public void doSomething();
+}
+</code></pre>
+Заметьте, что оба интерфейса, имеют метод с одинаковым названием. Теперь, допустим, у нас есть интерфейс, унаследованный от обоих интерфейсов.
+
+<code><strong>InterfaceC.java</strong></code>
+
+<pre class='lang-java line-numbers'><code>
+package com.journaldev.inheritance;
+ 
+public interface InterfaceC extends InterfaceA, InterfaceB {
+ 
+    //метод, с тем же названием описан в  InterfaceA и InterfaceB 
+    public void doSomething();
+</code></pre>
+Здесь, все идеально, поскольку интерфейсы – это только  резервирование/описание метода, а реализация самого метода будет в конкретном классе, реализующем эти интерфейсы, таким образом нет никакой возможности  столкнуться с неопределенностью при множественном наследовании интерфейсов.
+
+Вот почему, классы в Java могут наследоваться от нескольких интерфейсов.  Покажем на примере ниже.
+
+<code><strong>InterfacesImpl.java</strong></code>
+
+<pre class='lang-java line-numbers'><code>
+package com.journaldev.inheritance;
+ 
+public class InterfacesImpl implements InterfaceA, InterfaceB, InterfaceC {
+ 
+    @Override
+    public void doSomething() {
+        System.out.println("doSomething реализация реального класса ");
+    }
+ 
+    public static void main(String[] args) {
+        InterfaceA objA = new InterfacesImpl();
+        InterfaceB objB = new InterfacesImpl();
+        InterfaceC objC = new InterfacesImpl();
+         
+        //все вызываемые ниже методы получат одинаковую реализацию конкретного класса
+
+        objA.doSomething();
+        objB.doSomething();
+        objC.doSomething();
+    }
+}
+</code></pre>
+Возможно, вы обратили внимание, что я каждый раз, когда я переопределяю метод  описанный в суперклассе или в интерфейсе я использую аннотацию @Override. Это одна из трех встроенных Java-аннотаций и вам следует всегда использовать ее при переопределении методов.
+<h2>Композиция как спасение</h2>Так что же делать, если мы хотим использовать функцию <code>methodA()</code> класса <code>ClassA</code> и <code>methodB()</code> класса <code>ClassB</code> в <code>ClassС</code>? Решением этого может стать композиция – переписанная версия <code>ClassC</code> реализующая оба метода классов <code>ClassA</code> и <code>ClassB</code>, также имеющая  реализацию <code>doSomething()</code> для одного из объектов.
+
+<code><strong>ClassC.java</strong></code>
+
+<pre class='lang-java line-numbers'><code>
+package com.journaldev.inheritance;
+ 
+public class ClassC{
+ 
+    ClassA objA = new ClassA();
+    ClassB objB = new ClassB();
+     
+    public void test(){
+        objA.doSomething();
+    }
+     
+    public void methodA(){
+        objA.methodA();
+    }
+     
+    public void methodB(){
+        objB.methodB();
+    }
+}
+</code></pre>
+<h2>Композиция или наследование?</h2>Хорошим тоном программирования на Java является – использовать преимущества композиции перед наследованием. Мы рассмотрим некоторые аспекты в пользу такого подхода.
+<ol>
+<li><p>Предположим, мы имеем следующую связку классов родитель-наследник:</p>
+<p><code><strong>ClassC.java</strong></code></p>
+<p><pre class='lang-java line-numbers'><code>
+package com.journaldev.inheritance;
+ 
+public class ClassC{
+ 
+public void methodC(){
+  	}
+
+}
+</code></pre></p>
+<p><code><strong>ClassD.java</strong></code></p>
+<p><pre class='lang-java line-numbers'><code>
+package com.journaldev.inheritance;
+ 
+public class ClassD extends ClassC{
+ 
+    public int test(){
+        return 0;
+    }
+}
+</code></pre></p>
+<p>Код выше прекрасно компилируется и работает, но что, если <code>ClassC</code> будет реализован иначе:</p>
+<p><pre class='lang-java line-numbers'><code>
+package com.journaldev.inheritance;
+ 
+public class ClassC{
+ 
+    public void methodC(){
+    }
+ 
+    public void test(){
+    }
+}
+</code></pre></p>
+<p>Отметьте, что  метод <code>test()</code> уже существует в классе наследнике, но возвращает результат другого типа. Теперь <code>ClassD</code>, в случае если вы используете IDE, не будет скомпилирован. Вам будет рекомендовано изменить тип возвращаемого результата в классе наследнике или в суперклассе.</p>
+<p>Теперь представим себе такую ситуацию, где  имеется многоуровневое наследование классов и суперкласс не доступен для наших изменений. Теперь, чтобы избавиться от ошибки компиляции, у нас нет других вариантов, кроме как изменить сигнатуру или имя метода подкласса. Также нам придется внести  изменения во все места, где этот метод вызывался. Таким образом, наследование делает наш код  хрупким.</p>
+<p>Проблема, описанная выше, никогда не встречается в случае композиции, и поэтому делает последнюю более предпочтительной перед наследованием.</p></li>
+<li><p>Следующая проблема с наследованием заключается в том, что мы демонстрируем все методы родителя клиенту. И если суперкласс разработан не очень корректно и содержит дыры в «безопасности». Тогда, несмотря на то, что мы полностью позаботимся о безопасности при реализации нашего подкласса, мы все равно будем зависеть от ущербной реализации класса-родителя.</p>
+<p>Композиция помогает нам в обеспечении контролируемого доступа к методам суперкласса, тогда как наследование не поддерживает никакого контроля над его методами. Это - также одно из главных преимуществ композиции над наследованием.</p></li>
+<li><p>Еще одно преимущество композиции  то, что оно добавляет гибкости при  вызове методов. Реализация класса <code>ClassC</code>, описанная выше,  не оптимальна и использует раннее связывание с вызываемым методом. Минимальные изменения позволят нам сделать вызов методов гибким и обеспечить позднее связывание (связывание во время выполнения).</p>
+<p><code><strong>ClassC.java</strong></code></p>
+<p><pre class='lang-java line-numbers'><code>
+package com.journaldev.inheritance; 
+public class ClassC{ 
+    SuperClass obj = null; 
+    public ClassC(SuperClass o){
+        this.obj = o;
+    }
+    public void test(){
+        obj.doSomething();
+    }
+     
+    public static void main(String args[]){
+        ClassC obj1 = new ClassC(new ClassA());
+        ClassC obj2 = new ClassC(new ClassB());
+         
+        obj1.test();
+        obj2.test();
+    }
+}
+</code></pre></p>
+<p>Программа выше выведет на экран:</p>
+<p><pre class='lang-java line-numbers'><code>
+doSomething implementation of A
+doSomething implementation of B
+</code></pre></p>
+<p>Эта гибкости при вызове метода, не наблюдается при наследовании, что заставляет использовать композицию в качестве наилучшего подхода.</p></li>
+<li><p>Модульное тестирование проще в случае композиции, потому что мы знаем, что для всех методов, которые используются в суперклассе, мы можем поставить заглушку для тестов, в то время как в наследовании мы сильно зависим от  суперкласса и не знаем, как методы класса-родителя будут использованы. Таким образом, из-за наследования, нам придется тестировать все методы суперкласса,  что является излишней работой.</p>
+<p>В идеале, наследование следует использовать только тогда, когда отношение ”<em>is-a</em>” справедливо для классов родителя и наследника, иначе стоит предпочесть композицию.</p></li></ol><a href="http://www.journaldev.com/1775/multiple-inheritance-in-java-and-composition-vs-inheritance" rel="nofollow" ><em>Oригинал статьи</em></a>

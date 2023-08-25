@@ -1,0 +1,378 @@
+Функциональные интерфейсы в Java
+<p>----------------------------------------</p>
+В квесте Java Syntax Pro мы изучали лямбда-выражения и говорили, что это ничто иное как реализация функционального метода из функционального интерфейса. Другими словами, это реализация некоего анонимного (неизвестного) класса...
+<p>----------------------------------------</p>
+Привет!
+
+<a href="https://javarush.com/quests/lectures/questsyntaxpro.level18.lecture01" target="_blank">В квесте Java Syntax Pro</a> мы изучали лямбда-выражения и говорили, что это ничто иное как реализация функционального метода из функционального интерфейса.
+
+Иными словами, это реализация некоего анонимного (неизвестного) класса, его нереализованного метода.
+
+И если в лекциях курса мы углублялись в манипуляции с лямбда-выражениями, сейчас рассмотрим, так сказать, обратную сторону: а именно — эти самые интерфейсы.<img data-max-width="800" data-id="861cdfa7-c0dc-49c3-b54e-12c365b7d158" src="/images/article/861cdfa7-c0dc-49c3-b54e-12c365b7d158/800.jpeg" alt="Функциональные интерфейсы в Java - 1">В восьмой версии Java появилось понятие <span class="text-bold">функциональные интерфейсы</span>.
+
+Что же это? 
+
+Функциональным считается интерфейс с одним не реализованным (абстрактным) методом. Под это определение попадают многие интерфейсы с “коробки”, такие как, например, рассмотренный ранее интерфейс <code>Comparator</code>.
+
+А еще — интерфейсы, которые мы создаём сами, как, например:
+
+<pre class="lang-java line-numbers"><code>
+@FunctionalInterface
+public interface Converter&lt;T, N&gt; {
+   N convert(T t);
+}
+</code></pre>
+У нас получился интерфейс, задача которого — преобразовывать объекты одного типа в объекты другого (такой себе адаптер).
+
+Аннотация <code>@FunctionalInterface</code> не является чем-то сверхсложным и важным, так как её предназначение — сообщить компилятору, что данный интерфейс функциональный и должен содержать не более одного метода.
+
+Если же в интерфейсе с данной аннотацией более одного не реализованного (абстрактного) метода, компилятор не пропустит данный интерфейс, так как будет воспринимать его как ошибочный код.
+
+Интерфейсы и без данной аннотации могут считаться функциональными и будут работать, а  <code>@FunctionalInterface</code> является не более чем дополнительной страховкой.
+
+Вернёмся же к классу <code>Comparator</code>. Если заглянуть в его код (или <a href="https://docs.oracle.com/javase/8/docs/api/java/util/Comparator.html" rel="nofollow" target="_blank">документацию</a>), можно увидеть, что у него есть гораздо больше одного метода.
+
+Тогда вы спросите: как же в таком случае он может считаться функциональным интерфейсом? 
+
+Абстрактные интерфейсы могут иметь методы, которые не входят в ограничения одного метода:
+<ul><li><span class="text-bold">статические</span></li></ul>Концепция интерфейсов подразумевает, что данная единица кода не может иметь реализованных методов.
+
+Но начиная с Java 8 появилась возможность использовать статические и дефолтные методы в интерфейсах.
+
+<a href="https://javarush.com/quests/lectures/questsyntaxpro.level11.lecture02" target="_blank">Статические методы</a> привязаны непосредственно к классу, и для вызова такого метода не нужен конкретный объект данного класса.
+
+То есть данные методы гармонично вписываются в представления об интерфейсах.
+
+В качестве примера добавим в предыдущий класс статический метод проверки объекта на null:
+
+<pre class="lang-java line-numbers"><code>
+@FunctionalInterface
+public interface Converter&lt;T, N&gt; {
+ 
+   N convert(T t);
+ 
+   static &lt;T&gt; boolean isNotNull(T t){
+       return t != null;
+   }
+}
+</code></pre>
+Получив этот метод, компилятор не стал ругаться, а значит наш интерфейс все еще функциональный.
+<ul><li><span class="text-bold">default методы</span></li></ul>До появления Java 8, если бы нам было нужно создать в интерфейсе какой-то метод, который наследуется другими классами, мы могли бы создать только абстрактный метод, реализуемый в каждом конкретном классе.
+
+Но а что если этот метод будет одинаковым у всех классов?
+
+В таком случае чаще всего использовали <a href="https://javarush.com/quests/lectures/questsyntaxpro.level17.lecture05" target="_blank">абстрактные классы</a>.
+
+Но начиная с Java 8 есть опция использовать интерфейсы с реализованными методами — методами по умолчанию.
+
+При наследовании интерфейса можно переопределить эти методы или же оставить всё как есть (оставить логику по умолчанию).
+
+При создании метода по умолчанию мы должны добавить ключевое слово — <code>default</code>:
+
+<pre class="lang-java line-numbers"><code>
+@FunctionalInterface
+public interface Converter&lt;T, N&gt; {
+ 
+   N convert(T t);
+ 
+   static &lt;T&gt; boolean isNotNull(T t){
+       return t != null;
+   }
+ 
+   default void writeToConsole(T t) {
+       System.out.println("Текущий объект - " + t.toString());
+   }
+}
+</code></pre>
+Опять же мы видим, что компилятор не начал ругаться, и мы не вышли за ограничения функционального интерфейса.
+<ul><li><span class="text-bold">методы класса Object</span></li></ul>В лекции <a href="https://javarush.com/quests/lectures/questsyntaxpro.level10.lecture04" target="_blank">Сравнение объектов</a> мы рассказывали о том, что все классы наследуются от класса <code>Object</code>.
+
+Это не касается интерфейсов. Но если у нас в интерфейсе будет абстрактный метод, совпадающий сигнатурой с каким-то методом класса <code>Object</code>, такой метод (или методы) не поломает наше ограничение функционального интерфейса:
+
+<pre class="lang-java line-numbers"><code>
+@FunctionalInterface
+public interface Converter&lt;T, N&gt; {
+ 
+   N convert(T t);
+ 
+   static &lt;T&gt; boolean isNotNull(T t){
+       return t != null;
+   }
+ 
+   default void writeToConsole(T t) {
+       System.out.println("Текущий объект - " + t.toString());
+   }
+ 
+   boolean equals(Object obj);
+}
+</code></pre>
+И снова компилятор у нас не ругается, поэтому интерфейс <code>Converter</code> всё ещё считается функциональным.
+
+Теперь вопрос: а зачем же нам ограничение одним не реализованным методом в функциональном интерфейсе?
+ 
+А затем, чтобы мы могли его реализовать с помощью лямбд.
+
+Давайте рассмотрим это на примере <code>Converter</code>.
+
+Для этого создадим класс <code>Dog</code>:
+
+<pre class="lang-java line-numbers"><code>
+public class Dog {
+  String name;
+  int age;
+  int weight;
+ 
+  public Dog(final String name, final int age, final int weight) {
+     this.name = name;
+     this.age = age;
+     this.weight = weight;
+  }
+}
+</code></pre>
+И аналогичный ему <code>Raccoon</code> (енот): 
+
+<pre class="lang-java line-numbers"><code>
+public class Raccoon {
+  String name;
+  int age;
+  int weight;
+ 
+  public Raccoon(final String name, final int age, final int weight) {
+     this.name = name;
+     this.age = age;
+     this.weight = weight;
+  }
+}
+</code></pre>
+Предположим, у нас есть объект <code>Dog</code>, и нам нужно на основе его полей создать объект <code>Raccoon</code>.
+
+То есть <code>Converter</code> конвертирует объект одного типа в другой.
+
+Как это будет выглядеть: 
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+  Dog dog = new Dog("Bobbie", 5, 3);
+ 
+  Converter&lt;Dog, Raccoon&gt; converter = x -&gt; new Raccoon(x.name, x.age, x.weight);
+ 
+  Raccoon raccoon = converter.convert(dog);
+ 
+  System.out.println("Raccoon has parameters: name - " + raccoon.name + ", age - " + raccoon.age + ", weight - " + raccoon.weight);
+}
+</code></pre>
+Запустив, мы получим вывод в консоль:
+
+<pre><code>
+Raccoon has parameters: name - Bobbbie, age - 5, weight - 3
+</code></pre>
+И это значит, что наш метод отработал корректно.<img data-max-width="800" data-id="1ee0215f-1248-4e06-88c1-cb956a1147da" src="/images/article/1ee0215f-1248-4e06-88c1-cb956a1147da/800.jpeg" alt="Функциональные интерфейсы в Java - 2"><h2>Базовые функциональные интерфейсы Java 8</h2>Ну а теперь рассмотрим несколько функциональных интерфейсов, которые принесла нам Java 8 и которые активно используются в связке со Stream API.<h3>Predicate<t></t></h3><code>Predicate<t></t></code> — функциональный интерфейс для проверки соблюдения некоторого условия. Если условие соблюдается, возвращает <code>true</code>, иначе — <code>false</code>:
+
+<pre class="lang-java line-numbers"><code>
+@FunctionalInterface
+public interface Predicate&lt;T&gt; {
+   boolean test(T t);
+}
+</code></pre>
+ В качестве примера рассмотрим создание <code>Predicate</code>, который будет проверять на чётность числа типа <code>Integer</code>:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+   Predicate&lt;Integer&gt; isEvenNumber = x -&gt; x % 2==0;
+ 
+   System.out.println(isEvenNumber.test(4));
+   System.out.println(isEvenNumber.test(3));
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+true
+false
+</code></pre><h3>Consumer<t></t></h3><code>Consumer<t></t></code> (с англ. — “потребитель”) — функциональный интерфейс, который принимает в качестве входного аргумента объект типа T, совершает некоторые действия, но при этом ничего не возвращает:
+
+<pre class="lang-java line-numbers"><code>
+@FunctionalInterface
+public interface Consumer&lt;T&gt; {
+   void accept(T t);
+}
+</code></pre>
+В качестве примера рассмотрим <code>Consumer<string></string></code>, задача которого — выводить в консоль приветствие с переданным строковым аргументом: 
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+   Consumer&lt;String&gt; greetings = x -&gt; System.out.println("Hello " + x + " !!!");
+   greetings.accept("Elena");
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+Hello Elena !!!
+</code></pre><h3>Supplier<t></t></h3><code>Supplier<t></t></code> (с англ. — поставщик) — функциональный интерфейс, который не принимает никаких аргументов, но возвращает некоторый объект типа T:
+
+<pre class="lang-java line-numbers"><code>
+@FunctionalInterface
+public interface Supplier&lt;T&gt; {
+   T get();
+}
+</code></pre>
+В качестве примера рассмотрим <code>Supplier</code>, который будет выдавать рандомные имена из списка:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+   ArrayList&lt;String&gt; nameList = new ArrayList&lt;&gt;();
+   nameList .add("Elena");
+   nameList .add("John");
+   nameList .add("Alex");
+   nameList .add("Jim");
+   nameList .add("Sara");
+ 
+   Supplier&lt;String&gt; randomName = () -&gt; {
+       int value = (int)(Math.random() * nameList.size());
+       return nameList.get(value);
+   };
+ 
+   System.out.println(randomName.get());
+}
+</code></pre>
+И если мы это запустим, то увидим в консоли случайные результаты из списка имен.<h3>Function<t,r></t,r></h3><code>Function<t,r></t,r></code> — этот функциональный интерфейс принимает аргумент T и приводит его к объекту типа R, который и возвращается как результат:
+
+<pre class="lang-java line-numbers"><code>
+@FunctionalInterface
+public interface Function&lt;T, R&gt; {
+   R apply(T t);
+}
+</code></pre>
+В качестве примера возьмём <code>Function<string, integer=""></string,></code>, который конвертирует числа из формата строк (<code>String</code>) в формат чисел (<code>Integer</code>): 
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+   Function&lt;String, Integer&gt; valueConverter = x -&gt; Integer.valueOf(x);
+   System.out.println(valueConverter.apply("678"));
+}
+</code></pre>
+Запустив, получим вывод в консоль:
+
+<pre><code>
+678
+</code></pre>
+P.S.: если в строку мы передадим не только числа, но и другие символы, вылетит <a href="https://javarush.com/quests/lectures/questsyntaxpro.level14.lecture01" target="_blank">exception</a> — <code>NumberFormatException</code>.<h3>UnaryOperator<t></t></h3><code>UnaryOperator<t></t></code> — функциональный интерфейс, принимает в качестве параметра объект типа T, выполняет над ним некоторые операции и возвращает результат операций в виде объекта того же типа T:
+
+<pre class="lang-java line-numbers"><code>
+@FunctionalInterface
+public interface UnaryOperator&lt;T&gt; {
+   T apply(T t);
+}
+</code></pre>
+<code>UnaryOperator<t></t></code>, который своим методом <code>apply</code> возводит число в квадрат:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+   UnaryOperator&lt;Integer&gt; squareValue = x -&gt; x * x;
+   System.out.println(squareValue.apply(9));
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+81
+</code></pre>
+Мы рассмотрели пять функциональных интерфейсов. Это не все, что доступно нам начиная с Java 8 — это основные интерфейсы. Остальные из доступных — это их усложненные аналоги. Полный список можно посмотреть <a href="https://docs.oracle.com/javase/8/docs/api/java/util/function/package-summary.html" rel="nofollow" target="_blank">в официальной документации Oracle</a>.<h2>Функциональные интерфейсы в Stream</h2>Как говорилось выше, эти функциональные интерфейсы плотно связаны со Stream API. Каким же образом, спросите вы?<img data-max-width="800" data-id="28a45e98-2298-4254-b447-9da64fcba954" src="/images/article/28a45e98-2298-4254-b447-9da64fcba954/800.jpeg" alt="Функциональные интерфейсы в Java - 3">А таким, что многие методы <code>Stream</code> работают именно с данными функциональными интерфейсами. Давайте рассмотрим, как можно применять функциональные интерфейсы в методах <code>Stream</code>.<h3>Метод с Predicate</h3>Для примера возьмем метод класса <code>Stream</code> — <code>filter</code>, который в качестве аргумента принимает <code>Predicate</code> и возвращает <code>Stream</code> только с теми элементами, которые удовлетворяют условию <code>Predicate</code>.
+
+В контексте <code>Stream</code>-а это означает, что он пропускает только те элементы, которые возвращают <code>true</code> при использовании их в методе <code>test</code> интерфейса <code>Predicate</code>. 
+
+Вот как будет выглядеть наш пример для <code>Predicate</code>, но уже для фильтра элементов в <code>Stream</code>:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+   List&lt;Integer&gt; evenNumbers = Stream.of(1, 2, 3, 4, 5, 6, 7, 8)
+           .filter(x -&gt; x % 2==0)
+           .collect(Collectors.toList());
+}
+</code></pre>
+В итоге список <code>evenNumbers</code> будет состоять из элементов {2, 4, 6, 8}.
+
+И, как мы помним, <code>collect</code> будет собирать все элементы в некоторую коллекцию: в нашем случае — в <code>List</code>.<h3>Метод с Consumer</h3>Одним из методом в <code>Stream</code>, который использует функциональный интерфейс <code>Consumer</code>, является метод <code>peek</code>.
+
+Так будет выглядеть наш пример для <code>Consumer</code> в <code>Stream</code>:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+   List&lt;String&gt; peopleGreetings = Stream.of("Elena", "John", "Alex", "Jim", "Sara")
+           .peek(x -&gt; System.out.println("Hello " + x + " !!!"))
+           .collect(Collectors.toList());
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+Hello Elena !!!
+Hello John !!!
+Hello Alex !!!
+Hello Jim !!!
+Hello Sara !!!
+</code></pre>
+Но так как метод <code>peek</code> работает с <code>Consumer</code>, модификации строк в <code>Stream</code> не произойдет, а сам <code>peek</code> вернет <code>Stream</code> с изначальными элементами: такими, какими они ему пришли.
+
+Поэтому список <code>peopleGreetings</code> будет состоять из элементов "Elena", "John", "Alex", "Jim", "Sara".
+
+Также есть часто используемый метод <code>foreach</code>, который аналогичен методу <code>peek</code>, но разница состоит в том, что он конечный — терминальный.<h3>Метод с Supplier</h3>Примером метода в <code>Stream</code>, использующего функциональный интерфейс <code>Supplier</code>, является <code>generate</code>, который генерирует бесконечную последовательность на основе переданного ему функционального интерфейса.
+
+Воспользуемся нашим примером <code>Supplier</code> для вывода в консоль пяти случайных имен:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+   ArrayList&lt;String&gt; nameList = new ArrayList&lt;&gt;();
+   nameList.add("Elena");
+   nameList.add("John");
+   nameList.add("Alex");
+   nameList.add("Jim");
+   nameList.add("Sara");
+
+   Stream.generate(() -&gt; {
+       int value = (int) (Math.random() * nameList.size());
+       return nameList.get(value);
+   }).limit(5).forEach(System.out::println);
+}
+</code></pre>
+И вот какой мы получим вывод в консоль:
+
+<pre><code>
+John
+Elena
+Elena
+Elena
+Jim
+</code></pre>
+Здесь мы использовали метод <code>limit(5)</code>, чтобы задать ограничение методу <code>generate</code>, иначе программа выводила бы рандомные имена в консоль бесконечно.<h3>Метод с Function</h3>Типичный пример метода в <code>Stream</code> c аргументом <code>Function</code> — метод <code>map</code>, который принимает элементы одного типа, что-то с ними делает и передает дальше, но это уже могут быть элементы другого типа.
+
+Как может выглядеть пример с <code>Function</code> в <code>Stream</code>:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+   List&lt;Integer&gt; values = Stream.of("32", "43", "74", "54", "3")
+           .map(x -&gt; Integer.valueOf(x)).collect(Collectors.toList());
+}
+</code></pre>
+В итоге мы получаем список чисел, но уже в формате <code>Integer</code>.<h3>Метод с UnaryOperator</h3>В качестве метода, использующего <code>UnaryOperator</code> как аргумент, возьмем метод класса <code>Stream</code> — <code>iterate</code>.
+
+Данный метод схож с методом <code>generate</code>: он также генерирует бесконечную последовательность но имеет два аргумента:<ul><li>первый — элемент, с которого начинается генерация последовательности;</li>
+<li>второй — <code>UnaryOperator</code>, который указывает принцип генерации новых элементов с первого элемента.</li></ul>Как будет выглядеть наш пример <code>UnaryOperator</code>, но в методе <code>iterate</code>:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+   Stream.iterate(9, x -&gt; x * x)
+           .limit(4)
+           .forEach(System.out::println);
+}
+</code></pre>
+Запустив, мы получим вывод в консоль:
+
+<pre><code>
+9
+81
+6561
+43046721
+</code></pre>
+То есть каждый наш элемент умножен на самого себя, и так для первых четырёх чисел.<img data-max-width="800" data-id="bfd62e34-1737-4d0b-bdc5-d9f7a24c07e3" src="/images/article/bfd62e34-1737-4d0b-bdc5-d9f7a24c07e3/800.jpeg" alt="Функциональные интерфейсы в Java - 4">На этом всё! Будет отлично, если после прочтения данной статьи вы станете на шаг ближе к пониманию и освоению Stream API в Java!<a href="https://javarush.com/welcome" target="_blank"><img id="click_banner3_3_articles" data-max-width="1080" data-id="10a63dcc-e5a9-4481-a226-e2c9273db605" src="/images/article/10a63dcc-e5a9-4481-a226-e2c9273db605/1080.jpeg" alt="Функциональные интерфейсы в Java - 5"></a>

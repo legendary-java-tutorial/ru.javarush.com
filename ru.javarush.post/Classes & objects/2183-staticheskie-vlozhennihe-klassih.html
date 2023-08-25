@@ -1,0 +1,188 @@
+Статические вложенные классы
+<p>----------------------------------------</p>
+Привет! Мы продолжаем изучать тему вложенных классов (nested classes) в Java. На прошлом занятии мы поговорили о нестатических внутренних классах  (non-static nested classes) или, как их еще называют, внутренних классах. Сегодня перейдем к другой группе и рассмотрим ...
+<p>----------------------------------------</p>
+Привет! Мы продолжаем изучать тему вложенных классов (nested classes) в Java. На прошлом занятии мы поговорили о нестатических внутренних классах  (non-static nested classes) или, как их еще называют, внутренних классах.
+<img data-id="10ac2dc4-b564-4868-83cf-77792005a358" data-max-width="850" alt="Статические вложенные классы - 2" src="https://cdn.javarush.com/images/article/10ac2dc4-b564-4868-83cf-77792005a358/1024.jpeg">Сегодня перейдем к другой группе и рассмотрим подробнее статические вложенные классы (static nested classes).
+<img data-id="bc2a93db-14e3-486d-9b3b-3f761dc7c453" data-max-width="850" alt="Статические вложенные классы - 3" src="https://cdn.javarush.com/images/article/bc2a93db-14e3-486d-9b3b-3f761dc7c453/1024.jpeg">Чем они отличаются от остальных групп?
+
+При объявлении такого класса мы используем уже знакомое тебе ключевое слово static:
+
+<pre class="lang-java line-numbers"><code>
+public class Boeing737 {
+
+   private int manufactureYear;
+   private static int maxPassengersCount = 300;
+
+   public Boeing737(int manufactureYear) {
+       this.manufactureYear = manufactureYear;
+   }
+
+   public int getManufactureYear() {
+       return manufactureYear;
+   }
+
+   public static class Drawing {
+      
+       public static int getMaxPassengersCount() {
+          
+           return maxPassengersCount;
+       }
+   }
+}
+</code></pre>
+<img data-id="ec27b203-2201-44ad-911a-30015b6cf380" data-max-width="850" alt="Статические вложенные классы - 4" src="https://cdn.javarush.com/images/article/ec27b203-2201-44ad-911a-30015b6cf380/1024.jpeg">В этом примере у нас есть внешний класс <code>Boeing737</code>, который создает самолет этой модели. А у него — конструктор с одним параметром: годом выпуска (<code>int manufactureYear</code>).
+
+Также есть одна статическая переменная <code>int maxPassengersCount</code> — максимальное число пассажиров. Оно будет одинаковым у всех самолетов одной модели, так что нам достаточно одного экземпляра. Кроме того, у него есть статический внутренний класс <code>Drawing</code> — чертеж самолета.
+
+В этом классе мы можем инкапсулировать всю служебную информацию о самолете. В нашем примере для простоты мы ограничили ее годом выпуска, но она может содержать много другой информации.
+<img data-id="fea440a9-61f0-4920-a20f-d87d467ed007" data-max-width="850" alt="Статические вложенные классы - 5" src="https://cdn.javarush.com/images/article/fea440a9-61f0-4920-a20f-d87d467ed007/1024.jpeg">Как мы и говорили в прошлой лекции, создание такого вложенного класса повышает инкапсуляцию и способствует более реалистичной абстракции.
+
+В чем же отличие между статическим и нестатическим вложенными классами?
+
+1. Объект статического класса <code>Drawing</code> не хранит ссылку на конкретный экземпляр внешнего класса. 
+
+Вспомни пример из прошлой лекции  с велосипедом:
+
+<pre class="lang-java line-numbers"><code>
+public class Bicycle {
+
+   private String model;
+   private int mawWeight;
+
+   public Bicycle(String model, int mawWeight) {
+       this.model = model;
+       this.mawWeight = mawWeight;
+   }
+  
+   public void start() {
+       System.out.println("Поехали!");
+   }
+
+   public class SteeringWheel {
+
+       public void right() {
+           System.out.println("Руль вправо!");
+       }
+
+       public void left() {
+
+           System.out.println("Руль влево!");
+       }
+   }
+
+}
+</code></pre>
+Там мы говорили о том, что в каждый экземпляр внутреннего класса <code>SteeringWheel</code> (руль) незаметно для нас передается ссылка на объект внешнего класса <code>Bicycle</code> (велосипед).
+
+Без объекта внешнего класса объект внутреннего просто не мог существовать.
+
+Для статических вложенных классов это не так. Объект статического вложенного класса вполне может существовать сам по себе.
+В этом плане статические классы более «независимы», чем нестатические.
+
+Единственный момент — при создании такого объекта нужно указывать название внешнего класса:
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) {
+
+       Boeing737.Drawing drawing1 = new Boeing737.Drawing();
+       Boeing737.Drawing drawing2 = new Boeing737.Drawing();
+   }
+}
+</code></pre>
+Почему мы сделали класс <code>Drawing</code> статическим, а в прошлой лекции класс <code>Seat</code> (сиденье велосипеда) был нестатическим?
+
+Как и в прошлый раз, давай добавим немного «философии» для понимания примера :)
+
+В отличие от сиденья велосипеда, сущность чертежа не привязана так жестко к сущности самолета.
+
+Отдельный объект сиденья, без велосипеда, чаще всего будет бессмысленным (хотя и не всегда — мы говорили об этом на прошлом занятии).
+
+Сущность чертежа имеет смысл сама по себе. Например, он может пригодиться инженерам, планирующим ремонт самолета. Сам самолет для планирования им не нужен, и может находиться где угодно — достаточно просто чертежа.
+
+Кроме того, для всех самолетов одной модели чертеж все равно будет одинаковым, так что такой жесткой связи, как у сиденья с велосипедом, нет. Поэтому и ссылка на конкретный объект самолета объекту <code>Drawing</code> не нужна.
+
+2. Разный доступ к переменным и методам внешнего класса.
+
+Статический вложенный класс может обращаться только к статическим полям внешнего класса.
+
+В нашем примере в классе <code>Drawing</code> есть метод <code>getMaxPassengersCount()</code>, который возвращает значение статической переменной <code>maxPassengersCount</code> из внешнего класса.
+
+Однако мы не можем создать метод <code>getManufactureYear()</code> в <code>Drawing</code> для возврата значения <code>manufactureYear</code>. Ведь переменная <code>manufactureYear</code> — нестатическая, а значит, должна принадлежать конкретному экземпляру <code>Boeing737</code>. А как мы уже выяснили, в случае со статическими вложенными классами объект внешнего класса запросто может отсутствовать. Отсюда и ограничение :)
+
+При этом неважно, какой модификатор доступа имеет статическая переменная во внешнем классе. Даже если это <code>private</code>, доступ из статического вложенного класса все равно будет.
+
+Все вышесказанное касается не только доступа к статическим переменным, но и к статическим методам.
+ВАЖНО!
+
+Слово <code>static</code> в объявлении внутреннего класса не означает, что можно создать всего один объект. Не путай объекты с переменными.
+
+Если мы говорим о статических переменных — да, статическая переменная класса, например, <code>maxPassangersCount</code>, существует в единственном экземпляре.
+
+Но применительно ко вложенному классу <code>static</code> означает лишь то, что его объекты не содержат ссылок на объекты внешнего класса. А самих объектов мы можем создать сколько угодно:
+
+<pre class="lang-java line-numbers"><code>
+public class Boeing737 {
+
+   private int manufactureYear;
+   private static int maxPassengersCount = 300;
+
+   public Boeing737(int manufactureYear) {
+       this.manufactureYear = manufactureYear;
+   }
+
+   public int getManufactureYear() {
+       return manufactureYear;
+   }
+
+   public static class Drawing {
+
+       private int id;
+
+       public Drawing(int id) {
+           this.id = id;
+       }
+
+       public static int getPassengersCount() {
+
+           return maxPassengersCount;
+       }
+
+       @Override
+       public String toString() {
+           return "Drawing{" +
+                   "id=" + id +
+                   '}';
+       }
+
+       public static void main(String[] args) {
+
+           for (int i = 1; i &lt; 6; i++) {
+
+               Boeing737.Drawing drawing = new Boeing737.Drawing(i);
+               System.out.println(drawing);
+           }
+       }
+   }
+}
+</code></pre>
+Мы объявили метод <code>main()</code> прямо во вложенном классе (особой причины для этого нет — просто чтобы ты знал, что так можно), и создали 5 объектов <code>Drawing</code>. При том, что ни одного объекта внешнего класса у нас нет.
+
+Как видишь, никаких проблем не возникло :)
+
+Вывод в консоль:
+
+<pre><code>
+Drawing{id=1}
+Drawing{id=2}
+Drawing{id=3}
+Drawing{id=4}
+Drawing{id=5}
+</code></pre>
+На этом наше занятие подошло к концу!
+
+На всякий случай оставлю тебе ссылку на на раздел про них <a href="https://docs.oracle.com/javase/tutorial/java/javaOO/nested.html" rel="nofollow" target="_blank">в документации Oracle</a>. Почитай, если вдруг остались неясные моменты.
+
+А теперь самое время решить пару задач! :)

@@ -1,0 +1,547 @@
+Создание простого веб-приложения на сервлетах и jsp (часть 2)
+<p>----------------------------------------</p>
+Этот материал является логическим продолжением моей статьи Создание простейшего веб-проекта в IntelliJ Idea Enterprise. В ней я продемонстрировал, как создать работающий шаблон веб-проекта ...
+<p>----------------------------------------</p>
+<a href="https://javarush.com/groups/posts/328-sozdanie-prostogo-veb-prilozhenija-na-servletakh-i-jsp-chastjh-1" target="_blank" rel="nofollow">Создание простого веб-приложения на сервлетах и jsp (часть 1)</a> 
+
+<strong>Уровень знаний, необходимых для понимания статьи:</strong> вы уже более-менее разобрались с Java Core и хотели бы посмотреть на JavaEE-технологии и web-программирование. Логичнее всего, если вы сейчас изучаете квест Java Collections, где рассматриваются близкие статье темы.  
+
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="8ae3315a-75cd-46d0-aa40-8e36c71382dd" alt="Создание простого веб-приложения на сервлетах и jsp (часть 2) - 1" src="https://cdn.javarush.com/images/article/8ae3315a-75cd-46d0-aa40-8e36c71382dd/1024.jpeg"></div></div><h3>Создаем сущности</h3>В пакете <strong>entities</strong> создадим класс <strong>User</strong>, ну а в нём — две приватные строковые переменные <strong>name</strong> и <strong>password</strong>. Создадим конструкторы (по умолчанию и такой, который бы принимал оба значения), геттеры/сеттеры, переопределим метод <em><strong>toString()</strong></em> на всякий случай, а также методы <em><strong>equals()</strong></em> и <em><strong>hashCode()</strong></em>. То есть сделаем всё то, что делает приличный Java-разработчик при создании класса. 
+
+<pre class="lang-java line-numbers"><code>
+public class User {
+    private String name;
+    private String password;
+
+    public User() {
+    }
+
+    public User(String name, String password) {
+        this.name = name;
+        this.password = password;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "name='" + name + '\'' +
+                ", password='" + password + '\'' +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        User user = (User) o;
+
+        if (name != null ? !name.equals(user.name) : user.name != null) return false;
+        return password != null ? password.equals(user.password) : user.password == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = name != null ? name.hashCode() : 0;
+        result = 31 * result + (password != null ? password.hashCode() : 0);
+        return result;
+    }
+}
+
+</code></pre>
+Теперь можем приступать к созданию списка пользователей. В него будем добавлять пользователей, и откуда будем их забирать для отображения. Однако здесь есть одна проблема. Объекты наших сервлетов создаем не мы, за нас это делает <strong>Tomcat</strong>. Методы, которые мы переопределяем в них, тоже уже определены за нас, и добавить параметр мы не можем. Как же тогда создать общий список, который был бы виден в обоих наших сервлетах? Если мы просто в каждом сервлете создадим свой объект списка, то получится, что добавлять пользователей мы будем в один список, а выводить список пользователей сервлетом <strong>ListServlet</strong> — в другой.
+
+Выходит, нам нужен такой объект, который был бы общим для обоих сервлетов. Если говорить обобщенно, нам нужен такой объект, который был бы общим для всех классов в нашей программе; единственный объект на всю программу.
+
+Надеюсь, вы что-то слышали про шаблоны проектирования. И, возможно, для кого-то это первая реальная необходимость использования шаблона <a href="http://info.javarush.ru/translation/2013/09/14/%D0%A8%D0%B0%D0%B1%D0%BB%D0%BE%D0%BD-%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F-Singleton-%D0%BE%D0%B4%D0%B8%D0%BD%D0%BE%D1%87%D0%BA%D0%B0-%D0%BD%D0%B0%D0%B8%D0%B1%D0%BE%D0%BB%D0%B5%D0%B5-%D1%80%D0%B0%D1%86%D0%B8%D0%BE%D0%BD%D0%B0%D0%BB%D1%8C%D0%BD%D1%8B%D0%B5-%D1%80%D0%B5%D0%B0%D0%BB%D0%B8%D0%B7%D0%B0%D1%86%D0%B8%D0%B8-%D0%B2-%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%D0%B0%D1%85-.html" target="_blank" rel="nofollow"><strong>Singleton</strong></a> в своей программе. 
+
+Можете извратиться и «запилить» какой-нибудь крутой <strong>Singleton</strong>, с двойными проверками и синхронизациями (да-да, у нас многопоточное приложение, так как сервлеты Tomcat запускает в разных потоках), но я буду использовать вариант с ранней инициализацией, поскольку здесь его вполне хватает, и он подходит для наших целей. 
+
+<h3>Создание модели</h3>Создадим класс (и реализуем в нем шаблон <strong>Singleton</strong>) в пакете <strong>model</strong> и назовем его как-нибудь необычно. Скажем, <strong>Model</strong>.
+
+Создадим в нашем классе приватный объект списка пользователей, и реализуем два метода: один для того, чтоб можно было добавить пользователя, а второй для возврата списка строк (имен пользователей). Поскольку наш объект пользователя состоит из имени и пароля, а пароли пользователей мы «светить» не хотели бы, будем только список имен.
+
+<pre class="lang-java line-numbers"><code>
+public class Model {
+    private static Model instance = new Model();
+
+    private List&lt;User&gt; model;
+
+    public static Model getInstance() {
+        return instance;
+    }
+
+    private Model() {
+        model = new ArrayList&lt;&gt;();
+    }
+
+    public void add(User user) {
+        model.add(user);
+    }
+
+    public List&lt;String&gt; list() {
+        return model.stream()
+                .map(User::getName)
+                .collect(Collectors.toList());
+    }
+}
+</code></pre>
+<h3>Немного про mvc</h3>Раз уж вы слышали про <strong>singleton</strong>, значит возможно слышали и про другой шаблон проектирования — <a href="https://javarush.com/quests/lectures/questharvardcs50.level08.lecture02" target="_blank" rel="nofollow"><strong>MVC</strong></a> (model-view-controller, по-русски модель-представление-контроллер, или прям так как и на английском модель-вью-контроллер).
+
+Его суть в том, чтобы отделять бизнес-логику от представления. То есть, отделять код, который определяет, что делать от кода, который определяет, как отображать. <strong>View</strong> (представление или просто вьюхи) отвечает за то, в каком виде представлять какие-то данные. В нашем случае вьюхи — это наши jsp-странички. Именно поэтому я их и положил в папочку с названием <strong>views</strong>.
+
+<strong>Модель</strong> — это собственно сами данные, с которыми работает программа. В нашем случае это пользователи (список пользователей). Ну а контроллеры — связующее звено между ними. Берут данные из модели и передают их во вьюхи (или получают от Tomcat какие-то данные, обрабатывают их и передают модели). Бизнес-логику (что именно программа должна делать) нужно описывать в них, а не в модели или во вьюхе. Таким образом, каждый занимается своим делом:
+
+<ul>
+<li>модель хранит данные;</li>
+<li>вьюхи рисуют красивое представление данных;</li>
+<li>контроллеры занимаются обработкой данных.</li>
+</ul>
+Это позволяет программе быть достаточно простой и поддерживаемой, а не монструозной свалкой всего кода в одном классе.
+
+<strong>MVC</strong> подходит не только для веб-программирования, но именно в этой сфере он встречается особенно часто (едва ли не всегда).
+
+В нашем случае в качестве контроллеров будут выступать сервлеты.
+
+Это очень поверхностное и краткое описание паттерна, но <strong>MVC</strong> — не главная тема этой статьи. Кто хочет узнать больше — Google в помощь! 
+Создаем форму добавления пользователя
+
+Добавим в файл <strong>add.jsp</strong> форму, состоящую из двух текстовых полей ввода (одно обычное, другое — пароль) и кнопки для отправки данных на сервер.
+
+<pre class="lang-java line-numbers"><code>
+&lt;form method="post"&gt;
+    &lt;label&gt;Name:
+        &lt;input type="text" name="name"&gt;&lt;br /&gt;
+    &lt;/label&gt;
+
+    &lt;label&gt;Password:
+        &lt;input type="password" name="pass"&gt;&lt;br /&gt;
+    &lt;/label&gt;
+    &lt;button type="submit"&gt;Submit&lt;/button&gt;
+&lt;/form&gt;
+</code></pre>
+
+Здесь у формы указан атрибут <em><strong>method</strong></em> со значением <em><strong>post</strong></em>. Это говорит о том, что данные из этой формы полетят на сервер в виде POST-запроса. Атрибут <em><strong>action</strong></em> не указан, значит запрос отправится по тому же адресу, по которому мы перешли на эту страничку (<em><strong>/add</strong></em>). Таким образом, наш сервлет, привязанный к этому адресу, при получении GET-запроса возвращает эту jsp с формой добавления пользователей, а если получит POST-запрос, значит, форма отправила туда свои данные (которые мы в методе <em><strong>doPost()</strong></em> вытащим из объекта запроса, обработаем и передадим в модель на сохранение).
+
+Стоит обратить внимание, что у полей ввода указан параметр <strong>name</strong> (для поля с именем он имеет значение name, а для поля с паролем — <strong>pass</strong>). Это довольно важный момент. Так как чтобы получить из запроса (внутри сервлета уже) эти данные (имя и пароль которые будут введены) — мы будем использовать именно эти <strong>name</strong> и <strong>pass</strong>. Но об этом чуть позже.
+
+Сама кнопка отправки данных у меня сделана снова же в виде <strong>button</strong>, а не полем вывода, как это обычно принято. Не знаю насколько такой вариант универсален, но у меня работает (браузер Chrome). 
+
+<h3>Обработка POST-запроса сервлетом</h3>Вернемся к сервлету <strong>AddServlet</strong>. Напомню: чтобы наш сервлет умел «ловить» GET-запросы, мы переопределили метод <em><strong>doGet()</strong></em> из класса <em><strong>HttpServlet</strong></em>. Чтобы научить наш сервлет отлавливать ещё и POST-звапросы, нам нужно переопределить еще и метод <em><strong>doPost()</strong></em>. Он получает аналогичные объекты запроса и ответа от <strong>Tomcat</strong>, с которыми мы и будем работать.
+
+Для начала вытащим из запроса параметры name и pass, которые отправила форма (если вы их в форме назвали по-другому — тогда именно те названия и пишете). После этого создадим объект нашего пользователя, используя полученные данные. Потом получим объект модели и добавим созданного пользователя в модель.
+
+<pre class="lang-java line-numbers"><code>
+@Override
+protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    String name = req.getParameter("name");
+    String password = req.getParameter("pass");
+    User user = new User(name, password);
+    Model model = Model.getInstance();
+    model.add(user);
+}
+</code></pre>
+<h3>Передача данных во view</h3>Перейдем к сервлету <strong>ListServlet</strong>. Тут уже реализован метод <em><strong>doGet()</strong></em>, который просто передает управление во вьюху <em><strong>list.jsp</strong></em>. Если у вас этого еще нет — сделайте по аналогии с таким же методом из сервлета <strong>AddServlet</strong>.
+
+Теперь было бы неплохо получить из модели список имен пользователей и передать их во вьюху, которая их получит и красивенько отобразит. Для этого снова воспользуемся объектом запроса, который мы получили от <strong>Tomcat</strong>. К этому объекту мы можем добавить атрибут, дав ему какое-то имя, и, собственно, сам объект, который бы мы хотели передать во <strong>view</strong>.
+
+Благодаря тому, что при передаче процесса выполнения из сервлета во вьюху мы передаем туда эти же объекты запроса и ответа, что получил сам сервлет, то и добавив наш список имен к объекту запроса мы потом из этого объекта запроса во вьюхе сможем наш список имен пользователей и получить.
+
+С классом <strong>ListServlet</strong> мы закончили, поэтому привожу код всего класса:
+
+<pre class="lang-java line-numbers"><code>
+package app.servlets;
+
+import app.model.Model;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.List;
+
+public class ListServlet extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        Model model = Model.getInstance();
+        List&lt;String&gt; names = model.list();
+        req.setAttribute("userNames", names);
+
+        RequestDispatcher requestDispatcher = req.getRequestDispatcher("views/list.jsp");
+        requestDispatcher.forward(req, resp);
+    }
+}
+</code></pre>
+<h3>Выполнение java-кода в jsp-файлах</h3>Пришла пора заняться файлом <strong>list.jsp</strong>. Он выполнится только когда <strong>ListServlet</strong> передаст сюда процесс выполнения. Кроме того, мы в том сервлете уже подготовили список имен пользователей из модели и передали сюда в объекте запроса.
+Поскольку у нас есть список имён, мы можем пробежаться по нему циклом <em><strong>for</strong></em> и вывести каждое имя.
+
+Как я уже говорил, jsp-файлы могут выполнять java-код (чем и отличаются от статичных html-страничек). Для того, чтобы выполнить какой-то код, достаточно поставить в нужном нам месте конструкцию:
+
+<pre class="lang-java line-numbers"><code>
+&lt;!-- html код --&gt;
+&lt;%
+    // java код
+%&gt;
+&lt;!-- html код --&gt;
+</code></pre>
+<strong>Внутри такой конструкции мы получаем доступ к нескольким переменным:</strong>
+
+<ul>
+<li><strong>request</strong> — наш объект запроса, который мы передали из сервлета, где он назывался просто <strong>req</strong>;</li>
+<li><strong>responce</strong> — объект ответа, в сервлете назывался <strong>resp</strong>;</li>
+<li><p><strong>out</strong> — объект типа <strong>JspWriter</strong> (наследуется от обычного <strong>Writer</strong>), при помощи которого можем «писать» что-либо прямо в саму html-страничку. Запись <strong>out.println(«Hello world!»)</strong> очень похожа на запись <strong>System.out.println(«Hello world!»)</strong>, но не путайте их!<br>
+<strong>out.println()</strong> «пишет» в html-страничку, а <strong>System.out.println</strong> — в системный вывод. Если вызвать внутри раздела с Java-кодом <strong>jsp-метод System.out.println()</strong> — то результаты увидите в консоли <strong>Tomcat</strong>, а не на страничке.</p></li>
+</ul>
+Про другие доступные объекты внутри jsp можно поискать <a href="https://www.google.com/search?q=JSP+Implicit+Objects" target="_blank" rel="nofollow">тут</a>.
+
+Используя объект <strong>request</strong>, мы можем получить список имен, который передавали из сервлета (мы прикрепили соответствующий атрибут к этому объекту), а используя объект <strong>out</strong> — можем вывести эти имена. Сделаем это (пока просто в виде html-списка):
+
+<pre class="lang-java line-numbers"><code>
+&lt;ul&gt;
+    &lt;%
+        List&lt;String&gt; names = (List&lt;String&gt;) request.getAttribute("userNames");
+
+        if (names != null &amp;&amp; !names.isEmpty()) {
+            for (String s : names) {
+                out.println("&lt;li&gt;" + s + "&lt;/li&gt;");
+            }
+        }
+    %&gt;
+&lt;/ul&gt;
+</code></pre>
+Если нужно выводить список только в том случае, когда есть пользователи, а иначе выводить предупреждение, что пользователей пока нет, можем немного переписать этот участок:
+
+<pre class="lang-java line-numbers"><code>
+&lt;%
+    List&lt;String&gt; names = (List&lt;String&gt;) request.getAttribute("userNames");
+
+    if (names != null &amp;&amp; !names.isEmpty()) {
+        out.println("&lt;ui&gt;");
+        for (String s : names) {
+            out.println("&lt;li&gt;" + s + "&lt;/li&gt;");
+        }
+        out.println("&lt;/ui&gt;");
+    } else out.println("&lt;p&gt;There are no users yet!&lt;/p&gt;");
+%&gt;
+</code></pre>
+Теперь, когда мы умеем передавать данные из сервлетов во вьюхи, можем немного улучшить наш <strong>AddServlet</strong>, чтобы выводилось уведомление об успешном добавлении пользователя. Для этого в методе <em><strong>doPost()</strong></em> после того, как добавили нового пользователя в модель, можем добавить имя этого пользователя в атрибуты объекта <em><strong>req</strong></em> и передать управление обратно во вьюху <strong>add.jsp</strong>. А в ней уже сделать участок с Java-кодом, в котором происходит проверка, есть ли такой атрибут в запросе, и если да — то вывод сообщения о том, что пользователь успешно добавлен.
+
+После этих изменений полный код сервлета <strong>AddServlet</strong> будет выглядеть примерно так:
+
+<pre class="lang-java line-numbers"><code>
+package app.servlets;
+
+import app.entities.User;
+import app.model.Model;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
+public class AddServlet extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        RequestDispatcher requestDispatcher = req.getRequestDispatcher("views/add.jsp");
+        requestDispatcher.forward(req, resp);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String name = req.getParameter("name");
+        String password = req.getParameter("pass");
+        User user = new User(name, password);
+        Model model = Model.getInstance();
+        model.add(user);
+
+        req.setAttribute("userName", name);
+        doGet(req, resp);
+    }
+}
+</code></pre>
+Тут в конце метода <em><strong>doPost()</strong></em> мы устанавливаем атрибут с именем добавленного в модель пользователя, после чего вызываем метод <em><strong>doGet()</strong></em>, в который передаем текущие запрос и ответ. А метод <em><strong>doGet()</strong></em> уже передает управление во вьюху, куда и отправляет объект запроса с прикрепленным именем добавленного пользователя в качестве атрибута.
+
+Осталось подправить <strong>add.jsp</strong>, чтобы он выводил такое уведомление, если присутствует такой атрибут.
+
+Окончательный вариант <strong>add.jsp</strong>:
+
+<pre class="lang-java line-numbers"><code>
+&lt;%@ page contentType="text/html;charset=UTF-8" language="java" %&gt;
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;title&gt;Add new user&lt;/title&gt;
+    &lt;/head&gt;
+
+    &lt;body&gt;
+        &lt;div&gt;
+            &lt;h1&gt;Super app!&lt;/h1&gt;
+        &lt;/div&gt;
+
+        &lt;div&gt;
+            &lt;%
+                if (request.getAttribute("userName") != null) {
+                    out.println("&lt;p&gt;User '" + request.getAttribute("userName") + "' added!&lt;/p&gt;");
+                }
+            %&gt;
+            &lt;div&gt;
+                &lt;div&gt;
+                    &lt;h2&gt;Add user&lt;/h2&gt;
+                &lt;/div&gt;
+
+                &lt;form method="post"&gt;
+                    &lt;label&gt;Name:
+                        &lt;input type="text" name="name"&gt;&lt;br /&gt;
+                    &lt;/label&gt;
+                    &lt;label&gt;Password:
+                        &lt;input type="password" name="pass"&gt;&lt;br /&gt;
+                    &lt;/label&gt;
+                    &lt;button type="submit"&gt;Submit&lt;/button&gt;
+                &lt;/form&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div&gt;
+            &lt;button onclick="location.href='/'"&gt;Back to main&lt;/button&gt;
+        &lt;/div&gt;
+    &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+<strong>Тело страницы состоит из:</strong>
+
+<ul>
+<li>div-a с шапкой;</li>
+<li>div-контейнера для контента, в нем проверка существует ли атрибут с именем пользователя;</li>
+<li>div с формой добавления пользователей;</li>
+<li>ну и в конце футер с кнопкой возврата на главную страницу.</li>
+</ul>
+Может показаться, что слишком много div-ов, но мы их потом используем, когда добавим стилей.
+
+Окончательный вариант <strong>list.jsp</strong>: 
+
+<pre class="lang-java line-numbers"><code>
+&lt;%@ page import="java.util.List" %&gt;
+&lt;%@ page contentType="text/html;charset=UTF-8" language="java" %&gt;
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;title&gt;Users&lt;/title&gt;
+    &lt;/head&gt;
+
+    &lt;body&gt;
+        &lt;div&gt;
+            &lt;h1&gt;Super app!&lt;/h1&gt;
+        &lt;/div&gt;
+
+        &lt;div&gt;
+            &lt;div&gt;
+                &lt;div&gt;
+                    &lt;h2&gt;Users&lt;/h2&gt;
+                &lt;/div&gt;
+                &lt;%
+                    List&lt;String&gt; names = (List&lt;String&gt;) request.getAttribute("userNames");
+
+                    if (names != null &amp;&amp; !names.isEmpty()) {
+                        out.println("&lt;ui&gt;");
+                        for (String s : names) {
+                            out.println("&lt;li&gt;" + s + "&lt;/li&gt;");
+                        }
+                        out.println("&lt;/ui&gt;");
+                    } else out.println("&lt;p&gt;There are no users yet!&lt;/p&gt;");
+                %&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div&gt;
+            &lt;button onclick="location.href='/'"&gt;Back to main&lt;/button&gt;
+        &lt;/div&gt;
+    &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+Таким образом, у нас готово полностью рабочее веб-приложение, которое умеет хранить и добавлять пользователей, а также выводить список их имен. Осталось лишь приукрасить… :)
+
+<h3>Добавление стилей. Используем фреймворк W3.CSS</h3>В данный момент наше приложение рабочее, но абсолютно вырвиглазное. Поэтому добавим фон, цвет текста и кнопок, стилизуем списки, сделаем выравнивание, добавим отступы и тому подобное. Если писать стили вручную, это может занять много времени и нервов. Поэтому я предлагаю воспользоваться CSS-фреймворком W3.CSS. В нём уже есть готовые классы со стилями, осталось только расставить в нужных местах те css-классы, которые мы хотим применить.
+
+Для того, чтобы добавить их на наши страницы, для начала подключим файл со стилями. Это можно сделать двумя способами:
+
+<ol>
+<li><p>пройтись по нашим страницам и в разделе head вставить прямую ссылку на файл со стилями</p>
+<p><strong>&lt;link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css"&gt;</strong></p>
+<p>Такой вариант подходит, если у вас постоянное подключение к интернету. Тогда при открытии ваших страниц на локальном сервере стили подтянутся из интернета.</p></li><br>
+<li><p>Если же вы хотите иметь все стили у себя локально и не быть зависимым от интернет-соединения, загрузите файл со стилями и поместить его где-нибудь внутри папки <strong>web</strong> (например, <strong>web/styles/w3.css</strong>), после чего пройтись по всем нашим страничкам (<strong>index.html, add.jsp, list.jsp</strong>) и вписать внутри раздела <strong>head</strong> ссылку на этот файл со стилями</p>
+<p><strong>&lt;link rel="stylesheet" href="styles/w3.css"&gt;</strong></p>
+<p>После этого просто пройтись по тегам и дописать те стили, которые вам понравятся. Я не буду останавливаться на этом подробно, а сразу дам свои готовые варианты трех моих файлов с раставленными классами стилей.</p></li>
+</ol>
+<h4>index.html</h4>
+<pre class="lang-java line-numbers"><code>
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+    &lt;head&gt;
+        &lt;meta charset="UTF-8"&gt;
+        &lt;title&gt;Super app!&lt;/title&gt;
+        &lt;link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css"&gt;
+    &lt;/head&gt;
+
+    &lt;body class="w3-light-grey"&gt;
+        &lt;div class="w3-container w3-blue-grey w3-opacity w3-right-align"&gt;
+            &lt;h1&gt;Super app!&lt;/h1&gt;
+        &lt;/div&gt;
+
+        &lt;div class="w3-container w3-center"&gt;
+            &lt;div class="w3-bar w3-padding-large w3-padding-24"&gt;
+                &lt;button class="w3-btn w3-hover-light-blue w3-round-large" onclick="location.href='/list'"&gt;List users&lt;/button&gt;
+                &lt;button class="w3-btn w3-hover-green w3-round-large" onclick="location.href='/add'"&gt;Add user&lt;/button&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+<h4>add.jsp</h4>
+<pre class="lang-java line-numbers"><code>
+&lt;%@ page contentType="text/html;charset=UTF-8" language="java" %&gt;
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;title&gt;Add new user&lt;/title&gt;
+        &lt;link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css"&gt;
+    &lt;/head&gt;
+
+    &lt;body class="w3-light-grey"&gt;
+        &lt;div class="w3-container w3-blue-grey w3-opacity w3-right-align"&gt;
+            &lt;h1&gt;Super app!&lt;/h1&gt;
+        &lt;/div&gt;
+
+        &lt;div class="w3-container w3-padding"&gt;
+            &lt;%
+                if (request.getAttribute("userName") != null) {
+                    out.println("&lt;div class=\"w3-panel w3-green w3-display-container w3-card-4 w3-round\"&gt;\n" +
+                            "   &lt;span onclick=\"this.parentElement.style.display='none'\"\n" +
+                            "   class=\"w3-button w3-margin-right w3-display-right w3-round-large w3-hover-green w3-border w3-border-green w3-hover-border-grey\"&gt;×&lt;/span&gt;\n" +
+                            "   &lt;h5&gt;User '" + request.getAttribute("userName") + "' added!&lt;/h5&gt;\n" +
+                            "&lt;/div&gt;");
+                }
+            %&gt;
+            &lt;div class="w3-card-4"&gt;
+                &lt;div class="w3-container w3-center w3-green"&gt;
+                    &lt;h2&gt;Add user&lt;/h2&gt;
+                &lt;/div&gt;
+                &lt;form method="post" class="w3-selection w3-light-grey w3-padding"&gt;
+                    &lt;label&gt;Name:
+                        &lt;input type="text" name="name" class="w3-input w3-animate-input w3-border w3-round-large" style="width: 30%"&gt;&lt;br /&gt;
+                    &lt;/label&gt;
+                    &lt;label&gt;Password:
+                        &lt;input type="password" name="pass" class="w3-input w3-animate-input w3-border w3-round-large" style="width: 30%"&gt;&lt;br /&gt;
+                    &lt;/label&gt;
+                    &lt;button type="submit" class="w3-btn w3-green w3-round-large w3-margin-bottom"&gt;Submit&lt;/button&gt;
+                &lt;/form&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div class="w3-container w3-grey w3-opacity w3-right-align w3-padding"&gt;
+            &lt;button class="w3-btn w3-round-large" onclick="location.href='/'"&gt;Back to main&lt;/button&gt;
+        &lt;/div&gt;
+    &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+<h4>list.jsp</h4>
+<pre class="lang-java line-numbers"><code>
+&lt;%@ page import="java.util.List" %&gt;
+&lt;%@ page contentType="text/html;charset=UTF-8" language="java" %&gt;
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;title&gt;Users list&lt;/title&gt;
+        &lt;link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css"&gt;
+    &lt;/head&gt;
+
+    &lt;body class="w3-light-grey"&gt;
+        &lt;div class="w3-container w3-blue-grey w3-opacity w3-right-align"&gt;
+            &lt;h1&gt;Super app!&lt;/h1&gt;
+        &lt;/div&gt;
+
+        &lt;div class="w3-container w3-center w3-margin-bottom w3-padding"&gt;
+            &lt;div class="w3-card-4"&gt;
+                &lt;div class="w3-container w3-light-blue"&gt;
+                    &lt;h2&gt;Users&lt;/h2&gt;
+                &lt;/div&gt;
+                &lt;%
+                    List&lt;String&gt; names = (List&lt;String&gt;) request.getAttribute("userNames");
+
+                    if (names != null &amp;&amp; !names.isEmpty()) {
+                        out.println("&lt;ul class=\"w3-ul\"&gt;");
+                        for (String s : names) {
+                            out.println("&lt;li class=\"w3-hover-sand\"&gt;" + s + "&lt;/li&gt;");
+                        }
+                        out.println("&lt;/ul&gt;");
+
+                    } else out.println("&lt;div class=\"w3-panel w3-red w3-display-container w3-card-4 w3-round\"&gt;\n"
++
+                            "   &lt;span onclick=\"this.parentElement.style.display='none'\"\n" +
+                            "   class=\"w3-button w3-margin-right w3-display-right w3-round-large w3-hover-red w3-border w3-border-red w3-hover-border-grey\"&gt;×&lt;/span&gt;\n" +
+                            "   &lt;h5&gt;There are no users yet!&lt;/h5&gt;\n" +
+                            "&lt;/div&gt;");
+                %&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div class="w3-container w3-grey w3-opacity w3-right-align w3-padding"&gt;
+            &lt;button class="w3-btn w3-round-large" onclick="location.href='/'"&gt;Back to main&lt;/button&gt;
+        &lt;/div&gt;
+    &lt;/body&gt;
+&lt;/html&gt;
+
+</code></pre>
+
+Вот и все :)
+Если у вас остались какие-то вопросы или есть какие-то замечания, или же наоборот что-то не получается — оставьте комментарий.
+
+UPD: если у вас возникают проблемы с 404 ошибкой при нажатиях на кнопки, хотя все сделано правильно - возможно вам стоит поправить конфигурацию деплоя в идее. для этого надо зайти в Edit configurations (там вверху возле кнопки запуска), там перейти в правой части окна на вкладку Deployment и сделать так, чтобы в Application context было указано просто /
+
+Ну и парочку скриншотов приложу что из этого всего получилось.
+
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="5a31675e-5596-4a86-953f-58777aa00369" alt="Создание простого веб-приложения на сервлетах и jsp (часть 2) - 2" src="https://cdn.javarush.com/images/article/5a31675e-5596-4a86-953f-58777aa00369/1024.jpeg"></div></div>
+
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="4d6dc2a0-4c48-4ad6-9088-e472f2a86ade" alt="Создание простого веб-приложения на сервлетах и jsp (часть 2) - 3" src="https://cdn.javarush.com/images/article/4d6dc2a0-4c48-4ad6-9088-e472f2a86ade/1024.jpeg"></div></div>
+
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="cc810988-5875-4c3c-a068-97b08e5c8913" alt="Создание простого веб-приложения на сервлетах и jsp (часть 2) - 4" src="https://cdn.javarush.com/images/article/cc810988-5875-4c3c-a068-97b08e5c8913/1024.jpeg"></div></div>
+<em>И напоследок</em>
+
+Если будет желание попрактиковаться с этим проектом — можете попробовать:
+
+<ul>
+<li>сделать сервлет и jsp для удаления пользователя и еще пару для изменения/редактирования существующего пользователя. Получится настоящее CrUD веб приложение :) на сервлетах));</li>
+<li>заменить список (List) на работу с базой данных, чтоб добавленные пользователи не пропадали после перезапуска сервера :)</li>
+</ul>Удачи!
+<table>
+<tbody><tr>
+<th><p>Что еще почитать: </p>
+</th>
+</tr>
+<tr>
+<td>
+<p><a href="https://javarush.com/groups/posts/305-sozdanie-prosteyshego-web-proekta-v-intellij-idea-enterprise-edition-poshagovo-s-kartinkami" target="_blank" rel="nofollow">Создание простейшего веб-проекта в IntelliJ Idea Enterprise. Пошагово, с картинками</a></p>
+<p><a href="https://javarush.com/groups/posts/147-moy-chat-" target="_blank" rel="nofollow">Мой чат</a></p>
+</td>
+</tr>
+</tbody></table>

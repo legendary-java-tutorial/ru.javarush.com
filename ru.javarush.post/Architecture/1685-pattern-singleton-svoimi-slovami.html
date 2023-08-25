@@ -1,0 +1,114 @@
+Паттерн Singleton своими словами
+<p>----------------------------------------</p>
+Привет всем, javaRush! Расскажу сегодня про паттерн проектирования Singleton (одиночка). Цель: создать класс, у которого будет только ОДИН объект. Это значит, что сколько бы раз к нему не обращались, возвращаться будет один и тот же объект, который был создан ...
+<p>----------------------------------------</p>
+<h2>Привет всем, javaRush!</h2>Расскажу сегодня про паттерн проектирования <code>Singleton</code> (одиночка).
+<img data-id="1cb048f8-444f-4161-978d-147c6072878d" data-max-width="850" alt="Паттерн Singleton своими словами - 1" src="https://cdn.javarush.com/images/article/1cb048f8-444f-4161-978d-147c6072878d/1024.jpeg"><strong>Цель:</strong> создать класс, у которого будет только ОДИН объект.
+
+Это значит, что сколько бы раз к нему не обращались, возвращаться будет один и тот же объект, который был создан первый раз.
+
+Это удобная вещь и необходимая во многих местах, не зря ее внедряют во фреймворки.
+
+<strong>Применение:</strong>
+<ul>
+    <li>Например необходимо подключить базу данных в проект и класс, который будет отвечать за соединение с ней. Один раз создается соединение и нет нужны создавать его снова и снова</li>
+   <li><code>Application settings</code> — класс отвечающий за настройки отружения, которые нужны для приложения: хост и порт базы данных и т.д. Они создаются один раз и используются всё время работы приложения.</li>
+   <li>есть еще множество примеров, о которых я не сказал, поэтому пишите в комментариях свои варианты! =)</li></ul>После этого вступления, как я понимаю можно показать уже пример этого класса: (Хотя я уверен, что каждый из нас сможет придумать реализацию этого)
+
+Вот самый простой пример, когда мы ставим приватным конструктор, т.е. нельзя создавать явно объект. И есть статический метод <code>getInstance()</code>, который предоставляет объект. 
+
+<pre class='lang-java line-numbers'><code>
+public class Singleton {
+  private static Singleton instance;
+  private Singleton () {}
+
+  public static Singleton getInstance() {
+    if (instance == null) {
+      instance = new Singleton();
+    }
+    return instance;
+  }
+}
+</code></pre>
+Есть проблемы с многопоточностью и тогда можно поставить метод <code>getInstance()</code> маркер <code>synchronized</code>:
+
+<pre class='lang-java line-numbers'><code>
+public class Singleton {
+  private static Singleton instance;
+  private Singleton () {}
+
+  public static synchronized Singleton getInstance() {
+    if (instance == null) {
+      instance = new Singleton();
+    }
+    return instance;
+  }
+}
+</code></pre>
+В конце, как обычно, хочу сказать, что если вы думаете иначе или нашли у меня ошибку — пишите в комментариях! Мы все обсудим, с удовольствием :)
+
+Если Вам понравилась статья, пишите "+" и я буду это знать. Это для меня важно :)
+
+P.S. Добавляю еще реализации:
+
+По мнению <strong>Joshua Bloch</strong>’а это лучший способ реализации шаблона <code>Enum Singleton</code>
+
+<pre class='lang-java line-numbers'><code>
+public enum Singleton {
+   INSTANCE;
+}
+</code></pre>
+<code>Double Checked Locking & volatile</code>
+
+<pre class='lang-java line-numbers'><code>
+public class Singleton {
+        private static volatile Singleton instance;
+   
+        public static Singleton getInstance() {
+      Singleton localInstance = instance;
+      if (localInstance == null) {
+         synchronized (Singleton.class) {
+            localInstance = instance;
+            if (localInstance == null) {
+               instance = localInstance = new Singleton();
+            }
+         }
+      }
+      return localInstance;
+   }
+}
+</code></pre>
+И еще <code>On Demand Holder idiom</code>:
+
+<pre class='lang-java line-numbers'><code>
+public class Singleton {
+      
+   public static class SingletonHolder {
+      public static final Singleton HOLDER_INSTANCE = new Singleton();
+   }
+      
+   public static Singleton getInstance() {
+      return SingletonHolder.HOLDER_INSTANCE;
+   }
+}
+</code></pre>
+<code>+</code> Ленивая инициализация
+<code>+</code> Высокая производительность
+<code>-</code> Невозможно использовать для не статических полей класса
+
+Будут вопросы/предложения — пишите в комментарии!
+
+<strong>См. также мои другие статьи:</strong>
+<ul>
+<li><p><a href='https://javarush.com/groups/posts/1707-testovoe-zadanie-napisatjh-interpretator-na-jazihk-brainfuck' target='_blank'>Тестовое задание: "Написать Интерпретатор на язык BrainFuck"</a></p></li>
+<li><p><a href='https://javarush.com/groups/posts/1700-testovoe-zadanie-image-comparison' target='_blank'>Тестовое задание "Image Comparison"</a></li>
+<li><p><a href='https://javarush.com/groups/posts/1696-java---bihstree-siljhnee-i-vihshe-zarplatih-ukrainskikh-programmistov' target='_blank'>Java — быстрее, сильнее и выше! Зарплаты украинских программистов</a></li>
+<li><p><a href='https://javarush.com/groups/posts/1675-istorija-uspekha-spustja-15-goda-ot-nachala-obuchenija' target='_blank'>История успеха спустя 1.5 года от начала обучения</a></p></li>
+<li><p><a href='https://javarush.com/groups/posts/1692-tekhnicheskie-voprosih-na-sobesedovanii' target='_blank'>Технические вопросы на собеседовании</a></p>
+<li><p><a href='https://javarush.com/groups/posts/1693-kak-nayti-rabotu-rassihlka-rezjume' target='_blank'>Как найти работу? Рассылка резюме</a></li>
+<li><p><a href='https://javarush.com/groups/posts/1694-professionaljhnoe-vihgoranie-kak-ustojatjh' target='_blank'>Профессиональное выгорание. Как устоять?</a></p></li>
+<li><p><a href='https://javarush.com/groups/posts/1689-angliyskiy-dlja-it-i-dlja--sobesedovanija' target='_blank'>Английский для IT и для собеседования</a></p></li>
+<li><p><a href='https://javarush.com/groups/posts/1684-pattern-command-svoimi-slovami' target='_blank'>Паттерн Command своими словами</a></p></li>
+<li><p><a href='https://javarush.com/groups/posts/1352-kak-sozdatjh-ispolnjaemihy-jar-v-intellij-idea--how-to-create-jar-in-idea' target='_blank'>Как создать исполняемый jar в Intellij IDEA / how to create jar in IDEA</a></p></li>
+<li><p><a href='https://javarush.com/groups/posts/1356-pomogite-nuzhna-motivacija' target='_blank'>Помогите, нужна мотивация!</a></p></li>
+</ul>

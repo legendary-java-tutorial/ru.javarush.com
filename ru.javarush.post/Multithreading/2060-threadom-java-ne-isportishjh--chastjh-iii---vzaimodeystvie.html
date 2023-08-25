@@ -1,0 +1,256 @@
+Thread'ом Java не испортишь: Часть III — взаимодействие
+<p>----------------------------------------</p>
+Краткий обзор особенностей взаимодействия потоков. Ранее мы разобрали, как потоки синхронизируются друг с другом. В этот раз мы окунёмся в проблемы, которые могут появиться при взаимодействии потоков и поговорим о том, как их можно избежать. Также приведём несколько полезных ссылок ...
+<p>----------------------------------------</p>
+Краткий обзор особенностей взаимодействия потоков. Ранее мы разобрали, как потоки синхронизируются друг с другом. В этот раз мы окунёмся в проблемы, которые могут появиться при взаимодействии потоков и поговорим о том, как их можно избежать. Также приведём несколько полезных ссылок для более глубокого изучения.
+
+<img data-max-width="800" data-id="f9de239f-14b1-4eb0-878d-36849844baa7" src="/images/article/f9de239f-14b1-4eb0-878d-36849844baa7/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть III — взаимодействие - 1"><h2>Вступление</h2>Итак, мы знаем, что в Java есть потоки, о чём можно прочитать в обзоре "<a href="https://javarush.com/groups/posts/2047-threadom-java-ne-isportishjh--chastjh-i---potoki" target="_blank" rel="nofollow">Thread'ом Java не испортишь: Часть I - потоки</a>" и что потоки можно синхронизировать между собой, с чем мы разбирались в обзоре "<a href="https://javarush.com/groups/posts/2048-threadom-java-ne-isportishjh--chastjh-ii---sinkhronizacija" target="_blank" rel="nofollow">Thread'ом Java не испортишь: Часть II - синхронизация</a>".
+
+Пришло время поговорить о том, как же потоки взаимодействуют между собой. Как они делят общие ресурсы? Какие с этим могут быть проблемы?
+<h2>Deadlock</h2>Самой страшной проблемой является Deadlock. Когда два и более потоков вечно ожидают друг друга — это называется Deadlock.
+
+Возьмём пример с сайта Oracle из описания понятия "<a href="https://docs.oracle.com/javase/tutorial/essential/concurrency/deadlock.html" target="_blank" rel="nofollow">Deadlock</a>":
+
+<pre class="lang-java line-numbers"><code>
+public class Deadlock {
+    static class Friend {
+        private final String name;
+        public Friend(String name) {
+            this.name = name;
+        }
+        public String getName() {
+            return this.name;
+        }
+        public synchronized void bow(Friend bower) {
+            System.out.format("%s: %s has bowed to me!%n",
+                    this.name, bower.getName());
+            bower.bowBack(this);
+        }
+        public synchronized void bowBack(Friend bower) {
+            System.out.format("%s: %s has bowed back to me!%n",
+                    this.name, bower.getName());
+        }
+    }
+
+    public static void main(String[] args) {
+        final Friend alphonse = new Friend("Alphonse");
+        final Friend gaston = new Friend("Gaston");
+        new Thread(() -&gt; alphonse.bow(gaston)).start();
+        new Thread(() -&gt; gaston.bow(alphonse)).start();
+    }
+}
+</code></pre>
+Deadlock тут может проявиться не с первого раза, но если у вас выполнение программы повисло, самое время запустить <code>jvisualvm</code>:
+<img data-max-width="800" data-id="0ec52f6a-18d2-42bf-b1e8-4fc0596fb697" src="/images/article/0ec52f6a-18d2-42bf-b1e8-4fc0596fb697/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть III — взаимодействие - 2">Если в JVisualVM установлен плагин (через Tools -&gt; Plugins), мы сможем увидеть, где произошёл дедлок:
+
+<pre class="lang-java line-numbers"><code>
+"Thread-1" - Thread t@12
+   java.lang.Thread.State: BLOCKED
+    at Deadlock$Friend.bowBack(Deadlock.java:16)
+    - waiting to lock &amp;lt33a78231&gt; (a Deadlock$Friend) owned by "Thread-0" t@11
+</code></pre>
+Поток 1 ждёт лока от потока 0. Почему так выходит? <code>Thread-1</code> начинает выполнение и выполняет метод <code>Friend#bow</code>. Он помечен ключевым словом <code>synchronized</code>, то есть мы забираем монитор по <code>this</code>. Мы на вход в метод получили ссылку на другого <code>Friend</code>. Теперь, поток <code>Thread-1</code> хочет выполнить метод у другого <code>Friend</code>, тем самым получив лок и у него. Но если другой поток (в данном случае <code>Thread-0</code>) успел войти в метод <code>bow</code>, то лок уже занят и <code>Thread-1</code> ждёт <code>Thread-0</code>, и наоборот. Блокировка неразрешимая, поэтому она Dead, то есть мёртвая. Как мёртвая хватка (которую не разжать), так и мёртвая блокировка, из которой не выйти.
+
+На тему дедлока можно посмотреть видео: "<a href="https://youtu.be/s032s29-NUU?t=698" target="_blank" rel="nofollow">Deadlock - Concurrency #1 - Advanced Java</a>".
+<h2>Livelock</h2>Если есть Deadlock, то есть ли Livelock? Да, есть ) Livelock заключается в том, что потоки внешне как бы живут, но при этом не могут ничего сделать, т.к. условие, по которым они пытаются продолжить свою работу, не могут выполниться. По сути Livelock похож на deadlock, но только потоки не "зависают" на системном ожидании монитора, а что-то вечно делают. Например:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+public class App {
+    public static final String ANSI_BLUE = "\u001B[34m";
+    public static final String ANSI_PURPLE = "\u001B[35m";
+    
+    public static void log(String text) {
+        String name = Thread.currentThread().getName(); //like Thread-1 or Thread-0
+        String color = ANSI_BLUE;
+        int val = Integer.valueOf(name.substring(name.lastIndexOf("-") + 1)) + 1;
+        if (val != 0) {
+            color = ANSI_PURPLE;
+        }
+        System.out.println(color + name + ": " + text + color);
+        try {
+            System.out.println(color + name + ": wait for " + val + " sec" + color);
+            Thread.currentThread().sleep(val * 1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) {
+        Lock first = new ReentrantLock();
+        Lock second = new ReentrantLock();
+
+        Runnable locker = () -&gt; {
+            boolean firstLocked = false;
+            boolean secondLocked = false;
+            try {
+                while (!firstLocked || !secondLocked) {
+                    firstLocked = first.tryLock(100, TimeUnit.MILLISECONDS);
+                    log("First Locked: " + firstLocked);
+                    secondLocked = second.tryLock(100, TimeUnit.MILLISECONDS);
+                    log("Second Locked: " + secondLocked);
+                }
+                first.unlock();
+                second.unlock();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        };
+
+        new Thread(locker).start();
+        new Thread(locker).start();
+    }
+}
+</code></pre>
+Успешность этого кода зависит от того, в каком порядке планировщик потоков Java запустит потоки.
+
+Если первым запустится <code>Thead-1</code>, то мы получим Livelock:
+
+<pre class="lang-java line-numbers"><code>
+Thread-1: First Locked: true
+Thread-1: wait for 2 sec
+Thread-0: First Locked: false
+Thread-0: wait for 1 sec
+Thread-0: Second Locked: true
+Thread-0: wait for 1 sec
+Thread-1: Second Locked: false
+Thread-1: wait for 2 sec
+Thread-0: First Locked: false
+Thread-0: wait for 1 sec
+...
+</code></pre>
+Как видно из примера, оба потока поочерёдно пытаются захватить оба лока, но им это не удаётся. При этом они не в deadlock, то есть визуально с ними всё хорошо и они выполняют свою работу.
+<img data-max-width="800" data-id="9deb012c-95e3-4578-a5a5-4dd9a8a64cf7" src="/images/article/9deb012c-95e3-4578-a5a5-4dd9a8a64cf7/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть III — взаимодействие - 3">По JVisualVM мы видим периоды sleep и период park (это когда поток пытается занять лок, он переходит в состояние park, как мы разбирали ранее, говоря про <a href="https://javarush.com/groups/posts/2048-threadom-java-ne-isportishjh--chastjh-ii---sinkhronizacija" target="_blank" rel="nofollow">синхронизацию потоков</a>).
+
+На тему лайвлока можно посмотреть пример: "<a href="https://www.logicbig.com/tutorials/core-java-tutorial/java-multi-threading/thread-livelock.html" target="_blank" rel="nofollow">Java - Thread Livelock</a>".
+<h2>Starvation</h2>Помимо блокировок (deadlock и livelock) есть ещё одна проблема при работе с многопоточностью — Starvation, или "голодание". От блокировок это явление отличается тем, что потоки не заблокированы, а им просто не хватает ресурсов на всех. Поэтому пока одни потоки на себя берут всё время выполнения, другие не могут выполниться:
+<img data-max-width="800" data-id="e82cb897-6396-449f-bef1-b8870c2e3b83" src="/images/article/e82cb897-6396-449f-bef1-b8870c2e3b83/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть III — взаимодействие - 4"><center><p><small><em>https://www.logicbig.com/</em></small></p></center>Супер пример можно посмотреть здесь: "<a href="https://www.logicbig.com/tutorials/core-java-tutorial/java-multi-threading/thread-starvation.html" target="_blank" rel="nofollow">Java - Thread Starvation and Fairness</a>".
+
+В этом примере показано, как работают потоки при Starvation и как одно маленькое изменение с Thread.sleep на Thread.wait позволяет распределить нагрузку равномерно.
+<img data-max-width="800" data-id="b48844ed-680e-4719-8730-c4e0a3875450" src="/images/article/b48844ed-680e-4719-8730-c4e0a3875450/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть III — взаимодействие - 5"><h2>Race Condition</h2>При работе с многопоточностью есть такое понятие, как "состояние гонки". Это явление заключается в том, что потоки делят между собой некоторый ресурс и код написан таким образом, что не предусматривает корректную работу в таком случае. Взглянем на пример:
+
+<pre class="lang-java line-numbers"><code>
+public class App {
+    public static int value = 0;
+
+    public static void main(String[] args) {
+        Runnable task = () -&gt; {
+            for (int i = 0; i &lt; 10000; i++) {
+                int oldValue = value;
+                int newValue = ++value;
+                if (oldValue + 1 != newValue) {
+                    throw new IllegalStateException(oldValue + " + 1 = " + newValue);
+                }
+            }
+        };
+        new Thread(task).start();
+        new Thread(task).start();
+        new Thread(task).start();
+    }
+}
+</code></pre>
+Этот код может выдать ошибку не с первого раза. И выглядеть она может вот таким вот образом:
+
+<pre class="lang-java line-numbers"><code>
+Exception in thread "Thread-1" java.lang.IllegalStateException: 7899 + 1 = 7901
+    at App.lambda$main$0(App.java:13)
+    at java.lang.Thread.run(Thread.java:745)
+</code></pre>
+Как видно, пока присваивалось <code>newValue</code> что-то пошло не так, и <code>newValue</code> стало больше. Какой-то из потоков в состоянии гонки успел изменить <code>value</code> между этими двумя командам. Как мы видим, проявилась гонка между потоками. А теперь представьте, как важно не совершать похожие ошибки с денежными операциями...
+
+Примеры и схемы можно посмотреть ещё и здесь: "<a href="https://stackoverflow.com/questions/25156724/code-to-simulate-race-condition-in-java-thread" target="_blank" rel="nofollow">Code to simulate race condition in Java thread</a>".
+<h2>Volatile</h2>Говоря про взаимодействие потоков стоит особо отметить ключевое слово <code>volatile</code>.
+
+Посмотрим на простой пример:
+
+<pre class="lang-java line-numbers"><code>
+public class App {
+    public static boolean flag = false;
+
+    public static void main(String[] args) throws InterruptedException {
+        Runnable whileFlagFalse = () -&gt; {
+            while(!flag) {
+            }
+            System.out.println("Flag is now TRUE");
+        };
+
+        new Thread(whileFlagFalse).start();
+        Thread.sleep(1000);
+        flag = true;
+    }
+}
+</code></pre>
+Самое интересное, что он с высокой долей вероятности не отработает. Новый поток не увидит изменения <code>flag</code>. Чтобы это исправить для поля <code>flag</code> нужно указать ключевое слово <code>volatile</code>. Как же так и почему?
+
+Все действия выполняет процессор. Но результаты вычислений нужно где-то хранить. Для этого есть основная память и есть аппаратный кэш у процессора. Эти кэши процессора — своего рода маленький кусочек памяти для более быстрого обращения к данным, чем обращения к основной памяти. Но у всего есть и минус: данные в кэше могут быть не актуальны (как в примере выше, когда значение флага не обновилось). Так вот, ключевое слово <code>volatile</code> указывает JVM, что мы не хотим кэшировать нашу переменную. Это позволяет увидеть актуальный результат во всех потоках.
+
+Это очень упрощённая формулировка. На тему <code>volatile</code> настоятельно рекомендуется к прочтению перевод "<a href="https://habr.com/company/golovachcourses/blog/221133/#10" target="_blank" rel="nofollow">JSR 133 (Java Memory Model) FAQ</a>".
+
+Подробнее советую также ознакомиться с материалами "<a href="http://tutorials.jenkov.com/java-concurrency/java-memory-model.html" target="_blank" rel="nofollow">Java Memory Model</a>" и "<a href="http://tutorials.jenkov.com/java-concurrency/volatile.html" target="_blank" rel="nofollow">Java Volatile Keyword</a>".
+
+Кроме того, важно помнить, что <code>volatile</code> — это про видимость, а не про атомарность измений. Если взять код из "Race Condition", то мы увидим в IntelliJ Idea подсказку:
+<img data-max-width="512" data-id="226a818d-c6d6-4414-87f8-f4aee1a63060" src="/images/article/226a818d-c6d6-4414-87f8-f4aee1a63060/512.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть III — взаимодействие - 6">Данная проверка (Inspection) была добавлена в IntelliJ Idea в рамках issue <a href="https://youtrack.jetbrains.net/issue/IDEA-61117" target="_blank" rel="nofollow">IDEA-61117</a>, который указан в <a href="https://confluence.jetbrains.com/display/IDEADEV/IDEA+X+98.382+Release+Notes" target="_blank" rel="nofollow">Release Notes</a> ещё в далёком 2010 году.
+<h2>Атомарность</h2>Атомарные операции — это операции, которые нельзя разделить.
+
+Например, операция присваивания значения переменной — атомарная.
+
+К сожалению, инкремент не является атомарной операцией, т.к. для инкремента требуется аж три операции: получить старое значение, прибавить к нему единицу, сохранить значение.
+
+Почему важна атомарность? В примере с инкрементом, если появится состояние гонки, в любой момент общий ресурс (т.е. общее значение) может внезапно измениться.
+
+Кроме того, важно, что 64-битные структуры тоже не атомарны, например <code>long</code> и <code>double</code>. Подробнее можно прочитать тут: "<a href="https://wiki.sei.cmu.edu/confluence/display/java/VNA05-J.+Ensure+atomicity+when+reading+and+writing+64-bit+values" target="_blank" rel="nofollow">Ensure atomicity when reading and writing 64-bit values</a>".
+
+Пример проблем с атомарностью можно увидеть на примере:
+
+<pre class="lang-java line-numbers"><code>
+public class App {
+    public static int value = 0;
+    public static AtomicInteger atomic = new AtomicInteger(0);
+
+    public static void main(String[] args) throws InterruptedException {
+        Runnable task = () -&gt; {
+            for (int i = 0; i &lt; 10000; i++) {
+                value++;
+                atomic.incrementAndGet();
+            }
+        };
+        for (int i = 0; i &lt; 3; i++) {
+            new Thread(task).start();
+        }
+        Thread.sleep(300);
+        System.out.println(value);
+        System.out.println(atomic.get());
+    }
+}
+</code></pre>
+Специальный класс для работы с атомарным <code>Integer</code> всегда будет выводить нам 30000, а вот <code>value</code> будет меняться от раза к разу.
+
+На эту тему есть небольшой обзор "<a href="https://www.baeldung.com/java-atomic-variables" target="_blank" rel="nofollow">An Introduction to Atomic Variables in Java</a>". В основе Atomic'ов лежит алгоритм "Compare-and-Swap". Подробнее про него можно прочитать в статье на хабре "<a href="https://habr.com/post/319036/" target="_blank" rel="nofollow">Сравнение Lock-free алгоритмов — CAS и FAA на примере JDK 7 и 8</a>" или на википедии в статье про "<a href="https://ru.wikipedia.org/wiki/Сравнение_с_обменом" target="_blank" rel="nofollow">Сравнение с обменом</a>".
+<img data-max-width="512" data-id="78607131-1e74-4e1f-8f1c-bd81164525d9" src="/images/article/78607131-1e74-4e1f-8f1c-bd81164525d9/512.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть III — взаимодействие - 8"><center><p><small><em>http://jeremymanson.blogspot.com/2008/11/what-volatile-means-in-java.html</em></small></p></center><h2>Happens Before</h2>Есть интересная и загадочная штука — Happens Before. Рассуждая о потоках, про неё стоит тоже прочитать. Отношение Happens Before показывает, в каком порядке будут видны действия между потоками. Существует немало трактовок и толкований. Одним из самых последних докладов на эту тему является вот этот доклад: <div class="row"><div class="col col-md-10 col-lg-8"><div class="embed-responsive embed-responsive-16by9" style="white-space: normal"><iframe width="560" height="315" src="https://www.youtube.com/embed/C6b_dFtujKo" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen=""></iframe></div></div></div>Наверно, лучше, чем это видео ничего не расскажет про это. Поэтому, я просто оставлю ссылку на видео.
+
+Прочитать можно "<a href="https://www.logicbig.com/tutorials/core-java-tutorial/java-multi-threading/happens-before.html" target="_blank" rel="nofollow">Java - Understanding Happens-before relationship</a>".
+<h2>Итоги</h2>В данном обзоре мы посмотрели на особенности взаимодействия потоков. Обсудили проблемы, которые могут возникнуть и способы их обнаружения и устранения.
+
+Список дополнительных материалов по теме:
+<ul>
+<li><a href="https://habr.com/post/248041/" target="_blank" rel="nofollow">Ещё раз про double-checked locking</a><!--*li-->
+</li><li><a href="https://habr.com/company/golovachcourses/blog/221133/" target="_blank" rel="nofollow">JSR 133 (Java Memory Model) FAQ (перевод)</a></li>
+<li><a href="https://www.youtube.com/watch?v=s032s29-NUU&amp;list=PL6jg6AGdCNaXo06LjCBmRao-qJdf38oKp" target="_blank" rel="nofollow">Advanced Java - Concurrency (Юрий Ткач)</a></li>
+<li><a href="https://www.youtube.com/watch?v=ADxUsCkWdbE&amp;t=470s" target="_blank" rel="nofollow">Concurrency Concepts in Java by Douglas Hawkins (2017)</a></li></ul>#Viacheslav
+<table>
+<tbody><tr>
+<th>Что еще почитать:
+</th>
+</tr>
+<tr>
+<td><a href="https://javarush.com/groups/posts/2047-threadom-java-ne-isportishjh--chastjh-i---potoki" target="_blank">Thread'ом Java не испортишь: Часть I — потоки</a><br>
+<a href="https://javarush.com/groups/posts/2048-threadom-java-ne-isportishjh--chastjh-ii---sinkhronizacija" target="_blank">Thread'ом Java не испортишь: Часть II — синхронизация</a><br>
+<a href="https://javarush.com/groups/posts/2065-threadom-java-ne-isportishjh--chastjh-iv---callable-future-i-druzjhja" target="_blank">Thread'ом Java не испортишь: Часть IV - Callable, Future и друзья</a><br>
+<a href="https://javarush.com/groups/posts/2078-threadom-java-ne-isportishjh--chastjh-v---executor-threadpool-fork-join-pool" target="_blank">Thread'ом Java не испортишь: Часть V - Executor, ThreadPool, Fork Join</a><br>
+<a href="https://javarush.com/groups/posts/2111-threadom-java-ne-isportishjh--chastjh-vi---k-barjheru" target="_blank">Thread'ом Java не испортишь: Часть VI - К барьеру!</a>
+</td>
+</tr>
+</tbody></table>

@@ -1,0 +1,145 @@
+Паттерн Command своими словами
+<p>----------------------------------------</p>
+Разобрался-таки основательно(как мне кажется) с паттером Command и хочу попытаться рассказать о нем "своими словами". Исходя из Википедии, можем узнать, что цель его — это создание структуры, в которой класс-отправитель и класс-получатель не зависят друг от друга напрямую ...
+<p>----------------------------------------</p>
+<h2>Привет всем, Форумчане!</h2>Разобрался-таки основательно(как мне кажется) с паттером <code>Command</code> и хочу попытаться рассказать о нем "своими словами". 
+<img data-id="8db18801-0304-409e-9123-4d00fe6f0fa4" data-max-width="850" alt="Паттерн Command своими словами - 1" src="https://cdn.javarush.com/images/article/8db18801-0304-409e-9123-4d00fe6f0fa4/1024.jpeg">Исходя из Википедии, можем узнать, что цель его — это <em>создание структуры, в которой класс-отправитель и класс-получатель не зависят друг от друга напрямую. Организация обратного вызова к классу, который включает в себя класс-отправитель</em>.
+
+В принципе написано чётко и правильно, но это в теории. А как же сделать это? Вот этим начинаются проблемы, т.к. описание уже не так ясно и очевидно. Поэтому я как разобрался, решил рассказать вам как я это понял, может кому-то и пригодится:
+
+Исходя из описания цели этого паттерна, буду комбинировать описание сразу с кодом, чтоб было нагляднее, т.к. в той же википедии обобщили для многих языков и поэтому описание отделено от примера.
+
+В этом паттерне есть четыре термина, пока примем их как данность: команды(<code>command</code>), приемник команд(<code>receiver</code>), вызывающий команды(<code>invoker</code>) и клиент(<code>client</code>).
+
+Пример буду брать с той же Википедии, он вполне сносный.
+
+<strong>Задача</strong>
+есть класс <code>Light</code>, который умеет две вещи: включить свет и выключить. Он в терминах паттерна будет "приемник команд (<code>receiver</code>)"
+
+<pre class='lang-java line-numbers'><code>
+/*Receiver class*/
+
+public class Light{
+     public Light(){  }
+   
+     public void turnOn(){
+        System.out.println("The light is on");
+     }
+
+     public void turnOff(){
+        System.out.println("The light is off");
+     }
+}
+</code></pre>
+Создадим интерфейс с одним методом <code>execute()</code>, который будет выполнять и который называется в терминах паттерна "команда (<code>command</code>)"
+
+<pre class='lang-java line-numbers'><code>
+/*the Command interface*/
+
+public interface Command{
+    void execute();
+}
+</code></pre>
+Необходимо инкапсулировать выполнение умений класса <code>Light</code>. Для этого мы создадим классы <code>TurnOnLightCommand</code> и <code>TurnOffLightCommand</code>, которые реализуют интерфейс <code>Command</code> и которые будут принимать в конструкторе объект класса <code>Light</code>. И каждый из них будет выполнять только одно действие. Один будет вызывать метод <code>turnOn()</code>, а другой <code>turnOff()</code>.
+
+<pre class='lang-java line-numbers'><code>
+/*the Command for turning on the light*/
+
+public class TurnOnLightCommand implements Command{
+   private Light theLight;
+
+   public TurnOnLightCommand(Light light){
+        this.theLight=light;
+       }
+
+   public void execute(){
+      theLight.turnOn();
+   }
+}
+
+/*the Command for turning off the light*/
+
+public class TurnOffLightCommand implements Command{
+   private Light theLight;
+
+   public TurnOffLightCommand(Light light){
+        this.theLight=light;
+       }
+
+   public void execute(){
+      theLight.turnOff();
+   }
+}
+</code></pre>
+Теперь пришло время создать объект, который бы принимал эти инкапсулированные методы объекта <code>Light</code>. Он в терминах паттерна называется вызывающий команды (invoker). Назовем его <code>Switch</code> и пусть он будет принимать в конструкторе переменные <code>Command</code>, которые будут использоваться в созданных методах <code>flipUp()</code> и <code>flipDown()</code>. 
+
+<pre class='lang-java line-numbers'><code>
+/*the Invoker class*/
+
+public class Switch {
+    private Command flipUpCommand;
+    private Command flipDownCommand;
+
+    public Switch(Command flipUpCommand,Command flipDownCommand){
+         this.flipUpCommand=flipUpCommand;
+         this.flipDownCommand=flipDownCommand;
+    }
+
+    public void flipUp(){
+         flipUpCommand.execute();
+    }
+    
+    public void flipDown(){
+         flipDownCommand.execute();
+    }
+}
+</code></pre>
+Ну и конечно создадим класс который будет использовать их, чтобы понять что происходит вообще. Он будет именть метод main, в котором и будет происходить всё действие:
+
+<pre class='lang-java line-numbers'><code>
+/*The test class*/
+public class TestCommand{
+   public static void main(String[] args){
+       // создаем объект, который будет использоваться
+       Light l=new Light();
+       // создаем объекты для всех умений объекта Light:
+       Command switchUp=new TurnOnLightCommand(l);
+       Command switchDown=new TurnOffLightCommand(l);
+        
+       // Создаемтся invoker, с которым мы будем непосредственно контактировать:
+       Switch s=new Switch(switchUp,switchDown);
+       
+       // вот проверка этого, используем методы:
+       s.flipUp();
+       s.flipDown();
+   }
+}
+</code></pre>
+На выводе будет следующее:
+
+<pre class='lang-java line-numbers'><code>
+"The light is on"
+"The light is off"
+</code></pre><h2>Где это применяется?</h2>По цели ясно, что и для чего это нужно, а именно: в ситуации, когда нужно отделить конкретное исполнение, это очень удобно. Чтоб использование каких-то функций не зависело от конкретной реализации и ее можно было изменять без ущерба для системы.
+
+как-то так...) 
+Пишите свои комментарии, давайте обсуждать, может что-то можно сделать проще и рассказать лучше, будем всё править, если необходимо) Чтоб для тех, кто будет читать первый раз, было как можно понятнее.
+
+Ну и кому понравится статья — ставьет "+" на ней :) Для меня это важно)
+
+Со временем хочу написать еще про <code>Builder</code>, <code>Singleton</code> и прочие.
+
+<strong>См. также мои другие статьи:</strong>
+<ul>
+<li><p><a href='https://javarush.com/groups/posts/1707-testovoe-zadanie-napisatjh-interpretator-na-jazihk-brainfuck' target='_blank'>Тестовое задание: "Написать Интерпретатор на язык BrainFuck"</a></p></li>
+<li><p><a href='https://javarush.com/groups/posts/1700-testovoe-zadanie-image-comparison' target='_blank'>Тестовое задание "Image Comparison"</a></li>
+<li><p><a href='https://javarush.com/groups/posts/1696-java---bihstree-siljhnee-i-vihshe-zarplatih-ukrainskikh-programmistov' target='_blank'>Java — быстрее, сильнее и выше! Зарплаты украинских программистов</a></li>
+<li><p><a href='https://javarush.com/groups/posts/1675-istorija-uspekha-spustja-15-goda-ot-nachala-obuchenija' target='_blank'>История успеха спустя 1.5 года от начала обучения</a></p></li>
+<li><p><a href='https://javarush.com/groups/posts/1692-tekhnicheskie-voprosih-na-sobesedovanii' target='_blank'>Технические вопросы на собеседовании</a></p>
+<li><p><a href='https://javarush.com/groups/posts/1693-kak-nayti-rabotu-rassihlka-rezjume' target='_blank'>Как найти работу? Рассылка резюме</a></li>
+<li><p><a href='https://javarush.com/groups/posts/1694-professionaljhnoe-vihgoranie-kak-ustojatjh' target='_blank'>Профессиональное выгорание. Как устоять?</a></p></li>
+<li><p><a href='https://javarush.com/groups/posts/1689-angliyskiy-dlja-it-i-dlja--sobesedovanija' target='_blank'>Английский для IT и для собеседования</a></p></li>
+<li><p><a href='https://javarush.com/groups/posts/1352-kak-sozdatjh-ispolnjaemihy-jar-v-intellij-idea--how-to-create-jar-in-idea' target='_blank'>Как создать исполняемый jar в Intellij IDEA / how to create jar in IDEA</a></p></li>
+<li><p><a href='https://javarush.com/groups/posts/1685-pattern-singleton-svoimi-slovami' target='_blank'>Паттерн Singleton своими словами</a></p></li>
+<li><p><a href='https://javarush.com/groups/posts/1356-pomogite-nuzhna-motivacija' target='_blank'>Помогите, нужна мотивация!</a></p></li>
+</ul>

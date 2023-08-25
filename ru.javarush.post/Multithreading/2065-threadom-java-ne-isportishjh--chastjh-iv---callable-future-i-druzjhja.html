@@ -1,0 +1,234 @@
+Thread'ом Java не испортишь: Часть IV — Callable, Future и друзья
+<p>----------------------------------------</p>
+Данная часть должна раскрыть детали того, как работать с вычислениями в потоках и какие средства для этого появились в Java 1.8. Зачем нужен интерфейс Future и его реализация CompletableFuture.
+<p>----------------------------------------</p>
+<h2>Вступление</h2>Мы уже рассматривали в <a href="https://javarush.com/groups/posts/2047-threadom-java-ne-isportishjh--chastjh-i---potoki" target="_blank" rel="nofollow">первой части</a>, как создаются потоки. Ещё раз вспомним.
+<img data-max-width="800" data-id="2e89a4c6-8d22-4ca5-95d2-9151e6ca180b" src="/images/article/2e89a4c6-8d22-4ca5-95d2-9151e6ca180b/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть IV — Callable, Future и друзья - 1">Поток — это <code>Thread</code>, в нём что-то запускается <code>run</code>, поэтому воспользуемся <a href="https://www.tutorialspoint.com/compile_java_online.php" target="_blank" rel="nofollow">tutorialspoint java online compiler</a>'ом и выполним следующий код:
+
+<pre class="lang-java line-numbers"><code>
+public class HelloWorld {
+    
+    public static void main(String []args){
+        Runnable task = () -&gt; {
+            System.out.println("Hello World");
+        };
+        new Thread(task).start();
+    }
+}
+</code></pre>
+Единтсвенный ли это вариант запуска задачи в потоке? 
+<h2>java.util.concurrent.Callable</h2>Оказывается, у <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Runnable.html" target="_blank" rel="nofollow">java.lang.Runnable</a> есть брат и зовут его <a href="https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/Callable.html" target="_blank" rel="nofollow">java.util.concurrent.Callable</a> и появился он на свет в Java 1.5. В чём же различия? Если приглядеться к JavaDoc этого интерфейса, мы видим, что в отличие от <code>Runnable</code>, новый интерфейс объявляет метод <code>call</code>, который возвращает результат. Кроме того, по умолчанию он throws Exception. То есть избавляет нас от необходимости на проверяемые исключения писать <code>try-catch</code> блоки. Уже неплохо, правда?
+
+Теперь у нас есть вместо <code>Runnable</code> новый task:
+
+<pre class="lang-java line-numbers"><code>
+Callable task = () -&gt; {
+	return "Hello, World!";
+};
+</code></pre>
+Но что с ним делать? Зачем нам вообще задача, выполняемая в потоке, которая возвращает результат? Очевидно, что в дальнейшем мы рассчитываем получить результат действий, которыев в будущем будут выполнены. Будущее по-английский — Future. И интерфейс есть с точно таким же именем: <code>java.util.concurrent.Future</code>
+<h2>java.util.concurrent.Future</h2>Интерфейс <a href="https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/Future.html" target="_blank" rel="nofollow">java.util.concurrent.Future</a> описывает API для работы с задачами, результат которых мы планируем получить в будущем: методы получения результата, методы проверки статуса.
+
+Для <code>Future</code> нас интересует его реализация <a href="https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/FutureTask.html" target="_blank" rel="nofollow">java.util.concurrent.FutureTask</a>. То есть это <code>Task</code>, который будет выполнен во <code>Future</code>. Чем эта реализация ещё интересна, так это тем, что она реализует и <code>Runnable</code>. Можно считать это своего рода адаптером старой модели работы с задачами в потоках и новой модели (новой в том смысле, что она появилась в java 1.5).
+
+Вот пример:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.concurrent.Callable;
+import java.util.concurrent.FutureTask;
+
+public class HelloWorld {
+    
+    public static void main(String []args) throws Exception {
+        Callable task = () -&gt; {
+            return "Hello, World!";
+        };
+        FutureTask&lt;String&gt; future = new FutureTask&lt;&gt;(task);
+        new Thread(future).start();
+        System.out.println(future.get());
+    }
+}
+</code></pre>
+Как видно из примера, мы получаем при помощи метода <code>get</code> результат из задачи <code>task</code>.
+ 
+<mark>(!)Важно</mark>, что в момент получения результата при помощи метода <code>get</code> выполнение становится синхронным. Как вы думаете, какой механизм тут будет использован? Правильно, нет блока синхронизации — поэтому <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.State.html#WAITING" target="_blank" rel="nofollow">WAITING</a> в JVisualVM мы увидим не как <code>monitor</code> или <code>wait</code>, а как тот самый <code>park</code> (т.к. используется механизм <code>LockSupport</code>).
+<h2>Функциональные интерфейсы</h2>Дальше пойдёт речь про классы из Java 1.8, поэтому не лишним будет сделать краткое введение. Посмотрим на следующий код:
+
+<pre class="lang-java line-numbers"><code>
+Supplier&lt;String&gt; supplier = new Supplier&lt;String&gt;() {
+	@Override
+	public String get() {
+		return "String";
+	}
+};
+Consumer&lt;String&gt; consumer = new Consumer&lt;String&gt;() {
+	@Override
+	public void accept(String s) {
+		System.out.println(s);
+	}
+};
+Function&lt;String, Integer&gt; converter = new Function&lt;String, Integer&gt;() {
+	@Override
+	public Integer apply(String s) {
+		return Integer.valueOf(s);
+	}
+};
+</code></pre>
+Как же много лишнего кода, не правда ли? Каждый из объявляемых классов выполняет какую-то одну функцию, но для её описания мы используем кучу лишнего вспомогательного кода. И разработчики Java так же подумали. Поэтому, они ввели набор "функциональных интерфейсов" (<code>@FunctionalInterface</code>) и решили, что теперь Java сама будет "додумывать" за нас всё, кроме важного:
+
+<pre class="lang-java line-numbers"><code>
+Supplier&lt;String&gt; supplier = () -&gt; "String";
+Consumer&lt;String&gt; consumer = s -&gt; System.out.println(s);
+Function&lt;String, Integer&gt; converter = s -&gt; Integer.valueOf(s);
+</code></pre>
+<code>Supplier</code> — поставщик. Он не имеет параметров, но возвращает что-то, то есть поставляет это.
+
+<code>Consumer</code> — потребитель. Он принимает на вход что-то (параметр s) и с этим что-то что-то делает, то есть потребляет что-то.
+
+Есть ещё функция. Она принимает на вход что-то (параметр <code>s</code>), что-то делает и возвращает что-то. Как мы видим, активно используются дженерики. В случае неуверенности можно вспомнить про них и прочитать "<a href="https://javarush.com/groups/posts/2004-teorija-dzhenerikov-v-java-ili-gde-na-praktike-stavitjh-skobki" target="_blank" rel="nofollow">Теория дженериков в Java или как на практике ставить скобки</a>".
+<h2>CompletableFuture</h2>Шло время, и в Java 1.8 появился новый класс, который зовётся <code>CompletableFuture</code>. Он реализует интерфейс <code>Future</code>, то есть наши <code>task</code> будут выполнены в будущем, и мы сможем выполнить <code>get</code> и получить результат. Но ещё он реализует некоторый <code>CompletionStage</code>. Из перевода уже понятно его назначение: это некий этап (Stage) каких-то вычислений. С кратким введением в тему можно ознакомиться в обзоре "<a href="http://millross-consultants.com/completion-stage-future-introduction.html" target="_blank" rel="nofollow">Introduction to CompletionStage and CompletableFuture</a>".
+
+Давайте перейдём сразу к делу. Посмотрим на список доступных статических методов, которые нам помогут начать:
+<img data-max-width="800" data-id="231e6b36-edb8-42b1-b8bb-04ed8b95c034" src="/images/article/231e6b36-edb8-42b1-b8bb-04ed8b95c034/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть IV — Callable, Future и друзья - 2">Вот варианты их использования:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.concurrent.CompletableFuture;
+public class App {
+    public static void main(String []args) throws Exception {
+        // CompletableFuture уже содержащий результат
+        CompletableFuture&lt;String&gt; completed;
+        completed = CompletableFuture.completedFuture("Просто значение");
+        // CompletableFuture, запускающий (run) новый поток с Runnable, поэтому он Void
+        CompletableFuture&lt;Void&gt; voidCompletableFuture;
+        voidCompletableFuture = CompletableFuture.runAsync(() -&gt; {
+            System.out.println("run " + Thread.currentThread().getName());
+        });
+        // CompletableFuture, запускающий новый поток, результат которого возьмём у Supplier 
+        CompletableFuture&lt;String&gt; supplier;
+        supplier = CompletableFuture.supplyAsync(() -&gt; {
+            System.out.println("supply " + Thread.currentThread().getName());
+            return "Значение";
+        });
+    }
+}
+</code></pre>
+Если мы выполним этот код, то увидим, что создание <code>CompletableFuture</code> подразумевает запуск и всей цепочки. Поэтому при некоторой схожести со SteamAPI из Java8 в этом отличие этих подходов. Например:
+
+<pre class="lang-java line-numbers"><code>
+List&lt;String&gt; array = Arrays.asList("one", "two");
+Stream&lt;String&gt; stringStream = array.stream().map(value -&gt; {
+	System.out.println("Executed");
+	return value.toUpperCase();
+});
+</code></pre>
+Это пример Java 8 Stream Api (подробнее можно с ним ознакомиться здесь "<a href="https://annimon.com/article/2778" target="_blank" rel="nofollow">Руководство по Java 8 Stream API в картинках и примерах</a>"). Если запустить этот код, то <code>Executed</code> не отобразится. То есть при создании стрима в Java стрим не запускается сразу, а ждёт, когда из него захотят значение. А вот <code>CompletableFuture</code> запускает цепочку на выполнение сразу, не дожидаясь того, что у него попросят посчитанное значение. Считаю важным это понимать.
+
+Итак, у нас есть CompletableFuture. Как же мы можем составить цепочку и какие у нас есть средства?
+
+Вспомним про функциональные интерфейсы, о которых мы писали ранее.
+<ul>
+<li>У нас есть функция (<code>Function</code>), которая принимает А и возвращает Б. Имеет единственный метод — <code>apply</code> (применить).</li>
+<li>У нас есть потребитель (<code>Consumer</code>), которая принимает А и ничего не возвращает (Void). Имеет единственный метод — <code>accept</code> (принять).</li>
+<li>У нас есть запускаемый в потоке код <code>Runnable</code>, который не принимает и не возвращает. Имеет единственный метод — <code>run</code> (запустить).</li>
+</ul>Второе, что надо помнить, что <code>CompletalbeFuture</code> в своей работе использует <code>Runnable</code>, потребителей и функции. Учитывая это, вы всегда сможете вспомнить, что с <code>CompletableFuture</code> можно делать так:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args) throws Exception {
+        AtomicLong longValue = new AtomicLong(0);
+        Runnable task = () -&gt; longValue.set(new Date().getTime());
+        Function&lt;Long, Date&gt; dateConverter = (longvalue) -&gt; new Date(longvalue);
+        Consumer&lt;Date&gt; printer = date -&gt; {
+            System.out.println(date);
+            System.out.flush();
+        };
+        // CompletableFuture computation
+        CompletableFuture.runAsync(task)
+                         .thenApply((v) -&gt; longValue.get())
+                         .thenApply(dateConverter)
+                         .thenAccept(printer);
+}
+</code></pre>
+У методов <code>thenRun</code>, <code>thenApply</code> и <code>thenAccept</code> есть версии <code>Async</code>. Это значит, что эти стадии будут выполнены в новом потоке. Он будет взят из особого пула, поэтому заранее неизвестно, какой поток будет, новый или прежний. Всё зависит от того, на сколько тяжёлые задачи.
+
+Помимо этих методов есть ещё три интересные возможности.
+
+Для наглядности представим, что у нас есть некий сервис, который получает какое-то сообщение откуда-то и на это требуется время:
+
+<pre class="lang-java line-numbers"><code>
+public static class NewsService {
+	public static String getMessage() {
+		try {
+			Thread.currentThread().sleep(3000);
+			return "Message";
+		} catch (InterruptedException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+}
+</code></pre>
+Теперь, давайте посмотрим на другие возможности, которые предоставляет <code>CompletableFuture</code>. Мы можем объединять результат <code>CompletableFuture</code> с результатом другого <code>CompletableFuture</code>:
+
+<pre class="lang-java line-numbers"><code>
+Supplier newsSupplier = () -&gt; NewsService.getMessage();
+        
+CompletableFuture&lt;String&gt; reader = CompletableFuture.supplyAsync(newsSupplier);
+CompletableFuture.completedFuture("!!")
+				 .thenCombine(reader, (a, b) -&gt; b + a)
+				 .thenAccept(result -&gt; System.out.println(result))
+				 .get();
+</code></pre>
+Тут стоить обратить внимание, что по умолчанию потоки будут демон-потоками, поэтому для наглядности мы используем <code>get</code>, чтобы дождаться результат.
+
+А ещё мы можем не только объединить (combine), но и возвращать <code>CompletableFuture</code>:
+
+<pre class="lang-java line-numbers"><code>
+CompletableFuture.completedFuture(2L)
+				.thenCompose((val) -&gt; CompletableFuture.completedFuture(val + 2))
+                               .thenAccept(result -&gt; System.out.println(result));
+</code></pre>
+Тут хочется отметить, что для краткости использован метод <code>CompletableFuture.completedFuture</code>. Данный метод не создаёт новый поток, поэтому остальная цепочка будет выполнена в том же потоке, в котором был вызван <code>completedFuture</code>.
+
+Также есть метод <code>thenAcceptBoth</code>. Он очень похож на <code>accept</code>, но если <code>thenAccept</code> принимает <code>consumer</code>, то <code>thenAcceptBoth</code> принимает на вход ещё один <code>CompletableStage</code> + <code>BiConsumer</code>, то есть <code>consumer</code>, который на вход принимает 2 источника, а не один.
+
+Есть ещё интересная возможность со словом <code>Either</code>:
+<img data-max-width="800" data-id="36a07217-c968-48f8-8ef6-d82b0c09bf4e" src="/images/article/36a07217-c968-48f8-8ef6-d82b0c09bf4e/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть IV — Callable, Future и друзья - 3">Данные методы принимают альтернативный <code>CompletableStage</code> и будут выполнены на том <code>CompletableStage</code>, который первее выполнится.
+
+И закончить этот обзор хочется ещё одной интересной возможностью <code>CompletableFuture</code> — обработкой ошибок.
+
+<pre class="lang-java line-numbers"><code>
+CompletableFuture.completedFuture(2L)
+				 .thenApply((a) -&gt; {
+					throw new IllegalStateException("error");
+				 }).thenApply((a) -&gt; 3L)
+				 //.exceptionally(ex -&gt; 0L)
+				 .thenAccept(val -&gt; System.out.println(val));
+</code></pre>
+Данный код ничего не сделает, т.к. упадёт исключение и ничего не будет. Но если мы раскомментируем <code>exceptionally</code>, то мы определим поведение.
+
+На тему <code>CompletableFuture</code> советую так же посмотреть следующее видео:
+<ul>
+<li><a href="https://www.youtube.com/watch?v=hqR41XVx3kM" target="_blank" rel="nofollow">CompletableFuture. Хочется взять и применить (2015)</a></li>
+<li><a href="https://www.youtube.com/watch?v=-MBPQ7NIL_Y" target="_blank" rel="nofollow">CompletableFuture in Java 8, asynchronous processing done right</a></li></ul>По моему скромному мнению, данные видео — одни из самых наглядных на просторах интернета. Из них должно быть понятно, как это всё работает, какой у нас есть арсенал и зачем это всё нужно.
+<h2>Заключение</h2>Надеюсь, теперь стало понятно, как можно использовать потоки для получения вычислений после того, как они будут высчитаны.
+
+Дополнительный материал:
+<ul>
+<li><a href="https://kurspc.com.ua/node/424" target="_blank" rel="nofollow">Пишем асинхронный код с CompletableFuture</a></li>
+<li><a href="http://millross-consultants.com/completion-stage-future-introduction.html" target="_blank" rel="nofollow">Introduction to CompletionStage and CompletableFuture</a></li>
+<li><a href="https://vertex-academy.com/tutorials/ru/java-8-completablefuture-part-2/" target="_blank" rel="nofollow">Java 8 CompletableFuture. Часть 2</a></li>
+<li><a href="https://www.baeldung.com/java-completablefuture" target="_blank" rel="nofollow">Guide To CompletableFuture</a></li>
+</ul>#Viacheslav
+<table>
+<tbody><tr>
+<th>Что еще почитать:
+</th>
+</tr>
+<tr>
+<td><a href="https://javarush.com/groups/posts/2047-threadom-java-ne-isportishjh--chastjh-i---potoki" target="_blank">Thread'ом Java не испортишь: Часть I — потоки</a><br>
+<a href="https://javarush.com/groups/posts/2048-threadom-java-ne-isportishjh--chastjh-ii---sinkhronizacija" target="_blank">Thread'ом Java не испортишь: Часть II — синхронизация</a><br>
+<a href="https://javarush.com/groups/posts/2060-threadom-java-ne-isportishjh--chastjh-iii---vzaimodeystvie" target="_blank">Thread'ом Java не испортишь : Часть III - взаимодействие</a><br>
+<a href="https://javarush.com/groups/posts/2078-threadom-java-ne-isportishjh--chastjh-v---executor-threadpool-fork-join-pool" target="_blank">Thread'ом Java не испортишь: Часть V - Executor, ThreadPool, Fork Join</a><br>
+<a href="https://javarush.com/groups/posts/2111-threadom-java-ne-isportishjh--chastjh-vi---k-barjheru" target="_blank">Thread'ом Java не испортишь: Часть VI - К барьеру!</a>
+</td>
+</tr>
+</tbody></table>

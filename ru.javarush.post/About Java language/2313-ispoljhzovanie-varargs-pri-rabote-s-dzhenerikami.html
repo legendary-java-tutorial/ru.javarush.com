@@ -1,0 +1,272 @@
+Использование varargs при работе с дженериками
+<p>----------------------------------------</p>
+Привет! На сегодняшнем занятии мы продолжим изучать дженерики. Так уж вышло, что это большая тема, но деваться некуда — это крайне важная часть языка :) Когда будешь изучать документацию Oracle по дженерикам или читать гайды в интернете, тебе встретятся термины...
+<p>----------------------------------------</p>
+Привет! На сегодняшнем занятии мы продолжим изучать дженерики. Так уж вышло, что это большая тема, но деваться некуда — это крайне важная часть языка :)
+
+Когда будешь изучать документацию Oracle по дженерикам или читать гайды в интернете, тебе встретятся термины <span class="text-bold">Non-Reifiable Types</span> и <span class="text-bold">Reifiable Types</span>. 
+
+Что это за слово такое — “Reifiable”? Даже если с английским все неплохо, его ты вряд ли встречал. Попробуем перевести!
+<img data-max-width="850" alt="Использование varargs при работе с дженериками - 2" src="https://cdn.javarush.com/images/article/49e946db-0e92-4811-bbc6-635fd70f5ff3/original.jpeg"><em></em><center><em>*спасибо, Гугл, ты очень помог -_-*</em></center>
+<span class="text-bold">Reifiable-type</span> — это тип, информация о котором полностью доступна во время выполнения.
+
+В языке Java к ним относятся примитивы, raw-types, а также типы, не являющиеся дженериками.
+
+Напротив, <span class="text-bold">Non-Reifiable Types</span> — это типы, информация о которых стирается и становится недоступной во время выполнения. Это как раз дженерики — <span class="code">List&lt;String&gt;</span>, <span class="code">List&lt;Integer&gt;</span> и т.д.<h2>Кстати, ты помнишь, что такое <span class="code">varargs</span>?</h2>Если вдруг ты забыл, это аргументы переменной длины.
+
+Они пригодятся в ситуациях, когда мы не знаем, сколько точно аргументов может быть передано в наш метод.
+
+К примеру, если у нас есть класс-калькулятор и в нем есть метод <code>sum</code>.
+
+В метод <code>sum()</code> можно передать 2 числа, 3, 5 или вообще сколько угодно. Было бы очень странно каждый раз перегружать метод <code>sum()</code>, чтобы учесть все возможные варианты.
+
+Вместо этого мы можем сделать так:
+
+<pre class="lang-java line-numbers"><code>
+public class SimpleCalculator {
+
+   public static int sum(int...numbers) {
+
+       int result = 0;
+
+       for(int i : numbers) {
+
+           result += i;
+       }
+
+       return result;
+   }
+
+   public static void main(String[] args) {
+
+       System.out.println(sum(1,2,3,4,5));
+       System.out.println(sum(2,9));
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+15
+11
+</code></pre>
+Так вот, у использования <code>varargs</code> в сочетании с дженериками есть некоторые важные особенности.
+
+Давай рассмотрим этот код:
+
+<pre class="lang-java line-numbers"><code>
+import javafx.util.Pair;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Main {
+
+   public static &lt;E&gt; void addAll(List&lt;E&gt; list, E... array) {
+
+       for (E element : array) {
+           list.add(element);
+       }
+   }
+
+   public static void main(String[] args) {
+       addAll(new ArrayList&lt;String&gt;(),  //  здесь все нормально
+               "Leonardo da Vinci",
+               "Vasco de Gama"
+       );
+
+       // а здесь мы получаем предупреждение
+       addAll(new ArrayList&lt;Pair&lt;String, String&gt;&gt;(),
+               new Pair&lt;String, String&gt;("Leonardo", "da Vinci"),
+               new Pair&lt;String, String&gt;("Vasco", "de Gama")
+       );
+   }
+}
+</code></pre>
+Метод <code>addAll()</code> принимает на вход список <code>List&lt;E&gt;</code> и любое количество объектов <code>E</code>, после чего добавляет все эти объекты в список.
+
+В методе <code>main()</code> мы дважды вызываем наш метод <code>addAll()</code>.
+
+В первый раз мы добавляем в <code>List</code> две обычные строки. Здесь все в порядке.
+
+Во второй раз мы добавляем в <code>List</code> два объекта <code>Pair&lt;String, String&gt;</code>.
+
+И вот здесь мы неожиданно получаем предупреждение:
+
+<pre><code>
+Unchecked generics array creation for varargs parameter
+</code></pre>
+Что это значит? Почему мы получаем предупреждение и причем здесь вообще <code>array</code>? <code>Array</code> — это массив, а в нашем коде нет никаких массивов!
+
+Начнем со второго. В предупреждении упоминается массив, потому что компилятор преобразует аргументы переменной длины (varargs) в массив.
+
+Иными словами, сигнатура нашего метода <code>addAll()</code>:
+
+<pre class="lang-java line-numbers"><code>
+public static &lt;E&gt; void addAll(List&lt;E&gt; list, E... array)
+</code></pre>
+На самом деле выглядит так:
+
+<pre class="lang-java line-numbers"><code>
+public static &lt;E&gt; void addAll(List&lt;E&gt; list, E[] array)
+</code></pre>
+То есть в методе <code>main()</code> компилятор преобразует наш код в это:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) { 
+   addAll(new ArrayList&lt;String&gt;(), 
+      new String[] { 
+        "Leonardo da Vinci", 
+        "Vasco de Gama" 
+      } 
+   ); 
+   addAll(new ArrayList&lt;Pair&lt;String,String&gt;&gt;(),
+        new Pair&lt;String,String&gt;[] { 
+            new Pair&lt;String,String&gt;("Leonardo","da Vinci"), 
+            new Pair&lt;String,String&gt;("Vasco","de Gama") 
+        } 
+   ); 
+}
+</code></pre>
+С массивом <code>String</code> все нормально.
+
+А вот с массивом <code>Pair&lt;String, String&gt;</code> — нет.
+
+Дело в том, что <code>Pair&lt;String, String&gt;</code> — это Non-Reifiable Type. При компиляции вся информация о типах-параметрах (&lt;String, String&gt;) будет стерта.
+
+<span class="text-red">Создание массивов из Non-Reifiable Type в Java запрещено</span>. 
+
+Ты можешь в этом убедиться, если попробуешь вручную создать массив Pair&lt;String, String&gt;
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   //  ошибка компиляции! Generic array creation
+  Pair&lt;String, String&gt;[] array = new Pair&lt;String, String&gt;[10];
+}
+</code></pre>
+Причина очевидна — типобезопасность. Как ты помнишь, при создании массива тебе обязательно нужно указать, какие объекты (или примитивы) будет хранить этот массив.
+
+<pre class="lang-java line-numbers"><code>
+int array[] = new int[10];
+</code></pre>
+На одном из прошлых занятий мы подробно разобрали механизм стирания типов.
+
+Так вот, в данном случае мы в результате стирания типов потеряли информацию о том, что в наших объектах <code>Pair</code> хранились пары <code>&lt;String, String&gt;</code>. Создание массива будет небезопасным.
+При использовании методов с <code>varargs</code> и дженериками обязательно помни о стирании типов и о том, как именно оно работает.
+
+Если ты совершенно точно уверен в написанном коде, и знаешь что он не вызовет никаких проблем, ты можешь отключить связанные с <code>varargs</code> предупреждения при помощи аннотации <code>@SafeVarargs</code>
+
+<pre class="lang-java line-numbers"><code>
+@SafeVarargs
+public static &lt;E&gt; void addAll(List&lt;E&gt; list, E... array) {
+
+   for (E element : array) {
+       list.add(element);
+   }
+}
+</code></pre>
+Если ты добавишь к своему методу эту аннотацию, предупреждение, с которым мы столкнулись ранее, появляться не будет.
+
+Еще одна возможная проблема при совместном использовании <code>varargs</code> и дженериков, — загрязнение кучи (heap pollution).
+<img data-max-width="800" data-id="0f3c7f39-d832-47f2-8074-297b71a1d727" src="/images/article/0f3c7f39-d832-47f2-8074-297b71a1d727/800.jpeg" class="img-fluid" alt="Использование varargs при работе с дженериками - 4">Загрязнение может возникнуть вот в такой ситуации:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.ArrayList;
+import java.util.List;
+
+public class Main {
+
+   static List&lt;String&gt; makeHeapPollution() {
+       List numbers = new ArrayList&lt;Number&gt;();
+       numbers.add(1);
+       List&lt;String&gt; strings = numbers;
+       strings.add("");
+       return strings;
+   }
+
+   public static void main(String[] args) {
+
+       List&lt;String&gt; stringsWithHeapPollution = makeHeapPollution();
+
+       System.out.println(stringsWithHeapPollution.get(0));
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+Exception in thread "main" java.lang.ClassCastException: java.lang.Integer cannot be cast to java.lang.String
+</code></pre>
+Говоря простым языком, загрязнение кучи — это ситуация, при которой в куче должны находиться объекты типа <code>А</code>, но в результате там оказываются объекты типа <code>B</code> — из-за ошибок, связанных с типобезопасностью.
+
+В нашем примере это и происходит. Сначала мы создали Raw-переменную <code>numbers</code>, и присвоили ей дженерик-коллекцию <code>ArrayList&lt;Number&gt;</code>. После этого мы добавили туда число <code>1</code>.
+
+<pre class="lang-java line-numbers"><code>
+List&lt;String&gt; strings = numbers;
+</code></pre>
+В этой строке компилятор пытался предупредить нас о вероятных ошибках, выдав предупреждение “<em>Unchecked assignment...</em>”, но мы проигнорировали его.
+
+В результате у нас есть дженерик-переменная типа <code>List&lt;String&gt;</code>, которая указывает на дженерик-коллекцию типа <code>ArrayList&lt;Number&gt;</code>. Эта ситуация явно может привести к неприятностям!
+
+Так и происходит. Используя нашу новую переменную, мы добавляем в коллекцию строку. Произошло загрязнение кучи — мы добавили в типизированную коллекцию сначала число, а потом строку. Компилятор нас предупреждал, но мы его предупреждение проигнорировали, получив результате <code>ClassCastException</code> только во время работы программы.
+
+Причем же здесь <code>varargs</code>?
+
+<span class="text-bold">Использование <code>varargs</code> с дженериками запросто может привести к загрязнению кучи.</span>
+
+Вот простой пример:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.Arrays;
+import java.util.List;
+
+public class Main {
+
+   static void makeHeapPollution(List&lt;String&gt;... stringsLists) {
+       Object[] array = stringsLists;
+       List&lt;Integer&gt; numbersList = Arrays.asList(66,22,44,12);
+
+       array[0] = numbersList;
+       String str = stringsLists[0].get(0);
+   }
+
+   public static void main(String[] args) {
+
+       List&lt;String&gt; cars1 = Arrays.asList("Ford", "Fiat", "Kia");
+       List&lt;String&gt; cars2 = Arrays.asList("Ferrari", "Bugatti", "Zaporozhets");
+
+       makeHeapPollution(cars1, cars2);
+   }
+}
+</code></pre>
+Что здесь происходит?
+
+Из-за стирания типов наши листы-параметры (будем называть их “листами” вместо “списков” для удобства) —
+
+<pre class="lang-java line-numbers"><code>
+List&lt;String&gt;...stringsLists
+</code></pre> 
+— превратятся в массив листов — <code>List[]</code> с неизвестным типом (не забывай, что varargs в результате компиляции превращается в обычный массив).
+
+Из-за этого мы легко можем произвести присвоение в переменную <code>Object[] array</code> в первой строке метода — типы-то из наших листов стерлись!
+
+И теперь у нас есть переменная типа <code>Object[]</code>, куда можно добавлять вообще что угодно — все объекты в Java наследуются от <code>Object</code>!
+
+Сейчас у нас только массив строковых листов. Но благодаря использованию <code>varargs</code> и стирания типов мы легко можем добавить к ним лист, состоящий из чисел, что мы и делаем.
+
+В результате мы загрязняем кучу из-за смешивания объектов разных типов. Результатом будет все то же исключение <code>ClassCastException</code> при попытке прочитать строку из массива. 
+
+Вывод в консоль:
+
+<pre><code>
+Exception in thread "main" java.lang.ClassCastException: java.lang.Integer cannot be cast to java.lang.String
+</code></pre>
+Вот к таким неожиданным последствиям может привести использование простого, казалось бы, механизма <code>varargs</code> :)
+
+А наша сегодняшняя лекция на этом подходит к концу.
+
+Не забудь решить пару задач, а если останутся время и силы — изучить дополнительную литературу.
+
+“<a href="https://www.amazon.com/Effective-Java-Joshua-Bloch/dp/0134685997" rel="nofollow" target="_blank">Effective Java</a>” сама себя не прочитает! :)
+
+До встречи!

@@ -1,0 +1,377 @@
+Добавляем клиента к статьям - "Java-проект от А до Я"
+<p>----------------------------------------</p>
+Всем привет, мои дорогие друзья. Шаг за шагом мы все ближе к нашей цели — к выходу в MVP нашего проекта — JavaRush Telegram Bot. Как я уже говорил в прошлой статье, осталось всего 5 задач. Сегодня мы покроем две из них. Хочу повторить, что проект на этом не закончится...
+<p>----------------------------------------</p>
+Всем привет, мои дорогие друзья.
+
+Шаг за шагом мы все ближе к нашей цели — к выходу в MVP нашего проекта — JavaRush Telegram Bot. Как я уже говорил в прошлой статье, осталось всего 5 задач. Сегодня мы покроем две из них.
+
+<img data-max-width="800" data-id="21512a00-39ce-4aba-9eec-cd668dd8509f" src="https://cdn.javarush.com/images/article/21512a00-39ce-4aba-9eec-cd668dd8509f/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем клиента к статьям - 1">Хочу повторить, что проект на этом не закончится. У меня есть еще тьма идей и видений того, как должен развиваться этот проект, что в нем можно добавить новое, что сделать лучше.
+
+Перед MVP сделаем еще отдельную статью на тему рефакторинга — то есть, об улучшении качества кода без изменения его функциональности. К тому моменту уже будет видно весь проект и будет понятно, что и где можно улучшить. В нашем случае мы будем максимально защищены от того, чтобы не сломать функционал, потому что написано много тестов. 
+
+Также напишем ретроспективу на тему того, что мы хотели и что получили в итоге. Это очень полезная вещь: посмотрим насколько правильно виделся весь полгода назад. Мне по крайней мере очень это интересно. 
+
+Если у кого-то будет желание попробовать себя в роли мануального тестировщика — пишите, посотрудничаем. Сделаем этот проект лучше вместе!
+
+Итак, вот они: две задачи, описанные еще полгода назад: <a href="https://github.com/javarushcommunity/javarush-telegrambot/issues/8" rel="nofollow" target="_blank">JRTB-8</a> и <a href="https://github.com/javarushcommunity/javarush-telegrambot/issues/9" rel="nofollow" target="_blank">JRTB-9</a>.
+
+Начал я смотреть, что нужно реализовать по этим задачам, и понял, что в плане запуска команд уже все готово. Так бывает…) 
+
+Вот, можно посмотреть в <span class="code">StartCommand</span>, метод <span class="code">execute</span>:
+
+<pre class="language-java line-numbers"><code>
+@Override
+public void execute(Update update) {
+   String chatId = update.getMessage().getChatId().toString();
+
+   telegramUserService.findByChatId(chatId).ifPresentOrElse(
+           user -&gt; {
+               user.setActive(true);
+               telegramUserService.save(user);
+           },
+           () -&gt; {
+               TelegramUser telegramUser = new TelegramUser();
+               telegramUser.setActive(true);
+               telegramUser.setChatId(chatId);
+               telegramUserService.save(telegramUser);
+           });
+
+   sendBotMessageService.sendMessage(chatId, START_MESSAGE);
+}
+</code></pre>
+Здесь работает логика, что если в нашей базе уже есть такой юзер по chatId, мы ему просто ставим поле active = true. А если нет такого пользователя — создаем нового.
+
+Так же и для команды <span class="text-bold">/stop</span> в <span class="code">StopCommand</span>:
+
+<pre class="language-java line-numbers"><code>
+@Override
+public void execute(Update update) {
+   telegramUserService.findByChatId(update.getMessage().getChatId().toString())
+           .ifPresent(it -&gt; {
+               it.setActive(false);
+               telegramUserService.save(it);
+           });
+   sendBotMessageService.sendMessage(update.getMessage().getChatId().toString(), STOP_MESSAGE);
+}
+</code></pre>
+Видно, что при вызове этой команды для пользователя ставят только поле active = false. И все: его подписки будут жить и ждать своего часа, когда пользователь опять решит активировать чат с ботом. 
+
+И казалось бы, задача уже сделана и ее можно закрыть. Но не тут-то было. Самая главная задача — создать оповещение о новых статьях в подписке. Вот как раз там и будет полностью обновлены и сделаны эти задачи. То есть, пока мы не реализовали оповещение о новых статьях, нельзя закрыть. 
+
+Поэтому займемся задачей JRTB-4 — созданием проверки каждые 20 минут и оповещения о новых статьях. 
+
+<em>Друзья! Хотите сразу узнавать, когда выйдет новый код проекту? Когда выходит новая статья? Присоединяйтесь к моему <a href="https://t.me/joinchat/SpqRPBFo_sM6qm05" rel="nofollow" target="_blank">тг-каналу</a>. Там собираю свою статьи, свои мысли, свою open-source разработку воедино.</em><h2>Реализуем JRTB-4</h2>Что нам нужно сделать в рамках этой задачи:<ol>
+
+<li><p>Создать джобу, которая будет периодически ходить во все группы, подписки на которые есть у нас БД, сортировать статьи по дате публикации и проверять, совпадает ли ID последней публикации со значением в GroupSub. Если не совпадает, значит, нужно понять, сколько именно статей вышло с последнего раза. Обновляем last_article_id в GroupSub7 до актуального состояния.</p></li>
+<li><p>Когда нашли список вышедших статей, находим всех АКТИВНЫХ пользователей для этих групп и пересылаем им уведомления о новых статьях.</p></li>
+
+</ol>Чтобы это сделать, воспользуемся такой вещью как Spring Scheduler. Это механизм в Spring Framework, с ним можно создавать задачи, которые будут выполняться в определенное время. То ли каждые 15-20-40 минут, то ли каждый четверг в 15:30 или какой-то другой вариант. Их еще называют калькой с английского — джоба.
+
+Пока мы будем делать эту задачу, я умышленно оставляю один дефект в поиске новых статей. Он достаточно редкий и проявился только в ситуации, когда я тестировал мануально работу этой задачи.
+
+Чтобы это сделать нужно написать клиент по поиску статей. Для этого воспользуемся уже знакомым нам <a href="https://javarush.com/swagger-ui.html#/" target="_blank">Swagger API</a>. Там есть post-controller. Нас интересует только поиск коллекции статей по определенным фильтрам:
+
+<div class="terminal">/api/1.0/rest/posts Get posts by filters</div>
+Будем работать с этим запросом. Что нам в нем нужно? Получить список статей, которые относятся к определенной группе, при этом они должны быть отсортированы по дате публикации. Таким образом мы можем взять последние 15 статей и проверить, не вышли ли новые публикации судя по <span class="code">lastArticleId</span> из нашей базы данных. 
+
+Если таки есть, мы их передадим далее для обработки и отправки уже пользователю. Поэтому нам нужно написать <span class="code">JavaRushPostClient</span>.<h2>Пишем JavaRushPostClient</h2>Здесь не будем стараться охватить все запросы, которые нам передали в API и создадим только тот, который нам нужен. 
+
+Делая это, мы достигаем сразу две цели:<ol>
+
+<li><p>Ускоряем процесс написания нашего приложения.</p></li>
+<li><p>Оставляем такую работу для тех, кто захочет помочь нашему сообществу и решит попробовать себя в роли разработчика. Я сделаю для этого задачи, которые можно будет выполнить уже после MVP.</p></li>
+
+</ol>Поэтому начем. Для запроса по секции <span class="text-bold">Models</span> в <span class="text-bold">Swagger UI</span> создадим следующие DTO:<img data-max-width="512" data-id="56f16689-26fc-4510-aa4a-c0a91d3c4224" src="https://cdn.javarush.com/images/article/56f16689-26fc-4510-aa4a-c0a91d3c4224/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: Добавляем клиента к статьям - 2"><h4>BaseUserInfo:</h4><pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient.dto;
+
+import lombok.Data;
+
+/**
+* DTO, which represents base user information.
+*/
+@Data
+public class BaseUserInfo {
+   private String city;
+   private String country;
+   private String displayName;
+   private Integer id;
+   private String job;
+   private String key;
+   private Integer level;
+   private String pictureUrl;
+   private String position;
+   private UserPublicStatus publicStatus;
+   private String publicStatusMessage;
+   private Integer rating;
+   private Integer userId;
+}
+</code></pre><h4>Language:</h4><pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient.dto;
+
+/**
+* DTO, which represents languages.
+*/
+public enum Language {
+   UNKNOWN,
+   ENGLISH,
+   GERMAN,
+   SPANISH,
+   HINDI,
+   FRENCH,
+   PORTUGUESE,
+   POLISH,
+   BENGALI,
+   PUNJABI,
+   CHINESE,
+   ITALIAN,
+   INDONESIAN,
+   MARATHI,
+   TAMIL,
+   TELUGU,
+   JAPANESE,
+   KOREAN,
+   URDU,
+   TAIWANESE,
+   NETHERLANDS,
+   RUSSIAN,
+   UKRAINIAN
+}
+</code></pre><h4>LikesInfo:</h4><pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient.dto;
+
+/**
+* DTO, which represents like's information.
+*/
+public class LikesInfo {
+
+   private Integer count;
+   private LikeStatus status;
+}
+</code></pre><h4>LikeStatus:</h4><pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient.dto;
+
+/**
+* DTO, which represents like's status.
+*/
+public enum LikeStatus {
+
+   UNKNOWN,
+   LIKE,
+   HOT,
+   FOLLOW,
+   FAVORITE,
+   SOLUTION,
+   HELPFUL,
+   ARTICLE,
+   OSCAR,
+   DISLIKE,
+   WRONG,
+   SPAM,
+   ABUSE,
+   FOUL,
+   TROLLING,
+   OFFTOPIC,
+   DUPLICATE,
+   DIRTY,
+   OUTDATED,
+   BORING,
+   UNCLEAR,
+   HARD,
+   EASY,
+   FAKE,
+   SHAM,
+   AWFUL
+}
+</code></pre><h4>PostType:</h4><pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient.dto;
+
+/**
+* DTO, which represents post types.
+*/
+public enum PostType {
+   UNKNOWN, USUAL, INNER_LINK, OUTER_LINK
+}
+</code></pre><h4>UserPublicStatus:</h4><pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient.dto;
+
+/**
+* DTO, which represents user public status.
+*/
+public enum UserPublicStatus {
+   UNKNOWN,
+   BEGINNER,
+   ACTIVE,
+   STRONG,
+   GRADUATED,
+   INTERNSHIP_IN_PROGRESS,
+   INTERNSHIP_COMPLETED,
+   RESUME_COMPLETED,
+   LOOKING_FOR_JOB,
+   HAVE_JOB;
+}
+
+VisibilityStatus:
+package com.github.javarushcommunity.jrtb.javarushclient.dto;
+
+/**
+* DTO, which represents visibility status.
+*/
+public enum VisibilityStatus {
+   UNKNOWN,
+   RESTRICTED,
+   PUBLIC,
+   PROTECTED,
+   PRIVATE,
+   DISABLED,
+   DELETED
+}
+</code></pre>
+Основываясь на всех этих DTO, напишем основной класс для получения статей:<h4>PostInfo:</h4><pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient.dto;
+
+import lombok.Data;
+
+/**
+* DTO, which represents post information.
+*/
+@Data
+public class PostInfo {
+
+   private BaseUserInfo authorInfo;
+   private Integer commentsCount;
+   private String content;
+   private Long createdTime;
+   private String description;
+   private GroupInfo groupInfo;
+   private Integer id;
+   private String key;
+   private Language language;
+   private LikesInfo likesInfo;
+   private GroupInfo originalGroupInfo;
+   private String pictureUrl;
+   private Double rating;
+   private Integer ratingCount;
+   private String title;
+   private PostType type;
+   private Long updatedTime;
+   private UserDiscussionInfo userDiscussionInfo;
+   private Integer views;
+   private VisibilityStatus visibilityStatus;
+
+}
+</code></pre>
+Теперь создадим интерфейс для работы и его реализацию.
+
+Нам нужен будет только один метод для работы со статьями:<h4>JavaRushPostClient:</h4><pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient;
+
+import com.github.javarushcommunity.jrtb.javarushclient.dto.PostInfo;
+
+import java.util.List;
+
+/**
+* Client for Javarush Open API corresponds to Posts.
+*/
+public interface JavaRushPostClient {
+
+   /**
+    * Find new posts since lastPostId in provided group.
+    *
+    * @param groupId provided group ID.
+    * @param lastPostId provided last post ID.
+    * @return the collection of the new {@link PostInfo}.
+    */
+   List&lt;PostInfo&gt; findNewPosts(Integer groupId, Integer lastPostId);
+}
+</code></pre>
+<span class="code">findNewPosts</span> принимает два аргумента: ID группы и последний ID статьи, которую бот уже отправлял. Поэтому передадутся все те статьи, которые вышли позже статьи с <span class="text-bold">lastPostId</span>. 
+
+И его реализация:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient;
+
+import com.github.javarushcommunity.jrtb.javarushclient.dto.PostInfo;
+import kong.unirest.GenericType;
+import kong.unirest.Unirest;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Component
+public class JavaRushPostClientImpl implements JavaRushPostClient {
+
+   private final String javarushApiPostPath;
+
+   public JavaRushPostClientImpl(@Value("${javarush.api.path}") String javarushApi) {
+       this.javarushApiPostPath = javarushApi + "/posts";
+   }
+
+   @Override
+   public List&lt;PostInfo&gt; findNewPosts(Integer groupId, Integer lastPostId) {
+       List&lt;PostInfo&gt; lastPostsByGroup = Unirest.get(javarushApiPostPath)
+               .queryString("order", "NEW")
+               .queryString("groupKid", groupId)
+               .queryString("limit", 15)
+               .asObject(new GenericType&lt;List&lt;PostInfo&gt;&gt;() {
+               }).getBody();
+       List&lt;PostInfo&gt; newPosts = new ArrayList&lt;&gt;();
+       for (PostInfo post : lastPostsByGroup) {
+           if (lastPostId.equals(post.getId())) {
+               return newPosts;
+           }
+           newPosts.add(post);
+       }
+       return newPosts;
+   }
+}
+</code></pre>
+В запросе добавляем несколько фильтров:<ul>
+
+<li>order = NEW — чтобы в списке были вначале новые;</li>
+<li>groupKid = groupId — поиск только по определенным группам;</li>
+<li>limit = 15 — ограничиваем количество статей на запрос. У нас периодичность 15-20 минут и мы ожидаем, что за это время не будет написано БОЛЬШЕ, чем 15(!).</li>
+
+</ul>Далее, когда мы нашли статьи, пробегаем по списку и ищем новые. Алгоритм простой и наглядный. Если есть желание его улучшить — пишите).
+
+Напишем простой тест для этого клиента:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient;
+
+import com.github.javarushcommunity.jrtb.javarushclient.dto.PostInfo;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+import static com.github.javarushcommunity.jrtb.javarushclient.JavaRushGroupClientTest.JAVARUSH_API_PATH;
+
+@DisplayName("Integration-level testing for JavaRushPostClient")
+class JavaRushPostClientTest {
+
+   private final JavaRushPostClient postClient = new JavaRushPostClientImpl(JAVARUSH_API_PATH);
+
+   @Test
+   public void shouldProperlyGetNew15Posts() {
+       //when
+       List&lt;PostInfo&gt; newPosts = postClient.findNewPosts(30, 2935);
+
+       //then
+       Assertions.assertEquals(15, newPosts.size());
+   }
+}
+</code></pre>
+Это очень простой тест, который проверяет, есть ли вообще связь с клиентом или нет. 
+
+Он находит 15 новых статей в группе Java-проекты, потому что я ему передаю ID первой в этой группе статьи, а их уже больше 15… Их уже 22! Я даже не думал, что их будет так много. 
+
+Как я быстро это узнал? Думаете, пошел считать их? Не-а) Я воспользовался свагером и посмотрел количество статей по определенной группе. Кстати, так можно посмотреть и в других… А сколько всего статей в группе RANDOM?... сейчас скажу: их 1062! Серьезное количество.<h2>Окончание первой части</h2>Здесь мы добавили работу с клиентом по статьям. Все уже делали, в этот раз, я думаю, все должно пройти просто и быстро. В <a href="https://javarush.com/groups/posts/3356-java-proekt-ot-a-do-ja-dobavljaem-spring-scheduler" target="_blank">следующей статье</a> будем добавлять Spring Scheduler и писать <span class="code">FindNewArticleService</span>.
+
+<em>Ну и как обычно <s>лайк - подписка - колокольчик</s>, ставь звезду <a href="https://github.com/javarushcommunity/javarush-telegrambot" rel="nofollow" target="_blank">нашему проекту</a>, пиши комментарии и оценивай статью!</em>
+
+Всем спасибо за прочтение — до встречи!<h4><a href="https://javarush.com/groups/posts/2935-java-proekt-ot-a-do-ja-pishem-realjhnihy-proekt-dlja-portfolio#articles" target="_blank">Список всех материалов серии в начале этой статьи.</a></h4>

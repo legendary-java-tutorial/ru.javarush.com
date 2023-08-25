@@ -1,0 +1,130 @@
+IntelliJ IDEA и Debug: не дайвинг, но снорклинг
+<p>----------------------------------------</p>
+Написать код - пол дела. Нужно его ещё заставить работать правильно. В этом нам очень сильно помогают IDE и средства отладки.
+На примере IntelliJ IDEA предлагаю познакомиться с тем, как мы можем узнать, что же происходит с нашим кодом, когда он работает.
+Debug тема обширная ...
+<p>----------------------------------------</p>
+Написать код - пол дела. Нужно его ещё заставить работать правильно. В этом нам очень сильно помогают IDE и средства отладки.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="6cef1308-37e2-4b28-bd67-89ef3d483558" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 1" src="https://cdn.javarush.com/images/article/6cef1308-37e2-4b28-bd67-89ef3d483558/1024.jpeg"></div></div>На примере IntelliJ IDEA предлагаю познакомиться с тем, как мы можем узнать, что же происходит с нашим кодом, когда он работает.
+
+Debug тема обширная, поэтому данный обзор на глубокое погружение, словно дайвер, не предлагает. Но надеюсь снорклинг точно )
+<h2>Вступление</h2>Часть написания кода – это его отладка, дебаг (англ. debug). А если в задачи входит поддержка кода – отладки будет ещё больше. Ну и кроме того, при помощи отладки можно исследовать работу используемых библиотек и фрэймворков так глубоко, как только сможете погрузиться в дебри чужого кода.
+
+Для нашего погружения нам потребуется:
+<ul>
+<li>Среда разработки: Бесплатная <a href="https://www.jetbrains.com/idea/download" target="_blank" rel="nofollow">IntelliJ Idea Community Edition</a></li>
+<li>Установленный <a href="https://maven.apache.org/" target="_blank" rel="nofollow">Maven</a></li>
+<li>Сервер приложений <a href="http://wildfly.org/downloads/" target="_blank" rel="nofollow">WildFly 12.0.0.Final</a></li>
+<li>Исходный код официальных примеров: <a href="https://github.com/wildfly/quickstart/tree/12.0.0.Final" target="_blank" rel="nofollow">Quick Start Source Code</a></li>
+</ul>Для начала, распаковываем скачанный архив с Quick Start Source Code. Запускаем IntelliJ Idea и создаём «<strong>New Project from Existing Sources</strong>». Выбираем в подкаталоге <strong>hibernate4</strong> файл <strong>pom.xml</strong>. При импорте указываем «<strong>Import Maven projects automatically</strong>» и завершаем создание проекта оставляя остальные настройки без изменений.
+
+Пока импортируется проект разархивируем скачанный сервер приложений WildFly в какой-нибудь каталог. Запускаем сервер при помощи файла <code>bin\standalone.bat</code> (или standalone.sh для *nix систем).
+
+<strong>(!) Важно запуститься с параметром --debug</strong>
+
+Ожидаем, когда сервер стартует. Нам напишут, что он started in и укажут время. Выглядеть это будет примерно так:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="f40dc808-95a4-4f8f-8799-c9bfc494fbe8" data-max-width="674" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 2" src="https://cdn.javarush.com/images/article/f40dc808-95a4-4f8f-8799-c9bfc494fbe8/1024.jpeg"></div></div>Далее нужно запустить выбранный нами проект на сервере. Этот процесс описан в небольшой документации, которую можно найти в самом проекте: 
+
+<code>\hibernate4\README.adoc</code>
+
+Как и указано в этой документации, нам нужно в каталоге hibernate4 выполнить команду: <code>mvn clean package wildfly:deploy</code>
+
+Ожидаем, когда нам напишут, что сборка выполнена успешно:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="864c45b6-e844-4ab4-bac1-08a204f3fd64" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 3" src="https://cdn.javarush.com/images/article/864c45b6-e844-4ab4-bac1-08a204f3fd64/1024.jpeg"></div></div>После этого в логе сервера мы можем увидеть, как "задеплоился" новый проект:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="a9ae187d-51bc-4c34-86d7-337dea70bf77" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 4" src="https://cdn.javarush.com/images/article/a9ae187d-51bc-4c34-86d7-337dea70bf77/1024.jpeg"></div></div>После этого мы переходим на страницу <code>http://localhost:8080/wildfly-hibernate4</code> и у нас должна отобразиться страница с формой "<strong>Member Registration</strong>".
+
+Итак, наша подготовка к экспериментам выполнена и мы можем начинать )) Впереди для наглядности будет много картинок, так что приготовтесь)
+<h2>Remote Debug</h2>Итак, нам нужно настроить Debug режим, чтобы наша IDE управляла исполнение кода на сервере приложений.
+
+IntelliJ Idea поставляется в двух вариантах: бесплатный (Community) и платный (Ultimate). Последний можно официально попробовать в виде EAP.
+
+В Ultimate версии всё просто - сервер приложений можно запускать сразу из IDE в режиме дебага. А вот в Community версии надо немного действий сделать вручную. Поэтому, рассмотрим случай посложнее, т.е. настройка в Community версии.
+
+В Community версии есть некоторые ограничения. В частности, из неё нельзя запускать сервер приложений. Но можно настроить удалённую отладку (Remote Debug), когда где-то отдельно есть запущенный сервер с нужным нам приложением.
+
+Воспользуемся описанием настройки отсюда: <a href="https://yongwblog.wordpress.com/2017/03/17/remote-debug-wildfly-in-intellij-idea-community-edition/" target="_blank" rel="nofollow">Remote debug Wildfly in IntelliJ Idea community edition</a> (настройка Remote Run Configuration для 8787 порта).
+
+После настройки запускаем в Debug режиме нашу новую конфигурацию:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="235" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 5" src="https://cdn.javarush.com/images/article/48778864-d8c7-4278-9b44-4963ca21f1e5/original.jpeg"></div></div>Если всё хорошо, то мы увидим внизу об этом сообщение:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="2ee2020c-2914-4b6f-a3c8-ba8148b00660" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 6" src="https://cdn.javarush.com/images/article/2ee2020c-2914-4b6f-a3c8-ba8148b00660/1024.jpeg"></div></div><h2>Процесс Debug'а</h2>Давайте «отдебажим» сохранение записи. Для этого надо сначала определиться с местом, где мы будем исследовать. Судя по окну, нам нужна кнопка «Register». Давайте найдём её в коде.
+
+Итак, нам нужен элемент, у него должен быть текст: "Register". Или она должна как-то относится к этому. 
+
+Нажимаем <code>Ctrl+Shift+F</code> и ищеём Register в кавычках. Видим, что такая есть на index.xhtml. 
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="c7c36e08-0760-49e4-9c84-dde5000d4da2" data-max-width="718" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 7" src="https://cdn.javarush.com/images/article/c7c36e08-0760-49e4-9c84-dde5000d4da2/1024.jpeg"></div></div>Нажимаем Enter для перехода в найденный источник:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="dd06d186-8235-4c51-92d0-00bfbcb29ea0" data-max-width="793" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 8" src="https://cdn.javarush.com/images/article/dd06d186-8235-4c51-92d0-00bfbcb29ea0/1024.jpeg"></div></div>Итак, мы видим, что при регистрации вызывается <strong>memberController.register</strong>
+
+Судя по всему, это должен быть некоторый java класс. Нажимаем <code>Ctrl+N</code>, ищем:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="b87cd136-ba29-414f-9cf9-dcb6e46624ff" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 9" src="https://cdn.javarush.com/images/article/b87cd136-ba29-414f-9cf9-dcb6e46624ff/1024.jpeg"></div></div>Действительно, такой класс есть . Переходим в него. Видимо, тут должен быть метод register. Нажимаем  <code>Ctrl+F12</code> и ищем метод register
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="644f0b0f-99c6-47dd-8a6f-0ceb45cdd301" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 10" src="https://cdn.javarush.com/images/article/644f0b0f-99c6-47dd-8a6f-0ceb45cdd301/1024.jpeg"></div></div>Действительно, нашли.
+
+Судя по всему, регистрация происходит тут, в <strong>memberRegistration.register</strong>. Нажимаем Ctrl и кликаем по методу, чтобы «провалиться» в него:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="96088e05-cfe5-468d-b16b-758528eff9db" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 11" src="https://cdn.javarush.com/images/article/96088e05-cfe5-468d-b16b-758528eff9db/1024.jpeg"></div></div>Давайте теперь поставим «точку остановки» или Break Point. Это такой маркер, который говорит, где выполнение кода должно приостановиться. Мы в этот момент получим возможность узнать много интересного. Чтобы его поставить нужно кликнуть в место правее номера строки.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="fd2146e9-006f-4737-a79a-6bf4e4fa5c9a" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 12" src="https://cdn.javarush.com/images/article/fd2146e9-006f-4737-a79a-6bf4e4fa5c9a/1024.jpeg"></div></div>На странице http://localhost:8080/wildfly-hibernate4 заполняем поля и нажимаем кнопку Register.
+
+Значок идеи на панели мигнёт:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="191" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 13" src="https://cdn.javarush.com/images/article/8d1e1b96-041a-4bb0-b2c5-8025b3d3b0d3/original.jpeg"></div></div>Перейдя в Idea видно, что на панеле отладки много интересной информации:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="96936606-bb9e-4a3d-ab3c-df465091c096" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 14" src="https://cdn.javarush.com/images/article/96936606-bb9e-4a3d-ab3c-df465091c096/1024.jpeg"></div></div>Здесь можно посмотреть значение полей объекта. Например, из чего состоит регистрируемый Member:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="3e4d77bf-f91f-414c-afe9-8c6a6ce73bce" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 15" src="https://cdn.javarush.com/images/article/3e4d77bf-f91f-414c-afe9-8c6a6ce73bce/1024.jpeg"></div></div>Отлично. Что мы можем ещё сделать?
+
+Мы можем открыть контекстное меню и выбрать там Evaluate Expression (или через меню Run -&gt; Evaluate Expression). А ещё лучше на панели управления дебаггером:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="32b68fef-2fb5-4830-8888-b1af6ba053c1" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 16" src="https://cdn.javarush.com/images/article/32b68fef-2fb5-4830-8888-b1af6ba053c1/1024.jpeg"></div></div>Это супер замечательная возможность в точке останова, имея доступ ко всему, к чему есть доступ к этом месте кода, выполнить любой код, который можно было бы выполнить в этом месте. Например:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="fd6d3298-d30c-4064-9a2c-63fb089fecf3" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 17" src="https://cdn.javarush.com/images/article/fd6d3298-d30c-4064-9a2c-63fb089fecf3/1024.jpeg"></div></div>На панели управления дебаггером есть также кнопки управления, которые отвечают за то, куда необходимо переместить управление ходом выполнения программы. Не правда ли, магия?)
+
+Нажимая кнопку F8 (Step Out) мы ходим по коду без заходов в методы. Нажав F9 мы прекращаем ходить по строкам кода дебаггером, а отдаём дебаггером управление ходом выполнения программы.
+
+Если мы нажмём F7 (Step Into), то мы пойдём по коду с заходом в каждый метод, который встретим на своём пути. Кстати, обратите особое внимание на вот этот информационный блок:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="bedf1840-3dcd-4d42-a5a3-3ce2bea62d4f" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 18" src="https://cdn.javarush.com/images/article/bedf1840-3dcd-4d42-a5a3-3ce2bea62d4f/1024.jpeg"></div></div>Тут показан поток, в котором мы находимся и методы в стэке текущего потока. Но и это ещё не всё. Для удобства, можно открыть вкладку фрэймов. Для этого она должна быть включена:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="138" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 19" src="https://cdn.javarush.com/images/article/d6542016-c60f-4ba4-9fb0-a0ddc48e997f/original.jpeg"></div></div>Теперь на вкладке фрэймов мы видим информацию о переходе от метода к методу, т.к. начали ходить по коду при помощи Step Into.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="d2543ca3-a072-4fd0-b337-862e648cbf18" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 20" src="https://cdn.javarush.com/images/article/d2543ca3-a072-4fd0-b337-862e648cbf18/1024.jpeg"></div></div>Как мы видим, не всегда нас может перебросить туда, где сейчас выполнение программы. Мы сейчас находимся в «getDelegate:469, AbstractEntityManager (org.jboss.as.jpa.container)». Но на самом деле, мы в реализации. Об этом свидетельствует класс, указанный у this:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="f8a0910c-a656-4dda-88ba-a8e59f708922" data-max-width="769" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 21" src="https://cdn.javarush.com/images/article/f8a0910c-a656-4dda-88ba-a8e59f708922/1024.jpeg"></div></div>Смотрим на this. Как мы знаем, он указывается на текущий объект. Мы в TransactionScopedEntityManager. Почему же Idea нам не может показать код?
+Дело в том, что IntelliJ Idea сейчас не знает ни про какой TransactionScopedEntityManager, т.к. он не подключен к нашему проекту (его нет в зависимостях проекта). Когда работает сервер приложений, то внутри него крутится много-много всяких библиотек. А нам про них известно очень мало, т.к. в общем случае нам не нужно копаться во внутренностях, нам нужно чтобы оно просто работало. Но иногда этого требует работа или спортивный интерес. 
+Тогда, надо об этой библиотеке сообщаить Idea, чтобы она знала, где брать код классов.
+<h2>Подключение сторонних библиотек для дебага</h2>Для начала нам самим нужно понять, что же это за библиотека, которую нужно подключить.
+
+<u>Первый путь</u> он трудный самый – искать в интернете. Скорость и результат нахождения результата сильно зависят от того, на сколько хорошо вели проект. Например, у WildFly открытый репозиторий. Поэтому, при поиске в гугле «TransactionScopedEntityManager» мы выйдем на <a href="https://github.com/wildfly/wildfly/tree/master/jpa/subsystem" target="_blank" rel="nofollow">https://github.com/wildfly/wildfly/tree/master/jpa/subsystem</a> и найдём, что нам нужен wildfly-jpa.
+
+<u>Второй способ</u> – правильный. Где лежит сервер, там и искать. В этом могут помочь различные средства. Например, на Windows это может быть <a href="https://www.farmanager.com/download.php?l=ru" target="_blank" rel="nofollow">Far Manager</a>. Далее пример алгоритма поиска приведён на нём.
+
+Установив и запустив его, переключаемся при помощи <strong>Tab</strong> на одну из вкладок, при помощи <code>Alt+F1</code> для левой вкладки или <code>Alt+F2</code> для правой и выбираем нужный нам раздел на жёстком диске. Вполне возможно, что в Far Manager после установки открыт каталог самого Far Manager. Чтобы перейти в корень диска следует нажать <code>Ctrl + \</code>.
+
+При помощи <code>Alt+F</code> открываем окошко поиска, начинаем набирать название каталоге и нажимаем Enter после того, как каталог найден. Этот поиск хитрый и выделяет те каталоги, которые совпадает с текстом поиска. Если вводятся символы, для которых нет папок, то такие символы ввести нельзя. Переходим таким образом в каталог сервера приложений.
+
+Допустим, мы не знаем, где на сервере лежат модули. Возможно, Вы вообще в первый раз в жизни слышите про какой-то там WildFly. Поэтому, нажимаем сразу здесь <code>Alt+F7</code> для поиска файлов.
+
+Итак, логика подсказывает: нам нужен файл с библиотекой. То есть нам нужен jar. Внутри должен быть класс TransactionScopedEntityManager. Т.к. класс = файл, то ищем по «содержит». То есть как-то так:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="b24d7fc8-4f7d-4b94-97fa-62f2102e0aea" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 22" src="https://cdn.javarush.com/images/article/b24d7fc8-4f7d-4b94-97fa-62f2102e0aea/1024.jpeg"></div></div>Теперь, ждём результат. Он не заставит себя ждать)
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="e727b84b-0c35-4418-a44f-8072e78528ab" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 23" src="https://cdn.javarush.com/images/article/e727b84b-0c35-4418-a44f-8072e78528ab/1024.jpeg"></div></div>Теперь, нам надо где-то найти исходный код для него. И тут есть 2 варианта:
+<ul>
+<li>Супер полезный <a href="https://www.versioneye.com/java" target="_blank" rel="nofollow">versioneye.com</a></li>
+<li>Центральный <a href="https://search.maven.org/" target="_blank" rel="nofollow">Maven Repository</a></li>
+</ul>Воспользуемся, пожалуй, вторым. Найдём там:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="0094787b-47da-41ea-92ef-9a81b077213c" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 24" src="https://cdn.javarush.com/images/article/0094787b-47da-41ea-92ef-9a81b077213c/1024.jpeg"></div></div>Теперь же переходим к описанию зависимости. На этой страничке есть возможность скачать исходный код.
+
+Отлично, теперь код у нас скачан. Осталось подключить библиотеку. Подключается она предельно просто. Нам нужно открыть настройки проекта: 
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="d2db562a-1bf2-451d-84ad-c927a269ab59" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 25" src="https://cdn.javarush.com/images/article/d2db562a-1bf2-451d-84ad-c927a269ab59/1024.jpeg"></div></div>Там выбираем «Libraries» и в раздел «Sources» добавляем полученные исходные коды, а в разделе «Classes» указываем сам jar файл библиотеки из каталога WildFly, который нами был найден при помощи Far Manager’а.
+
+После этого мы увидим при переходе по F7 содержимое класса AbstractEntityManager и TransactionScopedEntityManager, а так же станет доступен через поиск по классам через Ctrl+N.
+<h2>Break Points с условиями</h2>Вернёмся теперь к Break Points. Иногда, мы хотим остановиться не всегда, а только при каком-нибудь условии. Что же делать? И тут нам тоже поможет наша IDE.
+
+Поставив Break Point мы можем назначит ей условие. Например, поставим точку и нажмём по ней правой кнопкой мыши:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="a056ce92-7673-4adb-ae3d-cb0cd3c1ad70" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 26" src="https://cdn.javarush.com/images/article/a056ce92-7673-4adb-ae3d-cb0cd3c1ad70/1024.jpeg"></div></div>Теперь точка остановки сработает только тогда, когда имя будет Maximilian. По кнопке More Вам будут доступны расширенный набор настроек для Break Point’ов.
+<h2>Break Points на исключения</h2>Иногда мы можем получать ошибку и хочется проследить, откуда она идёт. Тогда мы можем добавить точку остановки не на конкретную строку кода, а на место, где будет брошено исключение. Для этого нужно раскрыть список всех точек остановки:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="c70b7e73-348e-4346-89ee-024a3a91d6cc" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 27" src="https://cdn.javarush.com/images/article/c70b7e73-348e-4346-89ee-024a3a91d6cc/1024.jpeg"></div></div>И создать новое правило для выбранного типа исключения:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="b60eb7cc-6cac-4bca-aa7c-4449d3423f4c" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 28" src="https://cdn.javarush.com/images/article/b60eb7cc-6cac-4bca-aa7c-4449d3423f4c/1024.jpeg"></div></div>Например, для NPE:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="9d867572-f37e-4234-bd0b-1034b8f0ccce" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 29" src="https://cdn.javarush.com/images/article/9d867572-f37e-4234-bd0b-1034b8f0ccce/1024.jpeg"></div></div><h2>HotSwap классов</h2>Дебаггер — удивительная вещь. Она помимо дебага позволяет изменять классы! Да, ресурсы (такие как xhtml стриницы, например) не изменить так просто. Но вот код java классов можно подменить на лету (это и называется Hot Swap). Для этого достаточно при присоединённом дебаггере изменить класс и выполнить Run -&gt; Reload Changed Classes.
+
+Полезный обзор на эту тему: <a href="https://sites.google.com/a/athaydes.com/renato-athaydes/posts/4freewaystohot-swapcodeonthejvm" target="_blank" rel="nofollow">4 free ways to hot-swap code on the JVM</a>
+
+<div class="email-subscription"><iframe frameborder="0" src="https://secure.esputnik.com.ua/4Q0Ef6d2SOs" width="100%" height="200" scrolling="no"></iframe></div><h2>Заключение</h2>Дебаггер — мощный инструмент, позволяющий разработчику проникнуть в самую глубину выполняемого кода, изучить его во всех деталях. Это позволяет исправлять самые запутанные ошибки. Так же это позволяет лучше понять то, как те или иные библиотеки работают.
+
+Даже такой краткий обзор вышел довольно внушительным, но я надеюсь он будет полезен и интересен.
+
+Если кого-то смог заинтересовать данный материал, то продолжить погружение можно по ссылкам:
+<ul>
+<li><a href="https://www.jetbrains.com/help/idea/debugging-your-first-java-application.html" target="_blank" rel="nofollow">Debugging Your First Java Application</a></li>
+<li><a href="https://www.jetbrains.com/help/idea/tutorial-java-debugging-deep-dive.html" target="_blank" rel="nofollow">Tutorial: Java Debugging Deep Dive</a>
+</li>
+</ul><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="eadfc335-58ae-4f4d-9739-e815ab5b7851" data-max-width="710" alt="IntelliJ IDEA и Debug : Не дайвинг, но снорклинг - 30" src="https://cdn.javarush.com/images/article/eadfc335-58ae-4f4d-9739-e815ab5b7851/1024.jpeg"></div></div>
+
+#Viacheslav

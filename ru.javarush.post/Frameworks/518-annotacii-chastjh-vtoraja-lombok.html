@@ -1,0 +1,177 @@
+Аннотации. Часть вторая. Lombok
+<p>----------------------------------------</p>
+Как писать быстрее и меньше кода? Как заставить машину работать на тебя? Тебе больше не придется нажимать Alt+Insert для генерации шаблонных вещей. Это и много другое в этой статье. Заходи, мало кто уходит отсюда равнодушным!
+<p>----------------------------------------</p>
+<a href="https://javarush.com/groups/posts/500-annotacii-chastjh-pervaja-nemnogo-skuchnaja" target="_blank" rel="nofollow">Аннотации. Часть первая, немного скучная</a>
+
+В этой части я решил затронуть библиотеку Lombok как известного представителя Source аннотаций. С Runtime аннотациями в следующей статье.
+
+Жил был java программист, каждый день он писал обычный код, например такой:
+
+<pre class="lang-java line-numbers"><code>
+package lombok;
+
+public class Chelovek {
+    private String name;
+    private int age;
+
+    public Chelovek(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    public Chelovek() {
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Chelovek chelovek = (Chelovek) o;
+
+        if (age != chelovek.age) return false;
+        return name != null ? name.equals(chelovek.name) : chelovek.name == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = name != null ? name.hashCode() : 0;
+        result = 31 * result + age;
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "Chelovek{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                '}';
+    }
+}
+</code></pre>
+Обычный такой класс, всего 2 поля (а ведь бывает и больше 10-15 полей). Да конечно это все можно генерировать в IDE, но блин, оно место занимает. Если полей 15-20, ко всем нужны геттеры, сеттеры,  конструкторы…  Среди всего этого легко может потеряться пара другая методов, незаметных глазу.
+
+Как помочь такому программисту, чтобы писал быстрее и меньше? Lombok. 
+Сразу в пекло, тот же класс но с использование ломбока:
+
+<pre class="lang-java line-numbers"><code>
+package lombok;
+
+@Data
+public class Chelovek {
+    private String name;
+    private int age;
+}
+
+</code></pre>
+Да это все. Прикольно?
+
+Что сделает аннотация  <em>@Data</em>? 
+Она на этапе компиляции сгенерирует геттеры\сеттеры для всех полей, toString и переопределит equals и hashCode по стандартам. В IDE можно установить плагин и он будет видеть все ещё не созданные методы.
+
+<center> <img data-id="c32c1813-344f-4d48-9ade-3b9df2b50cf3" data-max-width="515" alt="Аннотации. Часть вторая. Lombok - 1" src="https://cdn.javarush.com/images/article/c32c1813-344f-4d48-9ade-3b9df2b50cf3/1024.jpeg"></center>
+Надеюсь тут тебе, читатель, стало интересно, потому что дальше будет коротка вводная и ссылки на подробности.
+
+Ломбок так же предоставляет возможность кастомизировать генерацию, не всегда же нужны все геттеры, сеттеры или хешкод надо генерировать по-другому. Поэтому есть отдельные аннотации (думаю, многие из них в описании не нуждаются)
+
+<em>@Getter/@Setter
+@ToString 
+@EqualsAndHashCode
+@NoArgsConstructor, @RequiredArgsConstructor and @AllArgsConstructor
+@Log
+</em>
+
+Это самые типичные, весь набор можно <a href="https://projectlombok.org/features/all" target="_blank" rel="nofollow">посмотреть тут </a>
+
+Особого внимания достойный var и val. Это возможность писать так:
+
+<pre class="lang-java line-numbers"><code>
+package lombok;
+
+import lombok.experimental.var;
+
+@Data
+public class Chelovek {
+    private String name;
+    private int age;
+
+    public static void main(String[] args) {
+        var chelovek = new Chelovek();
+        chelovek.setAge(22);
+        System.out.println(chelovek);
+    }
+}
+
+</code></pre>
+Зачем это нужно? Например у нас есть класс RandomAccessFileChannel
+
+Ну, зачем нам писать так:
+
+<pre class="lang-java line-numbers"><code>
+RandomAccessFileChannel channel = new RandomAccessFileChannel();
+</code></pre>
+Если можно так:
+
+<pre class="lang-java line-numbers"><code>
+var channel2 = new RandomAccessFileChannel();
+</code></pre>
+На мой взгляд, это не всегда приемлемо. Например, у нас есть злой метод, возвращающий злую мапу:
+
+<pre class="lang-java line-numbers"><code>
+public static Map&lt;List&lt;Set&lt;Integer&gt;&gt;, Set&lt;List&lt;String&gt;&gt;&gt; evilMap(){
+    return new HashMap&lt;&gt;();
+}
+
+</code></pre>
+если вызывать его так:
+
+<pre class="lang-java line-numbers"><code>
+Map&lt;List&lt;Set&lt;Integer&gt;&gt;, Set&lt;List&lt;String&gt;&gt;&gt; listSetMap = evilMap();
+</code></pre>
+То более менее понятно с чем мы работаем.
+
+Если же вызов такой:
+
+<pre class="lang-java line-numbers"><code>
+var listSetMap = evilMap();
+</code></pre>
+то хрен знает, что там возвращает evilMap(), и пока не посмотришь в сам метод, не узнаешь. А зачем бегать по исходникам? В общем, с этим надо быть аккуратнее.
+
+<strong>Экспериментальная ветка:</strong>
+
+Тут хочу отметить аннотации:
+
+<em>@UtilityClass</em>
+Она создает приватный конструктор и там бросает exception (чтоб ручки грязные от рефлексии не лезли сюда). И очень красиво в начале класса сообщает нам, что тут утилитные методы.
+
+<em>@Delegate</em>
+Реализует шаблон делегирования. Если у тебя есть класс, который что-то делегирует другому классу, при этом вносит изменения только в некоторые методы, эта аннотация избавит тебя от дублирования методов + будет следить за ними. Если метод удалили или добавили, она это заметит.
+
+<a href="https://projectlombok.org/features/experimental/all" target="_blank" rel="nofollow">Ветка экспериментальных аннотаций</a>
+
+<a href="https://github.com/rzwitserloot/lombok" target="_blank" rel="nofollow">GITHUB</a>
+
+<a href="https://projectlombok.org/" target="_blank" rel="nofollow">Официальный сайт</a>
+
+Для того, чтобы IDE нормально работала с lombok, и не подчеркивала методы как несуществующие, надо установить плагин.
+
+На официальном сайте, есть <a href="https://projectlombok.org/setup/overview" target="_blank" rel="nofollow">раздел setup</a> в котором можно посмотреть как подключить плагин для каждой IDE
+
+Как можно заметить ломбок популярен. &gt;5000 звезд и &gt;1000 форков. Спринг в своих классах использует ломбок. Если у тебя в проекте есть спринг, поищи, возможно, он подтянул ломбок, просто ты не в курсе.

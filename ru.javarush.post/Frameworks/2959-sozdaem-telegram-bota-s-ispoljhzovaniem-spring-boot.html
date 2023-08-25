@@ -1,0 +1,123 @@
+Создаем телеграм-бота с использованием Spring Boot
+<p>----------------------------------------</p>
+Пошаговая инструкция о том, как поднять Telegram бота с минимальным количеством кода и головной боли. В какой-то момент обучения вам хочется перейти от решения задач к созданию реальных проектов, которые лягут в основу вашего портфолио. Когда я начинал учиться на стажировке...
+<p>----------------------------------------</p>
+Всем привет!
+
+В какой-то момент обучения вам хочется перейти от решения задач к созданию реальных проектов, которые лягут в основу вашего портфолио. Когда я начинал учиться на стажировке (которую я всем очень рекомендую), на фрилансе поступило предложение написать телеграм- бота. Ввиду своих малых познаний написал довольно простого бота (<a href="https://github.com/whiskels/TelegramNotifierBot/tree/635f2993b9c7a6de654abd5c1958294a03ab4360" target="_blank" rel="nofollow">последний коммит до миграции на Spring</a>), который содержал в себе три нити:<ul>
+<li>нить приема сообщений;</li>
+<li>нить отправки сообщений;</li>
+<li>нить планирования событий (в ней проверялось наличие запланированных сообщений и обновление кешированных данных из JSON).</li>
+</ul>При написании этого функционала во многом я опирался на <a href="https://habr.com/ru/post/476306/" target="_blank" rel="nofollow">эту статью</a>. Все вполне неплохо работало, но чем глубже я погружался в Spring, тем сильнее мне хотелось все отрефакторить с целью уменьшения связности программы и улучшения качества кода. Еще SonarLint (плагин для автоматической проверки качества кода) все время пытался меня убедить, что бесконечные циклы while иметь не очень хорошо. В какой-то момент я решился и все переписал, а теперь хочу поделиться полученными в процессе рефакторинга знаниями с вами. Начнем с основ, а конкретнее — c <a href="https://github.com/rubenlagus/TelegramBots/tree/master/telegrambots-spring-boot-starter" target="_blank" rel="nofollow">TelegramBots-Spring-Boot-Starter</a>
+<strong>Итак, поехали!</strong>
+Создадим бота, который будет здороваться в ответ на любое сообщение.
+
+Для начала нам необходимо создать новый Maven проект. 
+
+Добавим необходимые зависимости в pom.xml. 
+
+Добавляем в properties версии Java и TelegramBots-Spring-Boot-Starter. 
+И прописываем dependencies — здесь у нас будет уже упомянутый выше TelegramBots-Spring-Boot-Starter <s>и Telegram API</s>:<img data-id="71b67dfa-a0a0-4feb-840b-470a8aed0d42" src="/images/article/71b67dfa-a0a0-4feb-840b-470a8aed0d42/800.jpeg" alt="Создаем телеграм бота с использованием Spring Boot - 1">Библиотека TelegramBots-Spring-Boot-Starter включает в себя Spring Boot и Telegram API. Ее использование позволяет нам довольно простым образом объявить бота в нашем коде, а Spring сам создаст Bean и активирует бота. Если вам интересно, что происходит под капотом в этот момент, то посмотрите исходники библиотеки (в среде разработки или на <a href="https://github.com/rubenlagus/TelegramBots/tree/master/telegrambots-spring-boot-starter" target="_blank" rel="nofollow">гитхабе</a>).
+
+Также добавляем параметры компиляции:<img data-id="ef34cc48-d1ff-4e80-af88-b83a617dd053" src="/images/article/ef34cc48-d1ff-4e80-af88-b83a617dd053/1024.jpeg" alt="Создаем телеграм бота с использованием Spring Boot - 2">
+<span>Не забудьте после заполнения pom обновить все зависимости!</span>
+
+Создадим два класса — App и Bot, а также файл application.yaml в папке resources. Структура моего проекта выглядит так:<img data-id="8e378f74-d7f1-41ba-ac09-62f4898d6ba8" src="/images/article/8e378f74-d7f1-41ba-ac09-62f4898d6ba8/512.jpeg" alt="Создаем телеграм бота с использованием Spring Boot - 3">На данном этапе добавим в application.yaml credentials нашего бота:
+
+<pre class="lang-java line-numbers"><code>
+bot:
+  name: JavaRushTelegramBot
+  token: 22313424:AAF4gck4D8gDhq68E7k0UH8vlyQADhxQhYo
+</code></pre>
+Иерархическая запись позволяет нам избежать повторения (bot.name, bot.token) и повысить читаемость. Если у вас еще не создан бот, то завести его можно, следуя <a href="https://core.telegram.org/bots" target="_blank" rel="nofollow">официальной инструкции</a>.
+
+Если вы не хотите светить креденшлы к боту в application.yaml (что правильно) — используйте переменные окружения при деплое:
+
+<pre class="lang-java line-numbers"><code>
+bot:
+  name: ${BOT_NAME}
+  token: ${BOT_TOKEN}
+</code></pre>
+Заполняем класс Bot:
+
+<pre class="lang-java line-numbers"><code>
+package com.whiskels.telegram.bot;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+
+// Аннотация @Component необходима, чтобы наш класс распознавался Spring, как полноправный Bean
+@Component
+// Наследуемся от TelegramLongPollingBot - абстрактного класса Telegram API
+public class Bot extends TelegramLongPollingBot {
+    // Аннотация @Value позволяет задавать значение полю путем считывания из application.yaml
+    @Value("${bot.name}")
+    private String botUsername;
+
+    @Value("${bot.token}")
+    private String botToken;
+
+    /* Перегружаем метод интерфейса LongPollingBot
+    Теперь при получении сообщения наш бот будет отвечать сообщением Hi!
+     */
+    @Override
+    public void onUpdateReceived(Update update) {
+        try {
+            execute(new SendMessage().setChatId(update.getMessage().getChatId())
+            .setText("Hi!"));
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Геттеры, которые необходимы для наследования от TelegramLongPollingBot
+    public String getBotUsername() {
+        return botUsername;
+    }
+
+    public String getBotToken() {
+        return botToken;
+    }
+}
+</code></pre>
+Заполняем класс App:
+
+<pre class="lang-java line-numbers"><code>
+package com.whiskels.telegram;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.telegram.telegrambots.ApiContextInitializer;
+
+// Аннотация, которая объединяет в себя @Configuration, @EnableAutoConfiguration, @ComponentScan
+@SpringBootApplication
+public class App {
+    public static void main(String[] args) {
+        // Здесь код написан по заветам 
+        // https://github.com/rubenlagus/TelegramBots/tree/master/telegrambots-spring-boot-starter
+        ApiContextInitializer.init();
+
+        SpringApplication.run(App.class, args);
+    }
+}
+</code></pre>
+
+Если мы все сделали правильно, то можно запустить main и поздороваться с нашим ботом.<img data-id="61161b78-a249-4313-a6d4-9b1acec73c82" src="/images/article/61161b78-a249-4313-a6d4-9b1acec73c82/800.jpeg" alt="Создаем телеграм бота с использованием Spring Boot - 4">Готово! Мы успешно написали и запустили телеграм бота, который на каждое входящее сообщение здоровается. 
+
+Если вам была полезна эта статья, то лучшей благодарностью будет, если вы загляните в <a href="https://github.com/whiskels/TelegramNotifierBot" target="_blank" rel="nofollow">мой репозиторий</a> и поставите звездочку. Там же вы найдете мою версию телеграм-бота, который имеет много интересных особенностей:<ul>
+<li>хранение пользователей в базе Postgres;</li>
+<li>авторизацию доступа к командам на основе ролей пользователя;</li>
+<li>использование кастомных аннотаций @BotCommand и @RequiredRoles для создания обработчиков сообщений и проверки прав пользователя;</li>
+<li>поддержка создания графика уведомлений.</li>
+</ul>Если что-то из этого функционала вас заинтересовало — пишите в комментарии, и я постараюсь либо ответить, либо написать развернутую статью о том, как его воссоздать.
+
+P. S. Это моя первая статья на JavaRush, и мне хотелось бы погрузиться в дебри Spring JPA и аннотации @Scheduled, но для начала мне показалось, что стоит написать это руководство о том, как вообще поднять бота с использованием Spring Boot. По ботам уже написано несколько статей, но поиск не выдал подобного гайда, так что я решил заполнить эту нишу :)
+
+Также хотелось бы отметить Miroha — спасибо за идею UpdateHandler'ов, утащил ее себе :)
+
+<a href="https://javarush.com/groups/posts/2966-sozdaem-telegram-bota-s-ispoljhzovaniem-spring-boot-pt2-quiz-bot" target="_blank" rel="nofollow">ЧАСТЬ 2</a>
+<a href="https://javarush.com/groups/posts/2967-sozdaem-telegram-bota-s-ispoljhzovaniem-spring-boot-pt3-quiz-bot" target="_blank" rel="nofollow">ЧАСТЬ 3</a>

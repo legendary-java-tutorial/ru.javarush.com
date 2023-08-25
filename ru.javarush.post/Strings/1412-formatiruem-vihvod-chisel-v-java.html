@@ -1,0 +1,364 @@
+Форматируем вывод чисел в Java
+<p>----------------------------------------</p>
+Всем привет! Часто в наши методы приходят числа, которые нужно отобразить в каком-то особом формате. Вроде бы как мелочь, но как бы вы реализовали эту задачу? Предлагаем над этим сегодня немного поразмыслить...
+<p>----------------------------------------</p>
+Всем привет!
+
+Часто в наши методы приходят числа, которые нужно отобразить в каком-то особом формате. Вроде бы как мелочь, но как бы вы реализовали эту задачу?
+
+<img data-max-width="800" data-id="39a54a20-41b8-4bab-9d07-34673832c350" src="/images/article/39a54a20-41b8-4bab-9d07-34673832c350/800.jpeg" alt="Форматируем вывод чисел в Java - 1">Предлагаем над этим сегодня немного поразмыслить.
+
+Для начала, чтобы с головой окунуться в форматирование чисел в Java, давайте вспомним метод <span class="code">format</span> класса <span class="code">String</span>:
+
+<span class="code">public static String format(String format, Object… args)</span> — возвращает строку, отформатированную из строки <span class="code">format</span> с помощью остальных аргументов <span class="code">args</span>.
+
+И сразу пример:
+
+<pre class="language-java line-numbers"><code>
+String str = String.format("Привет - %s! Как дела %s?", "Саша", "на работе");
+System.out.println(str);
+</code></pre>
+В итоге мы получим вывод в консоли:
+
+<div class="terminal">Привет - Саша! Как дела на работе?</div><h2>Методы printf и format</h2><span class="code">String.format()</span> — не единственный метод для форматирования строки. Его аналогами могут служить <span class="code">System.out.printf()</span> и <span class="code">System.out.format();</span>.
+
+Так, предыдущий код мы можем заменить на:
+
+<pre class="language-java line-numbers"><code>
+System.out.printf("Привет - %s! Как дела %s?", "Саша", "на работе");
+</code></pre>
+или
+
+<pre class="language-java line-numbers"><code>
+System.out.format("Привет - %s! Как дела %s?", "Саша", "на работе");
+</code></pre>
+Вывод в консоли при этом останется тем же. Единственным отличием служит только то, что данные методы сразу выводят значение в консоли, в отличие от <span class="code">String.format()</span>.
+
+Но мне <span class="code">String.format()</span> нравится больше, так как нам не всегда нужно выводить результат в консоли, поэтому далее мы будем использовать именно этот способ.
+
+Вернемся же к нашему примеру. Что мы видим? А то, что в места, где были символы — <span class="code">%s</span>, вставлены строки — <span class="code">"Саша"</span> и <span class="code">"на работе"</span>.
+
+Каким образом это может нам помочь при разработке? 
+
+Представьте, что у вас есть большой шаблонный текст, но в некоторых местах вам нужно вставлять значения, которые могут быть разными и приходить в качестве аргументов извне. Вот тут нам и пригодится данное форматирование.
+
+Спецификаторы формата начинаются со знака процента % и заканчиваются символом, указывающим тип аргумента, который нужно отформатировать.
+
+И, как вы наверное поняли, <span class="code">%s</span> используется для вставки объектов — строк.
+
+Но если мы попробуем вставить, к примеру, <span class="code">double</span> в место, в котором прописан объект строки:
+
+<pre class="language-java line-numbers"><code>
+String str = String.format("Привет - %s! Как дела %s?", 55.6, "на работе");
+</code></pre>
+это также сработает. <span class="code">double</span> будет приведен к строке, и мы получим:
+
+<div class="terminal">Привет - 55.6! Как дела на работе?</div>
+Помимо строк и чисел с плавающей запятой, в Java есть и другие типы, не так ли? Поэтому давайте взглянем на весь арсенал:<table>
+<tbody><tr><th></th>
+<th>Тип форматируемого значения</th>
+<th>Пример</th></tr>
+<tr><td><span class="text-bold">%s</span></td>
+<td>Любой тип, который будет приведен к строке</td>
+<td><pre class="language-java line-numbers"><code>
+String.format("Привет %s!","мир")
+</code></pre>
+Результат: <div class="terminal">Привет мир!</div></td></tr>
+<tr><td><span class="text-bold">%b</span></td>
+<td>Любой тип, который будет приведен к <span class="code">boolean</span>: true — если значение не null, false — если null</td>
+<td><pre class="language-java line-numbers"><code>
+String.format("Привет %b!",null)
+</code></pre>
+
+Результат: <div class="terminal">Привет false</div></td></tr>
+<tr><td><span class="text-bold">%h</span></td>
+<td>Можно передавать любой объект, который будет приведен к шестнадцатеричной строке значения из метода <span class="code">hashCode ()</span></td>
+<td><pre class="language-java line-numbers"><code>
+String.format("Привет %h!","мир")
+</code></pre>
+
+Результат: <div class="terminal">Привет 106c44!<div></div></div></td></tr>
+<tr><td><span class="text-bold">%c</span></td>
+<td>Используется для задания символа Unicode (<span class="text-bold">char</span>)</td>
+<td><pre class="language-java line-numbers"><code>
+String.format("Привет м%cр!",'и')
+</code></pre>
+
+Результат: <div class="terminal">Привет мир!</div></td></tr>
+<tr><td><span class="text-bold">%d</span>
+</td><td>Задается целое число (<span class="text-bold">int. byte, short, int, long, BigInteger</span>)</td>
+<td><pre class="language-java line-numbers"><code>
+String.format("Мне уже %d!",20)
+</code></pre>
+Результат: <div class="terminal">Мне уже 20!</div></td></tr>
+<tr><td><span class="text-bold">%f</span></td>
+<td>Используется для задания числа с плавающей запятой</td>
+<td><pre class="language-java line-numbers"><code>
+String.format("Число ПИ равно -  %f!", 3.14159)
+</code></pre>
+Результат: <div class="terminal">Число ПИ равно -  3,141590!</div></td></tr>
+<tr><td><span class="text-bold">%e</span></td>
+<td>Числа с плавающей запятой в экспоненциальном представлении</td>
+<td><pre class="language-java line-numbers"><code>
+String.format("Число ПИ равно -  %e!", 3.14159);
+</code></pre>
+Результат: <div class="terminal">Число ПИ равно -  3,141590e+00!</div></td></tr>
+<tr><td><span class="text-bold">%a</span></td>
+<td>Числа с плавающей запятой будут представлены в шестнадцатеричном виде</td>
+<td><pre class="language-java line-numbers"><code>
+String.format("Число ПИ равно -  %a!", 3.14159)
+</code></pre>
+Результат: <div class="terminal">Число ПИ равно -  0x1.921f9f01b866ep1!</div></td></tr>
+<tr><td><span class="text-bold">%x</span></td>
+<td>Передается целое число (<span class="text-bold">int. byte, short, int, long, BigInteger</span>), результатом форматирования будет символ под данным номером в таблице ASCII</td>
+<td><pre class="language-java line-numbers"><code>
+String.format("Мне уже %x!",25)
+</code></pre>
+Результат: <div class="terminal">Мне уже 19!</div></td></tr>
+<tr><td><span class="text-bold">%o</span></td>
+<td>Принимается целое число (<span class="text-bold">int. byte, short, int, long, BigInteger</span>), которое будет представлено в виде восьмеричного числа</td>
+<td><pre class="language-java line-numbers"><code>
+String.format("Мне уже %o!",25);
+</code></pre>
+Результат: <div class="terminal">Мне уже 31!</div></td></tr>
+<tr><td><span class="text-bold">%t</span></td>
+<td>Префикс для преобразований даты и времени. Для форматирования требуются дополнительные флаги </td>
+<td><pre class="language-java line-numbers"><code>
+String.format("Сегодня %tA",new Date())
+</code></pre>
+Результат: <div class="terminal">Сегодня суббота</div></td></tr>
+<tr><td><span class="text-bold">%n</span></td>
+<td>Разделитель строк для конкретной платформы. Аналог \n</td>
+<td><pre class="language-java line-numbers"><code>
+String.format(" Привет %n Привет")
+</code></pre>
+Результат: <div class="terminal">Привет 
+                 Привет</div></td></tr>
+</tbody></table>Давайте используем для <span class="code">double</span> более подходящий формат: 
+
+<pre class="language-java line-numbers"><code>
+String str = String.format("Расстояние от Киева до Одессы - %f. Не так уж и мало, не правда ли?  ", 475.4d);
+System.out.println(str);
+</code></pre>
+Вывод в консоль:
+
+<div class="terminal">Расстояние от Киева до Одессы - 475,400000. Не так уж и мало, не правда ли?</div>
+Как вы уже поняли, <span class="code">%f</span> будет более подходящим спецификатором для чисел с плавающей запятой, которые включают в себя такие типы данных как <span class="code">double</span> и <span class="code">float</span> в Java.
+
+С этим спецификатором мы можем форматировать число с плавающей запятой:
+
+<pre class="language-java line-numbers"><code>
+String str = String.format("Расстояние от Киева до Одессы - %.2f. Не так уж и мало, не правда ли?  ", 475.4d);
+</code></pre>
+Вставка <span class="code">.2</span> в данный спецификатор обрежет количество знаков после запятой до двух, и мы получим вывод:
+
+<div class="terminal">Расстояние от Киева до Одессы - 475,40. Не так уж и мало, не правда ли?</div>
+<span class="code">.2</span> — не единственная поднастройка спецификаторов. Комбинация данных поднастроек называется <span class="text-bold">инструкцией</span>.<img data-max-width="512" data-id="088335ae-e68c-4e96-8b84-5a6bee89288f" src="/images/article/088335ae-e68c-4e96-8b84-5a6bee89288f/512.jpeg" alt="Форматируем вывод чисел в Java - 2">Общий вид <span class="text-bold">инструкции</span> такой:
+
+<div class="terminal">%[аргумент_индекс][флаги][ширина][.точность]спецификатор типа</div>
+ А теперь расшифруем все по порядку:<ul>
+<li><span class="text-bold">[аргумент_индекс]</span> — целое число, указывающее позицию в списке аргументов. К примеру, ссылка на первый аргумент 1$, ссылка на второй аргумент — 2$, и т.д.  Если же позиция не была задана, аргументы должны находиться в том же порядке, что и ссылки на них в строке форматирования.</li>
+ 
+<li><span class="text-bold">[флаги]</span> — специальные символы для форматирования. Например:<ul>
+<li><span class="code">+</span> флаг, означающий, что если числовое значение положительное, оно должно включать знак +</li>
+<li><span class="code">-</span> означает выравнивание результата по левому краю</li>
+<li><span class="code">,</span> устанавливает разделитель тысяч у целых чисел</li></ul></li>
+<li><span class="text-bold">[ширина]</span> — положительное целое десятичное число, определяющее минимальное количество символов, которые будут выведены. Если перед этим числом стоит 0, то недостающие символы будут дополнены 0, если 0 нет, то пробелами.</li>
+ 
+<li><span class="text-bold">[.точность]</span> — неотрицательное целое число с точкой перед ним. Как правило используется для ограничения количества символов. Специфика поведения зависит от конкретного вида спецификатора. </li>
+ 
+</ul>Также хотелось бы отметить, что все вышеперечисленные элементы инструкции не обязательны, и всё будет работать и без них.
+
+В качестве примера использования поднастроек представим, что нам нужен специфический вывод числа Пи:
+
+<pre class="language-java line-numbers"><code>
+String str = String.format("%1$+09.5f", 3.1415926535897);
+System.out.print(str);
+</code></pre>
+И соответственно, вывод в консоли:
+
+<div class="terminal">+03,14159</div>
+Вроде несложно, так?
+
+Но когда заходит речь о форматировании числа, то нельзя обойти стороной <span class="text-bold">DecimalFormat</span>. Давайте разберемся, что имеется в виду.<h2>DecimalFormat</h2><a href="https://docs.oracle.com/javase/8/docs/api/java/text/DecimalFormat.html" rel="nofollow" target="_blank">DecimalFormat</a> — класс для форматирования любого числа в Java, будь то целое число или число с плавающей запятой.
+
+Когда происходит создание объекта <span class="code">DecimalFormat</span>, прямо в конструкторе можно задать шаблон форматирования приходящих чисел. 
+
+Как будет выглядеть наш пример с использованием <span class="code">DecimalFormat</span>:
+
+<pre class="language-java line-numbers"><code>
+DecimalFormat dF = new DecimalFormat( "#.###" );
+double value = 72.224463;
+System.out.print(dF.format(value));
+</code></pre>
+Вывод в консоли:
+
+<div class="terminal">72,224</div>
+Строка <span class="code">#.###</span> является шаблоном, который указывает, что мы форматируем передаваемое значение до 3 десятичных знаков.
+
+Какие ещё доступны символы для шаблонов? Вот некоторые из них:<ul>
+<li><span class="code">#</span> — цифра, ведущие нули опускаются;</li>
+<li><span class="code">0</span> — цифра отображается всегда, даже если в номере меньше цифр (в таком случае отображается 0);</li>
+<li><span class="code">.</span> — знак десятичного разделителя;</li>
+<li><span class="code">,</span> — знак группировки разделителей (например, разделитель тысяч);</li>
+<li><span class="code">;</span> — разделяет форматы;</li>
+<li><span class="code">-</span> — отмечает префикс отрицательного числа;</li>
+<li><span class="code">%</span> — умножает на 100 и показывает число в процентах;</li>
+<li><span class="code">?</span> — умножает на 1000 и показывает число в промилле;</li>
+<li><span class="code">E</span> — разделяет мантиссу и порядок для экспоненциального формата.</li>
+</ul>Давайте взглянем на несколько примеров:
+
+<pre class="language-java line-numbers"><code>
+System.out.println(new DecimalFormat( "###,###.##" ).format(74554542.224463));
+</code></pre>
+Вывод в консоли:
+
+<div class="terminal">74 554 542,22</div>
+<pre class="language-java line-numbers"><code>
+System.out.println(new DecimalFormat( "%###.##" ).format(0.723456));
+</code></pre>
+Вывод в консоли:
+
+<div class="terminal">%72,35</div>
+<pre class="language-java line-numbers"><code>
+System.out.println(new DecimalFormat( "000.###" ).format(42.224463));
+</code></pre>
+Вывод в консоли:
+
+<div class="terminal">042,224</div>
+Не обязательно создавать каждый раз новый объект <span class="code">DecimalFormat</span>, чтобы задать новый шаблон. Будет достаточно использовать его методы <span class="code">applyPattern</span> и <span class="code">applyLocalizedPattern</span>:
+
+<pre class="language-java line-numbers"><code>
+DecimalFormat dF = new DecimalFormat("###.###");
+dF.applyPattern("000000.000");
+dF.applyLocalizedPattern("#,#00.0#");
+</code></pre>
+Когда мы говорим о форматировании числа с плавающей запятой, нас немало интересует округление, не так ли?
+
+Так вот, при обрезании числа со знаками после запятой, выходящими за заданный шаблон, <span class="code">DecimalFormat</span> округляет число в большую сторону, если последнее обрезаемое число больше 5. 
+
+А если последнее обрезаемое — 5? Ведь в таком случае это число ровно посередине между ближайшими целыми.<img data-max-width="512" data-id="7d0d4af9-f14c-4f48-8184-086f4ed2484c" src="/images/article/7d0d4af9-f14c-4f48-8184-086f4ed2484c/512.jpeg" alt="Форматируем вывод чисел в Java - 3">В этом случае в расчет берется предыдущее до него число.
+
+Если предыдущее число чётное, округление производится: 
+
+<pre class="language-java line-numbers"><code>
+DecimalFormat dF = new DecimalFormat("##.###");
+String result = dF.format(56.4595);
+System.out.println((result));
+</code></pre>
+Вывод в консоли:
+
+<div class="terminal">56,459</div>
+Если нечётное — не производится:
+
+<pre class="language-java line-numbers"><code>
+DecimalFormat dF = new DecimalFormat("##.###");
+String str = dF.format(56.4595);
+System.out.println((str));
+</code></pre>
+Вывод в консоли:
+
+<div class="terminal">56,459</div>
+Разницей между форматированием чисел с плавающей запятой с использованием <span class="code">String.format()</span> и <span class="code">DecimalFormat.format()</span> можно считать то, что в первом случае будут присутствовать конечные нули, даже если нет дробной части.
+
+Например:
+
+<pre class="language-java line-numbers"><code>
+String firstStr = String.format("%.4f", 9.00001273);
+System.out.println((firstStr));
+</code></pre>
+Вывод в консоли:
+
+<div class="terminal">9,0000</div>
+
+<pre class="language-java line-numbers"><code>
+DecimalFormat decimalFormat = new DecimalFormat("#.####");
+String secondStr = decimalFormat.format(9.00001273);
+System.out.println((secondStr));
+</code></pre>
+Вывод в консоли:
+
+<div class="terminal">9</div>
+Как видите, при форматировании числа <span class="text-bold">9.00001273</span> с точностью до четырех десятичных разрядов метод <span class="code">format()</span> у класса <span class="code">String</span> выведет значение <span class="text-bold">9.0000</span>, при этом у <span class="code">DecimalFormat</span> аналогичный метод <span class="code">format()</span> выведет <span class="text-bold">9</span>.<h2>BigDecimal и BigInteger</h2>Раз мы затронули такую тему округления чисел в Java, поговорим и о том, как для таких операций использовать класс <span class="code">BigDecimal</span>. 
+
+Этот класс ориентирован на работу с действительно БОЛЬШИМИ числами: для него максимальные значения <span class="code">double</span> и <span class="code">float</span> слишком малы. У этого класса есть много различных настроек для округления числа с плавающей запятой, а также много методов для арифметических операций.
+
+У него есть похожий класс, но ориентированный на работу с БОЛЬШИМИ целыми числами — <span class="code">BigInteger</span>.
+
+Подробнее о <span class="code">BigDecimal</span> и <span class="code">BigInteger</span> можно почитать в <a href="https://javarush.com/groups/posts/2709-biginteger-i-bigdecimal" target="_blank">этой статье</a>.<h2>Форматирование Date и Time</h2>Выше только упоминалось, что с помощью <span class="code">format()</span> класса <span class="code">String</span> можно еще и форматировать время и дату.<img data-max-width="512" data-id="982ae8bd-d9a0-4a69-a81d-682b381d1cb2" src="/images/article/982ae8bd-d9a0-4a69-a81d-682b381d1cb2/512.jpeg" alt="Форматируем вывод чисел в Java - 4">Что же, давайте взглянем, как это делается.
+
+Во-первых, хотелось бы напомнить, что для дат используется спецификатор формата <span class="code">%t</span>.
+
+Во-вторых, при форматировании шаблона, для каждого спецификатора формата для дат требуются дополнительные флаги форматирования.
+
+Вот возможные флаги форматирования для дат:<table>
+<tbody><tr><th>Флаги</th>
+<th>Описание</th></tr>
+<tr><td><span class="text-bold">%tB</span></td>
+<td>Полное название месяца, например, January, February и т.д.</td></tr>
+<tr><td><span class="text-bold">%tb</span></td>
+<td>Сокращенное название месяца, например, Jan, Feb и т.д.</td></tr>
+<tr><td><span class="text-bold">%tA</span></td>
+<td>Полное название дня недели, например, Sunday, Monday</td></tr>
+<tr><td><span class="text-bold">%ta</span></td>
+<td>Сокращенное название дня недели, например, Sun, Mon и т.д.</td></tr>
+<tr><td><span class="text-bold">%tY</span></td>
+<td>Год в формате 4 цифры, например, от 0000 до 9999</td></tr>
+<tr><td><span class="text-bold">%ty</span></td>
+<td>Год в формате 2 цифры, например, от 00 до 99</td></tr>
+<tr><td><span class="text-bold">%tm</span></td>
+<td>Месяц отформатирован с нуля в начале, например, от  01 до  12</td></tr>
+<tr><td><span class="text-bold">%tc</span></td>
+<td>Дата и время в формате %ta %tb %td %tT %tZ %tY, например, Mon Feb 17 03:56:12 PST 2020</td></tr>
+<tr><td><span class="text-bold">%tD</span></td>
+<td>Дата в формате %tm/%td/%ty</td></tr>
+<tr><td><span class="text-bold">%td</span></td>
+<td>День месяца в формате двух цифр, например, от 01 до 31</td></tr>
+<tr><td><span class="text-bold">%te</span></td>
+<td>День месяца в формате без 0 в начале, например от 1 до 31</td></tr>
+<tr><td><span class="text-bold">%tT</span></td>
+<td>Время в 24-часовом формате, например, %tH:%tM:%tS</td></tr>
+<tr><td><span class="text-bold">%tH</span></td>
+<td>Час дня в 24-часовом формате, от 00 до 23</td></tr>
+<tr><td><span class="text-bold">%tI</span></td>
+<td>Час дня для 12-часового формата, например, от 01  до 12</td></tr>
+<tr><td><span class="text-bold">%tM</span></td>
+<td>Минуты в часе форматируются с нуля в начале, например, от 00 до 59</td></tr>
+<tr><td><span class="text-bold">%tS</span></td>
+<td>Секунды в минуте, состоящие из двух цифр, например, от 00 до 59</td></tr>
+<tr><td><span class="text-bold">%tZ</span></td>
+<td>Аббревиатура часового пояса, например, PST, UTC и т.д.</td></tr>
+
+</tbody></table>Это сокращенный список возможных флагов форматирования дат — их очень много, на любой вкус. Полный список их как и возможных спецификаторов можно посмотреть по <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/Formatter.html#syntax" rel="nofollow" target="_blank">этой ссылке</a>.
+
+Давайте рассмотрим, как этим пользоваться. В этот раз используем не <span class="code">String.format()</span>, а сразу <span class="code">System.out.printf()</span>.<h3>Пример 1</h3>Помимо всего, зададим язык результа, передав его первым аргументом в метод:
+
+<pre class="language-java line-numbers"><code>
+Date date = new Date();
+System.out.printf(Locale.ENGLISH,"%tB %te, %tY",date,date,date);
+</code></pre>
+Вывод в консоли:
+
+<div class="terminal">October 11, 2020</div>
+Без задавания языка будет использован язык по умолчанию (к примеру, у меня он русский).<h3>Пример 2</h3>Давайте выведем на экран более полную дату:
+
+<pre class="language-java line-numbers"><code>
+Date date = new Date();
+System.out.printf("%td %tB %tY года %n%tH:%tM:%tS",date,date,date,date,date,date,date);
+</code></pre>
+И вывод в консоли:
+
+<div class="terminal">11 октября 2020 года 
+13:43:22</div>
+Столько раз передавать аргументом один и тот же объект Date... Как-то выглядит не очень, не так ли? 
+
+Давайте воспользуемся внутренней поднастройкой <span class="code">$</span> для указания аргумента, который мы хотим использовать:
+
+<pre class="language-java line-numbers"><code>
+System.out.printf("%1$td %1$tB %1$tY года %n%1$tH:%1$tM:%1$tS",date);
+</code></pre>
+Вывод в консоли у нас и не изменится.
+
+Есть и другие не менее интересные способы форматирования даты. О них и немного подробнее о времени и дате в Java можно почитать вот в <a href="https://javarush.com/groups/posts/1941-kak-ne-poterjatjhsja-vo-vremeni--datetime-i-calendar" target="_blank">этом материале</a>.
+
+На этом у меня на сегодня всё, спасибо за внимание!<img data-max-width="512" data-id="f587099d-37a0-4506-a52a-ebf610399731" src="/images/article/f587099d-37a0-4506-a52a-ebf610399731/512.jpeg" alt="Форматируем вывод чисел в Java - 5">

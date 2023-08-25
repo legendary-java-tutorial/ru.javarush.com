@@ -1,0 +1,476 @@
+Реализуем Command Pattern для работы с ботом. (Часть 1) - "Java-проект от А до Я"
+<p>----------------------------------------</p>
+Всем привет, дорогие друзья. Сегодня будем реализовывать шаблон (шаблон — паттерн, в нашем контексте это одно и тоже) проектирования Command для наших нужд. При помощи этого шаблона...
+<p>----------------------------------------</p>
+Всем привет, дорогие друзья. Сегодня будем реализовывать шаблон (шаблон — паттерн, в нашем контексте это одно и тоже) проектирования Command для наших нужд. При помощи этого шаблона мы будем удобно и правильно работать с обработкой команд нашего бота.
+<img data-max-width="800" data-id="4d083e79-c172-4654-b9e3-72f21e6d379b" src="https://cdn.javarush.com/images/article/4d083e79-c172-4654-b9e3-72f21e6d379b/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Реализуем Command Pattern для работы с ботом. Часть 1 - 1"><table><tbody>
+
+<tr><td>Друзья, нравится <a href="https://github.com/javarushcommunity/javarush-telegrambot" rel="nofollow" target="_blank">проект Javarush Telegram Bot</a>? Не ленитесь: ставьте <a href="https://github.com/javarushcommunity/javarush-telegrambot/stargazers" rel="nofollow" target="_blank">звезду</a>. Так будет понятно, что он интересный, и его будет приятней развивать!</td></tr>
+
+</tbody></table>Для начала хорошо было бы поговорить о том, что это за паттерн — Command. Но если я сделаю это, статья будет уж очень большой и громоздкой. Поэтому я выбрал материалы для самостоятельного изучения:<ol>
+
+<li>Это <a href="https://javarush.com/groups/posts/1684-pattern-command-svoimi-slovami" target="_blank">моя статья</a> 4-летней давности. Писал ее еще когда был джуниором, поэтому не судите строго. </li>
+<li><a href="https://www.youtube.com/watch?v=9qA5kw8dcSU" rel="nofollow" target="_blank">Видео очень эмоционального и интерактивного шведа на ютубе.</a> Очень советую. Рассказывает шикарно, английская речь чистая и понятная. И вообще у него есть видео о других паттернах проектирования.</li>
+<li>В комментариях к моей статье некто <a href="https://javarush.com/users/1710975" target="_blank">Nullptr35</a> советовал это <a href="https://www.youtube.com/watch?v=8gE-icd93WA" rel="nofollow" target="_blank">видео</a>.</li>
+
+</ol>Этого должно хватить, чтобы погрузиться в тему и быть на одной волне со мной. Ну а те, кто знаком с этим шаблоном проектирования, могут пропустить смело и идти дальше.<h2>Пишем JRTB-3</h2>Все так же, как и раньше:<ol>
+<li>Обновляем main ветку.</li>
+<li>На основе обновленной ветки main создаем новую <span class="text-bold">JRTB-3</span>.</li>
+<li>Реализуем паттерн.</li>
+<li>Создаем новый коммит с описанием проделанной работы.</li>
+<li>Создаем пул-реквест, проверяем, и если все ок — мержим нашу работу. </li>
+
+</ol>Пункты 1-2 показывать не буду: я их очень тщательно описывал в предыдущих статьях, поэтому приступим сразу к реализации шаблона.
+
+Почему нам подойдет этот шаблон? Да потому что каждый раз, когда мы будем выполнять какую-то команду, мы будем заходить в метод <span class="code">onUpdateReceived(Update update)</span>, и уже в зависимости от команды будем выполнять разную логику. Без этого паттерна у нас была бы целая тьма if-else if выражений. Что-то типа такого:
+
+<pre class="language-java line-numbers"><code>
+if (message.startsWith("/start")) {
+   doStartCommand();
+} else if(message.startsWith("/stop")) {
+   doStopCommand();
+} else if(message.startsWith("/addUser")) {
+   doAddUserCommand();
+}
+...
+else if(message.startsWith("/makeMeHappy")) {
+   doMakeMeHappyCommand();
+}
+</code></pre>
+Причем там, где троеточие, может быть еще несколько десятков команд. И как это обрабатывать нормально? Как поддерживать? Сложно и тяжело. А значит нам такой вариант не подходит. 
+
+Надо, чтобы это выглядело где-то так:
+
+<pre class="language-java line-numbers"><code>
+if (message.startsWith(COMMAND_PREFIX)) {
+   String commandIdentifier = message.split(" ")[0].toLowerCase();
+   commandContainer.getCommand(commandIdentifier, userName).execute(update);
+} else {
+   commandContainer.getCommand(NO.getCommand(), userName).execute(update);
+}
+</code></pre>
+И все! И сколько бы команд мы ни добавляли, этот участок кода будет неизменным. 
+
+Что он делает? Первый иф смотрит, что сообщение начинается с префикса команды "/". Если это так, то вычленяем строку до первого пробела и ищем соответствующую команду у CommandContainer, как только нашли ее — запускаем команду. И все…)
+
+Если будет желание и время, можно реализовать работу с командами вначале сразу в одном классе, с кучей условий и всего такого, а потом — при помощи шаблона. Вы увидите разницу. Какая будет красота!
+
+Сперва создадим пакет рядом с пакетом bot, который и будет называться <span class="text-bold">command</span>.<img data-max-width="800" data-id="71040e87-9610-4c4b-9d1a-7377af6daa97" src="https://cdn.javarush.com/images/article/71040e87-9610-4c4b-9d1a-7377af6daa97/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Реализуем Command Pattern для работы с ботом. Часть 1 - 2">И уже в этом пакете будут все классы, которые относятся реализации команды. 
+
+Нам же нужен один интерфейс для работы с командами. Для этого дела создадим его:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import org.telegram.telegrambots.meta.api.objects.Update;
+
+/**
+* Command interface for handling telegram-bot commands.
+*/
+public interface Command {
+
+   /**
+    * Main method, which is executing command logic.
+    *
+    * @param update provided {@link Update} object with all the needed data for command.
+    */
+   void execute(Update update);
+}
+</code></pre>
+На данном этапе нам не нужно реализовывать обратную операцию команды, поэтому пропустим этот метод (unexecute). 
+
+В методе execute в качестве аргумента приходит объект <span class="text-bold">Update</span> — как раз тот, который приходит в наш главный метод в боте. Этот объект будет содержать все нужное для обработки команды. 
+
+Далее добавим enum, в котором будут храниться значения команд (start, stop и так далее). Зачем нам это нужно? Чтобы у нас был только один источник истины для названий команд. Создаем его также в нашем пакете <span class="text-bold">command</span>. 
+
+Назовем его <span class="code">CommandName</span>:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+/**
+* Enumeration for {@link Command}'s.
+*/
+public enum CommandName {
+  
+   START("/start"),
+   STOP("/stop");
+  
+   private final String commandName;
+  
+   CommandName(String commandName) {
+       this.commandName = commandName;
+   }
+  
+   public String getCommandName() {
+       return commandName;
+   }
+  
+}
+</code></pre>
+Также нам нужен сервис, который будет заниматься отправкой сообщений через бота. 
+Для этого дела создадим рядом с пакетом <span class="text-bold">command</span> — пакет <span class="text-bold">service</span>, в который будем добавлять все нужные сервисы.  
+
+<em>Здесь стоит заострить внимание на том, что я подразумеваю под словом сервис в данном случае. Если рассмотреть приложение, то зачастую оно делится на несколько слоев: слой работы с эндпоинтами — контроллеры, слой бизнес логики — сервисы, и слой работы с БД — репозиторий. 
+
+Поэтому в нашем случае сервис — это класс, который осуществляет какую-то бизнес-логику.</em>
+
+Как правильно создавать сервис? Вначале создать интерфейс к нему и реализацию. Реализацию при помощи аннотации `@Service` добавить в Application Context нашего SpringBoot приложения, и уже при необходимости подтягивать его при помощи аннотации `@Autowired`.
+
+Поэтому создаем интерфейс SendBotMessageService (в именовании сервисов обычно добавляют в конце имени Service):
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.service;
+
+/**
+* Service for sending messages via telegram-bot.
+*/
+public interface SendBotMessageService {
+
+   /**
+    * Send message via telegram bot.
+    *
+    * @param chatId provided chatId in which messages would be sent.
+    * @param message provided message to be sent.
+    */
+   void sendMessage(String chatId, String message);
+}
+</code></pre>
+Далее создаем его реализацию:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.service;
+
+import com.github.javarushcommunity.jrtb.bot.JavarushTelegramBot;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+
+/**
+* Implementation of {@link SendBotMessageService} interface.
+*/
+@Service
+public class SendBotMessageServiceImpl implements SendBotMessageService {
+
+   private final JavarushTelegramBot javarushBot;
+
+   @Autowired
+   public SendBotMessageServiceImpl(JavarushTelegramBot javarushBot) {
+       this.javarushBot = javarushBot;
+   }
+
+   @Override
+   public void sendMessage(String chatId, String message) {
+       SendMessage sendMessage = new SendMessage();
+       sendMessage.setChatId(chatId);
+       sendMessage.enableHtml(true);
+       sendMessage.setText(message);
+
+       try {
+           javarushBot.execute(sendMessage);
+       } catch (TelegramApiException e) {
+           //todo add logging to the project.
+           e.printStackTrace();
+       }
+   }
+}
+</code></pre>
+Вот так выглядит реализация. Самая главная магия находится там, где создается конструктор. При помощи аннотации @Autowired при конструктор, SpringBoot будет искать у себя в Application Context объект этого класса. А он уже там находится. 
+
+Получается так работа: в нашем приложении в любом месте мы можем получить доступ к боту и что-то сделать. И вот этот сервис отвечает за то, чтобы отправлять сообщения. Чтобы мы не писали каждый раз в каждом месте что-то типа такого:
+
+<pre class="language-java line-numbers"><code>
+SendMessage sendMessage = new SendMessage();
+sendMessage.setChatId(chatId);
+sendMessage.setText(message);
+
+try {
+   javarushBot.execute(sendMessage);
+} catch (TelegramApiException e) {
+   //todo add logging to the project.
+   e.printStackTrace();
+}
+</code></pre>
+Мы эту логику вынесли в отдельный класс и при необходимости будем ею пользоваться. 
+
+Теперь нам нужно реализовать три команды: StartCommand, StopCommand и UnknownCommand. Нужны они для того, чтобы нам было чем заполнять наш контейнер для команд. Тексты пока что будут сухие и малоинформативные, в рамках этой задачи это не сильно важно. 
+
+Итак, StartCommand:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import com.github.javarushcommunity.jrtb.service.SendBotMessageService;
+import org.telegram.telegrambots.meta.api.objects.Update;
+
+/**
+* Start {@link Command}.
+*/
+public class StartCommand implements Command {
+
+   private final SendBotMessageService sendBotMessageService;
+
+   public final static String START_MESSAGE = "Привет. Я Javarush Telegram Bot. Я помогу тебе быть в курсе последних " +
+           "статей тех авторов, котрые тебе интересны. Я еще маленький и только учусь.";
+
+   // Здесь не добавляем сервис через получение из Application Context.
+   // Потому что если это сделать так, то будет циклическая зависимость, которая
+   // ломает работу приложения.
+   public StartCommand(SendBotMessageService sendBotMessageService) {
+       this.sendBotMessageService = sendBotMessageService;
+   }
+
+   @Override
+   public void execute(Update update) {
+       sendBotMessageService.sendMessage(update.getMessage().getChatId().toString(), START_MESSAGE);
+   }
+}
+</code></pre>
+Внимательно прочитайте комментарии перед конструктором. Циклическая зависимость (<a href="https://java-ru-blog.blogspot.com/2020/05/spring-ioc-container-dependency-resolution.html" rel="nofollow" target="_blank">круговая зависимость</a>) может произойти из-за не совсем правильной архитектуры. В нашем случае мы сделаем все так, чтобы все работало и было правильным. Реальный объект из Application Context будет добавлен при создании команды уже в CommandContainer.
+
+StopCommand:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import com.github.javarushcommunity.jrtb.service.SendBotMessageService;
+import org.telegram.telegrambots.meta.api.objects.Update;
+
+/**
+* Stop {@link Command}.
+*/
+public class StopCommand implements Command {
+  
+   private final SendBotMessageService sendBotMessageService;
+  
+   public static final String STOP_MESSAGE = "Деактивировал все ваши подписки \uD83D\uDE1F.";
+
+   public StopCommand(SendBotMessageService sendBotMessageService) {
+       this.sendBotMessageService = sendBotMessageService;
+   }
+
+   @Override
+   public void execute(Update update) {
+       sendBotMessageService.sendMessage(update.getMessage().getChatId().toString(), STOP_MESSAGE);
+   }
+}
+</code></pre>
+И UnknownCommand. Зачем он нам нужен? Для нас это важная команда, которая будет отвечать в случае, если мы не смогли найти ту команду, которую нам передали. 
+А еще нам нужна будет NoCommand и HelpCommand.<ul>
+
+<li>NoCommand — будет отвечать за ситуацию, когда сообщение начинается вовсе не с команды;</li>
+<li>HelpCommand — будет путеводителем для пользователя, своего рода документацией.</li>
+
+</ul>Добавим HelpCommand:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import com.github.javarushcommunity.jrtb.service.SendBotMessageService;
+import org.telegram.telegrambots.meta.api.objects.Update;
+
+import static com.github.javarushcommunity.jrtb.command.CommandName.*;
+
+/**
+* Help {@link Command}.
+*/
+public class HelpCommand implements Command {
+
+   private final SendBotMessageService sendBotMessageService;
+
+   public static final String HELP_MESSAGE = String.format("✨&lt;b&gt;Дотупные команды&lt;/b&gt;✨\n\n"
+
+                   + "&lt;b&gt;Начать\\закончить работу с ботом&lt;/b&gt;\n"
+                   + "%s - начать работу со мной\n"
+                   + "%s - приостановить работу со мной\n\n"
+                   + "%s - получить помощь в работе со мной\n",
+           START.getCommandName(), STOP.getCommandName(), HELP.getCommandName());
+
+   public HelpCommand(SendBotMessageService sendBotMessageService) {
+       this.sendBotMessageService = sendBotMessageService;
+   }
+
+   @Override
+   public void execute(Update update) {
+       sendBotMessageService.sendMessage(update.getMessage().getChatId().toString(), HELP_MESSAGE);
+   }
+}
+</code></pre>
+NoCommand:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import com.github.javarushcommunity.jrtb.service.SendBotMessageService;
+import org.telegram.telegrambots.meta.api.objects.Update;
+
+/**
+* No {@link Command}.
+*/
+public class NoCommand implements Command {
+  
+   private final SendBotMessageService sendBotMessageService;
+
+   public static final String NO_MESSAGE = "Я поддерживаю команды, начинающиеся со слеша(/).\n"
+           + "Чтобы посмотреть список команд введите /help";
+  
+   public NoCommand(SendBotMessageService sendBotMessageService) {
+       this.sendBotMessageService = sendBotMessageService;
+   }
+  
+   @Override
+   public void execute(Update update) {
+       sendBotMessageService.sendMessage(update.getMessage().getChatId().toString(), NO_MESSAGE);
+   }
+}
+</code></pre>
+И для этой задачи остался еще UnknownCommand:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import com.github.javarushcommunity.jrtb.service.SendBotMessageService;
+import org.telegram.telegrambots.meta.api.objects.Update;
+
+/**
+* Unknown {@link Command}.
+*/
+public class UnknownCommand implements Command {
+
+   public static final String UNKNOWN_MESSAGE = "Не понимаю вас \uD83D\uDE1F, напишите /help чтобы узнать что я понимаю.";
+
+   private final SendBotMessageService sendBotMessageService;
+
+   public UnknownCommand(SendBotMessageService sendBotMessageService) {
+       this.sendBotMessageService = sendBotMessageService;
+   }
+
+   @Override
+   public void execute(Update update) {
+       sendBotMessageService.sendMessage(update.getMessage().getChatId().toString(), UNKNOWN_MESSAGE);
+   }
+}
+</code></pre>
+Далее добавим контейнер для наших команд. В нем будут храниться объекты наших команд, и по запросу мы ожидаем получить необходимую команду. Назовем его <span class="code">CommandContainer</span>:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.command;
+
+import com.github.javarushcommunity.jrtb.service.SendBotMessageService;
+import com.google.common.collect.ImmutableMap;
+
+import static com.github.javarushcommunity.jrtb.command.CommandName.*;
+
+/**
+* Container of the {@link Command}s, which are using for handling telegram commands.
+*/
+public class CommandContainer {
+
+   private final ImmutableMap&lt;String, Command&gt; commandMap;
+   private final Command unknownCommand;
+
+   public CommandContainer(SendBotMessageService sendBotMessageService) {
+      
+       commandMap = ImmutableMap.&lt;string, command=""&gt;builder()
+               .put(START.getCommandName(), new StartCommand(sendBotMessageService))
+               .put(STOP.getCommandName(), new StopCommand(sendBotMessageService))
+               .put(HELP.getCommandName(), new HelpCommand(sendBotMessageService))
+               .put(NO.getCommandName(), new NoCommand(sendBotMessageService))
+               .build();
+
+       unknownCommand = new UnknownCommand(sendBotMessageService);
+   }
+
+   public Command retrieveCommand(String commandIdentifier) {
+       return commandMap.getOrDefault(commandIdentifier, unknownCommand);
+   }
+
+}
+</code></pre>
+Как видно, сделано все просто. У нас есть неизменяемая мапа с ключом в виде значения команды и со значением в виде объекта команды типа Command. В конструкторе мы заполняем неизменяемую мапу один раз и все время работы приложения к ней обращаемся.
+
+Главный и единственный метод для работы с контейнером — <span class="code">retrieveCommand(String commandIdentifier)</span>.
+
+Есть команда UnknownCommand, которая отвечает за случаи, когда мы не можем найти соответствующую команду.
+
+Теперь мы готовы внедрить контейнер в наш класс с ботом — в JavaRushTelegramBot:
+
+Вот так теперь выглядит наш класс бота:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.bot;
+
+import com.github.javarushcommunity.jrtb.command.CommandContainer;
+import com.github.javarushcommunity.jrtb.service.SendBotMessageServiceImpl;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.objects.Update;
+
+import static com.github.javarushcommunity.jrtb.command.CommandName.NO;
+
+/**
+* Telegram bot for Javarush Community from Javarush community.
+*/
+@Component
+public class JavarushTelegramBot extends TelegramLongPollingBot {
+
+   public static String COMMAND_PREFIX = "/";
+
+   @Value("${bot.username}")
+   private String username;
+
+   @Value("${bot.token}")
+   private String token;
+
+   private final CommandContainer commandContainer;
+
+   public JavarushTelegramBot() {
+       this.commandContainer = new CommandContainer(new SendBotMessageServiceImpl(this));
+   }
+
+   @Override
+   public void onUpdateReceived(Update update) {
+       if (update.hasMessage() &amp;&amp; update.getMessage().hasText()) {
+           String message = update.getMessage().getText().trim();
+           if (message.startsWith(COMMAND_PREFIX)) {
+               String commandIdentifier = message.split(" ")[0].toLowerCase();
+
+               commandContainer.retrieveCommand(commandIdentifier).execute(update);
+           } else {
+               commandContainer.retrieveCommand(NO.getCommandName()).execute(update);
+           }
+       }
+   }
+
+   @Override
+   public String getBotUsername() {
+       return username;
+   }
+
+   @Override
+   public String getBotToken() {
+       return token;
+   }
+}
+</code></pre>
+И все, изменения в коде закончены.
+
+Как это проверить? 
+
+Нужно запустить бота и проверить, что все работает.
+
+Для этого в application.properties обновляю токен, ставлю правильный и в классе JavarushTelegramBotApplication запускаю приложение:<img data-max-width="1080" data-id="9c491117-6475-4c8a-b531-54861e81bfde" src="https://cdn.javarush.com/images/article/9c491117-6475-4c8a-b531-54861e81bfde/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: Реализуем Command Pattern для работы с ботом. Часть 1 - 3">Теперь нужно проверить, что команды работают как нужно. Поэтапно проверяю:<ul>
+
+<li>StopCommand;</li>
+<li>StartCommand;</li>
+<li>HelpCommand;</li>
+<li>NoCommand;</li>
+<li>UnknownCommand.</li>
+
+</ul>Вот что получилось:<img data-max-width="512" data-id="6e46d97a-ed7b-4361-af00-559932d6ff84" src="https://cdn.javarush.com/images/article/6e46d97a-ed7b-4361-af00-559932d6ff84/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: Реализуем Command Pattern для работы с ботом. Часть 1 - 4">Бот отработал именно так, как мы и ожидали.
+
+Продолжение <a href="https://javarush.com/groups/posts/3220-java-proekt-ot-a-do-ja-realizuem-command-pattern-dlja-rabotih-s-botom-chastjh-2" target="_blank">по ссылке</a>.
+
+<h4><a href="https://javarush.com/groups/posts/2935-java-proekt-ot-a-do-ja-pishem-realjhnihy-proekt-dlja-portfolio#articles" target="_blank">Список всех материалов серии в начале этой статьи.</a></h4>

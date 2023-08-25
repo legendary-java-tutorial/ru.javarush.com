@@ -1,0 +1,124 @@
+Топ 10 вопросов об исключениях в Java
+<p>----------------------------------------</p>
+Статья описывает 10 наиболее часто задаваемых вопросов об исключениях в Java. В кратце, проверяемые исключения должны быть явно пойманы в теле метода или объявлены в секции throws метода. Непроверяемые исключения вызваны проблемами, которые не могут быть решены ...
+<p>----------------------------------------</p>
+<em>Статья описывает 10 наиболее часто задаваемых вопросов об исключениях в Java.</em>
+<img data-id="b8e622d9-5d4a-47af-b011-273ffb296a2d" data-max-width="850" alt="Топ 10 вопросов об исключениях в Java - 1" src="https://cdn.javarush.com/images/article/b8e622d9-5d4a-47af-b011-273ffb296a2d/1024.jpeg"><h2>1. Проверяемые и непроверяемые</h2>
+В кратце, проверяемые исключения должны быть явно пойманы в теле метода или объявлены в секции throws метода. Непроверяемые исключения вызваны проблемами, которые не могут быть решены, такими как деление на 0, нулевой указатель и т.п. Проверяемые исключения особенно важны потому, что от других разработчиков, использующих ваше API, вы ожидаете, что они  будут знать, как обращаться с исключениями.
+
+Например, IOException - часто используемое проверяемое исключение, а RuntimeException - непроверяемое. Перед тем, как читать дальше, ознакомьтесь с <a href="http://www.programcreek.com/2009/02/diagram-for-hierarchy-of-exception-classes/" rel="nofollow" >Иерархической диаграммой исключений в Java</a>.
+
+<h2>2. Лучший способ работать с исключениями</h2>Если исключение может быть правильно обработано, его надо ловить, иначе, оно должно быть проброшено дальше.
+
+<h2>3. Почему переменные, определенные в try не могут быть использованы в catch или finally?</h2>В следующем куске кода строку s, объявленную в блоке try, нельзя использовать в блоке catch. Этот код не скомпилируется.
+
+<pre class='lang-java line-numbers'><code>
+try {
+	File file = new File("path");
+	FileInputStream fis = new FileInputStream(file);
+	String s = "inside";
+} catch (FileNotFoundException e) {
+	e.printStackTrace();
+	System.out.println(s);
+}
+</code></pre>
+Причина в том, что неизвестно, где именно в блоке try могло быть вызвано исключение. Вполне возможно, что исключение было вызвано до того, как был объявлен объект. И именно для данного примера это справедливо.
+
+<h2>4. Почему Double.parseDouble(null) и Integer.parseInt(null) вызывают разные исключения?</h2>Так и есть, они действительно вызывают разные исключения. Это проблема JDK. Они просто были разработаны разными людьми, и не стоит всерьёз заморачиваться над этим.
+
+<pre class='lang-java line-numbers'><code>
+Integer.parseInt(null); 
+// вызывает java.lang.NumberFormatException: null
+ 
+Double.parseDouble(null); 
+// вызывает java.lang.NullPointerException
+</code></pre>
+<h2>5. Основные runtime exceptions в Java</h2>Вот несколько из них:
+
+<pre class='lang-java line-numbers'><code>
+IllegalArgumentException
+ArrayIndexOutOfBoundsException
+</code></pre>
+Их можно использовать в операторе if, когда условие не выполняется, как здесь:
+
+<pre class='lang-java line-numbers'><code>
+if (obj == null) {
+   throw new IllegalArgumentException("obj не может быть равно null");
+</code></pre>
+<h2>6. Можно ли поймать несколько исключений в одном блоке catch?</h2>Ответ - ДА. Пока классы этих исключений можно отследить вверх по иерархии наследования классов до одного и того же суперкласса, можно использовать только этот суперкласс.
+
+<h2>7. Может ли конструктор вызывать исключения?</h2>Ответ - ДА. Конструктор - это просто особый вид метода. <a href="http://www.programcreek.com/2013/01/constructor-can-throw-exceptions-in-java/" rel="nofollow" >Вот</a> пример кода.
+
+<h2>8. Вызов исключений в блоке final</h2>В принципе, можно вполне законно сделать так:
+
+<pre class='lang-java line-numbers'><code>
+public static void main(String[] args) {
+	File file1 = new File("path1");
+	File file2 = new File("path2");
+	try {
+ 
+		FileInputStream fis = new FileInputStream(file1);
+	} catch (FileNotFoundException e) {
+		e.printStackTrace();
+	} finally {
+		try {
+			FileInputStream fis = new FileInputStream(file2);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
+}
+</code></pre>
+Но чтобы сохранить читабельность кода, надо объявить вложенный блок <code>try-catch</code> как новый метод, и вставить вызов этого метода в блок <code>finally</code>.
+
+<pre class='lang-java line-numbers'><code>
+public static void main(String[] args) {
+	File file1 = new File("path1");
+	File file2 = new File("path2");
+	try {
+ 
+		FileInputStream fis = new FileInputStream(file1);
+	} catch (FileNotFoundException e) {
+		e.printStackTrace();
+	} finally {
+		methodThrowException();
+	}
+}
+</code></pre>
+<h2>9. Можно ли использовать return в блоке finally</h2> Да, можно.
+
+<h2>10. Почему разработчики обрабатывают исключения втихую?</h2>Часто встречаются например такие куски кода. Если правильная обработка исключений так важна, почему разработчики продолжают так писать?
+
+<pre class='lang-java line-numbers'><code>
+try {
+     ...
+} catch(Exception e) {
+     e.printStackTrace();
+}
+</code></pre>
+Игнорировать легче всего. Но даже если так часто поступают, не значит, что это корректно.
+
+Ссылки:
+<ol>
+<li><a href="http://docs.oracle.com/javase/tutorial/essential/exceptions/runtime.html" rel="nofollow" >Непроверяемые исключения в Java</a></li>
+<li><a href="http://docs.oracle.com/javase/6/docs/api/java/lang/Throwable.html" rel="nofollow" >Корень иерархического дерева исключений в Java</a></li>
+<li><a href="http://stackoverflow.com/questions/tagged/java+exception" rel="nofollow" >Вопросы об исключениях на сайте stackoverflow</a></li>
+</ol>
+<a href="http://www.programcreek.com/2013/10/top-10-questions-about-java-exceptions/" rel="nofollow" ><em>Оригинал статьи</em></a>
+
+<table>
+<thead>
+<tr>
+<th>
+Что еще почитать:
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<p><a href='https://javarush.com/groups/posts/1897-iskljuchenija-v-java' target='_blank'>Исключения в Java</a></p>
+</td>
+</tr>
+</tbody>
+</table>

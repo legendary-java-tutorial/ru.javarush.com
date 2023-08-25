@@ -1,0 +1,400 @@
+Особенности Java 8 – максимальное руководство (часть 1)
+<p>----------------------------------------</p>
+От редакции: статья опубликована в то время как Java 8 была доступна общественности и все указывает на то, что это действительно major-версия. Здесь мы в изобилии предоставили руководства Java Code Geeks, такие как Играем с Java 8 – Лямбды и Параллелизм, Java 8 руководство ...
+<p>----------------------------------------</p>
+Первая часть перевода статьи <a href="http://www.javacodegeeks.com/2014/05/java-8-features-tutorial.html#repeating_annotations" rel="nofollow" >Java 8 Features – The ULTIMATE Guide</a>. Вторая часть <a href="https://javarush.com/groups/posts/1040-osobennosti-java-8--maksimaljhnoe-rukovodstvo-chastjh-2">тут</a> (ссылка может поменяться).
+<img data-id="b3820b3e-4684-4a7d-94c6-3fff7adc6a2a" data-max-width="850" alt="Особенности Java 8 – максимальное руководство (часть 1) - 1" src="https://cdn.javarush.com/images/article/b3820b3e-4684-4a7d-94c6-3fff7adc6a2a/1024.jpeg">
+<em><strong>От редакции</strong>: статья опубликована в то время как Java 8 была доступна общественности и все указывает на то, что это действительно major-версия.
+
+Здесь мы в изобилии предоставили руководства Java Code Geeks, такие как <a href="http://www.javacodegeeks.com/2014/04/playing-with-java-8-lambdas-and-concurrency.html" rel="nofollow" >Играем с Java 8 – Лямбды и Параллелизм</a>, <a href="http://www.javacodegeeks.com/2014/04/java-8-date-time-api-tutorial-localdatetime.html" rel="nofollow" >Java 8 руководство по API даты и времени: LocalDateTime</a> и <a href="http://www.javacodegeeks.com/2014/04/abstract-class-versus-interface-in-the-jdk-8-era.html" rel="nofollow" >Абстрактный Класс против Интерфейса в эру Java 8</a>.
+
+Мы также ссылаемся на <a href="http://www.javacodegeeks.com/2014/04/15-must-read-java-8-tutorials.html" rel="nofollow" >15 необходимых к прочтению руководств по Java 8 из других источников</a>. Конечно мы рассматриваем некоторые из недостатков, например, <a href="http://www.javacodegeeks.com/2014/04/java-8-friday-the-dark-side-of-java-8.html" rel="nofollow" >Темная сторона Java 8</a>.
+
+Итак, пришло время собрать все основные особенности Java 8 в одном месте для вашего удобства. Наслаждайтесь!</em>
+<h2>1. Введение</h2>Без сомнений <a href="https://www.oracle.com/technetwork/java/javase/8train-relnotes-latest-2153846.html" rel="nofollow" >релиз Java 8</a> величайшее событие со времен Java 5 (выпущена довольно давно, в 2004-м). Он принес множество новых особенностей в Java как в язык, так и в компилятор, библиотеки, инструменты и JVM (виртуальная машина Java). В этом руководстве мы собираемся взглянуть на эти изменения и продемонстрировать различные сценарии использования на реальных примерах.
+
+Руководство состоит из нескольких частей каждая из которой затрагивает конкретную сторону платформы:
+<ul>
+    <li>Язык</li>
+    <li>Компилятор</li>
+    <li>Библиотеки</li>
+    <li>Инструменты</li>
+    <li>Среда выполнения (JVM)</li>
+</ul><h2>2. Новые особенности в языке Java 8</h2>В любом случае Java 8 – это крупный релиз. Можно сказать, что это заняло так много времени из-за реализации возможностей, которые искал каждый Java-разработчик. В этом разделе мы собираемся охватить большинство из них.
+<h3>2.1. Лямбды и Функциональные интерфейсы</h3>Лямбды (также известные как закрытые или анонимные методы) наиболее большое и наиболее ожидаемое изменение языка во всем релизе Java 8. Они позволяют нам задавать функциональность как аргумент метода (объявляя функцию вокруг), или задавать код как данные: понятия с которыми знаком каждый <a href="http://www.javacodegeeks.com/2014/03/functional-programming-with-java-8-lambda-expressions-monads.html" rel="nofollow" >разработчик функционального программирования</a>. Много языков на платформе JVM (Groovy, <a href="http://www.javacodegeeks.com/tutorials/scala-tutorials/" rel="nofollow" >Scala</a>, …) имели лямбды с первого дня, но у разработчиков Java не было выбора кроме как представлять лямбды через анонимные классы.
+
+Обсуждение дизайна лямбд заняли много времени и усилий общественности. Но в конце концов компромиссы были найдены, что привело к появлению новых кратких конструкций. В своей простейшей форме лямбда может быть представлена в виде разделенных запятыми списка параметров, символа <strong>–></strong> и тела. Например:
+
+<pre class='lang-java line-numbers'><code>
+Arrays.asList( "a", "b", "d" ).forEach( e -&gt; System.out.println( e ) )
+</code></pre>
+Обратите внимание, что тип аргумента <strong>e</strong> определен компилятором. Кроме того вы можете явно указать тип параметра обернув параметр в скобки. Например:
+
+<pre class='lang-java line-numbers'><code>
+Arrays.asList( "a", "b", "d" ).forEach( ( String e ) -&gt; System.out.println( e ) );
+</code></pre>
+В случае, если тело лямбды более сложное, оно может быть обернуто в фигурные скобки подобно определению обычной функции в Java. Например:
+
+<pre class='lang-java line-numbers'><code>
+Arrays.asList( "a", "b", "d" ).forEach( e -&lt; {
+    System.out.print( e );
+    System.out.print( e );
+} );
+</code></pre>
+Лямбда может ссылаться на члены класса и локальные переменные (неявно делает обращение эффективным независимо от того обращается к <code>final</code> полю или нет). Например, эти 2 фрагмента эквиваленты:
+
+<pre class='lang-java line-numbers'><code>
+String separator = ",";
+Arrays.asList( "a", "b", "d" ).forEach(
+    ( String e ) -&gt; System.out.print( e + separator ) );
+</code></pre>
+И:
+
+<pre class='lang-java line-numbers'><code>
+final String separator = ",";
+Arrays.asList( "a", "b", "d" ).forEach(
+    ( String e ) -&gt; System.out.print( e + separator ) );
+</code></pre>
+Лямбды могут возвращать значение. Тип возвращаемого значения будет определен компилятором. Объявление <code>return</code> не требуется, если тело лямбды состоит из одной строки. Два фрагмента кода ниже эквивалентны:
+
+<pre class='lang-java line-numbers'><code>
+Arrays.asList( "a", "b", "d" ).sort( ( e1, e2 ) -&gt; e1.compareTo( e2 ) );
+</code></pre>
+И:
+
+<pre class='lang-java line-numbers'><code>
+Arrays.asList( "a", "b", "d" ).sort( ( e1, e2 ) -&gt; {
+    int result = e1.compareTo( e2 );
+    return result;
+} );
+</code></pre>
+Разработчики языка долго думали как сделать уже существующие функции лямбда-дружелюбными. В результате появилось понятие функционального интерфейса. Функциональный интерфейс – это интерфейс с только одним методом. В результате он может быть неявно преобразован в лямбда-выражение. <code>java.lang.Runnable</code> и <code>java.util.concurrent.Callable</code> два замечательных примера функциональных интерфейсов. На практике  функциональные интерфейсы очень хрупки: если кто-то добавит хотя бы один другой метод в определение интерфейса, он не будет больше функциональным и процесс компиляции не завершится. Чтобы избежать этой хрупкости и явно определить намерения интерфейса как функционального в Java 8 была добавлена специальная аннотация <code>@FunctionalInterface</code> (все существующие интерфейсы в библиотеке Java получили аннотацию @FunctionalInterface). Давайте посмотрим на это простое определение функционального интерфейса:
+
+<pre class='lang-java line-numbers'><code>
+@FunctionalInterface
+public interface Functional {
+    void method();
+}
+</code></pre>
+Есть одна вещь, которую нужно иметь в виду: <a href="https://www.javacodegeeks.com/2014/05/java-8-features-tutorial.html#Interface_Default" rel="nofollow" >методы по умолчанию и статические методы</a> не нарушают принцип функционального интерфейса и могут быть объявлены:
+
+<pre class='lang-java line-numbers'><code>
+@FunctionalInterface
+public interface FunctionalDefaultMethods {
+    void method();
+         
+    default void defaultMethod() {           
+    }       
+}
+</code></pre>
+Лямбды наиболее популярный пункт Java 8. Они имеют весь потенциал для привлечения большего количества разработчиков к этой прекрасной платформе и обеспечить умелую поддержку функциональным особенностям в чистой Java. Для более детальной информации обратитесь к <a href="https://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html" rel="nofollow" >официальной документации</a>.
+<h3>2.2. Интерфейсы по умолчанию и статические методы</h3>В Java 8 было расширено определение интерфейсов двумя новыми концепциями: метод по умолчанию и статический метод. <a href="https://www.javacodegeeks.com/2014/04/java-8-default-methods-what-can-and-can-not-do.html" rel="nofollow" >Методы по умолчанию</a> делают интерфейсы несколько похожими на трейты, но служат немного другой цели. Они позволяют добавлять новые методы к существующим интерфейсам не нарушая обратную совместимость для ранее написанных версий этих интерфейсов.
+
+Разница между методами по умолчанию и абстрактными методами в том, что абстрактные методы должны быть реализованы, а методы по умолчанию нет. Вместо этого каждый интерфейс должен предоставить так называемую реализацию по умолчанию, и все наследники будут получать ее по умолчанию (с возможностью переопределить эту реализацию по умолчанию при необходимости). Давайте посмотрим на пример ниже.
+
+<pre class='lang-java line-numbers'><code>
+private interface Defaulable {
+    // Интерфейсы теперь разрешают методы по умолчанию, 
+    // клиент может реализовывать  (переопределять)
+    // или не реализовывать его
+    default String notRequired() {
+        return "Default implementation";
+    }       
+}
+	         
+private static class DefaultableImpl implements Defaulable {
+}
+	     
+private static class OverridableImpl implements Defaulable {
+    @Override
+    public String notRequired() {
+        return "Overridden implementation";
+    }
+}
+</code></pre>
+Интерфейс <code>Defaulable</code> объявил метод по умолчанию <code>notRequired()</code> используя ключевое слово <code>default</code> как часть определения метода. Один из классов, <code>DefaultableImpl</code>, реализует этот интерфейс оставляя метод по умолчанию как есть. Другой класс, <code>OverridableImpl</code>, переопределяет реализацию по умолчанию и предоставляет свою собственную.
+
+Другая интересная особенность, представленная в Java 8 – это то, что интерфейсы могут объявить (и предложить реализацию) статических методов. Вот пример:
+
+<pre class='lang-java line-numbers'><code>
+private interface DefaulableFactory {
+    // Interfaces now allow static methods
+    static Defaulable create( Supplier&lt;Defaulable&gt; supplier ) {
+        return supplier.get();
+    }
+}
+</code></pre>
+Небольшой фрагмент кода объединяет метод по умолчанию и статический метод из примера выше:
+
+<pre class='lang-java line-numbers'><code>
+public static void main( String[] args ) {
+    Defaulable defaulable = DefaulableFactory.create( DefaultableImpl::new );
+    System.out.println( defaulable.notRequired() );
+	         
+    defaulable = DefaulableFactory.create( OverridableImpl::new );
+    System.out.println( defaulable.notRequired() );
+}
+</code></pre>
+Вывод на консоль этой программы выглядит так:
+
+<pre class='lang-java line-numbers'><code>
+Default implementation
+Overridden implementation
+</code></pre>
+Реализация методов по умолчанию в JVM является очень эффективной и вызов метода поддерживается инструкциями байт-кода. Методы по умолчанию позволили существующим Java интерфейсам развиваться не нарушая процесс компиляции. Хорошие примеры – множество добавленных методов в интерфейс <code>java.util.Collection</code>: <code>stream()</code>, <code>parallelStream()</code>, <code>forEach()</code>, <code>removeIf()</code>, …
+
+Хотя будучи мощными, методы по умолчанию следует использовать с осторожностью: прежде, чем объявить метод по умолчанию стоит подумать дважды действительно ли это необходимо так как это может привести к неоднозначности компиляции и ошибках в сложных иерархиях. Для получения более детальной информации обращайтесь к <a href="https://docs.oracle.com/javase/tutorial/java/IandI/defaultmethods.html" rel="nofollow" >документации</a>.
+<h3>2.3. Ссылочные методы</h3>Ссылочные методы внедряют полезный синтаксис, чтобы ссылаться на существующие методы или конструкторы Java-классов или объектов (экземпляров). Совместно с лямбда-выражениями, ссылочные методы делают языковые конструкции компактными и лаконичными, делая его шаблонным.
+
+Ниже представлен класс <code>Car</code> как пример различных определений методов, давайте выделим четыре поддерживаемых типа ссылочных методов:
+
+<pre class='lang-java line-numbers'><code>
+public static class Car {
+    public static Car create( final Supplier&lt;Car&gt; supplier ) {
+        return supplier.get();
+    }             
+	         
+    public static void collide( final Car car ) {
+        System.out.println( "Collided " + car.toString() );
+    }
+	         
+    public void follow( final Car another ) {
+        System.out.println( "Following the " + another.toString() );
+    }
+	         
+    public void repair() {  
+        System.out.println( "Repaired " + this.toString() );
+    }
+}
+</code></pre>
+Первый ссылочный метод – ссылка на конструктор с синтаксисом <code>Class::new</code> или альтернативный для дженериков (generics) <code>Class&lt; T &gt;::new</code>. Обратите внимание, что конструктор не имеет аргументов.
+
+<pre class='lang-java line-numbers'><code>
+final Car car = Car.create( Car::new );
+final List&lt;Car&gt; cars = Arrays.asList( car );
+</code></pre>
+Второй вариант это ссылка на статический метод с синтаксисом <code>Class::static_method</code>. Обратите внимание, что метод принимает ровно один параметр типа <code>Car</code>.
+
+<pre class='lang-java line-numbers'><code>
+cars.forEach( Car::collide );
+</code></pre>
+Третий тип – ссылка на метод экземпляра произвольного объекта определенного типа с синтаксисом <code>Class::method</code>. Обратите внимание, что никакие аргументы не принимаются методом.
+
+<pre class='lang-java line-numbers'><code>
+cars.forEach( Car::repair );
+</code></pre>
+И последний, четвертый тип – ссылка на метод экземпляра определенного класса с синтаксисом <code>instance::method</code>. Обратите внимание, что метод принимает только один параметр типа <code>Car</code>.
+
+<pre class='lang-java line-numbers'><code>
+final Car police = Car.create( Car::new );
+cars.forEach( police::follow );
+</code></pre>
+Запуск всех этих примеров как Java-программы производит следующий вывод на консоль (ссылка на класс <code>Car</code> может отличаться):
+
+<pre class='lang-java line-numbers'><code>
+Collided com.javacodegeeks.java8.method.references.MethodReferences$Car@7a81197d
+Repaired com.javacodegeeks.java8.method.references.MethodReferences$Car@7a81197d
+Following the com.javacodegeeks.java8.method.references.MethodReferences$Car@7a81197d
+</code></pre>
+Для более детальной информации и деталей ссылочных методов обращайтесь к <a href="https://docs.oracle.com/javase/tutorial/java/javaOO/methodreferences.html" rel="nofollow" >официальной документации</a>.
+<h3>2.4. Повторяющиеся аннотации</h3>С тех пор как в Java 5 была введена <a href="http://www.javacodegeeks.com/2012/08/java-annotations-explored-explained.html" rel="nofollow" >поддержка аннотаций</a>, эта возможность стала очень популярной и очень широко используемой. Тем не менее, одним из ограничений использования аннотаций был тот факт, что одна и та же аннотация не может быть объявлена более одного раза в одном месте. Java 8 нарушает это правило и представляет повторяющиеся аннотации. Это позволяет тем же аннотациям повторяться несколько раз в том месте где они объявлены.
+
+Повторяющиеся аннотации следует аннотировать себя с использованием аннотации <code>@Repeatable</code>. На самом деле, это не сколько изменение языка сколько трюк компилятора, в то время как техника остается той же. Давайте посмотрим на простой пример:
+
+<pre class='lang-java line-numbers'><code>
+package com.javacodegeeks.java8.repeatable.annotations;
+	 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+	 
+public class RepeatingAnnotations {
+    @Target( ElementType.TYPE )
+    @Retention( RetentionPolicy.RUNTIME )
+    public @interface Filters {
+        Filter[] value();
+    }
+	     
+    @Target( ElementType.TYPE )
+    @Retention( RetentionPolicy.RUNTIME )
+    @Repeatable( Filters.class )
+    public @interface Filter {
+        String value();
+    };
+	     
+    @Filter( "filter1" )
+    @Filter( "filter2" )
+    public interface Filterable {       
+    }
+	     
+    public static void main(String[] args) {
+        for( Filter filter: Filterable.class.getAnnotationsByType( Filter.class ) ) {
+            System.out.println( filter.value() );
+        }
+    }
+}
+</code></pre>
+Как мы можем видеть, класс <code>Filter</code> аннотирован с помощью @Repeatable( Filters.<code>class</code> ). <code>Filters</code> просто владелец аннотаций <code>Filter</code>, но компилятор Java старается скрыть их присутствие от разработчиков. Таким образом, интерфейс <code>Filterable</code> содержит аннотации <code>Filter</code>, которые объявлены дважды (без упоминания <code>Filters</code>).
+
+Также Reflection API предоставляет новый метод <code>getAnnotationsByType()</code> для возвращения повторяющихся аннотаций некоторого типа (помните, что Filterable.<code>class</code>.getAnnotation( Filters.<code>class</code> ) вернет экземпляр <code>Filters</code> введенный компилятором).
+
+Вывод программы будет выглядеть следующим образом:
+
+<pre class='lang-java line-numbers'><code>
+filter1
+filter2
+</code></pre>
+За более детальной информацией обратитесь к <a href="https://docs.oracle.com/javase/tutorial/java/annotations/repeating.html" rel="nofollow" >официальной документации</a>.
+<h3>2.5. Улучшенное выведение типов</h3>Компилятор Java 8 получил много улучшений выведения типов. Во многих случаях явные параметры типов могут быть определены компилятором, тем самым делая код чище. Давайте взглянем на один из примеров:
+
+<pre class='lang-java line-numbers'><code>
+package com.javacodegeeks.java8.type.inference;
+	 
+public class Value&lt;T&gt; {
+    public static&lt;T&gt; T defaultValue() {
+        return null;
+    }
+	     
+    public T getOrDefault( T value, T defaultValue ) {
+        return ( value != null ) ? value : defaultValue;
+    }
+}
+</code></pre>
+А вот использование с типом <code>Value&lt;String&gt;</code>:
+
+<pre class='lang-java line-numbers'><code>
+package com.javacodegeeks.java8.type.inference;
+	 
+public class TypeInference {
+    public static void main(String[] args) {
+        final Value&lt;String&gt; value = new Value&lt;&gt;();
+        value.getOrDefault( "22", Value.defaultValue() );
+    }
+}
+</code></pre>
+Параметр типа <code>Value.defaultValue()</code> определеляется автоматически и не должен быть представлен явно. В Java 7 тот же пример не будет компилироваться и должен быть переписан в виде &lt;NOBR&gt;Value.&lt;String&gt;defaultValue()&lt;/NOBR&gt;.
+<h3>2.6. Расширенная поддержка аннотаций</h3>Java 8 расширяет контекст где могут быть использованы аннотации. Сейчас аннотацию может иметь почти все: локальные переменные, обобщенные типы, суперклассы и реализуемые интерфейсы, даже исключения методов. Несколько примеров представлено ниже:
+
+<pre class='lang-java line-numbers'><code>
+package com.javacodegeeks.java8.annotations;
+	 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.util.ArrayList;
+import java.util.Collection;
+	 
+public class Annotations {
+    @Retention( RetentionPolicy.RUNTIME )
+    @Target( { ElementType.TYPE_USE, ElementType.TYPE_PARAMETER } )
+    public @interface NonEmpty {       
+    }
+	         
+    public static class Holder&lt;@NonEmpty T&gt; extends @NonEmpty Object {
+        public void method() throws @NonEmpty Exception {          
+        }
+    }
+	         
+    @SuppressWarnings( "unused" )
+    public static void main(String[] args) {
+        final Holder&lt;String&gt; holder = new @NonEmpty Holder&lt;String&gt;();      
+        @NonEmpty Collection&lt;@NonEmpty String&gt; strings = new ArrayList&lt;&gt;();      
+    }
+}
+</code></pre>
+<code>ElementType.TYPE_USE</code> и <code>ElementType.TYPE_PARAMETER</code> два новых типа элементов, чтобы описать соответствующий контекст аннотаций. <code>Annotation Processing API</code> также потерпело незначительные изменения, чтобы распознать новые типы аннотаций в Java.
+<h2>3. Новые возможности в компиляторе Java</h2><h3>3.1. Имена параметров</h3>На протяжении всего времени разработчики Java изобретали разнообразные способы сохранения <a href="https://www.javacodegeeks.com/2014/04/constructormethod-parameters-metadata-available-via-reflection-in-jdk-8.html" rel="nofollow" >имен параметров метода в Java байт-коде</a>, чтобы сделать их доступными во время выполнения (например, <a href="https://github.com/paul-hammant/paranamer" rel="nofollow" >библиотека Paranamer</a>). И наконец, Java 8 создает эту нелегкую функцию в языке (используя Reflection API и метод <code>Parameter.getName()</code> ) и байт-коде (с помощью нового аргумента компилятора <code>javac</code>: <code>–parameters</code>).
+
+<pre class='lang-java line-numbers'><code>
+package com.javacodegeeks.java8.parameter.names;
+	 
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+ 
+public class ParameterNames {
+    public static void main(String[] args) throws Exception {
+        Method method = ParameterNames.class.getMethod( "main", String[].class );
+        for( final Parameter parameter: method.getParameters() ) {
+            System.out.println( "Parameter: " + parameter.getName() );
+        }
+    }
+}
+</code></pre>
+Если вы скомпилируете этот класс без использования аргумента <code>–parameters</code> и затем запустите программу, вы увидите что-то типа этого:
+
+<pre class='lang-java line-numbers'><code>
+Parameter: arg0
+</code></pre>
+С параметром <code>–parameters</code> переданным компилятору, вывод программы будет отличаться (будет показано фактическое имя параметра):
+
+<pre class='lang-java line-numbers'><code>
+Parameter: args
+</code></pre>
+Для <a href="https://www.javacodegeeks.com/tag/apache-maven" rel="nofollow" >опытных пользователей Maven</a> аргумент –parameters может быть добавлен в компиляцию используя секцию <code>maven-compiler-plugin</code>:
+
+<pre class='lang-java line-numbers'><code>
+&lt;plugin&gt;
+    &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+    &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+    &lt;version&gt;3.1&lt;/version&gt;
+    &lt;configuration&gt;
+    &lt;compilerArgument&gt;-parameters&lt;/compilerArgument&gt;
+    &lt;source&gt;1.8&lt;/source&gt;
+    &lt;target&gt;1.8&lt;/target&gt;
+    &lt;/configuration&gt;
+&lt;/plugin&gt;
+</code></pre>
+Для проверки доступности имен параметров есть удобный <code>isNamePresent()</code> метод предоставленный классом <code>Parameter</code>.
+<h2>4. Новые инструменты Java</h2>Java 8 поставляется с новым набором инструментов командной строки. В этом разделе мы рассмотрим самые интересные из них.
+<h3>4.1. Движок Nashorn: jjs</h3><em>jjs</em> – автономный движок Nashorn, который основан на командной строке. Он принимает список JavaScript файлов исходного кода и запускает их. Например, давайте создадим файл <em>func.js</em> следующего содержания:
+
+<pre class='lang-java line-numbers'><code>
+function f() {
+     return 1;
+};
+	 
+print( f() + 1 );
+</code></pre>
+Чтобы запустить этот файл давайте передадим его как аргумент в <em>jjs</em>:
+
+<pre class='lang-java line-numbers'><code>
+jjs func.js
+</code></pre>
+Вывод на консоль будет таким:
+
+<pre class='lang-java line-numbers'><code>
+2
+</code></pre>
+Для более подробной информации <a href="http://docs.oracle.com/javase/8/docs/technotes/tools/unix/jjs.html" rel="nofollow" >смотрите документацию</a>.
+<h3>4.2. Анализатор зависимостей класса: jdeps</h3><em>jdeps</em> действительно отличный инструмент командной строки. Он показывает зависимости на уровне пакета или класса для Java классов. Он принимает <em>.class</em> файл, папку или <em>JAR-файл</em> на вход. По умолчанию <em>jdeps</em> выводит зависимости в стандартную систему вывода (консоль).
+
+В качестве примера давайте посмотрим на отчет зависимостей популярной библиотеки <a href="https://spring.io/projects/spring-framework" rel="nofollow" >Spring Framework</a>. Чтоб сделать пример коротким давайте посмотрим зависимости только для JAR-файла <code>org.springframework.core-3.0.5.RELEASE.jar</code>.
+
+<pre class='lang-java line-numbers'><code>
+jdeps org.springframework.core-3.0.5.RELEASE.jar
+</code></pre>
+Эта команда выводит довольно много, поэтому мы будем анализировать только часть вывода. Зависимости сгруппированы по пакетам. Если зависимостей нет – будет выведено <em>not found</em>.
+
+<pre class='lang-java line-numbers'><code>
+org.springframework.core-3.0.5.RELEASE.jar -> C:\Program Files\Java\jdk1.8.0\jre\lib\rt.jar
+   org.springframework.core (org.springframework.core-3.0.5.RELEASE.jar)
+      -> java.io                                           
+      -> java.lang                                         
+      -> java.lang.annotation                              
+      -> java.lang.ref                                     
+      -> java.lang.reflect                                 
+      -> java.util                                         
+      -> java.util.concurrent                              
+      -> org.apache.commons.logging                         not found
+      -> org.springframework.asm                            not found
+      -> org.springframework.asm.commons                    not found
+   org.springframework.core.annotation (org.springframework.core-3.0.5.RELEASE.jar)
+      -> java.lang                                         
+      -> java.lang.annotation                              
+      -> java.lang.reflect                                 
+      -> java.util
+</code></pre>
+Для более детальной информации обращайтесь к <a href="http://docs.oracle.com/javase/8/docs/technotes/tools/unix/jdeps.html" rel="nofollow" >официальной документации</a>.

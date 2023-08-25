@@ -1,0 +1,226 @@
+Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1
+<p>----------------------------------------</p>
+Начну с того, что мне очень понравился цикл статей от Эллеоноры Керри про названием "Обзор REST".  В общем, я решил взять на себя смелость, и немного дополнить их. А именно, рассказать как создать базу данных...
+<p>----------------------------------------</p>
+Начну с того, что мне очень понравился цикл статей от <a href="https://javarush.com/users/1293665" target="_blank" rel="nofollow">Эллеоноры Керри</a> под названием "Обзор REST". 
+Вот ссылки на эти статьи:
+<ul>
+<li><a href="https://javarush.com/groups/posts/2486-obzor-rest-chastjh-1-chto-takoe-rest" target="_blank" rel="nofollow">Обзор REST. Часть 1: что такое REST</a></li>
+<li><a href="https://javarush.com/groups/posts/2487-obzor-rest-chastjh-2-kommunikacija-mezhdu-klientom-i-serverom-" target="_blank" rel="nofollow">Обзор REST. Часть 2: коммуникация между клиентом и сервером</a></li>
+<li><a href="https://javarush.com/groups/posts/2488-obzor-rest-chastjh-3-sozdanie-restful-servisa-na-spring-boot" target="_blank" rel="nofollow">Обзор REST. Часть 3: создание RESTful сервиса на Spring Boot</a></li>
+</ul><img src="/images/article/1bab8b6e-a2cc-4a40-93ae-ccaafcc81e39/original.png" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1 - 1" border="0">В общем, я решил взять на себя смелость, и немного дополнить их. А именно, рассказать как создать базу данных и подключить ее к этому приложению.
+
+С чего начать? Наверное с самой базы данных. Я решил использовать <span>PostgreSQL</span>, так как мне понравился дружественный интерфейс ее админки.
+
+Для начала нам нужно скачать установщик PostgreSQL, например отсюда: <a href="https://www.enterprisedb.com/downloads/postgres-postgresql-downloads" target="_blank" rel="nofollow">PostgreSQL Database Download</a>
+
+Полный процесс установки я описывать не буду, т.к. он может отличаться в зависимости от вашей ОС. Однако отмечу, что в процессе вам потребуется придумать пароль администратора для дефолтной роли (учетной записи) <span>postgres</span> и ввести его 2 раза.
+
+Для простоты я установил пароль <span>123</span>. Конечно, в реальных проектах необходимо придумать что-то посложнее. 
+<img src="/images/article/3b02a24a-079f-4e23-9245-2571bfa34a78/original.png" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1 - 2">Далее программа установки предлагает выбрать порт, я оставил его значение по умолчанию.
+<img src="/images/article/e67312ba-1234-4b22-8d8b-41fd4e6a1715/original.png" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1 - 3"><span>Locale</span> тоже оставил по умолчанию.
+<img src="/images/article/857bbc16-1b17-42d5-aa7b-83c9d03ecff9/original.png" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1 - 4">Установили, дальше открываем интерфейс администратора <span>pgAdmin</span>. Oткроется браузер со всплывающим окошком, где нас попросят ввести созданный ранее пароль.
+<img src="/images/article/59ceb969-4591-46c2-8527-77b6c134ce75/original.png" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1 - 5">Теперь нам нужно установить язык интерфейса.  Для этого нажимаем <span>Configure pgAdmin --&gt; Miscellaneous --&gt; User Language</span>, выбираем нужный язык <span>--&gt; Save</span>, и <span>перезагружаем страницу браузера</span>.
+<img src="/images/article/5542c356-13fd-4907-a52e-04b8a769ce49/original.png" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1 - 6">В левом верхнем углу страницы нажимаем <span>Server</span>, появляется окошко «<span>Подключиться к серверу</span>». Вводим наш пароль еще раз и ставим галку <span>Save Password</span>, чтобы не вводить его каждый раз.
+<img src="/images/article/fa331eab-4750-4e50-b675-a9d9c42579c2/original.png" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1 - 7">Можно было бы и далее использовать роль администратора для всех баз данных, но лучше создадим новую роль, ведь у нас может быть  много баз данных и много программ, которые их используют.
+
+Для этого в левом верхнем углу жмем на <span>PostgreSQL 12 --&gt;</span> ПКМ на <span>Роли входа/группы --&gt; Создать --&gt; Роль входа/группы</span>
+<img src="/images/article/de331482-0c9b-47df-8cd0-3e60a2286c72/original.png" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1 - 8">Во всплывающем окне на вкладке «<span>Общие</span>» вписываем имя роли. Я назвал роль <span>root</span>.
+<img src="/images/article/cc9afc7e-c897-4f8d-82d3-50a785f4d9fc/original.png" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1 - 9">На вкладке «<span>Определение</span>» создаем новый пароль, я оставил <span>123</span>, просто чтобы не запутаться.
+<img src="/images/article/9e8755bf-ef67-48ec-8230-7d9fcaa42598/original.png" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1 - 10">Переходим на вкладку «<span>Права</span>» и отмечаем все необходимые пункты. Я установил все пункты «<span>ДА</span>». Нажимаем «<span>Сохранить</span>»
+<img src="/images/article/cef886e4-a846-47eb-9d30-bac3d5cbdd73/original.png" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1 - 11">Переходим к созданию базы данных.
+
+Жмем ПКМ на <span>«Базы данных» --&gt; Создать --&gt; База данных</span>
+<img src="/images/article/1500f7cc-e5a3-4c11-a308-7b56d2a6f092/original.png" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1 - 12">На вкладке «<span>Общие</span>» создаем название базы данных. Пусть это будет, например, <span>customers</span>. Владельцем назначаем <span>root</span>, которого мы создали на предыдущем этапе.
+<img src="/images/article/96aee8bb-df7d-4a16-b6b9-fa02a1ecd5b9/original.png" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1 - 13">На вкладке «<span>Определение</span>» проверяем, что у нас установлена кодировка <span>UTF8</span>. Нажимаем «<span>Сохранить</span>». Всё, наша база данных создана (пока что пустая).
+<img src="/images/article/a5afb34f-a6a1-4aa9-9ca8-24872baefb11/original.png" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1 - 14">На этом можно было бы закончить с pgAdmin, т.к. таблицы мы будем создавать программно, но, на всякий случай, покажу как создать таблицу вручную.
+
+Разворачиваем дерево <span>customers --&gt; Схемы --&gt; public</span>. Жмем ПКМ <span>Таблицы --&gt; Создать --&gt; Таблица</span>.
+<img src="/images/article/fe41bf80-af33-403f-b3c2-4d8bb0ee3ef0/original.png" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1 - 15">Откроется всплывающее окно.
+
+На вкладке «<span>Общие</span>» назначаем имя нашей таблице, например <span>test_table</span>, владельцем назначаем <span>root</span>.
+<img src="/images/article/fd87e660-5e7b-4eb2-a2e4-1833ceda3b3c/original.png" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1 - 16">Переходим на вкладку «<span>Столбцы</span>», нажимаем на "<span>+</span>" для создания нового столбца.
+
+Вводим имя “<span>id</span>” и тип данных <span>bigserial</span>, что эквивалентно типу <span>Long</span> в Java, но с авто-инкрементом (при добавлении новой записи, <span>id</span> будет автоматически увеличиваться на единицу).
+
+<span>Не NULL</span> отмечаем как «<span>Да</span>», первичный ключ тоже «<span>Да</span>».
+<img src="/images/article/f8401b71-881c-4a7c-ac21-d362850a03da/original.png" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1 - 17">Создаем таким же образом столбцы  ”<span>name</span>”, “<span>email</span>” и ”<span>phone</span>”.
+
+Тип данных выбираем <span>character varying</span>, это соответствует типу <span>String</span>, но позволяет задать максимальную длину.
+
+Задаем максимальную длину имени в <span>200</span> символов для заполнения Ф.И.О. в одном столбце. Задаем максимальную длину <span>email</span> в <span>254</span> символа. Почему у email такая максимальная длина можно узнать <a href="https://stackoverflow.com/questions/386294/what-is-the-maximum-length-of-a-valid-email-address" target="_blank" rel="nofollow">здесь</a>.
+
+Для телефонного номера выделяем <span>20</span> символов, этого должно хватить. Немного о телефонных номерах: <a href="https://habr.com/ru/post/279751/" target="_blank" rel="nofollow">Заблуждения программистов о телефонных номерах</a> (Хабр)
+
+<span>Не NULL</span> во всех столбцах отмечаем как «<span>Да</span>», если хотим, чтобы эти данные были обязательными. Нажимаем «<span>Сохранить</span>». Всё, таблица создана.
+<img src="/images/article/1ec4945c-a216-426f-93e6-117ae343f8c6/original.png" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1 - 18">Для удаления нашей тестовой таблицы нажмите ПКМ по ней (в дереве) и «<span>удалить</span>», т.к. она нам больше не нужна, ведь мы будем создавать таблицы из нашей программы.
+
+Закрываем <span>pgAdmin</span>, и переходим к нашей программе.
+
+Открываем IDEA с нашим проектом. Нажимаем <span>Database</span> в правом столбце интерфейса, нажимаем на "<span>+</span>" для добавления нашей БД. Далее <span>Data Source --&gt; PostgreSQL</span>.
+<img src="/images/article/0dfec16b-85ba-4ce9-8412-146337cc0ffb/original.png" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1 - 19">Во всплывающем окне вписываем в поле <span>User</span> роль <span>root</span>, которую мы создали ранее, и наш пароль <span>123</span> в поле <span>password</span>.
+
+В поле <span>Database</span> пишем название нашей БД <span>customers</span>. Нажимаем кнопку <span>Test Connection</span>, и если видим зеленую галку под ней, то все в порядке, и нажимаем кнопку <span>OK</span>.
+<img src="/images/article/bc9dacc8-af6e-40b7-85aa-9e2b79858c23/original.png" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1 - 20">Всё, к БД подключились, теперь переходим к файлу <span>pom.xml</span> и добавим зависимости.
+
+<span>Для работы с БД ORM</span>:
+
+<pre class="lang-java line-numbers"><code>
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-data-jpa&lt;/artifactId&gt;
+&lt;/dependency&gt;
+</code></pre>
+<span>Для создания REST контроллера:</span>
+
+<pre class="lang-java line-numbers"><code>
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-data-rest&lt;/artifactId&gt;
+&lt;/dependency&gt;
+</code></pre>
+<span>Для сервера Tomcat:</span>
+
+<pre class="lang-java line-numbers"><code>
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-tomcat&lt;/artifactId&gt;
+&lt;/dependency&gt;
+</code></pre>
+<span>Для PostgreSQL:</span>
+
+<pre class="lang-java line-numbers"><code>
+&lt;dependency&gt;
+    &lt;groupId&gt;org.postgresql&lt;/groupId&gt;
+    &lt;artifactId&gt;postgresql&lt;/artifactId&gt;
+    &lt;version&gt;42.2.10&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+Разобрались с pom.xml, перейдем в папку resources, и заполним файл <span>application.properties</span> следующим образом:
+
+<pre class="lang-java line-numbers"><code>
+spring.datasource.url=jdbc:postgresql://localhost:5432/customers
+spring.datasource.username=root
+spring.datasource.password=123
+
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.jpa.database=postgresql
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQL10Dialect
+</code></pre>
+Здесь мы прописали URL нашей базы данных, сообщили логин и пароль для нее, прописали драйвер для PostgreSQL, обозначили, что будем использовать тип данных  PostgreSQL и прописали диалект для Hibernate.
+
+Далее создадим в той же папке resources новую директорию под названием <span>database</span>. В этой директории создадим 2 файла: <span>initDB.sql</span> и <span>populateDB.sql</span> .
+
+Первый будет отвечать за создание таблиц, второй за первоначальное их заполнение. Откроем  <span>initDB.sql</span> и увидим сверху зеленую полоску с надписью <span>SQL dialect is not configured</span>. Это означает, что мы не выбрали диалект SQL для нашего проекта (а их существует несколько). Нажимаем справа на этой же полоске на надпись <span>Change dialect to…</span>. Во всплывающем окошке жмем <span>Project SQL Dialect</span>, и поскольку база данных у нас <span>PostgreSQL</span>, то выбираем одноименный диалект. Жмем <span>ОК</span>
+<img src="/images/article/26dca57a-df1f-43cf-b349-c074b4b7f3e8/original.png" alt="Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 1 - 21">Перейдем к заполнению наших файлов <span>.sql</span>. Заполним сначала файл <span>initDB.sql</span> :
+
+<pre class="lang-java line-numbers"><code>
+CREATE TABLE IF NOT EXISTS clients
+(
+    id    BIGSERIAL PRIMARY KEY ,
+    name  VARCHAR(200) NOT NULL ,
+    email VARCHAR(254) NOT NULL ,
+    phone VARCHAR(20)  NOT NULL
+);
+</code></pre>
+Если у вас после заполнения файла какие-то слова кроме <span>clients</span> написаны белым шрифтом, то нажмите ПКМ внутри текста, и выберите еще раз <span>Change Dialect --&gt; PostgreSQL</span>. Как вы наверное уже поняли, это те же самые данные, которые мы заполняли при создании тестовой таблицы вручную. Здесь они оформлены на диалекте PostgreSQL языка SQL.
+
+Теперь заполним файл <span>populateDB.sql</span> :
+
+<pre class="lang-java line-numbers"><code>
+INSERT INTO clients VALUES
+(1, 'Vassily Petrov', 'vpetrov@jr.com', '+7 (191) 322-22-33)'),
+(2, 'Pjotr Vasechkin', 'pvasechkin@jr.com', '+7 (191) 223-33-22)');
+</code></pre>
+Если название таблицы <span>clients</span> у вас написано красными буквами, то ничего страшного. Дело в том, что мы еще не создали эту таблицу, и IDEA ее пока что не узнает.
+
+Для того, чтобы создать и заполнить таблицу, нам нужно вернуться в файл <span>application.properties</span> и добавить туда три следующие строчки:
+
+<pre class="lang-java line-numbers"><code>
+spring.datasource.initialization-mode=ALWAYS
+spring.datasource.schema=classpath*:database/initDB.sql
+spring.datasource.data=classpath*:database/populateDB.sql
+</code></pre>
+В этих строках мы говорим, что хотим инициализировать БД программно и указываем какие файлы нужно для этого использовать. Далее переходим в метод <span>main</span> нашего приложения, и <span>запускаем его</span>.
+
+После этого идем в <span>pgAdmin --&gt; Servers --&gt; PostgreSQL 12 --&gt; Базы данных --&gt; customers --&gt; Схемы --&gt; public</span>, нажимаем ПКМ на «<span>Таблицы</span>», «<span>Обновить</span>».
+
+Если всё прошло успешно, то видим созданную нами таблицу <span>clients</span>. После этого переходим обратно в файл <span>application.properties</span> и закомментируем строку.
+
+<pre class="lang-java line-numbers"><code>
+spring.datasource.data=classpath*:database/populateDB.sql
+</code></pre>
+как показано ниже:
+
+<pre class="lang-java line-numbers"><code>
+spring.datasource.url=jdbc:postgresql://localhost:5432/customers
+spring.datasource.username=root
+spring.datasource.password=123
+
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.jpa.database=postgresql
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQL10Dialect
+
+spring.datasource.initialization-mode=ALWAYS
+spring.datasource.schema=classpath*:database/initDB.sql
+#spring.datasource.data=classpath*:database/populateDB.sql
+</code></pre>
+Если мы этого не сделаем, то при следующем запуске программы получим такую ошибку: <em>org.postgresql.util.PSQLException: ОШИБКА: повторяющееся значение ключа нарушает ограничение уникальности "clients_pkey"</em>.
+
+Это происходит потому, что у нас уже заполнены в таблице поля с <span>id 1</span> и <span>2</span> (еще при первом запуске).
+
+В созданной нами таблице поле <span class="text-bold">id</span> указано как <span class="text-bold">bigserial</span>, что соответствует типу <span class="text-bold">Long</span> в Java. 
+Однако в нашей программе для этого поля используется тип <span class="text-bold">Integer</span>. 
+Я решил показать как использовать Long (BIGSERIAL), потому что это больший диапазон чем Integer.
+ Дело в том, что в таблицах поле, обозначенное как Primary Key может использоваться не только для хранения <span class="text-bold">id</span> юзеров, но и для хранения индексов самых различных данных, и количество таких записей может превысить максимальное значение Integer.
+Например, если наша программа ежесекундно производит какие-то измерения и записывает данные в таблицу.
+Для того, чтобы переписать наши классы под использование типа данных Long, нам необходимо поменять тип с Integer на Long во всех классах и методах, где используется поле <span class="text-bold">id</span>.
+Мы этого делать не будем, потому что изначально программа была написана автором под тип<span class="text-bold"> id</span> Integer, значит в этом есть какой-то смысл. 
+Чтобы продолжить, давайте еще раз удалим созданную нами таблицу <span class="text-bold">clients</span> из нашей БД, но теперь мы попробуем сделать это программно, а не вручную.
+Для этого закомментируем наш код в файле <span class="text-bold">initDB.sql</span>, и добавим одну строчку:
+<pre class="lang-java line-numbers"><code>
+-- CREATE TABLE IF NOT EXISTS clients
+-- (
+--     id    BIGSERIAL PRIMARY KEY ,
+--     name  VARCHAR(200) NOT NULL ,
+--     email VARCHAR(254) NOT NULL ,
+--     phone VARCHAR(20)  NOT NULL
+-- );
+DROP TABLE IF EXISTS clients
+</code></pre>
+
+Запустим программу, перейдем в <span class="text-bold">pgAdmin</span>, нажмем ПКМ на «<span class="text-bold">Таблицы</span>»  (в нашей базе данных <span class="text-bold">customers</span>) <span class="text-bold">- -&gt;</span> «<span class="text-bold">Обновить</span>», и увидим, что наша таблица пропала.
+
+<span class="text-bold">NB!</span> Будьте осторожны с использованием этой команды, иначе вы рискуете потерять все данные, которые были в вашей таблице!
+
+Вернемся в файл <span class="text-bold">initDB.sql</span> и перепишем его следующим образом:
+<pre class="lang-java line-numbers"><code>
+CREATE TABLE IF NOT EXISTS clients
+(
+    id    SERIAL PRIMARY KEY ,
+    name  VARCHAR(200) NOT NULL ,
+    email VARCHAR(254) NOT NULL ,
+    phone VARCHAR(50)  NOT NULL
+);
+</code></pre>
+
+Здесь мы поменяли тип <span class="text-bold">id</span> на <span class="text-bold">SERIAL</span>, что соответствует типу <span class="text-bold">Integer</span>, который мы используем для поля <span class="text-bold">id</span> в нашей программе.
+Кроме того, была увеличена максимальная длина поля phone, чтобы мы могли свободно использовать пробелы и специальные символы (скобки, тире и др.) в его написании.
+Максимальное количество цифр в телефонном номере на данный момент составляет 18 цифр (если мне не изменяет память). Я установил размер в 50 символов, чтобы хватило наверняка.
+
+Перейдем в файл application.properties, раскомментируем строку: 
+<pre class="lang-java line-numbers"><code>
+spring.datasource.data=classpath*:database/populateDB.sql
+</code></pre>
+ Запустим нашу программу, зайдем в pgAdmin, проверим что наша таблица создана,
+И закомментируем эту строку обратно.
+<pre class="lang-java line-numbers"><code>
+#spring.datasource.data=classpath*:database/populateDB.sql
+</code></pre>
+На этом первую часть статьи пожалуй закончу.  
+Надеюсь, что она вам понравится, пишите комментарии (даже если не понравилось). 
+Во второй части мы перепишем наши классы, чтобы они могли работать с реальными базами данных.
+Продолжение:
+<a href="https://javarush.com/groups/posts/2582-dobavljaem-bd-k-restful-servisu-na-spring-boot-chastjh-2" target="_blank" rel="nofollow">Добавляем БД PostgreSQL к RESTful сервису на Spring Boot. Часть 2</a>
+
+UPD Спасибо модераторам, что поправили мои картинки и форматирование текста!

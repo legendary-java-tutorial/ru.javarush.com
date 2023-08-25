@@ -1,0 +1,225 @@
+Thread'ом Java не испортишь: Часть V — Executor, ThreadPool, Fork Join
+<p>----------------------------------------</p>
+В этом обзоре мы постараемся вспомнить про Executor'ы, пулы потоков и Fork Join Framework. Узнаем, как всем этим пользоваться и где бы про это ещё посмотреть и почитать.
+<p>----------------------------------------</p>
+<h2>Вступление</h2>Итак, мы знаем, что в Java есть потоки, о чём можно прочитать в обзоре "<a href="https://javarush.com/groups/posts/2047-threadom-java-ne-isportishjh--chastjh-i---potoki" target="_blank" rel="nofollow">Thread'ом Java не испортишь : Часть I - потоки</a>".
+<img data-max-width="800" data-id="02e6f204-92ca-4955-bcbd-f1e0d387b25f" src="/images/article/02e6f204-92ca-4955-bcbd-f1e0d387b25f/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть V — Executor, ThreadPool, Fork Join - 1">Давайте ещё раз посмотрим на типовой код:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args) throws Exception {
+	Runnable task = () -&gt; {
+		System.out.println("Task executed");
+	};
+	Thread thread = new Thread(task);
+	thread.start();
+}
+</code></pre>
+Как мы видим, код для запуска задачи довольно типовой, но на каждый новый запуск нам его придётся повторять. Одно из решений — вынести его в отдельный метод, например, <code>execute(Runnable runnable)</code>. Но разработчики Java за нас уже побеспокоились и придумали интерфейс <code>Executor</code>:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args) throws Exception {
+	Runnable task = () -&gt; System.out.println("Task executed");
+	Executor executor = (runnable) -&gt; {
+		new Thread(runnable).start();
+	};
+	executor.execute(task);
+}
+</code></pre>
+Как видно, код стал лаконичнее и позволил нам просто написать код по запуску <code>Runnable</code> в потоке. Здорово, не так ли? Но это только начало:
+<img data-max-width="512" data-id="fe98eee4-5064-4626-bc15-535a728659ca" src="/images/article/fe98eee4-5064-4626-bc15-535a728659ca/512.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть V — Executor, ThreadPool, Fork Join - 2"><center><p><em><small>https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/Executor.html</small></em></p></center>Как видно, у интерфейса <code>Executor</code> есть интерфейс-наследник <code>ExecutorService</code>. В JavaDoc данного интерфейса сказано, что <code>ExecutorService</code> является описанием особого <code>Executor</code>'а, который предоставляет методы по остановке работы <code>Executor</code>'а и позволяет получить <code>java.util.concurrent.Future</code>, чтобы отслеживать процесс выполнения. Ранее, в "<a href="https://javarush.com/groups/posts/2065-threadom-java-ne-isportishjh--chastjh-iv---callable-future-i-druzjhja" target="_blank" rel="nofollow">Thread'ом Java не испортишь : Часть IV — Callable, Future и друзья</a>" мы уже кратко рассмотрели возможности <code>Future</code>. Кто забыл или не читал - советую освежить в памяти ;)
+
+Что ещё интересного в JavaDoc написано? Что у нас есть специальная фабрика <code>java.util.concurrent.Executors</code>, которая нам позволяет создавать доступные по умолчанию реализации <code>ExecutorService</code>.
+<h2>ExecutorService</h2>Ещё раз вспомним. У нас есть <code>Executor</code> для execute (т.е. выполнения) некой задачи в потоке, когда реализация создания потока скрыта от нас. У нас есть <code>ExecutorService</code> — особый <code>Executor</code>, который имеет набор возможностей по управлению ходом выполнения. И у нас есть фабрика <code>Executors</code>, которая позволяет создавать <code>ExecutorService</code>. Давайте теперь это проделаем сами:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) throws ExecutionException, InterruptedException {
+	Callable&lt;String&gt; task = () -&gt; Thread.currentThread().getName();
+	ExecutorService service = Executors.newFixedThreadPool(2);
+	for (int i = 0; i &lt; 5; i++) {
+		Future result = service.submit(task);
+		System.out.println(result.get());
+	}
+	service.shutdown();
+}
+</code></pre>
+Как мы видим, мы указали фиксированный пул потоков (<code>Fixed Thread Pool</code>) размером 2. После чего мы поочередно отправляем в пул задачи. Каждая задача возвращает строку (<code>String</code>), содержащую имя потока (<code>currentThread().getName()</code>). Важно в самом конце выполнить shutdown для <code>ExecutorService</code>, потому что в противном случае наша программа не завершится.
+
+В фабрике <code>Executors</code> есть и другие фабричные методы. Например, мы можем создать пул всего из одного потока — <code>newSingleThreadExecutor</code> или пул с кэшированием <code>newCachedThreadPool</code>, когда потоки будут убираться из пула, если они простаивают 1 минуту. 
+
+На самом деле, за этими <code>ExecutorService</code> прячется <strong>блокирующая очередь</strong>, в которую помещаются задачи и из которой эти задачи выполняются. Подробнее про блокирующие очереди можно посмотреть в видео "<a href="https://www.youtube.com/watch?v=nUYOGkh9XqE" target="_blank" rel="nofollow">Блокирующая очередь - Collections #5 - Advanced Java</a>". А так же можно прочитать обзор "<a href="http://java-online.ru/concurrent-queue-block.xhtml" target="_blank" rel="nofollow">Блокирующие очереди пакета concurrent</a>" и ответ на вопрос "<a href="https://stackoverflow.com/questions/35967792/when-to-prefer-linkedblockingqueue-over-arrayblockingqueue" target="_blank" rel="nofollow">When to prefer LinkedBlockingQueue over ArrayBlockingQueue?</a>". Супер упрощённо — <code>BlockingQueue</code> (блокирующая очередь) блокирует поток, в двух случаях:
+<ul>
+<li>поток пытается получить элементы из пустой очереди</li>
+<li>поток пытается положить элементы в полную очередь</li>
+</ul>Если посмотреть на реализацию фабричных методов, то мы увидим, как они устроены. Например:
+
+<pre class="lang-java line-numbers"><code>
+public static ExecutorService newFixedThreadPool(int nThreads) {
+        return new ThreadPoolExecutor(nThreads, nThreads,
+                                      0L, TimeUnit.MILLISECONDS,
+                                      new LinkedBlockingQueue&lt;Runnable&gt;());
+}
+</code></pre>
+или
+
+<pre class="lang-java line-numbers"><code>
+public static ExecutorService newCachedThreadPool() {
+        return new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+                                      60L, TimeUnit.SECONDS,
+                                      new SynchronousQueue&lt;Runnable&gt;());
+}
+</code></pre>
+Как мы видим, внутри фабричных методов создаются реализации <code>ExecutorService</code>. И в основном это <code>ThreadPoolExecutor</code>. Меняются только атрибуты, которые и влияют на работу.
+<img data-max-width="800" data-id="decabcf3-8341-429b-9266-a262f8a4152b" src="/images/article/decabcf3-8341-429b-9266-a262f8a4152b/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть V — Executor, ThreadPool, Fork Join - 3"><center><p><em><small>https://en.wikipedia.org/wiki/Thread_pool#/media/File:Thread_pool.svg</small></em></p></center><h2>ThreadPoolExecutor</h2>Как мы ранее увидели, внутри фабричных методов в основном создаётся <code>ThreadPoolExecutor</code>. На функциональность влияет то, какие значения переданы в качестве максимума и минимума потоков, а также какая очередь используется. А использоваться может любая реализация интерфейса <code>java.util.concurrent.BlockingQueue</code>.
+
+Говоря о <code>ThreadPoolExecutor</code>'ах, стоит отметить интересные особенности при работе. Например, нельзя посылать задачи в <code>ThreadPoolExecutor</code>, если там нет места:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) throws ExecutionException, InterruptedException {
+	int threadBound = 2;
+	ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(0, threadBound,
+            0L, TimeUnit.SECONDS, new SynchronousQueue&lt;&gt;());
+	Callable&lt;String&gt; task = () -&gt; {
+		Thread.sleep(1000);
+		return Thread.currentThread().getName();
+	};
+	for (int i = 0; i &lt; threadBound + 1; i++) {
+		threadPoolExecutor.submit(task);
+	}
+	threadPoolExecutor.shutdown();
+}
+</code></pre>
+Данный код упадёт с ошибкой вида:
+
+<pre class="lang-java line-numbers"><code>
+Task java.util.concurrent.FutureTask@7cca494b rejected from java.util.concurrent.ThreadPoolExecutor@7ba4f24f[Running, pool size = 2, active threads = 2, queued tasks = 0, completed tasks = 0]
+</code></pre>
+То есть <code>task</code> нельзя засабмитить, т.к. <code>SynchronousQueue</code> устроена так, что фактически состоит из одного элемента и не позволяет положить туда больше. Как мы видим, <code>queued tasks</code> здесь 0, и в этом нет ничего странного, т.к. это специфика <code>SynchronousQueue</code> — фактически это очередь в 1 элемент, которая всегда пустая. (!) Когда один поток кладёт в очередь элемент, он будет ждать, пока другой поток не заберёт элемент из очереди.
+
+Поэтому, мы можем заменить на <code>new LinkedBlockingQueue&lt;&gt;(1)</code> и в ошибке изменится то, что будет указано <code>queued tasks = 1</code>. Т.к. очередь всего в 1 элемент, то второй мы уже положить не можем. И упадём на этом.
+
+Продолжая тему очереди, стоит отметить, что класс <code>ThreadPoolExecutor</code> обладает дополнительными методами по обслуживанию очереди. Например, метод <code>threadPoolExecutor.purge()</code> удалит из очереди все отменённые задачи, чтобы освободить место в очереди. Ещё одной интересной функцией, связанной с очередью, является обработчик непринятых задач:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+	ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(1, 1,
+            0L, TimeUnit.SECONDS, new SynchronousQueue());
+	Callable&lt;String&gt; task = () -&gt; Thread.currentThread().getName();
+	threadPoolExecutor.setRejectedExecutionHandler((runnable, executor) -&gt; System.out.println("Rejected"));
+	for (int i = 0; i &lt; 5; i++) {
+		threadPoolExecutor.submit(task);
+	}
+	threadPoolExecutor.shutdown();
+}
+</code></pre>
+Для примера обработчик просто выводит слово <code>Rejected</code> на каждый отказ принимать задачу в очередь. Удобно, не правда ли?
+
+Кроме того, <code>ThreadPoolExecutor</code> имеет интересного наследника — <code>ScheduledThreadPoolExecutor</code>, который является <code>ScheduledExecutorService</code>. Он предоставляет возможность выполнять задачу по таймеру.
+<h2>ScheduledExecutorService</h2><code>ExecutorService</code> типа <code>ScheduledExecutorService</code> позволяют запускать задачи по расписанию (schedule).
+
+Посмотрим на пример:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+	ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(4);
+	Callable&lt;String&gt; task = () -&gt; {
+		System.out.println(Thread.currentThread().getName());
+		return Thread.currentThread().getName();
+	};
+	scheduledExecutorService.schedule(task, 1, TimeUnit.MINUTES);
+	scheduledExecutorService.shutdown();
+}
+</code></pre>
+Тут всё просто. Отправляются задачи, получаем "запланированную задачу" <code>java.util.concurrent.ScheduledFuture</code>.
+
+С расписанием может быть полезен также и следующий случай:
+
+<pre class="lang-java line-numbers"><code>
+ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(4);
+Runnable task = () -&gt; {
+	System.out.println(Thread.currentThread().getName());
+};
+scheduledExecutorService.scheduleAtFixedRate(task, 1, 2, TimeUnit.SECONDS);
+</code></pre>
+Здесь мы отправляем <code>Runnable</code> задачу на выполнение с фиксированной частотой (Fixed Rate) с определённой задержкой. В данном случае, через 1 секунду каждые 2 секунды начать выполнять задачу.
+
+Есть похожий вариант: 
+
+<pre class="lang-java line-numbers"><code>
+scheduledExecutorService.scheduleWithFixedDelay(task, 1, 2, TimeUnit.SECONDS);
+</code></pre>
+Но здесь задачи выполняются с заданным промежутком МЕЖДУ выполнением разных задач. То есть задача <code>task</code> будет выполнена через 1 секунду. Далее, как только она будет завершена, пройдёт 2 секунды, и тогда новая задача task будет запущена.
+
+По данной теме можно прочитать следующие материалы:
+<ul>
+<li><a href="https://allegro.tech/2015/05/thread-pools.html" target="_blank" rel="nofollow">An introduction to thread pools</a></li>
+<li><a href="https://www.baeldung.com/thread-pool-java-and-guava" target="_blank" rel="nofollow">Introduction to Thread Pools</a></li>
+<li><a href="https://10kloc.wordpress.com/2013/12/24/cancelling-tasks-in-executors/" target="_blank" rel="nofollow">Java Multithreading Steeplechase: Cancelling Tasks In Executors</a></li>
+<li><a href="https://zeroturnaround.com/rebellabs/fixedthreadpool-cachedthreadpool-or-forkjoinpool-picking-correct-java-executors-for-background-tasks" target="_blank" rel="nofollow">Picking correct Java executors for background tasks</a></li></ul><img data-max-width="800" data-id="d4ef6ba2-470d-4778-a638-56f0df3150eb" src="/images/article/d4ef6ba2-470d-4778-a638-56f0df3150eb/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть V — Executor, ThreadPool, Fork Join - 4"><center><p><em><small>https://dzone.com/articles/diving-into-java-8s-newworkstealingpools</small></em></p></center><h2>WorkStealingPool</h2>Помимо указанных выше пулов потоков, есть ещё один. Можно сказать, что он немного особенный. Имя ему — Work Stealing Pool.
+
+Если кратко, то Work Stealing — это такой алгоритм работы, при котором простаивающие потоки начинают забирать задачи других потоков или задачи из общей очереди.
+
+Посмотрим на пример:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+	Object lock = new Object();
+	ExecutorService executorService = Executors.newCachedThreadPool();
+	Callable&lt;String&gt; task = () -&gt; {
+		System.out.println(Thread.currentThread().getName());
+		lock.wait(2000);
+		System.out.println("Finished");
+		return "result";
+	};
+	for (int i = 0; i &lt; 5; i++) {
+		executorService.submit(task);
+	}
+	executorService.shutdown();
+}
+</code></pre>
+Если мы запустим данный код, то <code>ExecutorService</code> нам создаст 5 потоков, т.к. каждый поток будет вставать в wait очередь по локу объекта <code>lock</code>. Про мониторы и локи по нему мы уже ранее разбирались в "<a href="https://javarush.com/groups/posts/2048-threadom-java-ne-isportishjh--chastjh-ii---sinkhronizacija" target="_blank" rel="nofollow">Thread'ом Java не испортишь: Часть II — синхронизация</a>".
+
+А теперь мы заменим <code>Executors.newCachedThreadPool</code> на <code>Executors.newWorkStealingPool()</code>. Что поменяется?
+
+Мы увидим, что наши задачи выполняются не в 5 потоков, а меньше. Помните, что <code>cachedThreadPool</code> создавал на каждую задачу свой поток? Потому что <code>wait</code> блокировал поток, а следующие задачи хотели выполнятся и в пуле для них создавались новые потоки. В случае со <code>StealingPool</code> потоки не будут вечно простаивать в <code>wait</code>, они начнут выполнять соседние задачи.
+
+Чем так отличается от остальных тредпулов этот <code>WorkStealingPool</code>? Тем, что внутри него живёт на самом деле волшебный <code>ForkJoinPool</code>:
+
+<pre class="lang-java line-numbers"><code>
+public static ExecutorService newWorkStealingPool() {
+        return new ForkJoinPool
+            (Runtime.getRuntime().availableProcessors(),
+             ForkJoinPool.defaultForkJoinWorkerThreadFactory,
+             null, true);
+}
+</code></pre>
+На самом деле есть ещё одно отличие. Потоки, которые создаются для <code>ForkJoinPool</code> по умолчанию являются демон потоками, в отличие от потоков, созданных через обычный <code>ThreadPool</code>. Вообще, стоит помнить про демон-потоки, т.к. например при <code>CompletableFuture</code> тоже используются демон-потоки, если не указать свою <code>ThreadFactory</code>, которая будет создавать не демон-потоки. Вот такие вот сюрпризы могут ждать в неожиданном месте!)
+<h2>Fork/Join Pool</h2>В этой части мы поговорим про тот самый <code>ForkJoinPool</code> (его ещё называют fork/join framework), который живёт "под капотом" у <code>WorkStealingPool</code>. Вообще, Fork Join Framework появился ещё в Java 1.7. И пусть уже Java 11 на дворе, но вспомнить всё равно стоит. Не самая распространённая задача, но довольно интересная.
+
+На просторах сети есть хороший обзор на эту тему: "<a href="https://habr.com/post/128985/" target="_blank" rel="nofollow">Fork/Join Framework в Java 7</a>".
+
+<code>Fork/JoinPool</code> оперирует в своей работе таким понятием как <code>java.util.concurrent.RecursiveTask</code>. Также есть аналог — <code>java.util.concurrent.RecursiveAction</code>. RecursiveAction не возвращают результат. Таким образом <code>RecursiveTask</code> похож на <code>Callable</code>, а <code>RecursiveAction</code> похож на <code>Runnable</code>.
+
+Ну и смотря на название мы видим два ключевых метода — <code>fork</code> и <code>join</code>. Метод <code>fork</code> запускает асинхронно в отдельном потоке некоторую задачу. А метод <code>join</code> позволяет дождаться завершения выполнения работы.
+
+Существует несколько способов использования:
+<img data-max-width="800" data-id="d3a97020-34fd-44cf-b0a2-bf85b9a18fe5" src="/images/article/d3a97020-34fd-44cf-b0a2-bf85b9a18fe5/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть V — Executor, ThreadPool, Fork Join - 5">Данный картинка — это часть слайда доклада Алексея Шипилёва "<a href="https://shipilev.net/talks/j1-April2012-forkjoin.pdf" target="_blank" rel="nofollow">Fork/Join: реализация, использование, производительность</a>".
+
+Чтобы стало понятнее, стоит посмотреть его доклад на JEE CONF: "<a href="https://www.youtube.com/watch?v=_2ciDWeeXJQ" target="_blank" rel="nofollow">Fork Join особенности реализации</a>".
+<h2>Подведение итогов</h2>Итак, вот мы и закончили очередную часть обзора. Мы разобрались, что сначала придумали <code>Executor</code> для выполнения потоков. Потом решили продолжить идею и придумали <code>ExecutorService</code>. <code>ExecutorService</code> позволяет отправлять задачи на выполнение при помощи <code>submit</code> и <code>invoke</code>, а также управлять сервисом, выключая его. Т.к. <code>ExecutorService</code>'у нужны реализации, написали класс с фабричными методами и назвали его <code>Executors</code>. Он позволяет создавать пулы потоков <code>ThreadPoolExecutor</code>'ы. При этом существуют такие пулы потоков, которые позволяют ещё и указать расписание для выполнения, а за <code>WorkStealingPool</code> прячется <code>ForkJoinPool</code>.
+
+Надеюсь, Вам было не только интересно выше написанное, но и понятно ) Всегда рад предложениям и замечаниям.
+
+#Viacheslav<table>
+<tbody><tr>
+<th>Что еще почитать:
+</th>
+</tr>
+<tr>
+<td><a href="https://javarush.com/groups/posts/2047-threadom-java-ne-isportishjh--chastjh-i---potoki" target="_blank">Thread'ом Java не испортишь: Часть I — потоки</a><br>
+<a href="https://javarush.com/groups/posts/2048-threadom-java-ne-isportishjh--chastjh-ii---sinkhronizacija" target="_blank">Thread'ом Java не испортишь: Часть II — синхронизация</a><br>
+<a href="https://javarush.com/groups/posts/2060-threadom-java-ne-isportishjh--chastjh-iii---vzaimodeystvie" target="_blank">Thread'ом Java не испортишь : Часть III - взаимодействие</a><br>
+<a href="https://javarush.com/groups/posts/2065-threadom-java-ne-isportishjh--chastjh-iv---callable-future-i-druzjhja" target="_blank">Thread'ом Java не испортишь : Часть IV - Callable, Future и друзья</a><br>
+<a href="https://javarush.com/groups/posts/2111-threadom-java-ne-isportishjh--chastjh-vi---k-barjheru" target="_blank">Thread'ом Java не испортишь: Часть VI - К барьеру!</a>
+</td>
+</tr>
+</tbody></table>

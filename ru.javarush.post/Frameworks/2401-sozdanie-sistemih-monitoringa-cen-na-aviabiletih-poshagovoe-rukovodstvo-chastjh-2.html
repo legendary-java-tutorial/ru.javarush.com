@@ -1,0 +1,660 @@
+Создание системы мониторинга цен на авиабилеты: пошаговое руководство [Часть 2]
+<p>----------------------------------------</p>
+Всем привет, JavaRush сообщество! Сегодня поговорим о том, как шаг за шагом написать Spring Boot приложение для мониторинга цен на авиабилеты. Статья рассчитана на людей, которые имеют представление...
+<p>----------------------------------------</p>
+<a href="https://javarush.com/groups/posts/2400-sozdanie-sistemih-monitoringa-cen-na-aviabiletih-poshagovoe-rukovodstvo" target="_blank">Создание системы мониторинга цен на авиабилеты: пошаговое руководство [Часть 1]</a>
+<h3>Содержание</h3><ul>
+<li><a href="#topic1">Настраиваем H2 базу данных и создаем Subscription сущность. Слой Repository</a></li>
+<li><a href="#topic2">EmailNofiticationService: пишем сервис отправки электронных писем</a></li>
+<li><a href="#topic3">FlightPriceService — связь сервисов клиента с сервисами приложения</a></li>
+<li><a href="#topic4">Создаем SubscriptionService и CRUD операции в нём</a></li>
+<li><a href="#topic5">Пишем Spring Scheduler для проверки состояния билетов</a></li>
+<li><a href="#topic6">Добавляем Swagger и Swagger UI в приложение</a></li>
+</ul><img data-id="45741987-9a24-4e76-be92-dcc8cc158a94" data-max-width="850" alt="Создание системы мониторинга цен на авиабилеты: пошаговое руководство [Часть 2] - 1" src="https://cdn.javarush.com/images/article/45741987-9a24-4e76-be92-dcc8cc158a94/1024.jpeg"><h2 id="topic1">Настраиваем H2 базу данных и создаем Subscription сущность. Слой Repository</h2>Нужно хранить состояния подписок на стороне приложения, чтобы знать, кому отправлять уведомления о снижении цены. Для этого я выбрал объект со всеми необходимыми данными, которые нужны — Subscription. Воспользуемся аннотациями <a href="https://ru.wikipedia.org/wiki/Java_Persistence_API" rel="nofollow" target="_blank">JPA</a> (java persistence api), получим:
+
+<pre class="lang-java line-numbers"><code>
+import java.io.Serializable;
+import java.time.LocalDate;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import lombok.Data;
+import lombok.ToString;
+
+@Data
+@Entity
+@Table(name = "subscription")
+public class Subscription implements Serializable {
+
+   private static final long serialVersionUID = 1;
+
+   @Id
+   @GeneratedValue
+   private Long id;
+
+   @Column(name = "email")
+   private String email;
+
+   @Column(name = "country")
+   private String country;
+
+   @Column(name = "currency")
+   private String currency;
+
+   @Column(name = "locale")
+   private String locale;
+
+   @Column(name = "origin_place")
+   private String originPlace;
+
+   @Column(name = "destination_place")
+   private String destinationPlace;
+
+   @Column(name = "outbound_partial_date")
+   private LocalDate outboundPartialDate;
+
+   @Column(name = "inbound_partial_date")
+   private LocalDate inboundPartialDate;
+
+   @Column(name = "min_price")
+   private Integer minPrice;
+}
+</code></pre>
+где мы указали уже известную нам @Data. 
+
+Помимо ее есть новые:
+<ul>
+<li>@Entity — аннотация из JPA, которая говорит, что это будет сущность из базы данных;</li>
+<li>@Table(name = “subscription”) — также из JPA, которая определяет, с какой таблицей будет соединяться эта сущность.</li>
+</ul>Далее, нужно настроить H2 на проекте. К счастью, зависимость уже у нас есть: нам нужно написать простенький скрипт для создания таблицы и добавить настройки в application.properties файле. <a href="https://www.baeldung.com/spring-boot-h2-database" rel="nofollow" target="_blank">Полное описание как добавить H2</a>.
+<table class="table table--striped">
+<tbody><tr>
+<td><p>Выдержка из книги Spring in Action 5th edition:<br>
+<em>schema.sql — if there’s a file named schema.sql in the root of the application’s classpath, then the SQL in that file will be executed against the database when the application starts.</em></p>
+</td>
+</tr>
+</tbody></table>Spring Boot поймет, что файл с именем schema.sql в правильном месте будет значить, что он нужен для базы данных. Как файл со схемой БД, поместим его в корень <strong>main/resources</strong>:
+
+<strong>schema.sql</strong>
+
+<pre class="lang-java line-numbers"><code>
+DROP TABLE IF EXISTS subscription;
+
+CREATE TABLE subscription (
+   id INT AUTO_INCREMENT PRIMARY KEY,
+   email VARCHAR(250) NOT NULL,
+   country VARCHAR(250) NOT NULL,
+   currency VARCHAR(250) NOT NULL,
+   locale VARCHAR(250) NOT NULL,
+   origin_place VARCHAR(250) NOT NULL,
+   destination_place VARCHAR(250) NOT NULL,
+   outbound_partial_date DATE NOT NULL,
+   min_price INT,
+   inbound_partial_date DATE
+)
+</code></pre>
+Далее из гайда, который я привел выше, берем следующие настройки:
+
+<pre class="lang-java line-numbers"><code>
+# H2
+spring.h2.console.enabled=true
+spring.h2.console.settings.web-allow-others=true
+spring.datasource.url=jdbc:h2:mem:subscriptiondb
+spring.datasource.driverClassName=org.h2.Driver
+spring.datasource.username=flights
+spring.datasource.password=flights
+spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+</code></pre>
+Добавим SubscriptionRespository — интерфейс, при помощи которого будет общаться с БД из Java-кода.
+
+<pre class="lang-java line-numbers"><code>
+import com.github.romankh3.flightsmonitoring.repository.entity.Subscription;
+import java.util.List;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface SubscriptionRepository extends JpaRepository&lt;Subscription, Long&gt; {
+   List&lt;Subscription&gt; findByEmail(String email);
+}
+</code></pre>
+Со Spring Data этого вполне достаточно. JpaRepository имеет набор необходимых методов для нашей работы. Метод findByEmail(String email) создан как дополнительный, который нужен помимо стандартного набора. Прелесть Spring Data в том, что правильно написанного имени метода хватает, чтоб Spring уже сам все сделал без нашей реализации.
+
+Аннотация @Repository нужна для того, чтобы потом можно было этот интерфейс инъектировать в другие классы. 
+
+И всё…) Вот так просто работать со Spring Data. 
+<h2 id="topic2">EmailNofiticationService: пишем сервис отправки электронных писем</h2>Чтобы подписчики получали уведомления, необходимо добавить отправку писем на почту. Здесь можно выбрать и другой путь, например, отправку через мессенджеры.
+
+Из опыта использования gmail почты для отправки уведомлений скажу, что нужно сделать еще дополнительную настройку в аккаунте и отключить двойную авторизацию, чтобы все работало нормально. <a href="https://stackoverflow.com/questions/35347269/javax-mail-authenticationfailedexception-535-5-7-8-username-and-password-not-ac/45212730#45212730" rel="nofollow" target="_blank">Вот хорошее решение</a>.
+
+Если работаешь со Spring Boot, велика вероятность, что с задачей которую нужно реализовать, уже решили и можно воспользоваться этим. А именно, Spring boot starter mail. Зависимость уже добавили еще при создании проекта, поэтому добавляем необходимые настройки в application.properties <a href="https://www.mkyong.com/spring-boot/spring-boot-how-to-send-email-via-smtp/" rel="nofollow" target="_blank">как указано в статье</a>.
+
+<pre class="lang-java line-numbers"><code>
+# Spring Mail
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=IMAIL
+spring.mail.password=PASSWORD
+
+# Other properties
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.connectiontimeout=5000
+spring.mail.properties.mail.smtp.timeout=5000
+spring.mail.properties.mail.smtp.writetimeout=5000
+
+# TLS , port 587
+spring.mail.properties.mail.smtp.starttls.enable=true
+</code></pre>
+и собственно сервис. Нужно отправлять уведомление о регистрации подписки и об уменьшении цены на перелет:
+
+<pre class="lang-java line-numbers"><code>
+import com.github.romankh3.flightsmonitoring.repository.entity.Subscription;
+
+/**
+* Sends email notification.
+*/
+public interface EmailNotifierService {
+
+   /**
+    * Notifies subscriber, that the minPrice has decreased.
+    *
+    * @param subscription the {@link Subscription} object.
+    * @param oldMinPrice minPrice before recount.
+    * @param newMinPrice minPrice after recount.
+    */
+   void notifySubscriber(Subscription subscription, Integer oldMinPrice, Integer newMinPrice);
+
+   /**
+    * Notifies subscriber, that subscription has added.
+    *
+    * @param subscription the {@link Subscription} object.
+    */
+   void notifyAddingSubscription(Subscription subscription);
+}
+</code></pre>
+ и реализация:
+
+<pre class="lang-java line-numbers"><code>
+import com.github.romankh3.flightsmonitoring.repository.entity.Subscription;
+import com.github.romankh3.flightsmonitoring.service.EmailNotifierService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.stereotype.Service;
+
+/**
+* {@inheritDoc}
+*/
+@Slf4j
+@Service
+public class EmailNotifierServiceImpl implements EmailNotifierService {
+
+   @Autowired
+   private JavaMailSender javaMailSender;
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public void notifySubscriber(Subscription subscription, Integer oldMinPrice, Integer newMinPrice) {
+       log.debug("method notifySubscriber STARTED");
+       SimpleMailMessage msg = new SimpleMailMessage();
+       msg.setTo(subscription.getEmail());
+       msg.setSubject("Flights Monitoring Service");
+       msg.setText(String.format("Hello, dear! \n "
+               + "the price for your flight has decreased \n"
+               + "Old min price = %s,\n new min price = %s,\n Subscription details = %s", oldMinPrice, newMinPrice, subscription.toString()));
+       javaMailSender.send(msg);
+       log.debug("method notifySubscriber FINISHED");
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public void notifyAddingSubscription(Subscription subscription) {
+       log.debug("method notifyAddingSubscription STARTED");
+       SimpleMailMessage msg = new SimpleMailMessage();
+       msg.setTo(subscription.getEmail());
+       msg.setSubject("Flights Monitoring Service");
+       msg.setText(String.format("Hello, dear! \n "
+               + "Subscription has been successfully added. \n"
+               + "Subscription details = %s", subscription.toString()));
+       javaMailSender.send(msg);
+       log.debug("method notifyAddingSubscription FINISHED");
+   }
+}
+</code></pre><h2 id="topic3">FlightPriceService — связь сервисов клиента с сервисами приложения</h2>Чтобы связать работу нашего FlightPricesClient и сервиса для обработки подписок, нужно создать сервис, который будет на основании Subscription объекта выдавать полную информацию о рейсе с минимальной стоимостью.
+
+Для этого есть FlightPriceService:
+
+<pre class="lang-java line-numbers"><code>
+import com.github.romankh3.flightsmonitoring.client.dto.FlightPricesDto;
+import com.github.romankh3.flightsmonitoring.repository.entity.Subscription;
+
+/**
+* Service, for getting details based on {@link Subscription} object.
+*/
+public interface FlightPriceService {
+
+   /**
+    * Finds minPrice based on {@link Subscription}.
+    *
+    * @param flightPricesDto provided {@link FlightPricesDto} object.
+    * @return
+    */
+   Integer findMinPrice(FlightPricesDto flightPricesDto);
+
+   /**
+    * Finds all the flight data related to {@link Subscription} object.
+    *
+    * @param subscription provided {@link Subscription} object
+    * @return {@link FlightPricesDto} with all the data related to flight specific in {@link Subscription}.
+    */
+   FlightPricesDto findFlightPrice(Subscription subscription);
+}
+</code></pre>
+и реализация:
+
+<pre class="lang-java line-numbers"><code>
+import com.github.romankh3.flightsmonitoring.client.dto.FlightPricesDto;
+import com.github.romankh3.flightsmonitoring.client.service.FlightPricesClient;
+import com.github.romankh3.flightsmonitoring.repository.entity.Subscription;
+import com.github.romankh3.flightsmonitoring.service.FlightPriceService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+/**
+* {@inheritDoc}
+*/
+@Service
+public class FlightPriceServiceImpl implements FlightPriceService {
+
+   @Autowired
+   private FlightPricesClient flightPricesClient;
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public Integer findMinPrice(FlightPricesDto flightPricesDto) {
+       return flightPricesDto.getQuotas().get(0).getMinPrice();
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public FlightPricesDto findFlightPrice(Subscription subscription) {
+       if (subscription.getInboundPartialDate() == null) {
+           return flightPricesClient
+                   .browseQuotes(subscription.getCountry(), subscription.getCurrency(), subscription.getLocale(),
+                           subscription.getOriginPlace(), subscription.getDestinationPlace(),
+                           subscription.getOutboundPartialDate().toString());
+       } else {
+           return flightPricesClient
+                   .browseQuotes(subscription.getCountry(), subscription.getCurrency(), subscription.getLocale(),
+                           subscription.getOriginPlace(), subscription.getDestinationPlace(),
+                           subscription.getOutboundPartialDate().toString(), subscription.getInboundPartialDate().toString());
+       }
+   }
+}
+</code></pre>
+Здесь у нас есть два метода: один возвращает полную информацию о полете с минимальной ценой, а другой принимает эту информацию и выдает значение минимальной цены. Это можно было бы проделывать каждый раз и с результатом, но я считаю, что так удобнее использовать.
+<h2 id="topic4">Создаем SubscriptionService и CRUD операции в нём</h2>Для полного управления подписками нужно создать сервис с CRUD операциями.
+
+CRUD расшифровывается как create, read, update, delete. То есть нужно уметь создавать подписку, считать ее по ID, отредактировать и удалить. С одной лишь разницей, что получать подписки будем не по ID, а по email, так как нам нужно именно это. Ведь зачем нам подписки по непонятному ID, а вот все подписки пользователя по его почте реально нужны.
+
+Итак SubscriptionService:
+
+<pre class="lang-java line-numbers"><code>
+import com.github.romankh3.flightsmonitoring.repository.entity.Subscription;
+import com.github.romankh3.flightsmonitoring.rest.dto.SubscriptionCreateDto;
+import com.github.romankh3.flightsmonitoring.rest.dto.SubscriptionDto;
+import com.github.romankh3.flightsmonitoring.rest.dto.SubscriptionUpdateDto;
+import java.util.List;
+
+/**
+* Manipulates with  subscriptions.
+*/
+public interface SubscriptionService {
+
+   /**
+    * Add new subscription.
+    * @param dto the dto of the subscription.
+    */
+   SubscriptionDto create(SubscriptionCreateDto dto);
+
+   /**
+    * Get all subscription based on email.
+    *
+    * @param email provided email;
+    * @return the collection of the {@link SubscriptionDto} objects.
+    */
+   List&lt;SubscriptionDto&gt; findByEmail(String email);
+
+   /**
+    * Remove subscription based on it ID
+    *
+    * @param subscriptionId the ID of the {@link Subscription}.
+    */
+   void delete(Long subscriptionId);
+
+   /**
+    * Update subscription based on ID
+    *
+    *
+    * @param subscriptionId the ID of the subscription to be updated.
+    * @param dto the data to be updated.
+    * @return updated {@link SubscriptionDto}.
+    */
+   SubscriptionDto update(Long subscriptionId, SubscriptionUpdateDto dto);
+}
+</code></pre>
+В аргументах можно заметить три новых DTO объекта:
+<ul>
+<li>SubscriptionDto — содержит всю информацию для показа;</li>
+<li>SubscriptionCreateDto — данные для создания подписки;</li>
+<li>SubscriptionUpdateDto — данные, которые можно обновлять в подписке.</li>
+</ul>В Create, Update DTO не попали такие поля как ID, minPrice, так как у пользователя есть к ним доступ только на чтение. ID задает база данных, а minPrice получаем от запроса на Skyscanner API. 
+
+И реализация этого сервиса, SubscriptionServiceImpl:
+
+<pre class="lang-java line-numbers"><code>
+import com.github.romankh3.flightsmonitoring.client.dto.FlightPricesDto;
+import com.github.romankh3.flightsmonitoring.repository.SubscriptionRepository;
+import com.github.romankh3.flightsmonitoring.repository.entity.Subscription;
+import com.github.romankh3.flightsmonitoring.rest.dto.SubscriptionCreateDto;
+import com.github.romankh3.flightsmonitoring.rest.dto.SubscriptionDto;
+import com.github.romankh3.flightsmonitoring.rest.dto.SubscriptionUpdateDto;
+import com.github.romankh3.flightsmonitoring.service.EmailNotifierService;
+import com.github.romankh3.flightsmonitoring.service.FlightPriceService;
+import com.github.romankh3.flightsmonitoring.service.SubscriptionService;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Example;
+import org.springframework.stereotype.Service;
+
+/**
+* {@inheritDoc}
+*/
+@Slf4j
+@Service
+public class SubscriptionServiceImpl implements SubscriptionService {
+
+   @Autowired
+   private SubscriptionRepository subscriptionRepository;
+
+   @Autowired
+   private FlightPriceService flightPriceService;
+
+   @Autowired
+   private EmailNotifierService emailNotifierService;
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public SubscriptionDto create(SubscriptionCreateDto dto) {
+       Subscription subscription = toEntity(dto);
+       Optional&lt;Subscription&gt; one = subscriptionRepository.findOne(Example.of(subscription));
+
+       if (one.isPresent()) {
+           log.info("The same subscription has been found for Subscription={}", subscription);
+           Subscription fromDatabase = one.get();
+           FlightPricesDto flightPriceResponse = flightPriceService.findFlightPrice(subscription);
+           subscription.setMinPrice(flightPriceService.findMinPrice(flightPriceResponse));
+           return toDto(fromDatabase, flightPriceResponse);
+       } else {
+           FlightPricesDto flightPriceResponse = flightPriceService.findFlightPrice(subscription);
+           subscription.setMinPrice(flightPriceService.findMinPrice(flightPriceResponse));
+           Subscription saved = subscriptionRepository.save(subscription);
+           log.info("Added new subscription={}", saved);
+           emailNotifierService.notifyAddingSubscription(subscription);
+           return toDto(saved, flightPriceResponse);
+       }
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public List&lt;SubscriptionDto&gt; findByEmail(String email) {
+       return subscriptionRepository.findByEmail(email).stream()
+               .map(subscription -&gt; {
+                   FlightPricesDto flightPriceResponse = flightPriceService.findFlightPrice(subscription);
+                   if (subscription.getMinPrice() != flightPriceService.findMinPrice(flightPriceResponse)) {
+                       subscription.setMinPrice(flightPriceService.findMinPrice(flightPriceResponse));
+                       subscriptionRepository.save(subscription);
+                   }
+                   return toDto(subscription, flightPriceResponse);
+               })
+               .collect(Collectors.toList());
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public void delete(Long subscriptionId) {
+       subscriptionRepository.deleteById(subscriptionId);
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public SubscriptionDto update(Long subscriptionId, SubscriptionUpdateDto dto) {
+       Subscription subscription = subscriptionRepository.getOne(subscriptionId);
+       subscription.setDestinationPlace(dto.getDestinationPlace());
+       subscription.setOriginPlace(dto.getOriginPlace());
+       subscription.setLocale(dto.getLocale());
+       subscription.setCurrency(dto.getCurrency());
+       subscription.setCountry(dto.getCountry());
+       subscription.setEmail(dto.getEmail());
+       subscription.setOutboundPartialDate(dto.getOutboundPartialDate());
+       subscription.setInboundPartialDate(dto.getInboundPartialDate());
+
+       FlightPricesDto flightPriceResponse = flightPriceService.findFlightPrice(subscription);
+       subscription.setMinPrice(flightPriceService.findMinPrice(flightPriceResponse));
+       return toDto(subscriptionRepository.save(subscription), flightPriceResponse);
+   }
+
+   private Subscription toEntity(SubscriptionCreateDto dto) {
+       Subscription subscription = new Subscription();
+       subscription.setCountry(dto.getCountry());
+       subscription.setCurrency(dto.getCurrency());
+       subscription.setDestinationPlace(dto.getDestinationPlace());
+       subscription.setInboundPartialDate(dto.getInboundPartialDate());
+       subscription.setOutboundPartialDate(dto.getOutboundPartialDate());
+       subscription.setLocale(dto.getLocale());
+       subscription.setOriginPlace(dto.getOriginPlace());
+       subscription.setEmail(dto.getEmail());
+
+       return subscription;
+   }
+
+   private SubscriptionDto toDto(Subscription entity, FlightPricesDto response) {
+       SubscriptionDto dto = new SubscriptionDto();
+       dto.setEmail(entity.getEmail());
+       dto.setCountry(entity.getCountry());
+       dto.setCurrency(entity.getCurrency());
+       dto.setLocale(entity.getLocale());
+       dto.setOriginPlace(entity.getOriginPlace());
+       dto.setDestinationPlace(entity.getDestinationPlace());
+       dto.setOutboundPartialDate(entity.getOutboundPartialDate());
+       dto.setInboundPartialDate(entity.getInboundPartialDate());
+       dto.setMinPrice(entity.getMinPrice());
+       dto.setId(entity.getId());
+       dto.setFlightPricesDto(response);
+       return dto;
+   }
+}
+</code></pre><h2 id="topic5">Пишем Spring Scheduler для проверки состояния билетов</h2>Чтобы знать, изменилась ли цена на авиабилеты, нужно время от времени проводить запросы по созданным подпискам и проверять с сохраненным состоянием минимальной цены, которая лежит в базе данных.
+
+Для этого есть Spring Scheduler, который и поможет нам с этим. Вот <a href="https://spring.io/guides/gs/scheduling-tasks/" rel="nofollow" target="_blank">отличное описание</a>. Как и всё во Spring, не нужно много действий:
+<ul>
+<li><p>Добавляем аннотацию @EnableScheduling;</p></li>
+<li><p>Создаем SchedulerTasks объект и помещаем его в Application Context</p>
+<pre class="lang-java line-numbers"><code>
+import com.github.romankh3.flightsmonitoring.service.RecountMinPriceService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+@Slf4j
+@Component
+public class SchedulerTasks {
+
+   @Autowired
+   private RecountMinPriceService recountMinPriceService;
+
+   private static final long TEN_MINUTES = 1000 * 60 * 10;
+
+   @Scheduled(fixedRate = TEN_MINUTES)
+   public void recountMinPrice() {
+       log.debug("recount minPrice Started");
+       recountMinPriceService.recount();
+       log.debug("recount minPrice finished");
+   }
+}
+</code></pre></li>
+<li><p>Пишем RecountMinPriceService, который будет выполнять всю логику:</p>
+<pre class="lang-java line-numbers"><code>
+/**
+* Recounts minPrice for all the subscriptions.
+*/
+public interface RecountMinPriceService {
+
+   /**
+    * Recounts minPrice for all the subscriptions.
+    */
+   void recount();
+}
+</code></pre>
+<p>и реализация:</p>
+<pre class="lang-java line-numbers"><code>
+import com.github.romankh3.flightsmonitoring.client.dto.FlightPricesDto;
+import com.github.romankh3.flightsmonitoring.repository.SubscriptionRepository;
+import com.github.romankh3.flightsmonitoring.service.EmailNotifierService;
+import com.github.romankh3.flightsmonitoring.service.FlightPriceService;
+import com.github.romankh3.flightsmonitoring.service.RecountMinPriceService;
+import java.time.LocalDate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+/**
+* {@inheritDoc}
+*/
+@Service
+public class RecountMinPriceServiceImpl implements RecountMinPriceService {
+
+   @Autowired
+   private SubscriptionRepository subscriptionRepository;
+
+   @Autowired
+   private FlightPriceService flightPriceService;
+
+   @Autowired
+   private EmailNotifierService emailNotifierService;
+
+   //todo add async
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public void recount() {
+       subscriptionRepository.findAll().forEach(subscription -&gt; {
+           if(subscription.getOutboundPartialDate().isAfter(LocalDate.now().minusDays(1))) {
+               FlightPricesDto flightPricesDto = flightPriceService.findFlightPrice(subscription);
+               Integer newNumPrice = flightPriceService.findMinPrice(flightPricesDto);
+               if (subscription.getMinPrice() &gt; newNumPrice) {
+                   emailNotifierService.notifySubscriber(subscription, subscription.getMinPrice(), newNumPrice);
+                   subscription.setMinPrice(newNumPrice);
+                   subscriptionRepository.save(subscription);
+               }
+           } else {
+               subscriptionRepository.delete(subscription);
+           }
+       });
+   }
+}
+</code></pre></li>
+</ul>и всё, можно использовать. Теперь каждые 30 минут (эта цифра задана в SchedulerTasks) будет происходить пересчет minPrice без нашего участия. Если цена станет меньше, уведомление будет отправлено пользователю и сохранено в базе данных. Это будет происходить daemon потоком.
+<h2 id="topic6">Добавляем Swagger и Swagger UI в приложение</h2>Прежде чем написать контроллеры, добавим Swagger и Swagger UI. <a href="https://www.baeldung.com/swagger-2-documentation-for-spring-rest-api" rel="nofollow" target="_blank">Отличная статья</a> на эту тему.
+<table class="table table--striped">
+<tbody><tr>
+<td><p>Swagger — это программная среда с открытым исходным кодом, опирающаяся на обширную экосистему инструментов, которая помогает разработчикам проектировать, создавать, документировать и использовать веб-сервисы RESTful.</p>
+</td>
+</tr>
+</tbody></table>Swagger UI предоставляет веб-страницу с информацией о REST API, чтобы показать, какие есть запросы, какие данные принимает, а какие возвращает. Добавить описания к полям, показать примеры полей, которые ожидает приложение. 
+
+Также с помощью Swagger UI можно отправлять запросы к приложение без помощи сторонних инструментов. Это важная часть, так как никакого front-end не предусматривается.
+
+Разобрались для чего, теперь — как это добавить:
+<ul>
+<li><p>добавляем две зависимости в pom.xml</p>
+<pre class="lang-java line-numbers"><code>
+&lt;dependency&gt;
+    &lt;groupId&gt;io.springfox&lt;/groupId&gt;
+     &lt;artifactId&gt;springfox-swagger2&lt;/artifactId&gt;
+    &lt;version&gt;2.9.2&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;io.springfox&lt;/groupId&gt;
+    &lt;artifactId&gt;springfox-swagger-ui&lt;/artifactId&gt;
+    &lt;version&gt;2.9.2&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre></li>
+<li><p>Новый класс для конфигурации SwaggerConfig, с настройками того, что будет показываться на UI (user interface).</p>
+<pre class="lang-java line-numbers"><code>
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import springfox.documentation.builders.PathSelectors;
+import springfox.documentation.builders.RequestHandlerSelectors;
+import springfox.documentation.spi.DocumentationType;
+import springfox.documentation.spring.web.plugins.Docket;
+import springfox.documentation.swagger2.annotations.EnableSwagger2;
+
+@Configuration
+@EnableSwagger2
+public class SwaggerConfig {
+   @Bean
+   public Docket api() {
+       return new Docket(DocumentationType.SWAGGER_2)
+               .select()
+               .apis(RequestHandlerSelectors.basePackage("com.github.romankh3.flightsmonitoring.rest.controller"))
+               .paths(PathSelectors.any())
+               .build();
+   }
+}
+</code></pre></li>
+</ul>И всё: теперь при запуске приложения, если перейти по ссылке <strong>swagger-ui.html</strong>, будет видна вся информация о контроллерах.
+
+Так как никакого фронтенда в приложении нет, при попадании на главную страницу будет ошибка. Добавим редирект с главной страницы на Swagger UI. Для этого ye;ty еще один конфигурационный класс WebConfig:
+
+<pre class="lang-java line-numbers"><code>
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+/**
+* Web configuration class.
+*/
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+   @Override
+   public void addViewControllers(ViewControllerRegistry registry) {
+       registry.addViewController("/").setViewName("redirect:/swagger-ui.html");
+   }
+}
+</code></pre>
+<a href="https://javarush.com/groups/posts/2402-sozdanie-sistemih-monitoringa-cen-na-aviabiletih-poshagovoe-rukovodstvo-chastjh-3" target="_blank">Создание системы мониторинга цен на авиабилеты: пошаговое руководство [Часть 3]</a>

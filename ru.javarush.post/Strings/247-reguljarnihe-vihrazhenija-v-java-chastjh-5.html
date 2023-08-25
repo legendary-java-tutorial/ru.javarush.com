@@ -1,0 +1,270 @@
+Регулярные выражения в Java, часть 5
+<p>----------------------------------------</p>
+Предлагаем вашему вниманию перевод краткого руководства по регулярным выражениям в языке Java, написанного Джеффом Фрисеном (Jeff Friesen) для сайта javaworld. Для простоты чтения мы разделили статью на несколько частей. Данная часть — заключительная. 
+<p>----------------------------------------</p>
+Предлагаем вашему вниманию перевод краткого руководства по регулярным выражениям в языке Java, написанного Джеффом Фрисеном (Jeff Friesen) для сайта javaworld. Для простоты чтения мы разделили статью на несколько частей. Данная часть — заключительная. 
+
+<img data-max-width="800" data-id="42bced17-119d-411e-9554-a1c760fb4644" src="/images/article/42bced17-119d-411e-9554-a1c760fb4644/800.jpeg" class="img-fluid" alt="Регулярные выражения в Java, часть 5 - 1"><a href="https://javarush.com/groups/posts/136-reguljarnihe-vihrazhenija-v-java-chastjh-1" target="_blank">Регулярные выражения в Java, часть 1</a>
+<a href="https://javarush.com/groups/posts/154-reguljarnihe-vihrazhenija-v-java-chastjh-2" target="_blank">Регулярные выражения в Java, часть 2</a>
+<a href="https://javarush.com/groups/posts/186-reguljarnihe-vihrazhenija-v-java-chastjh-3" target="_blank">Регулярные выражения в Java, часть 3</a>
+<a href="https://javarush.com/groups/posts/229-reguljarnihe-vihrazhenija-v-java-chastjh-4" target="_blank">Регулярные выражения в Java, часть 4 </a><h2>Использование регулярных выражений для лексического анализа</h2>Еще более полезное приложение регулярных выражений – библиотека допускающего многократное использование кода для выполнения лексического анализа, ключевой компонент любого компилятора или ассемблера. В этом случае входной поток символов группируется в выходной поток маркеров (token) – имен для последовательностей символов, обладающих общим значением. Например, наткнувшись во входном потоке на последовательность символов <code>c</code>, <code>o</code>, <code>u</code>, <code>n</code>, <code>t</code>, <code>e</code>, <code>r</code>, лексический анализатор может вывести маркер <code>ID</code> (идентификатор). Соответствующая маркеру последовательность символов называется лексемой (lexeme).
+<table>
+<thead>
+<tr>
+<th>Еще о маркерах и лексемах</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Такие маркеры, как ID, могут соответствовать многим последовательностям символов. В случае подобных маркеров, соответствующая маркеру фактическая лексема тоже необходима компилятору, ассемблеру или другой утилите, которой требуется лексический анализ. Для маркеров же, которые представляют одну конкретную последовательность символов, как маркер <code>PLUS</code>, соответствующий только символу <code>+</code>, фактическая лексема не требуется, поскольку её можно [однозначно] определить по маркеру.
+</td>
+</tr>
+</tbody>
+</table><a href="https://javarush.com/groups/posts/2013-reguljarnihe-vihrazhenija-v-java" target="_blank">Регулярные выражения</a> гораздо эффективнее лексических анализаторов на основе [конечного] состояния, которые необходимо писать вручную и обычно нельзя использовать повторно. В качестве примера лексического анализатора на основе регулярных выражений можно привести <a href="http://www.cs.princeton.edu/~appel/modern/java/JLex/current/manual.html" target="_blank">JLex</a>, лексический генератор для языка Java, использующий регулярные выражения для задания правил разбиения входного потока данных на маркеры. Еще один пример – Lexan.
+<h2>Знакомимся с Lexan</h2>Lexan – допускающая многократное использование Java-библиотека, предназначенная для лексического анализа. Она основана на коде из серии сообщений из блога <a href="http://cogitolearning.co.uk/2013/03/writing-a-parser-in-java-introduction/" target="_blank">Пишем синтаксический анализатор на языке Java</a> веб-сайта <a href="http://cogitolearning.co.uk" target="_blank">Cogito Learning</a>. <span class="text-bold">Библиотека состоит из следующих классов, которые находятся в пакете <code>ca.javajeff.lexan</code>, включенном в загружаемый код данной статьи:</span>
+<ul>
+<li><code>Lexan</code>: лексический анализатор;</li>
+<code>LexanException</code>: исключение, генерируемое в конструкторе класса <code>Lexan;</code>
+<li><code>LexException</code>: исключение, генерируемое в случае обнаружения неправильного синтаксиса при лексическом анализе;</li>
+<li><code>Token</code>: название с атрибутом-регулярным выражением;</li>
+<li><code>TokLex</code>: пара маркер/лексема.</li>
+</ul>Конструктор <code>Lexan(java.lang.Class<!--?--> tokensClass)</code> создает новый лексический анализатор. Для него требуется один аргумент в виде объекта класса <code>java.lang.Class</code>, соответствующий классу констант типа <code>static Token</code>. При помощи API Reflection, конструктор читает все константы <code>Token</code> в массив значений <code>Token[]</code>. Если констант <code>Token</code> нет, генерируется исключение <code>LexanException</code>.
+<img data-max-width="800" data-id="6d27ccf9-12eb-4243-adf4-20bbf06963c2" src="/images/article/6d27ccf9-12eb-4243-adf4-20bbf06963c2/800.jpeg" class="img-fluid" alt="Регулярные выражения в Java, часть 5 - 2"><span class="text-bold">Класс <code>Lexan</code> также предоставляет следующие два метода:</span>
+<ul>
+<li>Метод <code>List<toklex> getTokLexes()</toklex></code> возвращает список <code>Token</code> этого лексического анализатора;</li>
+<li><code>Метод void lex(String str)</code> выполняет лексический анализ входной строки [с помещением результата] в список значений типа <code>TokLex</code>. В случае обнаружения символа, не соответствующего ни одному из шаблонов массива <code>Token[]</code>, генерируется исключение <code>LexException</code>.</li>
+</ul>В классе <code>LexanException</code> методов нет, он использует для возврата сообщения исключения унаследованный метод <code>getMessage()</code>.<span class="text-bold"> В отличие от него, класс <code>LexException</code> предоставляет следующие методы:</span>
+<ul>
+<li>Метод <code>int getBadCharIndex()</code> возвращает позицию символа, не соответствующего ни одному из шаблонов маркеров.</li>
+<li>Метод <code>String getText()</code> возвращает анализировавшийся при генерации исключения текст.</li>
+</ul>Класс <code>Token</code> переопределяет метод <code>toString()</code> для возврата названия маркера. Он также предоставляет метод <code>String getPattern()</code>, возвращающий атрибут регулярного выражения маркера.
+
+Класс <code>TokLex</code> предоставляет метод <code>Token getToken()</code>, который возвращает его маркер. Он также предоставляет метод <code>String getLexeme()</code>, который возвращает его лексему.
+<h2>Демонстрация работы библиотеки Lexan</h2>Для демонстрации работы библиотеки <code>Lexan</code> я написал приложение <code>LexanDemo</code>. Оно состоит из классов <code>LexanDemo</code>, <code>BinTokens</code>, <code>MathTokens</code> и <code>NoTokens</code>. Исходный код приложения <code>LexanDemo</code> приведен в листинге 2.
+
+<span class="text-bold">Листинг 2. Демонстрация работы библиотеки Lexan</span>
+
+<pre class="lang-java line-numbers"><code>
+import ca.javajeff.lexan.Lexan;
+import ca.javajeff.lexan.LexanException;
+import ca.javajeff.lexan.LexException;
+import ca.javajeff.lexan.TokLex;
+
+public final class LexanDemo
+{
+   public static void main(String[] args)
+   {
+      lex(MathTokens.class, " sin(x) * (1 + var_12) ");
+      lex(BinTokens.class, " 1 0 1 0 1");
+      lex(BinTokens.class, "110");
+      lex(BinTokens.class, "1 20");
+      lex(NoTokens.class, "");
+   }
+
+   private static void lex(Class<!--?--> tokensClass, String text)
+   {
+      try
+      {
+         Lexan lexan = new Lexan(tokensClass);
+         lexan.lex(text);
+         for (TokLex tokLex: lexan.getTokLexes())
+            System.out.printf("%s: %s%n", tokLex.getToken(), 
+                              tokLex.getLexeme());
+      }
+      catch (LexanException le)
+      {
+         System.err.println(le.getMessage());
+      }
+      catch (LexException le)
+      {
+         System.err.println(le.getText());
+         for (int i = 0; i &lt; le.getBadCharIndex(); i++)
+            System.err.print("-");
+         System.err.println("^");
+         System.err.println(le.getMessage());
+      }
+      System.out.println();
+   }
+}
+</code></pre>
+Метод <code>main()</code> из листинга 2 вызывает утилиту <code>lex()</code> для демонстрации лексического анализа при помощи Lexan. При каждом вызове этому методу передается класс маркеров в объекте <code>Class</code> и строка, анализ которой необходимо выполнить.
+
+Метод <code> lex()</code> сначала создает объект класса <code>Lexan</code>, передавая объект <code>Class</code> конструктору класса <code>Lexan</code>. А затем он вызывает метод <code>lex()</code> класса <code>Lexan</code> для этой строки.
+
+В случае успешного выполнения лексического анализа, с целью возврата списка объектов <code>TokLex</code> вызывается метод <code>getTokLexes()</code> класса <code>Lexan</code>. Для каждого из этих объектов вызывается его метод <code>getToken()</code> класса <code>TokLex</code> для возврата маркера и его метод <code>getLexeme()</code> для возврата лексемы. Оба значения выводятся в стандартный поток вывода. В случае неудачи лексического анализа генерируется и обрабатывается соответствующим образом одно из исключений <code>LexanException</code> или <code>LexException</code>.
+
+Для краткости, рассмотрим, из составляющих это приложение, только класс <code>MathTokens</code>. В листинге 3 показан его исходный код.
+
+<span class="text-bold">Листинг 3. Описание набора маркеров для небольшого математического языка</span>
+
+<pre class="lang-java line-numbers"><code>
+import ca.javajeff.lexan.Token;
+
+public final class MathTokens
+{
+   public final static Token FUNC = new Token("FUNC", "sin|cos|exp|ln|sqrt");
+   public final static Token LPAREN = new Token("LPAREN", "\\(");
+   public final static Token RPAREN = new Token("RPAREN", "\\)");
+   public final static Token PLUSMIN = new Token("PLUSMIN", "[+-]");
+   public final static Token TIMESDIV = new Token("TIMESDIV", "[*/]");
+   public final static Token CARET = new Token("CARET", "\\^");
+   public final static Token INTEGER = new Token("INTEGER", "[0-9]+");
+   public final static Token ID = new Token("ID", "[a-zA-Z][a-zA-Z0-9_]*");
+}
+</code></pre>
+Из листинга 3 видно, что класс <code>MathTokens</code> описывает последовательность констант типа <code>Token</code>. Каждой из них присваивается значение объекта <code>Token</code>. Конструктор этого объекта получает строку-название маркера, вместе с регулярным выражением, описывающим все строки символов, относящихся к этому маркеру. Для ясности, желательно, чтобы строковое название маркера совпадало с названием константы, но это не обязательно.
+<img data-max-width="800" data-id="363409bf-80bd-4588-bc7b-8e81f36a3596" src="/images/article/363409bf-80bd-4588-bc7b-8e81f36a3596/800.jpeg" class="img-fluid" alt="Регулярные выражения в Java, часть 5 - 3">Позиция константы <code>Token</code> в списке маркеров важна. Расположенные выше в списке константы <code>Token</code> имеют приоритет перед расположенными ниже. Например, встретив <code>sin</code>, Lexan выбирает маркер <code>FUNC</code> вместо <code>ID</code>. Если бы маркер <code>ID</code> предшествовал маркеру <code>FUNC</code>, то был бы выбран он.
+<h2>Компиляция и запуск приложения LexanDemo</h2>Загружаемый код для данной статьи включает архив <code>lexan.zip</code>, содержащий все файлы дистрибутива Lexan. Распакуйте этот архив и перейдите в подкаталог <code>demos</code> корневого каталога <code>lexan</code>.
+
+<span class="text-bold">Если вы используете Windows, выполните следующую команду для компиляции файлов исходного кода демо-приложения:</span>
+
+<pre class="lang-java line-numbers"><code>javac -cp ..\library\lexan.jar *.java</code></pre>
+
+<span class="text-bold">В случае успешной компиляции выполните следующую команду для запуска демо-приложения:</span>
+
+<pre class="lang-java line-numbers"><code> java -cp ..\library\lexan.jar;. LexanDemo </code></pre>
+
+<span class="text-bold">Вы должны увидеть следующие результаты:</span>
+
+<pre class="lang-java line-numbers"><code>
+FUNC: sin
+LPAREN: (
+ID: x
+RPAREN: )
+TIMESDIV: *
+LPAREN: (
+INTEGER: 1
+PLUSMIN: +
+ID: var_12
+RPAREN: )
+ONE: 1
+ZERO: 0
+ONE: 1
+ZERO: 0
+ONE: 1
+ONE: 1
+ONE: 1
+ZERO: 0
+1 20
+--^
+Неожиданный символ во входном тексте: 20 </code></pre>
+Сообщение <code>Неожиданный символ во входном тексте: 20</code> возникает в результате генерации исключения <code>LexanException</code>, вызванного тем, что в классе <code>BinTokens</code> не описана константа <code>Token</code> со значением <code>2</code> в качестве регулярного выражения. Обратите внимание на то, что обработчик исключений вывел полученную в результате лексического анализа текста позицию неподходящего символа. Сообщение маркеры отсутствуют получается в результате генерации исключения <code>LexException</code>, вызванного тем, что в классе <code>NoTokens</code> не описано никаких констант <code>Token</code>.
+<h2>За кулисами</h2><code>Lexan</code> использует в качестве своего "движка" класс Lexan. Взгляните на реализацию этого класса в листинге 4 и отметьте вклад регулярных выражений в обеспечение возможности повторного использования "движка".
+
+<span class="text-bold">Листинг 4. Создание архитектуры лексического анализатора на основе регулярных выражений</span>
+
+<pre class="lang-java line-numbers"><code>
+package ca.javajeff.lexan;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+
+/**
+ *  Лексический анализатор. Этот класс можно использовать для 
+ *  преобразования входного потока символов в выходной поток маркеров.
+ *
+ *  @Автор Джефф Фризен
+ */
+
+public final class Lexan
+{
+   private List<toklex> tokLexes;
+
+   private Token[] values;
+
+   /**
+    *  Инициализируем лексический анализатор набором объектов Token.
+    *
+    *  @параметры tokensClass – объект Class класса, содержащего 
+    *       набор объектов Token
+    *
+    *  @генерирует исключение LexanException в случае невозможности 
+    *       формирования объекта Lexan, возможно, из-за отсутствия объектов 
+    *       Token в классе
+    */
+
+   public Lexan(Class<!--?--> tokensClass) throws LexanException
+   {
+      try
+      {
+         tokLexes = new ArrayList&lt;&gt;();
+         List<token> _values = new ArrayList&lt;&gt;();
+         Field[] fields = tokensClass.getDeclaredFields();
+         for (Field field: fields)
+            if (field.getType().getName().equals("ca.javajeff.lexan.Token"))
+               _values.add((Token) field.get(null));
+         values = _values.toArray(new Token[0]);
+         if (values.length == 0)
+            throw new LexanException("маркеры отсутствуют");
+      }
+      catch (IllegalAccessException iae)
+      {
+         throw new LexanException(iae.getMessage());
+      }
+
+   /**
+    * Получаем список TokLex'ов этого лексического анализатора.
+    *
+    *  @возвращает список TokLex'ов
+    */
+
+   public List<toklex> getTokLexes()
+   {
+      return tokLexes;
+   }
+
+   /**
+    *  Выполняет лексический анализ входной строки [с помещением
+    *  результата] в список TokLex'ов.
+    *
+    *  @параметры str – строка, подвергаемая лексическому анализу
+    *
+    *  @генерирует исключение LexException: во входных данных обнаружен
+    *          неожиданный символ
+    */
+
+   public void lex(String str) throws LexException
+   {
+      String s = new String(str).trim(); // удалить ведущие пробелы
+      int index = (str.length() - s.length());
+      tokLexes.clear();
+      while (!s.equals(""))
+      {
+         boolean match = false;
+         for (int i = 0; i &lt; values.length; i++)
+         {
+            Token token = values[i];
+            Matcher m = token.getPattern().matcher(s);
+            if (m.find())
+            {
+               match = true;
+               tokLexes.add(new TokLex(token, m.group().trim()));
+               String t = s;
+               s = m.replaceFirst("").trim(); // удалить ведущие пробелы
+               index += (t.length() - s.length());
+               break;
+            }
+         }
+         if (!match)
+            throw new LexException("Неожиданный символ во входном тексте: "
+                                    + s, str, index);
+      }
+   }
+}
+</toklex></token></toklex></code></pre>
+Код метода <code>lex()</code> основан на коде, приведенном в сообщении блога <a href="http://cogitolearning.co.uk/2013/03/writing-a-parser-in-java-introduction/" target="_blank">"Пишем синтаксический анализатор на языке Java: Генератор маркеров"</a> веб-сайта Cogito Learning. Прочитайте это сообщение, чтобы узнать больше о том, как Lexan использует API Regex для компиляции кода.
+<a href="https://javarush.com/welcome" target="_blank"><img data-max-width="1024" data-id="43855ae5-aed3-4e58-bbb2-e34e42081e71" src="/images/article/43855ae5-aed3-4e58-bbb2-e34e42081e71/1024.jpeg" class="img-fluid" alt="Регулярные выражения в Java, часть 5 - 4"></a><h2>Заключение</h2>Регулярные выражения – полезный инструмент, который может пригодиться любому разработчику. API Regex языка программирования Java упрощает их использование в приложениях и библиотеках. Теперь, когда у вас уже есть базовое представление о регулярных выражениях и этом API, загляните в документацию SDK <code>java.util.regex</code>, чтобы узнать еще больше о регулярных выражениях и дополнительных методах API Regex.
+<table>
+<tbody><tr>
+<th><p>Что еще почитать:</p>
+</th>
+</tr>
+<tr>
+<td><ul>
+<li><a href="https://javarush.com/groups/posts/264-populjarno-o-ljambda-vihrazhenijakh-v-java-s-primerami-i-zadachami-chastjh-1-" target="_blank">Популярно о лямбда-выражениях в Java. С примерами и задачами. Часть 1</a></li>
+<li><a href="https://javarush.com/groups/posts/305-sozdanie-prosteyshego-web-proekta-v-intellij-idea-enterprise-edition-poshagovo-s-kartinkami" target="_blank">Создание простейшего веб-проекта в IntelliJ Idea Enterprise. Пошагово, с картинками</a></li>
+<li><a href="https://javarush.com/groups/posts/234-luchshie-knigi-dlja-podgotovki-k-ehkzamenu-ocajp8-1z0-808-po-java-8" target="_blank">Лучшие книги для подготовки к экзамену OCAJP8 (1Z0-808) по Java 8</a></li></ul>
+</td>
+</tr><tr>
+</tr></tbody></table>

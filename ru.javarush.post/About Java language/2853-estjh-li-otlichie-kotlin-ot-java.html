@@ -1,0 +1,200 @@
+Есть ли отличие Kotlin от Java?
+<p>----------------------------------------</p>
+Некоторые отличия синтаксиса Kotlin и Java. То, с чем вы столкнетесь при переходе с одного языка на другой. Хочу рассказать немного базовых вещей о языке Kotlin, что будет полезно новичкам. Так уж сложилось, что сейчас попасть в android-разработку только с одним языком будет сложно...
+<p>----------------------------------------</p>
+Всем привет. Хочу рассказать немного базовых вещей о языке Kotlin, что будет полезно новичкам. Так уж сложилось, что сейчас попасть в android-разработку только с одним языком будет сложно — большинство новых проектов начинают писать на Kotlin, большинство готовых проектов написаны на Java.
+
+<img data-max-width="512" data-id="4709b2de-adeb-4a7a-939c-55f8763f9206" src="/images/article/4709b2de-adeb-4a7a-939c-55f8763f9206/512.jpeg" alt="Есть ли отличие Kotlin от Java? - 1">На данный момент у меня на работе 4 проекта: два на Kotlin и два на Java (один большой основной и три маленьких, для внутреннего пользования). Когда компанией было принято решение писать новые проекты на Kotlin, для меня это решение казалось странным. Зачем мешать разные языки? Пусть себе кто-то другой пишет на Kotlin, нам оно зачем? Но выхода не было, потому решил опробовать новый язык и начал его изучать. 
+
+Первый код, естественно, был полностью написан в стиле Java, что еще больше добавляло непонимания: зачем мне новый язык? Но по мере его использования я всё больше находил преимуществ и сейчас (уже почти 2 года пишу на Kotlin) могу сказать, что в андроид-разработке Kotlin удобнее. 
+
+Хочу показать некоторые нюансы, которые будут неочевидны для того, кто решил начать изучать Kotlin после Java. Также напомню, что в андроиде используется Java 8, при нынешней актуальной версии 14. 
+
+Итак, первое — <strong>Переменные</strong>:
+
+Java:
+
+<pre class="lang-java line-numbers"><code>
+        Int a = 1;	
+	String s = "test";
+</code></pre>	
+Kotlin:
+
+<pre class="lang-java line-numbers"><code>
+        val a = 1
+        var b = 2
+        val c: Int
+        val d = "test" 
+</code></pre>
+В Kotlin переменные двух типов: val (только для чтения) и var (для чтения и записи). Рекомендуется использовать val везде, где это возможно. Объявлять тип переменной не обязательно, если переменная уже инициализирована. 
+	
+Второе — <strong>выражения if/else, switch</strong>:
+
+Как часто вы используете в Java такую цепочку операторов:
+
+<pre class="lang-java line-numbers"><code>
+if (вариант 1)
+{...}
+else if (вариант 2)
+{...}
+...
+else
+{...}
+</code></pre>
+Или так:
+
+<pre class="lang-java line-numbers"><code>
+switch(выражениеДляВыбора) {
+        case (значение 1):
+                Код1;
+                break;
+        case (значение 2):
+                Код2;
+                break;
+...
+        case (значение N):
+                КодN;
+                break;
+        default:
+                КодВыбораПоУмолчанию;
+                break;
+        }
+</code></pre>
+В Kotlin используется для таких выражений оператор when (хотя if/else тоже можно использовать):
+
+<pre class="lang-java line-numbers"><code>
+val x = 5
+val result = when(x) {
+        0, 1 -&gt; "cool"
+        2 -&gt; "bad"
+        5 -&gt; "normal"
+        else -&gt; "error"
+}
+System.out.println(result)
+</code></pre>
+Здесь мы не просто прошлись по цепочке условий, а еще и всё выражение сразу присвоили в переменную result, что сократило нам немало строк кода. Но всё же если у вас только два варианта в ветвлении, рекомендую использовать обычный if..else. Конструкция when будет короче только от трех вариантов.
+	
+Идем дальше — <strong>Конструкторы</strong>.
+
+Здесь вообще сказка. Просто сравните код в Java и Kotlin.
+
+Java:
+
+<pre class="lang-java line-numbers"><code>
+public class Person {
+    
+    private String firstName;
+    private String lastName;
+    private int age;
+
+    public Person(String firstName, String lastName, int age) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.age = age;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+}
+</code></pre>
+Kotlin:
+
+<pre class="lang-java line-numbers"><code>
+ class Person(private val firstName: String, 
+             private val lastName: String, 
+             private var age: Int) {
+}
+</code></pre>
+Может показаться, что в коде на котлине что-то не дописали. Но нет, это два идентичных кода на разных языках. Давайте немного разберемся. В Kotlin конструктор можно прописывать прямо в теле названия класса (но если хочется, то можно и по старинке, как в Java). Итак, мы прописали три переменные, в Java создали конструктор, геттеры и один сеттер для переменной age. В Kotlin, как мы помним, переменная val только для чтения, а потому сеттер для этих переменных недоступен (геттеры-сеттеры котлин реализует под капотом сам). Переменная var дает возможность использовать сеттер. В итоге практически одной строкой мы написали то же самое, что на Java заняло больше десятка строк. Здесь рекомендую еще почитать про data class в Kotlin. 
+
+Но это еще не всё, в чем хороши конструкторы в Kotlin. А что, если вам надо два конструктора? А если три? В Java это будет выглядеть так:
+
+<pre class="lang-java line-numbers"><code>
+public Person(String firstName, String lastName, int age) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.age = age;
+    }
+
+public Person(String firstName, String lastName) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+    }
+
+public Person(String firstName) {
+        this.firstName = firstName;
+    }
+</code></pre>
+Ничего сложного, сколько надо конструкторов, столько и сделали.
+
+В Kotlin можно обойтись одним конструктором. Как? Всё просто — значения по умолчанию.
+
+<pre class="lang-java line-numbers"><code>
+class Person(private val firstName: String,
+             private val lastName: String? = null,
+             private var age: Int = 5) {
+}
+</code></pre>
+Мы в конструкторе присвоили значения по умолчанию и теперь вызов их будет выглядеть так:
+
+<pre class="lang-java line-numbers"><code>
+Person(firstName = "Elon", lastName = "Mask", age = 45)
+Person(firstName = "Elon", age = 45)
+Person(firstName = "Elon", lastName = "Mask")
+</code></pre>
+Тут может возникнуть вопрос: что это такое: 
+
+<pre class="lang-java line-numbers"><code>
+private val lastName: String? = null
+</code></pre>
+Что еще за знаки вопроса? Да, если значение может быть null, то ставится <code>?</code>.Также есть вариант вот такой — <code>!!</code> (если переменная не может принимать null). Об этом уже сами почитайте, там всё просто. 
+
+А мы идем к следующему пункту.
+	
+<strong>Extensions</strong>. Это очень крутой инструмент в Kotlin, которого нету в Java. Иногда мы в проекте используем шаблонные методы, которые повторяются во многих классах. Например, так:
+
+<pre class="lang-java line-numbers"><code>
+Toast.makeText(this, "hello world :)", Toast.LENGTH_SHORT).show();
+</code></pre>
+В Kotlin мы можем сделать расширение для класса:
+
+<pre class="lang-java line-numbers"><code>
+fun Context.toast(message: CharSequence) = Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+</code></pre>
+И дальше по всему проекту использовать это вот так:
+
+<pre class="lang-java line-numbers"><code>
+context?.toast("hello world")
+</code></pre>
+Мы сделали расширение для класса Context. И теперь везде, где доступен context, будет доступен его новый метод toast. Это можно сделать для любого класса: String, Fragment, ваши кастомные классы, ограничений нет.
+	
+И последний пункт, который разберем — <strong>Работа со строками</strong>.
+
+Тут всё просто. В Java это пишется так:
+
+<pre class="lang-java line-numbers"><code>
+String s = "friends";
+int a = 5;
+System.out.println("I have" + a + s + "!");
+</code></pre>
+В Kotlin проще:
+
+<pre class="lang-java line-numbers"><code>
+val s = "friends"
+val a = 5
+println("I have $a $s!")
+</code></pre>
+Это те нюансы, на которых я спотыкался в начале изучения Kotlin, надеюсь вам это поможет. 

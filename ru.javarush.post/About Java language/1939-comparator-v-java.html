@@ -1,0 +1,223 @@
+Comparator в Java
+<p>----------------------------------------</p>
+Про Comparator'ы и сравнение в Java не писал только ленивый. Я не ленивый - так что прошу любить и жаловать ещё одну вариацию. Надеюсь, она будет не лишней. И да, данная статья ответ на вопрос: "Сможешь ли ты написать на память компаратор?". Надеюсь, после прочтения данной ...
+<p>----------------------------------------</p>
+Про Comparator и сравнение в Java не писал только ленивый. Я не ленивый — так что прошу любить и жаловать ещё одну вариацию. Надеюсь, она будет не лишней. И да, данная статья ответ на вопрос: "Сможешь ли ты написать на память компаратор?". Надеюсь, после прочтения данной статьи каждый сможет написать компаратор по памяти.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="d1c56e1c-26c5-4e0e-81db-e690fd7c6cef" data-max-width="273" alt="Comparator в Java - 1" src="https://cdn.javarush.com/images/article/d1c56e1c-26c5-4e0e-81db-e690fd7c6cef/1024.jpeg"></div></div><strong>Вступление</strong>
+
+Java, как известно, является объектно-ориентированным языком. Как следствие — в Java принято оперировать объектами. Но рано или поздно появляется задача сравнения объектов по какому либо принципу. 
+
+Итак, дано: У нас есть некоторое сообщение, которое описано классом Message:
+
+<pre class="lang-java line-numbers"><code>
+public static class Message {
+    private String message;
+    private int id;
+        
+    public Message(String message) {
+        this.message = message;
+        this.id = new Random().nextInt(1000);
+    }
+    public String getMessage() {
+        return message;
+    }
+    public Integer getId() {
+        return id;
+    }
+    public String toString() {
+        return "[" + id + "] " + message;
+    }
+}
+</code>
+</pre>
+Добавим данный класс в <a href="https://www.tutorialspoint.com/compile_java_online.php" target="_blank" rel="nofollow"><strong>Tutorialspoint java compiler</strong></a>. 
+
+Не забудем также добавить импорты: 
+
+<pre class="lang-java line-numbers"><code>
+import java.util.Random;
+import java.util.ArrayList;
+import java.util.List;
+</code></pre>
+В main методе создадим несколько сообщений:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args){
+    List&lt;Message&gt; messages = new ArrayList();
+    messages.add(new Message("Hello, World!"));
+    messages.add(new Message("Hello, Sun!"));
+    System.out.println(messages);
+}
+</code>
+</pre>
+Давайте подумаем, что же нам делать, если мы хотим их сравнить? Например, мы хотим упорядочить по id. А чтобы создать порядок, нужно как-то сравнить объекты, чтобы понять, какой объект предыдущий (то есть меньший), а какой следующий (то есть больший).
+
+Начнём с такого класса, как <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html" target="_blank" rel="nofollow">java.lang.Object</a>. Как мы знаем, все классы наследуются неявным образом от этого класса Object. И это логично, т.к. по сути это выражает смысл концепции: "Всё есть объект" и предоставляет общее поведение для всех классов. И данный класс определяет, что у каждого класса есть два метода:
+
+→ <strong>hashCode</strong>
+
+Метод hashCode возвращает некоторое числовое (int) представление объекта как экземпляра класса. Что это значит? Это значит, что если вы создали два разных экземпляра класса, то так как экземпляры разные, то и hashCode у них должны быть разными.
+
+Так сказано и в описании к методу: "As much as is reasonably practical, the hashCode method defined by class Object does return distinct integers for distinct objects"
+ 
+То есть если это два разных instance, то у них должны быть разные hashCode. То есть для нашего сравнения данный метод не подойдёт.
+
+→ <strong>equals</strong>
+
+Метод equals отвечает на вопрос "равны ли объекты" и возвращает boolean. Данный метод по умолчанию имеет код:
+
+<pre class="lang-java line-numbers"><code>
+public boolean equals(Object obj) {
+    return (this == obj);
+}
+</code>
+</pre>
+То есть не переопределяя данный метод у объекта данный метод по сути говорит, совпадают ли ссылки на объект или нет. Для сообщений наших это не подойдёт, ведь нас не интересуют ссылки на объект, нас интересует id сообщения. И даже если бы мы переопределили метод equals, то максимум что мы бы получили: "Они равны" или "Они не равны". А для определения порядка нам этого мало.<h2>Comparator и Comparable в Java</h2>Что же нам подходит? Если мы в переводчике переведём слово "сравнить" на английский, то получим перевод "compare". Отлично, значит нам нужен тот, кто будет сравнивать. Если сравнивать это compare, то тот, кто сравнивает - Comparator. Откроем <a href="https://docs.oracle.com/javase/8/docs/api/" target="_blank" rel="nofollow">Java Api</a> и найдём там <a href="https://docs.oracle.com/javase/8/docs/api/java/util/Comparator.html" target="_blank" rel="nofollow">Comparator</a>.
+
+И действительно, есть такой интерфейс — java.util.Comparator
+
+<strong>java.util.Comparator и java.lang.Comparable</strong>
+
+Как видно, существует такой такой интерфейс. Класс, который его реализует говорит этим, что "Я реализую функцию сравнения объектов".
+Единственное, что надо действительно запомнить - это контракт компаратора, который выражается в следующем:
+
+<pre><code>
+Comparator возвращает int по следующей схеме: 
+<ul>
+<li>отрицательный int (первый объект отрицательный, то есть меньше)</li>
+<li>положительный int (первый объект положительный, хороший, то есть больший)</li>
+<li>ноль = объекты равны</li>
+</ul>
+</code></pre>
+Теперь напишем компаратор. Нам потребуется импорт <strong>java.util.Comparator</strong>. После импорта добавим в main метод:
+
+<code>Comparator&lt;Message&gt; comparator = new Comparator&lt;Message&gt;();</code>
+
+Естественно, это не отработает, т.к. Comparator это интерфейс. Поэтому, после круглых скобок добавим фигурные <code>{ }</code>.
+
+В этих скобках напишем метод:
+
+<pre class="lang-java line-numbers"><code>
+public int compare(Message o1, Message o2) {
+    return o1.getId().compareTo(o2.getId());
+}
+</code></pre>
+Написание это не надо даже помнить. Компаратор - это тот, кто выполняет сравнивание, то есть делает compare. Чтобы ответить на вопрос, в каком порядке идут сравниваемые объекты мы возвращаем int. Вот и всё, собственно. Легко и просто.
+
+Как мы видим из примера, помимо Comparator'а есть ещё один интерфейс — <strong>java.lang.Comparable</strong>, реализуя который мы должны определить метод <strong>compareTo</strong>. Данный интерфейс говорит, что "Класс, который реализует интерфейс, позволяет сравнивать экземпляры класса". Например, у Integer реализация compareTo выглядит следующим образом:
+
+<pre class="lang-java line-numbers"><code>
+(x &lt; y) ? -1 : ((x == y) ? 0 : 1)
+</code></pre>
+Как запомнить все эти интерфейсы? А зачем? Всё идёт от английского. Compare - сравнивать, тот кто сравнивает — Comparator (как регистратор, например. Т.е. тот, кто регистрирует), а прилагательное "сравниваемое" Comparable. Ну а "Сравнить с" переводится не только как compare with, но и как compare to. Всё просто. Язык Java писали ведь англоговорящие люди и в названии всего в Java они руководствовались просто английским и в именовании была какая-то логика. А метод compareTo описывает то, каким образом экземпляр класса нужно сравнивать с другими экземплярами. Например, строки сравниваются <a href="https://ru.wikipedia.org/wiki/Лексикографический_порядок" target="_blank" rel="nofollow">лексиграфически</a>, а числа сравниваются по значению.
+
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="f7969289-ed38-46d3-bbdc-59758f0044b9" data-max-width="328" alt="Comparator в Java - 2" src="https://cdn.javarush.com/images/article/f7969289-ed38-46d3-bbdc-59758f0044b9/1024.jpeg"></div></div>
+Java 8 внесла приятные изменения. Если приглядеться к интерфейсу Comparator, то мы увидим, что над ним стоит аннотация <code>@FunctionalInterface</code>. На самом деле, эта аннотация для информации и означает, что данный интерфейс является функциональным. 
+Это значит, что в этом интерфейсе есть всего 1 абстрактный метод без реализации. Что это нам даёт?
+
+Мы можем написать код компаратора теперь вот так:
+
+<pre class="lang-java line-numbers"><code>
+Comparator&lt;Message&gt; comparator = (o1, o2) -&gt; o1.getId().compareTo(o2.getId());
+</code></pre>
+В скобочках — то, как мы назовём переменные. Java сама увидит, что т.к. метод то всего один, то понятно какие входные параметры нужны, сколько, каких типов. Далее мы говорим стрелочкой, что хотим их передать вот в этот участок кода.
+
+Кроме того, благодаря Java 8 появились default методы в интерфейсах - это такие методы, которые по умолчанию появляются (по умолчанию - by default), когда мы реализуем интерфейс. В интерфейсе Comparator таких несколько.Например:
+
+<pre class="lang-java line-numbers"><code>
+Comparator moreImportant = Comparator.reverseOrder();
+Comparator lessImportant = Comparator.naturalOrder();
+</code></pre>
+Есть и ещё один метод, который сделает ваш код чище. Посмотрим на пример выше, где мы описывали наш компаратор. Что он делает? Он ведь довольно примитивный. Он просто берёт объект и достаёт из него какое-то значение, которое comparable. Например, Integer реализует comparable, поэтому мы смогли выполнить compareTo на значениях id сообщения. Эту простую функцию компаратора можно записать и так:
+
+<pre class="lang-java line-numbers"><code>
+Comparator&lt;Message&gt; comparator = Comparator.comparing(obj -&gt; obj.getId());
+</code></pre>
+То есть дословно "У нас есть Comparator, сравнивающий так: берёт объекты, достаёт из них Comparable при помощи метода getId(), сравнивает через compareTo". И никаких ужасных конструкций больше.
+
+Ну и напоследок, хочется ещё отметить одну особенность. Компараторы можно объединять в цепочку. Например:
+
+<pre class="lang-java line-numbers"><code>
+Comparator&lt;Message&gt; comparator = Comparator.comparing(obj -&gt; obj.getId());
+comparator = comparator.thenComparing(obj -&gt; obj.getMessage().length());
+</code></pre><h3>Применение</h3>Объявление компаратора оказалось довольно логичным, не правда ли? Теперь надо посмотреть, как же его использовать и в каких местах.
+
+→ <strong>Collections.sort (java.util.Collections)</strong>
+
+Конечно же, мы можем сортировать коллекции таким образом. Но не все, а только списки. И тут нет ничего необычного, т.к. именно список предполагает доступ к элементу по индексу. А это позволяет элемент номер два поменять местами с элементом номер три. Поэтому и сортировка таким образом есть только для списков:
+
+<pre class="lang-java line-numbers"><code>
+Comparator&lt;Message&gt; comparator = Comparator.comparing(obj -&gt; obj.getId());
+Collections.sort(messages, comparator);
+</code></pre>
+→ <strong>Arrays.sort (java.util.Arrays)</strong>
+
+Массивы так же удобно сортировать. Опять, по той же самое причине доступа к элементам по индексу.
+
+→ <strong>Наследники java.util.SortedSet и java.util.SortedMap</strong>
+
+Как мы помним, у Set и Map не гарантируют порядок хранения записей. НО у нас есть специальные реализации, которые гарантируют порядок.
+И если элементы коллекции не реализуют java.lang.Comparable, то мы в конструктор таких коллекций можем передать Comparator:
+
+<pre class="lang-java line-numbers"><code>
+Set&lt;Message&gt; msgSet = new TreeSet(comparator);
+</code></pre>
+→ <strong>Stream API</strong>
+
+В Stream Api, которые появились в Java 8, компаратор позволяет упрощать работу над элементами стримов.
+
+Например, нам нужна последовательность случайных чисел от 0 до 999 включительно:
+
+<pre class="lang-java line-numbers"><code>
+Supplier&lt;Integer&gt; randomizer = () -&gt; new Random().nextInt(1000);
+Stream.generate(randomizer)
+    .limit(10)
+    .sorted(Comparator.naturalOrder())
+    .forEach(e -&gt; System.out.println(e));
+</code></pre>
+Мы могли бы и остановиться, но есть задачки поинтереснее. Например, нужно подготовить Map, где ключ — id сообщения.
+При этом мы хотим отсортировать эти ключи, чтобы ключи шли по порядку, от меньшего к большему.
+
+Начнём с такого кода:
+<pre class="lang-java line-numbers"><code>
+Map&lt;Integer, Message&gt; collected = Arrays.stream(messages)
+                .sorted(Comparator.comparing(msg -&gt; msg.getId()))
+                .collect(Collectors.toMap(msg -&gt; msg.getId(), msg -&gt; msg));
+</code></pre>
+Нам вернут тут на самом деле HashMap. А как мы знаем, она не гарантирует какой либо порядок. Поэтому наши отсортированные по ID записи просто потеряли порядок. Не хорошо. Придётся изменить немного наш коллектор:
+<pre class="lang-java line-numbers"><code>
+Map&lt;Integer, Message&gt; collected = Arrays.stream(messages)
+                .sorted(Comparator.comparing(msg -&gt; msg.getId()))
+                .collect(Collectors.toMap(msg -&gt; msg.getId(), msg -&gt; msg, (oldValue, newValue) -&gt; oldValue, TreeMap::new));
+</code></pre>
+Код стал выглядеть несколько страшнее, но задача теперь решена правильно благодаря явному указанию реализации карты TreeMap.
+
+Подробнее про различные группирования можно прочитать здесь:
+<ul>
+<li><a href="https://vertex-academy.com/tutorials/ru/java-8-stream-collect-groupingby/" target="_blank" rel="nofollow">Java 8 Stream collect grouping</a></li>
+<li><a href="https://www.mkyong.com/java8/java-8-collectors-groupingby-and-mapping-example/" target="_blank" rel="nofollow">Java 8 – Stream Collectors groupingBy examples</a></li>
+</ul>
+Коллектор можно создать самим. Подробнее можно прочитать здесь: <a href="https://blog.indrek.io/articles/creating-a-collector-in-java-8/" target="_blank" rel="nofollow">"Creating a custom collector in Java 8"</a>. И полезно прочитать обсуждение здесь: <a href="https://stackoverflow.com/questions/32859038/java-8-list-to-map-with-stream" target="_blank" rel="nofollow">"Java 8 list to map with stream"</a>.
+
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="226" alt="Comparator в Java - 3" src="https://cdn.javarush.com/images/article/7ba32ce5-f169-467a-be75-9d540239781b/original.jpeg"></div></div>
+
+<strong>Грабли</strong>
+
+Comparator и Comparable это хорошо. Но с ними связан один нюанс, про который стоит помнить. Когда класс выполняет сортировку, то он рассчитывает, что можно привести Ваш класс к Comparable. Если это не так - в момент выполнения вы получите ошибку. Посмотрим на пример:
+
+<pre class="lang-java line-numbers"><code>
+SortedSet&lt;Message&gt; msg = new TreeSet&lt;&gt;();
+msg.add(new Message(2, "Developer".getBytes()));
+</code></pre>
+Кажется, что ничего плохого тут нет. Но на самом деле на нашем примере он упадёт с ошибкой:
+
+<code>java.lang.ClassCastException: Message cannot be cast to java.lang.Comparable</code>
+
+А всё потому, что он пытался отсортировать элементы (Он ведь SortedSet). И не смог.
+
+Cледует не забыть про это при работе с SortedMap и SortedSet.
+
+<strong>Дополнительно</strong>
+
+Рекомендуется к просмотру:
+<a href="https://youtu.be/-S_huEuNJiU?t=5m2s" target="_blank" rel="nofollow">Юрий Ткач : HashSet и TreeSet - Collections #1 - Advanced Java</a>

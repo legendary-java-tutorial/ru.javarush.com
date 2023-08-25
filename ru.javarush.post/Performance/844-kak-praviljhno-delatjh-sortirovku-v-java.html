@@ -1,0 +1,70 @@
+Как правильно делать сортировку в Java
+<p>----------------------------------------</p>
+Анализируя исходные коды многих opensource Java-проектов, я обнаружил, что большинство разработчиков осуществляют сортировку всего двумя разными способами. Один из них основан на применении метода sort() классов Collections или Arrays, а другой на использовании ...
+<p>----------------------------------------</p>
+Анализируя исходные коды многих opensource Java-проектов, я обнаружил, что большинство разработчиков осуществляют сортировку всего двумя разными способами. Один из них основан на применении метода <code>sort()</code> классов <code>Collections</code> или <code>Arrays</code>, а другой на использовании самосортирующихся структур данных, таких как <code>TreeMap</code> и <code>TreeSet</code>.
+<img data-id="8d7f42e0-8dc8-4f83-8de4-355c29ef000f" data-max-width="850" alt="Как правильно делать сортировку в Java - 1" src="https://cdn.javarush.com/images/article/8d7f42e0-8dc8-4f83-8de4-355c29ef000f/1024.jpeg"><h2>Использование метода sort()</h2>Если нужно отсортировать коллекцию, то применяйте метод <code>Collections.sort()</code>.
+
+<pre class="lang-java line-numbers"><code>
+// Collections.sort(…)
+List&lt;ObjectName&gt; list = new ArrayList&lt;ObjectName&gt;();
+Collections.sort(list, new Comparator&lt;ObjectName&gt;() {
+	public int compare(ObjectName o1, ObjectName o2) {
+		return o1.toString().compareTo(o2.toString());
+	}
+});
+</code></pre>
+Если требуется отсортировать массив, используйте метод <code>Arrays.sort()</code>.
+
+<pre class="lang-java line-numbers"><code>
+// Arrays.sort(…)
+ObjectName[] arr = new ObjectName[10];
+Arrays.sort(arr, new Comparator&lt;ObjectName&gt;() {
+	public int compare(ObjectName o1, ObjectName o2) {
+		return o1.toString().compareTo(o2.toString());
+	}
+});
+</code></pre>
+Метод <code>sort()</code> очень удобен, когда коллекция или массив уже заполнены значениями.
+<h2>Применение самосортирующихся структур данных</h2>Если нужно отсортировать список (<code>List</code>) или множество (<code>Set</code>), используйте структуру <code>TreeSet</code> для сортировки.
+
+<pre class="lang-java line-numbers"><code>
+// TreeSet
+Set&lt;ObjectName&gt; sortedSet = new TreeSet&lt;ObjectName&gt;(new Comparator&lt;ObjectName&gt;() {
+	public int compare(ObjectName o1, ObjectName o2) {
+		return o1.toString().compareTo(o2.toString());
+	}
+});
+sortedSet.addAll(unsortedSet);
+</code></pre>
+Если вам требуется отсортировать словарь (<code>Map</code>), используйте структуру <code>TreeMap</code> для сортировки. <code>TreeMap</code> сортируется по ключу (<code>key</code>).
+
+<pre class="lang-java line-numbers"><code>
+// TreeMap – использующий String ключи и компаратор (Comparator) CASE_INSENSITIVE_ORDER,
+// упорядочивающий строки (String) методом compareToIgnoreCase
+Map&lt;String, Integer&gt; sortedMap = new TreeMap&lt;String, Integer&gt;(String.CASE_INSENSITIVE_ORDER);
+sortedMap.putAll(unsortedMap);
+</code></pre>
+<pre class="lang-java line-numbers"><code>
+//TreeMap – общий случай, компаратор указывается вручную
+Map&lt;ObjectName, String&gt; sortedMap = new TreeMap&lt;ObjectName, String&gt;(new Comparator&lt;ObjectName&gt;() {
+	public int compare(ObjectName o1, ObjectName o2) {
+		return o1.toString().compareTo(o2.toString());
+	}
+});
+sortedMap.putAll(unsortedMap);
+</code></pre>
+Вышеописанный подход очень полезен в тех случаях, если вам нужно проводить большое количество операций поиска элементов в коллекции. Самосортирующиеся структуры данных имеют эффективность <code>O(log(n))</code>, что лучше, чем <code>O(n)</code>. Это означает, что при удвоении количества данных в коллекции время поиска не удваивается, а увеличивается на постоянную величину (<em>прим. перев.</em>)
+<h2>Плохой подход к задаче сортировки</h2>До сих пор можно встретить примеры, когда программисты самостоятельно описывают алгоритмы сортировки. Рассмотрим код сортировки, представленный ниже (сортировка double-массива по возрастанию (<em>прим. перев.</em>)). Этот код не только не эффективен, но и не читабелен. И таких примеров много.
+
+<pre class="lang-java line-numbers"><code>
+double t;
+for (int i = 0; i &lt; N; i++)
+	for (int j = i + 1; j &lt; N; j++)
+		if (r[j] &lt; r[i]) {
+			t = r[i];
+			r[i] = r[j];
+			r[j] = t;
+		}
+</code></pre>
+<div class="email-subscription"><iframe frameborder="0" src="https://secure.esputnik.com.ua/4Q0Ef6d2SOs" width="100%" height="200" scrolling="no"></iframe></div>

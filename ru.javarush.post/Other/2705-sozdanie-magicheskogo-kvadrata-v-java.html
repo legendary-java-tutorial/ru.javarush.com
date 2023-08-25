@@ -1,0 +1,177 @@
+Создание "Магического квадрата" в Java
+<p>----------------------------------------</p>
+Статья для тех кто столкнулся с "Магическим квадратом". Недавно наткнулся на такую задачу: магическим квадратом порядка n называется квадратная матрица размера nxn, составленная из чисел 1, 2, 3, ..., 2 n так, что суммы по каждому столбцу, каждой строке и каждой из двух больших...
+<p>----------------------------------------</p>
+Магическим квадратом порядка n называется квадратная матрица размера nxn, составленная из чисел 1, 2, 3, ..., n^2 так, что суммы по каждому столбцу, каждой строке и каждой из двух больших диагоналей равны между собой.
+
+<s>Первое что вспомнилось это судоку :)</s>
+<img data-max-width="512" data-id="a22857d4-131d-43db-9344-56beedb7195f" src="https://cdn.javarush.com/images/article/a22857d4-131d-43db-9344-56beedb7195f/512.jpeg" alt="Создание &quot;Магического квадрата&quot; в Java - 1"><a href="https://ru.wikipedia.org/wiki/%D0%9C%D0%B0%D0%B3%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9_%D0%BA%D0%B2%D0%B0%D0%B4%D1%80%D0%B0%D1%82" rel="nofollow" target="_blank">ссылка из википедии</a>, для тех кто не понял.
+
+Поэкспериментировав с составлением собственных алгоритмов для заполнения, я пришел к выводу, что без помощи других людей мне не справиться. 
+
+Поэтому, прошерстив с десяток ссылок реализовал 3 алгоритма, которые в сумме реализуют заполнение любой матрицы “n” размерности. 
+
+В начале кода сможете найти комментарии к методам, которые будут использоваться ниже.
+
+Ссылки на алгоритмы и другие (полезные?) комментарии сможете найти в теле соответствующих методов.
+
+Я в Telegram: @sergey3ts
+Ну и <a href="https://www.linkedin.com/in/tsekhmistrenkosergey/" rel="nofollow" target="_blank">Linkedin</a> конечно (Добавляйтесь, для меня это важно :) 
+
+<pre class="language-java line-numbers"><code>
+// magicSquareOfOddOrder(int n);       метод для n нечетной размерности (3, 7, 9, и тд)
+ // magicSquareOfEvenOddOrder(int n);   метод для n четно-нечетной размерности (n кратно 2 но не крастно 4)
+ // magicSquareOfEvenOddOrder(int n);   метод для n четн-четной размерности (n кратно и 2 и 4);
+ // magicSquare(int n);                 общий метод, который определяет кратность n и вызывает соотв. метод
+ 
+ // Вспомогательные методы
+ // standardMatrixFillingAscending(n); заполняет матрицу от 1 по возростанию
+ // standardMatrixFillingDescending(n); заполняет матрицу от n*n по убыванию
+ 
+ // Извиняюсь за косяки в коде (непонятные переменные(возможно(нет(да)))) :)
+public class MatrixSolution16 {
+    public static void main(String[] args) {
+        magicSquare(6);
+    }
+   public static int [][] magicSquare(int n) {
+        if (n % 2 !=0) return magicSquareOfOddOrder(n);             // метод для n нечетной размерности (3, 7, 9, и тд)
+        else if (n % 4 != 0) return magicSquareOfEvenOddOrder(n);   // метод для n четно-нечетной размерности (n кратно 2 но не кратно 4)
+        return magicSquareOfEvenOddOrder(n);                        // метод для n четн-четной размерности (n кратно и 2 и 4);
+    }
+   private static int[][] magicSquareOfOddOrder(int n) {
+        // "Сиамский метод" - один из самых просты для восприятия
+        // https://ru.xcv.wiki/wiki/Siamese_method
+        // Оставлю без комментариев (gif по ссылке наглядно показывает как он работает)
+        // код не сложный
+        int[][] matrix = new int[n][n];
+        for (int i = 0; i &lt; n; i++) {
+            Arrays.fill(matrix[i], 0);
+        }
+        int count = 1, y = 0, x = matrix.length/2;
+        while (true){
+            matrix[y][x] = count;
+ 
+            count++;
+            if (((y == 0) &amp;&amp; (x &gt;= n-1)) &amp;&amp; (matrix[n-1][0] != 0)){
+                y++;
+            }
+            else {
+                y--;
+                if (y &lt; 0) {
+                    y = n - 1;
+                }
+                x++;
+                if (x == n) {
+                    x = 0;
+                }
+                if(matrix[y][x]!=0){
+                    y+=2;
+                    x--;
+                }
+            }
+ 
+            if(count==n*n+1) break;
+        }
+        return matrix;
+    }
+   private static int[][] magicSquareOfEvenOddOrder(int n) {
+        // Метод "анонима" спасибо человеку, который его придумал
+        // Вот ссылка на подробное описание метода http://www.klassikpoez.narod.ru/mojmetod.htm
+        // Оставлю этот код без комментариев уж очень он большой
+        // Надеюсь прочитав описание метода сможете понять(или нет?)
+        int half = n/2;
+ 
+        int[][] matrix = new int[n][n];
+        int[][] tempMatrix;
+        tempMatrix = magicSquareOfOddOrder(half);
+ 
+        // 1/4 матрицы
+        for (int i = 0; i &lt; half; i++) {
+            for (int j = 0; j &lt; half; j++) {
+                matrix[i][j] = tempMatrix[i][j];
+            }
+        }
+        // 2/4 матрицы
+        for (int i = 0; i &lt; half; i++) {
+            for (int j = half; j &lt; n; j++) {
+                int x = j-half;
+                matrix[i][j] = (tempMatrix[i][x]+2*half*half);
+            }
+        }
+        // 3/4 матрицы
+        for (int i = half; i &lt; n; i++) {
+            for (int j = 0; j &lt; half; j++) {
+                int x = i-half;
+ 
+                matrix[i][j] = (tempMatrix[x][j]+3*half*half);
+            }
+        }
+        // 4/4 матрицы
+        for (int i = half; i &lt; n; i++) {
+            for (int j = half; j &lt; n; j++) {
+                int x = i-half, y = j-half;
+                matrix[i][j] = (tempMatrix[x][y]+half*half);
+            }
+        }
+        int move = 0;
+        for (int i = 6; i &lt; n; i++) {
+            if((i%4!=0)&amp;&amp;(i%2==0)) move++;
+        }
+        for (int j = matrix.length/2-move; j &lt;= matrix.length/2+move-1; j++) {
+            for (int i = 0; i &lt; tempMatrix.length; i++) {
+ 
+                int key = matrix[i][j];
+                matrix[i][j] = matrix[half+i][j];
+                matrix[half+i][j] = key;
+            }
+        }
+        for (int j = 0; j &lt;= 1; j++) {
+            if (j == 0) {
+                int key = matrix[0][0];
+                matrix[0][0] = matrix[half][0];
+                matrix[half][0] = key;
+            }
+            if (j == 1) {
+                int key = matrix[half - 1][0];
+                matrix[half - 1][0] = matrix[n - 1][0];
+                matrix[n - 1][0] = key;
+            }
+        }
+        for (int j = half+1; j &lt; n-1; j++) {
+            for (int i = 1; i &lt; half-1; i++) {
+                int key = matrix[i][1];
+                matrix[i][1] = matrix[half+i][1];
+                matrix[half+i][1] = key;
+            }
+        }
+        return matrix;
+    }
+    private static int[][] evenMatrixSquare(int n){
+        // Метод Раус-Болла хорошое описание нашел тут:
+        // https://rep.bntu.by/bitstream/handle/data/62327/Magicheskie_kvadraty.pdf?sequence=1&amp;isAllowed=y
+        // Страница 8, 9
+        int[][] matrix = WorkWithMatrix.standardMatrixFillingAscending(n);
+        int[][] tempMatrix = WorkWithMatrix.standardMatrixFillingDescending(n);
+ 
+        int size = 4;    // Размерность каждого квадрата (4х4 тафтология)
+                         // можно заменить простой цифрой
+        int x = 0;       // x, y - движение по кадратам (посмотрите как изменяются в ходе программы)
+        int y = 0;
+        for (int i = 0; i &lt; (n*n/16); i++) {                // Смотрим сколько квадратов 4х4 помещается в матрице nxn
+            if (x == (int)Math.sqrt(n*n/16)) {              // x, y переменные для движения по квадратам 4х4
+                                                            // х проходит по первому ряду квадратов, достигая последнего
+                                                            // обнуляется, а y увеличивается
+                x = 0;
+                y++;
+            }
+            // x и y должны лишь обеспечивать проход по квадратам
+            for (int j = 0; j &lt; 4; j++) {
+                matrix[size*y+j][size*x+j] = tempMatrix[size*y+j][size*x+j];  // главная диагональ квадратов 4х4
+                matrix[size*y+j][size*x+size-1-j] = tempMatrix[size*y+j][size*x+size-1-j]; // побочная диагональ
+            }
+            x++;
+        }
+        return matrix;
+    }
+}
+</code></pre>

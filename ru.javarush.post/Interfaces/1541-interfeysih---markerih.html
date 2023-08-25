@@ -1,0 +1,81 @@
+Интерфейсы - маркеры
+<p>----------------------------------------</p>
+Интерфейсы - маркеры - это такой шаблон проектирования с проверкой
+ типов во время выполнения, который позволяет связать интерфейс и класс. 
+    Чтобы понять 
+<p>----------------------------------------</p>
+Интерфейсы - маркеры - это такой шаблон проектирования с проверкой
+ типов во время выполнения, который позволяет связать интерфейс и класс. 
+    Чтобы понять для чего это может быть нужно рассмотрим
+ пример маркирования класса Serializible маркером.
+
+ Предположим, что нам понадобилось сохранить состояние объекта в памяти, а потом
+ еще и иметь воззможность расшифровать то, что мы сохранили. Тогда, скажите вы, можно
+ перевести наш объект в набор битов. Верно.
+
+ Мы можем использоватьпростой способ записи в файл с помощью FileInputStream, но это
+ удобно только если объектов мало,  а что если их много?
+ Для этого есть чудесный инструмент сериализации.
+ Главное правило, когда вы им пользуетесь - сериализуемый объект должен
+ содержать в себе все данные, а не ссылаться на другие объекты.
+
+ Смотрите на свой класс " Ага, не ссылаются поля и хорошо поставлю маркер Serializable".
+ А когда поставите, это будет значить, что объекты, которые вы пометили могут быть записаны
+ в ObjectOutputStream. У класса ObjectOutputStream есть метод writeObject0(),
+ а в нем находятся проверки instanceof, проверяющие можно ли записывать объект и если вся серия проверок проваливается, то выбрасывается исключение NotSerializableException, а если нет- все аккуратненько пишется в память.
+
+Создадим класс BigObject, экземпляры которого будем сериализовывать
+
+<code>
+    package post1;
+    import java.io.Serializable;
+
+    public class BigObject implements Serializable {
+
+        private int id;
+        public void setId(final int id){
+            this.id = id;
+        }
+
+        public int getId() {
+           return id;
+        }
+    }</code>
+
+
+Класс BigObject уже помечен как Serializable. У него есть одно поле id и сопутствующие методы get/set.
+
+
+<code>    package post1;
+    import post1.BigObject;
+    import java.io.*;
+    
+    public class InterfaceMarker  {
+
+        public static void main(String[] args) throws IOException, ClassNotFoundException {
+            int originalId = 12;
+            BigObject objectOriginal = new BigObject();
+            objectOriginal.setId(originalId);
+            ByteArrayOutputStream writeBuffer = new ByteArrayOutputStream();
+            ObjectOutputStream outputStream = new ObjectOutputStream(writeBuffer);
+            outputStream.writeObject(objectOriginal);
+            outputStream.close();
+
+            byte[] buffer = writeBuffer.toByteArray();
+            ByteArrayInputStream readBuffer = new ByteArrayInputStream(buffer);
+            ObjectInputStream inputStream = new ObjectInputStream(readBuffer);
+            BigObject objectCopy = (BigObject)inputStream.readObject();
+            if (objectCopy.getId() == originalId)
+                System.out.println( "originalId equals copiedId");
+        }
+    }
+</code>
+<h4>Запись объекта</h4>
+
+В начале создаем объект сериализируемого класса BigObject, затем готовим под него буфер данных - место куда все бантики будем складывать ByteArrayOutputStream. Затем готовим уже упомянутый ObjectOutputStream и передаем ему буфер.Записываем наш объект в поток и закрываем его. 
+
+<h4>Чтение объекта</h4>
+
+Подготовим буфер записи readBuffer, передадим inputStream, прочтем readObject(). Теперь объект восстановлен. 
+
+Благодаря тому, что поле `id` не являлось ссылкой, мы смогли пометить Serializable класс, который полностью содержит в себе свои данные. Вместо того, чтобы добавлять функции проверки внутри нашего класса маркеры позволяют упростить процедуру валидации классов.

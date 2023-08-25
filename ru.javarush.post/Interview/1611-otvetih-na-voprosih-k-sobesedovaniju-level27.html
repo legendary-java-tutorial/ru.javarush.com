@@ -1,0 +1,174 @@
+Уровень 27. Ответы на вопросы к собеседованию по теме уровня
+<p>----------------------------------------</p>
+Дедлок – это ситуация, когда два и более нитей заблокированы, ждущие друг друга. Дедлоком также называется взаимная блокировка. Взаимная блокировка – это ситуация в которой, два или более процесса...
+<p>----------------------------------------</p>
+
+<img data-id="ce961db6-56c1-4a07-a341-c85c821b873c" data-max-width="850" alt="Уровень 27. Ответы на вопросы к собеседованию по теме уровня - 1" src="https://cdn.javarush.com/images/article/ce961db6-56c1-4a07-a341-c85c821b873c/1024.jpeg"><ol><li><p><strong>Что такое дедлок?</strong></p><p><strong>Дедлок</strong> – это ситуация, когда два и более нитей заблокированы, ждущие друг друга. Дедлоком также называется взаимная блокировка.</p>
+
+<p><strong>Взаимная блокировка</strong> – это ситуация в которой, два или более процесса занимая некоторые ресурсы, пытаются заполучить некоторые другие ресурсы, занятые другими процессами и ни один из процессов не может занять необходимый им ресурс, и соответственно освободить занимаемый. </p>
+
+<p>Бывают взаимные блокировки порядка синхронизации (решаются назначением порядка);</p>
+
+<p>Взаимная блокировка между объектами (различные объекты пытаются получить доступ к одним и тем же синхронизированным блокам);</p>
+
+<p>Ресурсная взаимоблокировка (при попытке получить доступ к некоторым ресурсам, которые может использовать одновременно только один поток).</p></li>
+<li><p><strong>Какие вы знаете стратегии, предотвращающие появление дедлоков?</strong></p><p>Безусловно, если код написан без каких-либо ошибок, то взаимных блокировок в нем не будет. Но кто может поручиться, что его код написан без ошибок? Безусловно, тестирование помогает выявить значительную часть ошибок, но как мы уже видели ранее, ошибки в многопоточном коде нелегко диагностировать и даже после тестирования нельзя быть уверенным в отсутствии ситуаций взаимных блокировок. Можем ли мы как-то перестраховаться от блокировок? Ответ – да. Подобные техники применяются в движках баз данных, которым нередко необходимо восстанавливаться после взаимных блокировок (связанных с механизмом транзакций в БД). Интерфейс <code>Lock</code> и его реализации доступные в пакете <code>java.util.concurrent.locks</code> позволяют попытаться занять монитор, связанный с экземпляром данного класса методом <code>tryLock</code> (возвращает true, если удалось занять монитор).</p>
+
+<p>Также есть стратегия применения открытых вызовов, то есть вызывать методы других объектов вне синхронизированного блока.</p>
+
+<p>Ссылка на статью: <a href='http://www.developersonthe.net/ru/posts/post_id/34-Vzaimnaja-blokirovkadeadlock-v-Java-i-metody-borby-s-nej/' rel='nofollow' target='_blank'>Взаимная блокировка(deadlock) в Java и методы борьбы с ней</a></p></li>
+<li><p><strong>Могут ли возникнуть дедлоки при использовании методов <code>wait-notify</code>?</strong></p><p>Ответить на этот вопрос сложно лично мне, но прочитав в интернете разные дискуссии на эту тему, можно сказать следующее:</p>
+
+<p>Дедлоков можно избежать за счет разумного использования <code>synchronized</code>, <code>volatile</code>, монитора (<code>wait()</code>, <code>notify()</code>, <code>notifyAll()</code>),а если копать глубже, то используя классы <code>java.utils.concurrent</code>: вместо обычных коллекций - многопоточные варианты (<code>ConcurrentHashMap</code>, например); если нужен более сложный способ синхронизации потоков — различные <code>CyclicBarrier</code>, <code>CountDownLatch</code>.</p>
+
+<p>Если грамотно использовать <code>wait</code> – <code>notify</code>, то дедлоки возникнуть не должны.)))</p>
+
+<p>Вот ссылка: <a href='http://www.quizful.net/interview/java/Deadlock' rel='nofollow' target='_blank'>Взаимная блокировка или Deadlock.</a></p></li>
+<li><p><strong>Что чаще используется: <code>notify</code> или <code>notifyAll</code>?</strong></p><p>The java.lang.Object.notify() wakes up a single thread that is waiting on this object's monitor. If any threads are waiting on this object, one of them is chosen to be awakened. The choice is arbitrary and occurs at the discretion of the implementation. A thread waits on an object's monitor by calling one of the wait methods.</p>
+
+<p>This method should only be called by a thread that is the owner of this object's monitor. A thread becomes the owner of the object's monitor in one of three ways:</p><ul>
+<li>By executing a synchronized instance method of that object.</li>
+<li>By executing the body of a synchronized statement that synchronizes on the object.</li>
+<li>For objects of type Class, by executing a synchronized static method of that class.</li>
+</ul><p>Only one thread at a time can own an object's monitor.</p>
+
+<p>The java.lang.Object.notifyAll() wakes up all threads that are waiting on this object's monitor. A thread waits on an object's monitor by calling one of the wait methods.</p>
+
+<p>The awakened threads will not be able to proceed until the current thread relinquishes the lock on this object. The awakened threads will compete in the usual manner with any other threads that might be actively competing to synchronize on this object; for example, the awakened threads enjoy no reliable privilege or disadvantage in being the next thread to lock this object.</p>
+
+<p>This method should only be called by a thread that is the owner of this object's monitor.</p>
+
+<p>Это отрывки из документации. Вопрос – то по большей части риторический, смотря какое приложение, в зависимости от ситуации))) Я даже не знаю, как бы я ответил. Если у кого-то есть какие-то догадки, то прошу в комментариях оставить, буду очень рад почитать.</p></li>
+<li><p><strong>Метод <code>wait</code> рекомендуется использовать с конструкциями <code>if</code> или <code>while</code>?</strong></p><p>Здесь отвечу просто цитатой из сайта: <a href='http://www.skipy.ru/technics/synchronization.html' rel='nofollow' target='_blank'>Синхронизация потоков</a></p>
+
+<p>По поводу вызова метода <code>wait</code>. Это уже из разряда чистой техники. Рекомендуется вызывать <code>wait</code> изнутри цикла <code>while</code>. Т.е., писать не</p>
+
+<pre class='lang-java line-numbers'><code>
+if (some condition){
+    obj.wait()
+}
+</code></pre>
+<p>..., а</p>
+
+<pre class='lang-java line-numbers'><code>
+while (some condition){
+    obj.wait()
+}
+</code></pre>
+<p>Зачем это надо. Дело в том, что <code>notify</code> может вызвать кто угодно. Просто по ошибке, от которой никто не застрахован. В том случае из опыта, о котором я рассказывал выше, мы взялись за переделку именно для того, чтобы избежать такой возможности. Просто спрятали объект, на котором происходит синхронизация. И доступ к нему имел только наш код. Это хорошая практика, но не всегда возможно, к сожалению. Так вот, если поток ждет выполнения некоторого условия – вариант с <code>while</code> надежнее. Если поток пустили по ошибке – он опять проверит условие и, если надо, будет ждать дальше.</p>
+
+<p>Кроме того, не исключена возможность и простого выхода из ожидания без вызова <code>notify</code>. Я честно признаюсь, что не видел этого в спецификации виртуальной машины, хотя специально искал. Но некоторые «гуру» утверждают, что VM может выйти из состояния ожидания самопроизвольно. И более того, периодически это наблюдается. Если кто-нибудь даст ссылку на соответствующую спецификацию – буду благодарен!</p></li>
+<li><p><strong>Что происходит после вызова метода <code>notifyAll</code>?</strong></p><p>The java.lang.Object.notifyAll() wakes up all threads that are waiting on this object's monitor. A thread waits on an object's monitor by calling one of the wait methods.</p>
+
+<p>Пробуждает все нити, которые ждали на этом мониторе.</p></li>
+<li><p><strong>Какие выгоды получает объект, если он <code>immutable</code>?</strong></p><p>Нашел комментарий на: <a href='http://ru.stackoverflow.com/questions/432545/' rel='nofollow' target='_blank'>immutable-объекты и многопоточность</a></p>
+
+<p><code>Immutable</code> объект — это объект, состояние которого после создания невозможно изменить. В случае Java это значит что все поля экземпляра у класс отмечены как <code>final</code> и являются примитивами или тоже <code>immutable</code> типами.</p>
+
+<p>Пример:</p>
+
+<pre class='lang-java line-numbers'><code>
+public class ImmutablePoint {
+    private final int x;
+    private final int y;
+    private final String description;
+
+    public ImmutablePoint(int x, int y, String description) {
+        this.x = x;
+        this.y = y;
+        this.description = description;
+    }
+}
+</code></pre>
+<p>После создания экземпляра <code>ImmutablePoint</code> его модификация невозможна.</p>
+
+<p>Простейший пример <code>immutable</code> класса из JDK это <code>String</code>. Любые методы, которые вы вызовите на строке (например <code>description.toLowerCase()</code>) вернут новую строку, а не модифицируют исходную.</p>
+
+<p>Пример <code>mutable</code> класс из JDK — <code>Date</code>. Например <code>myDate.setHours(x)</code> модифицирует сам экземпляр <code>myDate</code>!</p>
+
+<p>Есть разница между <code>immutable</code>-объектом (то есть, неизменяемым), и <code>final</code>-ссылкой.</p>
+
+<p>Ключевое слово <code>final</code> для объектных типов гарантирует неизменяемость лишь ссылки, но не самого объекта. Например, если у вас есть <code>final</code>-ссылка на <code>ArrayList&lt;T&gt;</code>, вы тем не менее можете добавлять в него новые элементы или изменять существующие.</p>
+
+<p>В случае же <code>immutable</code>-объекта объект после окончания конструктора не изменяется вообще. Одного лишь модификатора <code>final</code> для этого недостаточно, необходимо, чтобы все подобъекты были тоже неизменяемыми. Вы в принципе можете держать внутри ссылку на изменяемый объект, но обращаться с ним так, чтобы он не менялся.</p>
+
+<p>Использование неизменяемых объектов даёт много выгод. Например, о таком объекте намного легче судить в ситуации, когда во многих частях программы есть ссылка на него (для изменяемого объекта, любая часть программы может вызвать мутирующую функцию в практически любой момент времени и из любого потока).</p>
+
+<p>Но то, что для нас важно в контексте вопроса — неизменяемые объекты не требуют синхронизации при многопоточном доступе. Вот собственно и вся рекомендация: используйте неизменяемые объекты, и вам не придётся думать о том, что нужно, а что не нужно синхронизировать. Единственная возможная проблема — если вы внутри ещё не отработавшего конструктора публикуете ссылку на объект, через которую к нему может получить доступ кто-нибудь ещё, и увидеть объект в изменяющемся состоянии! (Это бывает не так уж и редко. Например, иногда программист хочет добавить объект в конструкторе в коллекцию всех объектов данного типа.)</p>
+<hr /><p>Следует различать действительно неизменяемые объекты, и объекты, имеющие лишь интерфейс «только для чтения». При чтении объект тем не менее может менять свою внутреннюю структуру (например, кэшировать самый свежий запрос данных). Такие объекты не являются в строгом смысле неизменяемыми, и не могут быть использованы из разных потоков без предосторожностей. (Поэтому, если ваш объект включает другие объекты, убедитесь, что документация гарантирует их неизменяемость!)</p>
+<hr />
+<p>Обратите внимание, что для полей неизменяемого объекта вы практически обязаны использовать <code>final</code>! Дело в так называемой безопасной публикации. Смотрите. Инструкции в Java-программе могут быть переставлены как оптимизатором, так и процессором (у Java достаточно слабая модель памяти). Поэтому, если не предпринимать специальных действий, окончание работы конструктора и присвоение значений полям может быть переставлено (но невидимо в рамках текущего потока)! Использование <code>final</code> гарантирует, что такого не произойдёт.</p>
+
+<p>В случае многопоточного программирования преимущества <code>immutable</code> классов очевидны: после создания объекты можно передавать другим потокам и они всегда будут в актуальном состоянии. Т.е. вам не надо проверять не устарело ли состояние вашего экземпляра и не модифицировал ли его другой поток пока вы с ним работаете. Например, у вас есть метод <code>bill(Date endDate)</code>, в нём вы наивно проверяете соответствие <code>endDate</code> каким-то предварительным условиям и начинаете с ней работать. В этот момент другой поток может изменить <code>endDate</code>, например установит её глубоко в прошлое. Последствия могут быть самыми удивительными.</p></li>
+<li><p><strong>Что такое «thread-safe»?</strong></p><p>Опять же: <a href='http://stackoverflow.com/questions/6324085/' rel='nofollow' target='_blank'>What is thread Safe in java? [duplicate]</a></p>
+
+<p>Thread safe means that a method or class instance can be used by multiple threads at the same time without any problems occuring.</p>
+
+<p>Состояние потоко-безопасности подразумевает, что метод или класс может быть использован множеством нитей без проблем столкновения, то есть дедлоков.</p>
+
+<p>Consider the following method:</p>
+
+<pre class='lang-java line-numbers'><code>
+    private int myInt = 0;
+public int AddOne()
+{
+    int tmp = myInt;
+    tmp = tmp + 1;
+    myInt = tmp;
+    return tmp;
+}
+</code></pre>
+<p>Now thread A and thread B both would like to execute AddOne(). but A starts first and reads the value of myInt (0) into tmp. Now for some reason the scheduler decides to halt thread A and defer execution to thread B. Thread B now also reads the value of myInt (still 0) into it's own variable tmp. Thread B finishes the entire method, so in the end myInt = 1. And 1 is returned. Now it's Thread A's turn again. Thread A continues. And adds 1 to tmp (tmp was 0 for thread A). And then saves this value in myInt. myInt is again 1.</p>
+
+<p>Здесь и нить А и нить B  хотят  выполнить <code>AddOne ()</code>. но А начинается первой и считывает значение myInt (0)  в TMP. Теперь по некоторым причинам планировщик решает остановить поток А и отложить выполнение нити B. Поток В настоящее время также считывает значение myInt (0)  в его собственной переменной TMP. Нить B завершает весь метод так, что в конце концов myInt = 1. И 1 возвращается. Поток А продолжается. И добавляет 1 к TMP (TMP 0 для нити A). А затем сохраняет это значение в myInt. myInt снова 1.</p>
+
+<p>So in this case the method AddOne was called two times, but because the method was not implemented in a thread safe way the value of myInt is not 2, as expected, but 1 because the second thread read the variable myInt before the first thread finished updating it.</p>
+
+<p>Так что в этом случае метод <code>AddOne</code> был вызван два раза, но так как этот метод не был реализован в потоке безопасным способом величина myInt не 2, как  ожидалось, а 1, потому что второй поток чтения переменной <code>myInt</code> закончился  перед первой нитью до его обновления.</p>
+
+<p>Creating thread safe methods is very hard in non trivial cases. And there are quite a few techniques. In Java you can mark a method as synchronized, this means that only one thread can execute that method at a given time. The other threads wait in line. This makes a method thread safe, but if there is a lot of work to be done in a method, then this wastes a lot of time. Another technique is to 'mark only a small part of a method as synchronized' by creating a lock or semaphore, and locking this small part (usually called the critical section). There are even some methods that are implemented as lockless thread safe, which means that they are built in such a way that multiple threads can race through them at the same time without ever causing problems, this can be the case when a method only executes one atomic call. Atomic calls are calls that can't be interrupted and can only be done by one thread at a time.</p>
+
+<p>Создание потоко-безопасных методов очень трудно. В Java вы можете пометить метод как синхронизированный, это будет означать, что только один поток может выполнить этот метод в данный момент времени. Другие нити, будут ждать в очереди. Это делает метод потоко-безопасным, но если много работы предстоит сделать в методе, то на это будет уходить много времени. Другой метод заключается в разметке лишь малой части метода, как синхронизированного 'путем создания локов(locks) или семафоров, и запирании этой небольшой части (обычно называемый критический раздел (critical section)). Есть даже некоторые методы, которые реализуются как беззамочные потокобезопасные (lockless thread safe), это означает, что они построены таким образом, что несколько потоков могут проходить через них в одно время и никогда не вызывают проблем, это может быть в случае, когда метод выполняет только один атомарный вызов. Атомарные вызовы это вызовы, которые не могут быть прерваны, и может быть реализованы только одним потоком.</p></li>
+<li><p><strong>Что такое "happens-before"?</strong></p><p>Есть статья на википедии, она не конкретно про "happens-before", но все – таки.</p>
+<p>А так-то:<br />
+«Выполняется прежде» (англ. happens before) — отношение строгого частичного порядка (арефлексивное, антисимметричное, транзитивное), введённое между атомарными командами (<code>++</code> и <code>--</code> не атомарны!), придуманное Лесли Лэмпортом и не означающее «физически прежде». Оно значит, что вторая команда будет «в курсе» изменений, проведённых первой.</p>
+
+<p><a href='https://ru.wikipedia.org/wiki/%D0%9C%D0%BE%D0%B4%D0%B5%D0%BB%D1%8C_%D0%BF%D0%B0%D0%BC%D1%8F%D1%82%D0%B8_Java' rel='nofollow' target='_blank'>Модель памяти Java</a></p>
+
+<p>В частности, одно выполняется прежде другого для таких операций (список не исчерпывающий):</p>
+<ul>
+<li>Синхронизация и мониторы:</li>
+<li>Захват монитора (начало <code>synchronized</code>, метод <code>lock</code>) и всё, что после него в том же потоке.</li>
+<li>Возврат монитора (конец <code>synchronized</code>, метод <code>unlock</code>) и всё, что перед ним в том же потоке.</li>
+<li>Таким образом, оптимизатор может заносить строки в синхроблок, но не наружу.</li>
+<li>Возврат монитора и последующий захват другим потоком.</li>
+<li>Запись и чтение:</li>
+<li>Любые зависимости по данным (то есть запись в любую переменную и последующее чтение её же) в одном потоке.</li>
+<li>Всё, что в том же потоке перед записью в <code>volatile</code>-переменную, и сама запись.</li>
+<li><code>volatile</code>-чтение и всё, что после него в том же потоке.</li>
+<li>Запись в <code>volatile</code>-переменную и последующее считывание её же.[4][2] Таким образом, <code>volatile</code>-запись делает с памятью то же, что возврат монитора, а чтение — то же, что захват.[5] А значит: если один поток записал в <code>volatile</code>-переменную, а второй обнаружил это, всё, что предшествует записи, выполняется раньше всего, что идёт после чтения; см. иллюстрацию.</li>
+<li>Для объектных переменных (например, <code>volatile List x;</code>) столь сильные гарантии выполняются для ссылки на объект, но не для его содержимого.</li>
+<li>Обслуживание объекта:</li>
+<li>Статическая инициализация и любые действия с любыми экземплярами объектов.</li>
+<li>Запись в <code>final</code>-поля в конструкторе[6] и всё, что после конструктора. Как исключение из всеобщей транзитивности, это соотношение happens-before не соединяется транзитивно с другими правилами и поэтому может вызвать межпоточную гонку.[7]</li>
+<li>Любая работа с объектом и <code>finalize()</code>.</li>
+<li>Обслуживание потока:</li>
+<li>Запуск потока и любой код в потоке.</li>
+<li>Зануление переменных, относящихся к потоку, и любой код в потоке.</li>
+<li>Код в потоке и <code>join();</code> код в потоке и <code>isAlive() == false</code>.</li>
+<li><code>interrupt()</code> потока и обнаружение факта останова.</li>
+</ul></li><li><p><strong>Что такое JMM?</strong></p><p>Java Memory Model</p>
+<p>Вот ссылка: <a href='https://docs.oracle.com/javase/specs/jls/se7/html/jls-17.html' rel='nofollow' target='_blank'>Chapter 17. Threads and Locks</a></p>
+
+<p>И вот выдержка из нее:</p>
+
+<p>A memory model describes, given a program and an execution trace of that program, whether the execution trace is a legal execution of the program. The Java programming language memory model works by examining each read in an execution trace and checking that the write observed by that read is valid according to certain rules.</p>
+
+<p>Я понял на своем уровне что это набор правил:</p>
+
+<p>Правило № 1: однопоточные программы исполняются псевдопоследовательно. Это значит: в реальности процессор может выполнять несколько операций за такт, заодно изменив их порядок, однако все зависимости по данным остаются, так что поведение не отличается от последовательного.
+Правило № 2: нет невесть откуда взявшихся значений. Чтение любой переменной (кроме не-volatile long и double, для которых это правило может не выполняться) выдаст либо значение по умолчанию (ноль), либо что-то, записанное туда другой командой.br />
+И правило № 3: остальные события выполняются по порядку, если связаны отношением строгого частичного порядка «выполняется прежде» (англ. happens before).</p></li>
+<li><p><strong>Какое исключение вылетит, если вызвать <code>wait</code> не в блоке <code>synchronized</code>?</strong></p><p>Вот ссылка: <a href='https://jsehelper.blogspot.ru/2016/01/multithreading-2.html' rel='nofollow' target='_blank'>Ответы на вопросы на собеседование Multithreading (часть 2)</a></p>
+
+<p>Основная причина вызова <code>wait</code> и <code>notify</code> из статического блока или метода в том, что Java API обязательно требует этого. Если вы вызовете их не из синхронизированного блока, ваш код выбросит <code>IllegalMonitorStateException</code>. Более хитрая причина в том, чтобы избежать состояния гонки между вызовами <code>wait</code> и <code>notify</code>.</p></li></ol>

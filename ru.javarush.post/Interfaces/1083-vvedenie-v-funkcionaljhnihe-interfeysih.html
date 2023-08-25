@@ -1,0 +1,93 @@
+Введение в функциональные интерфейсы
+<p>----------------------------------------</p>
+Любой разработчик Java в мире хотя бы раз использовал один из следующих интерфейсов: java.lang.Runnable, java.awt.event.ActionListener, java.util.Comparator, java.util.concurrent.Callable. Их все объединяет одна общая черта, и это то что во всех них есть только один метод ...
+<p>----------------------------------------</p>
+<em>прошу сильно не тролить, только начинаю переводить статьи</em>
+<img data-id="8b8069c1-ee58-4524-82ff-b7e50cd90747" data-max-width="850" alt="Введение в функциональные интерфейсы - 1" src="https://cdn.javarush.com/images/article/8b8069c1-ee58-4524-82ff-b7e50cd90747/1024.jpeg"><h2>Введение в функциональные интерфейсы – концепции воссозданные в Java 8</h2>Любой разработчик Java в мире хотя бы раз использовал один из следующих интерфейсов: <code>java.lang.Runnable</code>, <code>java.awt.event.ActionListener</code>, <code>java.util.Comparator</code>, <code>java.util.concurrent.Callable</code>. Их все объединяет одна общая черта, и это то что во всех них есть только один метод. Существует множество других таких интерфейсов в JDK, а также другие созданные разработчиками Java. Эти интерфейсы также известны как <code>Single Abstract Method interfaces</code> (SAM interfaces). Одним из самых популярных способов использования этих интерфейсов заключается в создании анонимных внутренних классов, использующих эти интерфейсы, как в следующем примере:
+
+<pre class='lang-java line-numbers'><code>
+public class AnonymousInnerClassTest {
+    public static void main(String[] args) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("A thread created and running...");
+            }
+        }).start();
+    }
+}
+</code></pre>
+В Java 8 концепция SAM воссоздана и называется функциональными интерфейсами. Они могут быть представлены при помощи лямбда-выражений, ссылками на методы и конструкторами ссылок. Создана новая аннотация @FunctionalInterface которая используется для выдачи ошибок на уровне компилятора, когда интерфейс который Вы аннотировали не работает на функциональном уровне. Давайте посмотрим на простой функциональный интерфейс с одним абстрактным методом:
+
+<pre class='lang-java line-numbers'><code>
+@FunctionalInterface
+public interface SimpleFunInterface {
+    public void doWork();
+}
+</code></pre>
+Интерфейс также может объявлять абстрактные методы из класса <code>java.lang.Object</code>, но и в этом случае интерфейс может объявляться функциональным:
+
+<pre class='lang-java line-numbers'><code>
+@FunctionalInterface
+public interface SimpleFuncInterface {
+    public void doWork();
+    public String toString();
+    public Boolean equals(Object o);
+}
+</code></pre>
+Как только Вы добавили еще один абстрактный метод в интерфейс IDE пометит его ошибочным как на картинке:
+<img data-id="0aa77e6f-dc93-4309-99fd-b86fbcdb220f" data-max-width="469" alt="Введение в функциональные интерфейсы - 2" src="https://cdn.javarush.com/images/article/0aa77e6f-dc93-4309-99fd-b86fbcdb220f/1024.jpeg"><table>
+<tr>
+<th>Что еще почитать:</th>
+</tr>
+<tr>
+<td>
+<p><a href='https://javarush.com/groups/general' target='_blank'><em><strong>Группа Random:</strong></em></a></p><ul>
+<li><p><a href='https://javarush.com/groups/posts/592-java-functional-interfaces' target='_blank'>Java functional interfaces</a></p></li></ul>
+</td>
+</tr>
+</table>Интерфейс может наследоваться от другого интерфейса, в случае если интерфейс наследуется от функционального интерфейса и не содержит в себе новых абстрактных методов, тогда этот интерфейс также является функциональным. Но интерфейс может содержать только один абстрактный метод и множество дефолтных методов, и он до сих пор будет считаться функциональным.
+
+<pre class='lang-java line-numbers'><code>
+@FunctionalInterface
+public interface ComplexFunctionalInterface extends SimpleFuncInterface {
+    default public void doSomeWork() {
+        System.out.println("Doing some work in interface impl...");
+    }
+    default public void doSomeWork() {
+        System.out.println("Doing some other work in interface impl...");
+    }
+}
+</code></pre>
+Верхний пример до сих пор является функциональным интерфейсом. Теперь давайте рассмотрим, как мы можем использовать лямбда-выражения для замены анонимного внутреннего класса для реализации функциональных интерфейсов:
+
+<pre class='lang-java line-numbers'><code>
+/*
+*Implementation the interface by creating an
+*anonymoous inner class versus using
+*lambda expression.
+*/
+public class SimpleFunInterfaceTest {
+    public static void main(String[] args) {
+        carryOutWork(new SimpleFunInterface() {
+            @Override
+            public void doWork() {
+                System.out.println("Do work in SimpleFun impl...");
+            }
+        });
+        carryOutWork(() -&gt; System.out.println("Do work in lambda exp impl..."));
+    }
+    public static void carryOutWork(SimpleFuncInterface sfi) {
+        sfi.work();
+    }
+}
+</code></pre>
+Результат программы будет следующим:
+
+<pre class='lang-java line-numbers'><code>
+Do work in SimpleFun impl...
+Do work in lambda exp impl...
+</code></pre>
+В случае если вы используете IDE, которая поддерживает синтаксис Java лямбда-выражений (Netbeans 8 Nightly builds) – Вы получаете подсказку, когда используете анонимные внутренние классы:
+<img data-id="b188b9a5-c454-44e7-afcb-6e74177d8b80" data-max-width="570" alt="Введение в функциональные интерфейсы - 3" src="https://cdn.javarush.com/images/article/b188b9a5-c454-44e7-afcb-6e74177d8b80/1024.jpeg">
+Это был краткий ввод в концепцию функциональных интерфейсов в Java 8, а также как они могут быть реализованы с помощью лямбда-выражений.

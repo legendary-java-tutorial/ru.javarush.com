@@ -1,0 +1,462 @@
+Основы XML для Java программиста – Часть 3.1 из 3 - SAX
+<p>----------------------------------------</p>
+После мучительной второй части, можно расслабиться и получить удовольствие от такого инструмента для обработки XML файлов, как SAX. Вы познакомитесь с методом работы SAX и примерами его ...
+<p>----------------------------------------</p>
+<strong>Вступление</strong>
+
+Привет всем читателям моей еще не последней статьи и хочу поздравить: сложное про XML осталось позади. В данной статье будет уже код на Java. Будет немного теории, а далее практика. 
+<img data-id="dde81b05-d9c1-402b-ab94-ad2f8e12af5d" data-max-width="850" alt="" src="https://cdn.javarush.com/images/article/dde81b05-d9c1-402b-ab94-ad2f8e12af5d/1024.jpeg">Из-за того, что одного материала по SAX у меня получилось на 10 страничек в ворде, я понял, что в лимиты не помещусь. Потому, 3 статья будет разделена на 3 отдельные статьи, как бы это странно не звучало. Будет все в таком порядке: SAX -&gt; DOM -&gt; JAXB.
+
+Данная статья будет посвящена только SAX.
+
+P.S. Там где-то в курсе была задача, где надо было в HTML файле вывести все внутренние элементы. После данной статьи, вы сможете это сделать без считывания построчно обычным <code>BufferedReader</code> и сложными алгоритмами обработки, а, так же, близкое решение будет дано в последнем практическом примере. Давайте приступать :)
+
+<strong>SAX (Simple API for XML) — ТЕОРИЯ</strong>
+
+SAX-обработчик устроен так, что он просто считывает последовательно XML файлы и реагирует на разные события, после чего передает информацию специальному обработчику событий.
+<img data-id="d0c45ba0-1eae-42e0-bfc7-44f22a137ca7" data-max-width="907" alt="" src="https://cdn.javarush.com/images/article/d0c45ba0-1eae-42e0-bfc7-44f22a137ca7/1024.jpeg">У него есть немало событий, однако самые частые и полезные следующие:
+<ol>
+<li><code>startDocument</code> — начало документа</li>
+<li><code>endDocument</code> — конец документа</li>
+<li><code>startElement</code> — открытие элемента</li>
+<li><code>endElement</code> — закрытие элемента</li>
+<li><code>characters</code> — текстовая информация внутри элементов.</li>
+</ol>Все события обрабатываются в <strong>обработчике событий</strong>, который нужно создать и <strong>переопределить методы</strong>.
+
+<strong>Преимущества:</strong> высокая производительность благодаря "прямому" способу считывания данных, низкие затраты памяти.
+<strong>Недостатки:</strong> ограниченная функциональность, а, значит, в нелинейных задачах дорабатывать её надо будет уже нам.
+
+<strong>SAX (Simple API for XML) – ПРАКТИКА</strong>
+
+Сразу список импортов, чтобы вы не искали и ничего не спутали:
+
+<pre class="lang-java line-numbers"><code>
+import org.xml.sax.Attributes;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
+
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+</code></pre>
+Теперь, для начала, нам нужно создать SAXParser:
+
+<pre class="lang-java line-numbers"><code>
+public class SAXExample {
+    public static void main(String[] args) throws ParserConfigurationException, SAXException, IOException {
+        // Создание фабрики и образца парсера
+        SAXParserFactory factory = SAXParserFactory.newInstance();
+        SAXParser parser = factory.newSAXParser();
+    }
+}
+</code></pre>
+Как вы видите, сначала нужно создать фабрику, а потом в фабрике создать уже сам парсер. Теперь, когда у нас есть сам парсер, нам нужен обработчик его событий. Для этого нам нужен отдельный класс ради нашего же удобства:
+
+<pre class="lang-java line-numbers"><code>
+public class SAXExample {
+    public static void main(String[] args) throws ParserConfigurationException, SAXException, IOException {
+        SAXParserFactory factory = SAXParserFactory.newInstance();
+        SAXParser parser = factory.newSAXParser();
+    }
+    
+    private static class XMLHandler extends DefaultHandler {
+        @Override
+        public void startDocument() throws SAXException {
+            // Тут будет логика реакции на начало документа
+        }
+
+        @Override
+        public void endDocument() throws SAXException {
+            // Тут будет логика реакции на конец документа
+        }
+
+        @Override
+        public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
+            // Тут будет логика реакции на начало элемента
+        }
+
+        @Override
+        public void endElement(String uri, String localName, String qName) throws SAXException {
+            // Тут будет логика реакции на конец элемента
+        }
+
+        @Override
+        public void characters(char[] ch, int start, int length) throws SAXException {
+            // Тут будет логика реакции на текст между элементами
+        }
+
+        @Override
+        public void ignorableWhitespace(char[] ch, int start, int length) throws SAXException {
+            // Тут будет логика реакции на пустое пространство внутри элементов (пробелы, переносы строчек и так далее).
+        }
+    }
+}
+</code></pre>
+Мы создали класс со всеми нужными нам методами для обработки событий, которые были перечислены в теории.
+
+Еще немного дополнительной теории:
+
+<strong>Немного про <code>characters</code>: </strong>если в элементе будет текст, например, «<em>hello</em>», то, теоретически, метод способен вызваться 5 раз подряд на каждый отдельный символ, однако это не страшно, так как все равно все будет работать.
+
+<strong>О методах <code>startElement</code> и <code>endElement</code>: </strong><code>uri</code> — это пространство, в котором находится элемент, <code>localName</code> — это имя элемента без префикса, <code>qName</code> — это имя элемента с префиксом (если он есть, иначе просто имя элемента).
+
+<code>uri</code> и <code>localName</code> всегда пустые, если мы не подключили в фабрике обработку пространств. Это делается методом фабрики <code>setNamespaceAware(true)</code>. Тогда мы сможем получать пространство (<code>uri</code>) и элементы с префиксами перед ними (<code>localName</code>).
+
+<em><strong>Задача №1 — у нас есть следующий XML</strong></em>
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8" standalone="yes"?&gt;
+&lt;company&gt;
+    &lt;name&gt;IT-Heaven&lt;/name&gt;
+    &lt;offices&gt;
+        &lt;office floor="1" room="1"&gt;
+            &lt;employees&gt;
+                &lt;employee name="Maksim" job="Middle Software Developer" /&gt;
+                &lt;employee name="Ivan" job="Junior Software Developer" /&gt;
+                &lt;employee name="Franklin" job="Junior Software Developer" /&gt;
+            &lt;/employees&gt;
+        &lt;/office&gt;
+        &lt;office floor="1" room="2"&gt;
+            &lt;employees&gt;
+                &lt;employee name="Herald" job="Middle Software Developer" /&gt;
+                &lt;employee name="Adam" job="Middle Software Developer" /&gt;
+                &lt;employee name="Leroy" job="Junior Software Developer" /&gt;
+            &lt;/employees&gt;
+        &lt;/office&gt;
+    &lt;/offices&gt;
+&lt;/company&gt;
+</code></pre>
+<em><strong>Наша цель:</strong></em> достать всю информацию про всех сотрудников из данного файла.
+
+Для начала, нам нужно создать класс <code>Employee</code>:
+
+<pre class="lang-java line-numbers"><code>
+public class Employee {
+    private String name, job;
+
+    public Employee(String name, String job) {
+        this.name = name;
+        this.job = job;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getJob() {
+        return job;
+    }
+}
+</code></pre>
+А в нашем основном классе <code>SAXExample</code> нам нужен список со всеми сотрудниками:
+
+<pre class="lang-java line-numbers"><code>
+private static ArrayList&lt;Employee&gt; employees = new ArrayList&lt;&gt;();
+</code></pre>
+Теперь давайте внимательно смотреть, где нужная нам информация находится в XML файле. И, как мы можем видеть, вся нужная нам информация — это атрибуты элементов <code>employee</code>. А так, как <code>startElement</code> у нас обладает таким полезным параметром, как <code>attributes</code>, то у нас довольно простая задача.
+
+Для начала, давайте уберем ненужные методы, чтобы не захламлять наш код. Нам нужен только метод <code>startElement</code>. А в самом методе мы должны собрать информацию с атрибутов тега employee. Внимание:
+
+<pre class="lang-java line-numbers"><code>
+public class SAXExample {
+    private static ArrayList&lt;Employee&gt; employees = new ArrayList&lt;&gt;();
+
+    public static void main(String[] args) throws ParserConfigurationException, SAXException, IOException {
+        SAXParserFactory factory = SAXParserFactory.newInstance();
+        SAXParser parser = factory.newSAXParser();
+    }
+
+    private static class XMLHandler extends DefaultHandler {
+        @Override
+        public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
+            if (qName.equals("employee")) {
+                String name = attributes.getValue("name");
+                String job = attributes.getValue("job");
+                employees.add(new Employee(name, job));
+            }
+        }
+    }
+}
+</code></pre>
+Логика простая: если имя элемента — <code>employee</code>, мы просто будем получать информацию про его атрибуты. В <code>attributes</code> есть полезный метод, где, зная название атрибута, можно получить его значение. Именно его мы и использовали.
+
+Теперь, когда мы создали обрабатывание события на начало элемента, <strong>нам нужно запарсить наш XML файл</strong>. Для этого достаточно сделать так:
+
+<pre class="lang-java line-numbers"><code>
+public class SAXExample {
+    private static ArrayList&lt;Employee&gt; employees = new ArrayList&lt;&gt;();
+
+    public static void main(String[] args) throws ParserConfigurationException, SAXException, IOException {
+        SAXParserFactory factory = SAXParserFactory.newInstance();
+        SAXParser parser = factory.newSAXParser();
+
+        XMLHandler handler = new XMLHandler();
+        parser.parse(new File("resource/xml_file1.xml"), handler);
+
+        for (Employee employee : employees)
+            System.out.println(String.format("Имя сотрудника: %s, его должность: %s", employee.getName(), employee.getJob()));
+    }
+
+    private static class XMLHandler extends DefaultHandler {
+        @Override
+        public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
+            if (qName.equals("employee")) {
+                String name = attributes.getValue("name");
+                String job = attributes.getValue("job");
+                employees.add(new Employee(name, job));
+            }
+        }
+    }
+}
+</code></pre>
+<strong>В методе parse вы должны передать путь к xml файлу и обработчик, который вы создали.</strong> И так, с помощью данного кода мы достали информацию из этого XML:
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8" standalone="yes"?&gt;
+&lt;company&gt;
+    &lt;name&gt;IT-Heaven&lt;/name&gt;
+    &lt;offices&gt;
+        &lt;office floor="1" room="1"&gt;
+            &lt;employees&gt;
+                &lt;employee name="Maksim" job="Middle Software Developer" /&gt;
+                &lt;employee name="Ivan" job="Junior Software Developer" /&gt;
+                &lt;employee name="Franklin" job="Junior Software Developer" /&gt;
+            &lt;/employees&gt;
+        &lt;/office&gt;
+        &lt;office floor="1" room="2"&gt;
+            &lt;employees&gt;
+                &lt;employee name="Herald" job="Middle Software Developer" /&gt;
+                &lt;employee name="Adam" job="Middle Software Developer" /&gt;
+                &lt;employee name="Leroy" job="Junior Software Developer" /&gt;
+            &lt;/employees&gt;
+        &lt;/office&gt;
+    &lt;/offices&gt;
+&lt;/company&gt;
+</code></pre>
+А выходные данные мы получили такие:
+
+<pre class="lang-java line-numbers"><code>
+Имя сотрудника: Maksim, его должность: Middle Software Developer
+Имя сотрудника: Ivan, его должность: Junior Software Developer
+Имя сотрудника: Franklin, его должность: Junior Software Developer
+Имя сотрудника: Herald, его должность: Middle Software Developer
+Имя сотрудника: Adam, его должность: Middle Software Developer
+Имя сотрудника: Leroy, его должность: Junior Software Developer
+</code></pre>
+Задача выполнена!
+
+<em><strong>Задача №2 — у нас есть следующий XML:</strong></em>
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;company&gt;
+    &lt;name&gt;IT-Heaven&lt;/name&gt;
+    &lt;offices&gt;
+        &lt;office floor="1" room="1"&gt;
+            &lt;employees&gt;
+                &lt;employee&gt;
+                    &lt;name&gt;Maksim&lt;/name&gt;
+                    &lt;job&gt;Middle Software Developer&lt;/job&gt;
+                &lt;/employee&gt;
+                &lt;employee&gt;
+                    &lt;name&gt;Ivan&lt;/name&gt;
+                    &lt;job&gt;Junior Software Developer&lt;/job&gt;
+                &lt;/employee&gt;
+                &lt;employee&gt;
+                    &lt;name&gt;Franklin&lt;/name&gt;
+                    &lt;job&gt;Junior Software Developer&lt;/job&gt;
+                &lt;/employee&gt;
+            &lt;/employees&gt;
+        &lt;/office&gt;
+        &lt;office floor="1" room="2"&gt;
+            &lt;employees&gt;
+                &lt;employee&gt;
+                    &lt;name&gt;Herald&lt;/name&gt;
+                    &lt;job&gt;Middle Software Developer&lt;/job&gt;
+                &lt;/employee&gt;
+                &lt;employee&gt;
+                    &lt;name&gt;Adam&lt;/name&gt;
+                    &lt;job&gt;Middle Software Developer&lt;/job&gt;
+                &lt;/employee&gt;
+                &lt;employee&gt;
+                    &lt;name&gt;Leroy&lt;/name&gt;
+                    &lt;job&gt;Junior Software Developer&lt;/job&gt;
+                &lt;/employee&gt;
+            &lt;/employees&gt;
+        &lt;/office&gt;
+    &lt;/offices&gt;
+&lt;/company&gt;
+</code></pre>
+<em>Наша цель:</em> достать всю информацию про всех сотрудников из данного файла.
+
+Задача хорошо продемонстрирует, каким образом плохо структурированный XML файл может приводить к усложнению написания кода.
+
+Как вы видите, информация про имя и должность теперь хранится как текстовая информация внутри элементов <code>name</code> и <code>job</code>. Для считывания текста внутри элементов у нас есть метод characters.
+
+Для этого, нам нужно создать новый класс-обработчик с улучшенной логикой. Не забывайте, что обработчики – полноценные классы, способные хранить в себе логику любой сложности. Потому, сейчас мы будем тюнинговать наш обработчик.
+
+На самом деле, достаточно заметить, что у нас всегда <code>name</code> и <code>job</code> идут по очереди, и не важно, в каком порядке, мы можем спокойно сохранить имя и профессию в отдельные переменные, и когда обе переменные сохранены – создать нашего сотрудника. Только вот вместе с началом элемента у нас нет параметра для текста внутри элемента. Нам нужно использовать методы для текста.
+
+Но как нам получить текстовую информацию внутри элемента, если это совершенно разные методы? Мое решение: нам достаточно запомнить имя последнего элемента, а в <code>characters</code> проверять, в каком элементе мы считываем информацию. <strong>Так же нужно помнить, что &lt;codee&gt;characters считывает все символы внутри элементов, а это значит, что будут считываться все пробелы и даже переносы строчек. А они нам не нужны. Нам нужно игнорировать эти данные, так как они неправильные.&lt;/codee&gt;</strong> Код:
+
+<pre class="lang-java line-numbers"><code>
+public class SAXExample {
+    private static ArrayList&lt;Employee&gt; employees = new ArrayList&lt;&gt;();
+
+    public static void main(String[] args) throws ParserConfigurationException, SAXException, IOException {
+        SAXParserFactory factory = SAXParserFactory.newInstance();
+        SAXParser parser = factory.newSAXParser();
+
+        AdvancedXMLHandler handler = new AdvancedXMLHandler();
+        parser.parse(new File("resource/xml_file2.xml"), handler);
+
+        for (Employee employee : employees)
+            System.out.println(String.format("Имя сотрудника: %s, его должность: %s", employee.getName(), employee.getJob()));
+    }
+
+    private static class AdvancedXMLHandler extends DefaultHandler {
+        private String name, job, lastElementName;
+
+        @Override
+        public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
+            lastElementName = qName;
+        }
+
+        @Override
+        public void characters(char[] ch, int start, int length) throws SAXException {
+            String information = new String(ch, start, length);
+
+            information = information.replace("\n", "").trim();
+
+            if (!information.isEmpty()) {
+                if (lastElementName.equals("name"))
+                    name = information;
+                if (lastElementName.equals("job"))
+                    job = information;
+            }
+        }
+
+        @Override
+        public void endElement(String uri, String localName, String qName) throws SAXException {
+            if ( (name != null &amp;&amp; !name.isEmpty()) &amp;&amp; (job != null &amp;&amp; !job.isEmpty()) ) {
+                employees.add(new Employee(name, job));
+                name = null;
+                job = null;
+            }
+        }
+    }
+}
+</code></pre>
+Как вы видите, из-за банального усложнения структуры XML файла у нас значительно усложнился код. Однако, код не сложный. 
+
+<strong>Описание:</strong> мы создали переменные для хранения данных про сотрудника <strong>(<code>name</code>, <code>job</code>)</strong>, а так же переменную <code>lastElementName</code>, чтобы фиксировать, внутри какого элемента мы находимся. После этого, в методе <code>characters</code> мы фильтруем информацию, и если там еще осталась информация, то, значит, это нужный нам текст, а далее мы определяем, имя это или профессия, используя <code>lastElementName</code>. В методе <code>endElement</code> мы проверяем, считана ли вся информация, и если считана, то мы создаем сотрудника и сбрасываем информацию.
+
+Выходные данные решения эквивалентны первому примеру:
+
+<pre class="lang-java line-numbers"><code>
+Имя сотрудника: Maksim, его должность: Middle Software Developer
+Имя сотрудника: Ivan, его должность: Junior Software Developer
+Имя сотрудника: Franklin, его должность: Junior Software Developer
+Имя сотрудника: Herald, его должность: Middle Software Developer
+Имя сотрудника: Adam, его должность: Middle Software Developer
+Имя сотрудника: Leroy, его должность: Junior Software Developer
+</code></pre>
+Таким образом, данная задача была <strong>решена</strong>, но вы можете заметить то, что сложность выше. Потому можно сделать вывод, что хранить текстовую информацию в атрибутах чаще всего будет правильней, чем в отдельных элементах.
+
+И еще одна сладкая задача, которая будет частично решать задачу на JavaRush про вывод информации об элементе в HTML, только её надо будет немного подредактировать, тут мы будем просто перечислять все элементы внутри какого-то элемента :)
+
+<em><strong>Задача №3 — дан элемент element, вывести имена и атрибуты всех внутренних элементов, если элемент не найден — вывести это.</strong></em>
+
+<em>Для данной задачи мы будем использовать следующий XML файл:</em>
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;root&gt;
+    &lt;oracle&gt;
+        &lt;connection value="jdbc:oracle:thin:@10.220.140.48:1521:test1" /&gt;
+        &lt;user value="secretOracleUsername" /&gt;
+        &lt;password value="111" /&gt;
+    &lt;/oracle&gt;
+
+    &lt;mysql&gt;
+        &lt;connection value="jdbc:mysql:thin:@10.220.140.48:1521:test1" /&gt;
+        &lt;user value="secretMySQLUsername" /&gt;
+        &lt;password value="222" /&gt;
+    &lt;/mysql&gt;
+&lt;/root&gt;
+</code></pre>
+Как вы видите, у нас тут есть три возможных сценария: <code>root</code>, <code>mysql</code>, <code>oracle</code>. Тогда программа будет выводить всю инфу о всех элементах внутри. Как же нам сделать такое? А достаточно просто: нам достаточно объявить логическую переменную <code>isEntered</code>, которая будет означать, внутри ли мы нужно нам элемента, и если внутри – считывать все данные из <code>startElement</code>. <strong>Код решения:</strong>
+
+<pre class="lang-java line-numbers"><code>
+public class SAXExample {
+    private static boolean isFound;
+
+    public static void main(String[] args) throws ParserConfigurationException, SAXException, IOException {
+        SAXParserFactory factory = SAXParserFactory.newInstance();
+        SAXParser parser = factory.newSAXParser();
+
+        SearchingXMLHandler handler = new SearchingXMLHandler("root");
+        parser.parse(new File("resource/xml_file3.xml"), handler);
+        
+        if (!isFound)
+            System.out.println("Элемент не был найден.");
+    }
+
+    private static class SearchingXMLHandler extends DefaultHandler {
+        private String element;
+        private boolean isEntered;
+
+        public SearchingXMLHandler(String element) {
+            this.element = element;
+        }
+
+        @Override
+        public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
+            if (isEntered) {
+                System.out.println(String.format("Найден элемент &lt;%s&gt;, его атрибуты:", qName));
+
+                int length = attributes.getLength();
+                for(int i = 0; i &lt; length; i++)
+                    System.out.println(String.format("Имя атрибута: %s, его значение: %s", attributes.getQName(i), attributes.getValue(i)));
+            }
+
+            if (qName.equals(element)) {
+                isEntered = true;
+                isFound = true;
+            }
+        }
+
+        @Override
+        public void endElement(String uri, String localName, String qName) throws SAXException {
+            if (qName.equals(element))
+                isEntered = false;
+        }
+    }
+}
+</code></pre>
+В данном коде мы при входе в элемент, про который нам нужна информация, выставляем флажок <code>isEntered</code> в true, что значит, что мы внутри элемента. И как только мы оказались внутри элемента, мы просто каждый новый элемент в <code>startElement</code> обрабатываем, зная, что он точно внутренний элемент нашего элемента. Таким образом, мы выводим имя элемента и его название. Если же элемент не был найден в файле, то у нас есть переменная <code>isFound</code>, которая устанавливается тогда, когда элемент находится, и если она false, то будет выведено сообщение, что элемент не найден.
+
+И как вы видите, в примере в конструктор <code>SearchingXMLHandler</code> мы передали <code>root</code> элемент. Вывод для него:
+
+<pre class="lang-java line-numbers"><code>
+Найден элемент &lt;oracle&gt;, его атрибуты:
+Найден элемент &lt;connection&gt;, его атрибуты:
+Имя атрибута: value, его значение: jdbc:oracle:thin:@10.220.140.48:1521:test1
+Найден элемент &lt;user&gt;, его атрибуты:
+Имя атрибута: value, его значение: secretOracleUsername
+Найден элемент &lt;password&gt;, его атрибуты:
+Имя атрибута: value, его значение: 111
+Найден элемент &lt;mysql&gt;, его атрибуты:
+Найден элемент &lt;connection&gt;, его атрибуты:
+Имя атрибута: value, его значение: jdbc:mysql:thin:@10.220.140.48:1521:test1
+Найден элемент &lt;user&gt;, его атрибуты:
+Имя атрибута: value, его значение: secretMySQLUsername
+Найден элемент &lt;password&gt;, его атрибуты:
+Имя атрибута: value, его значение: 222
+</code></pre>
+Таким образом, мы получили всю информацию про внутренние элементы и их атрибуты. <strong>Задача решена.</strong>
+&lt;h2&gt;Эпилог&lt;/h2&gt;Вы ознакомились, что SAX довольно интересный инструмент и вполне эффективный, и его можно использовать по-разному, с разными целями и так далее, достаточно только посмотреть на задачу с правильной стороны, как это показано в задаче №2 и №3, где SAX не предоставлял прямых методов для решения задачи, но, благодаря нашей смекалке, у нас получилось придумать выход из ситуации.
+
+Следующая часть статьи будет целиком посвящена DOM. Надеюсь, что вам было интересно познакомиться с SAX. Поэкспериментируйте, попрактикуйтесь и вы поймете, что все довольно просто. А на этом все, удачи вам в программировании и ждите скоро часть про DOM. <strong>Успехов вам в обучении :)</strong>
+
+Предыдущая статья: <a href="https://javarush.com/groups/posts/633-konkurs-osnovih-xml-dlja-java-programmista---chastjh-2-iz-3" target="_blank" rel="nofollow">[Конкурс] Основы XML для Java программиста - Часть 2 из 3</a>
+Следующая статья: <a href="https://javarush.com/groups/posts/656-konkurs-osnovih-xml-dlja-java-programmista---chastjh-31-iz-3---dom" target="_blank" rel="nofollow">[Конкурс] Основы XML для Java программиста - Часть 3.2 из 3 - DOM</a>

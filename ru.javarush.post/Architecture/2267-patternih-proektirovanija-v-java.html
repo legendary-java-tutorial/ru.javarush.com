@@ -1,0 +1,402 @@
+Паттерны проектирования в Java
+<p>----------------------------------------</p>
+Паттерны или шаблоны проектирования - часть работы разработчика, которую часто недооценивают, что приводит к тому, что код становится трудно поддерживать и адаптировать под новые требования. Предлагаю посмотреть на то, что это вообще такое и как это используется в JDK...
+<p>----------------------------------------</p>
+
+<img data-id="c86f5596-3531-4cb0-8f97-d118db931971" data-max-width="850" alt="" src="https://cdn.javarush.com/images/article/c86f5596-3531-4cb0-8f97-d118db931971/1024.jpeg">Паттерны или шаблоны проектирования — часть работы разработчика, которую часто недооценивают, что приводит к тому, что код становится трудно поддерживать и адаптировать под новые требования. Предлагаю посмотреть на то, что это вообще такое и как это используется в JDK. Естественно, все базовые шаблоны в том или ином виде уже давно вокруг нас. Давайте увидим их в рамках данного обзора.<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="8e71f181-0aaf-4206-a29a-bd62bdd41c2f" data-max-width="272" alt="Паттерны проектирования в Java - 1" src="https://cdn.javarush.com/images/article/8e71f181-0aaf-4206-a29a-bd62bdd41c2f/1024.jpeg"></div></div>Содержание:
+<ul>
+<li><a href="#Шаблоны">Шаблоны</a></li>
+<li><a href="#Порождающие_паттерны">Порождающие паттерны (creational patterns)</a></li>
+<li><a href="#Структурные_паттерны">Структурные паттерны (structural patterns)</a></li>
+<li><a href="#Поведенческие_шаблоны">Поведенческие шаблоны</a></li>
+<li><a href="#Заключение">Заключение</a></li>
+</ul><h2 id="Шаблоны">Шаблоны</h2>Одно из часто встречаемых требований в вакансиях — "Знание паттернов". Прежде всего стоит ответить на простой вопрос — "А что такое Паттерн проектирования?".
+
+Паттерн переводится с английского как "шаблон". То есть это некоторый образец, по которому мы что-то делаем. Так и в программировании. Есть некоторые выработанные лучшие практики (best practice) и подходы к решению часто встречаемых проблем.
+
+Каждый программист — архитектор. Даже когда Вы создаёте всего несколько классов или даже один — от Вас зависит, на сколько код сможет выживать под изменением требований, на сколько он удобен в использовании другими. И вот тут как раз и поможет знание шаблонов, т.к. это позволит быстрее понять, как лучше написать код так, чтобы не переписывать его. Как известно, программисты — люди ленивые и проще написать сразу хорошо, чем переделывать несколько раз )
+
+Ещё паттерны могут показаться похожимм на алгоритмы. Но у них есть разница. Алгоритм состоит из конкретных шагов, описывающих необходимые действия. Паттерны же лишь описывают подход, но не описывают шаги реализации.
+
+Паттерны бывают разные, т.к. решают разные проблемы. Обычно выделяют следующие категории:
+<ul>
+<li><p><strong>Порождающие</strong></p>
+<p>Эти паттерны решают проблемы обеспечения гибкости создания объектов</p></li>
+<li><p><strong>Структурные</strong></p>
+<p>Эти паттерны решают проблемы эффективного построения связей между объектами</p></li>
+<li><p><strong>Поведенческие</strong></p>
+<p>Эти паттерны решают проблемы эффективного взаимодействия между объектами</p></li>
+</ul>Для рассмотрения примеров предлагаю воспользоваться онлайн компилятором кода <a href="https://repl.it/languages/java" target="_blank" rel="nofollow">repl.it</a>.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="200" alt="Паттерны проектирования в Java - 2" src="https://cdn.javarush.com/images/article/6bffcb44-77df-4006-bb37-e58df0dd07de/original.jpeg"></div></div><h2 id="Порождающие_паттерны">Порождающие паттерны (creational patterns)</h2>Начнём с начала жизненного цикла объектов — с создания объектов. Порождающие шаблоны как раз и помогают создавать объекты удобнее, обеспечить гибкость этого процесса.
+
+Одним из самых известных является "<strong>Строитель</strong>" (Builder). Данный паттерн позволяет создавать сложные объекты пошагово. В Java самый известный пример — <code><strong>StringBuilder</strong></code>:
+
+<pre class="lang-java line-numbers"><code>
+class Main {
+  public static void main(String[] args) {
+    StringBuilder builder = new StringBuilder();
+    builder.append("Hello");
+    builder.append(',');
+    builder.append("World!");
+    System.out.println(builder.toString());
+  }
+}
+</code></pre>
+Другим известным подходом к созданию объекта — вынос создания в отдельный метод. Такой метод как бы становится фабрикой объектов. Поэтому и шаблон называется "<strong>Фабричный метод</strong>" (Factory Method).
+
+В Java, например, его действие можно увидеть на примере класса <code><strong>java.util.Calendar</strong></code>. Сам класс <code>Calendar</code> абстрактный, а чтобы его создавать используется метод <code>getInstance</code>:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.*;
+class Main {
+  public static void main(String[] args) {
+    Calendar calendar = Calendar.getInstance();
+    System.out.println(calendar.getTime());
+    System.out.println(calendar.getClass().getCanonicalName());
+  }
+}
+</code></pre>
+Часто это обусловлено тем, что логика создания объекта может быть непростой. Например, в случае выше, мы обращаемся к базовому классу <code>Calendar</code>, а создаётся класс <code>GregorianCalendar</code>. Если мы посмотрим в конструктор, то увидим, что в зависимости от условий создаются разные реализации <code>Calendar</code>.
+
+Но иногда одного фабричного метода мало. Иногда требуется создавать разные объекты так, чтобы они друг с другом сочетались. В этом нам поможет другой шаблон - "<strong>Абстрактная фабрика</strong>" (Abstract factory).
+
+И тогда нам требуется создавать разные фабрики в одном месте. При этому плюсом является то, что нам не важны детали реализации, т.е. не важно, какую конкретно фабрику мы получим. Главное, чтобы она создавала правильные реализации. Супер пример:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="5e51cdb5-4979-412f-b326-da25f80084a6" data-max-width="442" alt="Паттерны проектирования в Java - 3" src="https://cdn.javarush.com/images/article/5e51cdb5-4979-412f-b326-da25f80084a6/1024.jpeg"></div></div>То есть в зависимости от окружения (от операционной системы) мы получим определённую фабрику, которая создаст совместимые элементы.
+
+Как альтернатива подхода к созданию через кого-то, мы можем воспользоваться паттерном "<strong>Прототип</strong>". Суть его проста — новые объекты создаются по образу и подобию уже существующих объектов, т.е. по их прототипу. В Java с этим паттерном сталкивался каждый — это использование интерфейса <code><strong>java.lang.Cloneable</strong></code>:
+
+<pre class="lang-java line-numbers"><code>
+class Main {
+  public static void main(String[] args) {
+    class CloneObject implements Cloneable {
+      @Override
+      protected Object clone() throws CloneNotSupportedException {
+        return new CloneObject();
+      }
+    }
+    CloneObject obj = new CloneObject();
+    try {
+      CloneObject pattern = (CloneObject) obj.clone();
+    } catch (CloneNotSupportedException e) {
+      //Do something
+    }
+  }
+}
+</code></pre>
+Как видно, вызывающий не знает, как устроен метод <code>clone</code>. То есть создание объекта по прототипу — обязанность самого объекта. Это полезно потому, что не завязывает использующего на реализацию объекта-шаблона.
+
+Ну и самый последний в этом списке — паттерн "Одиночка" (Singleton).
+
+Цель его проста — обеспечить единственный экземпляр объекта на всё приложение. Данный паттерн интересен тем, что на нём часто показывают проблемы многопоточности. Для более глубокого ознакомления следует ознакомиться с этими статьями:
+<ul>
+<li>"<a href="https://habr.com/ru/post/129494/" target="_blank" rel="nofollow">Правильный Singleton в Java</a>"</li>
+<li>"<a href="https://habr.com/ru/post/27108/" target="_blank" rel="nofollow">Реализация Singleton в JAVA</a>"</li>
+<li>"<a href="https://refactoring.guru/ru/design-patterns/singleton" target="_blank" rel="nofollow">Паттерн Singleton</a>"</li>
+</ul><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="218" alt="Паттерны проектирования в Java - 4" src="https://cdn.javarush.com/images/article/80313e8a-4ba8-4380-8a45-257c54fa7fb5/original.jpeg"></div></div><h2 id="Структурные_паттерны">Структурные паттерны (structural patterns)</h2>С созданием объектов стало понятнее. И теперь самое время посмотреть на структурные паттерны.
+
+Их цель — построение удобных в поддержке иерархий классов и их взаимосвязей.
+
+Одним из первых и всем известных паттернов — "<strong>Заместитель</strong>" (Proxy).
+
+Заместитель имеет тот же интерфейс, что и реальный объект, поэтому для клиента нет разницы — работать через заместителя или напрямую. Самым простым примером является <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/reflection/proxy.html" target="_blank" rel="nofollow">java.lang.reflect.Proxy</a>:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.*;
+import java.lang.reflect.*;
+class Main {
+  public static void main(String[] arguments) {
+    final Map&lt;String, String&gt; original = new HashMap&lt;&gt;();
+    InvocationHandler proxy = (obj, method, args) -&gt; {
+      System.out.println("Invoked: " + method.getName());
+      return method.invoke(original, args);
+    };
+    Map&lt;String, String&gt; proxyInstance = (Map) Proxy.newProxyInstance(
+        original.getClass().getClassLoader(),
+        original.getClass().getInterfaces(),
+        proxy);
+    proxyInstance.put("key", "value");
+    System.out.println(proxyInstance.get("key"));
+  }
+}
+</code></pre>
+Как видно, в примере у нас есть original — это <code>HashMap</code>, который реализует интерфейс <code>Map</code>. Мы далее создаём прокси, который замещает оригинальную <code>HashMap</code> для клиентской части, которая вызывает методы <code>put</code> и <code>get</code>, добавляя во время вызова свою логику.
+
+Как мы видим, взаимодействие в паттерне идёт через интерфейсы. Но иногда заместителя недостаточно. И тогда может быть использован паттерн "<strong>Декоратор</strong>" (Decorator). Декоратор ещё называют обёрткой или враппером (Wrapper). Прокси и декоратор очень похожи, но если посмотреть на пример — будет видна разница:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.*;
+class Main {
+  public static void main(String[] arguments) {
+    List&lt;String&gt; list = new ArrayList&lt;&gt;();
+    List&lt;String&gt; decorated = Collections.checkedList(list, String.class);
+    decorated.add("2");
+    list.add("3");
+    System.out.println(decorated);
+  }
+}
+</code></pre>
+В отличии от прокси, декоратор оборачивается вокруг чего-то, что передали на вход. Прокси же может как принимать то, что нужно проксировать, так и сам управлять жизнью проксируемого объекта (например, создавать проксируемый объект).
+
+Есть ещё один интересный паттерн — "<strong>Адаптер</strong>" (adapter). Он похож на декоратор — на вход декоратор принимает один объект и возвращает обёртку над этим объектом. Отличие в том, что цель у этого не изменение функционала, а адаптация одного интерфейса к другому.
+
+В Java есть очень яркий пример на этот счёт:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.*;
+class Main {
+  public static void main(String[] arguments) {
+    String[] array = {"One", "Two", "Three"};
+    List&lt;String&gt; strings = Arrays.asList(array);
+    strings.set(0, "1");
+    System.out.println(Arrays.toString(array));
+  }
+}
+</code></pre>
+На входе у нас массив. Далее мы создаём адаптер, приводящий массив к интерфейсу <code>List</code>. Работая с ним мы на самом деле работаем с массивом. Поэтому, добавлять элементы не выйдет, т.к. массив изначальный не изменить. И мы в этом случае получим <code>UnsupportedOperationException</code>.
+
+Следующим интересным подходом в разработке структуры классов является паттерн "<strong>Компоновщик</strong>" (Сomposite). Интересен он тем, что некоторый набор элементов использующих один интерфейс выстраиваются в некоторую древовидную иерархию. Вызывая метод в родительском элементе мы получаем вызов этого метода по всем необходимым дочерним элементам.
+
+Яркий пример этого паттерна — UI (будь то java.awt или JSF):
+
+<pre class="lang-java line-numbers"><code>
+import java.awt.*;
+class Main {
+  public static void main(String[] arguments) {
+    Container container = new Container();
+    Component component = new java.awt.Component(){};
+    System.out.println(component.getComponentOrientation().isLeftToRight());
+    container.add(component);
+    container.applyComponentOrientation(ComponentOrientation.RIGHT_TO_LEFT);
+    System.out.println(component.getComponentOrientation().isLeftToRight());
+  }
+}
+</code></pre>
+Как мы видим, мы добавили в контейнер компонент. А потом попросили контейнер применить новую ориентацию компонентов. И контейнер, зная из каких компонентов он состоит, делегировал выполнение этой команды всем дочерним компонентам.
+
+Ещё одним из интересных паттернов является паттерн "<strong>Мост</strong>" (Bridge). Называется он так, потому что описывает соединение или мост между двумя различными иерархиями классов. 
+
+Одну из этих иерархий считают абстракцией, а другую — реализацией. Так выделено потому что абстракция сама не выполняет действия, а делегирует это выполнение реализации. Такой паттерн часто применяют тогда, когда есть классы "управления" и несколько видов классов "платформ" (например, Windows, Linux и т.д.).
+
+При таком подходе одна из этих иерархий (абстракция) получит ссылку на объекты другой иерархии (реализация) и будет делегировать им основную работу. Благодаря тому, что все реализации будут следовать общему интерфейсу, их можно будет взаимозаменять внутри абстракции.
+
+В Java яркие пример этому — <code>java.awt</code>:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="952083dd-9347-4cb5-91fc-50776d8d9dc8" data-max-width="375" alt="Паттерны проектирования в Java - 5" src="https://cdn.javarush.com/images/article/952083dd-9347-4cb5-91fc-50776d8d9dc8/1024.jpeg"></div></div>Подробнее см. статью "<a href="http://www.soberit.hut.fi/tik-76.278/group6/awtpat.html" target="_blank" rel="nofollow">Patterns in Java AWT</a>".
+
+Среди структурных паттернов так же хочется отметить паттерн "<strong>Фасад</strong>" (facade). Суть его в том, чтобы за удобным и лаконичным интерфейсом спрятать сложность использования библиотек/фрэймворков, стоящих за этим API. Например, как пример, можно привести JSF или EntityManager из JPA.
+
+Так же есть другой паттерн, называемый "<strong>Легковес</strong>" (Flyweight). Его суть заключается в том, что если у разных объектов есть одинаковое состояние, то его можно обобщить и хранить не в каждом объекте, а в одном месте. И тогда каждый объект сможет ссылаться на общу часть, что позволит сократить расходы памяти на хранение.
+
+Часто работа данного паттерна связана с предварительным кэшированием или с поддержанием пула объектов. Интересно, что этот паттерн мы тоже знаем с самого начала:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="7808e413-6d2c-4f28-86f6-c2df0ef8a00c" data-max-width="480" alt="Паттерны проектирования в Java - 6" src="https://cdn.javarush.com/images/article/7808e413-6d2c-4f28-86f6-c2df0ef8a00c/1024.jpeg"></div></div>По той же аналогии сюда можно отнести пул строк. На эту тему можно прочитать статью: "<a href="https://www.javagists.com/what-is-flyweight-design-pattern" target="_blank" rel="nofollow">Flyweight Design Pattern</a>".
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="d31e3f1d-875f-49ad-8787-da19d3e89612" data-max-width="264" alt="Паттерны проектирования в Java - 7" src="https://cdn.javarush.com/images/article/d31e3f1d-875f-49ad-8787-da19d3e89612/1024.jpeg"></div></div><h2 id="Поведенческие_шаблоны">Поведенческие шаблоны</h2>Итак, мы разобрались, как можно создать объекты и как можно организовать связь между классами. Осталось самое интересно — обеспечить гибкость в изменении поведения объектов. И в этом нам помогут поведенческие паттерны.
+
+Одним из самых часто упоминаемых паттернов является паттерн "<strong>Стратегия</strong>". С него же начинается изучение паттернов в книге "<a href="http://bit.ly/2Zpw2cA" target="_blank" rel="nofollow">Head First. Паттерны проектирования</a>". При помощи паттерна "Стратегия" мы можем внутри объекта хранить то, каким образом мы будем выполнять действие, т.е. объект внутри хранит стратегию, которая может быть изменена в том числе во врем выполнения кода.
+
+Этот паттерн мы часто используем, когда применяем компаратор:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.*;
+class Main {
+  public static void main(String[] args) {
+    List&lt;String&gt; data = Arrays.asList("Moscow", "Paris", "NYC");
+    Comparator&lt;String&gt; comparator = Comparator.comparingInt(String::length);
+    Set dataSet = new TreeSet(comparator);
+    dataSet.addAll(data);
+    System.out.println("Dataset : " + dataSet);
+  }
+}
+</code></pre>
+Перед нами — <code>TreeSet</code>. У него есть поведение — <code>TreeSet</code> поддерживает порядок элементов, т.е. сортирует их (т.к. он является SortedSet). 
+
+У этого поведения есть стратегия, определённая по умолчанию, которую мы видим в JavaDoc: сортировка в "natural ordering" (для строк это лексикографический порядок). Так происходит, если использовать конструктор без параметров.
+
+Но если мы захотим поменять стратегию, то мы можем передать в конструктор <code>Comparator</code>. В данном примере мы можем создать наш набор как <code>new TreeSet(comparator)</code>, и тогда порядок хранения элементов (стратегия хранения) поменяется на тот, который указан в компараторе.
+
+Интересно, что есть почти такой же паттерн с названием "<strong>Состояние</strong>" (State). Паттерн "Состояние" говорит, что если у нас есть у главного объекта некоторое поведение, зависимое от состояние этого объекта, то тогда можно описать само состояние в виде объекта и менять объект состояния. А вызовы из главного объекта делегировать состоянию.
+
+Ещё один паттерн, известный нам с изучения самых основ языка Java — паттерн "<strong>Комманда</strong>". Этот паттерн проектирования говорит о том, что различные команды можно представлять в виде разных классов. Данный паттерн очень похож на паттерн "Стратегия". Но в паттерне "Стратегия" мы переопределяли то, как будет выполняться конкретное действие (например, сортировка в <code>TreeSet</code>). В паттерне "Комманда" же мы переопределяем то, какое вообще действие будет выполнено.
+
+Паттерн комманда с нами каждый день, когда мы используем потоки:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.*;
+class Main {
+  public static void main(String[] args) {
+    Runnable command = () -&gt; {
+      System.out.println("Command action");
+    };
+    Thread th = new Thread(command);
+    th.start();
+  }
+}
+</code></pre>
+Как видим, command определяет действие или комманду, которая будет выполнена в новом потоке.
+
+Так же стоит рассмотреть и паттерн "<strong>Цепочка обязанностей</strong>" (Chain of responsibility). Данный паттерн тоже очень просто. Этот паттерн говорит, что если что-то надо обработать, то можно собрать обработчики в цепочку.
+
+Например, такой шаблон часто используется в веб-серверах. На входе сервер имеет некоторый запрос от пользователя. Дальше этот запрос проходит цепочку обработки. В этой цепочке обработчиков есть фильтры (например, не принимать запросы из чёрного списка IP-адресов), обработчики аутентификации (пускать только разрешённых пользователей), обработчик заголовков запроса, обработчик кэширования и т.д.
+
+Но есть в Java и более простой и понятный пример — <code>java.util.logging</code>:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.logging.*;
+class Main {
+  public static void main(String[] args) {
+    Logger logger = Logger.getLogger(Main.class.getName());
+    ConsoleHandler consoleHandler = new ConsoleHandler(){
+		@Override
+            public void publish(LogRecord record) {
+                System.out.println("LogRecord обработан");
+            }
+        };
+    logger.addHandler(consoleHandler);
+    logger.info("test");
+  }
+}
+</code></pre>
+Как видно, обработчики (Handlers) добавляются в список обработчиков логгера. Когда логгер получает сообщение для обработки, каждое такое сообщение проходит через цепочку хэндлеров (из <code>logger.getHandlers</code>) данного логгера.
+
+Ещё один паттерн, который мы видим каждый день "<strong>Итератор</strong>". Суть его заключается в том, чтобы разделить коллекцию объектов (т.к. класс, представляющий структуру данных. Например, <code>List</code>) и обход этой коллекции.
+
+<pre class="lang-java line-numbers"><code>
+import java.util.*;
+class Main {
+  public static void main(String[] args) {
+    List&lt;String&gt; data = Arrays.asList("Moscow", "Paris", "NYC");
+    Iterator&lt;String&gt; iterator = data.iterator();
+    while (iterator.hasNext()) {
+      System.out.println(iterator.next());
+    }
+  }
+}
+</code></pre>
+Как видно, итератор — не является частью коллекции, а представлен отдельным классом, который обходит коллекцию. Использующий итератор даже может не знать про то, по какой коллекции он итерируется, т.е. какую коллекцию он обходит.
+
+Стоит рассмотреть и паттерн "<strong>Посетитель</strong>" (Visitor).
+
+Паттерн посетитель очень похож на итератор. Данный паттерн помогает обходить структуру объектов и выполнять действия над этими объектами. Отличаются они скорее концепцией. Итератор обходит коллекцию так, что клиенту, использующему итератор, всё равно, что за коллекция внутри, важны лишь элементы из последовательности.
+
+Посетитель же именно про то, что есть некоторая иерархия или структура объектов, которые мы посещаем. Например, мы можем использовать отдельную обработку каталогов и отдельную обработку файлов.
+
+В Java "из коробки" есть реализация этого паттерна в виде <code>java.nio.file.FileVisitor</code>:
+
+<pre class="lang-java line-numbers"><code>
+import java.nio.file.*;
+import java.nio.file.attribute.*;
+import java.io.*;
+class Main {
+  public static void main(String[] args) {
+    SimpleFileVisitor visitor = new SimpleFileVisitor() {
+      @Override
+      public FileVisitResult visitFile(Object file, BasicFileAttributes attrs) throws IOException {
+        System.out.println("File:" + file.toString());
+        return FileVisitResult.CONTINUE;
+      }
+    };
+    Path pathSource = Paths.get(System.getProperty("java.io.tmpdir"));
+    try {
+      Files.walkFileTree(pathSource, visitor);
+    } catch (AccessDeniedException e) {
+      // skip
+    } catch (IOException e) {
+      // Do something
+    }
+  }
+}
+</code></pre>
+Иногда возникает необходимость одним объектам реагировать на изменения в других объектах и тогда нам поможет паттерн "<strong>Наблюдатель</strong>" (Observer). 
+
+Cамый удобный способ — это обеспечить механизм подписки, позволяющий одним объектам следить и реагировать на события, происходящие в других объектах. Данный паттерн часто применяется в различных Listener'ах и Observer'ах, реагирующих на разные события.
+
+Как самый простой пример можно вспомнить реализацию этого паттерна из JDK первой версии:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.*;
+class Main {
+  public static void main(String[] args) {
+    Observer observer = (obj, arg) -&gt; { 
+      System.out.println("Arg: " + arg); 
+    };
+    Observable target = new Observable(){
+      @Override
+      public void notifyObservers(Object arg) {
+        setChanged();
+        super.notifyObservers(arg);
+      }
+    };
+    target.addObserver(observer);
+    target.notifyObservers("Hello, World!");
+  }
+}
+</code></pre>
+Есть ещё один полезный поведенческий шаблон — "<strong>Посредник</strong>" (Mediator). Полезен он тем, что в сложных системах помогает убрать связь между разными объектами и делегировать все взаимодействия между объектами некоторому объекту, который и является посредником.
+
+Одним из самых ярких применений данного паттерна является Spring MVC, который использует этот паттерн. Подробнее про это можно прочитать здесь: "<a href="https://springframework.guru/gang-of-four-design-patterns/mediator-pattern/" target="_blank" rel="nofollow">Spring: Mediator Pattern</a>".
+
+Часто можно увидеть в примерах так же <code>java.util.Timer</code>:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.*;
+class Main {
+  public static void main(String[] args) {
+    Timer mediator = new Timer("Mediator");
+    TimerTask command = new TimerTask() {
+      @Override
+      public void run() {
+        System.out.println("Command pattern");
+        mediator.cancel();
+      }
+    };
+    mediator.schedule(command, 1000);
+  }
+}
+</code></pre>
+Пример внешне скорее напоминает паттерн комманда. А суть паттерна "Посредник" скрыта в реализации <code>Timer</code>'а. Внутри таймера есть очередь задач <code>TaskQueue</code>, есть поток <code>TimerThread</code>. Мы, как клиенты этого класса, не взаимодействуем с ними, а взаимодействуем с <code>Timer</code>'ом, который на наш вызов его методов обращается к методам других объектов, посредником которых является.
+
+Внешне может показаться очень похоже на "Фасад". Но разница в том, что когда используется Фасад — компоненты не знают, что фасад существует и обращаются друг к другу. А когда используется "Посредник", то компоненты знают и используют посредника, но не обращаются друг к другу напрямую.
+
+Стоит рассмотреть и паттерн "<strong>Шаблонный метод</strong>" (Template Method)
+
+Понятный уже по названию шаблон. Суть заключается в том, что код написан так, что пользователям кода (разработчикам) предоставляется некоторый шаблон алгоритма, шаги в котором разрешается переопределять. Это позволяет пользователям кода не писать весь алгоритм, а думать только над тем, как правильно выполнить тот или иной шаг этого алгоритма.
+
+Например, в Java есть абстрактный класс <code>AbstractList</code>, определяющий поведение итератора по <code>List</code>. Однако, сам итератор использует методы листа, такие как: <code>get</code>, <code>set</code>, <code>remove</code>. Поведение этих методов определяет разработчик наследников <code>AbstractList</code>. Таким образом итератор в <code>AbstractList</code> — является шаблоном алгоритма итерирования по листу. А разработчики конкретных реализаций <code>AbstractList</code> меняют поведение этого итерирования, определяя поведение конкретных шагов.
+
+Последний из разбираемых нами паттернов — паттерн "<strong>Снимок</strong>" (Momento). Суть его заключается в сохранении некоторого состояния объекта с возможностью это состояние восстановить.
+
+Самым узнаваемым примером из JDK является сериализация объекта, т.е. <code>java.io.Serializable</code>. Давайте рассмотрим пример:
+
+<pre class="lang-java line-numbers"><code>
+import java.io.*;
+import java.util.*;
+class Main {
+  public static void main(String[] args) throws IOException {
+    ArrayList&lt;String&gt; list = new ArrayList&lt;&gt;();
+    list.add("test");
+    // Save State
+    ByteArrayOutputStream stream = new ByteArrayOutputStream();
+    try (ObjectOutputStream out = new ObjectOutputStream(stream)) {
+      out.writeObject(list);
+    }
+    // Load state
+    byte[] bytes = stream.toByteArray();
+    InputStream inputStream = new ByteArrayInputStream(bytes);
+    try (ObjectInputStream in = new ObjectInputStream(inputStream)) {
+      List&lt;String&gt; listNew = (List&lt;String&gt;) in.readObject();
+      System.out.println(listNew.get(0));
+    } catch (ClassNotFoundException e) {
+      // Do something. Can't find class fpr saved state
+    }
+  }
+}
+</code></pre>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="250" alt="Паттерны проектирования в Java - 8" src="https://cdn.javarush.com/images/article/cefbbfa2-4eb8-4941-b03a-ce2b9030e76e/original.jpeg"></div></div><h2 id="Заключение">Заключение</h2>Как мы увидели из обзора, паттернов существует огромное множество. Каждый из них решает свою задачу. И знание этих паттернов может помочь Вам вовремя понять, как написать Вашу систему так, чтобы она была гибкая, поддерживаемая и устойчивая к изменениям.
+
+И напоследок немного ссылок для более глубокого погружения:
+<ul>
+<li>Самый шикарный ресурс по паттернам: <a href="https://refactoring.guru/ru" target="_blank" rel="nofollow"><strong>refactoring.guru</strong></a></li>
+<li>Видео плэйлист "<a href="https://www.youtube.com/playlist?list=PLrhzvIcii6GNjpARdnO4ueTUAVR9eMBpc" target="_blank" rel="nofollow">Design Patterns in Object Oriented Programming</a>"</li>
+<li><a href="http://sce2.umkc.edu/BIT/burrise/pl/design-patterns/qanda.html" target="_blank" rel="nofollow">Design Patterns Exercises</a></li>
+<li><a href="http://www.quizful.net/test/ood_patterns" target="_blank" rel="nofollow">Тест по паттернам</a></li>
+<li><a href="https://www.udemy.com/courses/search/?src=ukw&amp;q=Design%20Patterns&amp;p=1&amp;price=price-free" target="_blank" rel="nofollow">Курсы по паттернам на Udemy</a></li>
+<li><a href="https://www.coursera.org/learn/design-patterns" target="_blank" rel="nofollow">Курс по паттернам на Coursera</a></li>
+</ul>#Viacheslav

@@ -1,0 +1,213 @@
+Как HashMap работает в Java?
+<p>----------------------------------------</p>
+Очень часто на собеседованиях задают вопросы такого рода, как “Как работает HashMap в Java?”, “Каков внутренний механизм работы методов get и put в HashMap?”. Тут я попытаюсь объяснить внутреннюю функциональность на простом примере. Не вдаваясь в теорию ...
+<p>----------------------------------------</p>
+
+<img data-id="d55dce14-2b5c-4fb9-ba86-7c66bca05174" data-max-width="850" alt="Как HashMap работает в Java? - 1" src="https://cdn.javarush.com/images/article/d55dce14-2b5c-4fb9-ba86-7c66bca05174/1024.jpeg">Очень часто на собеседованиях задают вопросы такого рода, как “<a href='https://javarush.com/groups/posts/732-kak-rabotaet-hashmap-v-java' target='_blank'>Как работает HashMap в Java?</a>”, “Каков внутренний механизм работы методов <code>get</code> и <code>put</code> в HashMap?”. Тут я попытаюсь объяснить внутреннюю функциональность на простом примере. Не вдаваясь в теорию, мы начнем с примера, чтобы вы лучше поняли, а затем и увидели, как работают методы <code>get</code> и <code>put</code> в Java.
+
+Возьмем очень простой пример. У нас есть класс <code>Country</code> (англ. “страна”), мы будем использовать объект класса <code>Country</code>, как ключ, и название столицы этой страны, как значение. Ниже приведен пример, который поможет нам понять, как пара ключ-значение будет храниться в хэш-карте.
+<h2>1. Country.java</h2><pre class='lang-java line-numbers'><code>
+package org.arpit.javapostsforlearning;
+public class Country {
+
+ String name;
+ long population;
+
+ public Country(String name, long population) {
+  super();
+  this.name = name;
+  this.population = population;
+ }
+ public String getName() {
+  return name;
+ }
+ public void setName(String name) {
+  this.name = name;
+ }
+ public long getPopulation() {
+  return population;
+ }
+ public void setPopulation(long population) {
+  this.population = population;
+ }
+
+ // если длина имени в объекте Country - четное число,
+ // то возвращаем 31(любое случайное число), а если нечетное - 95 (любое случайное число).
+ // указанный ниже метод - это не самый лучший способ генерации хеш-кода,
+ // но мы воспользуемся им для более четкого понимания хеш-карт.
+
+ @Override
+ public int hashCode() {
+  if(this.name.length()%2==0)
+   return 31;
+  else 
+   return 95;
+ }
+ @Override
+ public boolean equals(Object obj) {
+
+  Country other = (Country) obj;
+   if (name.equalsIgnoreCase((other.name)))
+   return true;
+  return false;
+ }
+}
+</code></pre>
+Если хотите понять и узнать больше о методах <code>hashcode</code> и equals, можете пройти по этой <a href='https://java2blog.com/hashcode-and-equals-method-in-java/' rel='nofollow' target='_blank'>ссылке</a>.
+<h2>2. HashMapStructure.java(main class)</h2>
+<pre class='lang-java line-numbers'><code>
+import java.util.HashMap;
+import java.util.Iterator;
+  
+public class HashMapStructure {
+  
+    /**
+     * @author Arpit Mandliya
+     */
+    public static void main(String[] args) {
+          
+        Country india=new Country("India",1000);
+        Country japan=new Country("Japan",10000);
+          
+        Country france=new Country("France",2000);
+        Country russia=new Country("Russia",20000);
+          
+        HashMap&lt;country,string&gt; countryCapitalMap=new HashMap&lt;country,string&gt;();
+        countryCapitalMap.put(india,"Delhi");
+        countryCapitalMap.put(japan,"Tokyo");
+        countryCapitalMap.put(france,"Paris");
+        countryCapitalMap.put(russia,"Moscow");
+          
+        Iterator&lt;country&gt; countryCapitalIter=countryCapitalMap.keySet().iterator();//установите 
+        //debug-точку на этой строке(23)
+        while(countryCapitalIter.hasNext())
+        {
+            Country countryObj=countryCapitalIter.next();
+            String capital=countryCapitalMap.get(countryObj);
+            System.out.println(countryObj.getName()+"----"+capital);
+            }
+        }
+}
+</code></pre>
+Теперь установите брейкпоинт на строку 23 и запустите <strong>run -> debug as-> java application</strong> (прим. переводчика — действительно для Eclipse). Программа остановит выполнение на строке 23, после этого кликните правой кнопкой на <strong>countryCapitalMap</strong> и выберете <strong>watch</strong>. Вы увидите вот такую таблицу:
+<img data-id="459da8c1-b7ee-48a8-bc4a-d266b6fbcf5d" data-max-width="650" alt="Как HashMap работает в Java? - 2" src="https://cdn.javarush.com/images/article/459da8c1-b7ee-48a8-bc4a-d266b6fbcf5d/1024.jpeg">Здесь мы видим следующее:
+<ol>
+    <li><p>Есть массив <code>Entry[]</code> из 16 ячеек с именем <code>table</code>;</p></li>
+    <li><p>В этом массиве хранятся объекты класса <code>Entry</code>. У класса <code>HashMap</code> есть внутренний класс — <code>Entry</code>. И экземплярами этого класса являются пары ключ-значение. Давайте взглянем на структуру класса <code>Entry</code>:</p></li>
+
+<pre class='lang-java line-numbers'><code>
+static class Entry implements Map.Entry
+        {
+                final K key;
+                V value;
+                Entry next;
+                final int hash;
+                ...//продолжение кода
+        }
+</code></pre></code>
+    <li><p>Каждый раз когда мы пытаемся создать пару ключ-значение в хэш-карте, для этой пары создается объект класса <code>Entry</code>, и он будет храниться в указанной выше таблице <code>Entry[]</code>. А теперь вам должно быть интересно, куда именно в этой таблице будет записан этот объект (в какую ячейку). Для ключа из пары ключ-значение высчитывается хэш-код с помощью метода <code>hashcode()</code>. И этот хэш-код используется для вычисления номера ячейки таблицы <codE>Entry[]</code>;</p></li>
+    <li><p>Теперь, если вы взгляните на ячейку 10 таблицы, вы увидите объект класса <code>Entry</code> с именем <code>HashMap$Entry</code>;</li>
+    <li>Мы добавили 4 пары ключ-значение, но в массиве только 2!!! Это потому что, если 2 объекта имеют одинаковый хэш-код, то они будут храниться в одной ячейке. Но как? Объекты будут храниться в виде связного списка (<code>LinkedList</code>).</li>
+</ol>Вот как будет вычислен хеш-код для наших пар ключ-значение.
+
+<pre class='lang-java line-numbers'><code>
+Hashcode for Japan = 95 так как длина слова Japan имеет нечетное количество букв.
+Hashcode for India = 95 так как длина слова India имеет нечетное количество букв.
+HashCode for Russia = 31 так как длина слова Russia имеет четное количество букв.
+HashCode for France = 31 так как длина слова France имеет четное количество букв.
+</code></pre>
+Следующий рисунок объяснит идею связного списка:
+<img data-id="efd496d2-340c-40d2-92e7-91e8824a014d" data-max-width="650" alt="Как HashMap работает в Java? - 3" src="https://cdn.javarush.com/images/article/efd496d2-340c-40d2-92e7-91e8824a014d/1024.jpeg">Теперь, когда у вас уже есть понимание о структуре хэш-карт, давайте перейдем к методам <code>put</code> и <code>get</code>.
+<h2>Put:</h2>Давайте посмотрим, как используется этот метод:
+
+<pre class='lang-java line-numbers'><code>
+/**
+  * Метод связывает указанное значение с указанным ключом в данной хэш-карте. Если
+  * карта до этого уже содержала некоторое значение, соответствующее этому ключу, 
+  * то старое значение заменяется на указанное.
+  * @param key
+  *            ключ, с которым связывается указанное значение
+  * @param value
+  *            значение, связываемое с указанным ключом
+  * @возвращает значение связанное с &lt;tt&gt;ключом&lt;/tt&gt;, или &lt;tt&gt;null&lt;/tt&gt;,
+  *         если никакое значение не соответствует &lt;tt&gt;ключу&lt;/tt&gt;. ( Возврат &lt;tt&gt;null&lt;/tt&gt;
+  *         может так же говорить о том, что в карте заведомо &lt;tt&gt;null&lt;/tt&gt; был связан с
+  *         &lt;tt&gt;ключом&lt;/tt&gt;.)
+  */
+ public V put(K key, V value) {
+  if (key == null)
+   return putForNullKey(value);
+  int hash = hash(key.hashCode());
+  int i = indexFor(hash, table.length);
+  for (Entry&lt;k , V&gt; e = table[i]; e != null; e = e.next) {
+   Object k;
+   if (e.hash == hash && ((k = e.key) == key || key.equals(k))) {
+    V oldValue = e.value;
+    e.value = value;
+    e.recordAccess(this);
+    return oldValue;
+   }
+  }
+
+  modCount++;
+  addEntry(hash, key, value, i);
+  return null;
+ }
+</code></pre>
+Теперь давайте шаг за шагом попытаемся понять этот код:
+<ol>
+    <li><p>Проверяем объект <code>key</code> на равенство <code>null</code>. Если так и есть, то объект <code>key</code> будет сохранен в ячейке <code>table[0]</code>, потому что хэш-код для <code>null</code> всегда равен 0;</p></li>
+    <li><p>Далее у объекта <code>key</code> вызываем метод <code>hashcode()</code>, который высчитает его хэш-код. Этот хэш-код используется для определения ячейки массива, где будет храниться объект класса <code>Entry</code>. Иногда бывает так, что эта функция <code>hashcode</code> написана не слишком умело, потому разработчики JDK создали другу функцию — <code>hash()</code>, которая в качестве аргумента принимает до этого высчитанный хэш-код. Если интересно почитать про эту функцию более подробно, можете пройти по <a href='http://javapostsforlearning.blogspot.com/2014/02/hash-and-indexfor-method-in-hashmap.html' rel='nofollow' target='_blank'>ссылке</a>;</p></li>
+    <li><p><codE>indexFor(hash,table.length)</code> используется для определения конкретной ячейку в массиве <code>table</code>, в которую будет определен для хранения объект класса <code>Entry</code>;</p></li>
+    <li></p>Как мы видели в нашем примере, если два объекта <code>key</code> имеют одинаковый хэш-код (эта ситуации известна, как коллизия), то они будут сохранены в форме связного списка. Поэтому на данном этапе мы проводим итерацию нашего списка:</p></li><ul>
+    <li><p>если только что рассчитанная ячейка пуста, то объект класса <code>Entry</code> будет сохранен непосредственно в эту ячейку;</p></li>
+    <li><p>если в этой ячейке уже содержится какой-либо объект, тогда происходит итерация до элемента, у которого поле <code>next</code> равно <code>null</code>. После этого наш объект класса <code>Entry</code> становится следующим в списке;</p></li>
+    <li><p>что, если мы добавим такой же объект <code>key</code> еще раз? По логике он должен заменить старое значение. Да, так и будет. Во время итерации будет производиться сравнение ключей с помощью метода <code>equals()</code> (<code>key.equals(k)</code>). Если результатом будет истина, то старое значение будет заменено на значение текущего объекта <code>Entry</code>.</li>
+</ul></ol><h2>Get:</h2>Теперь давайте взглянем на применение метода <codу>get</code>
+
+<pre class='lang-java line-numbers'><code>
+/**
+  * Возвращает значение, которое соответствует указанному ключу, или {@code null}, если              
+  * данная карта не содержит пары с указанным ключом.
+  *
+  *
+  * &lt;p&gt;
+  * Более точно, если в данной карте содержится такой ключ {@code k} 
+  * с соответствующим ему значением {@code v}, что {@code (key==null ? k==null : key.equals(k))},
+  * то метод возвращает {@code v}; в противном случае возвращается {@code null}. 
+  * (может быть не более одной такой пары)
+  *
+  * &lt;/p&gt;&lt;p&gt;
+  * Возвращенное значение {@code null} не &lt;i&gt;обязательно&lt;/i&gt; говорит о том, что
+  * в карте нет пары с таким указанным ключом; а возможно, что в карте однозначно
+  * указано соответствие этого ключа со значением {@code null}.
+  * Можно воспользоваться операцией {@link #containsKey containsKey}, чтобы
+  * отличить эти два случая
+  * @see #put(Object, Object)
+  */
+ public V get(Object key) {
+  if (key == null)
+   return getForNullKey();
+  int hash = hash(key.hashCode());
+  for (Entry&lt;k , V&gt; e = table[indexFor(hash, table.length)]; e != null; e = e.next) {
+   Object k;
+   if (e.hash == hash && ((k = e.key) == key || key.equals(k)))
+    return e.value;
+  }
+  return null;
+ }
+</code></pre>
+Теперь, когда у вас есть понимание работы метода put в хэш-картах, понять, как работает метод <code>get</code>, очень просто. Когда вы передаете методу какой-либо ключ, чтобы получить значение из хеш-карты:
+<ol>
+    <li><p>Объект <cod>Ekey</code> проверяется на равенство <code>null</code>. Если так и есть, то будет возвращено значение объекта, хранящегося в ячейке <code>table[0]</code>;</p></li>
+    <li><p>У объекта key вызывается метод <code>hashcode()</code>, который высчитывает хэш-код;</p></li>
+    <li><p><code>indexFor(hash,table.length)</code> используется для определения конкретной ячейки массива <code>table</code>, из которой необходимо взять объект класса <code>Entry</code>;</p></li>
+    <li><p>После получения номера ячейки массива <code>table</code> будет произведена итерация по списку и сравнение ключей с помощью метода <code>equals()</code>. Если результатом будет истина, то будет возвращено значение объекта <code>Entry</code>, в противном случае — <code>null</code>.</p></li></ol><h2>Что следует запомнить:</h2><ul>
+    <li><p>Класс <code>HashMap</code> имеет внутренний класс <code>Entry</code>, который хранит пары ключ-значение;</p></li>
+    <li><p>Объекты класса <code>Entry</code> хранятся в массиве <code>Entry[ ]</code> под названием <code>table</code>;</p></li>
+    <li><p>Ячейка массива называется корзиной и хранит первый элемент из связного списка;</p></li>
+    <li><p>Метод <code>hashcode()</code> объекта <code>key</code> используется для поиска корзины этого объекта класса <code>Entry</code>;</p></li>
+    <li><p>Если ключи двух объектов имеют одинаковый хэш-код, они будут сохранены в одной корзине массива <code>table</code>;</p></li>
+    <li><p>Метод <code>equals()</code> объекта <code>key</code> используется для подтверждения его уникальности;</p></li>
+    <li><p>Методы <code>equals()</code> и <code>hashcode()</code> объекта <code>value</code> вообще не используются.</p></li>
+</ul><a href='https://www.javacodegeeks.com/2014/03/how-hashmap-works-in-java.html' rel='nofollow' target='_blank'>Источник</a>

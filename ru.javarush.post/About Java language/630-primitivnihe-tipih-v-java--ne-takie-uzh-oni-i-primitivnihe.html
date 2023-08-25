@@ -1,0 +1,372 @@
+Примитивные типы в Java: Не такие уж они и примитивные
+<p>----------------------------------------</p>
+Повесть о том, что примитивные типы не такие уж и примитивные и скрывают в себе множество особенностей, благодаря которым на конференциях рассказывают о Java пазлерах. Постараемся подглядеть во "внутреннюю кухню" и понять, что там есть интересного.
+<p>----------------------------------------</p>
+<h2>Вступление</h2>Разработку приложений можно рассматривать как работу с некоторыми данными, а точнее — их хранение и обработку. Сегодня хотелось бы затронуть первый ключевой аспект. Как данные хранятся в Java? Тут у нас есть два возможные формата: <a href="https://javarush.com/groups/posts/2642-ssihlochnihe-tipih-dannihkh-v-java" target="_blank">ссылочный</a> и <a href="https://javarush.com/groups/posts/2630-prostihe-peremennihe-v-java-i-konstantih" target="_blank">примитивный</a> тип данных.
+
+Давайте поговорим о видах примитивных типов и возможностях работы с ними (как ни крути, это фундамент наших знаний языка программирования).
+
+<strong>Примитивные типы данных Java</strong> — это основа, на которой держится всё. Нет, я нисколько не преувеличиваю. У Oracle примитивам посвящён отдельный Tutorial: <a href="https://docs.oracle.com/javase/tutorial/java/nutsandbolts/datatypes.html" rel="nofollow" target="_blank">Primitive Data Types</a>
+<img data-id="0f115d55-cc8a-45b7-b302-bb9a8450fe3a" data-max-width="850" alt="Примитивные типы в Java: Не такие уж они и примитивные - 1" src="https://cdn.javarush.com/images/article/0f115d55-cc8a-45b7-b302-bb9a8450fe3a/1024.jpeg">Немного истории. Вначале был ноль. Но ноль — это скучно. И тогда появился <strong>bit</strong> (бит). Почему его так назвали? Назвали его так от сокращения "<u>bi</u>nary digi<u>t</u>" (двоичное число). То есть у него есть только два значения. А так как был ноль, то логично, что теперь стало или 0 или 1. И стало жить веселее.
+
+Биты начали собираться в стаи. И эти стаи стали называть <strong>byte</strong> (байт). В современном мире byte = 2 в третьей степени, т.е. 8. Но, оказывается, так было не всегда. Существует множество догадок, легенд и слухов, откуда пошло название byte. Кто-то считает, что всё дело в кодировках того времени, а кто-то считает, что так было выгоднее считать информацию. Байт — это наименьшая адресуемая часть памяти. Именно байты имеют уникальные адреса в памяти. 
+
+Есть легенда о том, что ByTe это сокращение от Binary Term — машинное слово. Машинное слово – если говорить просто, это количество данных, которые процессор может обработать за одну операцию. Раньше размер машинного слова совпадал с наименьшей адресуемой памятью.
+
+В Java, переменные могут хранить только значение байтов. Как я и говорил выше, в Java существует два вида переменных:
+<ul>
+<li>примитивные типы java, хранят непосредственно значение байтов данных (подробнее типы этих примитивов мы разберем немного ниже);</li>
+<li>ссылочный тип, хранит байты адреса объекта в Heap, то есть через эти переменные мы получаем доступ непосредственно к самому объекту(такой себе пульт от объекта)</li></ul><h2>Java byte</h2>Итак, история подарила нам байт – минимальный объём памяти, который мы можем использовать. И состоит он из 8 бит. Самый маленький целый тип данных в java – byte. Это знаковый 8-битовый тип. Что это значит?
+
+Давайте считать. 2 ^ 8 будет 256. Но что же делать, если мы хотим отрицательное число? И решили разработчики Java, что двоичный код «10000000» будет обозначать -128, то есть старший бит (самый левый бит) будет обозначать, отрицательное ли число. Двоичное «0111 1111» равняется 127. То есть 128 никак не обозначить, т.к. это будет -128. 
+
+Полный расчёт приведён в этом ответе: <a href="https://stackoverflow.com/a/42623517" target="_blank" rel="nofollow">Why is the range of bytes -128 to 127 in Java?</a>
+
+Чтобы понять как получаются числа, стоит посмотреть на картинку:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="ee556b87-0313-4a28-8fa1-b4f05c5c58c4" data-max-width="710" alt="Примитивные типы в Java: Не такие уж они и примитивные - 2" src="https://cdn.javarush.com/images/article/ee556b87-0313-4a28-8fa1-b4f05c5c58c4/1024.jpeg"></div></div>Соответственно, чтобы вычислить размер 2^(8-1) = 128. Значит минимальная граница (а она с минусом) будет -128. А максимальная 128 – 1 (вычитаем ноль). То есть максимум будет 127.
+
+На самом деле, с типом byte работаем мы не так часто на "высоком уровне". В основном это обработка «сырых» данных. Например, при работе с передачей данных по сети, когда данные это набор 0 и 1, переданных через какой-то канал связи. Или при чтении данных из файлов. Так же могут быть использованы при работе со строкам и кодировками.
+
+Пример кода:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args){
+        byte value = 2;
+        byte shortByteValue = 0b10; // 2
+        System.out.println(shortByteValue);
+        // Начиная с JDK7 мы можем разделять литералы подчёркиваниями
+        byte minByteValue = (byte) 0B1000_0000; // -128
+        byte maxByteValue = (byte) 0b0111_1111; // 127
+        byte minusByteValue = (byte) 0b1111_1111; // -128 + 127
+        System.out.println(minusByteValue);
+        System.out.println(minByteValue + " to " + maxByteValue);
+}
+</code></pre>
+Кстати, не стоит думать, что использование типа byte будет снижать потребление памяти. В основном byte используется для уменьшения расхода памяти при хранении данных в массивах (например, хранение данных, полученных по сети в некотором буфере, который будет реализован в виде массива байт). 
+А вот при операциях над данными использование byte не оправдает ваши ожидания.
+
+Связано это с реализацией Java Virtual Machine (JVM). Так как большинство систем 32 или 64 разрядные, то byte и short при вычислениях будут приведены к 32-битному int, о котором мы поговорим дальше. Так проще производить вычисления. Подробнее см. <a href="https://stackoverflow.com/questions/18483470/is-addition-of-byte-converts-to-int-because-of-java-language-rules-or-because-of" target="_blank" rel="nofollow">Is addition of byte converts to int because of java language rules or because of jvm?</a>. В ответе даны так же ссылки на JLS (Java Language Specification).
+
+Кроме того, использование byte в неправильном месте может привести к неловким моментам:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args){
+        for (byte i = 1; i &lt;= 200; i++) {
+            System.out.println(i);
+        }
+}
+</code></pre>
+Тут будет зацикливание. Потому что значение счётчика дойдёт до максимума (127), произойдёт переполнение и значение станет -128. И мы никогда не выйдем из цикла.
+<h3>short</h3>Лимит значений из byte довольно мал. Поэтому, для следующего типа данных решили увеличить количество бит вдвое. То есть теперь не 8 бит, а 16. То есть 2 байта.
+
+Значения можно посчитать так же. 2^(16-1) = 2 ^ 15 = 32768. Значит, диапазон от -32768 до 32767. Используют его совсем редко для каких-либо специальных случаев.  Как говорит нам документация языка Java: «<em>you can use a short to save memory in large arrays</em>».
+<h3>int</h3>Вот мы и добрались до самого частоиспользуемого типа. Занимает он 32 бита, или 4 байта. В общем, мы продолжаем удваивать.
+Диапазон значений от -2^31 до 2^31 – 1.
+<h3>Максимальное значение int</h3><strong>Максимальное значение int</strong> 2147483648 – 1, что совсем не мало. Как выше было указано, для оптимизации вычислений, т.к. современным компьютерам с учетом их разрядности удобнее считать, данные могут быть неявно преобразованы к int. Вот простой пример:
+
+<pre class="lang-java line-numbers"><code>
+byte a = 1;
+byte b = 2;
+byte result = a + b;
+</code></pre>
+Такой безобидный код, а мы получим ошибку: «error: incompatible types: possible lossy conversion from int to byte». Придётся исправить на byte result = (byte)(a + b);
+
+И ещё один безобидный пример. Что будет если запустим следующий код?
+
+<pre class="lang-java line-numbers"><code>
+int value = 4;
+System.out.println(8/value);
+System.out.println(9/value);
+System.out.println(10/value);
+System.out.println(11/value);
+</code></pre>
+А мы получим вывод
+
+<pre class="lang-java line-numbers"><code>
+2
+2
+2
+2
+</code></pre><center>*звуки паники*</center>
+
+Дело обстоит в том, что при работе с int значениями остаток отбрасывается, оставляя только целую часть(в таких случая лучше уж использовать double).
+<h3>long</h3>Продолжаем удваивать. 32 умножаем на 2 и получаем 64 бита. По традиции, это 4 * 2, то есть 8 байт. Диапазон значений от -2^63 до 2^63 – 1. Более чем достаточно. Данный тип позволяет считать большие-большие числа. Часто используется при работе со временем. Или с большими расстояниями, например.
+
+Для обозначения того, что число это long после числа ставят литерал L – Long. Пример:
+
+<pre class="lang-java line-numbers"><code>
+long longValue = 4;
+longValue = 1l; // Не ошибка, но плохо читается
+longValue = 2L; // Идеально
+</code></pre>
+Хочется забежать вперёд. Далее мы будем рассматривать тот факт, что для примитивов есть соответствующие обёртки, которые дают возможность работать с примитивами как с объектами. Но есть интересная особенность. Вот пример:
+
+На том же <a href="https://www.tutorialspoint.com/compile_java_online.php" target="_blank" rel="nofollow">Tutorialspoint online compiler</a> можете проверить такой вот код: 
+
+<pre class="lang-java line-numbers"><code>
+public class HelloWorld {
+
+     public static void main(String []args) {
+        printLong(4);
+     }
+    
+    public static void printLong(long longValue) {
+        System.out.println(longValue);
+    }
+}
+</code></pre>
+Данный код работает без ошибок, всё хорошо. Но стоит в методе printLong заменить тип с long на Long (т.е. тип становится не примитивным, а объектным), как становится джаве непонятно, какой параметр мы передаём. Она начинает считать, что передаётся int и будет ошибка. Поэтому, в случае с методом необходимо будет явно указывать 4L.
+
+Очень часто long используется как ID при работе с базами данных.
+<h3>Java float и Java double</h3>Данные типы называются типами с плавающей точкой. То есть это не целочисленные типы.  Тип float является 32битным (как int), а double называется типом с двойной точностью, поэтому он 64битный (умножаем на 2, всё как мы любим).
+
+Пример:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args){
+        // float floatValue = 2.3; lossy conversion from double to float
+        float floatValue = 2.3F;
+        floatValue = 2.3f;
+        double doubleValue = 2.3;
+        System.out.println(floatValue);
+        double cinema = 7D;
+}
+</code></pre>
+А вот пример разницы значений (из-за точности типов):
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args){
+        float piValue = (float)Math.PI;
+        double piValueExt = Math.PI;
+        System.out.println("Float value: " + piValue );
+        System.out.println("Double value: " + piValueExt );
+ }
+</code></pre>
+Данные примитивные типы используются в математике, например. Вот доказательство, константа для вычисления <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Math.html#PI" target="_blank" rel="nofollow">числа PI</a>. Ну и вообще можно посмотреть API класса Math.
+
+Вот что ещё должно быть важно и интересно: даже в документации сказано: «<strong>This data type should never be used for precise values, such as currency. For that, you will need to use the java.math.BigDecimal class instead.Numbers and Strings covers BigDecimal and other useful classes provided by the Java platform.</strong>». То есть деньги в float и double не надо вычислять.
+
+Пример про точность на примере работы в NASA: <a href="http://voidexception.weebly.com/java-bigdecimal---dealing-with-high-precision-calculations.html" target="_blank" rel="nofollow">Java BigDecimal, Dealing with high precision calculations</a>
+
+Ну и чтобы самим прочувствовать:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args){
+        float amount = 1.0000005F;
+        float avalue = 0.0000004F;
+        float result = amount - avalue;
+        System.out.println(result);
+}
+</code></pre>
+Выполните этот пример, а потом добавьте 0 перед цифрами 5 и 4. И вы увидите весь ужас)
+
+Есть интересный доклад на русском про float и double в тему: <a href="https://youtu.be/1RCn5ruN1fk" rel="nofollow" target="_blank">https://youtu.be/1RCn5ruN1fk</a>
+
+Примеры работы с BigDecimal можно увидеть здесь: <a href="https://www.javaworld.com/article/2075315/core-java/make-cents-with-bigdecimal.html" target="_blank" rel="nofollow">Make cents with BigDecimal</a>
+
+Кстати, float и double могут вернуть не только число. Например, пример ниже вернёт Infinity (т.е. бесконечность):
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args){
+        double positive_infinity = 12.0 / 0;
+        System.out.println(positive_infinity);
+}
+</code></pre>
+А этот вернёт NAN:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args){
+        double positive_infinity = 12.0 / 0;
+        double negative_infinity = -15.0 / 0;
+        System.out.println(positive_infinity + negative_infinity);
+}
+</code></pre>
+Про бесконечность понятно. А что такое NaN? Это <strong>Not a number</strong>, то есть результат не может быть высчитан и не является числом. Вот пример:
+
+Мы хотим вычислить квадратный корень из -4. Квадратный корень из 4 это 2. То есть 2 надо возвести квадрат и тогда мы получим 4. А что надо возвести в квадрат, чтобы получить -4? Не получится, т.к. если положительное число будет, то оно и останется. А если было отрицательное, то минус на минус даст плюс. То есть это не вычисляемо.
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args){
+        double sqrt = Math.sqrt(-4);
+        System.out.println(sqrt + 1);
+        if (Double.isNaN(sqrt)) {
+           System.out.println("So sad"); 
+        }
+        System.out.println(Double.NaN == sqrt);
+}
+</code></pre>
+Вот ещё отличный обзор на тему чисел с плавающей точкой: <a href="https://www.ibm.com/developerworks/ru/library/j-jtp0114/index.html" target="_blank" rel="nofollow">Где ваша точка?</a>
+<table>
+<tbody><tr>
+<th>Что еще почитать:</th>
+</tr>
+<tr>
+<td>
+<ul>
+<li><p><a href="https://javarush.com/groups/posts/1382-primitivnihe-tipih-java" target="_blank">Примитивные типы Java</a></p></li></ul>
+</td>
+</tr>
+</tbody></table><h3>Java boolean</h3>Следующий тип – булевский (логический тип). Он может принимать значения только true или false, которые являются ключевыми словами.
+
+Используется в логических операциях, таких как циклы while, и в ветвлении при помощи if, switch.
+
+Что тут можно интересного узнать? Ну, например, теоретически, нам достаточно 1 бита информации, 0 или 1, то есть true или false. Но на самом деле Boolean будет занимать больше памяти и это будет зависеть от конкретной реализации JVM. Обычно на это тратится столько же, сколько на int. Как вариант – использовать BitSet. 
+
+Вот краткое описание из книги «Основы Java»: <a href="https://books.google.ru/books?id=7DAxDwAAQBAJ&amp;lpg=PA406&amp;ots=RLilwCBxfu&amp;dq=BitSet%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20java&amp;hl=ru&amp;pg=PA405#v=onepage&amp;q=BitSet%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20java&amp;f=false" target="_blank" rel="nofollow">BitSet</a>
+<h3>Java char</h3>Вот мы и добрались до последнего примитивного типа.
+
+Итак, данные в char занимают 16 бит и описывают символ. В Java для char используется кодировка Unicode.
+
+Символ можно задать в соответствии с двумя таблицами (посмотреть можно <a href="https://unicode-table.com/ru/" target="_blank" rel="nofollow">тут</a>):
+<ul>
+<li>Таблица Unicode символов</li>
+<li>Таблица символов ASCII </li>
+</ul><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="172" alt="Примитивные типы в Java: Не такие уж они и примитивные - 3" src="https://cdn.javarush.com/images/article/c071803f-ce7d-4b05-aa28-9cb116cb03b0/original.jpeg"></div></div>Пример в студию:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+    char symbol = '\u0066'; // Unicode
+    symbol = 102; // ASCII
+    System.out.println(symbol);
+}
+</code></pre>
+Кстати, char, являясь по своей сути всё таки числом, поддерживает математические действия, такие как сумма. А иногда это может привести к забавным последствиям:
+
+<pre class="lang-java line-numbers"><code>
+public class HelloWorld{
+
+    public static void main(String []args){
+        String costForPrint = "5$";
+        System.out.println("Цена только для вас " + 
+        + costForPrint.charAt(0) + getCurrencyName(costForPrint.charAt(1)));
+    }
+    
+    public static String getCurrencyName(char symbol) {
+        if (symbol == '$') {
+            return " долларов";
+        } else {
+            throw new UnsupportedOperationException("Not implemented yet");
+        }
+    }
+   
+}
+</code></pre>
+Настоятельно советую проверить в онлайн <a href="https://www.tutorialspoint.com/compile_java_online.php" target="_blank" rel="nofollow">IDE от tutorialspoint</a>. Когда я увидел этот пазлер на одной из конференций мне это подняло настроение. Надеюсь, Вам пример тоже понравится)
+
+<strong>UPDATED:</strong> Это было на Joker 2017, доклад: "<a href="https://youtu.be/MvxDvHJrbGs?t=1887" target="_blank" rel="nofollow">Java Puzzlers NG S03 — Откуда вы все лезете-то?!</a>".
+<h3>Литералы</h3>Литерал - явно заданное значение.  При помощи литералов можно указывать значения в разных системах счисления:
+<ul>
+<li>Десятеричная система: 10</li>
+<li>Шестнадцатеричная система: 0x1F4, начинается с 0x</li>
+<li>Восьмеричная система: 010, начинается с нуля.</li>
+<li>Двоичная система (начиная с Java7): 0b101, начинается с 0b</li>
+</ul>На восьмеричной системе я бы чуть подробнее остановился, потому что это забавно:
+
+<pre class="lang-java line-numbers"><code>
+int costInDollars = 08;
+</code></pre>
+Эта строчка кода не скомпилируется:
+
+<pre class="lang-java line-numbers"><code>
+error: integer number too large: 08
+</code></pre>
+Кажется, что за бред. А теперь вспомним про двоичную и восьмеричную системы. В двоичной системе нет двойки, т.к. есть два значения (начиная с 0). А восьмеричной системе есть 8 значений, начиная с нуля. То есть самого значения 8 нет. Поэтому и ошибка, которая на первый взгляд кажется абсурдной. И чтобы вспомнить вот «вдогонку» правила перевода значений:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="de5f8ba1-20f1-4e9f-bbe3-c08e267666a9" data-max-width="710" alt="Примитивные типы в Java: Не такие уж они и примитивные - 4" src="https://cdn.javarush.com/images/article/de5f8ba1-20f1-4e9f-bbe3-c08e267666a9/1024.jpeg"></div></div><h3>Классы-обертки</h3>Примитивы в Java имеют свои классы-обертки, чтобы можно было работать с ними как с объектами. То есть, для каждого примитивного типа существует, соответствующий ему ссылочный тип.
+<img data-max-width="512" data-id="a1b74d30-1489-4480-b80a-fd00c6bca53d" src="/images/article/a1b74d30-1489-4480-b80a-fd00c6bca53d/512.webp" class="img-fluid" alt="Примитивные типы в Java: Не такие уж они и примитивные - 5">Классы-обертки являются immutable (неизменяемыми): это означает, что после создания объекта его состояние — значение поля value — не может быть изменено. Классы-обертки задекларированы как final: объекты, так сказать, read-only.
+
+Также хотелось бы упомянуть, что от этих классов невозможно наследоваться.
+
+Java автоматически делает преобразования между примитивными типами и их обертками:
+
+<pre class="lang-java line-numbers"><code>
+Integer x = 9;          // autoboxing
+int n = new Integer(3); // unboxing
+</code></pre>
+Процесс преобразования примитивных типов в ссылочные (int-&gt;Integer) называется <strong>autoboxing</strong> (автоупаковкой), а обратный ему — <strong>unboxing</strong> (автораспаковкой).
+
+Эти классы дают возможность сохранять внутри объекта примитив, а сам объект будет вести себя как Object (ну как любой другой объект). При всём этом мы получаем большое количество разношерстных, полезных статических методов, как например — сравнение чисел, перевод символа в регистр, определение того, является ли символ буквой или числом, поиск минимального числа и т.п. Предоставляемый набор функционала зависит лишь от самой обертки.
+
+Пример собственной реализации обёртки для int:
+
+<pre class="lang-java line-numbers"><code>
+public class CustomerInt {
+
+   private final int value;
+
+   public CustomerInt(int value) {
+       this.value = value;
+   }
+
+   public int getValue() {
+       return value;
+   }
+}
+</code></pre>
+В основном пакете, java.lang, уже есть реализации классы Boolean, Byte, Short, Character, Integer, Float, Long, Double, и нам не нужно ничего городить своего, а только переиспользовать готовое.
+
+К примеру, такие классы дают нам  возможность создать, скажем, List<integer>, ведь List должен содержать только объекты, чем примитивы не являются.
+
+Для преобразования значения примитивного типа есть статические методы valueOf, например, Integer.valueOf(4) вернёт объект типа Integer. Для обратного преобразования есть методы intValue(), longValue() и т. п.
+
+Компилятор вставляет вызовы valueOf и *Value самостоятельно, это и есть суть autoboxing и autounboxing.
+
+Как выглядит пример автоупаковки и автораспаковки, представленный выше, на самом деле:
+
+<pre class="lang-java line-numbers"><code>
+Integer x = Integer.valueOf(9);
+int n = new Integer(3).intValue();
+</code></pre>
+Подробнее про автоупаковку и автораспаковку можно почитать вот <a href="https://javarush.com/groups/posts/1948-objertki-raspakovka-i-zapakovka" target="_blank">в этой статье</a>.
+<h2>Приведение типов</h2>При работе с примитивами существует такое понятие как <a href="https://javarush.com/groups/posts/1945-rasshirenie-i-suzhenie-primitivnihkh-tipov" target="_blank">приведение типов</a>, одно из не очень приятных свойств C++, тем не менее приведение типов сохранено и в языке Java.
+
+Иногда мы сталкиваемся с такими ситуациями, когда нам нужно совершать взаимодействия с данными разных типов. И очень хорошо, что в некоторых ситуациях это возможно. В случае с ссылочными переменными, там свои особенности, связанные с полиморфизмом и наследованием, но сегодня мы рассматриваем простые типы и соответственно приведение простых типов.
+
+Существует преобразование с расширением и преобразование сужающее. Всё на самом деле просто. Если тип данных становится больше (допустим, был int, а стал long), то тип становится шире (из 32 бит становится 64). И в этом случае мы не рискуем потерять данные, т.к. если влезло в int, то в long влезет тем более, поэтому данное приведение мы не замечаем, так как оно осуществляется автоматически. А вот в обратную сторону преобразование требует явного указания от нас, данное приведение типа называется — <strong>сужение</strong>. Так сказать, чтобы мы сами сказали: «Да, я даю себе отчёт в этом. В случае чего — виноват сам».
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args){
+   int intValue = 128;
+   byte value = (byte)intValue;
+   System.out.println(value);
+}
+</code></pre>
+Чтобы потом в таком случае не говорили что «Ваша Джава плохая», когда получат внезапно -128 вместо 128 ) Мы ведь помним, что в байте 127 верхнее значение и всё что находилось выше него соответственно можно потерять.  Когда мы явно превратили наш int в байт, то произошло переполнение и значение стало -128.
+<h2>Область видимости</h2>Это то место в коде, где данная переменная будет выполнять свои функции и хранить в себе какое-то значение. Когда же эта область закончится, переменная перестанет существовать и будет стерта из памяти и. как уже можно догадаться, посмотреть или получить ее значение будет невозможно!
+
+Так что же это такое — область видимости?
+<img data-max-width="800" data-id="67de3d66-7851-4b3f-999e-9fd3e8f2a04f" src="/images/article/67de3d66-7851-4b3f-999e-9fd3e8f2a04f/800.webp" class="img-fluid" alt="Примитивные типы в Java: Не такие уж они и примитивные - 6">Область определяется "блоком" — вообще всякой областью, замкнутой в фигурные скобки, выход за которые сулит удаление данных объявленных в ней. Или как минимум — сокрытие их от других блоков, открытых вне текущего.
+
+В Java область видимости определяется двумя основными способами:
+<ul>
+<li>Классом.</li>
+<li>Методом.</li>
+</ul>Как я и сказал, переменная не видна коду, если она определена за пределами блока, в котором она была инициализирована.
+
+Смотрим пример:
+
+<pre class="lang-java line-numbers"><code>
+int x;
+x = 6;
+if (x &gt;= 4) {
+   int y = 3;
+}
+x = y;// переменная y здесь не видна!
+</code></pre>
+И как итог мы получим ошибку:
+
+<pre><code>
+Error:(10, 21) java: cannot find symbol
+  symbol:   variable y
+  location: class com.javaRush.test.type.Main
+</code></pre>
+Области видимости могут быть вложенными (если мы объявили переменную в первом, внешнем блоке, то во внутреннем она будет видна).
+<h2>Заключение</h2>Сегодня мы познакомились с восемью примитивными типами в Java.
+
+Эти типы можно разделить на четыре группы:
+<ul>
+<li><strong>Целые числа: byte, short, int, long</strong> — представляют собой целые числа со знаком.</li>
+<li><strong>Числа с плавающей точкой</strong> — эта группа включает себе float и double — типы, которые хранят числа с точностью до определённого знака после запятой.</li>
+<li><strong>Булевы значения</strong> — boolean — хранят значения типа "истина/ложь".</li>
+<li><strong>Символы</strong> — в эту группу входит типа char.</li></ul>Как показал текст выше, примитивы в Java не такие уж примитивные и позволяют решать многие задачи эффективно. Но это и привносит некоторые особенности, о которых следует помнить, если мы не хотим столкнуться с непредсказуемым поведением нашей программы.
+
+Как говорится, за всё нужно платить. Если мы хотим примитив с “крутым” (широким) диапазоном — что-то вроде long — мы жертвуем выделением большего куска памяти и в обратную сторону. Экономя память и используя byte, мы получаем ограниченный диапазон  от -128 до 127. </integer>

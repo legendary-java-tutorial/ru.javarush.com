@@ -1,0 +1,90 @@
+Double brace инициализация
+<p>----------------------------------------</p>
+Инициализация с использованием двойных фигурных скобок (далее по тексту — Double brace инициализация) — Java средство для создания коллекций таких как list, set и map одновременно с их объявлением. Когда вам необходимы списки с фиксированными элементами ...
+<p>----------------------------------------</p>
+<h2>1. Double brace инициализация</h2>Инициализация с использованием двойных фигурных скобок (<em>далее по тексту — Double brace инициализация</em>) — Java средство для создания коллекций таких как list, set и map одновременно с их объявлением.
+<div class='row justify-content-center jr-image-wrap'><div class='col-12 col-sm-10 col-md-8'><img data-id="27a6a1f0-1475-48f0-89cd-ae168f77ac56" data-max-width="710" alt="Double brace инициализация - 1" src="https://cdn.javarush.com/images/article/27a6a1f0-1475-48f0-89cd-ae168f77ac56/1024.jpeg"></div></div>Когда вам необходимы списки с фиксированными элементами, такие как перечень поддерживаемых продуктов или денежных единиц, то объявление списка  одновременно с его инициализацией улучшает читабельность кода. Именно поэтому Double brace инициализация набирает популярность, так как иных стандартных способов создания с одновременной инициализацией в коде для коллекций нет. 
+
+К сожалению, в отличие от других языков программирования Java не поддерживает коллекции литералов. В соответствие с данным ограничением, создание неизменяемого списка (<a href="http://javarevisited.blogspot.sg/2012/07/create-read-only-list-map-set-example-java.html" rel="nofollow" >unmodifiableList</a>) даже с небольшим количеством элементов вынуждает нас писать много строк кода в виде повторяющихся вызовов <code>add()</code> для добавления нужных элементов с завершающим обертыванием (wrapping):
+
+<pre class='lang-java line-numbers'><code>
+List&lt;Integer&gt; list = new ArrayList&lt;&gt;();
+list.add(2);
+list.add(3);
+list.add(5);
+list.add(7);        
+List&lt;Integer&gt; unmodifiableList = Collections.unmodifiableList(list);
+</code></pre>
+Это излишне избыточное описание, которое можо упростить. Заполним статические списки удобным для нас способом, а именно непосредственно в статических блоках при инициализации, в чем нам и поможет <code>Double brace</code> инициализация, позволяющая нам записать все в одну строку:
+
+<pre class='lang-java line-numbers'><code>
+List&lt;Integer&gt; list = Collections.unmodifiableList(new ArrayList&lt;Integer&gt;() {{
+        add(2);
+        add(3);
+        add(5);
+}});
+</code></pre>
+Аналогично <code>Double brace</code> инициализация  поможет нам заполнить значениями и <code>HashMap</code>:
+
+<pre class='lang-java line-numbers'><code>
+Map&lt;Integer, String&gt; intToString = new HashMap&lt;Integer, String&gt;(){{
+         put(1, "one");
+         put(2, "two");
+         put(3, "three");         
+ }};
+</code></pre>
+Все это так элегантно выглядит, однако имеет свои недостатки, которые и делают Double brace инициализацию анти-шаблоном. Рассмотрим их далее в следующей главе.
+
+<h2>Плюсы и минусы Double brace инициализации.</h2><code>Double</code> brace инициализация использует создание внутреннего анонимного класса (<a href="https://en.wikipedia.org/wiki/Inner_class" rel="nofollow" >anonymous inner class</a>). Что поначалу внешне скрыто, однако <code>Double brace</code> инициализация создает класс с дальнейшей инициализацией его экземпляра, каждый раз как вы применяете ее. Помимо этого используется скрытая ссылка на этот закрытый класс, что может привести нас к возможным утечкам памяти. Вы также не сможете использовать оператор привидения для generic-ов (diamond operator &lt; &gt;), так как мы не можем обратиться внутрь анонимного класса.
+
+<table>
+<tr>
+<td>(От переводчика: Еще раз более подробно: <br />
+после первой <code>{</code> создается внутренний анонимный класс, после второй <code>{</code> происходит инициализация при создании экземпляра класса при которой мы имеем  доступ к полям и методам внешнего (по отношению к анонимному) класса.)
+</td>
+</tr>
+</table>
+<strong>Плюсы:</strong><ol>
+    <li>Уменьшение строк в коде</li>
+    <li>Создание и инициализация в одном выражении.</li>
+</ol><strong>Минусы:</strong><ol>
+    <li>Скрытое от вас создание анонимного класса.</li>
+    <li>Что стоит нам дополнительных расходов для его экземпляра каждый раз при использовании.</li>
+    <li>Каждый раз создается скрытая ссылка на него, которая возможно приведет к утечкам памяти.</li>
+</ol><strong>Вердикт:</strong> из-за вышеуказанных минусов и существованию альтернатив Double brace инициализация рассматривается как анти-шаблон в мире Java.
+
+<img data-id="44c8ddba-f5c5-4c7f-8d0d-37e41d6740dd" data-max-width="600" alt="Спасите котенка" src="https://cdn.javarush.com/images/article/44c8ddba-f5c5-4c7f-8d0d-37e41d6740dd/1024.jpeg"><h2>Альтернативы Double brace инициализации в Java</h2>Хорошая новость состоит в том, что имеются иные способы достижения тех же самых целей в Java. Мы может реализовать в одной строке кода создание и инициализацию значениями ArrayList используя Copy constructor из Collection класса как показано ниже:
+
+<pre class='lang-java line-numbers'><code>
+List&lt;Integer&gt; list = Collections.unmodifiableList(new ArrayList&lt;&gt;(Arrays.asList(2, 3, 5)));
+</code></pre>
+<code>Arrays.asList()</code> возвратит нам список фиксированной длины переданный в <code>ArrayList</code> copy constructor. Помните про различие между списками фиксированной длины возвращаемыми из <code>Arrays.asList()</code> и <code>Collections.unmodifiableList()</code>: вы не можете добавлять или удалять элементы <code>ArrayList</code>-а, однако вы можете изменить элемент по индексу с использованием <code>set()</code>, чего вам не удастся сделать со списком, возвращенным <code>Collections.unmodifiableList()</code>.
+
+Если вы хотите получить небольшой список – это лучший способ, хотя он будет менее прозрачным для <code>Set</code> и других коллекций, так придется создать <code>List</code> перед созданием <code>Set</code>-а. Но это все же лучше, нежели  Double brace инициализация, так как в данном случае не создается лишний внутренний анонимный класс при каждом подобном использовании.
+
+Если вы работаете под Java 8 у вас есть еще один альтернативный способ. JDK 8 Stream API поможет вам создавать небольшие коллекции комбинируя вывод <code>Stream Factory</code> методы в коллекцию <code>List</code>:
+
+<pre class='lang-java line-numbers'><code>
+List&lt;String&gt; list = Collections.unmodifiableList(Stream.of("abc", "bcd", "cde").collect(toList()));
+</code></pre>
+Для <code>Set</code> вы можете использовать <code>Collectors.toSet()</code> метод вместо <code>Collectors.toList()</code>, как показано ниже:
+
+<pre class='lang-java line-numbers'><code>
+Set&lt;String&gt; set = Collections.unmodifiableSet(Stream.of("abc", "bcd", "cde").collect(toSet()));
+</code></pre>
+Кстати, <code>Stream collect</code> методы не гарантируют, что сгенерированные ими коллекции защищены от изменений. В Java 8 коллекции, которые они вернули (такие как — <code>ArrayList</code>, <code>HashSet</code>, and <code>HashMap</code> ), вполне себе обычные ( мы можем менять их), но это данный факт возможно будет исправлен в будущих релизах JDK.
+
+Это все на данный момент о <code>Double brace</code> инициализации в Java. Этот шаблон приемлим для тестов и демонстраций, но не достаточно хорош для использования в промышленной эксплуатации (production). Из-за присущих ему минусов, Double brace инициализация стал анти-шаблоном в наши дни, особенно учитывая доступные альтернативы. Сам я все еще использую данную конструкцию для инициализации static map-ов и все. Для <code>List</code> я  предпочитаю создавать <code>Collections</code> комбинируя с созданием <code>Array.asList</code> в его конструкторе. А если использую Java 8 – конструкцию с использованием Stream API  и <code>collect()</code>.
+
+<strong>Статьи по теме:</strong> если вам понравился данный учебный материал и вы хотите узнать побольше о паттернах, принципах и лучших приемах программирования на Java, возможно вы также ознакомитесь и с другими статьями на нашем <a href="https://javarevisited.blogspot.com/" rel="nofollow" >сайте</a>. 
+
+<strong>Рекомендуемая литература:</strong>если вы хотите побольше узнать о шаблонах и лучших практиках вы должны прочитать книгу <a href="https://www.amazon.com/Effective-Java-Edition-Joshua-Bloch/dp/0321356683" rel="nofollow" >«Эффективное программирование» Джошуа Блоха</a>, ни одна книга не может занять ее место. 
+
+А если вы уже поднаторели в Java и ищете книгу по шаблонам проектирования, юморной стиль изложения которой интересно и легко читать – обратите внимание на <a href="https://www.ozon.ru/context/detail/id/144233005/" rel="nofollow" >«Нead First. Шаблоны проектирования»</a>. 
+
+<table>
+<tr>
+<td>От переводчика: Я умышленно привел ссылку на оригинальную книгу Блоха, так как перевод ее на русский неудачен (например, Builder=конструктор).</td>
+</tr>
+</table>
+<em>Перевод статьи <a href="http://javarevisited.blogspot.sg/2015/10/what-is-double-brace-initialization-in-java-example-anti-pattern.html" rel="nofollow" >What is Double Brace Initialization in Java? Anti Pattern Example</a> (опубликованной в октябре 2015 года).</em>

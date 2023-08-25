@@ -1,0 +1,407 @@
+JPA : Знакомство с технологией
+<p>----------------------------------------</p>
+Современный мир разработки полон различных спецификаций призванных упроститить жизнь. Зная инструменты, можно выбрать подходящий. Не зная — можно усложнить себе жизнь. Данный обзор приоткроет завесу тайны над понятием JPA — Java Persistence API...
+<p>----------------------------------------</p>
+Современный мир разработки полон различных спецификаций призванных упроститить жизнь. Зная инструменты, можно выбрать подходящий. Не зная — можно усложнить себе жизнь. Данный обзор приоткроет завесу тайны над понятием JPA — Java Persistence API. Надеюсь, после прочтения захочется погрузиться в этот таинственный мир ещё глубже.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="9feb3ae0-27de-4c4c-bfc7-3904f37679d8" data-max-width="279" alt="JPA : Знакомство с технологией - 1" src="https://cdn.javarush.com/images/article/9feb3ae0-27de-4c4c-bfc7-3904f37679d8/1024.jpeg"></div></div><ul>
+<li><a href="#Вступление">Вступление</a></li>
+<li><a href="#Создание-проекта">Создание проекта</a></li>
+<li><a href="#Добавление-JPA">Добавление JPA</a></li>
+<li><a href="#Сущности-(Entities)">Сущности (Entities)</a></li>
+<li><a href="#Mapping">Mapping</a></li>
+<li><a href="#JPQL">JPQL</a></li>
+<li><a href="#Criteria-API">Criteria API</a></li>
+<li><a href="#Заключение">Заключение</a></li>
+</ul><h2 id="Вступление">Вступление</h2>Как мы знаем, одна из основных задач программ — хранение и обработка данных. 
+
+В старые добрые времена люди хранили данные просто в файлах. Но как только нужен одновременный доступ на чтение и редактирование, когда появляется нагрузка (т.е. одновременно поступает несколько обращений), хранение данных просто в файлах становится проблемой.
+
+Подробнее о том, какие проблемы решают БД и каким образом, советую прочитать в статье "<a href="https://habr.com/ru/company/oleg-bunin/blog/358984/" target="_blank" rel="nofollow">Как устроены базы данных</a>".
+
+Значит, наши данные мы решаем хранить в базе данных. С давних пор Java умеет работать с базами данных при помощи JDBC API (The Java Database Connectivity). Подробнее про JDBC можно прочитать тут: "<a href="https://javarush.com/groups/posts/2172-jdbc-ili-s-chego-vsje-nachinaetsja" target="_blank" rel="nofollow">JDBC или с чего всё начинается</a>".
+
+Но время шло и разработчики каждый раз сталкивались с необходимостью писать однотипный и ненужный "обслуживающий" код (так называемый Boilerplate code) для тривиальных операций по сохранению Java объектов в БД и наоборот, созданию Java объектов по данным из БД.  И тогда для решения этих проблем на свет появилось такое понятие, как ORM.
+
+<strong>ORM — Object-Relational Mapping или в переводе на русский объектно-реляционное отображение.</strong> Это технология программирования, которая связывает базы данных с концепциями объектно-ориентированных языков программирования. Если упростить, то ORM это связь Java объектов и записей в БД:
+<img data-id="4b8f2fcd-2c48-497e-96a6-bf2100f93425" data-max-width="850" alt="JPA : Знакомство с технологией - 2" src="https://cdn.javarush.com/images/article/4b8f2fcd-2c48-497e-96a6-bf2100f93425/1024.jpeg">ORM — это по сути концепция о том, что Java объект можно представить как данные в БД (и наоборот). Она нашла воплощение в виде спецификации JPA — Java Persistence API. 
+
+Спецификация — это уже описание Java API, которое выражает эту концепцию. Спецификация рассказывает, какими средствами мы должны быть обеспечены (т.е. через какие интерфейсы мы сможем работать), чтобы работать по концепции ORM. И как использовать эти средства.
+
+Реализацию средств спецификация не описывает. Это даёт возможность использовать для одной спецификации разные реализации. Можно упростить и сказать, что спецификация — это описание API.
+
+Текст спецификации JPA можно найти на сайте Oracle: "<a href="http://download.oracle.com/otn-pub/jcp/persistence-2_2-mrel-spec/JavaPersistence.pdf" target="_blank" rel="nofollow">JSR 338: JavaTM Persistence API</a>".
+
+Следовательно, чтобы использоать JPA нам требуется некоторая реализацию, при помощи которой мы будем пользоваться технологией. 
+
+Реализации JPA ещё называют JPA Provider. Одной из самых заметных реализаций JPA является <a href="http://hibernate.org/" target="_blank" rel="nofollow">Hibernate</a>. Поэтому, предлагаю её и рассмотреть.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="7e8c8a8a-d026-4b3d-95f3-e6b3a80334fa" data-max-width="261" alt="JPA : Знакомство с технологией - 3" src="https://cdn.javarush.com/images/article/7e8c8a8a-d026-4b3d-95f3-e6b3a80334fa/1024.jpeg"></div></div><h2 id="Создание-проекта">Создание проекта</h2>Так как JPA — это про Java, то нам понадобится Java проект. 
+
+Мы могли бы сами вручную создать структуру каталогов, сами добавить нужные библиотеки. Но куда удобнее и правильнее использовать системы автоматизации сборки проектов (т.е. по сути это просто программа, которая за нас будет управлять сборкой проектов. Создавать каталоги, подкладывать в classpath нужные библиотеки и т.д.). Одной из такой систем является Gradle.
+
+Подробнее про Gradle можно прочитать здесь: "<a href="https://javarush.com/groups/posts/2126-kratkoe-znakomstvo-s-gradle" target="_blank" rel="nofollow">Краткое знакомство с Gradle</a>".
+
+Как мы знаем, функциональность Gradle (т.е. действия, которые он может сделать) реализованы при помощи различных Gradle Plugins. Воспользуемся Gradle и плагином "<a href="https://docs.gradle.org/current/userguide/build_init_plugin.html" target="_blank" rel="nofollow">Gradle Build Init Plugin'ом</a>".
+
+Выполним комманду:
+
+<pre class="line-numbers"><code>
+gradle init --type java-application
+</code></pre>
+Gradle за нас сделает нужную структуру каталогов, создаст базовое декларативное описание проекта в билд скрипте <code>build.gradle</code>.
+
+Итак, у нас появилось приложение. Нам надо подумать, что мы хотим описывать или моделировать нашим приложением. 
+
+Давайте воспользуемся каким-нибудь средством моделирования, например: <a href="https://app.quickdatabasediagrams.com/#/" target="_blank" rel="nofollow">app.quickdatabasediagrams.com</a>
+<img data-id="695f9085-8069-4007-888d-c2a98b21f1f6" data-max-width="850" alt="JPA : Знакомство с технологией - 4" src="https://cdn.javarush.com/images/article/695f9085-8069-4007-888d-c2a98b21f1f6/1024.jpeg">Тут стоит сказать, что то что мы описали нашу "доменную модель". Домен — это некоторая "предметная область". Вообще, домен — это "владение" на латыни. В средние века так назывались области, которыми владели короли или феодалы. А во французском языке это стало словом "domaine", которое переводится просто как "область".
+
+Таким образом мы описали нашу "доменную модель" = "предметную модель". Каждый элемент этой модели — это некоторая "сущность", что-то из реальной жизни. В нашем случае это сущности: Категория (<code>Category</code>), Тема (<code>Topic</code>).
+
+Создадим для сущностей отдельный пакет, например с именем model. И добавим туда Java классы, описывающие сущности.
+
+В Java коде такие сущности представляют из себя обычный <a href="https://www.geeksforgeeks.org/pojo-vs-java-beans/" target="_blank" rel="nofollow">POJO</a>, который может выглядеть так:
+
+<pre class="lang-java line-numbers"><code>
+public class Category {
+    private Long id;
+    private String title;
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+}
+</code></pre>
+Скопируем содержимое класса и сделаем по аналогии класс <code>Topic</code>. Отличаться он будет лишь тем, что он знает про категорию, к которой относится. Поэтому, добавим в класс <code>Topic</code> поле категории и методы работы с ней:
+
+<pre class="lang-java line-numbers"><code>
+private Category category;
+
+public Category getCategory() {
+	return category;
+}
+
+public void setCategory(Category category) {
+	this.category = category;
+}
+</code></pre>
+Теперь у нас есть Java приложение, имеющее свою доменную модель. Пора теперь приступать к подключению к проекту JPA.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="255" alt="JPA : Знакомство с технологией - 5" src="https://cdn.javarush.com/images/article/fa26f42c-9ac8-4728-b0d7-fdd283bbcc6d/original.jpeg"></div></div><h2 id="Добавление-JPA">Добавление JPA</h2>Итак, как мы помним, JPA — это про то, что мы будем сохранять что-то в БД. Следовательно, нам нужна база данных. Чтобы использовать подключение к БД в своём проекте нам нужно добавить в зависимости библиотеку, для подключения к БД.
+
+Как мы помним, мы использовали Gradle, который создал нам билд скрипт <code>build.gradle</code>. В нём то мы и опишем зависимости, которые нужны нашему проекту. Зависимости — это те библиотеки, без которых не может работать наш код.
+
+Начнём с описания зависимости от подключения к БД. Делаем это так же, как бы делали, работая просто с JDBC:
+
+<pre class="line-numbers"><code>
+dependencies {
+	implementation 'com.h2database:h2:1.4.199'
+</code></pre>
+Теперь у нас есть БД. Мы можем теперь добавить в наше приложение уровень или слой (layer), отвечающий за отображение наших Java объектов в понятия базы данных (с Java языка на язык SQL). Как мы помним, мы собираемся использовать для этого реализацию спецификации JPA под названием Hibernate:
+
+<pre class="line-numbers"><code>
+dependencies {
+	implementation 'com.h2database:h2:1.4.199'
+	implementation 'org.hibernate:hibernate-core:5.4.2.Final'
+</code></pre>
+Теперь нам надо сконфигурировать JPA. Если мы прочитаем спецификацию и раздел "8.1 Persistence Unit", то мы узнаем, что Persistence Unit — это некоторая некоторое объединение конфигураций, метаданных и сущностей. И чтобы JPA заработал, нужно описать хотя бы один Persistence Unit в конфигурационном файле, который имеет название <code>persistence.xml</code>. Его расположение описано в главе специфкиации "8.2 Persistence Unit Packaging". Согласно этому разделу, если у нас Java SE окружение, то мы должны положить его в корень каталога META-INF.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="3560e674-fabb-4b2c-8a25-e9346a3b1368" data-max-width="333" alt="JPA : Знакомство с технологией - 6" src="https://cdn.javarush.com/images/article/3560e674-fabb-4b2c-8a25-e9346a3b1368/1024.jpeg"></div></div>Содержание скопируем из примера, приведённого в спецификации JPA в главе "<code>8.2.1 persistence.xml file</code>":
+
+<pre class="lang-java line-numbers"><code>
+&lt;persistence&gt;
+	&lt;persistence-unit name="JavaRush"&gt;
+        &lt;description&gt;Persistence Unit For test&lt;/description&gt;
+        &lt;class&gt;hibernate.model.Category&lt;/class&gt;
+        &lt;class&gt;hibernate.model.Topic&lt;/class&gt;
+    &lt;/persistence-unit&gt;
+&lt;/persistence&gt;
+</code></pre>
+Но этого мало. Надо рассказать, кто наш JPA Provider, т.е. тот, кто реализует спецификацию JPA:
+
+<pre class="lang-java line-numbers"><code>
+&lt;provider&gt;org.hibernate.jpa.HibernatePersistenceProvider&lt;/provider&gt;
+</code></pre>
+А теперь добавим настройки (<code>properties</code>). Часть из них (начинаются на <code>javax.persistence</code>) являются стандартными JPA конфигурациями и описаны в спецификации JPA в разделе "8.2.1.9 properties". Часть конфигураций являются провайдер-специфичными (в нашем случае, влияют на Hibernate как на Jpa Provider'а. Наш блок настроек будет выглядеть так:
+
+<pre class="lang-java line-numbers"><code>
+&lt;properties&gt;
+    &lt;property name="javax.persistence.jdbc.driver" value="org.h2.Driver" /&gt;
+    &lt;property name="javax.persistence.jdbc.url" value="jdbc:h2:mem:db1;DB_CLOSE_DELAY=-1;MVCC=TRUE" /&gt;
+    &lt;property name="javax.persistence.jdbc.user" value="sa" /&gt;
+    &lt;property name="javax.persistence.jdbc.password" value="" /&gt;
+    &lt;property name="hibernate.show_sql" value="true" /&gt;
+    &lt;property name="hibernate.hbm2ddl.auto" value="create" /&gt;
+&lt;/properties&gt;
+</code></pre>
+Теперь у нас есть JPA-совместимый конфиг <code>persistence.xml</code>, есть JPA провайдер Hibernate и есть база данных H2, а так же есть 2 класса, который являются нашей доменной моделью. Давайте заставим это всё наконец-то отработать.
+
+В каталоге <code>/test/java</code> наш Gradle любезно нам сгенерировал шаблон для Unit тестов и назвал его AppTest. Давайте используем его.
+
+Как гласит глава "7.1 Persistence Contexts" спецификации JPA, сущности в мире JPA живут в некотором пространстве, которое называется "Контекст персистенции" (или Контексте постоянства, Persistence Context). Но напрямую мы не работаем с Persistence Context. Для этого мы используем <code>Entity Manager</code> или "менеджер сущностей". Именно он знает про контекст и про то, какие там живут сущности. Мы же взаимодействуем с <code>Entity Manager</code>'ом.
+
+Тогда остаётся только понять, откуда нам достать этот <code>Entity Manager</code>?
+
+Согласно главе "7.2.2 Obtaining an Application-managed Entity Manager" спецификации JPA мы должны использовать <code>EntityManagerFactory</code>. Поэтому, вооружимся спецификацией JPA и возьмём пример из главы "7.3.2 Obtaining an Entity Manager Factory in a Java SE Environment" и оформим его в виде простейшего Unit теста:
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void shouldStartHibernate() {
+	EntityManagerFactory emf = Persistence.createEntityManagerFactory( "JavaRush" );
+	EntityManager entityManager = emf.createEntityManager();
+}
+</code></pre>
+Уже этот тест покажет ошибку "Unrecognized JPA persistence.xml XSD version". Причина — в <code>persistence.xml</code> нужно правильно указать используемую схему, как это сказано в спецификации JPA в разделе "8.3 persistence.xml Schema":
+
+<pre class="lang-java line-numbers"><code>
+&lt;persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence
+             http://xmlns.jcp.org/xml/ns/persistence/persistence_2_2.xsd"
+             version="2.2"&gt;
+</code></pre>
+Кроме того, важен порядок элементов. Поэтому, <code>provider</code> должен быть указан до перечисления классов. После этого тест выполнится успешно. Непосредственное подключение JPA мы выполнили. 
+
+Прежде чем мы будем двигаться дальше, подумаем про остальные тесты. Каждый наш тест будет требовать <code>EntityManager</code>. Давайте сделаем так, чтобы у каждого теста был свой <code>EntityManager</code> на начало выполнения. Кроме того, мы хотим чтобы БД каждый раз была новая. Благодаря тому, что мы используем <code>inmemory</code> вариант, достаточно закрывать <code>EntityManagerFactory</code>.
+
+Создание <code>Factory</code> — дорогая операция. Но для тестов — это оправдано. JUnit позволяет задать методы, которые будут выполняться перед (Before) и после (After) выполнением каждого теста:
+
+<pre class="lang-java line-numbers"><code>
+public class AppTest {
+    private EntityManager em;
+    
+    @Before
+    public void init() {
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory( "JavaRush" );
+        em = emf.createEntityManager();
+    }
+
+    @After
+    public void close() {
+        em.getEntityManagerFactory().close();
+        em.close();
+    }
+</code></pre>
+Теперь, перед выполнением любого теста будет создана новая <code>EntityManagerFactory</code>, что повлечёт за собой создание новой БД, т.к. <code>hibernate.hbm2ddl.auto</code> имеет значение <code>create</code>. А из новой фабрики получим новый <code>EntityManager</code>.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="7887bb89-5b23-40b3-924f-6a47fc7c67c2" data-max-width="306" alt="JPA : Знакомство с технологией - 7" src="https://cdn.javarush.com/images/article/7887bb89-5b23-40b3-924f-6a47fc7c67c2/1024.jpeg"></div></div><h2 id="Сущности-(Entities)">Сущности (Entities)</h2>Как мы помним, мы создали ранее классы, описывающие нашу доменную модель. Мы уже говорили, что это наши "сущности". Это и есть Entity, которыми мы будем управлять при помощи <code>EntityManager</code>. Напишем простой тест по сохранению сущности категории:
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void shouldPersistCategory() {
+	Category cat = new Category();
+	cat.setTitle("new category");
+	// JUnit обеспечит тест свежим EntityManager'ом
+	em.persist(cat);
+}
+</code></pre>
+Но сразу этот тест не заработает, т.к. мы получим различные ошибки, которые нам помогут понять, что такое сущности: 
+<ul>
+<li><p><code>Unknown entity: hibernate.model.Category</code><br>
+Почему же Hibernate не понимает, что <code>Category</code> это <code>entity</code>? Всё дело в том, что сущности должны быть описаны по стандарту JPA.<br>
+Классы сущностей должны быть аннотированы аннотацией <code>@Entity</code>, как сказано в главе "2.1 The Entity Class" спецификации JPA.</p></li>
+<li><p><code>No identifier specified for entity: hibernate.model.Category</code><br>
+Для сущностей должен быть указан уникальный идентификатор, по которому можно отличить одну запись от другой.<br>
+Согласно главе "2.4 Primary Keys and Entity Identity" спецификации JPA "Every entity must have a primary key", т.е. каждая сущность должна иметь "первичный ключ". Такой первичный ключ должен быть указан аннотацией <code>@Id</code></p></li>
+<li><p><code>ids for this class must be manually assigned before calling save()</code><br>
+Идентификатор должен откуда-то появиться. Его можно указать вручную, а можно получить автоматически.<br>
+Поэтому, как и указано в главах "11.2.3.3 GeneratedValue" и "11.1.20 GeneratedValue Annotation", мы можем указать аннотацию <code>@GeneratedValue</code>.</p></li></ul>Таким образом, чтобы класс категории стал сущностью мы должны выполнить следующие изменения:
+
+<pre class="lang-java line-numbers"><code>
+@Entity
+public class Category {
+    @Id
+    @GeneratedValue
+    private Long id;
+</code></pre>
+Кроме того, аннотация <code>@Id</code> указыает на то, какой использовать <code>Access Type</code>.
+
+Подробнее про тип доступа можно прочитать в спецификации JPA, в разделе "2.3 Access Type". Если очень кратко, то т.к. мы указали <code>@Id</code> над полем (<code>field</code>), то тип доступа будет по умолчанию <code>field-based</code>, а не <code>property-based</code>. Следовательно, провайдер JPA будет читать и сохранять значения напрямую из полей. Если бы мы поместили <code>@Id</code> над геттером, то использовался бы <code>property-based</code> доступ, т.е. через геттер и сеттер.
+
+При выполнении теста мы видим в том числе то, какие запросы отправляются в базу (благодаря опции <code>hibernate.show_sql</code>). Но при сохранении мы не видим никаких <code>insert</code>'ов. Получается, что мы на самом деле ничего не сохранили? 
+
+JPA позволяет синхронизировать контекст персистенции и БД при помощи метода <code>flush</code>:
+
+<pre class="inline-block language-java"><code>entityManager.flush();</code></pre>
+
+Но если мы его сейчас выполним, то получим ошибку: <em>no transaction is in progress</em>. И тут наступает пора узнать про то, как JPA использует транзакции.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="eace2b76-9155-45c2-a579-7a50141de44c" data-max-width="289" alt="JPA : Знакомство с технологией - 8" src="https://cdn.javarush.com/images/article/eace2b76-9155-45c2-a579-7a50141de44c/1024.jpeg"></div></div><h2>JPA Transactions</h2>Как мы помним, в основе JPA лежит понятие контекст персистенции (Persistence Context). Это место, где живут сущности. А мы управляем сущностями через <code>EntityManager</code>. Когда мы выполняем комманду <code>persist</code>, то мы помещаем сущность в контекст. Точнее, мы говорим <code>EntityManager</code>'у, что это нужно сделать. 
+
+Но контекст этот — это просто некоторая область хранения. Его даже иногда называют "кэшем первого уровня". Но его нужно соединить с базой данных. Комманда <code>flush</code>, которая ранее у нас упала с ошибкой, синхронизирует данные из контекста персистенции с БД. Но для этого требуется транспорт и этим транспортом является транзакция.
+
+Транзакции в JPA описаны в разделе спецификации "7.5 Controlling Transactions". Для использования транзакций в JPA есть специальный API:
+
+<pre class="lang-java line-numbers"><code>
+entityManager.getTransaction().begin();
+entityManager.getTransaction().commit();
+</code></pre>
+Необходимо добавить управление транзакциями в наш код, который выполняется до тестов и после:
+
+<pre class="lang-java line-numbers"><code>
+@Before
+public void init() {
+	EntityManagerFactory emf = Persistence.createEntityManagerFactory( "JavaRush" );
+	em = emf.createEntityManager();
+	em.getTransaction().begin();
+}
+@After
+public void close() {
+	if (em.getTransaction().isActive()) {
+		em.getTransaction().commit();
+        }
+	em.getEntityManagerFactory().close();
+	em.close();
+}
+</code></pre>
+После добавления мы увидим в логе insert выражение на языке SQL, которых ранее не было:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="d2bc6bda-19a5-440e-b160-06cc43859a6f" data-max-width="426" alt="JPA : Знакомство с технологией - 9" src="https://cdn.javarush.com/images/article/d2bc6bda-19a5-440e-b160-06cc43859a6f/1024.jpeg"></div></div>Изменения, накопленные в <code>EntityManager</code> было при помощи транзакции закоммичены (подтверждены и сохранены) в БД.
+
+Давайте попробуем теперь найти нашу сущность. Создадим тест на поиск сущности по её ID:
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void shouldFindCategory() {
+	Category cat = new Category();
+	cat.setTitle("test");
+	em.persist(cat);
+	Category result = em.find(Category.class, 1L);
+	assertNotNull(result);
+}
+</code></pre>
+В этом случае мы получим ранее сохранённую нами сущность, но в логе мы не увидим SELECT запросов.
+
+А всё по тому, что мы говорим: "Менеджер сущностей, найди пожалуйста мне сущность Категория с ID=1". А менеджер сущностей сначала смотрит у себя в контексте (использует его своего рода кэш), и только если не находит — идёт искать в БД. Стоит изменить ID на 2 (такого нет, мы сохранили только 1 экземпляр), как мы увидим, что <code>SELECT</code> запрос появляется. Потому что в контексте не найдено сущностей и <code>EntityManager</code> пытается найти сущность БД..
+
+Существуют разные комманды, которыми мы можем управлять состоянием сущности в контексте. Переход сущности из одного состояния в другое называется жизненным циклом сущности — <code>lifecycle</code>.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="181" alt="JPA : Знакомство с технологией - 10" src="https://cdn.javarush.com/images/article/b86aabbf-c2d7-4b4a-be74-69849ce0b331/original.jpeg"></div></div><h2>Entity Lifecycle</h2>Жизненный цикл сущностей описан в спецификации JPA в главе "3.2 Entity Instance’s Life Cycle". Т.к. сущности живут в контексте и ими управляет <code>EntityManager</code>, то говорят, что сущности управляемые, т.е. managed.
+
+Давайте посмотрим на этапы жизни сущности:
+
+<pre class="lang-java line-numbers"><code>
+// 1. New или Transient (временный)
+Category cat = new Category();
+cat.setTitle("new category");
+// 2. Managed или Persistent
+entityManager.persist(cat);
+// 3. Транзакция завершена, все сущности в контексте detached
+entityManager.getTransaction().begin();
+entityManager.getTransaction().commit();
+// 4. Сущность изымаем из контекста, она становится detached
+entityManager.detach(cat);
+// 5. Сущность из detached можно снова сделать managed
+Category managed = entityManager.merge(cat);
+// 6. И можно сделать Removed. Интересно, что cat всё равно detached
+entityManager.remove(managed);
+</code></pre>
+И вот для закрепления схемка:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="9fbfeb41-128b-4aba-bfd6-2a0cc0ed1315" data-max-width="623" alt="JPA : Знакомство с технологией - 11" src="https://cdn.javarush.com/images/article/9fbfeb41-128b-4aba-bfd6-2a0cc0ed1315/1024.jpeg"></div></div><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="253" alt="JPA : Знакомство с технологией - 12" src="https://cdn.javarush.com/images/article/6e5ca9c6-4c4d-449c-83b6-177012590ed6/original.jpeg"></div></div><h2 id="Mapping">Mapping</h2>В JPA мы можем описать отношения сущностей между друг другом. 
+
+Вспомним, что мы уже разбирали отношения сущностей между друг другом, когда мы разбирались с нашей доменной моделью. Тогда мы использовали ресурс <a href="https://app.quickdatabasediagrams.com/#/" target="_blank" rel="nofollow">quickdatabasediagrams.com</a>:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="09dbb7c0-a02e-4d77-8f54-008457c888f1" data-max-width="780" alt="JPA : Знакомство с технологией - 13" src="https://cdn.javarush.com/images/article/09dbb7c0-a02e-4d77-8f54-008457c888f1/1024.jpeg"></div></div>Установление связей между сущностями называется маппингом или ассоциированием (Association Mappings).
+
+Виды ассоциаций, которые могут быть установлены при помощи JPA представлены ниже:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="4afb8b7e-a138-4fa3-902a-8be961395103" data-max-width="547" alt="JPA : Знакомство с технологией - 14" src="https://cdn.javarush.com/images/article/4afb8b7e-a138-4fa3-902a-8be961395103/1024.jpeg"></div></div>Давайте посмотрим на сущность <code>Topic</code>, которая описывает тему. Что мы можем сказать про отношение <code>Topic</code> к <code>Category</code>?
+
+Много <code>Topic</code> будут принадлежать одной категории. Следовательно, нам нужна ассоциация <code>ManyToOne</code>. Выразим эту связь на языке JPA:
+
+<pre class="lang-java line-numbers"><code>
+@ManyToOne
+@JoinColumn(name = "category_id")
+private Category category;
+</code></pre>
+Чтобы запомнить, какие аннотации ставить, можно запомнить, что последняя часть отвечает за поле, над которым указана аннотация. <code>ToOne</code> — конкретный экземпляр. <code>ToMany</code> — коллекции.
+
+Сейчас у нас связь односторонняя. Давайте сделаем из неё двустороннюю связь. Добавим в <code>Category</code> знание о всех <code>Topic</code>, которые входят в эту категорию.
+
+Оканчиваться должен на <code>ToMany</code>, потому что у нас список <code>Topic</code>. То есть отношение "Ко многим" темам.
+
+Остаётся вопрос — <code>OneToMany</code> или <code>ManyToMany</code>:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="3d94a500-c55e-4a39-a423-c8fb7ed119b1" data-max-width="557" alt="JPA : Знакомство с технологией - 15" src="https://cdn.javarush.com/images/article/3d94a500-c55e-4a39-a423-c8fb7ed119b1/1024.jpeg"></div></div>На эту же тему хороший ответ можно прочитать тут: "<a href="https://dev.to/mah3uz/explain-orm-onetomany-manytomany-relation-like-im-five-94i" target="_blank" rel="nofollow">Explain ORM oneToMany, manyToMany relation like I'm five</a>".
+
+Если категория имеет связь с <code>ToMany</code> топиков, то каждый из этих топиков может иметь только одну категорию, то будет <code>One</code>, а иначе <code>Many</code>. Таким образом, в <code>Category</code> список всех тем будет выглядеть следующий образом:
+
+<pre class="lang-java line-numbers"><code>
+@OneToMany(cascade = CascadeType.ALL)
+@JoinColumn(name = "topic_id")
+private Set&lt;Topic&gt; topics = new HashSet&lt;&gt;();
+</code></pre>
+И не забудем в сущности <code>Category</code> описать геттер для получения списка всех тем:
+
+<pre class="lang-java line-numbers"><code>
+public Set&lt;Topic&gt; getTopics() {
+	return this.topics;
+}
+</code></pre>
+Двунаправленные отношения — очень сложный для автоматического отслеживания момент. Поэтому, JPA перекладывает эту обязанность на разработчика. Для нас это означает, что когда мы устанавливаем в сущности <code>Topic</code> связь с <code>Category</code>, мы должны обеспечить непротиворечивость данных самостоятельно. Делается это просто:
+
+<pre class="lang-java line-numbers"><code>
+public void setCategory(Category category) {
+	category.getTopics().add(this);
+	this.category = category;
+}
+</code></pre>
+Напишем для проверки простой тест:
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void shouldPersistCategoryAndTopics() {
+	Category cat = new Category();
+	cat.setTitle("test");
+	Topic topic = new Topic();
+	topic.setTitle("topic");
+	topic.setCategory(cat);
+ 	em.persist(cat);
+}
+</code></pre>
+Маппинг — это целая отдельная тема. В рамках данного обзора следует понять, при помощи каких средств это достигается. Подробнее про маппинг можно прочитать тут: 
+<ul>
+<li>"<a href="https://thoughts-on-java.org/ultimate-guide-association-mappings-jpa-hibernate/" target="_blank" rel="nofollow">Ultimate Guide – Association Mappings with JPA and Hibernate</a>".</li>
+<li>"<a href="https://easyjava.ru/data/jpa/jpa-i-svyazi-mezhdu-obektami/" target="_blank" rel="nofollow">JPA и связи между объектами</a>"</li>
+<li>"<a href="http://java-online.ru/hibernate-entities.xhtml" target="_blank" rel="nofollow">Связанные сущности в Hibernate</a>"</li>
+</ul><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="f29f552b-e340-43c1-92a8-97c72fd746dd" data-max-width="264" alt="JPA : Знакомство с технологией - 16" src="https://cdn.javarush.com/images/article/f29f552b-e340-43c1-92a8-97c72fd746dd/1024.jpeg"></div></div><h2 id="JPQL">JPQL</h2>JPA вводит интересный инструмент — запросы на языке Java Persistence Query Language.
+
+Этот язык похож на SQL, но использует объектную модель Java, а не SQL таблицы. Рассмотрим пример:
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void shouldPerformQuery() {
+	Category cat = new Category();
+	cat.setTitle("query");
+	em.persist(cat);
+	Query query = em.createQuery("SELECT c from Category c WHERE c.title = 'query'");
+ 	assertNotNull(query.getSingleResult());
+}
+</code></pre>
+Как мы видим, в запросе мы использовали указание на сущность <code>Category</code>, а не таблицу. А так же на поле этой сущности <code>title</code>. JPQL предоставляет множество полезных возможностей и претендует на отдельную статью. Подробнее можно ознакомиться в обзоре:
+<ul>
+<li>"<a href="https://thoughts-on-java.org/jpql/" target="_blank" rel="nofollow">Ultimate Guide to JPQL Queries with JPA and Hibernate</a>"</li></ul><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="219" alt="JPA : Знакомство с технологией - 17" src="https://cdn.javarush.com/images/article/eb27dd97-f714-4613-80b3-de46af969c7d/original.jpeg"></div></div><h2 id="Criteria-API">Criteria API</h2>И напоследок хотелось бы затронуть Criteria API. JPA вводит инструмент динамического построения запросов. Пример использования Criteria API:
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void shouldFindWithCriteriaAPI() {
+	Category cat = new Category();
+	em.persist(cat);
+	CriteriaBuilder cb = em.getCriteriaBuilder();
+	CriteriaQuery&lt;Category&gt; query = cb.createQuery(Category.class);
+	Root&lt;Category&gt; c = query.from(Category.class);
+	query.select(c);
+	List&lt;Category&gt; resultList = em.createQuery(query).getResultList();
+	assertEquals(1, resultList.size());
+}
+</code></pre>
+Данный пример равносилен выполнению запроса "<code>SELECT c FROM Category c</code>".
+
+<strong>Criteria API</strong> — мощный инструмент. Подробнее про него можно прочитать здесь:
+<ul>
+<li><a href="https://www.objectdb.com/java/jpa/query/criteria" target="_blank" rel="nofollow">JPA Criteria API Queries</a></li>
+<li><a href="https://easyjava.ru/data/jpa/jpa-criteria/" target="_blank" rel="nofollow">JPA Criteria</a></li>
+<li><a href="https://www.ibm.com/developerworks/ru/library/j-typesafejpa/index.html" target="_blank" rel="nofollow">Динамические типобезопасные запросы в JPA 2.0</a></li>
+</ul>
+<div class="email-subscription"><iframe frameborder="0" src="https://secure.esputnik.com.ua/4Q0Ef6d2SOs" width="100%" height="200" scrolling="no"></iframe></div><h2 id="Заключение">Заключение</h2>Как мы видим, JPA предоставляет огромное количество возможностей и инструментов. Каждый из них требует опыта и знаний. Даже в рамках обзора JPA вышло упоминуть не всё, не говоря уже о детальном погружении. Но надеюсь, после прочтения стало понятнее, что вообще такое ORM и JPA, как это работает и что с этим можно сделать.
+
+Ну и на закуску предлагаю различные материалы:
+<ul>
+<li><a href="https://www.youtube.com/watch?v=r8SlsJjmm8o&amp;list=PLCA5CB42F5A816A17&amp;index=5" target="_blank" rel="nofollow">JPA - Введение</a></li>
+<li><a href="https://www.youtube.com/watch?v=uVLujq7_35E&amp;list=PL50BZOuKafAYFT_F4Yris5Vj2ApwzUfmR" target="_blank" rel="nofollow">Thoughts On Java - Hibernate Beginner</a></li>
+<li><a href="https://www.youtube.com/watch?v=4deURytlQLI&amp;list=PL50BZOuKafAbXxVJiD9csunZfQOJ5X7hP" target="_blank" rel="nofollow">Thoughts On Java - Hibernate Tips</a></li>
+<li><a href="https://www.objectdb.com/java/jpa/persistence/advanced" target="_blank" rel="nofollow">Advanced JPA Topics</a></li>
+</ul>#Viacheslav

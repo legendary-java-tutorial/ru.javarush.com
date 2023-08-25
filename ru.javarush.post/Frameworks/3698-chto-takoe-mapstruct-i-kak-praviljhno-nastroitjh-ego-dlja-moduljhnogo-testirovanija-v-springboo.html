@@ -1,0 +1,691 @@
+Что такое Mapstruct и как правильно настроить его для модульного тестирования в SpringBoot приложениях
+<p>----------------------------------------</p>
+Всем привет, мои дорогие друзья и читатели! Перед тем, как будем писать статью, немного предыстории… Недавно столкнулся с одной проблемой в работе с библиотекой...
+<p>----------------------------------------</p>
+<h2>Предыстория</h2>Всем привет, мои дорогие друзья и читатели!
+
+Перед тем, как будем писать статью, немного предыстории… Недавно столкнулся с одной проблемой в работе с библиотекой <a href="https://github.com/mapstruct" rel="nofollow" target="_blank">Mapstruct</a>, которую бегло описал в своем телеграм-канале <a href="https://t.me/romankh3/88" rel="nofollow" target="_blank">здесь</a>. В комментариях проблему к записи решили, в этом помог мой коллега по прошлому проекту.
+<img data-max-width="800" data-id="7e40f4d6-eb67-4d3f-a79a-82d98e37e979" src="https://cdn.javarush.com/images/article/7e40f4d6-eb67-4d3f-a79a-82d98e37e979/800.jpeg" alt="Что такое Mapstruct и как правильно настроить его для модульного тестирования в SpringBoot приложениях. Часть 1 - 1">После этого я решил написать на эту тему статью, но мы конечно же не будем узко смотреть и постараемся вначале войти в курс дела, понять, что такое Mapstruct и зачем он нужен, и уже на реальном примере разберем возникшую ранее ситуацию и как ее решить. Поэтому настоятельно рекомендую проделать все выкладки параллельно чтению статьи, дабы ощутить все на практике.
+
+<span class="text-bold"><em>Перед началом — подпишись на <a href="https://t.me/romankh3" rel="nofollow" target="_blank">мой телеграм-канал</a>, я там собираю свою деятельность, пишу мысли о разработке на Java и IT в целом.</em></span>
+
+Подписался? Отлично! Ну что ж, теперь поехали!
+<h2>Mapstruct, чаво?</h2><span class="text-bold"><em>A code generator for fast type-safe bean mappings.</em></span>
+
+Первая наша задача ​​— разобраться, что такое Mapstruct и зачем он нам. В общем и целом можно почитать о нем на официальном сайте. На главной странице сайта написаны три ответа на вопросы: что это такое? зачем? как?
+
+Постараемся и мы так сделать:
+<h2>Что это такое?</h2>Mapstruct — это библиотека, которая помогает сопоставлять (маппить, в целом, так всегда и говорят: маппить, замапить и т.д.) объекты одних сущностей в объекты других сущностей при помощи сгенерированного кода на основе конфигураций, которые описываются через интерфейсы.
+<h2>Зачем?</h2>В большинстве своем мы разрабатываем многослойные приложения (слой работы с базой, слой бизнес логики, слой взаимодействия приложения с внешним миром) и каждый слой имеет свои объекты для хранения и обработки данных. 
+
+И эти данные нужно передавать из слоя в слой путем перевода из одной сущности в другую. 
+
+Для тех, кто не работал с таким подходом, это может показаться несколько сложным. Например, у нас есть сущность к базе данных Student. Когда данные этой сущности переходят в слой бизнес-логики (сервисов), нам нужно перевести данные из класса Student в класс StudentModel. Далее, после всех манипуляций с бизнес логикой, данные нужно выдать наружу. И для этого у нас есть класс StudentDto. Разумеется, нам нужно передать данные из класса StudentModel в StudentDto.
+ 
+Писать руками каждый раз методы, которые будут переносить, трудоемко. Плюс это лишний код в кодовой базе, который нужно поддерживать. Можно допустить ошибку. 
+
+А Mapstruct такие методы генерирует на этапе компиляции и хранит в generated-sources.
+<h2>Как?</h2>При помощи аннотаций. Нам необходимо просто создать аннотацию, в которой будет главная аннотация Mapper, которая скажет библиотеке, что методы в этом интерфейсе можно использовать для перевода из одних объектов в другие.
+
+Как я сказал раньше про студентов, в нашем случае это будет интерфейс StudentMapper, в котором будут несколько методов по перегонке данных из одного слоя в другой:
+
+<pre class="language-java line-numbers"><code>
+public class Student {
+   private Long id;
+   private String firstName;
+   private String lastName;
+   private Integer age;
+}
+
+public class StudentDTO {
+   private Long id;
+   private String firstName;
+   private String lastName;
+   private Integer age;
+}
+
+public class StudentModel {
+   private Long id;
+   private String firstName;
+   private String lastName;
+   private Integer age;
+}
+</code></pre>
+Для этих классов создаем маппер (здесь и далее так мы будем называть интерфейс, который описывает что мы хотим перевести и куда):
+
+<pre class="language-java line-numbers"><code>
+@Mapper
+public interface StudentMapper {
+   StudentModel toModel(StudentDTO dto);
+   Student toEntity(StudentModel model);
+   StudentModel toModel(Student entity);
+   StudentDTO toDto(StudentModel model);
+}
+</code></pre>
+Красота этого подхода в том, что если в разных классах имена и тип полей совпадают (как в нашем случае), то настроек для Mapstruct хватит, чтобы на основании интерфейса StudentMapper на этапе компиляции сгенерировать нужную реализацию, которая будет переводить.
+
+Так уже стало понятнее, да? Пойдем дальше, и на реальном примере разберем работу в Spring Boot приложении.
+<h2>Пример работы Spring Boot и Mapstruct</h2>Первое, что нам нужно — это создать Spring Boot проект и добавить в него Mapstruct.
+
+Для этого дела у меня есть <a href="https://github.com/template-repository/springboot-template-repository" rel="nofollow" target="_blank">организация в GitHub</a> с шаблонами для репозиториев и старт для Spring Boot один из них.
+
+На его основе создаем новый проект:
+<img data-max-width="800" data-id="07385967-ec66-4c22-86c0-fadfddb5ab5d" src="https://cdn.javarush.com/images/article/07385967-ec66-4c22-86c0-fadfddb5ab5d/800.jpeg" alt="Что такое Mapstruct и как правильно настроить его для модульного тестирования в SpringBoot приложениях. Часть 1 - 2">Далее получим <a href="https://github.com/romankh3/spring-boot-mapstruct-example" rel="nofollow" target="_blank">проект</a>. 
+
+<em>Да, друзья, ставьте <a href="https://github.com/romankh3/spring-boot-mapstruct-example" rel="nofollow" target="_blank">звезду проекту</a>, если нашли его полезным, так я буду знать, что делаю это не зря.</em>
+
+В этом проекте раскроем ситуацию, которую я получил на работе и описал в <a href="https://t.me/romankh3/88" rel="nofollow" target="_blank">посте у себя в телеграм-канале</a>. 
+
+Вкратце обрисую ситуацию для тех, кто не в теме: когда пишем тесты на мапперы (то есть на те реализации интерфейсов, о которых мы говорили ранее) хочется, чтобы тесты проходили как можно быстрее. 
+
+Самый простой вариант с мапперами — это во время запуска теста использовать аннотацию SpringBootTest, которая поднимет весь ApplicationContext Spring Boot приложения и инъектирует нужный для теста маппер внутрь теста.
+
+Но этот вариант ресурсоемкий и занимает значительно больше времени, поэтому для нас он не подходит. Нам нужно писать модульный (unit) тест, который бы просто создал нужный маппер и проверил, что его методы работают именно так, как мы ожидаем. 
+
+Для чего нужно, чтобы быстрее шли тесты? Если тесты проходят долго, то это замедляет весь процесс разработки. Пока тесты не пройдут на новом коде, этот код нельзя считать верным и его не возьмут в тестирование, а значит его не возьмут в продакшн и значит, что работу разработчик не выполнил.
+
+Казалось бы зачем писать тест на библиотеку, работа которой не подлежит сомнению? И все же писать тест нужно, потому что мы тестируем то, насколько правильно описали маппер и делает ли он то, что мы ожидаем.
+
+Первым делом, чтобы облегчить нам работу, добавим Lombok в наш проект, путем добавления еще одной зависимости в pom.xml:
+
+<pre class="language-java line-numbers"><code>
+&lt;dependency&gt;
+   &lt;groupId&gt;org.projectlombok&lt;/groupId&gt;
+   &lt;artifactId&gt;lombok&lt;/artifactId&gt;
+   &lt;scope&gt;provided&lt;/scope&gt;
+&lt;/dependency&gt;
+</code></pre>
+В нашем проекте, нам нужно будет перевести из model классов (которые используются для работы с бизнес-логикой) в классы DTO, которые используем для коммуникации с внешним миром. 
+
+В нашем упрощенном варианте, мы будем предполагать, что поля не изменяются и наши мапперы будут простыми. Но, если будет желание, можно будет написать более развернутую статью о том, как работать с Mapstruct, как его настраивать, как пользоваться его преимуществами. Но потом, так как эта статья выйдет немаленькой.
+
+Допустим у нас есть студент со списком лекций и лекторов, которые он посещает. Создадим пакет <span class="text-bold">model</span>. На основе этого создадим простенькую модель:
+
+<pre class="language-java line-numbers"><code>
+package com.github.romankh3.templaterepository.springboot.dto;
+
+import lombok.Data;
+
+import java.util.List;
+
+@Data
+public class StudentDTO {
+
+   private Long id;
+
+   private String name;
+
+   private List&lt;LectureDTO&gt; lectures;
+
+   private List&lt;LecturerDTO&gt; lecturers;
+}
+</code></pre>
+его лекции
+
+<pre class="language-java line-numbers"><code>
+package com.github.romankh3.templaterepository.springboot.dto;
+
+import lombok.Data;
+
+@Data
+public class LectureDTO {
+
+   private Long id;
+
+   private String name;
+}
+</code></pre>
+и лекторы
+
+<pre class="language-java line-numbers"><code>
+package com.github.romankh3.templaterepository.springboot.dto;
+
+import lombok.Data;
+
+@Data
+public class LecturerDTO {
+
+   private Long id;
+
+   private String name;
+}
+</code></pre>
+И создадим пакет <span class="text-bold">dto</span> рядом с пакетом <span class="text-bold">model</span>:
+
+<pre class="language-java line-numbers"><code>
+package com.github.romankh3.templaterepository.springboot.dto;
+
+import lombok.Data;
+
+import java.util.List;
+
+@Data
+public class StudentDTO {
+
+   private Long id;
+
+   private String name;
+
+   private List&lt;LectureDTO&gt; lectures;
+
+   private List&lt;LecturerDTO&gt; lecturers;
+}
+</code></pre>
+лекции
+
+<pre class="language-java line-numbers"><code>
+package com.github.romankh3.templaterepository.springboot.dto;
+
+import lombok.Data;
+
+@Data
+public class LectureDTO {
+
+   private Long id;
+
+   private String name;
+}
+</code></pre>
+и лекторы
+
+<pre class="language-java line-numbers"><code>
+package com.github.romankh3.templaterepository.springboot.dto;
+
+import lombok.Data;
+
+@Data
+public class LecturerDTO {
+
+   private Long id;
+
+   private String name;
+}
+</code></pre>
+Теперь создадим маппер, который будет переводить коллекцию моделей лекций в коллекцию DTO лекций.
+
+Первое, что нужно сделать — это добавить Mapstruct в проект. Для этого воспользуемся их <a href="https://mapstruct.org/documentation/installation/" rel="nofollow" target="_blank">официальным сайтом</a>, там все описано.
+
+То есть нам нужно добавить одну зависимость и плагин в наш помник (если есть вопросы о том, что такое помник, — вот, пожалуйста, <a href="https://javarush.com/groups/posts/3119-java-proekt-ot-a-do-ja-vse-chto-vih-khoteli-znatjh-o-maven" target="_blank">Статья1</a> и <a href="https://javarush.com/groups/posts/3120-java-proekt-ot-a-do-ja-vse-chto-vih-khoteli-znatjh-o-maven-chastjh-2" target="_blank">Статья2</a>):
+
+<pre class="language-java line-numbers"><code>
+&lt;dependency&gt;
+   &lt;groupId&gt;org.mapstruct&lt;/groupId&gt;
+   &lt;artifactId&gt;mapstruct&lt;/artifactId&gt;
+   &lt;version&gt;1.4.2.Final&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+и в помнике в блок &lt;build/&gt;. которого у нас еще не было:
+
+<pre class="language-java line-numbers"><code>
+&lt;build&gt;
+   &lt;plugins&gt;
+       &lt;plugin&gt;
+           &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+           &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+           &lt;version&gt;3.5.1&lt;/version&gt;
+           &lt;configuration&gt;
+               &lt;source&gt;1.8&lt;/source&gt;
+               &lt;target&gt;1.8&lt;/target&gt;
+               &lt;annotationProcessorPaths&gt;
+                   &lt;path&gt;
+                       &lt;groupId&gt;org.mapstruct&lt;/groupId&gt;
+                       &lt;artifactId&gt;mapstruct-processor&lt;/artifactId&gt;
+                       &lt;version&gt;1.4.2.Final&lt;/version&gt;
+                   &lt;/path&gt;
+               &lt;/annotationProcessorPaths&gt;
+           &lt;/configuration&gt;
+       &lt;/plugin&gt;
+   &lt;/plugins&gt;
+&lt;/build&gt;
+</code></pre>
+Далее создадим пакет <span class="text-bold">mapper</span> рядом с <span class="text-bold">dto</span> и <span class="text-bold">model</span>. 
+
+На основе тех классов, что мы показали ранее, нужно будет создать еще пять мапперов:<ul>
+
+    <li>Маппер LectureModel &lt;-&gt; LectureDTO</li>
+    <li>Маппер List&lt;LectureModel&gt; &lt;-&gt; List&lt;LectureDTO&gt;</li>
+    <li>Маппер LecturerModel &lt;-&gt; LecturerDTO</li>
+    <li>Маппер List&lt;LecturerModel&gt; &lt;-&gt; List&lt;LecturerDTO&gt;</li>
+    <li>Маппер StudentModel &lt;-&gt; StudentDTO</li>
+
+</ul>Поехали:
+<h4>LectureMapper</h4><pre class="language-java line-numbers"><code>
+package com.github.romankh3.templaterepository.springboot.mapper;
+
+import com.github.romankh3.templaterepository.springboot.dto.LectureDTO;
+import com.github.romankh3.templaterepository.springboot.dto.LecturerDTO;
+import com.github.romankh3.templaterepository.springboot.model.LectureModel;
+import org.mapstruct.Mapper;
+
+@Mapper(componentModel = "spring")
+public interface LectureMapper {
+   LectureDTO toDTO(LectureModel model);
+
+   LectureModel toModel(LecturerDTO dto);
+}
+</code></pre><h4>LectureListMapper</h4><pre class="language-java line-numbers"><code>
+package com.github.romankh3.templaterepository.springboot.mapper;
+
+import com.github.romankh3.templaterepository.springboot.dto.LectureDTO;
+import com.github.romankh3.templaterepository.springboot.dto.LectureDTO;
+import com.github.romankh3.templaterepository.springboot.model.LectureModel;
+import org.mapstruct.Mapper;
+
+import java.util.List;
+
+@Mapper(componentModel = "spring", uses = LectureMapper.class)
+public interface LectureListMapper {
+   List&lt;LectureModel&gt; toModelList(List&lt;LectureDTO&gt; dtos);
+   List&lt;LectureDTO&gt; toDTOList(List&lt;LectureModel&gt; models);
+}
+</code></pre><h4>LecturerMapper</h4><pre class="language-java line-numbers"><code>
+package com.github.romankh3.templaterepository.springboot.mapper;
+
+import com.github.romankh3.templaterepository.springboot.dto.LectureDTO;
+import com.github.romankh3.templaterepository.springboot.model.LectureModel;
+import org.mapstruct.Mapper;
+
+@Mapper(componentModel = "spring")
+public interface LectureMapper {
+   LectureDTO toDTO(LectureModel model);
+
+   LectureModel toModel(LectureDTO dto);
+}
+</code></pre><h4>LecturerListMapper</h4><pre class="language-java line-numbers"><code>
+package com.github.romankh3.templaterepository.springboot.mapper;
+
+import com.github.romankh3.templaterepository.springboot.dto.LecturerDTO;
+import com.github.romankh3.templaterepository.springboot.model.LecturerModel;
+import org.mapstruct.Mapper;
+
+import java.util.List;
+
+@Mapper(componentModel = "spring", uses = LecturerMapper.class)
+public interface LecturerListMapper {
+   List&lt;LecturerModel&gt; toModelList(List&lt;LecturerDTO&gt; dloList);
+   List&lt;LecturerDTO&gt; toDTOList(List&lt;LecturerModel&gt; modelList);
+}
+</code></pre><h4>StudentMapper</h4><pre class="language-java line-numbers"><code>
+package com.github.romankh3.templaterepository.springboot.mapper;
+
+import com.github.romankh3.templaterepository.springboot.dto.StudentDTO;
+import com.github.romankh3.templaterepository.springboot.model.StudentModel;
+import org.mapstruct.Mapper;
+
+@Mapper(componentModel = "spring", uses = {LectureListMapper.class, LecturerListMapper.class})
+public interface StudentMapper {
+   StudentDTO toDTO(StudentModel model);
+   StudentModel toModel(StudentDTO dto);
+}
+</code></pre>
+Нужно отдельно отметить, что в мапперах мы ссылаемся на другие мапперы. Делается это посредством поля <span class="text-bold">uses</span> в аннотации Mapper, как это сделано в StudentMapper:
+
+<pre class="language-java line-numbers"><code>
+@Mapper(componentModel = "spring", uses = {LectureListMapper.class, LecturerListMapper.class})
+</code></pre>
+Здесь мы используем два маппера, чтобы правильно замаппить список лекций и список лекторов. 
+
+Теперь нужно скомпилировать наш код и посмотреть, что там и как. 
+
+Сделать это можно при помощи команды <span class="text-bold">mvn clean compile</span>. Но, как оказалось, при создании реализаций для Mapstruct наших мапперов реализации мапперов не перезаписывали поля. Почему? 
+
+Оказалось, что не получилось подхватить аннотацию Data от Lombok. И что-то нужно было делать… 
+
+Поэтому у нас в статье появился новый раздел.
+<h2>Связываем Lombok и Mapstruct</h2>После нескольких минут поиска, выяснилось, что нужно определенным образом соединить Lombok и Mapstruct. В документации Mapstruct есть <a href="https://mapstruct.org/faq/#Can-I-use-MapStruct-together-with-Project-Lombok" rel="nofollow" target="_blank">информация об этом</a>.
+
+После исследования примера, который предложили разработчики из Mapstruct, обновим наш pom.xml:
+
+Добавим отдельно версии:
+
+<pre class="language-java line-numbers"><code>
+​​&lt;properties&gt;
+   &lt;org.mapstruct.version&gt;1.4.2.Final&lt;/org.mapstruct.version&gt;
+   &lt;lombok-mapstruct-binding.version&gt;0.2.0&lt;/lombok-mapstruct-binding.version&gt;
+&lt;/properties&gt;
+</code></pre>
+Добавим недостающую зависимость:
+
+<pre class="language-java line-numbers"><code>
+&lt;dependency&gt;
+   &lt;groupId&gt;org.projectlombok&lt;/groupId&gt;
+   &lt;artifactId&gt;lombok-mapstruct-binding&lt;/artifactId&gt;
+   &lt;version&gt;${lombok-mapstruct-binding.version}&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+И обновим наш компайлер-плагин, чтобы он таки смог соединить Lombok и Mapstruct:
+
+<pre class="language-java line-numbers"><code>
+&lt;plugin&gt;
+   &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+   &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+   &lt;version&gt;3.5.1&lt;/version&gt;
+   &lt;configuration&gt;
+       &lt;source&gt;1.8&lt;/source&gt;
+       &lt;target&gt;1.8&lt;/target&gt;
+       &lt;annotationProcessorPaths&gt;
+           &lt;path&gt;
+               &lt;groupId&gt;org.mapstruct&lt;/groupId&gt;
+               &lt;artifactId&gt;mapstruct-processor&lt;/artifactId&gt;
+               &lt;version&gt;${org.mapstruct.version}&lt;/version&gt;
+           &lt;/path&gt;
+           &lt;path&gt;
+               &lt;groupId&gt;org.projectlombok&lt;/groupId&gt;
+               &lt;artifactId&gt;lombok&lt;/artifactId&gt;
+               &lt;version&gt;${lombok.version}&lt;/version&gt;
+           &lt;/path&gt;
+           &lt;path&gt;
+               &lt;groupId&gt;org.projectlombok&lt;/groupId&gt;
+               &lt;artifactId&gt;lombok-mapstruct-binding&lt;/artifactId&gt;
+               &lt;version&gt;${lombok-mapstruct-binding.version}&lt;/version&gt;
+           &lt;/path&gt;
+       &lt;/annotationProcessorPaths&gt;
+   &lt;/configuration&gt;
+&lt;/plugin&gt;
+</code></pre>
+После этого должно все получиться. 
+
+Еще раз скомпилируем наш проект.
+
+Но где же искать классы, которые сгенерировал Mapstruct? Они лежат в generated-sources:
+
+<span class="text-bold">${projectDir}/target/generated-sources/annotations/</span>
+<img data-max-width="800" data-id="4de513a9-4011-488f-9e4b-64252fcbd2b5" src="https://cdn.javarush.com/images/article/4de513a9-4011-488f-9e4b-64252fcbd2b5/800.jpeg" alt="Что такое Mapstruct и как правильно настроить его для модульного тестирования в SpringBoot приложениях. Часть 1 - 3">Теперь, когда мы подготовились к тому, чтобы осознать мое разочарование из поста про Mapstruct, попробуем создать тесты на мапперы.
+<h2>Пишем тесты на наши мапперы</h2>Я создам быстрый и простой тест, который бы протестировал один из мапперов в случае, когда мы создаем интеграционный тест и не заморачиваемся о времени его прохождения:
+<h4>LectureMapperTest</h4><pre class="language-java line-numbers"><code>
+package com.github.romankh3.templaterepository.springboot.mapper;
+
+import com.github.romankh3.templaterepository.springboot.dto.LectureDTO;
+import com.github.romankh3.templaterepository.springboot.model.LectureModel;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class LectureMapperTest {
+
+   @Autowired
+   private LectureMapper mapperUnderTest;
+
+   @Test
+   void shouldProperlyMapModelToDto() {
+       //given
+       LectureModel model = new LectureModel();
+       model.setId(11L);
+       model.setName("lecture name");
+
+       //when
+       LectureDTO dto = mapperUnderTest.toDTO(model);
+
+       //then
+       Assertions.assertNotNull(dto);
+       Assertions.assertEquals(model.getId(), dto.getId());
+       Assertions.assertEquals(model.getName(), dto.getName());
+   }
+
+   @Test
+   void shouldProperlyMapDtoToModel() {
+       //given
+       LectureDTO dto = new LectureDTO();
+       dto.setId(11L);
+       dto.setName("lecture name");
+
+       //when
+       LectureModel model = mapperUnderTest.toModel(dto);
+
+       //then
+       Assertions.assertNotNull(model);
+       Assertions.assertEquals(dto.getId(), model.getId());
+       Assertions.assertEquals(dto.getName(), model.getName());
+   }
+}
+</code></pre>
+Здесь аннотацией SpringBootTest мы запускаем весь applicationContext и уже из него при помощи аннотации Autowired извлекаем необходимый нам класс для тестирования. С точки зрения скорости и легкости написания теста — это очень хорошо. 
+
+Тест успешно проходит, все хорошо.
+
+Но мы пойдем другой дорогой и напишем модульный тест на маппер, например, на LectureListMapper…
+
+<pre class="language-java line-numbers"><code>
+package com.github.romankh3.templaterepository.springboot.mapper;
+
+import com.github.romankh3.templaterepository.springboot.dto.LectureDTO;
+import com.github.romankh3.templaterepository.springboot.model.LectureModel;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import java.util.Collections;
+import java.util.List;
+
+class LectureListMapperTest {
+
+   private final LectureListMapper lectureListMapper = new LectureListMapperImpl();
+
+   @Test
+   void shouldProperlyMapListDtosToListModels() {
+       //given
+       LectureDTO dto = new LectureDTO();
+       dto.setId(12L);
+       dto.setName("I'm BATMAN!");
+
+       List&lt;LectureDTO&gt; dtos = Collections.singletonList(dto);
+
+       //when
+       List&lt;LectureModel&gt; models = lectureListMapper.toModelList(dtos);
+
+       //then
+       Assertions.assertNotNull(models);
+       Assertions.assertEquals(1, models.size());
+       Assertions.assertEquals(dto.getId(), models.get(0).getId());
+       Assertions.assertEquals(dto.getName(), models.get(0).getName());
+   }
+}
+</code></pre>
+Так как реализации, которые генерирует Mapstruct лежат в одном класспасе, что и наш проект, то мы спокойно можем использовать их в наших тестах. Выглядит все прекрасно — никаких аннотаций, создаем самым простым способом класс, что нам нужен и все.
+
+Но когда мы запустим тест, то поймем, что он упадет и в консоли будет NullPointerException…
+
+Все потому, что реализация маппера LectureListMapper имеет вид:
+
+<pre class="language-java line-numbers"><code>
+package com.github.romankh3.templaterepository.springboot.mapper;
+
+import com.github.romankh3.templaterepository.springboot.dto.LectureDTO;
+import com.github.romankh3.templaterepository.springboot.model.LectureModel;
+import java.util.ArrayList;
+import java.util.List;
+import javax.annotation.Generated;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+@Generated(
+   value = "org.mapstruct.ap.MappingProcessor",
+   date = "2021-12-09T21:46:12+0300",
+   comments = "version: 1.4.2.Final, compiler: javac, environment: Java 15.0.2 (N/A)"
+)
+@Component
+public class LectureListMapperImpl implements LectureListMapper {
+
+   @Autowired
+   private LectureMapper lectureMapper;
+
+   @Override
+   public List&lt;LectureModel&gt; toModelList(List&lt;LectureDTO&gt; dtos) {
+       if ( dtos == null ) {
+           return null;
+       }
+
+       List&lt;LectureModel&gt; list = new ArrayList&lt;LectureModel&gt;( dtos.size() );
+       for ( LectureDTO lectureDTO : dtos ) {
+           list.add( lectureMapper.toModel( lectureDTO ) );
+       }
+
+       return list;
+   }
+
+   @Override
+   public List&lt;LectureDTO&gt; toDTOList(List&lt;LectureModel&gt; models) {
+       if ( models == null ) {
+           return null;
+       }
+
+       List&lt;LectureDTO&gt; list = new ArrayList&lt;LectureDTO&gt;( models.size() );
+       for ( LectureModel lectureModel : models ) {
+           list.add( lectureMapper.toDTO( lectureModel ) );
+       }
+
+       return list;
+   }
+}
+</code></pre>
+Если мы посмотрим, то NPE (сокращение от NullPointerException), мы получаем как раз от переменной <span class="code">lectureMapper</span>, которая оказывается не инициализирована. 
+
+Но у нас в реализации нет и конструктора, при помощи которого мы бы могли инициализировать переменную. Здесь как раз закопана причина, почему Mapstruct реализовал маппер именно так!
+
+В Spring можно несколькими способами добавлять бины в классы, можно инъектировать их через поле вместе с аннотацией Autowired, как сделано выше, а можно инъектировать через конструктор. В такой проблемной ситуации я оказался на работе, когда нужно было оптимизировать время выполнения тестов.
+
+Я думал, что сделать с этим ничего нельзя и излил свою боль на своем телеграм-канале. И тут мне в комментариях помогли, сказали, что есть возможность настроить стратегию инъектирования.
+
+В интерфейсе Mapper есть поле <span class="text-bold">injectionStrategy</span>, которое как раз и принимает енам <span class="code">InjectionStrategy</span> у которого два значения: <span class="text-bold">FIELD</span> и <span class="text-bold">CONSTRUCTOR</span>. 
+
+Теперь, зная об этом, добавим в наши мапперы эту настройку, покажу на примере <span class="code">LectureListMapper</span>:
+
+<pre class="language-java line-numbers"><code>
+@Mapper(componentModel = "spring", uses = LectureMapper.class, injectionStrategy = InjectionStrategy.CONSTRUCTOR)
+public interface LectureListMapper {
+   List&lt;LectureModel&gt; toModelList(List&lt;LectureDTO&gt; dtos);
+   List&lt;LectureDTO&gt; toDTOList(List&lt;LectureModel&gt; models);
+}
+</code></pre>
+Выделил жирным часть, что добавил. Добавим эту опцию для всех остальных и перекомпилируем проект, чтобы сгенерировались мапперы уже с новой строкой.
+
+Когда это выполним, посмотрим как изменилась реализация маппера для <span class="code">LectureListMapper</span> (выделил жирным ту часть, что нам нужна):
+
+<pre class="language-java line-numbers"><code>
+package com.github.romankh3.templaterepository.springboot.mapper;
+
+import com.github.romankh3.templaterepository.springboot.dto.LectureDTO;
+import com.github.romankh3.templaterepository.springboot.model.LectureModel;
+import java.util.ArrayList;
+import java.util.List;
+import javax.annotation.Generated;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+@Generated(
+   value = "org.mapstruct.ap.MappingProcessor",
+   date = "2021-12-09T22:25:37+0300",
+   comments = "version: 1.4.2.Final, compiler: javac, environment: Java 15.0.2 (N/A)"
+)
+@Component
+public class LectureListMapperImpl implements LectureListMapper {
+
+   private final LectureMapper lectureMapper;
+
+   @Autowired
+   public LectureListMapperImpl(LectureMapper lectureMapper) {
+
+       this.lectureMapper = lectureMapper;
+   }
+
+   @Override
+   public List&lt;LectureModel&gt; toModelList(List&lt;LectureDTO&gt; dtos) {
+       if ( dtos == null ) {
+           return null;
+       }
+
+       List&lt;LectureModel&gt; list = new ArrayList&lt;LectureModel&gt;( dtos.size() );
+       for ( LectureDTO lectureDTO : dtos ) {
+           list.add( lectureMapper.toModel( lectureDTO ) );
+       }
+
+       return list;
+   }
+
+   @Override
+   public List&lt;LectureDTO&gt; toDTOList(List&lt;LectureModel&gt; models) {
+       if ( models == null ) {
+           return null;
+       }
+
+       List&lt;LectureDTO&gt; list = new ArrayList&lt;LectureDTO&gt;( models.size() );
+       for ( LectureModel lectureModel : models ) {
+           list.add( lectureMapper.toDTO( lectureModel ) );
+       }
+
+       return list;
+   }
+}
+</code></pre>
+И вот теперь Mapstruct реализовал инъектирование маппера через конструктор. Собственно чего мы и добивались. 
+
+Теперь наш тест перестанет компилироваться, обновим его и получим:
+
+<pre class="language-java line-numbers"><code>
+package com.github.romankh3.templaterepository.springboot.mapper;
+
+import com.github.romankh3.templaterepository.springboot.dto.LectureDTO;
+import com.github.romankh3.templaterepository.springboot.model.LectureModel;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import java.util.Collections;
+import java.util.List;
+
+class LectureListMapperTest {
+
+   private final LectureListMapper lectureListMapper = new LectureListMapperImpl(new LectureMapperImpl());
+
+   @Test
+   void shouldProperlyMapListDtosToListModels() {
+       //given
+       LectureDTO dto = new LectureDTO();
+       dto.setId(12L);
+       dto.setName("I'm BATMAN!");
+
+       List&lt;LectureDTO&gt; dtos = Collections.singletonList(dto);
+
+       //when
+       List&lt;LectureModel&gt; models = lectureListMapper.toModelList(dtos);
+
+       //then
+       Assertions.assertNotNull(models);
+       Assertions.assertEquals(1, models.size());
+       Assertions.assertEquals(dto.getId(), models.get(0).getId());
+       Assertions.assertEquals(dto.getName(), models.get(0).getName());
+   }
+}
+</code></pre>
+Теперь, если мы запустим тест, то все сработает так как положено, так как в LectureListMapperImpl мы передаем необходимый ему LectureMapper… Победа!
+
+Вам не сложно, а мне приятно:
+
+<span class="text-bold"><em>Друзья, все как обычно, подписывайтесь на мой <a href="http://github.com/romankh3" rel="nofollow" target="_blank">гитхаб-аккаунт</a>, на <a href="http://t.me/romankh3" rel="nofollow" target="_blank">телеграм-аккаунт</a>. Там я выкладываю результат своей деятельности, есть реально полезные вещи)
+
+Особенно приглашаю вступить в группу <a href="https://t.me/romankh3_chat" rel="nofollow" target="_blank">обсуждений телеграм-канала</a>. Так сложилось, что если у кого-то есть технический вопрос, там можно получить ответ. Такой формат интересен для всех, можно почитать, кто что умеет и набраться опыта.</em></span>
+<h2>Вывод</h2>В рамках этой статьи мы познакомились с таким нужным и часто используемым продуктом как Mapstruct. Разобрали что это, зачем и как. На реальном примере пощупали, что можно делать и как можно менять. 
+
+Также, разобрали как настроить инъектирование бинов через конструктор, чтобы была возможность нормально проводить тестирование мапперов.
+
+Коллеги из Mapstruct предоставили пользователям их продукта выбирать каким именно способом инъектировать мапперы, за что им несомненно спасибо. НО, несмотря на то, что Spring рекомендует инъектировать бины через конструктор,  ребята из Mapstruct поставили по умолчанию инъектирование через поле. Почему так? Нет ответа.
+
+Я подозреваю, что могут быть причины о которых мы просто не знаем, и поэтому они так сделали. И чтобы узнать у них, я создал <a href="https://github.com/mapstruct/mapstruct/issues/2672" rel="nofollow" target="_blank">GitHub issue</a> в их официальном репозитории продукта.
+<table>
+ <tbody>
+  <tr>
+   <th>Полезные ссылки:</th>
+  </tr>
+  <tr>
+   <td>
+    <ul>
+     <li><a href="http://mapstruct.org" rel="nofollow" target="_blank">Официальный сайт Mapstruct</a></li>
+     <li><a href="https://github.com/template-repository/springboot-template-repository" rel="nofollow" target="_blank">Шаблон для создания SpringBoot приложений</a></li>
+     <li><a href="https://github.com/mapstruct/mapstruct/issues/2672" rel="nofollow" target="_blank">Вопрос к разработчикам Mapstruct</a></li>
+     <li><a href="https://mapstruct.org/documentation/installation/" rel="nofollow" target="_blank">Как добавить Mapstruct в проект</a></li>
+     <li><a href="https://mapstruct.org/faq/#Can-I-use-MapStruct-together-with-Project-Lombok" rel="nofollow" target="_blank">Как связать Lombok и Mapstruct</a></li>
+    </ul>
+   </td>
+  </tr>
+ </tbody>
+</table><a href="https://javarush.com/login/signup" target="_blank"><img id="click_banner5_articles" data-max-width="1080" data-id="e3a73d74-4ef7-4b79-9d28-063aeded07bc" src="https://cdn.javarush.com/images/article/e3a73d74-4ef7-4b79-9d28-063aeded07bc/original.png" alt="Что такое Mapstruct и как правильно настроить его для модульного тестирования в SpringBoot приложениях. Часть 1 - 4"></a>

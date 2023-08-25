@@ -1,0 +1,155 @@
+Преобразование ссылочных типов в Java
+<p>----------------------------------------</p>
+Доброго времени суток, джаварашовец. Начали мне поступать вопросы о приведение ссылочных  типов в Java. Что бы каждый раз не пересказывать одно и то же, решил написать маленькую статью ...
+<p>----------------------------------------</p>
+Доброго времени суток, джаварашовец. Начали мне поступать вопросы о приведение ссылочных  типов в Java. Что бы каждый раз не пересказывать одно и то же, решил написать маленькую статью.<h2>Сначала разберем, что же такое приведение типов</h2> <a href="http://ru.wikipedia.org/wiki/%D0%9F%D1%80%D0%B5%D0%BE%D0%B1%D1%80%D0%B0%D0%B7%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5_%D1%82%D0%B8%D0%BF%D0%B0" rel="nofollow">Приведение типов (преобразование типов)</a> — преобразование значения переменной одного типа в значение другого типа. 
+
+Давайте посмотрим на примере, что это такое и с чем его едят.
+
+У нас есть некоторая иерархия классов (<em>см. Рисунок 1</em>). Тут видно все классы иерархии, кто кого наследует и методы каждого класса.
+<img data-id="2d532843-98df-4604-b10c-ca422461c6c1" data-max-width="570" alt="Рисунок 1" src="https://cdn.javarush.com/images/article/2d532843-98df-4604-b10c-ca422461c6c1/1024.jpeg">Есть расширяющее и сужающее приведение.
+
+Мы видим, что класс <code>Cat</code> является наследником класса <code>Pet</code>. <code>Pet</code>, в свою очередь, наследник класса <code>Animal</code>.
+
+Когда мы напишем:
+
+<pre class="lang-java line-numbers"><code>
+Animal animalCat = new Cat();
+Animal animalDog = new YorkshireTerrier();
+</code></pre>
+Это <strong>расширяющее приведение</strong> (или неявное). Мы расширили ссылки <code>animalCat</code> и <code>animalDog</code>. Они ссылаются на объекты <code>Cat</code> и <code>Dog</code>. При таком приведении мы не можем через ссылку <code>animalCat/animalDog</code> вызвать методы, которые есть в <code>Cat/Dog</code>, но которых нету в <code>Animal</code>.
+
+<strong>Сужающее приведение</strong>(или явное) происходит в обратную сторону:
+
+<pre class="lang-java line-numbers"><code>
+Animal animalCat = new Cat();
+Animal animalDog = new YorkshireTerrier();
+Cat cat =(Cat)animalCat;
+YorkshireTerrier dog = (YorkshireTerrier) animalDog;
+</code></pre>
+Мы явно указали к какому типу хотим привести данный объект.
+
+<strong>BUT, BE CAREFUL!!!</strong>
+Если Вы сделаете вот так:
+
+<pre class="lang-java line-numbers"><code>
+Animal animalCat = new Cat();
+YorkshireTerrier dog = (YorkshireTerrier) animalCat;
+</code></pre>
+компилятор пропустит этот код. А вот <code>RunTime</code> выкинет вам:
+
+<pre class="lang-java line-numbers"><code>
+Exception in thread "main" java.lang.ClassCastException: Animals.Cat cannot be cast to Animals.YorkshireTerrier
+</code></pre>
+<code>RunTime</code> видит, что <code>Cat</code> и <code>YorkshireTerrier</code> два разных класса. Что бы избежать <a href="http://docs.oracle.com/javase/7/docs/api/java/lang/ClassCastException.html" rel="nofollow">ClassCastException</a> при сужающем преобразовании, используйте <code>instanceof</code>.
+
+<pre class="lang-java line-numbers"><code>
+Animal animalCat = new Cat();
+if (animalCat instanceof YorkshireTerrier)
+{
+    YorkshireTerrier dog = (YorkshireTerrier) animalCat;
+}
+</code></pre>
+Если <code>animalCat</code> является <code>YorkshireTerrier</code>, тогда произойдет присвоение, если нет — ничего не произойдет.
+<h2>А теперь зачем же это нужно, если мы теряем методы и можем получить такие ошибки</h2>Рассмотрим код который я сделал по диаграмме с <em>Рис. 1</em>. Класс <code>Animal</code>
+
+<pre class="lang-java line-numbers"><code>
+public abstract class Animal
+{
+    String name;
+    int age;
+    String nameOfClass = getClass().getSimpleName();
+    public void eat(){
+        System.out.println(nameOfClass + ": Omnomnom");
+    }
+    public void sleep(){
+        System.out.println(nameOfClass + ": Z-z-z-z");
+    }
+}
+</code></pre>
+Класс <code>WildAnimal</code> который наследуется от <code>Animal</code>
+
+<pre class="lang-java line-numbers"><code>
+public abstract class WildAnimal extends Animal
+{
+    public void steelChicken()
+    {
+        System.out.println(nameOfClass+": Muhaha,I stole a chicken!");
+    }
+}
+</code></pre>
+Класс <code>Pet</code> который наследуется от <code>Animal</code>
+
+<pre class="lang-java line-numbers"><code>
+public abstract class Pet extends Animal
+{
+    public void peeInTray(){
+        System.out.println(nameOfClass + ": Master, I peed");
+    }
+}
+</code></pre>
+Класс <code>Fox</code> который наследуется от <code>WildAnimal</code>
+
+<pre class="lang-java line-numbers"><code>
+public class Fox extends WildAnimal
+{
+    public void eatColobok(){
+        System.out.println(nameOfClass + ": I will eat you, Colobok");
+    }
+}
+</code></pre>
+Класс <code>Wolf</code> который наследуется от <code>WildAnimal</code>
+
+<pre class="lang-java line-numbers"><code>
+public class Wolf extends WildAnimal
+{
+    public void hawlAtTheMoon(){
+        System.out.println(nameOfClass + ": Ouuuuu!!!Ouuuu!!!");
+    }
+}
+</code></pre>
+Класс <code>Cat</code> который наследуется от <code>Pet</code>
+
+<pre class="lang-java line-numbers"><code>
+public class Cat extends Pet
+{
+    public void sleepOnKeyboard(){
+        System.out.println(nameOfClass + ": Master, stop working!!I wanna sleep on your keyboard");
+    }
+}
+</code></pre>
+Класс <code>YorkshireTerrier</code> который наследуется от <code>Pet</code>
+
+<pre class="lang-java line-numbers"><code>
+public class YorkshireTerrier extends Pet
+{
+    public void bark(){
+        System.out.println(nameOfClass + ": Meow!!! Meow!!!");
+    }
+}
+</code></pre>
+Представьте себе ситуацию. Нам нужно собрать всех животных в один список, накормить их и потом уложить спать. Это легко сделать, если мы создадим <code>ArrayList</code> животных (<code>Animal</code>). И потом у каждого животного вызовем соответствующие методы:
+
+<pre class="lang-java line-numbers"><code>
+public class ZOO
+{
+    public static void main(String[] args)
+    {
+        List&lt;Animal&gt; allAnimals = new ArrayList&lt;&gt;();
+        allAnimals.add(new Cat());
+        allAnimals.add(new Wolf());
+        allAnimals.add(new Fox());
+        allAnimals.add(new YorkshireTerrier());
+        for (Animal animal : allAnimals)
+        {
+            animal.eat();
+            animal.sleep();
+        }
+    }
+}
+</code></pre>
+Я не могу у <code>animal</code> вызвать метод <code>bark()</code> или <code>sleepOnKeyboard()</code>. Потому что в листе <code>allAnimals</code> хранятся кот, волк, йорик и лиса, но они приведены к <code>Animal</code>. И у них есть только те методы, которые есть в <code>Animal</code>.
+
+Это очень хорошо, потому что, если бы мы могли вызвать все методы, то зачем нам нужен волк который спит на клавиатуре, или йорик который ворует куриц? 
+
+Спасибо за внимание. Надеюсь, эта статья для Вас будет полезна. Критика и комментарии приветствуются)

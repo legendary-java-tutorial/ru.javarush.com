@@ -1,0 +1,231 @@
+Побайтовая работа с файлами
+<p>----------------------------------------</p>
+В 18 уровне начались первые задачи побайтного чтения файлов: прочитать файл, далее найти минимальные/максимальные байты или вывести в упорядоченном виде и т.п. Народ тут весьма ушлый. Знают про коллекции и про то, что они могут сортировать, вставлять ...
+<p>----------------------------------------</p>
+Special for <ls user="Spiker" /> 
+<h2>Начнем'c</h2>В 18 уровне начались первые задачи побайтного чтения файлов: прочитать файл, далее найти минимальные/максимальные байты или вывести в упорядоченном виде и т.п.
+<div class='row justify-content-center jr-image-wrap'><div class='col-12 col-sm-10 col-md-8'><img data-id="578d642c-8711-4a30-ba6d-1aede13540eb" data-max-width="710" alt="Побайтовая работа с файлами - 1" src="https://cdn.javarush.com/images/article/578d642c-8711-4a30-ba6d-1aede13540eb/1024.jpeg"></div></div>Народ тут весьма ушлый. Знают про коллекции и про то, что они могут сортировать, вставлять.
+
+Коллекции — мощный механизм. И многие не применяли их вообще до JavaRush-а.
+
+Оно, конечно, похвально изучать их и пытаться приткнуть куда не попадя.
+
+И так. Возьмем задачу, которой нет в заданиях (чтобы не было спойлеров при решении), но есть сильно похожие:
+
+<ul>
+<li>Ввести с консоли имя файла</li>
+<li>Считать все байты из файла.</li>
+<li>Не учитывая повторений - отсортировать их по байт-коду в убывающем порядке.</li>
+<li>Вывести на экран</li>
+<li>Закрыть поток ввода-вывода</li>
+</ul>
+Пример байт входного файла
+<em>44 83 44</em>
+
+Пример вывода
+<em>83 44</em>
+
+Мы дополнительно завели переменные <code>startTime</code> и <code>finishTime</code> — чтобы засечь время выполнения программы. Для вычисления использовал <u>i3-3GHz/8Gb RAM/HDD WD Blue-1Tb/Win7-64/jdk-8u73-windows-x64</u>
+
+(примеры программ в вариантах 1-2 взяты из форума info.javarush , они чуть модифицированы только для сортировки в возрастающем порядке - то есть они РЕАЛЬНЫЕ!!)
+
+<h2>Решаем в лоб:</h2><pre class='lang-java line-numbers'><code>
+// Вариант 1. Загоняем в коллекцию и сортируем используя ее метод Collections.sort 
+public class Solution {
+    public static void main(String[] args) throws Exception {
+        FileInputStream inputStream = new FileInputStream(new BufferedReader(new InputStreamReader(System.in)).readLine());
+        long startTime = System.currentTimeMillis();
+        
+        ArrayList&lt;Integer&gt; listData = new ArrayList&lt;Integer&gt;();
+        while (inputStream.available() > 0) listData.add(inputStream.read());
+        inputStream.close();
+        ArrayList&lt;Integer&gt; result = new ArrayList&lt;Integer&gt;(new HashSet&lt;Integer&gt;(listData));
+        Collections.sort(result);
+
+        while (!result.isEmpty()) {
+            System.out.print(result.get(result.size()-1) + " ");
+            result.remove(result.get(result.size()-1));
+        }
+
+        long finishTime = System.currentTimeMillis();
+        System.out.println("\nвремя работы=" + (finishTime-startTime) + "ms.");
+    }
+}</code></pre>
+Решает все замечательно! Тест (если бы был — прошелся бы на ура). Но в жизни мало файлов содержащих только строчку "Мама мыла раму". Давайте скормим нашей программе файл в 46Мб (по нынешним меркам вроде и не особо много). Что такое, программа выполняется 220 секунд. Попытка скормить с вечера 1Gb файл (размер MPEG4 фильма не в самом лучшем качестве) не увенчалась успехом. Программа утром все еще читала - а мне идти на работу уже.
+
+В чем проблема? Наверное в использовании  <code>ArrayList&lt;Integer&gt;</code> у которого внутри 1 миллиард элементов. Каждый элемент его занимает 16 байт минимум (Заголовок: 8 байт + Поле int: 4 байта + Выравнивание для кратности 8: 4 байта). Итого мы добровольно загоняем в память 16 Gb данных при размере оперативы в 8.
+
+Будем делать лучше. Нырнем в коллекции глубже. И ура, нашлось то, что нам нужно.
+
+<h2>Встречаем TreeSet</h2>Это множество:
+<ul>
+<li>не допускает хранение двух одинаковых элементов (а значит мы будем хранить в памяти все 255 элементов, вместо миллиарда!)</li>
+<li>при манипуляциях со своими элементами автоматом упорядочивает (само сортирует - вот он, верх совершенства!)</li>
+</ul>
+Получаем:
+
+<pre class='lang-java line-numbers'><code>
+// Вариант 2. Загоняем в ТreeSet который сам сортирует (лютый win!)
+public class Solution {
+    public static void main(String[] args) throws Exception {
+        FileInputStream inputStream = new FileInputStream(new BufferedReader(new InputStreamReader(System.in)).readLine());
+
+        byte[] arrBytes = new byte[256];
+        long startTime = System.currentTimeMillis();
+
+        SortedSet&lt;Integer&gt; list = new TreeSet&lt;Integer&gt;();
+        while(inputStream.available()>0) list.add(inputStream.read());
+        inputStream.close();
+
+        while (!list.isEmpty())        {
+            System.out.print(list.last() + " ");
+            list.remove(list.last());
+        }
+
+		long finishTime = System.currentTimeMillis();
+        System.out.println("\nвремя работы=" + (finishTime-startTime) + "ms.");
+    }
+}
+</code></pre>
+<strong>Имеем на выходе:
+
+<em>46Мб файл 176 секунд.
+1Gb файл - 3 часа 5 минут.</em></strong>
+
+Прогресс на лицо. Мы смогли "дождаться" результатов, да и 46Мб файл заметно быстрее обрабатывается.
+
+Идем дальше. Давайте попытаемся <strong>отказаться</strong> от коллекций (это будет для некоторых мучительно больно). Будем использовать простые массивы (это так примитивно).
+
+Заметим одну <strong>важную вещь</strong>. Кол-во встречающихся байт можно загнать в массив длиной 256. Так просто будем увеличивать на единицу соответствующий считанному байту элемент массива.
+
+<h2>Массив — побайтно</h2><pre class='lang-java line-numbers'><code>
+// Вариант 3. Считываем массив побайтно.
+public class Solution {
+    public static void main(String[] args) throws Exception {
+        FileInputStream inputStream = new FileInputStream(new BufferedReader(new InputStreamReader(System.in)).readLine());
+
+        long[] arrBytes = new long[256];
+        long startTime = System.currentTimeMillis();
+        
+        while (inputStream.available() > 0) arrBytes[inputStream.read()]++;
+
+		inputStream.close();
+        // Выводим отсортированный по байт-коду в обратном порядке
+        for (long i = 255; i >= 0 ; i--)
+            if (arrBytes[(int) i] > 0) System.out.print(i + " ");
+
+			long finishTime = System.currentTimeMillis();
+        System.out.println("\nвремя работы=" + (finishTime-startTime) + "ms.");
+    }
+}
+</code></pre>
+<strong>Имеем на выходе:
+
+<em>46Мб файл 158 секунд.
+1Gb файл - 2 часа 55 минут.</em></strong>
+
+Опять улучшение, но небольшое. И мы сделали все простыми инструментами. <strong>Не использовали микроскоп для забивания гвоздей</strong>.
+
+<em>Теперь лирическое отступление.</em>
+
+Вспомним устройство компьютера.
+
+<strong><em>Память ОЗУ (DRAM)</em></strong> где обычно выполняется программа и хранятся переменные имеет высокую скорость доступа, но небольшой размер.
+
+<strong><em>Память на жестком/flash диске</em></strong> (HDD или Flash-накопители) где обычно хранятся файлы, наоборот имеет низкую скорость доступа, но большой размер.
+
+Так что когда мы побайтно читаем 1Gb файл (то есть миллиард раз обращаемся к HDD) - мы тратим много времени на работу с низкоскоростным устройством (по песчинке перекладываем песок с кузова КамАЗа в песочницу).
+
+Попробуем еще улучшить. 
+
+<h2>Вывалим сразу ВЕСЬ КамАЗ с песком за один раз!</h2> <pre class='lang-java line-numbers'><code>
+// Вариант 4. Считываем массив сразу целиком за раз в память.
+public class Solution {
+    public static void main(String[] args) throws Exception {
+        FileInputStream inputStream = new FileInputStream(new BufferedReader(new InputStreamReader(System.in)).readLine());
+
+        long[] arrBytes = new long[256];
+        long startTime = System.currentTimeMillis();
+        
+        byte fileImage[]=new byte[inputStream.available()];
+        long fileSize=fileImage.length;
+        inputStream.read(fileImage);
+        for (int i = 0; i <fileSize ; i++) arrBytes[fileImage[i] & 0b11111111]++;
+
+		inputStream.close();
+        // Выводим отсортированный по байт-коду в обратном порядке
+        for (long i = 255; i >= 0 ; i--)
+            if (arrBytes[(int) i] > 0) System.out.print(i + " ");
+
+		long finishTime = System.currentTimeMillis();
+        System.out.println("\nвремя работы=" + (finishTime-startTime) + "ms.");
+    }
+}
+</code></pre>
+<em>небольшое, но опять таки <strong>важное отступление</strong></em>
+
+<em><strong>Заметим:</strong></em>
+<ol>
+<li>индекс у arrBytes определен в пределах 0..255, </li>
+<li>fileImage - массив байт, элементы которого имеют значение -128..127</li>
+</ol>
+Поэтому для подсчета байт будем использовать конструкцию
+
+<code>arrBytes[fileImage[i] & 0b11111111]++;</code>
+
+которая банально сбросит бит знака и вернет нам значение в диапазоне 0..255
+
+<strong>И так, результаты:
+
+<em>46Мб файл 0.13  секунд (меньше секунды).
+1Gb файл - 9 секунд.</em></strong>
+
+Мы сделали это!  Мы невероятно круты! Ускорились с 3 часов до 9 секунд.
+
+Все, можно откинуться в кресле и попить чайку. А теперь еще один эксперимент - попробуем файл в 32 Gb (например, HD фильм). Получим в результате треск работающего HDD с вываливанием программы в Windows. КамАЗ вывалив кузов с песком сломал песочницу!
+
+Что будем делать? Вспомним еще один факт. Файлы в ОС хранятся обычно порциями (кластерами) по 2-64Кб  (зависит от типа файловой системы, настроек и т.п.). Будем считывать порциями, для примера в 64000 байт. Попытаемся разгрузить КамАЗ экскаватором достаточно большими порциями:
+
+<h2>Используем буфер</h2><pre class='lang-java line-numbers'><code>
+// Вариант 5. Считываем массив кусками.
+public class Solution {
+    public static void main(String[] args) throws Exception {
+        FileInputStream inputStream = new FileInputStream(new BufferedReader(new InputStreamReader(System.in)).readLine());
+
+        long[] arrBytes = new long[256];
+        long startTime = System.currentTimeMillis();
+        
+        int  bufferSize = 64000;
+        byte buffer[]   = new byte[64000];
+
+        while (inputStream.available() > 0) {
+            if (inputStream.available() < 64000) bufferSize = inputStream.available();
+            inputStream.read(buffer, 0, bufferSize );
+            for (int i = 0; i <bufferSize ; i++) arrBytes[ buffer[i] & 0b11111111 ]++;
+        }
+
+		inputStream.close();
+        // Выводим отсортированный по байт-коду в обратном порядке
+        for (long i = 255; i >= 0 ; i--)
+            if (arrBytes[(int) i] > 0) System.out.print(i + " ");
+
+		long finishTime = System.currentTimeMillis();
+        System.out.println("\nвремя работы=" + (finishTime-startTime) + "ms.");
+    }
+}
+</code></pre>
+<strong>В итоге получили:
+
+<em>46Мб файл 0.08  секунд (меньше секунды).
+1Gb файл - 0.9 секунд(меньше секунды).
+32Gb файл - 31 секунда.</em></strong>
+
+Заметим для 1 Gb файла мы улучшили производительность с нескольких <strong>часов</strong> до <strong>долей секунд</strong>!!!
+
+На этом скромном факте закончим эксперимент и улучшение начального кода. Мы достигли прогресса во многом - нас радуют новые показатели расхода памяти и времени работы. Также мы не подтягиваем в данном случае бесполезные коллекции из стандартной библиотеки.
+
+P.S. Кто-то скажет пример надуманный и т.п. Но полно похожих задач — проанализировать огромный объем элементов, имеющих конечное число состояний.
+
+Например изображения (RGB - обычно хранятся в 24 байтах, в нашем случае long[] arrRGB = new long[256*256*256] занял бы в памяти всего 64Мб), 
+
+музыка (амплитуда обычно оцифровывается в 16 или 24 бита) или дискретные показатели датчиков и т.п.

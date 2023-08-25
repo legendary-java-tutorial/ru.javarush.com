@@ -1,0 +1,254 @@
+Добавляем телеграм-бота на проект - "Java-проект от А до Я"
+<p>----------------------------------------</p>
+Приветствую вас, мои дорогие друзья. Да-да, именно друзья. Я уже так сросся с этой серией статей, что те люди, которые регулярно пишут в комментариях свою благодарность и/или показывают, что прочли и поняли материал...
+<p>----------------------------------------</p>
+Приветствую вас, мои дорогие друзья. Да-да, именно друзья. Я уже так сросся с этой серией статей, что те люди, которые регулярно пишут в комментариях свою благодарность и/или показывают, что прочли и поняли материал, стали уже близки.
+
+Мы с вами идем с двух сторон к одной цели. Вы хотите понять, а я хочу объяснить. И конечная цель у нас одна — написанное приложение, которое понятно вам от начала до конца. 
+
+О многом из того, что опишу в этой статье вы, возможно, уже наслышаны. Не думаю, что я расскажу что-то новое и неординарное (но в рамках проекта знать/повторить это необходимо).
+
+<img data-max-width="800" data-id="05bf61f9-8d16-4258-8c1e-c6195f1fff2d" src="https://cdn.javarush.com/images/article/05bf61f9-8d16-4258-8c1e-c6195f1fff2d/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 1">Весной я писал бота для себя, так что будем опираться на его “лекала”.<h2>Пишем JRTB-2</h2>Будем делать так же, как <a href="https://javarush.com/groups/posts/3179-java-proekt-ot-a-do-ja-pishem-proekt-dobavljaem-springboot-i-nastraivaem-ci-process" target="_blank">делали в статье</a> с задачей <a href="https://github.com/javarushcommunity/javarush-telegrambot/issues/12" rel="nofollow" target="_blank">JRTB-0</a>:<ol>
+
+<li>Обновляем <span class="text-bold">main</span> ветку в локальном проекте через комбинацию <span class="text-bold">ctrl + t</span>.<img data-max-width="512" data-id="21abf665-94f2-4ad8-8553-a15267510a8e" src="https://cdn.javarush.com/images/article/21abf665-94f2-4ad8-8553-a15267510a8e/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 2"></li>
+<li>На основе main ветки создаем:<img data-max-width="512" data-id="dbcaa295-a84a-4dd7-9fe2-67003405210d" src="https://cdn.javarush.com/images/article/dbcaa295-a84a-4dd7-9fe2-67003405210d/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 3"></li>
+<li>Добавляем бота.</li>
+<li>Создаем новый коммит с описанием сделанного и пушим на гитхаб.</li>
+<li>Создаем пул-реквест на main ветку и еще раз проверяем. Ждем, чтобы прошел билд (github actions), мержим в мейн ветку.</li>
+<li>Закрываем соответствующую задачу.</li>
+</ol><h2>Что такое телеграм-бот</h2>Мы, разработчики, можем представить работу с телеграм-ботом так: мы используем их клиент для работы с ними. У нас есть <a href="https://github.com/rubenlagus/TelegramBots" rel="nofollow" target="_blank">готовая библиотека</a> для работы. Есть набор действий, после которых телеграм-бот будет знать, что он связан нашей программой.
+
+А уже внутри программы мы научимся получать письма, команды и как-то их обрабатывать.
+
+Есть такая вещь как <span class="text-bold">команда в телеграм-ботах</span>: она начинается со слеша “/”. После нее сразу слитно пишем слово, и это будет считаться командой. 
+
+Например, есть две команды, которые все должны знать:<ul>
+<li>/start — начало работы с ботом;</li>
+<li>/stop — конец работы с ботом.</li>
+
+</ul>Остальное мы сделаем сами. Сразу оговорюсь: мы будем делать именно то и таким способ, каким научился я. И в работе с ботом я уверен, что можно будет сделать лучше. И если кто-то захочет это сделать — я буду только рад и всячески поддержу это начинание.
+
+<em>Кстати, самое первое, что было бы круто, если бы кто-то мне объяснил, как запрограммировать описание команд через код, а не через настройки бота в телеграме. Этому я не научился. </em>
+
+У нас на ресурсе есть несколько статей, в которых есть описание, как сделать элементарного бота: мы сегодня сделаем что-то похожее. 
+
+Если будут еще вопросы, рекомендую бегло пробежаться по <a href="https://javarush.com/groups/posts/504-sozdanie-telegram-bota-na-java-ot-idei-do-deploja" target="_blank">этой</a> статье.<h2>Создаем бота у BotFather</h2>Чтобы подключить бота, его вначале нужно создать. У Телеграма есть подход — создание бота со своим уникальным именем. К нему будет прилагаться еще токен (большая строка, которая работает как пароль).
+
+Я уже создал бота для JavaRush — <span class="text-bold">@javarush_community_bot</span>. Этот бот еще пустой и ничего не умеет. Главное, чтобы в конце имени было <span class="text-bold">_bot</span>.
+
+Чтобы показать, как это сделать, я создам бота, на котором мы будем тестировать наш функционал. 
+
+В терминах реальных проектов это будет test environment (тестовое окружение).
+
+А наш основной будет будет prod environment (prod — production, то есть реальное окружение, на котором будет выполняться проект).
+
+Конечно, можно было бы добавить еще одно окружение — sandbox environment: общую песочницу, более изменяемую и доступную всем участникам разработки. Но это лишь усложнит ситуацию на этапе создания проекта.
+
+Пока что создадим еще два бота для test и для sandbox окружения.
+
+Первый шаг — создать (зарегистрировать) бота в самом Телеграме. Нужно найти бота: @BotFather и написать ему команду:
+
+<span class="text-bold">/newbot</span><img data-max-width="1080" data-id="da251e55-7d65-405d-8269-eae59ddec3fd" src="https://cdn.javarush.com/images/article/da251e55-7d65-405d-8269-eae59ddec3fd/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 4">Далее нас просят дать имя этому боту. Так как это бот для тестовых задач, то и имя у него будет соответствующее:
+
+<span class="text-bold">[TEST] JavarushBot</span><img data-max-width="1080" data-id="cf774e29-d1bd-45ac-be63-4eec1ace7c8b" src="https://cdn.javarush.com/images/article/cf774e29-d1bd-45ac-be63-4eec1ace7c8b/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 5">Теперь пришло время дать уникальное имя, по которому его всегда можно будет найти — его username:
+
+<span class="text-bold">test_javarush_community</span><img data-max-width="1080" data-id="bc2012c9-a5fd-409c-9afb-d731c2498ba9" src="https://cdn.javarush.com/images/article/bc2012c9-a5fd-409c-9afb-d731c2498ba9/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 6">Как я и говорил выше, нужно добавлять суффикс _bot для username, поэтому пишем еще раз:
+
+<span class="text-bold">test_javarush_community_bot</span><img data-max-width="1080" data-id="fb211e24-7ad5-4826-93ac-131f48bec30b" src="https://cdn.javarush.com/images/article/fb211e24-7ad5-4826-93ac-131f48bec30b/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 7">И все! Бот создан. Теперь по username и token его можно подключить к нашему проекту. Разумеется для бесперебойной работы тестового сервера я не буду выставлять token (по сути это пароль к доступу к боту) этого бота на общее обозрение.<h2>Подключаем бота в проект</h2>Мы не будем подключать библиотеку как обычно, а сразу воспользуемся преимуществами нашего скелета — SpringBoot. У него есть такая вещь, как Starter. Подключив библиотеку, с его помощью можно дать знать SpringBoot’у, что мы хотим настроить проект правильно. 
+
+Если бы мы пошли по обычному пути, который описан во множестве мест, нам бы нужно было где-то создать конфигурацию, в которой было бы что-то такое:
+
+<pre class="language-java line-numbers"><code>
+ApiContextInitializer.init();
+TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
+try {
+  telegramBotsApi.registerBot(Bot.getBot());
+} catch (TelegramApiRequestException e) {
+  e.printStackTrace();
+}
+</code></pre>
+Здесь создается объект, при помощи которого можно установить связь с ботом.
+
+В нашем случае стартер, который мы захотим подключить, сделает все за нас где-то “под капотом” (это тоже перевод часто используемой фразы в IT — under the hood). 
+
+Вот ссылка на <a href="https://github.com/rubenlagus/TelegramBots/tree/master/telegrambots-spring-boot-starter" rel="nofollow" target="_blank">этот стартер</a>.
+
+Сразу же по README.md файлу видно, что это, зачем и как его использовать.
+
+Чтобы его подключить, нужно просто добавить эту зависимость в помник. И все :)
+
+Вот нужная зависимость:
+
+<pre class="language-java line-numbers"><code>
+&lt;dependency&gt;
+        &lt;groupId&gt;org.telegram&lt;/groupId&gt;
+        &lt;artifactId&gt;telegrambots-spring-boot-starter&lt;/artifactId&gt;
+        &lt;version&gt;5.0.1&lt;/version&gt;
+    &lt;/dependency&gt;
+</code></pre>
+Добавляем ее в наш помник. Выносим версию как положено и обновляем мавен проект.<img data-max-width="800" data-id="f4f45c30-c562-4961-b5c7-c08d60352a05" src="https://cdn.javarush.com/images/article/f4f45c30-c562-4961-b5c7-c08d60352a05/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 8">Исходя из описания, нам нужно просто создать новый класс, унаследоваться от TelegramLongPollingBot и добавить этот класс в Application Context нашего SpringBoot. 
+
+<em>Application Context — это место, где хранятся созданные объекты для работы проекта. Чтобы добавить какой-то класс, нужно использовать одну из аннотаций: @Component, @Service, @Repository, @Controller. Или аннотацию @Bean, если создается через метод в конфигурационном классе (то есть в классе, который помечен аннотацией Configuration).</em>
+
+Я понимаю, что все это пока может казаться непонятным. Но когда вы начнете разбираться, увидите, что ничего сложного там нет. Чтобы быстро разобраться со Spring Boot, советую крутую книжку — Spring In Action 5th edition. Если будет желание, я могу написать серию статей по этой книге. 
+
+Возвращаемся обратно. В пакете, в котором лежит JavarushTelegramBotApplication, создаем пакет <span class="text-bold">bot</span>, в котором будет лежать наш телеграм-бот. Имя у него будет <span class="text-bold">JavaRushTelegramBot</span>:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.bot;
+
+import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.objects.Update;
+
+/**
+* Telegrambot for Javarush Community from Javarush community.
+*/
+@Component
+public class JavarushTelegramBot extends TelegramLongPollingBot {
+
+   @Override
+   public void onUpdateReceived(Update update) {
+
+   }
+
+   @Override
+   public String getBotUsername() {
+       return null;
+   }
+
+   @Override
+   public String getBotToken() {
+       return null;
+   }
+}
+</code></pre>
+Этот класс был абстрактный и нужно было реализовать три метода. Поговорим о них подробнее:<ul>
+
+<li><span class="code">onUpdateReceived(Update update)</span> — это и есть точка входа, куда будут поступать сообщения от пользователей. Отсюда будет идти вся новая логика;</li>
+<li><span class="code">getBotUsername()</span> — здесь нужно добавить username нашего бота, к которому будем соединяться;</li>
+<li><span class="code">getBotToken()</span> — а это, соответственно, токен бота.</li>
+
+</ul>По сути это как логин и пароль к сайту. На данный момент мы не будем явно записывать это значение. Это называется “захардкодить” (то есть, привязать какое-то частное значение — как обычно, калька с английского hard code). Так делать не стоит. 
+
+Мы пойдем другим путем — запишем эти данные в <span class="code">application.properties</span> класс и отсюда будем их считывать. Зачем это нужно? Затем, чтобы при запуске приложения мы могли эти значения задать извне. Это гибко, это правильно.
+
+Идем в файл src/main/resources/application.properties. Там придумаем имена этим переменным. Файлы с расширением .properties считываются как структура ключ-значение с разделителем “=”, каждая пара — это отдельная строка. 
+
+Поэтому я придумал такие переменные:<ul>
+<li><span class="code">bot.username</span>;</li>
+<li><span class="code">bot.token</span>.</li>
+</ul>Вот так будет это выглядеть:<img data-max-width="512" data-id="f49789c6-3378-42d7-9da2-c7e7ec38b72c" src="https://cdn.javarush.com/images/article/f49789c6-3378-42d7-9da2-c7e7ec38b72c/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 9">У  SpringBoot есть отличная аннотация — @Value. Если ее правильно использовать, то она подтянет нам значения из application.properties файла. Обновляем проект под это:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.bot;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.objects.Update;
+
+/**
+* Telegram bot for Javarush Community from Javarush community.
+*/
+@Component
+public class JavarushTelegramBot extends TelegramLongPollingBot {
+  
+   @Value("${bot.username}")
+   private String username;
+  
+   @Value("${bot.token}")
+   private String token;
+
+   @Override
+   public void onUpdateReceived(Update update) {
+
+   }
+
+   @Override
+   public String getBotUsername() {
+       return username;
+   }
+
+   @Override
+   public String getBotToken() {
+       return token;
+   }
+}
+</code></pre>
+Видно, что мы передали в аннотацию значение переменной. И вот когда SpringBoot будет создавать объект нашего бота, то и значения будут взяты с пропертей (опять калька с английского — properties).
+
+Мы уже почти у цели. Нужно сделать так, чтобы бот что-то отвечал. Поэтому обновим метод <span class="code">onUpdateReceived</span>. Нужно, чтобы мы извлекли сообщение, которое пришло к боту, и передали его обратно. Так мы будем знать, что бот работает.
+
+Для этого мы грубо и быстро напишем то, что нужно:
+
+<pre class="language-java line-numbers"><code>
+@Override
+public void onUpdateReceived(Update update) {
+   if(update.hasMessage() &amp;&amp; update.getMessage().hasText()) {
+       String message = update.getMessage().getText().trim();
+       String chatId = update.getMessage().getChatId().toString();
+      
+       SendMessage sm = new SendMessage();
+       sm.setChatId(chatId);
+       sm.setText(message);
+
+       try {
+           execute(sm);
+       } catch (TelegramApiException e) {
+           //todo add logging to the project.
+           e.printStackTrace();
+       }
+   }
+}
+</code></pre>
+Здесь все предельно просто: мы проверяем, что сообщение реально существует, потому извлекаем само сообщение (<span class="code">message</span>) и айдишник чата (<span class="code">chatId</span>), в котором идет переписка. 
+
+Далее мы создаем объект для отправки сообщения <span class="code">SendMessage</span>, передаем в него само сообщение и айдишник чата — то есть то, что отправить боту и куда. 
+
+Этого нам уже хватает. Далее запускаем main метод в класс <span class="code">JavarushTelegramBotApplication</span> и ищем нашего бота в Телеграме:<img data-max-width="1080" data-id="0e5175c2-2cea-4294-b6d8-2d7b42e5d0ec" src="https://cdn.javarush.com/images/article/0e5175c2-2cea-4294-b6d8-2d7b42e5d0ec/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 10">Из логов видим, что бот запустился. Значит, пришло время идти в Телеграм и написать боту:<img data-max-width="512" data-id="1bed4559-f9bf-43e5-b4b8-dcdd4eb4a2ed" src="https://cdn.javarush.com/images/article/1bed4559-f9bf-43e5-b4b8-dcdd4eb4a2ed/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 11">Нажимаем начать и нам сразу же приходит ответ:<img data-max-width="512" data-id="392c2361-b04e-411e-8750-44ff8ac05b56" src="https://cdn.javarush.com/images/article/392c2361-b04e-411e-8750-44ff8ac05b56/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 12">Напишем еще какую-то лабуду, чтобы проверить:<img data-max-width="512" data-id="42578b38-d572-40a1-8c58-b56c9848dba3" src="https://cdn.javarush.com/images/article/42578b38-d572-40a1-8c58-b56c9848dba3/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 13">И все, на этом моменте можно сказать, что задача наша JRTB-2 завершена. Здесь пока что особенно тесты не напишешь, поэтому оставим все как есть.
+
+Далее нужно создать новый коммит:<img data-max-width="512" data-id="fab24536-9f78-4d76-87aa-94662b19ad7b" src="https://cdn.javarush.com/images/article/fab24536-9f78-4d76-87aa-94662b19ad7b/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 14">Обратите внимание на имя коммита: опять заостряю ваше внимание на этом. Коммит вначале содержит имя задачи, а потом уже более детальное описание, что сделано.
+
+Нажимаем <span class="text-bold">Commit and Push…</span> и подтверждаем, еще раз нажав <span class="text-bold">Push</span>:<img data-max-width="512" data-id="bb41a8e6-2dee-4b14-be36-460e23b60ace" src="https://cdn.javarush.com/images/article/bb41a8e6-2dee-4b14-be36-460e23b60ace/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 15">Переходим в <a href="https://github.com/javarushcommunity/javarush-telegrambot" rel="nofollow" target="_blank">наш проект</a>. Как и раньше, GitHub уже увидел новую ветку и предлагает создать пул-реквест на main. Не противимся и создаем его:<img data-max-width="800" data-id="75880a98-5812-49e7-bc02-09d2d4fb5ff5" src="https://cdn.javarush.com/images/article/75880a98-5812-49e7-bc02-09d2d4fb5ff5/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 16">Уже как обычно выбрали лейбу, проект и назначили ее на меня. В конце нажимаем Create Pull Request.
+
+Немного подождем, пока пройдет билд — и все, пул-реквест готов к слиянию:<img data-max-width="800" data-id="f63be8c4-31ec-47fb-af9b-dc621e0f3489" src="https://cdn.javarush.com/images/article/f63be8c4-31ec-47fb-af9b-dc621e0f3489/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 17"><h2>Версионирование</h2>Я как-то упустил момент, что нам нужно вести версионирование. Для этого сделаем еще несколько изменений в нашей ветке. Заходим обратно в IDEA и смотрим на версию проекта в помнике:<img data-max-width="512" data-id="5637da0d-2fe8-4d59-8674-f1790d03a305" src="https://cdn.javarush.com/images/article/5637da0d-2fe8-4d59-8674-f1790d03a305/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 18">Стоит версия <span class="text-bold">0.0.1-SNAPSHOT</span>. Это дежурная версия. А мы начнем с того, что будем обновлять версию проекта с каждой новой решенной задачей.
+
+Пока мы не вышли в MVP, версия будет идти с суффиксом -SNAPSHOT. 
+
+Какая будет схема версионирования?
+
+<span class="text-bold">X.Y.Z-SNAPSHOT</span>
+
+Где:<ul>
+<li>X — мажорное обновление версии, зачастую содержит проблемы с обратной совместимостью с предыдущей версией;</li>
+<li>Y — не сильно большие изменения, полностью совместимые с предыдущей версией;</li>
+<li>Z — счетчик дефектов, которые мы нашли и починили.</li>
+
+</ul>Исходя из этого у нас будет первая версия — <span class="text-bold">0.1.0-SNAPSHOT</span> — то есть, у нас не было еще мажорных обновлений, всего понемногу, и мы еще не вышли в MVP, поэтому есть суффикс -SNAPSHOT.
+
+Меняем в помнике это дело:<img data-max-width="800" data-id="44e2a45c-6291-4fdf-bda5-042e6a7ba595" src="https://cdn.javarush.com/images/article/44e2a45c-6291-4fdf-bda5-042e6a7ba595/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 19">Идем в файл RELEASE_NOTES, где будем описывать изменения проекта с каждой новой версией:<img data-max-width="800" data-id="138e13d9-499b-45d4-a2e7-e20d81cdf3a5" src="https://cdn.javarush.com/images/article/138e13d9-499b-45d4-a2e7-e20d81cdf3a5/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 20">Наша первая запись. Теперь при каждом последующем обновлении версии будем здесь описывать что именно произошло.
+
+Делаем коммит этого дела, пишем описание:
+
+<span class="text-bold">JRTB-2: updated project version and added to RELEASE_NOTES</span>
+
+Все точно так же, как и до этого. Ждем, пока билд пройдет, и мы сможем смержить наши изменения.
+
+Только здесь будет несколько иначе. Я хочу сделать так, чтобы каждая задача в main ветке была отдельным коммитом, поэтому просто нажать в пул-реквест <span class="text-bold">Merge pull request</span> нам не подойдет. 
+
+В гите есть опция git squash, которая собирает все коммиты в один и мержит. 
+
+Выбираем эту опцию:<img data-max-width="800" data-id="24112b77-07f4-4eb6-b649-5faf70bcf2d6" src="https://cdn.javarush.com/images/article/24112b77-07f4-4eb6-b649-5faf70bcf2d6/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 21">Нажимаем Squash and Merge, и нам предлагают еще отредактировать сообщение, которое будет в итоге:<img data-max-width="800" data-id="a583cdfc-9d42-4f03-b956-feeda0294423" src="https://cdn.javarush.com/images/article/a583cdfc-9d42-4f03-b956-feeda0294423/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 22">Очень удобно и главное, что востребовано. К слову, на битбакете такой фичи я не видел =/
+
+Подтверждаем мерж.
+
+Осталась самая малость — перевести задачу в статус Done у нас в доске, написать комментарий со ссылкой на пул-реквест и закрыть его:<img data-max-width="800" data-id="d04861f7-8bc2-45c1-b589-6c9b328c2afb" src="https://cdn.javarush.com/images/article/d04861f7-8bc2-45c1-b589-6c9b328c2afb/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 23">Наша доска теперь выглядит так:<img data-max-width="800" data-id="9a32e01a-6370-4fae-b8a5-ba7203aa5c89" src="https://cdn.javarush.com/images/article/9a32e01a-6370-4fae-b8a5-ba7203aa5c89/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 24"><h2>Вывод</h2>Сегодня мы шаг за шагом создали телеграм-бота и внедрили его в наш SpringBoot проект. Бот работает, отдает ответы. Сделали сразу же доступ к данным бота через проперти. 
+
+Дальше больше: будем делать большой кусок — выполнять <a href="https://github.com/javarushcommunity/javarush-telegrambot/issues/3" rel="nofollow" target="_blank">JRTB-3</a> — добавление Command Pattern для нашего проекта.
+
+Ох, еще один нюанс…. Я же говорил, что не буду публиковать token, чтобы им не воспользовались. Но так как я писал статью уже ближе к полуночи и после рабочего дня, то вышло, что я выложил-таки в репозиторий действующий токен, а сказала мне об этом GitGuardian в письме:<img data-max-width="512" data-id="573a85c7-ed5f-4f7a-84b4-daf515eedb33" src="https://cdn.javarush.com/images/article/573a85c7-ed5f-4f7a-84b4-daf515eedb33/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: добавляем телеграм-бота на проект - 25">Спасибо им за это! Что же теперь делать? Удалить из гита уже не получится, так как даже если я накачу новый коммит уже без этого токена, то он все равно останется в старом. А удалять и откатывать назад коммит я не хочу. Поэтому я пошел и деактивировал токен у уже упомянутого BotFather. Теперь токен есть, но он уже недействителен. 
+
+Подписывайтесь на <a href="https://github.com/romankh3" rel="nofollow" target="_blank">мой гитхаб аккаунт</a>, чтобы раньше публикации статьи увидеть весь код по ней.
+
+Всем спасибо за чтение, до встречи.
+
+<h4><a href="https://javarush.com/groups/posts/2935-java-proekt-ot-a-do-ja-pishem-realjhnihy-proekt-dlja-portfolio#articles" target="_blank">Список всех материалов серии в начале этой статьи.</a></h4>

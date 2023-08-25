@@ -1,0 +1,255 @@
+Порядок действий при создании объекта
+<p>----------------------------------------</p>
+Сегодняшняя лекция будет довольно...э-э-э...разносторонней :) В том смысле, что мы рассмотрим широкий круг тем, но все они будут касаться процесса создания объекта. Мы разберем его от начала до конца: как вызываются конструкторы, как и в каком порядке...
+<p>----------------------------------------</p>
+Привет! Сегодняшняя лекция будет довольно...э-э-э...разносторонней :) В том смысле, что мы рассмотрим широкий круг тем, но все они будут касаться <span class="text-bold">процесса создания объекта</span>.
+
+Мы разберем его от начала до конца: как вызываются конструкторы, как и в каком порядке инициализируются поля (в том числе статические) и т.д.
+
+Некоторые моменты, рассматриваемые в статье, мы затрагивали ранее, поэтому можешь пробежать глазами материал <a href="https://javarush.com/groups/posts/1927-konstruktorih-bazovihkh-klassov--" target="_blank">о конструкторе базовых классов</a>. 
+
+Для начала давай вспомним как происходит создание объекта.
+
+Ну, как этот процесс выглядит с точки зрения разработчика, ты хорошо помнишь: создал класс, написал <code><span class="text-bold">new</span></code> — и все готово :) Здесь поговорим о том, что происходит внутри компьютера и Java-машины, когда мы пишем, например:
+
+<pre class="lang-java line-numbers"><code>
+Cat cat = new Cat();
+</code></pre>
+Мы ранее уже говорили об этом, но на всякий случай вспомним:
+<ol>
+<li>Сначала для хранения объекта выделяется память.</li>
+<li>Далее Java-машина создает <span class="text-bold">ссылку</span> на этот объект (в нашем случае ссылка — это <code><span class="text-bold">Cat cat</span></code>).</li>
+<li>В завершение происходит инициализация переменных и вызов конструктора (этот процесс мы рассмотрим подробнее).</li>
+</ol>Кроме того, из <a href="https://javarush.com/groups/posts/1930-zhiznennihy-cikl-obhhekta-" target="_blank">лекции о жизненном цикле объекта</a> ты наверняка помнишь, что он длится до тех пор, пока на него существует хоть одна ссылка. Если же их не осталось, объект станет добычей для сборщика мусора.
+<img data-max-width="850" alt="Порядок действий при создании объекта - 2" src="https://cdn.javarush.com/images/article/1cbff5aa-f5c3-4677-a996-db0ccf4c8dc9/original.jpeg">Первые два пункта особых вопросов вызывать не должны. Выделение памяти — процесс несложный, да и результат может быть только один из двух: либо память есть, либо ее нет :) Создание ссылки — тоже ничего необычного. А вот пункт номер три представляет из себя целый набор операций, идущих в строго определенном порядке.
+
+Я не фанат зубрежки как средства что-то выучить, но вот в этом процессе тебе стоит хорошо разобраться, и <span class="text-bold">знать этот порядок нужно наизусть</span>.
+
+Когда мы говорили о процессе создания объектов на прошлых лекциях, ты еще ничего толком не знал о наследовании, поэтому объяснить некоторые моменты было проблематично. Сейчас же объем твоих знаний достаточно велик, и мы, наконец, можем рассмотреть этот вопрос полноценно :)
+
+Итак, третий пункт гласит что “<em>в завершение происходит инициализация переменных и вызов конструктора.</em>”
+
+Но в каком порядке все это совершается?
+
+Для лучшего понимания давай создадим два простейших класса — родителя и наследника:
+
+<pre class="lang-java line-numbers"><code>
+public class Car {
+
+   public static int carCounter = 0;
+
+   private String description = "Абстрактная машина";
+
+   public Car() {
+   }
+
+   public String getDescription() {
+       return description;
+   }
+}
+
+public class Truck extends Car {
+
+   private static int truckCounter = 0;
+
+   private int yearOfManufacture;
+   private String model;
+   private int maxSpeed;
+
+   public Truck(int yearOfManufacture, String model, int maxSpeed) {
+       this.yearOfManufacture = yearOfManufacture;
+       this.model = model;
+       this.maxSpeed = maxSpeed;
+
+       Car.carCounter++;
+       truckCounter++;
+   }
+}
+</code></pre>
+Класс <code><span class="text-bold">Truck</span></code> представляет собой реализацию грузовика: с полями, отражающими его год выпуска, модель и максимальную скорость.
+
+Итак, мы хотим создать один такой объект:
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) throws IOException {
+
+       Truck truck = new Truck(2017, "Scania S 500 4x2", 220);
+   }
+}
+</code></pre>
+Вот как будет выглядеть этот процесс с точки зрения Java-машины:
+<ol>
+<li><p>Первое что произойдет — <span class="text-bold">проинициализируются статические переменные класса <code>Car</code></span>. Да-да, именно класса <code><span class="text-bold">Car</span></code>, а не <span class="text-bold">Truck</span>. Статические переменные инициализируются еще до вызова конструкторов, и начинается это в классе-родителе. Давай попробуем проверить. Выставим счетчик <code><span class="text-bold">carCounter</span></code> в классе <code>Car</code> на 10 и попробуем вывести его в консоль в обоих конструкторах — <code><span class="text-bold">Car</span></code> и <code><span class="text-bold">Truck</span></code>.</p>
+
+<pre class="lang-java line-numbers"><code>
+public class Car {
+
+   public static int carCounter = 10;
+
+   private String description = "Абстрактная машина";
+
+   public Car() {
+       System.out.println(carCounter);
+   }
+
+   public String getDescription() {
+       return description;
+   }
+}
+
+public class Truck extends Car {
+
+   private static int truckCount = 0;
+
+   private int yearOfManufacture;
+   private String model;
+   private int maxSpeed;
+
+   public Truck(int yearOfManufacture, String model, int maxSpeed) {
+       System.out.println(carCounter);
+       this.yearOfManufacture = yearOfManufacture;
+       this.model = model;
+       this.maxSpeed = maxSpeed;
+
+       Car.carCounter++;
+       truckCount++;
+   }
+}
+</code></pre>
+<p>Мы специально поставили вывод в консоль в самом начале конструктора <code>Truck</code>, чтобы точно знать: поля грузовика на момент вывода <code>carCounter</code>’a в консоль еще не были инициализированы.</p>
+
+<p>А вот и результат:</p><p>
+</p><pre><code>
+10
+10
+</code></pre></li>
+<li><p><span class="text-bold">После инициализации статических переменных класса-предка инициализируются статические переменные класса-потомка.</span> 
+То есть в нашем случае — поле <code>truckCounter</code> класса <code>Truck</code>.</p>
+
+<p>Опять же, проведем эксперимент и попробуем вывести значение <code>truckCounter</code>’a внутри конструктора <code>Truck</code> до инициализации остальных полей:</p>
+
+<pre class="lang-java line-numbers"><code>
+public class Truck extends Car {
+
+   private static int truckCounter = 10;
+
+   private int yearOfManufacture;
+   private String model;
+   private int maxSpeed;
+
+   public Truck(int yearOfManufacture, String model, int maxSpeed) {
+       System.out.println(truckCounter);
+       this.yearOfManufacture = yearOfManufacture;
+       this.model = model;
+       this.maxSpeed = maxSpeed;
+
+       Car.carCounter++;
+       truckCounter++;
+   }
+}
+</code></pre>
+<p>Как видишь, значение 10 <span class="text-bold">уже было присвоено</span> нашей статической переменной на момент, когда конструктор <code>Truck</code> начал свою работу.</p></li>
+<li><p>Время конструкторов все еще не пришло! Инициализация переменных продолжается. <span class="text-bold">Третьими по счету будут инициализированы нестатические переменные класса-предка.</span> Как видишь, наследование заметно усложняет процесс создания объекта, но тут уж ничего не поделаешь: некоторые вещи в программировании придется просто запомнить :)</p>
+<p>Для эксперимента мы можем присвоить переменной <code><span class="text-bold">description</span></code> класса <code><span class="text-bold">Car</span></code> какое-то первоначальное значение, а потом поменять его в конструкторе. </p>
+
+<pre class="lang-java line-numbers"><code>
+public class Car {
+
+   public static int carCounter = 10;
+
+   private String description = "Начальное значение поля description";
+
+   public Car() {
+       System.out.println(description);
+       description = "Абстрактная машина";
+       System.out.println(description);
+   }
+
+   public String getDescription() {
+       return description;
+   }
+}
+</code></pre>
+<p>Запустим наш метод <code>main()</code> с созданием грузовика:</p>
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) throws IOException {
+
+       Truck truck = new Truck(2017, "Scania S 500 4x2", 220);
+   }
+}
+</code></pre>
+<p>И получим результат:</p>
+<pre><code>
+Начальное значение поля description
+Абстрактная машина
+</code></pre>
+<p>Это доказывает, что на момент начала работы конструктора <code>Car</code> у поля <code>description</code> уже было присвоенное значение.</p></li>
+<li><p>Наконец, дело дошло до конструкторов! <span class="text-bold">Точнее, до конструктора базового класса. Начало его работы — четвертый пункт в процессе создания объекта.</span></p>
+
+<p>Проверить это тоже достаточно легко. Попробуем вывести в консоль две строки: одну внутри конструктора базового <code>Car</code>, вторую — внутри конструктора <code>Truck</code>. Нам нужно убедиться, что строка внутри <code>Car</code> выведется первой:</p>
+
+<pre class="lang-java line-numbers"><code>
+public Car() {
+   System.out.println("Привет из конструктора Car!");
+}
+
+public Truck(int yearOfManufacture, String model, int maxSpeed) {
+
+   System.out.println("Привет из конструктора Truck!");
+   this.yearOfManufacture = yearOfManufacture;
+   this.model = model;
+   this.maxSpeed = maxSpeed;
+
+   Car.carCounter++;
+   truckCounter++;
+}
+</code></pre>
+<p>Запускаем наш метод <code>main()</code> и смотрим на результат:</p>
+<pre><code>
+Привет из конструктора Car!
+Привет из конструктора Truck!
+</code></pre>
+<p>Отлично, значит мы не ошиблись :) Едем дальше.</p></li>
+<li><p>Теперь пришла очередь <span class="text-bold">инициализации нестатических полей класса-потомка</span>, то есть нашего класса <code>Truck</code>. Поля класса, объект которого мы создаем, инициализируются только в пятую очередь! Удивительно, но факт :) Опять же, проведем простую проверку, такую же, как и с родительским классом: присвоим переменной <code><span class="text-bold">maxSpeed</span></code> некоторое изначальное значение и проверим в конструкторе <code><span class="text-bold">Truck</span></code>, что оно было присвоено раньше, чем конструктор начал работу:</p>
+
+<pre class="lang-java line-numbers"><code>
+public class Truck extends Car {
+
+   private static int truckCounter = 10;
+
+   private int yearOfManufacture;
+   private String model;
+   private int maxSpeed = 150;
+
+   public Truck(int yearOfManufacture, String model, int maxSpeed) {
+
+       System.out.println("Изначальное значение maxSpeed = " + this.maxSpeed);
+       this.yearOfManufacture = yearOfManufacture;
+       this.model = model;
+       this.maxSpeed = maxSpeed;
+
+       Car.carCounter++;
+       truckCounter++;
+   }
+}
+</code></pre>
+<p>Вывод в консоль:</p>
+<pre><code>
+Изначальное значение maxSpeed = 150
+</code></pre>
+<p>Как видишь, <span class="text-bold">на момент старта конструктора <code>Truck</code> значение <code>maxSpeed</code> уже было равно 150!</span></p></li>
+<li><p><span class="text-bold">Вызывается конструктор дочернего класса <code>Truck</code>.</span></p>
+
+<p>И только сейчас, <span class="text-bold">в последнюю очередь, будет вызван конструктор того класса, объект которого мы создаем!</span></p>
+
+<p>Только на шестом этапе полям будут присвоены те значения, которые мы передадим в качестве параметров нашему грузовику.</p>
+
+<p>Как видишь, «конструирование» грузовика, т.е. процесс создания объекта — штука непростая. Но мы, кажется, разобрали его до самых мелочей :)</p></li></ol><img data-max-width="850" alt="Порядок действий при создании объекта - 3" src="https://cdn.javarush.com/images/article/71adac61-c34b-4688-959b-b64a4cd2d972/original.jpeg">Почему так важно хорошо разбираться в этом процессе?
+Представь, насколько неожиданными могут оказаться результаты создания обычного объекта, если не знать точно, что происходит «под капотом» :) 
+<span class="text-bold">Самое время вернуться к курсу и решить несколько задач!
+Удачи, и до новых встреч :)</span>

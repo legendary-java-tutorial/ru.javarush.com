@@ -1,0 +1,226 @@
+Уровень 31. Ответы на вопросы к собеседованию по теме уровня
+<p>----------------------------------------</p>
+Может ли объект File соответствовать файлу, которого еще нет? Как преобразовать объект File к типу Path? Зачем нужен класс Files? Какие классы для архивации вы знаете? Как добавить директорию в архив?
+<p>----------------------------------------</p>
+
+<img data-id="fac7fd22-96b6-4c89-9146-e7b8017a40e2" data-max-width="850" alt="Уровень 31. Ответы на вопросы к собеседованию по теме уровня - 1" src="https://cdn.javarush.com/images/article/fac7fd22-96b6-4c89-9146-e7b8017a40e2/1024.jpeg"><ol><li><p><strong>Может ли объект <code>File</code> соответствовать файлу, которого еще нет?</strong></p><p>Да, если передать в конструктор значение директории.</p>
+
+<pre class='lang-java line-numbers'><code>
+String dirPath = "/";
+File f = new File(dirPath);
+File[] files = f.listFiles();
+</code></pre>
+<p>Так делают, например, для того, чтобы получить массив файлов.</p>
+
+<pre class='lang-java line-numbers'><code>
+public class MyClass {
+    public static void main(String[] args) {
+        boolean isObject = false;
+
+        
+        File file = new File("/");
+        if (file instanceof Object){
+            isObject = true;
+        }
+        boolean isFile = file.isFile(); // Tests whether the file denoted by this abstract pathname is a normal file.
+Это из документации
+        System.out.println(isObject + " "+ isFile);
+
+    }
+}
+</code></pre>
+<p><strong>Вывод: <br />
+<br />
+<em>true false</em></strong></p>
+
+<p><code>File</code> наследуется от <code>object</code>. Ответ: да! Жду комментариев.</p></li>
+<li><p><strong>Как преобразовать объект <code>File</code> к типу <code>Path</code>?</strong></p><p>Метод <code>toPath();</code></p>
+
+<pre class='lang-java line-numbers'><code>
+toPath(); //Returns a java.nio.file.Path object constructed from the this abstract path.
+</code></pre></li><li><p><strong>Зачем нужен класс Files?</strong></p><p>Взяли за основу класс <code>File</code>, добавили в него немного нового, переименовывали методы, а в конце еще и разделили на два. Так что теперь есть два новых класса – <code>Path</code> и <code>Files</code>. </p><p><code>Path</code> – это, фактически новый аналог класса <code>File</code>, а <code>Files</code> – это утилитный класс (по аналогии с классами <code>Arrays</code> & <code>Collections</code>), в него вынесли все статические методы класса <code>File</code>. Так «правильнее» с точки зрения ООП.M</p>
+
+<p>Немного из документов:</p>
+
+<p><code>public final class Files</code><br />
+<code>extends Object</code></p>
+
+<p>This class consists exclusively of static methods that operate on files, directories, or other types of files.<br />
+In most cases, the methods defined here will delegate to the associated file system provider to perform the file operations.</p></li>
+<li><p><strong>Какие классы для архивации вы знаете?</strong></p><p>Неплохая статья на эту тему и выдержка из нее: <a href='http://crypto.pp.ua/2010/06/arxivaciya-v-java/' rel='nofollow' target='_blank'>Архивация в Java</a></p>
+
+<p>Для работы с архивами в спецификации Java существуют два пакета – <code>java.util.zip</code> и <code>java.util.jar</code> соответственно для архивов zip и jar. Различие форматов jar и zip заключается только в расширении архива zip. Пакет <code>java.util.jar</code> аналогичен пакету <code>java.util.zip</code>, за исключением реализации конструкторов и метода <code>voidputNextEntry(ZipEntry e)</code> класса <code>JarOutputStream</code>. Ниже будет рассмотрен только пакет <code>java.util.jar</code>. Чтобы переделать все примеры на использование zip-архива, достаточно всюду в коде заменить Jar на Zip.</p></li>
+<li><p><strong>Как добавить директорию в архив?</strong></p><p>Для себя я понял этот вопрос, как добавление пустой директории в готовый архив. Никаких рабочих примеров я не нашел. Вот код: (Он наглядно показывает, что можно в архив положить любой файл, а вот с пустой директорией… я не знаю как ответить, постить на StackOverFlow не стал, за такой вопрос заминусят точно) Если у кого есть предложения, то напишите.</p>
+
+<pre class='lang-java line-numbers'><code>
+public class Main {
+    public static void main(String[] args) {
+        String[] myFiles = {"D:\\forJava\\MyArtifactName\\packForTest\\res2.txt",
+                "D:\\forJava\\MyArtifactName\\packForTest\\res.txt",
+                "D:\\forJava\\MyArtifactName\\packForTest\\res4.txt",
+                "D:\\forJava\\MyArtifactName\\packForTest\\testDir\\"
+                };
+        String zipFile = "D:\\forJava\\MyArtifactName\\packForTest\\res.zip";
+        ZipUtility zipUtil = new ZipUtility();
+        try {
+            zipUtil.zip(myFiles, zipFile);
+
+        } catch (Exception ex) {
+            // some errors occurred
+            ex.printStackTrace();
+        }
+    }
+}
+</code></pre>
+<p>Вопрос о последней testDir, ее то как раз в получившийся архив JVM не кладет, со всеми остальными txt – файлами норм получается.</p>
+
+<p><code>ZipUtility.java</code>:</p>
+
+<pre class='lang-java line-numbers'><code>
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+public class ZipUtility {
+
+    private static final int BUFFER_SIZE = 4096;
+
+    public void zip(List&lt;File&gt; listFiles, String destZipFile) throws IOException {
+        ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(destZipFile));
+        for (File file : listFiles) {
+            if (file.isDirectory()) {
+                zipDirectory(file, file.getName(), zos);
+            } else {
+                zipFile(file, zos);
+            }
+        }
+        zos.flush();
+        zos.close();
+    }
+
+    public void zip(String[] files, String destZipFile) throws IOException {
+        List&lt;File&gt; listFiles = new ArrayList&lt;File&gt;();
+        for (int i = 0; i &lt; files.length; i++) {
+            listFiles.add(new File(files[i]));
+        }
+        zip(listFiles, destZipFile);
+    }
+
+    private void zipDirectory(File folder, String parentFolder, ZipOutputStream zos) throws  IOException {
+        for (File file : folder.listFiles()) {
+            if (file.isDirectory()) {
+                zipDirectory(file, parentFolder + "/" + file.getName(), zos);
+                continue;
+            }
+            zos.putNextEntry(new ZipEntry(parentFolder + "/" + file.getName()));
+            BufferedInputStream bis = new BufferedInputStream(
+                    new FileInputStream(file));
+            long bytesRead = 0;
+            byte[] bytesIn = new byte[BUFFER_SIZE];
+            int read = 0;
+            while ((read = bis.read(bytesIn)) != -1) {
+                zos.write(bytesIn, 0, read);
+                bytesRead += read;
+            }
+            zos.closeEntry();
+        }
+    }
+
+    private void zipFile(File file, ZipOutputStream zos)
+            throws  IOException {
+        zos.putNextEntry(new ZipEntry(file.getName()));
+        BufferedInputStream bis = new BufferedInputStream(new FileInputStream(
+                file));
+        long bytesRead = 0;
+        byte[] bytesIn = new byte[BUFFER_SIZE];
+        int read = 0;
+        while ((read = bis.read(bytesIn)) != -1) {
+            zos.write(bytesIn, 0, read);
+            bytesRead += read;
+        }
+        zos.closeEntry();
+    }
+}
+</code></pre>
+<p>Код <a href='https://www.codejava.net/java-se/file-io/zip-directories' rel='nofollow' target='_blank'>отсюда</a></p></li>
+<li><p><strong>Зачем нужны <code>Properties</code>?</strong></p><p><code>Properties</code> – это файл свойств. Структура его: ключ – значение. Для работы с такими файлами в Java есть класс <code>Properties</code>, он унаследован от <code>HashTable&lt;Object, Object&gt;</code></p>
+
+<p>Есть статья про манипуляции с ним — <a href='http://www.mkyong.com/java/java-properties-file-examples/' rel='nofollow' target='_blank'>Java Properties file examples</a></p></li>
+<li><p><strong>В каком виде хранятся данные в файле <code>.properties</code>?</strong></p><p>Ключ – значение.</p></li>
+<li><p><strong>Можно ли изменять данные в объекте <code>Properties</code> после загрузки их из файла?</strong></p><p>Если он унаследован от <code>HashMap</code>, тогда можно, только потом нужно будет изменения в этот файл отписать. Для этого есть метод <code>setProperty</code>.</p>
+
+<p>Вот код:</p>
+
+<pre class='lang-java line-numbers'><code>
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+
+/**
+ * Created by Роман on 12.09.2016.
+ */
+public class LoadAndSetProperties {
+
+    public static void main(String[] args) {
+
+        Properties prop = new Properties();
+        InputStream input = null;
+        try {
+
+            input = new FileInputStream("D:\\forJava\\MyArtifactName\\packForTest\\config.properties");
+
+            // load a properties file
+            prop.load(input);
+
+            // get the property value and print it out
+
+
+            prop.setProperty("database", "ddfdfdfdfdf");
+            System.out.print(prop.getProperty("database"));
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        } finally {
+            if (input != null) {
+                try {
+                    input.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+}
+</code></pre>
+<p><strong>Вывод: <br />
+<br />
+<em>ddfdfdfdfdf</em></strong></p></li>
+<li><p><strong>Зачем нужен класс <code>FileReader</code>?</strong></p><p>Java Docs:</p>
+
+<p><code>public class FileReader</code><br />
+<code>extends InputStreamReader</code></p>
+
+<p>Convenience class for reading character files. The constructors of this class assume that the default character encoding and the default byte-buffer size are appropriate. To specify these values yourself, construct an InputStreamReader on a FileInputStream.</p>
+
+<p>FileReader is meant for reading streams of characters. </p>
+
+<p>Класс для чтения символов файлов. Конструкторы этого класса предполагают, что кодировка символов дефолтная и дефолтный размер буфера являются подходящими. Чтобы задать эти значения самостоятельно, следует построить <code>InputStreamReader</code> над <code>FileInputStream</code>. <code>FileReader</code> предназначен для считывания потоков символов. </p></li>
+<li><p><strong>Зачем нужен класс <code>FileWriter</code>?</strong></p><p><code>public class FileWriter</code><br />
+<code>extends OutputStreamWriter</code></p>
+
+<p>Convenience class for writing character files. The constructors of this class assume that the default character encoding and the default byte-buffer size are acceptable. To specify these values yourself, construct an OutputStreamWriter on a FileOutputStream.</p>
+
+<p>Whether or not a file is available or may be created depends upon the underlying platform. Some platforms, in particular, allow a file to be opened for writing by only one FileWriter (or other file-writing object) at a time. In such situations the constructors in this class will fail if the file involved is already open.
+FileWriter is meant for writing streams of characters. </p>
+
+<p>Класс для записи символов файлов. Конструкторы этого класса предполагают, что кодировка символов дефолтная и дефолтный размер буфера являются приемлемым. Чтобы задать эти значения самостоятельно, следует построить <code>OutputStreamWriter</code> над <code>FileOutputStream</code>. Является ли файл доступен для записи, зависит от используемой платформы. Некоторые платформы разрешают держать файл для записи только одним <code>FileWriter</code> (или другого объекта записи файла), в одно время.  <code>FileWriter</code> предназначен для записи потоков символов. Для написания потоков необработанных байтов, используйте <code>FileOutputStream</code>.</p>
+
+<p>Эти классы (<code>FileReader</code> и <code>FileWriter</code>) специально ориентированы для работы с текстом и строками.</p></li></ol>

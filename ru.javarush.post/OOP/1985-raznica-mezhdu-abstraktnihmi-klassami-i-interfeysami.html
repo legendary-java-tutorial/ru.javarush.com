@@ -1,0 +1,227 @@
+Разница между абстрактными классами и интерфейсами
+<p>----------------------------------------</p>
+ривет! В этой лекции поговорим о том, чем абстрактные классы отличаются от интерфейсов и рассмотрим примеры с распространенными абстрактными классами. Мы посвятили отличиям абстрактного класса от интерфейса отдельную лекцию, так как тема очень важная ...
+<p>----------------------------------------</p>
+Привет! В этой лекции поговорим о том, чем абстрактные классы отличаются от интерфейсов и рассмотрим примеры с распространенными абстрактными классами. 
+
+<img data-id="0418036c-c8a5-470e-adbb-71f1f64a7ead" data-max-width="850" alt="Разница между абстрактными классами и интерфейсами - 1" src="https://cdn.javarush.com/images/article/0418036c-c8a5-470e-adbb-71f1f64a7ead/1024.jpeg">Мы посвятили отличиям абстрактного класса от интерфейса отдельную лекцию, так как тема очень важная. О разнице между этими понятиями тебя спросят на 90% будущих собеседований. Поэтому обязательно разберись с прочитанным, а если что-то поймешь не до конца, почитай дополнительные источники.
+
+Итак, мы знаем, что такое абстрактный класс и что такое интерфейс. Теперь пройдемся по их отличиям.
+
+<ol>
+<li><p><strong>Интерфейс описывает только поведение. У него нет состояния. А у абстрактного класса состояние есть: он описывает и то, и другое.</strong></p>
+<p>Возьмем для примера абстрактный класс <code>Bird</code> и интерфейс <code>Flyable</code>:</p>
+
+<pre class="lang-java line-numbers"><code>
+public abstract class Bird {
+   private String species;
+   private int age;
+
+   public abstract void fly();
+
+   public String getSpecies() {
+       return species;
+   }
+
+   public void setSpecies(String species) {
+       this.species = species;
+   }
+
+   public int getAge() {
+       return age;
+   }
+
+   public void setAge(int age) {
+       this.age = age;
+   }
+}
+</code></pre>
+<p>Давай создадим класс птицы <code>Mockingjay</code> (сойка-пересмешница) и унаследуем его от <code>Bird</code>:</p>
+<pre class="lang-java line-numbers"><code>
+public class Mockingjay extends Bird {
+  
+   @Override
+   public void fly() {
+       System.out.println("Лети, птичка!");
+   }
+
+   public static void main(String[] args) {
+
+       Mockingjay someBird = new Mockingjay();
+       someBird.setAge(19);
+       System.out.println(someBird.getAge());
+   }
+}
+</code></pre>
+<p>Как видишь, мы легко получаем доступ к состоянию абстрактного класса — к его переменным <code>species</code> (вид) и <code>age</code> (возраст).</p>
+<p>Но если мы попытаемся сделать это же с интерфейсом, картина будет другой. Можем попробовать добавить в него переменные:</p>
+<pre class="lang-java line-numbers"><code>
+public interface Flyable {
+
+   String species = new String();
+   int age = 10;
+
+   public void fly();
+}
+
+public interface Flyable {
+
+   private String species = new String(); // ошибка
+   private int age = 10; // тоже ошибка
+
+   public void fly();
+}
+</code></pre>
+<p>У нас даже не получится создать внутри интерфейса <em>private</em>-переменные. Почему? Потому что <em>private</em>-модификатор создали, чтобы скрывать реализацию от пользователя. А внутри интерфейса реализации нет: там и скрывать нечего. </p>
+<p>Интерфейс только описывает поведение. Соответственно, мы не сможем реализовать внутри интерфейса геттеры и сеттеры. Такова природа интерфейса: он нужен для работы с поведением, а не состоянием.</p>
+<p>В Java8 появились дефолтные методы интерфейсов, у которых есть реализация. О них ты уже знаешь, поэтому повторяться не будем.</p></li>
+<li><p><strong>Абстрактный класс связывает между собой и объединяет классы, имеющие очень близкую связь. В то же время, один и тот же интерфейс могут реализовать классы, у которых вообще нет ничего общего.</strong></p>
+<p>Вернемся к нашему примеру с птицами.</p>
+<p>Наш абстрактный класс <code>Bird</code> нужен, чтобы на его основе создавать птиц. Только птиц и никого больше! Конечно, они будут разными.</p>
+<img data-id="19a7c54e-41da-4ec3-8ba0-759edcc28ccd" data-max-width="850" alt="Разница между абстрактными классами и интерфейсами - 2" src="https://cdn.javarush.com/images/article/19a7c54e-41da-4ec3-8ba0-759edcc28ccd/1024.jpeg">
+<p>С интерфейсом <code>Flyable</code> все обстоит по-другому. Он только описывает поведение, соответствующее его названию, — «летающий». Под определение «летающий», «способный летать» попадает много объектов, не связанных между собой.</p>
+<img data-id="6a5b3521-7f77-4a49-a1a1-ca5cdbf838c1" data-max-width="850" alt="Разница между абстрактными классами и интерфейсами - 3" src="https://cdn.javarush.com/images/article/6a5b3521-7f77-4a49-a1a1-ca5cdbf838c1/1024.jpeg">
+<p>Эти 4 сущности между собой никак не связаны. Что уж там говорить, не все из них даже являются одушевленными. Тем не менее, все они — <code>Flyable</code>, способные летать.</p>
+<p>Мы бы не смогли описать их с помощью абстрактного класса. У них нет общего состояния, одинаковых полей. Чтобы дать характеристику самолету, нам, наверное, понадобятся поля «модель», «год выпуска» и «максимальное количество пассажиров». Для Карлсона — поля для всех сладостей, которые он сегодня съел, и список игр, в которые он будет играть с Малышом. Для комара...э-э-э...даже не знаем… Может, «уровень надоедливости»? :) </p>
+<p>Главное, что с помощью абстрактного класса описать их мы не можем. Они слишком разные. Но есть общее поведение: они могут летать. Интерфейс идеально подойдет для описания всего на свете, что умеет летать, плавать, прыгать или обладает каким-то другим поведением.</p></li>
+<li><p><strong>Классы могут реализовывать сколько угодно интерфейсов, но наследоваться можно только от одного класса.</strong></p>
+<p>Об этом мы уже говорили не раз. Множественного наследования в Java нет, а множественная реализация есть. Отчасти этот пункт вытекает из предыдущего: интерфейс связывает между собой множество разных классов, у которых часто нет ничего общего, а абстрактный класс создается для группы очень близких друг другу классов. Поэтому логично, что наследоваться можно только от одного такого класса. Абстрактный класс описывает отношения «is a».</p></li></ol>
+<h2>Стандартные интерфейсы InputStream &amp; OutputStream</h2>Мы уже проходили различные классы, отвечающие за потоковый ввод и вывод. Давай рассмотрим <code>InputStream</code> и <code>OutputStream</code>.
+
+Вообще, никакие это не интерфейсы, а самые настоящие абстрактные классы. Теперь ты знаешь, что это такое, поэтому работать с ними будет намного проще :)
+
+<code><strong>InputStream</strong></code> — это абстрактный класс, который отвечает за байтовый ввод. В Java есть серия классов, наследующих <code>InputStream</code>. Каждый из них настроен таким образом, чтобы получать данные из разных источников.   
+
+Поскольку <code>InputStream</code> является родителем, он предоставляет несколько методов для удобной работы с потоками данных. Эти методы есть у каждого потомка <code>InputStream</code>:
+<ul>
+<li><code>int available()</code> возвращает число байт, доступных для чтения;</li>
+<li><code>close()</code> закрывает источник ввода;</li>
+<li><code>int read()</code> возвращает целочисленное представление следующего доступного байта в потоке. Если достигнут конец потока, будет возвращено число -1;</li>
+<li><code>int read(byte[] buffer)</code> пытается читать байты в буфер, возвращая количество прочитанных байтов. Когда он достигает конца файла, возвращает значение -1;</li>
+<li><code>int read(byte[] buffer, int byteOffset, int byteCount)</code> считывает часть блока байт. Используется, когда есть вероятность, что блок данных был заполнен не целиком. Когда он достигает конца файла, возвращает -1;</li>
+<li><code>long skip(long byteCount)</code> пропускает <code>byteCount</code>, байт ввода, возвращая количество проигнорированных байтов.</li></ul>
+Советую изучить <a href="https://docs.oracle.com/javase/7/docs/api/java/io/InputStream.html" rel="nofollow" target="_blank">полный перечень методов</a>. 
+
+Классов-наследников на самом деле больше десятка. Для примера приведем несколько:
+
+<ol>
+<li><code><strong>FileInputStream</strong></code>: самый распространенный вид <code>InputStream</code>. Используется для чтения информации из файла;</li>
+<li><code><strong>StringBufferInputStream</strong></code>: еще один полезный вид <code>InputStream</code>. Он превращает строку во входной поток данных <code>InputStream</code>;</li>
+<li><code><strong>BufferedInputStream</strong></code>: буферизированный входной поток. Чаще всего он используется для повышения эффективности.</li></ol>
+Помнишь, мы проходили <code>BufferedReader</code> и говорили, что его можно не использовать?
+
+<strong>Когда мы пишем:</strong>
+
+<pre class="lang-java line-numbers"><code>
+BufferedReader reader = new BufferedReader(new InputStreamReader(System.in)) 
+</code></pre>
+…использовать <code>BufferedReader</code> не обязательно: <code>InputStreamReader</code> справится с задачей. Но <code>BufferedReader</code> делает это эффективнее и, к тому же, умеет читать данные целыми строками, а не отдельными символами.
+
+С <code>BufferedInputStream</code> все так же! Класс накапливает вводимые данные в специальном буфере без постоянного обращения к устройству ввода.
+
+Рассмотрим пример:
+
+<pre class="lang-java line-numbers"><code>
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.InputStream;
+
+public class BufferedInputExample {
+
+   public static void main(String[] args) throws Exception {
+       InputStream inputStream = null;
+       BufferedInputStream buffer = null;
+
+       try {
+          
+           inputStream = new FileInputStream("D:/Users/UserName/someFile.txt");
+          
+           buffer = new BufferedInputStream(inputStream);
+          
+           while(buffer.available()&gt;0) {
+              
+               char c = (char)buffer.read();
+              
+               System.out.println("Был прочитан символ " + c);
+           }
+       } catch(Exception e) {
+          
+           e.printStackTrace();
+          
+       } finally {
+          
+           inputStream.close();
+           buffer.close();
+       }
+   }
+}
+</code></pre>
+В этом примере мы читаем данные из файла, который находится на компьютере по адресу <strong>«D:/Users/UserName/someFile.txt»</strong>. Создаем 2 объекта — <code>FileInputStream</code> и <code>BufferedInputStream</code> в качестве его «обертки». После этого мы считываем байты из файла и преобразуем их в символы. И так до тех пор, пока файл не закончится.
+
+Как видишь, ничего сложного здесь нет. Ты можешь скопировать этот код и запустить его на каком-то настоящем файле, который хранится на твоем компьютере :)
+
+Класс <code><strong>OutputStream</strong></code> — это абстрактный класс, определяющий потоковый байтовый вывод.
+
+Как ты уже понял, это — антипод <code>InputStream</code>’a. Он отвечает не за то, откуда считывать данные, а за то, <strong>куда их отправить</strong>. 
+
+Как и <code>InputStream</code>, этот абстрактный класс предоставляет всем потомкам группу методов для удобной работы:
+
+<ul>
+<li><code>int close()</code> закрывает выходной поток;</li>
+<li><code>void flush()</code> очищает все буферы вывода;</li>
+<li><code>abstract void write (int oneByte)</code> записывает 1 байт в выходной поток;</li>
+<li><code>void write (byte[] buffer)</code> записывает массив байтов в выходной поток;</li>
+<li><code>void write (byte[] buffer, int offset, int count)</code> записывает диапазон из count байт из массива, начиная с позиции offset.</li>
+</ul>
+Вот некоторые из потомков класса <code>OutputStream</code>:
+
+<ol>
+<li><p><code><strong>DataOutputStream</strong></code>. Выходной поток, включающий методы для записи стандартных типов данных Java.</p>
+<p>Очень простой класс для записи примитивных типов Java и строк. Наверняка ты поймешь написанный код даже без объяснений:</p>
+
+<pre class="lang-java line-numbers"><code>
+import java.io.*;
+
+public class DataOutputStreamExample {
+
+   public static void main(String[] args) throws IOException {
+
+       DataOutputStream dos = new DataOutputStream(new FileOutputStream("testFile.txt"));
+
+       dos.writeUTF("SomeString");
+       dos.writeInt(22);
+       dos.writeDouble(1.21323);
+       dos.writeBoolean(true);
+      
+   }
+}
+</code></pre>
+<p>У него есть отдельные методы для каждого типа — <code>writeDouble()</code>, <code>writeLong()</code>, <code>writeShort()</code> и так далее.</p></li>
+<li><p><strong>Класс</strong> <code><strong>FileOutputStream</strong></code>. Реализует механизм отправки данных в файл на диске. Мы, кстати, уже использовали его в прошлом примере, обратил внимание? Мы передали его внутрь DataOutputStream, который выступал в роли «обертки».</p></li>
+<li><p><code><strong>BufferedOutputStream</strong></code>. Буферизованный выходной поток. Тоже ничего сложного, суть та же, что и у <code>BufferedInputStream</code> (или у <code>BufferedReader</code>’a). Вместо обычной последовательной записи данных используется запись через специальный «накопительный» буфер. Благодаря буферу можно сократить количество обращений к месту назначения данных и за счет этого повысить эффективность.</p>
+
+<pre class="lang-java line-numbers"><code>
+import java.io.*;
+
+public class DataOutputStreamExample {
+
+   public static void main(String[] args) throws IOException {
+
+       FileOutputStream outputStream = new FileOutputStream("D:/Users/Username/someFile.txt");
+       BufferedOutputStream bufferedStream = new BufferedOutputStream(outputStream);
+      
+       String text = "I love Java!"; // эту строку мы преобразуем в массив байтов и запишем в файл
+
+       byte[] buffer = text.getBytes();
+      
+       bufferedStream.write(buffer, 0, buffer.length);
+       bufferedStream.close();
+   }
+}
+</code></pre>
+<p>Опять же, ты можешь самостоятельно «поиграть» с этим кодом и проверить, как он будет работать на реальных файлах твоего компьютера.</p></li></ol>
+Также об <code>InputStream</code> и <code>OutputStream</code> и наследниках можно почитать в материале «<a href="http://developer.alexanderklimov.ru/android/java/io.php" rel="nofollow" target="_blank">Система ввода/вывода</a>».
+
+О <code>FileInputStream</code>, <code>FileOutputStream</code> и <code>BufferedInputStream</code> у нас еще будет отдельная лекция, поэтому для первого знакомства информации о них достаточно. 
+
+Вот и все! Надеемся, ты хорошо разобрался в отличиях между интерфейсами и абстрактными классами и готов ответить на любой вопрос, даже с подвохом :)

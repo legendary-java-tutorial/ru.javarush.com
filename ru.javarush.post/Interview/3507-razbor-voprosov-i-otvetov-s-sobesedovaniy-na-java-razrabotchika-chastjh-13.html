@@ -1,0 +1,494 @@
+Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 13
+<p>----------------------------------------</p>
+Привет! Движение к цели — это прежде всего движение. Поэтому мало лишь думать о том, что ты хочешь чего-то достигнуть. Нужно что-то делать — даже самые маленькие шаги, — но делать...
+<p>----------------------------------------</p>
+Привет!
+
+<center><em>Движение к цели — это прежде всего движение.</em></center>
+ 
+Поэтому мало лишь думать о том, что ты хочешь чего-то достигнуть.
+
+Нужно что-то делать — даже самые маленькие шаги, — но делать их каждый день, и только так вы достигнете конечной цели.
+ 
+А так как вы здесь, чтобы стать Java-разработчиками, вам нужно каждый день делать хотя бы минимальный шаг в сторону углублений знаний по Java.
+
+В качестве сегодняшнего Java-шага предлагаю ознакомиться с новой частью разбора самых популярных вопросов на собеседованиях для разработчиков.
+<img data-max-width="800" data-id="5ee918ab-5450-428f-ba5e-1f5cec317723" src="https://cdn.javarush.com/images/article/5ee918ab-5450-428f-ba5e-1f5cec317723/800.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 13 - 1">Сегодня мы пройдемся по практической части вопросов для Junior-специалистов. Практическая задача на собеседовании — не редкость. Важно не теряться в такой ситуации, постараться сохранить холодную голову и предложить оптимальное решение, а то и несколько. 
+ 
+Также я бы порекомендовал не молчать при решении задачи, а комментировать ход свой мыслей и написание решения, ну или после написания объяснить на словах, что и зачем вы сделали. Это гораздо больше расположит интервьюера к вам, нежели молчаливое решение. 
+ 
+Итак, приступим!
+<h4>111. Как между потоками обмениваться данными?</h4><img data-max-width="512" data-id="49a8372d-89c3-4401-9c24-c4fe1af1841b" src="https://cdn.javarush.com/images/article/49a8372d-89c3-4401-9c24-c4fe1af1841b/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 13 - 2">Для обмена данными между потоками можно использовать много разных подходов и средств: например, воспользоваться атомарными переменными, синхронизированными коллекциями, семафором. Но для решения данной задачи я приведу пример с <span class="code">Exchanger</span>.
+ 
+<span class="code">Exchanger</span> — это класс синхронизации из <span class="code">concurrent</span> пакета, который облегчает обмен элементами между парой потоков за счет создания общей точки синхронизации. Его использование упрощает обмен данными между двумя потоками.
+ 
+Механизм его работы весьма прост: он ждет, пока два отдельных потока не вызовут его метод <span class="code">exchange()</span>. 
+
+Между ними создаётся что-то вроде точки обмена: первый поток кладет свой объект и получает взамен объект другого, а тот в свою очередь получает объект первого и кладет свой.
+
+То есть, первый поток использует метод <span class="code">exchange()</span> и бездействует до тех пор, пока другой поток не вызовет метод <span class="code">exchange()</span> у этого же объекта и между ними не произойдёт обмен данными.
+
+В качестве примера рассмотрим следующую реализацию класса <span class="code">Thread</span>:
+
+<pre class="language-java line-numbers"><code>
+public class CustomThread extends Thread {
+ private String threadName;
+ private String message;
+ private Exchanger&lt;String&gt; exchanger;
+ 
+ public CustomThread(String threadName, Exchanger&lt;String&gt; exchanger) {
+   this.threadName = threadName;
+   this.exchanger = exchanger;
+ }
+ 
+ public void setMessage(final String message) {
+   this.message = message;
+ }
+ 
+ @Override
+ public void run() {
+   while (true) {
+     try {
+       message = exchanger.exchange(message);
+       System.out.println(threadName + " поток получил сообщение: " + message);
+       Thread.sleep(1000);
+     } catch (Exception e) {
+       e.printStackTrace();
+     }
+   }
+ }
+}
+</code></pre>
+В конструкторе потока мы задаём объект <span class="code">Exchanger</span>, принимающий объекты типа <span class="code">String</span>, а в запуске (в методе <span class="code">run</span>) используем его <span class="code">exchange()</span> для обмена сообщением с другим потоком, использующим данный метод в этом же <span class="code">Exchanger</span>.
+
+Давайте запустим его в <span class="code">main</span>:
+
+<pre class="language-java line-numbers"><code>
+Exchanger&lt;String&gt; exchanger = new Exchanger&lt;&gt;();
+CustomThread first = new CustomThread("Первый ", exchanger);
+first.setMessage("Сообщение первого потока");
+CustomThread second = new CustomThread("Второй", exchanger);
+second.setMessage("Сообщение второго потока");
+first.start();
+second.start();
+</code></pre>
+В консоли будет выведено:
+
+<div class="terminal">Первый  поток получил сообщение: Сообщение второго потока
+Второй поток получил сообщение: Сообщение первого потока
+Второй поток получил сообщение: Сообщение второго потока
+Первый  поток получил сообщение: Сообщение первого потока
+Второй поток получил сообщение: Сообщение первого потока
+Первый  поток получил сообщение: Сообщение второго потока
+                                                      ...</div>
+Это значит, что обмен данными между потоками проходит успешно.
+<h4>112. В чем заключается отличие класса Thread от интерфейса Runnable?</h4>Первое, что отмечу, <span class="code">Thread</span> — это класс, <span class="code">Runnable</span> — интерфейс, что весьма очевидное отличие =D
+<img data-max-width="512" data-id="4ecd768e-4daa-4421-b59b-54a6f6e68cad" src="https://cdn.javarush.com/images/article/4ecd768e-4daa-4421-b59b-54a6f6e68cad/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 13 - 3">Также скажу, что <span class="code">Thread</span> использует <span class="code">Runnable</span> (композиция). То есть, у нас есть два пути:<ol>
+
+<li><p>Наследоваться от <span class="code">Thread</span>, переопределить метод run, после чего создать данный объект и запустить поток через метод <span class="code">start()</span>.</p></li>
+<li><p>Реализовать <span class="code">Runnable</span> в определенном классе, реализовать его метод <span class="code">run()</span>, после чего создать объект <span class="code">Thread</span>, задав ему в конструктор этот объект-реализацию интерфейса <span class="code">Runnable</span>. Ну и в конце запустить объект <span class="code">Thread</span> с помощью метода <span class="code">start()</span>.</p></li>
+
+</ol>Что же предпочтительнее? Давайте немного поразмыслим:<ul>
+ 
+<li><p>при реализации интерфейса <span class="code">Runnable</span> вы не изменяете поведение потока. По сути вы просто даете потоку что-то запустить. А это у нас композиция, что в свою очередь считается хорошим подходом.</p></li>
+
+<li><p>реализация <span class="code">Runnable</span> даёт больше гибкости вашему классу. Если вы наследуетесь от <span class="code">Thread</span>, то действие, которое вы выполняете, всегда будет в потоке. Но если вы реализуете <span class="code">Runnable</span>, это не обязательно будет просто поток. Ведь вы можете как запустить его в потоке, так и передать его какой-либо службе-исполнителю. Ну или просто передать его куда-то как задачу в однопоточном приложении. </p></li>
+
+<li><p>использование <span class="code">Runnable</span> позволяет логически отделить выполнение задачи от логики управления потоками.</p></li>
+
+<li><p>в Java возможно только одиночное наследование, поэтому можно расширить только один класс. В то же время количество расширяемых интерфейсов неограниченно (ну не совсем неограниченное, а <span class="text-bold">65535</span>, но вряд ли вы когда-то упретесь в этот лимит).</p></li>
+
+</ul>Ну а что именно предпочтительнее использовать, решать уже вам ^^
+<h4>113. Есть потоки Т1, Т2 и Т3. Как реализовать их последовательное выполнение?<img data-max-width="512" data-id="3d4d441d-0dd2-4762-9f2a-ed6ce6036cc9" src="https://cdn.javarush.com/images/article/3d4d441d-0dd2-4762-9f2a-ed6ce6036cc9/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 13 - 4"></h4>Самое первое и самое простое, что приходит на ум — это использование метода <span class="code">join()</span>. Он приостанавливает выполнение текущего (вызвавшего данный метод) потока до тех пор, пока поток, на котором был вызван метод, не закончит свое выполнение. 
+ 
+Создадим свою реализацию потока:
+ 
+<pre class="language-java line-numbers"><code>
+public class CustomThread extends Thread {
+private String threadName;
+ 
+ public CustomThread(final String  threadName){
+   this.threadName = threadName;
+ }
+ 
+ @Override
+ public void run() {
+   System.out.println(threadName + " - начал свою работу");
+   try {
+     // происходит некая логика
+     Thread.sleep(1000);
+   } catch (InterruptedException e) {
+     e.printStackTrace();
+   }
+ 
+   System.out.println(threadName + " - закончил свою работу");
+ }
+}
+</code></pre>
+Запустим три таких потока поочередно, используя <span class="code">join()</span>:
+ 
+<pre class="language-java line-numbers"><code>
+CustomThread t1 = new CustomThread("Первый поток");
+t1.start();
+t1.join();
+CustomThread t2 = new CustomThread("Второй поток");
+t2.start();
+t2.join();
+CustomThread t3 = new CustomThread("Третий поток");
+t3.start();
+t3.join();
+</code></pre>
+Вывод в консоли:
+ 
+<div class="terminal">Первый поток - начал свою работу
+Первый поток - закончил свою работу
+Второй поток - начал свою работу
+Второй поток - закончил свою работу
+Третий поток - начал свою работу
+Третий поток - закончил свою работу</div>
+Это значит, что мы справились с нашей задачей.
+ 
+Далее переходим непосредственно к практическим задачам уровня <span class="text-bold">Junior</span>.
+<h2>Практические задания</h2><h3>114. <a href="https://leetcode.com/problems/matrix-diagonal-sum/" rel="nofollow" target="_blank">Matrix Diagonal Sum</a> (задача с Leetcode)</h3><span class="text-bold">Условие:</span>
+Подсчитайте сумму всех элементов на основной диагонали и всех элементов на дополнительной диагонали, которые не являются частью основной диагонали.
+<img data-max-width="512" data-id="0cf6711c-fd4a-4dc1-9e1a-42780ffe4d69" src="https://cdn.javarush.com/images/article/0cf6711c-fd4a-4dc1-9e1a-42780ffe4d69/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 13 - 5">1. При матрице вида : mat = [[1,2,3],
+                                                [4,5,6],
+                                                [7,8,9]]
+ Вывод должен быть — 25
+ 
+2. При матрице - mat = [[1,1,1,1],
+                                        [1,1,1,1],
+                                        [1,1,1,1],
+                                        [1,1,1,1]]
+Вывод должен быть — 8
+ 
+3. При матрице - mat = [[5]]
+Вывод должен быть — 5
+ 
+Сделайте паузу в прочтении и реализуйте своё решение.
+ 
+Мое же <span class="text-bold">решение</span> будет следующим:
+ 
+<pre class="language-java line-numbers"><code>
+public static int countDiagonalSum(int[][] matrix) {
+ int sum = 0;
+ for (int i = 0, j = matrix.length - 1; i &lt; matrix.length; i++, j--) {
+   sum += matrix[i][i];
+   if (j != i) {
+     sum += matrix[i][j];
+   }
+ }
+ return sum;
+}
+</code></pre>
+Всё происходит с помощью одного прохода по массиву, во время которого у нас есть два индекса для отчёта: i  — для отчёта строк массива и колонок основной диагонали, j — для отчёта колонок дополнительной диагонали.
+ 
+Если же ячейка основной диагонали и дополнительной совпадают, то одно из значений игнорируется при подсчете суммы.
+ 
+Проверим, используя матрицы из условия:
+
+<pre class="language-java line-numbers"><code>
+int[][] arr1 = {
+   {1, 2, 3},
+   {4, 5, 6},
+   {7, 8, 9}};
+System.out.println(countDiagonalSum(arr1));
+ 
+int[][] arr2 = {
+   {1, 1, 1, 1},
+   {1, 1, 1, 1},
+   {1, 1, 1, 1},
+   {1, 1, 1, 1}};
+System.out.println(countDiagonalSum(arr2));
+ 
+int[][] arr3 = {{5}};
+System.out.println(countDiagonalSum(arr3));
+</code></pre>
+Вывод в консоли:
+
+<div class="terminal">25
+8
+5</div><h3>115. <a href="https://leetcode.com/problems/move-zeroes/" rel="nofollow" target="_blank">Move Zeroes</a> (задача с Leetcode)</h3><span class="text-bold">Условие:</span>
+В целочисленном массиве переместите все 0 в конец, сохраняя относительный порядок ненулевых элементов.
+ 
+1. При массиве: [0,1,0,3,12]
+Вывод должен быть: [1,3,12,0,0]
+
+2. При массиве: [0]
+Вывод должен быть: [0]
+ 
+Сделайте паузу и напишите свое решение
+
+...
+
+Моё решение:
+ 
+<pre class="language-java line-numbers"><code>
+public static void moveZeroes(int[] nums) {
+ int counterWithoutNulls = 0;
+ int counterWithNulls = 0;
+ int length = nums.length;
+ while (counterWithNulls &lt; length) {
+   if (nums[counterWithNulls] == 0) {// находим нулевые элементы и увеличиваем счётчик
+     counterWithNulls++;
+   } else { // сдвигаем элементы на количество найденных нулевых элементов слева
+     nums[counterWithoutNulls++] = nums[counterWithNulls++];
+   }
+ }
+ while (counterWithoutNulls &lt; length) {
+   nums[counterWithoutNulls++] = 0;// заполняем последние элементы массива нулями согласно счётчику нулей
+ }
+}
+</code></pre>
+Проверка:
+ 
+<pre class="language-java line-numbers"><code>
+int[] arr1 = {1, 2, 0, 0, 12, 9};
+moveZeroes(arr1);
+System.out.println(Arrays.toString(arr1));
+ 
+int[] arr2 = {0};
+moveZeroes(arr2);
+System.out.println(Arrays.toString(arr2));
+</code></pre>
+Вывод в консоль:
+
+<div class="terminal">[1, 2, 12, 9, 0, 0]
+[0]</div><h3>116. Given List &lt;String&gt; names. Удалите первую букву из каждого имени и поверните отсортированный список</h3>1. Первое, что приходит в голову, это методы класса <span class="code">Collections</span>, хранящий в себе множество вспомогательных методов для коллекций:
+
+<pre class="language-java line-numbers"><code>
+public static List&lt;String&gt; processTheList(List&lt;String&gt; nameList) {
+ for (int i = 0; i &lt; nameList.size(); i++) {
+   nameList.set(i, nameList.get(i).substring(1));
+ }
+ Collections.sort(nameList);
+ return nameList;
+}
+</code></pre>
+2. Также если мы используем Java версии 8 и выше мы просто обязаны показать решение через стримы:
+
+<pre class="language-java line-numbers"><code>
+public static List&lt;String&gt; processTheList(List&lt;String&gt; nameList) {
+ return nameList.stream()
+     .map(x -&gt; x.substring(1))
+     .sorted().collect(Collectors.toList());
+}
+</code></pre>
+Независимо от выбранного решения, проверка может быть следующая:
+ 
+<pre class="language-java line-numbers"><code>
+List&lt;String&gt; nameList = new ArrayList();
+nameList.add("John");
+nameList.add("Bob");
+nameList.add("Anna");
+nameList.add("Dmitriy");
+nameList.add("Peter");
+nameList.add("David");
+nameList.add("Igor");
+ 
+System.out.println(processTheList(nameList));
+</code></pre>
+Вывод в консоли:
+
+<div class="terminal">[avid, eter, gor, mitriy, nna, ob, ohn]</div><h3>117. Переверните массив</h3><span class="text-bold">Решение 1</span>
+Опять же, первое, что приходит в голову — использовать методы вспомогательного, утилитного класса <span class="code">Collections</span>. Но так как у нас массив, сперва нужно преобразовать его в коллекцию (список):
+ 
+<pre class="language-java line-numbers"><code>
+public static Integer[] reverse(Integer[] arr) {
+ List&lt;Integer&gt; list = Arrays.asList(arr);
+ Collections.reverse(list);
+ return list.toArray(arr);
+}
+</code></pre>
+<span class="text-bold">Решение 2</span>
+Так как вопрос был про массив, думаю, необходимо показать решение и без использования готового функционала из коробки, а так сказать, по классике:
+ 
+<pre class="language-java line-numbers"><code>
+public static Integer[] reverse(Integer[] arr) {
+ for (int i = 0; i &lt; arr.length / 2; i++) {
+   int temp = arr[i];
+   arr[i] = arr[arr.length - 1 - i];
+   arr[arr.length - 1 - i] = temp;
+ }
+ return arr;
+}
+</code></pre>
+Проверка:
+
+<pre class="language-java line-numbers"><code>
+Integer[] arr = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+System.out.println(Arrays.toString(reverse(arr)));
+</code></pre>
+Вывод в консоли:
+
+<div class="terminal">[9, 8, 7, 6, 5, 4, 3, 2, 1]</div><h3>118. Проверить, является ли строка палиндромом</h3><img data-max-width="256" data-id="345b415d-c34c-496d-9919-0b847d1635a0" src="https://cdn.javarush.com/images/article/345b415d-c34c-496d-9919-0b847d1635a0/256.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 13 - 6"><span class="text-bold">Решение 1</span>
+Стоит сразу вспомнить о <span class="code">StringBuilder</span>: он более гибкий и насыщенный различными методами по сравнению с обычным <span class="code">String</span>. Нас особенно интересует метод <span class="code">reverse</span>:
+ 
+<pre class="language-java line-numbers"><code>
+public static boolean isPalindrome(String string) {
+ string = string.toLowerCase(); //приводит всю строку к нижнему регистру
+ StringBuilder builder = new StringBuilder();
+ builder.append(string);
+ builder.reverse(); // перевочиваем строку методом Builder-а
+ return (builder.toString()).equals(string);
+}
+</code></pre>
+<span class="text-bold">Решение:</span>
+Следующий подход будет без использования “лазеек” из коробки. Сравниваем символы из задней части строки с соответствующими символами из передней:
+ 
+<pre class="language-java line-numbers"><code>
+public static boolean isPalindrome(String string) {
+  string = string.toLowerCase();
+ int length = string.length();
+ int fromBeginning = 0;
+ int fromEnd = length - 1;
+ while (fromEnd &gt; fromBeginning) {
+   char forwardChar = string.charAt(fromBeginning++);
+   char backwardChar = string.charAt(fromEnd--);
+   if (forwardChar != backwardChar)
+     return false;
+ }
+ return true;
+}
+</code></pre>
+И проверяем оба подхода:
+ 
+<pre class="language-java line-numbers"><code>
+boolean isPalindrome = isPalindrome("Tenet");
+System.out.println(isPalindrome);
+</code></pre>
+Вывод в консоли:
+
+<div class="terminal">true</div><h3>119. Написать простой алгоритм сортировки (Bubble, Selection или Shuttle). Как его можно улучшить?</h3>В качестве просто алгоритма для реализации я выбрал сортировку выбором — Selection Sort:
+ 
+<pre class="language-java line-numbers"><code>
+public static void selectionSorting(int[] arr) {
+ for (int i = 0; i &lt; arr.length - 1; i++) {
+   int min = i;
+   for (int j = i + 1; j &lt; arr.length; j++) {
+     if (arr[j] &lt; arr[min]) {
+       min = j; // выбираем минимальный элемент в текущем числовом отрезке
+     }
+   }
+   int temp = arr[min]; // меняем местами минимальный элемент с элементом под индексом i
+   arr[min] = arr[i]; // так как отрезок постоянно уменьшается
+   arr[i] = temp; // и выпадающие из него числа будут минимальными в текущем отрезке
+ } // и как итог - числа оставшиеся вне текущей итерации отсортированы от самого наименьшего к большему
+}
+</code></pre>
+Улучшенный вариант будет выглядеть следующим образом:
+ 
+<pre class="language-java line-numbers"><code>
+public static void improvedSelectionSorting(int[] arr) {
+ for (int i = 0, j = arr.length - 1; i &lt; j; i++, j--) { // рассматриваемый отрезок с каждой итерацией
+   // будет уменьшаться с ДВУХ сторон по одному элементу
+   int min = arr[i];
+   int max = arr[i];
+   int minIndex = i;
+   int maxIndex = i;
+   for (int n = i; n &lt;= j; n++) { // выбираем min и max на текущем отрезке
+     if (arr[n] &gt; max) {
+       max = arr[n];
+       maxIndex = n;
+     } else if (arr[n] &lt; min) {
+       min = arr[n];
+       minIndex = n;
+     }
+   }
+   // меняем найденный минимальный элемент с позиции с индексом min на позицию с индексом i
+   swap(arr, i, minIndex);
+ 
+   if (arr[minIndex] == max) {// срабатывает, если элемент max оказался смещен предыдущей перестановкой -
+     swap(arr, j, minIndex); // на старое место min, поэтому с позиции с индексом min смещаем его на позицию j
+   } else {
+     swap(arr, j, maxIndex); // простое обмен местами элементов с индексами max и j
+   }
+ }
+}
+ 
+static int[] swap(int[] arr, int i, int j) {
+ int temp = arr[i];
+ arr[i] = arr[j];
+ arr[j] = temp;
+ return arr;
+}
+</code></pre>
+Ну а теперь нам нужно убедиться, правда ли сортировка улучшилась.
+ 
+Давайте сравним производительность:
+ 
+<pre class="language-java line-numbers"><code>
+long firstDifference = 0;
+long secondDifference = 0;
+long primaryTime;
+int countOfApplying = 10000;
+for (int i = 0; i &lt; countOfApplying; i++) {
+ int[] arr1 = {234, 33, 123, 4, 5342, 76, 3, 65,
+     3, 5, 35, 75, 255, 4, 46, 48, 4658, 44, 22,
+     678, 324, 66, 151, 268, 433, 76, 372, 45, 13,
+     9484, 499959, 567, 774, 473, 3, 32, 865, 67, 43,
+     63, 332, 24, 1};
+ primaryTime = System.nanoTime();
+ selectionSorting(arr1);
+ firstDifference += System.nanoTime() - primaryTime;
+ 
+ int[] arr2 = {234, 33, 123, 4, 5342, 76, 3, 65,
+     3, 5, 35, 75, 255, 4, 46, 48, 4658, 44, 22,
+     678, 324, 66, 151, 268, 433, 76, 372, 45, 13,
+     9484, 499959, 567, 774, 473, 3, 32, 865, 67, 43,
+     63, 332, 24, 1};
+ primaryTime = System.nanoTime();
+ improvedSelectionSorting(arr2);
+ secondDifference += System.nanoTime() - primaryTime;
+}
+ 
+System.out.println(((double) firstDifference / (double) secondDifference - 1) * 100 + "%");
+</code></pre>
+Обе сортировки запустились в одном и том же цикле, т.к. если бы были отдельные циклы, сортировка из в коде выше показывала бы худший результат, нежели если её поставить второй. 
+ 
+Это связано с тем, что программа как бы “разогревается” и дальше работает немного быстрее.
+ 
+Но я немного отошёл от темы.
+ 
+После пяти запусков данной проверки в консоли я увидел увеличение производительности на: 
+ 
+<em>36.41006735635892%
+51.46131097160771%
+41.88918834013988%
+48.091980705743566%
+37.120220461591444%</em>
+ 
+Как по мне, это довольно-таки хороший результат.
+<img data-max-width="512" data-id="b384661d-92d6-4d81-a04f-44815f94d744" src="https://cdn.javarush.com/images/article/b384661d-92d6-4d81-a04f-44815f94d744/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 13 - 7"><h3>120. Напишите алгоритм (последовательность действий) составления литерала типа int с литералом типа byte. Объясните, что происходит с памятью</h3><ol>
+
+<li><p>byte значение приводится к int. Для него будет выделен не 1 байт памяти, а как и для всех int значений — 4, если этого значения ещё нет в int стеке. Если же есть — просто будет получена ссылка на него.</p></li>
+<li><p>Два int значения будут сложены и получится третье. Под него выделится новый участок памяти — 4 байта (либо будет получена ссылка из int стека на существующее значение). </p>
+<p>При этом память двух int всё ещё будет занята, и их значения будут храниться в int стеке соответственно.</p></li>
+ 
+</ol>Собственно, на этом и заканчиваются вопросы уровня Junior из нашего списка.
+Начиная со следующей статьи мы будем разбираться в вопросах уровня Middle. 
+ 
+Отмечу, что вопросы Middle-уровня активно задают и разработчикам начального уровня — Junior. Так что следите за обновлениями. 
+ 
+Ну а на сегодня всё: до встречи!<img data-max-width="512" data-id="ebd6bb3d-5860-496d-a94c-4d3e594fb27a" src="https://cdn.javarush.com/images/article/ebd6bb3d-5860-496d-a94c-4d3e594fb27a/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 13 - 8"><table><tbody>
+<tr><th>
+Другие материалы серии:
+</th></tr><tr><td>
+<ul>
+<li><a href="https://javarush.com/groups/posts/3243-razbor-voprosov-i-otvetov-na-sobesedovanii-chastjh-1" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 1</a></li>
+<li><a href="https://javarush.com/groups/posts/3252-razbor-voprosov-i-otvetov-na-sobesedovanii-chastjh-2" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 2</a></li>
+<li><a href="https://javarush.com/groups/posts/3273-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-3" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 3</a></li>
+<li><a href="https://javarush.com/groups/posts/3284-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-4" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 4</a></li>
+<li><a href="https://javarush.com/groups/posts/3296-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-5" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 5</a></li>
+<li><a href="https://javarush.com/groups/posts/3341-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-6" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 6</a></li>
+<li><a href="https://javarush.com/groups/posts/3386-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-7" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 7</a></li>
+<li><a href="https://javarush.com/groups/posts/3415-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-8" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 8</a></li>
+<li><a href="https://javarush.com/groups/posts/3434-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-9" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 9</a></li>
+<li><a href="https://javarush.com/groups/posts/3452-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-10" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 10</a></li>
+<li><a href="https://javarush.com/groups/posts/3464-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-11" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 11</a></li>
+<li><a href="https://javarush.com/groups/posts/3475-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-12" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 12</a></li>
+<li><a href="https://javarush.com/groups/posts/3558-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-14" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 14</a></li>
+<li><a href="https://javarush.com/groups/posts/3592-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-15" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 15</a></li>
+<li><a href="https://javarush.com/groups/posts/3621-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-16" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 16</a></li>
+</ul>
+</td></tr></tbody></table><a href="https://javarush.com/login/signup" target="_blank"><img data-max-width="1080" id="click_banner5_articles" data-id="c11da258-625d-43d0-a00a-7f80367b4279" src="https://cdn.javarush.com/images/article/c11da258-625d-43d0-a00a-7f80367b4279/1080.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 13 - 9"></a>

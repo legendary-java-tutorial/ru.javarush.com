@@ -1,0 +1,170 @@
+Оператор return в Java
+<p>----------------------------------------</p>
+О том, есть ли жизнь после return. И как избежать проблем и неловких ситуаций. Как мы знаем, язык Java является объектно-ориентированным языком программирования. То есть базовая концепция, т.к. сказать основа основ, заключается в том, что всё есть объект. Объекты описываются ...
+<p>----------------------------------------</p>
+<h2>Вступление</h2>Как мы знаем, язык Java является объектно-ориентированным языком программирования. То есть базовая концепция, т.к. сказать основа основ, заключается в том, что всё есть объект. Объекты описываются при помощи классов. 
+<img data-id="369066cb-8f47-4b46-9750-7ae02935716c" data-max-width="850" alt="Оператор return в Java - 1" src="https://cdn.javarush.com/images/article/369066cb-8f47-4b46-9750-7ae02935716c/1024.jpeg">В свою очередь у классов есть состояние и поведение. Например, банковский счёт может иметь состояние в виде количестве денег на счету и иметь поведения увеличение и уменьшение баланса. Поведение в Java реализуется при помощи методов.
+
+То, каким образом описывать методы, приводится в самом начале пути изучения Java. Например, в официальном tutorial от Oracle: «<a href="https://docs.oracle.com/javase/tutorial/java/javaOO/methods.html" target="_blank" rel="nofollow">Defining Methods</a>».
+
+Тут можно выделить два важных аспекта:
+<ul>
+<li>Каждый метод имеет сигнатуру. Сигнатура состоит из имени метода и его входных параметров;</li>
+<li>Для методов должно быть указан тип возвращаемого значения (return type);</li>
+<li>Тип возвращаемого значения не входит в сигнатуру метода.</li>
+</ul>Опять же, это следствие того, что Java язык строго типизированный и компилятор хочет заранее понимать, какие типы и где используются на столько, на сколько это возможно. Опять же, чтобы уберечь нас от ошибок. В общем, всё во благо. Ну и нам это лишний раз прививает культуру обращения с данными, как мне кажется.
+
+Итак, для методов указывается тип значения. А чтобы вернуть это самое значение из методов используется ключевое слово <code>return</code>.
+<h2>Ключевое слово оператор return в Java</h2>Ключевое слово оператор <code>return</code> относится к выражениям «управления ходом выполнения», о чём указано в oracle tutorial «<a href="https://docs.oracle.com/javase/tutorial/java/nutsandbolts/flow.html" target="_blank" rel="nofollow">Control Flow Statements</a>».
+
+О том, как нужно возвращать значения можно так же прочитать в официальном tutorial: «<a href="https://docs.oracle.com/javase/tutorial/java/javaOO/returnvalue.html" target="_blank" rel="nofollow">Returning a Value from a Method</a>».
+
+Компилятор тщательно следит, на сколько у него хватает сил, за тем, чтобы возвращаемое из метода значение соответствовало указанному у метода типу возвращаемого значения.
+
+Воспользуемся для примера <a href="https://www.tutorialspoint.com/compile_java_online.php" target="_blank" rel="nofollow">Online IDE</a> от tutorialspoint.  
+
+Посмотрим на изначальный пример:
+
+<pre class="lang-java line-numbers">
+<code>
+public class HelloWorld {
+    public static void main(String []args) {
+        System.out.println("Hello World");
+    }
+}
+</code></pre>
+Как мы видим, здесь выполняется <code>main</code> метод, который является точкой входа в программу. Строчки кода выполняются сверху вниз. Наш <code>main</code> метод не может возвращать значения, иначе мы получим ошибку: «<code>Error: Main method must return a value of type void</code>». Поэтому, метод просто выполнит вывод на экран. Давайте теперь вынесем получение строки в отдельный метод получения сообщения:
+
+<pre class="lang-java line-numbers">
+<code>
+public class HelloWorld {
+
+    public static void main(String []args) {
+        System.out.println(getHelloMessage());
+    }
+    
+    public static String getHelloMessage() {
+        return "Hello World";
+    }
+    
+}
+</code></pre>
+Как мы видим, при помощи ключевого слова <code>return</code> мы указали возвращаемое значение, которое использовали далее в методе <code>println</code>. В описании (определении) метода <code>getHelloMessage</code> мы указали, что он вернёт нам <code>String</code>. Это позволяет компилятору проверить, что действия метода согласуются с тем, каким образом он объявлен.
+
+Естественно, тип возвращаемого значения, указанного в определении метода, может быть более широким чем тип возвращаемого из кода значения, т.е. главное чтобы типы приводились друг к другу. В противном случае мы получим ошибку во время компиляции: «<code>error: incompatible types</code>».
+
+Кстати, наверно сразу появился вопрос: Почему <code>return</code> относится к операторам управления ходом выполнения программы. А потому, что он может нарушать обычный ход выполнения программы "сверху вниз". Например:
+
+<pre class="lang-java line-numbers">
+<code>
+public class HelloWorld {
+
+    public static void main(String []args){
+        if (args.length == 0)  {
+            return;
+        }
+        for (String arg : args)  {
+            System.out.println(arg);
+        }
+    }
+    
+}
+</code></pre>
+Как видно из примера, мы прерываем выполнение метода <code>main</code> в том случае, если java программа наша вызвана без параметров.
+
+Важно помнить, что если у вас после <code>return</code> есть код, он становится недоступным. И это заметит наш умный компилятор и не даст вам запустить такую программу. Например, данный код не скомпилируется:
+
+<pre class="lang-java line-numbers">
+<code>
+public static void main(String []args) {
+        System.out.println("1");
+        return;
+        System.out.println("2");
+ }
+</code></pre>
+Есть один «грязный хак» для обхода такого. Например, для целей отладки или ещё почему-то. Выше указанный код можно починить обернув <code>return</code> в <code>if</code> блок:
+
+<pre class="lang-java line-numbers">
+<code>
+if (2==2)  {
+    return;
+}
+</code></pre><h2>Оператор Return при обработке ошибок</h2>Есть одно очень хитрое обстоятельство – мы можем использовать <code>return</code> совместно с обработкой ошибок.  Сразу хочется сказать, что использование <code>return</code> в <code>catch</code> блоке это очень и очень плохой тон, поэтому стоит этого избегать. Но нам ведь нужен пример? Вот он:
+
+<pre class="lang-java line-numbers">
+<code>
+public class HelloWorld  {
+
+    public static void main(String []args) {
+        System.out.println("Value is: " + getIntValue());
+    }
+    
+    public static int getIntValue()  {
+        int value = 1;
+        try {
+            System.out.println("Something terrible happens");
+            throw new Exception();
+        } catch (Exception e) {
+            System.out.println("Catched value: " + value);
+            return value;
+        } finally {
+            value++;
+            System.out.println("New value: " + value);
+        }
+    }
+    
+}
+</code></pre>
+На первый взгляд кажется, что должно вернуться 2, ведь <code>finally</code> выполняется всегда. Но нет, значение будет 1, а изменение переменной в <code>finally</code> будет проигнорировано. Более того, если бы <code>value</code> содержала бы объект и мы в <code>finally</code> сказали бы <code>value = null</code>, то из <code>catch</code> вернулась бы всё равно ссылка на объект, а не <code>null</code>.
+
+А вот из блока <code>finally</code> оператор <code>return</code> сработал бы правильно. Коллеги за такой подарок явно не скажут спасибо.
+<table>
+<thead>
+<tr>
+<th>
+Что еще почитать:
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<p><a href='https://javarush.com/groups/posts/1383-operator-return' target='_blank'>Оператор return</a></p>
+</td>
+</tr>
+</tbody>
+</table><h2>void.class</h2>Ну и напоследок. Можно написать странную конструкцию вида <code>void.class</code>. Казалось бы, зачем и в чём смысл? На самом деле, в различных фрэймворках и хитрых случаях, когда используется <a href="http://www.oracle.com/technetwork/articles/java/javareflection-1536171.html" target="_blank" rel="nofollow">Java Reflection API</a>, это может очень понадобится.
+
+Например, можно проверять, какой тип возвращает метод:
+
+<pre class="lang-java line-numbers">
+<code>
+import java.lang.reflect.Method;
+
+public class HelloWorld {
+
+    public void getVoidValue() {
+    }
+
+    public static void main(String[] args) {
+        for (Method method : HelloWorld.class.getDeclaredMethods()) {
+            System.out.println(method.getReturnType() == void.class);
+        }
+    }
+}
+</code></pre>
+Это может быть полезно в тестовых фрэймворках, где необходимо подменять реальный код методов. Но для этого нужно понимать, как этот метод себя ведёт (т.е. какие типы возвращает).
+
+Есть ещё второй способ реализации метода <code>main</code> из кода выше:
+
+<pre class="lang-java line-numbers">
+<code>
+public static void main (String[] args) {
+        for (Method method : HelloWorld.class.getDeclaredMethods()) {
+            System.out.println(method.getReturnType() == Void.TYPE);
+        }
+ }
+</code></pre>
+Довольно интересное обсуждение разницы между ними можно прочитать на stackoverflow: <a href="https://stackoverflow.com/questions/10839042/what-is-the-difference-between-java-lang-void-and-void" target="_blank" rel="nofollow">What is the difference between java.lang.Void and void?</a>
+
+#Viacheslav

@@ -1,0 +1,109 @@
+Перегрузка методов equals() и hashCode() в Java
+<p>----------------------------------------</p>
+Переопределение методов equals() и hashCode() в Java. Equals и hashCode являются фундаментальными методами объявленные в классе Object и содержатся в стандартных библиотеках Java. Метод еquals() используется для сравнения объектов ...
+<p>----------------------------------------</p>
+<h2>Переопределение методов equals() и hashCode() в Java</h2><code>Equals</code> и <code>hashCode</code> являются фундаментальными методами объявленные в классе <code>Object</code> и содержатся в стандартных библиотеках Java.
+<img data-id="5ef0d361-1d52-4d2b-93a1-b0fefb42d7e5" data-max-width="850" alt="Перегрузка методов equals() и hashCode() в Java - 1" src="https://cdn.javarush.com/images/article/5ef0d361-1d52-4d2b-93a1-b0fefb42d7e5/1024.jpeg">Метод <code>еquals()</code> используется для сравнения объектов, а <code>hashCode</code> - для генерации целочисленного кода объекта. 
+
+Эти методы широко используются в стандартных библиотеках Java при вставке и извлечении объектов в <code>HashMap</code>. Метод <code>equal</code> также используется для обеспечения хранения только уникальных объектов в <code>HashSet</code> и других <code>Set</code> реализациях, а также в любых других случаях, когда нужно сравнивать объекты. 
+
+Реализация по умолчанию метода <code>equals()</code> в классе <code>java.lang.Object</code> сравнивает ссылки на адреса в памяти, которые хранят переменные, и возвращает <code>true</code> только в том случае, если адреса совпадают, другими словами переменные ссылаются на один и тот же объект. 
+
+Java рекомендует переопределять методы <code>equals()</code> и <code>hashCode()</code>, если предполагается, что сравнение должно осуществляться в соответсвии с естественной логикой или бизнес-логикой. Многие классы в стандартных библиотеках Java переопределяют их, например в классе <code>String</code> переопределяется <code>equals</code> таким образом, что возвращается <code>true</code>, если содержимое двух сравниваемых объектов одинаковое. В классе-обертке <code>Integer</code> метод <code>equal</code> переопределяется для выполнения численного сравнения, и так далее.
+
+Так как <code>HashMap</code> и <code>HashTable</code> в Java полагаются на методы <code>equals()</code> и <code>hashCode()</code> для сравнения своих <code>key</code> и <code>values</code>, то Java предлагает следующие правила для переопределения этих методов:
+<ol>
+<li>Рефлексивность: Объект должен равняться себе самому.</li>
+<li>Симметричность: если <code>a.equals(b)</code> возвращает <code>true</code>, то <code>b.equals(a)</code> должен тоже вернуть <code>true</code>.</li>
+<li>Транзитивность: если <code>a.equals(b)</code> возвращает <code>true</code> и <code>b.equals(c)</code> тоже возвращает <code>true</code>, то <code>c.equals(a)</code> тоже должен возвращать <code>true</code>.</li>
+<li>Согласованность: повторный вызов метода <code>equals()</code> должен возвращать одно и тоже значение до тех пор, пока какое-либо значение свойств объекта не будет изменено. То есть, если два объекта равны в Java, то они будут равны пока их свойства остаются неизменными. </li>
+<li>Сравнение <code>null</code>: объект должны быть проверен на <code>null</code>. Если объект равен <code>null</code>, то метод должен вернуть <code>false</code>, а не <code>NullPointerException</code>. Например, <code>a.equals(null)</code> должен вернуть <code>false</code>.</li>
+</ol><h2>Соглашение между equals и hashCode в Java</h2><ol>
+<li>Если объекты равны по результатам выполнения метода <code>equals</code>, тогда их <code>hashcode</code> должны быть одинаковыми.</li>
+<li>Если объекты не равны по результатам выполнения метода <code>equals</code>, тогда их <code>hashcode</code> могут быть как одинаковыми, так и разными. Однако для повышения производительности, лучше, чтобы разные объекты возвращали разные коды.</li>
+</ol><h2>Как переопределять метод equals в Java</h2><ol>
+<li>
+<pre class="lang-java line-numbers"><code>
+@Override
+public boolean equals(Object obj) {
+/*1. Проверьте*/<code>if (obj == this) {
+/*и верните */ return true;
+         }</code>
+</code></pre></li>
+<li><p>Проверьте объект на <code>null</code>, а также проверьте, чтобы объекты были одного типа. Не делайте проверку с помощью <code>instanceof</code> так как такая проверка будет возвращать <code>true</code> для подклассов и будет работать правильно только в случае если ваш класс объявлен как <code>immutable</code>. Вместо этого можно использовать <code>getClass()</code>;</p>
+<pre class="lang-java line-numbers"><code>
+if (obj == null || obj.getClass() != this.getClass()) { 
+            return false; 
+}
+</code></pre></li>
+<li><p>Объявите переменную типа, который вы сравниваете, и приведите <code>obj</code> к этому типу. Потом сравнивайте каждый атрибут типа начиная с численных атрибутов (если имеются) потому что численные атрибуты проверяются быстрей. Сравнивайте атрибуты с помощью операторов И и ИЛИ (так называемые <code>short-circuit logical operators</code>) для объединения проверок с другими атрибутами. </p>
+<pre class="lang-java line-numbers"><code>
+Person guest = (Person) obj; 
+        return id == guest.id &amp;&amp; (firstName == guest.firstName || 
+            (firstName != null &amp;&amp; firstName.equals(guest.getFirstName()))) 
+                &amp;&amp; (lastName == guest.lastName || (lastName != null &amp;&amp;                      lastName .equals(guest.getLastName()))); 
+}
+</code></pre></li></ol><span class="text-bold">Полный пример переопределения метода equals в Java</span>
+
+<pre class="lang-java line-numbers"><code>
+/** * Person class with equals and hashcode implementation in Java * @author Javin Paul */ 
+public class Person { 
+    private int id; 
+    private String firstName; 
+    private String lastName; 
+
+    public int getId() { return id; } 
+    public void setId(int id) { this.id = id;} 
+    
+    public String getFirstName() { return firstName; } 
+    public void setFirstName(String firstName) { this.firstName = firstName; }  
+    public String getLastName() { return lastName; } 
+    public void setLastName(String lastName) { this.lastName = lastName; }      
+    @Override 
+    public boolean equals(Object obj) { 
+    if (obj == this) { 
+        return true; 
+    } 
+    if (obj == null || obj.getClass() != this.getClass()) { 
+        return false; 
+    } 
+
+    Person guest = (Person) obj; 
+    return id == guest.id 
+        &amp;&amp; (firstName == guest.firstName 
+            || (firstName != null &amp;&amp;firstName.equals(guest.getFirstName())))        &amp;&amp; (lastName == guest.lastName 
+            || (lastName != null &amp;&amp; lastName .equals(guest.getLastName())
+            )); 
+    } 
+    @Override 
+    public int hashCode() { 
+    final int prime = 31; 
+    int result = 1; 
+    result = prime * result + ((firstName == null) ? 0 : firstName.hashCode());             result = prime * result + id; result = prime * result + 
+        ((lastName == null) ? 0 : lastName.hashCode()); return result; 
+    }
+ }
+</code></pre><h2>Распространенные ошибки при переопределении equals в Java</h2><ol>
+<li><p>Вместо того, чтобы переопределять метод <code>equals (Override)</code> программист перегружает его <code>(Overload)</code>Синтаксис метода <code>equals()</code> в классе <code>Object</code> определен как <code>public boolean equals(Object obj)</code>, но многие программисты ненароком перегружают метод: <code>public boolean equals(Person obj)</code> - вместо <code>Object</code> в качестве аргумента используют имя своего класса (напр. Person). Эту ошибку сложно обнаружить из-за <code>static binding</code>. Таким образом, если вы вызовете этот метод для объекта своего класса, то метод не просто скомпилируется, а даже сделает это корректно. Однако, если вы положите ваш объект в коллекцию, например <code>ArrayList</code> и вызовете метод <code>contains()</code>, работа которого основана на методе <code>equals()</code>, то метод <code>contains</code> не сможет обнаружить ваш объект.</p></li>
+<li><p>При переопределении метода <code>equals()</code> не проверять на <code>null</code> переменные, что в конечном итоге заканчивается <code>NullPointerException</code> при вызове <code>equals()</code>. Ниже представлен корректный код.</p>
+ <pre class="lang-java line-numbers"><code>
+   firstname == guest.firstname || (firstname != null &amp;&amp;
+        firstname.equals(guest.firstname));
+</code></pre></li>
+<li><p>Третья распространенная ошибка это не переопределять метод <code>hashCode()</code>, а только <code>equals()</code>. Вы обязаны переопределять оба метода <code>equals()</code> и <code>hashCode()</code> в Java. Метод <code>hashCode</code> используется в <code>hash</code> -коллекциях(например <code>HashSet</code>), и чем меньше будет коллизий (одинаковый код при разных объектах) тем эффективнее эти коллекции будут работать с объектами вашего класса.</p></li>
+<li><p>Последняя распространенная ошибка программистов в том, что при переопределении метода <code>equals()</code> не сохраняется соответствие между методами <code>equals()</code> и <code>compareTo()</code>, что является неформальным требованием для избежания хранения дубликатов в <code>Set (SortedSet, TreeSet)</code>.</p></li></ol><h2>Подсказки как писать в Java метод equals</h2><ol>
+<li><p>Большинство IDE такие как NetBeans, Eclipse  и IntelliJ IDEA обеспечивают поддержку генерации методов <code>equals()</code> и <code>hashCode()</code>. В Eclipse нажмите правую кнопку -&gt; source -&gt; <code>generate equals()</code> и <code>hashCode()</code>.</p></li>
+<li><p>Если в классе есть уникальный бизнес-ключ, то будет достаточно сделать проверку только на равенство этих полей. Как в нашем примере “id” - уникальный номер для каждого Person.</p></li>
+<li><p>При переопределении <code>hashCode()</code> в Java удостоверьтесь в использовании всех полей, что были использованы в методе <code>equals()</code>.</p></li>
+<li><p><code>String</code> и классы-оболочки такие как <code>Integer</code>, <code>Float</code> и <code>Double</code> переопределяют метод <code>equals()</code>, но <code>StringBuffer</code> не переопределяет.</p></li>
+<li><p>При любой возможности делайте поля <code>immutable</code> используя <code>final</code> переменные в Java.</p></li>
+<li><p>При сравнении <code>String</code> объектов используйте <code>equals()</code> вместо оператора <code>==</code>.</p></li>
+<li><p>Два объекта которые логически равны, но загружены из разных <code>ClassLoader</code> не могут быть равными. Помните, что проверка с помощью <code>getClass()</code> вернет <code>false</code> если класс-загрузчик разный.</p></li>
+<li><p>Используйте <code>@Override</code> аннотацию также для метода <code>hashCode</code>, так как это предупреждает неуловимые ошибки, например возвращаемое значение метода <code>int</code>, однако некоторые программисты возвращают <code>long</code>.</p></li>
+</ol>P.S. Уважаемые коллеги! Мне оказалась полезной эта статья при решении задач 21 го уровня! Желаю удачи при разборе данной темы, пользуйтесь переводом!
+
+Я надеюсь, что вы мне поможете поднять мой рейтинг, так как сейчас я даже не могу оставлять комментарий на этом форуме. Всем огромное спасибо!
+
+<a href="http://javarevisited.blogspot.co.il/2011/02/how-to-write-equals-method-in-java.html" rel="nofollow" target="_blank">Оригинал статьи</a>
+
+Я некоторые моменты опустил в связи с нехваткой свободного времени, однако перевел все, что необходимо знать для решения задач 21о уровня.

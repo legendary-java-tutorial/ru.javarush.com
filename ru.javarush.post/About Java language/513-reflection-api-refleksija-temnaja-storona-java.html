@@ -1,0 +1,204 @@
+Reflection API. Рефлексия. Темная сторона Java
+<p>----------------------------------------</p>
+Экспресс-курс по миру Reflection API. Ознакомьтесь с основными приемами механизма рефлексии. Узнайте как и зачем использовать ее на практике. Обучитесь тому, что многие java-программисты не знают. Почувствуйте темную сторону Силы!
+<p>----------------------------------------</p>
+Приветствую вас, юный падаван. В этой статье я поведаю о Силе, мощь которой java-программисты используют только в, казалось бы, безвыходной ситуации. Итак, темная сторона Java — <code>Reflection API</code>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="47eb4688-7ab0-4c1b-b14c-250d49a892bd" data-max-width="500" alt="Reflection API. Рефлексия. Темная сторона Java - 1" src="https://cdn.javarush.com/images/article/47eb4688-7ab0-4c1b-b14c-250d49a892bd/1024.jpeg"></div></div>Рефлексия в Java осуществляется с помощью Java Reflection API.   
+
+Что такое эта рефлексия? Существует короткое и точное, а также популярное на просторах интернета определение.
+
+<strong>Рефлексия</strong> <em>(от позднелат. reflexio — обращение назад)</em> — это механизм исследования данных о программе во время её выполнения. Рефлексия позволяет исследовать информацию о полях, методах и конструкторах классов.
+
+Сам же механизм рефлексии позволяет обрабатывать типы, отсутствующие при компиляции, но появившиеся во время выполнения программы. Рефлексия и наличие логически целостной модели выдачи информации об ошибках дает возможность создавать корректный динамический код.
+        
+Иначе говоря, понимание принципов работы рефлексии в java открывает перед вами ряд удивительных возможностей. Вы буквально можете жонглировать классами и их составляющими.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="b15e4b1b-876d-4859-8fc4-dda2e73f16e9" data-max-width="660" alt="Reflection API. Рефлексия. Темная сторона Java - 2" src="https://cdn.javarush.com/images/article/b15e4b1b-876d-4859-8fc4-dda2e73f16e9/1024.jpeg"></div></div>Вот основной список того, что позволяет рефлексия: 
+<ul>
+<li>Узнать/определить класс объекта;</li>
+<li>Получить информацию о модификаторах класса, полях, методах, константах, конструкторах и суперклассах;</li>
+<li>Выяснить, какие методы принадлежат реализуемому интерфейсу/интерфейсам;</li>
+<li>Создать экземпляр класса, причем имя класса неизвестно до момента выполнения программы;</li>
+<li>Получить и установить значение поля объекта по имени;</li>
+<li>Вызвать метод объекта по имени.</li>
+</ul>Рефлексия используется практически во всех современных технологиях Java. Сложно себе представить, могла бы Java, как платформа, достигнуть такого огромного распространения без рефлексии. Скорее всего не смогла бы. 
+
+С общим теоретическим представлением о рефлексии вы ознакомились, теперь приступим к ее практическому применению! Не будем изучать все методы Reflection API, только то, что реально встречается на практике.
+
+Так как механизм рефлексии подразумевает работу с классами, то и у нас будет простой класс — <code><strong>MyClass</strong></code>:
+
+<pre class="lang-java line-numbers"><code>
+public class MyClass {
+   private int number;
+   private String name = "default";
+//    public MyClass(int number, String name) {
+//        this.number = number;
+//        this.name = name;
+//    }
+   public int getNumber() {
+       return number;
+   }
+   public void setNumber(int number) {
+       this.number = number;
+   }
+   public void setName(String name) {
+       this.name = name;
+   }
+   private void printData(){
+       System.out.println(number + name);
+   }
+}
+</code></pre>
+Как мы видим, это самый обычный класс. Конструктор с параметрами закомментирован не просто так, мы к этому еще вернемся. Если вы внимательно просмотрели содержимое класса, то наверняка увидели отсутствие <code><strong>getter</strong></code>’a для поля <code><strong>name</strong></code>. Само поле <code><strong>name</strong></code> помечено модификатором доступа <code><strong>private</strong></code>, обратиться к нему вне самого класса у нас не выйдет <code>=&gt;</code> мы не можем получить его значение.
+
+“Так в чем проблема? — скажете вы. — Допиши <code><strong>getter</strong></code> или измени модификатор доступа”. И вы будете правы, но, что если <code><strong>MyClass</strong></code> находится в скомпилированной aar библиотеке или в другом закрытом модуле без доступа к редактированию, а на практике такое случается крайне часто. И какой-то невнимательный программист просто забыл написать <code><strong>getter</strong></code>. Самое время вспомнить о рефлексии!
+
+Попробуем добраться до <code><strong>private</strong></code> поля <code><strong>name</strong></code> класса <code><strong>MyClass</strong></code>:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+   MyClass myClass = new MyClass();
+   int number = myClass.getNumber();
+   String name = null; //no getter =(
+   System.out.println(number + name);//output 0null
+   try {
+       Field field = myClass.getClass().getDeclaredField("name");
+       field.setAccessible(true);
+       name = (String) field.get(myClass);
+   } catch (NoSuchFieldException | IllegalAccessException e) {
+       e.printStackTrace();
+   }
+   System.out.println(number + name);//output 0default
+}
+</code></pre>
+Разберем что тут сейчас произошло. В java есть замечательный класс <code><strong>Class</strong></code>. Он представляет классы и интерфейсы в исполняемом приложении Java. Связь между <code><strong>Class</strong></code> и <code><strong>ClassLoader</strong></code> мы затрагивать не будем, т.к. это не есть тема статьи. 
+
+Далее, чтобы получить поля этого класса нужно вызвать метод <strong><code>getFields()</code></strong>, этот метод вернет нам все доступные поля класса. Нам это не подходит, так как наше поле <code><strong>private</strong></code>, поэтому используем метод <strong><code>getDeclaredFields()</code></strong>, этот метод также возвращает массив полей класса, но теперь и <code><strong>private</strong></code> и <code><strong>protected</strong></code>. В нашей ситуации мы знаем имя поля, которое нас интересует, и можем использовать метод <strong><code>getDeclaredField(String)</code></strong>, где <code><strong>String</strong></code> — имя нужного поля. 
+
+<mark>Примечание:</mark> <strong><code>getFields()</code></strong> и <strong><code>getDeclaredFields()</code></strong> не возвращают поля класса-родителя!
+
+Отлично, мы получили объект <code><strong>Field </strong></code>с ссылкой на наш <code><strong>name</strong></code>. Т.к. поле не было <strong><code>публичным</code></strong> (public) следует дать доступ для работы с ним. Метод <strong><code>setAccessible(true)</code></strong> разрешает нам дальнейшую работу. Теперь поле <code><strong>name</strong></code> полностью под нашим контролем! Получить его значение можно вызовом <strong><code>get(Object)</code></strong> у объекта <code><strong>Field</strong></code>, где <code><strong>Object</strong></code> — экземпляр нашего класса <code><strong>MyClass</strong></code>. Приводим к типу <code><strong>String</strong></code> и присваиваем нашей переменной <code><strong>name</strong></code>.
+
+На тот случай если у нас вдруг не оказалось <code><strong>setter</strong></code>’a, для установки нового значения полю name можно использовать метод <code><strong>set</strong></code>:
+
+<pre class="lang-java line-numbers"><code>
+field.set(myClass, (String) "new value");
+</code></pre>
+<strong>Поздравляю! Вы только что овладели базовым механизмом рефлексии и смогли получить доступ к <code>private</code> полю!</strong>
+
+Обратите внимание на блок <code><strong>try/catch</strong></code> и типы обрабатываемых исключений. IDE сама укажет на их обязательное присутствие, но по их названию итак ясно зачем они здесь.
+
+Идем дальше! Как вы могли заметить, наш <code><strong>MyClass</strong></code> уже имеет метод для вывода информации о данных класса:
+
+<pre class="lang-java line-numbers"><code>
+private void printData(){
+       System.out.println(number + name);
+   }
+</code></pre>
+Но этот программист и тут наследил. Метод находится под модификатором доступа <code><strong>private</strong></code>, и нам пришлось самим каждый раз писать код вывода. Не порядок, где там наша рефлексия?…
+
+ Напишем вот такую функцию:
+
+<pre class="lang-java line-numbers"><code>
+public static void printData(Object myClass){
+   try {
+       Method method = myClass.getClass().getDeclaredMethod("printData");
+       method.setAccessible(true);
+       method.invoke(myClass);
+   } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+       e.printStackTrace();
+   }
+}
+</code></pre>
+Здесь примерно такая же процедура как и с получением поля — получаем нужный метод по имени и даем доступ к нему. И для вызова объекта <code><strong>Method</strong></code> используем <strong><code>invoke(Оbject, Args)</code></strong>, где <code><strong>Оbject</strong></code> — все также экземпляр класса <code><strong>MyClass</strong></code>.<code><strong> Args</strong></code> — аргументы метода — наш таковых не имеет. Теперь для вывода информации мы используем функцию <code><strong>printData</strong></code>:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+   MyClass myClass = new MyClass();
+   int number = myClass.getNumber();
+   String name = null; //?
+   printData(myClass); // outout 0default
+   try {
+       Field field = myClass.getClass().getDeclaredField("name");
+       field.setAccessible(true);
+       field.set(myClass, (String) "new value");
+       name = (String) field.get(myClass);
+   } catch (NoSuchFieldException | IllegalAccessException e) {
+       e.printStackTrace();
+   }
+   printData(myClass);// output 0new value
+}
+</code></pre>
+Ура, теперь у нас есть доступ к приватному методу класса. Но что делать если у метода все таки будут аргументы, и зачем тот закомментированный конструктор? Всему свое время.
+
+Из определения в начале ясно, что рефлексия позволяет создавать экземпляры класса в режиме <code><strong>runtime</strong></code> (во время выполнения программы)! Мы можем создать объект класса по полному имени этого класса. Полное имя класса — это имя класса, учитывая путь к нему в <code><strong>package</strong></code>.
+<div class="jr-image-wrap"><img data-id="10b0b072-c2e8-4d1e-a591-1ef394b41975" data-max-width="256" alt="Reflection API. Рефлексия. Темная сторона Java - 3" src="https://cdn.javarush.com/images/article/10b0b072-c2e8-4d1e-a591-1ef394b41975/1024.jpeg"></div>В моей иерархии <code><strong>package</strong></code> полным именем <code><strong>MyClass</strong></code> будет “<code><strong>reflection.MyClass</strong></code>”. Также узнать имя класса можно простым способом (вернет имя класса в виде строки):
+
+<pre class="lang-java line-numbers"><code>
+MyClass.class.getName()
+</code></pre> 
+Создадим экземпляр класса с помощью рефлексии:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+   MyClass myClass = null;
+   try {
+       Class clazz = Class.forName(MyClass.class.getName());
+       myClass = (MyClass) clazz.newInstance();
+   } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+       e.printStackTrace();
+   }
+   System.out.println(myClass);//output created object reflection.MyClass@60e53b93
+}
+</code></pre>
+На момент старта java приложения далеко не все классы оказываются загруженными в JVM. Если в вашем коде нет обращения к классу <code><strong>MyClass</strong></code>, то тот, кто отвечает за загрузку классов в JVM, а им является <code><strong>ClassLoader</strong></code>, никогда его туда и не загрузит. Поэтому нужно заставить <code><strong>ClassLoader</strong></code> загрузить его и получить описание нашего класса в виде переменной типа <code><strong>Class</strong></code>. Для этой задачи существует метод <strong><code>forName(String)</code></strong>, где <code><strong>String</strong></code> — имя класса, описание которого нам требуется. 
+
+Получив <code><strong>Сlass</strong></code>, вызов метода <strong><code>newInstance()</code></strong> вернет <code><strong>Object</strong></code>, который будет создан по тому самому описанию. Остается привести этот объект к нашему классу <code><strong>MyClass</strong></code>. 
+
+Круто! Было сложно, но, надеюсь, понятно. Теперь мы умеем создавать экземпляр класса буквально из одной строки! К сожалению описанный способ будет работать только с конструктором по умолчанию (без параметров).
+
+Как же вызывать методы с аргументами и конструкторы с параметрами?
+
+Самое время раскомментировать наш конструктор. Как и ожидалось, <code><strong>newInstance()</strong></code> не находит конструктор по умолчанию и больше не работает.
+
+Перепишем создание экземпляра класса:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+   MyClass myClass = null;
+   try {
+       Class clazz = Class.forName(MyClass.class.getName());
+       Class[] params = {int.class, String.class};
+       myClass = (MyClass) clazz.getConstructor(params).newInstance(1, "default2");
+   } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+       e.printStackTrace();
+   }
+   System.out.println(myClass);//output created object reflection.MyClass@60e53b93
+}
+</code></pre>
+Для получения конструкторов класса следует у описания класса вызвать метод <strong><code>getConstructors()</code></strong>, а для получения параметров конструктора - <strong><code>getParameterTypes()</code></strong>:
+
+<pre class="lang-java line-numbers"><code>
+Constructor[] constructors = clazz.getConstructors();
+for (Constructor constructor : constructors) {
+   Class[] paramTypes = constructor.getParameterTypes();
+   for (Class paramType : paramTypes) {
+       System.out.print(paramType.getName() + " ");
+   }
+   System.out.println();
+}
+</code></pre>
+Таким образом получаем все конструкторы и все параметры к ним. В моем примере идет обращение к конкретному конструктору с конкретными уже известными параметрами. И для вызова этого конструктора используем метод <code><strong>newInstance</strong></code>, в котором указываем значения этим параметрам. Точно так же будет и с <code><strong>invoke</strong></code> для вызова методов.
+
+Возникает вопрос: где может пригодится рефлексивный вызов конструкторов? Современные технологии java, как уже говорилось в начале, не обходятся без Reflection API. Например, DI (Dependency Injection), где аннотации в сочетании с рефлексией методов и конструкторов образуют популярную в Android разработке библиотеку Dagger. 
+
+После прочтения этой статьи вы с уверенностью можете считать себя просвещенным в механизмы Reflection API. Темной стороной java рефлексия называется не зря. Она напрочь ломает парадигму ООП. В java инкапсуляция служит для сокрытия и ограничения доступа одних компонентов программы к другим. Используя модификатор private мы подразумеваем, что доступ к этому полю будет только в пределах класса, где это поле существует, основываясь на этом мы строим дальнейшую архитектуру программы. В этой статье мы увидели, как с помощью рефлексии можно пробираться куда угодно.
+
+Хорошим примером в виде архитектурного решения является порождающий шаблон проектирования — <code><strong>Singleton</strong></code>. Основная его идея в том, чтобы на протяжении всей работы программы класс, реализующий этот шаблон был только в одном экземпляре. Осуществляется это при помощи установки конструктору по умолчанию private модификатор доступа. И будет очень нехорошо, если какой-то программист со своей рефлексией будет плодить такие классы. 
+
+Кстати, есть очень интересный вопрос, который я недавно услышал от своего сотрудника: может ли быть у класса, реализующий шаблон <code><strong>Singleton</strong></code>, наследники? Неужели в этом случае бессильна даже рефлексия? 
+
+Пишите ваши feedback’и по статье и ответ в коментарии, а также задавайте свои вопросы!
+
+Истинная Сила Reflection API раскрывается в комбинации c Runtime Annotations, о чем мы, возможно, поговорим в следующей статье про темную сторону Java. Спасибо за внимание!
+
+<div class="email-subscription"><iframe frameborder="0" src="https://secure.esputnik.com.ua/4Q0Ef6d2SOs" width="100%" height="200" scrolling="no"></iframe></div>

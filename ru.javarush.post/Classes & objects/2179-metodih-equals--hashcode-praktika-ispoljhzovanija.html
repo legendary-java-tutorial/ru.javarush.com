@@ -1,0 +1,389 @@
+Методы equals &amp; hashCode: практика использования
+<p>----------------------------------------</p>
+Привет! Сегодня мы поговорим о двух важных методах в Java — equals() и hashCode(). Мы встречаемся с ними не впервые: в начале курса JavaRush была небольшая лекция об equals() — прочитай ее, если подзабыл или не встречал ранее ...
+<p>----------------------------------------</p>
+Привет!
+
+Сегодня мы поговорим о двух важных методах в Java — <code>equals()</code> и <code>hashCode()</code>. Мы встречаемся с ними не впервые: в начале курса JavaRush была небольшая <a href="https://javarush.com/groups/posts/1923-equals-i-sravnenie-strok-" target="_blank">лекция</a> об <code>equals()</code> — прочитай ее, если подзабыл или не встречал ранее.
+<img data-max-width="800" data-id="9613b68a-c1eb-4280-a5b7-d27d0ec1c64c" src="/images/article/9613b68a-c1eb-4280-a5b7-d27d0ec1c64c/800.webp" class="img-fluid" alt="Методы equals &amp;amp; hashCode: практика использования - 1">На сегодняшнем же занятии поговорим об этих понятиях подробно — поверь, поговорить есть о чем! И перед тем, как переходить к новому, давай освежим в памяти то, что уже проходили :)
+
+Как ты помнишь, обычное сравнение двух объектов через оператор “<code>==</code>” — плохая идея, потому что “<code>==</code>” сравнивает ссылки.
+
+Вот наш пример с машинами из недавней лекции:
+
+<pre class="lang-java line-numbers"><code>
+public class Car {
+
+   String model;
+   int maxSpeed;
+
+   public static void main(String[] args) {
+
+       Car car1 = new Car();
+       car1.model = "Ferrari";
+       car1.maxSpeed = 300;
+
+       Car car2 = new Car();
+       car2.model = "Ferrari";
+       car2.maxSpeed = 300;
+
+       System.out.println(car1 == car2);
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+false
+</code></pre>
+Казалось бы, мы создали два идентичных объекта класса <code>Car</code>: все поля у двух машин одинаковые, но результат сравнения все равно false. 
+
+Причина нам уже известна: ссылки <code>car1</code> и <code>car2</code> указывают на разные адреса в памяти, поэтому они не равны.
+
+Мы же все-таки хотим сравнить два объекта, а не две ссылки. Лучшее решение для сравнения объектов — метод <code>equals()</code>.
+<h2>Метод equals()</h2>Возможно, ты помнишь, что этот метод мы не создаем с нуля, а переопределяем — ведь метод <code>equals()</code> определен в классе <code>Object</code>.
+
+Однако в обычном виде толку от него мало:
+
+<pre class="lang-java line-numbers"><code>
+public boolean equals(Object obj) {
+   return (this == obj);
+}
+</code></pre>
+Вот так метод <code>equals()</code> определен в классе <code>Object</code>. То же самое сравнение ссылок. Зачем его сделали таким?
+
+Ну а откуда создателям языка знать, какие объекты в твоей программе считать равными, а какие — нет? :)
+
+В этом заключается основная идея метода <code>equals()</code> — создатель класса сам определяет характеристики, по которым проверяется равенство объектов этого класса. Сделав это, ты переопределяешь метод <code>equals()</code> в своем классе.
+
+Если тебе не совсем понятен смысл «сам определяешь характеристики», давай рассмотрим пример.
+
+Вот простой класс человека — <code>Man</code>.
+
+<pre class="lang-java line-numbers"><code>
+public class Man {
+
+   private String noseSize;
+   private String eyesColor;
+   private String haircut;
+   private boolean scars;
+   private int dnaCode;
+
+public Man(String noseSize, String eyesColor, String haircut, boolean scars, int dnaCode) {
+   this.noseSize = noseSize;
+   this.eyesColor = eyesColor;
+   this.haircut = haircut;
+   this.scars = scars;
+   this.dnaCode = dnaCode;
+}
+
+   //геттеры, сеттеры и т.д.
+}
+</code></pre>
+Допустим, мы пишем программу, которая должна определять, являются ли два человека родственниками-близнецами, или это просто двойники.
+
+У нас есть пять характеристик: размер носа, цвет глаз, прическа, наличие шрамов и результаты биологического теста ДНК (для простоты — в виде кодового числа).
+
+Как ты думаешь, какие из этих характеристик позволят нашей программе определить родственников-близнецов?
+<img data-max-width="800" data-id="916b3fd9-cb03-4589-884d-34a5ac179d60" src="/images/article/916b3fd9-cb03-4589-884d-34a5ac179d60/800.webp" class="img-fluid" alt="Методы equals &amp;amp; hashCode: практика использования - 2">Разумеется, гарантию может дать только биологический тест. У двух людей могут быть одинаковый цвет глаз, прическа, нос, и даже шрамы — людей в мире много, и избежать совпадений невозможно. 
+
+Нам же нужен надежный механизм: только результат ДНК-теста позволяет сделать точный вывод.
+
+Что же это означает для нашего метода <code>equals()</code>? 
+
+Нам нужно его переопределить в классе <code>Man</code> с учетом требований нашей программы.
+
+Метод должен сравнивать поле <code>int dnaCode</code> двух объектов, и если они равны, значит, и объекты равны.
+
+<pre class="lang-java line-numbers"><code>
+@Override
+public boolean equals(Object o) {
+   Man man = (Man) o;
+   return dnaCode == man.dnaCode;
+}
+</code></pre>
+Неужели так просто? Не совсем. Мы кое-что упустили.
+
+В данном случае для наших объектов мы определили всего одно «значимое» поле, по которому устанавливается их равенство — <code>dnaCode</code>.
+
+А теперь представь, что таких «значимых» полей у нас было бы не 1, а 50. И если все 50 полей у двух объектов равны, то и объекты равны.
+
+Такое тоже может быть. Главная проблема в том, что вычисление равенства 50 полей — затратный по времени и ресурсам процесс.
+
+Теперь представь, что помимо класса <code>Man</code> у нас есть класс <code>Woman</code> с точно такими же полями, как и в <code>Man</code>.
+
+И если твоими классами будет пользоваться другой программист, он запросто может написать в своей программе что-то типа:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+  
+   Man man = new Man(........); //куча параметров в конструкторе
+
+   Woman woman = new Woman(.........);//такая же куча параметров.
+
+   System.out.println(man.equals(woman));
+}
+</code></pre>
+Проверять значения полей в данном случае бессмысленно: мы же видим, что перед нами объекты двух разных классов, и они не могут быть равны в принципе!
+
+Значит в метод <code>equals()</code> нам нужно поместить проверку — сравнение объектов двух одинаковых классов. Хорошо, что мы об этом подумали!
+
+<pre class="lang-java line-numbers"><code>
+@Override
+public boolean equals(Object o) {
+   if (getClass() != o.getClass()) return false;
+   Man man = (Man) o;
+   return dnaCode == man.dnaCode;
+}
+</code></pre>
+Но, может мы забыли что-то еще?
+
+Хм… Как минимум, надо бы проверить, что мы не сравниваем объект сам с собой! Если ссылки А и Б указывают на один адрес в памяти, значит, это один и тот же объект, и нам тоже не надо тратить время и сравнивать 50 полей.
+
+<pre class="lang-java line-numbers"><code>
+@Override
+public boolean equals(Object o) {
+   if (this == o) return true;
+   if (getClass() != o.getClass()) return false;
+   Man man = (Man) o;
+   return dnaCode == man.dnaCode;
+}
+</code></pre>
+Кроме того, не помешает добавить проверку на <code>null</code>: никакой объект не может быть равен <code>null</code>, и в таком случае нет смысла в дополнительных проверках.
+
+С учетом всего этого, наш метод <code>equals()</code> для класса <code>Man</code> будет выглядеть так:
+
+<pre class="lang-java line-numbers"><code>
+@Override
+public boolean equals(Object o) {
+   if (this == o) return true;
+   if (o == null || getClass() != o.getClass()) return false;
+   Man man = (Man) o;
+   return dnaCode == man.dnaCode;
+}
+</code></pre>
+Мы проводим все первоначальные проверки, о которых сказали выше. Если в итоге оказалось, что:
+<ul>
+<li>мы сравниваем два объекта одного класса</li>
+<li>это не один и тот же объект</li>
+<li>мы сравниваем наш объект не c <code>null</code></li>
+</ul>...тогда мы переходим к сравнению значимых характеристик. В нашем случае — поля <code>dnaCode</code> двух объектов.
+
+Переопределяя метод <code>equals()</code>, обязательно соблюдай эти требования:
+<ol>
+<li><p>Рефлексивность.</p>
+<p>Любой объект должен быть <code>equals()</code> самому себе.<br>
+Мы уже учли это требование. В нашем методе указано:</p>
+<p></p><pre class="lang-java line-numbers"><code>
+if (this == o) return true;
+</code></pre><p></p></li>
+<li><p>Симметричность.</p> 
+<p>Если <code>a.equals(b) == true</code>, то и <code>b.equals(a)</code> должно возвращать <code>true</code>.<br>
+Этому требованию наш метод тоже соответствует.</p></li>
+<li><p>Транзитивность.</p>
+<p>Если два объекта равны какому-то третьему объекту, значит, они должны быть равны друг и другу.<br>
+Если <code>a.equals(b) == true</code> и <code>a.equals(c) == true</code>, значит проверка <code>b.equals(c)</code> тоже должна возвращать true.</p></li>
+<li><p>Постоянность.</p>
+<p>Результаты работы <code>equals()</code> должны меняться только при изменении входящих в него полей. Если данные двух объектов не менялись, результаты проверки на <code>equals()</code> должны быть всегда одинаковыми. </p></li>
+<li><p>Неравенство с <code>null</code>.</p>
+<p>Для любого объекта проверка <code>a.equals(null)</code> должна возвращать false<br>
+Это не просто набор каких-то «полезных рекомендаций», а именно жесткий <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Object.html" rel="nofollow" target="_blank">контракт методов</a>, прописанный в документации Oracle</p></li></ol><h2>Метод hashCode()</h2>Теперь поговорим о методе <code>hashCode()</code>. Зачем он нужен?
+
+Ровно для той же цели — сравнения объектов. Но ведь у нас уже есть <code>equals()</code>! Зачем же еще один метод?
+
+Ответ прост: для повышения производительности.
+
+Хэш-функция, которая представлена в Java  методом <code>hashCode()</code>, возвращает числовое значение фиксированной длины для любого объекта. В случае с Java метод <code>hashCode()</code> возвращает для любого объекта 32-битное число типа <code>int</code>. 
+
+Сравнить два числа между собой — гораздо быстрее, чем сравнить два объекта методом <code>equals()</code>, особенно если в нем используется много полей.
+
+Если в нашей программе будут сравниваться объекты, гораздо проще сделать это по хэш-коду, и только если они равны по <code>hashCode()</code> — переходить к сравнению по <code>equals()</code>.
+
+Таким образом, кстати, работают основанные на хеше структуры данных — например, известная тебе <code>HashMap</code>!
+
+Метод <code>hashCode()</code>, так же как и <code>equals()</code>, переопределяется самим разработчиком.
+
+И так же, как для <code>equals()</code>, для метода <code>hashCode()</code> есть официальные требования, прописанные в документации Oracle:
+<ol>
+<li><p>Если два объекта равны (т.е. метод <code>equals()</code> возвращает true), у них должен быть одинаковый хэш-код.</p>
+<p>Иначе наши методы будут лишены смысла. Проверка по <code>hashCode()</code>, как мы и сказали, должна идти первой для повышения быстродействия. Если хэш-коды будут разными, проверка вернет false, хотя объекты на самом деле равны (согласно нашему определению в методе <code>equals()</code>).</p></li>
+<li><p>Если метод <code>hashCode()</code> вызывается несколько раз на одном и том же объекте, каждый раз он должен возвращать одно и то же число.</p></li>
+<li><p>Правило 1 не работает в обратную сторону. Одинаковый хэш-код может быть у двух разных объектов.</p></li></ol>Третье правило немного сбивает с толку. Как такое может быть?
+
+Объяснение достаточно простое. Метод <code>hashCode()</code> возвращает <code>int</code>. 
+
+<code>int</code> — это 32-битное число. 
+
+У него есть ограниченное число значений — от -2,147,483,648 до +2,147,483,647. Иными словами, всего существует чуть больше 4 миллиардов вариантов числа <code>int</code>.
+
+Теперь представь, что ты создаешь программу для хранения данных обо всех живущих людях на Земле. Каждому человеку будет соответствовать свой объект класса <code>Man</code>.
+
+На земле живет ~7.5 миллиарда человек. 
+
+Иными словами, какой бы хороший алгоритм преобразования объектов <code>Man</code> в число мы ни написали, нам просто не хватит чисел. У нас всего 4,5 миллиарда вариантов, а людей намного больше. Значит, как бы мы ни старались, для каких-то разных людей хэш-коды будут одинаковыми.
+
+Такая ситуация (совпадение хэш-кодов у двух разных объектов) называется коллизией. 
+
+Одна из задач программиста при переопределении метода <code>hashCode()</code> — сократить потенциальное число коллизий насколько это возможно.
+
+Как же будет выглядеть наш метод <code>hashCode()</code> для класса <code>Man</code> с учетом всех этих правил?
+
+Вот так:
+
+<pre class="lang-java line-numbers"><code>
+@Override
+public int hashCode() {
+   return dnaCode;
+}
+</code></pre>
+Удивлен? :)
+
+Неожиданно, но если ты посмотришь на требования, увидишь, что мы соблюдаем все.
+
+Объекты, для которых наш <code>equals()</code> возвращает true, будут равны и по <code>hashCode()</code>. Если два наших объекта <code>Man</code> будут равны по <code>equals</code> (то есть у них одинаковый <code>dnaCode</code>), наш метод вернет одинаковое число.
+
+Рассмотрим пример посложнее.
+
+Допустим, наша программа должна отбирать элитные автомобили для клиентов-коллекционеров.
+
+Коллекционирование — штука сложная, и в ней много особенностей. Автомобиль 1963 года выпуска может стоить в 100 раз дороже, чем такой же автомобиль 1964 года. Красный автомобиль 1970 года может стоить в 100 раз дороже, чем синий автомобиль той же марки того же года.
+<img data-max-width="800" data-id="50868840-604e-46c9-8fe5-2d00e3073f6a" src="/images/article/50868840-604e-46c9-8fe5-2d00e3073f6a/800.webp" class="img-fluid" alt="Методы equals &amp;amp; hashCode: практика использования - 4">В первом случае, с классом <code>Man</code>, мы отбросили большинство полей (т.е. характеристик человека) как незначительные и для сравнения использовали только поле <code>dnaCode</code>.
+
+Здесь же мы работаем с очень своеобразной сферой, и незначительных деталей быть не может!
+
+Вот наш класс <code>LuxuryAuto</code>:
+
+<pre class="lang-java line-numbers"><code>
+public class LuxuryAuto {
+
+   private String model;
+   private int manufactureYear;
+   private int dollarPrice;
+
+   public LuxuryAuto(String model, int manufactureYear, int dollarPrice) {
+       this.model = model;
+       this.manufactureYear = manufactureYear;
+       this.dollarPrice = dollarPrice;
+   }
+
+   //...геттеры, сеттеры и т.д.
+}
+</code></pre>
+Здесь при сравнении мы должны учитывать все поля. Любая ошибка может стоить сотен тысяч долларов для клиента, поэтому лучше перестраховаться:
+
+<pre class="lang-java line-numbers"><code>
+@Override
+public boolean equals(Object o) {
+   if (this == o) return true;
+   if (o == null || getClass() != o.getClass()) return false;
+
+   LuxuryAuto that = (LuxuryAuto) o;
+
+   if (manufactureYear != that.manufactureYear) return false;
+   if (dollarPrice != that.dollarPrice) return false;
+   return model.equals(that.model);
+}
+</code></pre>
+В нашем методе <code>equals()</code> мы не забыли о всех проверках, о которых говорили ранее. Но теперь мы сравниваем каждое из трех полей наших объектов. В этой программе равенство должно быть абсолютным, по каждому полю.
+
+А что же с <code>hashCode</code>?
+
+<pre class="lang-java line-numbers"><code>
+@Override
+public int hashCode() {
+   int result = model == null ? 0 : model.hashCode();
+   result = result + manufactureYear;
+   result = result + dollarPrice;
+   return result;
+}
+</code></pre>
+Поле <code>model</code> в нашем классе — строка. Это удобно: в классе <code>String</code> метод <code>hashCode()</code> уже переопределен.
+
+Мы вычисляем хэш-код поля <code>model</code>, а к нему прибавляем сумму двух остальных числовых полей. 
+
+В Java есть одна небольшая хитрость, которая используется для сокращения числа коллизий: при вычислении хэш-кода умножать промежуточный результат на нечетное простое число. Чаще всего используется число 29 или 31.
+
+Мы не будем сейчас углубляться в математические тонкости, но на будущее запомни, что умножение промежуточных результатов на достаточно большое нечетное число помогает «размазать» результаты хэш-функции и получить в итоге меньшее число объектов с одинаковым хэшкодом.
+
+Для нашего метода <code>hashCode()</code> в LuxuryAuto это будет выглядеть вот так:
+
+<pre class="lang-java line-numbers"><code>
+@Override
+public int hashCode() {
+   int result = model == null ? 0 : model.hashCode();
+   result = 31 * result + manufactureYear;
+   result = 31 * result + dollarPrice;
+   return result;
+}
+</code></pre>
+Подробнее обо всех тонкостях этого механизма можно прочитать <a href="https://stackoverflow.com/questions/3613102/why-use-a-prime-number-in-hashcode" rel="nofollow" target="_blank">в этом посте на StackOverflow</a>, а также у Джошуа Блоха в книге «<a href="https://www.amazon.com/dp/0321356683/?tag=stackoverfl08-20" rel="nofollow" target="_blank">Effective Java</a>».
+
+Напоследок еще один важный момент, о котором стоит сказать.
+
+Каждый раз при переопределении <code>equals()</code> и <code>hashCode()</code> мы выбирали определенные поля объекта, которые в этих методах учитывались.
+
+Но можем ли мы учитывать разные поля в <code>equals()</code> и <code>hashCode()</code>?
+
+Технически, можем. Но это плохая идея, и вот почему:
+
+<pre class="lang-java line-numbers"><code>
+@Override
+public boolean equals(Object o) {
+   if (this == o) return true;
+   if (o == null || getClass() != o.getClass()) return false;
+
+   LuxuryAuto that = (LuxuryAuto) o;
+
+   if (manufactureYear != that.manufactureYear) return false;
+   return dollarPrice == that.dollarPrice;
+}
+
+@Override
+public int hashCode() {
+   int result = model == null ? 0 : model.hashCode();
+   result = 31 * result + manufactureYear;
+   result = 31 * result + dollarPrice;
+   return result;
+}
+</code></pre>
+Вот наши методы <code>equals()</code> и <code>hashCode()</code> для класса LuxuryAuto. 
+
+Метод <code>hashCode()</code> остался без изменений, а из метода <code>equals()</code> мы убрали поле <code>model</code>. Теперь модель — не характеристика для сравнения двух объектов по <code>equals()</code>. Но при расчете хэш-кода она по-прежнему учитывается.
+
+Что же мы получим в результате? Давай создадим два автомобиля и проверим!
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) {
+
+       LuxuryAuto ferrariGTO = new LuxuryAuto("Ferrari 250 GTO", 1963, 70000000);
+       LuxuryAuto ferrariSpider = new LuxuryAuto("Ferrari 335 S Spider Scaglietti", 1963, 70000000);
+
+       System.out.println("Эти два объекта равны друг другу?");
+       System.out.println(ferrariGTO.equals(ferrariSpider));
+
+       System.out.println("Какие у них хэш-коды?");
+       System.out.println(ferrariGTO.hashCode());
+       System.out.println(ferrariSpider.hashCode());
+   }
+}
+</code></pre>
+<pre><code>
+Эти два объекта равны друг другу?
+true
+Какие у них хэш-коды?
+-1372326051
+1668702472
+</code></pre>
+Ошибка! Использовав разные поля для <code>equals()</code> и <code>hashCode()</code> мы нарушили установленный для них контракт!
+
+У двух равных по <code>equals()</code> объектов должен быть одинаковый хэш-код. Мы же получили для них разные значения.
+
+Подобные ошибки могут привести к самым невероятным последствиям, особенно при работе с коллекциями, использующими хэш.
+
+Поэтому при переопределении <code>equals()</code> и <code>hashCode()</code> правильно будет использовать одни и те же поля.
+
+Лекция получилось немаленькой, но сегодня ты узнал много нового! :)
+
+Самое время вернуться к решению задач!

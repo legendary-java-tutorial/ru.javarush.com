@@ -1,0 +1,189 @@
+Zookeeper или как живётся работнику зоопарка
+<p>----------------------------------------</p>
+В данном небольшом обзоре разберёмся в том, что такое Zookeeper и для чего он используется. Выясним смысл терминологии и как ей пользоваться. На закуску много полезных ссылок, чтобы стать Zookeeper гуру). Приложения в Java часто имеют различные конфигурации...
+<p>----------------------------------------</p>
+<img data-id="841d0e1c-0a0c-4d92-99b0-5de0d4d89401" data-max-width="850" alt="Zookeeper или как живётся работнику зоопарка - 1" src="https://cdn.javarush.com/images/article/841d0e1c-0a0c-4d92-99b0-5de0d4d89401/1024.jpeg"><h2>Введение</h2>Приложения в Java часто имеют различные конфигурации. Например, адрес и порт подключения. Например, это могло бы выглядеть следующим образом, если бы использовали класс <a href="https://docs.oracle.com/javase/8/docs/api/java/util/Properties.html" target="_blank" rel="nofollow">Properties</a>:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args) {
+	Properties props = new Properties();
+	props.setProperty("host", "www.tutorialspoint.com");
+	System.out.println("Hello, " + props.getProperty("host"));
+}
+</code></pre>
+И этого вроде достаточно, т.к. мы можем Properties получить из файла. И вроде у нас всё на одной машине уживается хорошо. Но представте, что наша система начинает состоять из разных систем, которые разделены между собой? Такая система ещё называется распределённой (Distributed Systems).
+
+В википедии можно найти следующее определение: <strong>Распределённые системы</strong> - это системы, компоненты который расположены на разных сетевых компьютерах, которые общаются между собой и координируют свои действия обмениваясь друг с другом сообщениями.
+Можно взглянуть на следующую схему:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="1fa0bd3c-9827-401a-88ad-193ea0fa9c74" data-max-width="316" alt="Zookeeper или как живётся работнику зоопарка - 2" src="https://cdn.javarush.com/images/article/1fa0bd3c-9827-401a-88ad-193ea0fa9c74/1024.jpeg"></div></div>При таком подходе единая система разделена на компоненты. Конфигурирование — отдельный общий компонент. Каждый из других компонентов выступает в роли клиента для компонента конфигурирования. Такой случай называется "<strong>Распределённая конфигурация</strong>".
+
+Существует множество различных реализаций распределённой конфигурации. И в сегодняшем обзоре предлагаю познакомиться с одной из них, которая называется Zookeeper.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="6a65885d-9a55-44bd-8374-5b2aaff4c6e6" data-max-width="289" alt="Zookeeper или как живётся работнику зоопарка - 3" src="https://cdn.javarush.com/images/article/6a65885d-9a55-44bd-8374-5b2aaff4c6e6/1024.jpeg"></div></div><h2>Zookeeper</h2>Путь к знакомству с Zookeeper начинается с их официального сайта: <a href="https://zookeeper.apache.org" target="_blank" rel="nofollow">zookeeper.apache.org</a>
+
+На официальном сайте необходимо перейти в раздел "<a href="https://zookeeper.apache.org/releases.html#download" target="_blank" rel="nofollow">Download</a>". 
+
+В этом разделе скачиваем архив в формате .tar.gz, например "zookeeper-3.4.13.tar.gz". tar - это формат архива, традиционный для Unit систем. gz - означает, что для сжатия архива используется gzip.
+
+Если мы работаем на Windows машине, то нас это не должно смущать. Большинство современных архиваторов (например, <a href="https://www.7-zip.org" target="_blank" rel="nofollow">7-zip</a>), прекрасно умеют с ними работать и на Windows. Извлечём содержимое в какой-нибудь каталог. Заодно увидим разницу - на диске в извлечённом состоянии оно будет занимать примерно 60 мегабайт, а скачивали мы архив размером около 35 мегабайт. Как видно, сжатие действительно работает.
+
+Теперь нужно запустить Zookeeper. Вообще, Zookeeper является своего рода сервером.  Zookeeper может быть запущен в одном из двух режимов: <strong>Standalone</strong> или <strong>Replicated</strong>. 
+
+Рассмотрим самый простой вариант, он же первый вариант — Standalone mode. Чтобы Zookeper запустился, ему нужен конфигурационный файл. Поэтому, создадим его тут: <code>[КаталогРаспаковкиZookeeper]/conf/zoo.cfg</code>.
+
+Для Windows воспользуемся рекомендацией из Medium : "<a href="https://medium.com/@shaaslam/installing-apache-zookeeper-on-windows-45eda303e835" target="_blank" rel="nofollow">Installing Apache ZooKeeper on Windows</a>".
+
+Содержание конфигурационного файла будет примерно следующим:
+
+<pre class="lang-java line-numbers"><code>
+tickTime=2000
+dataDir=C:/zookeeper-3.4.13/data
+clientPort=2181
+</code></pre>
+Добавим переменную среды окружения ZOOKEEPER_HOME, содержащую путь к корневому каталогу zookeper (как в инструкции на medium), а так же добавим в переменную среды окружения PATH следующий фрагмент: <code>;%ZOOKEEPER_HOME%\bin;</code>
+
+Так же каталог, указанный в dataDir, должен существовать, иначе Zookeeper не сможет запустить сервер.
+
+Теперь мы можем смело запускать сервер при помощи команды: zkServer. Благодаря тому, что каталог Zookeeper был добавлен в переменную среды окружения path мы можем вызывать команды Zookeper откуда угодно, а не только из каталога bin.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="935a76ad-fe7c-4545-8d24-2a2bfd07af0c" data-max-width="439" alt="Zookeeper или как живётся работнику зоопарка - 4" src="https://cdn.javarush.com/images/article/935a76ad-fe7c-4545-8d24-2a2bfd07af0c/1024.jpeg"></div></div><h2>ZNode</h2>Как сказано в "<a href="https://zookeeper.apache.org/doc/r3.4.13/zookeeperOver.html" target="_blank" rel="nofollow">Zookeeper Overview</a>", данные в Zookeper представлены в виде <strong>ZNode</strong> (узлов), которые объединены в древовидную структуру. То есть каждый ZNode может содержать данные и иметь дочерние ZNode.
+
+Подробнее про организацию ZNode можно прочитать в документации Zookeeper: "<a href="https://zookeeper.apache.org/doc/current/zookeeperOver.html#sc_dataModelNameSpace" target="_blank" rel="nofollow">Data model and the hierarchical namespace</a>".
+
+Для работы с Zookeeper и ZNode воспользуемся <a href="https://www.tutorialspoint.com/zookeeper/zookeeper_cli.htm" target="_blank" rel="nofollow">Zookeeper CLI</a> (Command Line interface - интерфейс командной строки). 
+
+Ранее мы запустили сервер при помощи команды zkServer. Теперь, для подключения выполним <code>zkCli.cmd -server 127.0.0.1:2181</code>
+При успешном выполнении будет создана сессия подключения к Zookeeper и мы увидим примерно следующий вывод:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="b68cad89-6f56-4267-b845-6c270c0ea24c" data-max-width="675" alt="Zookeeper или как живётся работнику зоопарка - 5" src="https://cdn.javarush.com/images/article/b68cad89-6f56-4267-b845-6c270c0ea24c/1024.jpeg"></div></div>
+
+Интересно, что даже сразу после установки Zookeeper уже имеет ZNode. Имеет он следующий путь: <code>/zookeeper/quota</code>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="bb12fd00-27d1-4f9e-b8a1-adfc131a20d1" data-max-width="449" alt="Zookeeper или как живётся работнику зоопарка - 6" src="https://cdn.javarush.com/images/article/bb12fd00-27d1-4f9e-b8a1-adfc131a20d1/1024.jpeg"></div></div>Это так называемые "<a href="https://zookeeper.apache.org/doc/r3.1.2/zookeeperQuotas.html" target="_blank" rel="nofollow">квоты</a>".
+
+Как сказано в "<a href="https://subscription.packtpub.com/book/big_data_and_business_intelligence/9781784391324/5/ch05lvl1sec30/quota-and-authorization" target="_blank" rel="nofollow">Apache ZooKeeper Essentials</a>", каждый ZNode может иметь ассоциированную с ним квоту, ограничивающую хранимые данные. Может быть указано ограничение по количеству znode и на объём хранимых данных. При этом если это ограничение превышено, то операции с ZNode не отменяется, но будет получено предупреждение о превышении лимита.
+
+Про ZNode рекомендуется прочитать в "<a href="https://zookeeper.apache.org/doc/r3.1.2/zookeeperProgrammers.html#sc_zkDataModel_znodes" target="_blank" rel="nofollow">ZooKeeper Programmer's Guide : ZNodes</a>".
+
+Несколько примеров от туда, как можно работать с ZNode:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="a3daa1b7-2845-42ae-8dee-81cdebd1a9ce" data-max-width="470" alt="Zookeeper или как живётся работнику зоопарка - 7" src="https://cdn.javarush.com/images/article/a3daa1b7-2845-42ae-8dee-81cdebd1a9ce/1024.jpeg"></div></div>Хочется отметить также, что ZNode бывают разные.
+
+Обычные ZNode (если не указать дополнительные флаги) являются тип "<strong>persistent</strong>".
+
+Есть ZNode типа "<a href="https://zookeeper.apache.org/doc/r3.1.2/zookeeperProgrammers.html#Ephemeral+Nodes" target="_blank" rel="nofollow">Ephemeral Node</a>". Такие ZNode существуют только на время существование сессии подключения к Zookeeper, в рамках которой они создавались.
+
+Есть ZNode типа "<a href="https://zookeeper.apache.org/doc/r3.1.2/zookeeperProgrammers.html#Sequence+Nodes+--+Unique+Naming" target="_blank" rel="nofollow">Sequence Node</a>". К таким ZNode добавляется номер из последовательности, чтобы гарантировать уникальность. Sequence Node могут быть как persistent, так и ephemeral.
+
+Про ZNode так же рекомендуется небольшая справочная информация тут: "<a href="https://data-flair.training/blogs/zookeeper-znodes/" target="_blank" rel="nofollow">Zookeeper ZNodes – Characteristics &amp; Example</a>".
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="203" alt="Zookeeper или как живётся работнику зоопарка - 8" src="https://cdn.javarush.com/images/article/b053e858-f3ef-404b-941e-7b6465020d81/original.jpeg"></div></div><h2>ZNode Watcher</h2>Хотелось бы ещё поговорить про наблюдателей (watchers). Подробно про них написано в документации Zookeeper'а: "<a href="https://zookeeper.apache.org/doc/r3.1.2/zookeeperProgrammers.html#ch_zkWatches" target="_blank" rel="nofollow">ZooKeeper Watches</a>".
+
+Если кратко, то вотчер — это такой одноразовый триггер, который срабатывает на некоторое событие. Получая данные, выполняя операции getData(), getChildren() или exists() мы можем создать триггер как дополнительное действие.
+
+Zookeeper обеспечивает порядок обработки event. Кроме того, в документации указано, что прежде чем мы сможем увидеть новое значение ZNode мы увидим event об изменении старого значения на новое.
+
+Подробнее про Watcher'ов можно прочитать здесь: "<a href="https://data-flair.training/blogs/zookeeper-watches/" target="_blank" rel="nofollow">ZooKeeper Watches – Features &amp; Guarantees</a>". 
+
+Для того, чтобы это попробовать, снова воспользуемся <a href="http://www.corejavaguru.com/bigdata/zookeeper/cli" target="_blank" rel="nofollow">CLI</a>:
+Предположим, у нас есть некоторый ZNode со значением, где мы храним статус некоторого сервиса:
+
+<pre class="lang-java line-numbers"><code>
+[zk: 127.0.0.1:2181(CONNECTED) 0] create /services/service1/status stopped
+Created /services/service1/status
+[zk: 127.0.0.1:2181(CONNECTED) 1] get /services/service1/status [watch]
+stopped
+</code></pre>
+Теперь, если данные в <code>/services/service1/status</code> изменятся, то отработает наш одноразовый триггер:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="52aa6b0f-eef8-4f53-b0c7-d55845af6df2" data-max-width="678" alt="Zookeeper или как живётся работнику зоопарка - 9" src="https://cdn.javarush.com/images/article/52aa6b0f-eef8-4f53-b0c7-d55845af6df2/1024.jpeg"></div></div>Интересно, что при подключении к Zookeeper'у мы так же видим, как отрабатывает вотчер:
+
+<pre class="lang-java line-numbers"><code>
+WATCHER::
+WatchedEvent state:SyncConnected type:None path:null
+</code></pre>
+<a href="https://zookeeper.apache.org/doc/r3.3.3/api/org/apache/zookeeper/Watcher.Event.KeeperState.html#SyncConnected" target="_blank" rel="nofollow">SyncConnected</a> является одним из возможных событий Zookeper. Подробнее про него можно посмотреть в описании API.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="164" alt="Zookeeper или как живётся работнику зоопарка - 10" src="https://cdn.javarush.com/images/article/9aaa885e-aeb4-4497-bf48-2ded07ce1030/original.jpeg"></div></div><h2>Zookeeper и Java</h2>Теперь у нас есть некоторое базовое представление о том, что может Zookeeper. Давайте теперь с ним поработаем через Java, а не через CLI. И для этого нам понадобится Java приложение, на котором мы увидим, как же с Zookeeper'ом работать.
+
+Для создания приложения воспользуемся системой сборки проектов <a href="https://gradle.org/" target="_blank" rel="nofollow">Gradle</a>.
+При помощи "<a href="https://docs.gradle.org/current/userguide/build_init_plugin.html" target="_blank" rel="nofollow">Gradle Build Init plugin</a>" выполним создание проекта. 
+
+Для этого выполним команду: <code>gradle init --type java-application</code>
+
+В случае, если Gradle нас будет спрашивать уточняющие вопросы, то оставим значения по умолчанию (просто нажимаем Enter). Теперь откроем билд скрипт, т.е. файл build.gradle. В нём описание того, из чего устроен наш проект и от каких артефактов(библиотек, фрэймворков) зависит. Т.к. мы хотим использовать Zookeeper, то надо добавить его.
+
+Поэтому, добавим в блок dependencies зависимость от Zookeeper'а:
+
+<pre class="lang-java line-numbers"><code>
+dependencies {
+    implementation 'org.apache.zookeeper:zookeeper:3.4.13'
+</code></pre>
+Подробнее про Gradle можно прочитать в обзоре: "<a href="https://javarush.com/groups/posts/2126-kratkoe-znakomstvo-s-gradle" target="_blank" rel="nofollow">Краткое знакомство с Gradle</a>". 
+
+Итак, у нас есть Java проект, к нему мы подключили библиотеку Zookeeper'а. Давайте теперь что-нибудь напишем. Как мы помним, при помощи CLI мы подключались примерно так: <code>zkCli.cmd -server 127.0.0.1:2181</code> 
+
+Давайте в классе App в main методе объявим атрибут "сервер":
+
+<pre class="lang-java line-numbers"><code>
+String server = "127.0.0.1:2181";
+</code></pre>
+Подключение — действие не моментальное. Нам придётся как-то в главное потоке выполнения программы ждать, когда произойдёт подключение. Поэтому, нам понадобится лок. Объявим его ниже:
+
+<pre class="lang-java line-numbers"><code>
+Object lock = new Object();
+</code></pre>
+Теперь нам нужен кто-то, кто скажет, что подключение установлено. Как мы помним, когда мы это делали через CLI, то у нас срабатывал вотчер. Так вот в Java коде всё точно так же. 
+
+Наш вотчер будет выводить сообщение об успешном выполнении и уведомлять об этом всех ждущих через лок. Напишем вотчер:
+
+<pre class="lang-java line-numbers"><code>
+Watcher connectionWatcher = new Watcher() {
+	public void process(WatchedEvent we) {
+		if (we.getState() == Event.KeeperState.SyncConnected) {
+			System.out.println("Connected to Zookeeper in " + Thread.currentThread().getName());
+			synchronized (lock) {
+            	lock.notifyAll();
+            }
+		}
+	}
+};
+</code></pre>
+Теперь допишем подключение к серверу zooKeeper'а:
+
+<pre class="lang-java line-numbers"><code>
+int sessionTimeout = 2000;
+ZooKeeper zooKeeper = null;
+synchronized (lock) {
+	zooKeeper = new ZooKeeper(server, sessionTimeout, connectionWatcher);
+	lock.wait();
+}
+</code></pre>
+Здесь всё просто. При выполнении main метода в главном потоке программы мы захватываем lock и запрашиваем подключение к zookeeper'у. При этом мы отпускаем лок, и ожидаем, пока кто-то другой не захватит лок и не уведомит нас, что можно продолжать. Когда подключение будет установлено, то сработает вотчер. Он проверит, что пришло событие - SyncConnected (как мы помним, именно его ловил вотчер через CLI), и тогда напишет сообщение. Далее мы захватываем lock (т.к. ранее главный поток его отпустил) и уведомляем все ждущие lock потоки, что можно продолжать. Поток обработки события выходит из synchronized блока, тем самым освобождая lock. Главный поток получил уведомление и дождавшись освобождение lock продолжает выполнение, т.к. пока не получит lock, то он не сможет выйти из synchronized блока и продолжить работу.
+
+Таким образом, используя многопоточность и Zookeeper API мы можем выполнять различные действия. Zookeeper API гораздо шире, чем позволяет использовать CLI. Например:
+
+<pre class="lang-java line-numbers"><code>
+// Создание нового узла
+String znodePath = "/zookeepernode2";
+List&lt;ACL&gt; acls = ZooDefs.Ids.OPEN_ACL_UNSAFE;
+if (zooKeeper.exists(znodePath, false) == null) {
+	zooKeeper.create(znodePath, "data".getBytes(), acls, CreateMode.PERSISTENT);
+}
+
+// Получение данных из узла
+byte[] data = zooKeeper.getData(znodePath, null, null);
+System.out.println("Result: " + new String(data, "UTF-8"));
+</code></pre>
+Как видно, при создании узла мы можем настроить ACL. Это ещё одна важная особенность. ACL - это разрешения, которые распостраняются на действия с ZNode. Настроек много, поэтому за подробностями рекомендую обратиться к официальной документации: "<a href="https://zookeeper.apache.org/doc/r3.3.3/zookeeperProgrammers.html#sc_ACLPermissions" target="_blank" rel="nofollow">Zookeeper ACL Permissions</a>".
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="188" alt="Zookeeper или как живётся работнику зоопарка - 11" src="https://cdn.javarush.com/images/article/36f72875-5fa4-4d55-9447-81aca08fbc82/original.jpeg"></div></div><h2>Заключение</h2>Зачем мы это прочитали? Потому что Zookeeper используется и в других востребованных технологиях. Например, Apache Kafka требует Zookeeper, о чём можно прочитать в "<a href="https://kafka.apache.org/quickstart" target="_blank" rel="nofollow">Kafka Quick Start Guide</a>". Так же используется в NOSQL базе данных HBase, о чём можно подробнее прочитать в их "<a href="http://hbase.apache.org/book.html#quickstart" target="_blank" rel="nofollow">HBase Quickstart Guide</a>". На самом деле, множество других проектов используют Zookeeper. Часть из них приведена в списке в "<a href="http://qaru.site/questions/25258/real-world-use-of-zookeeper" target="_blank" rel="nofollow">Использование Zookeeper в реальном мире</a>".
+
+Надеюсь, на вопрос "зачем" я ответил. Самый главный вопрос теперь: "Что дальше?". Во-первых, по теме Apache Zookeeper можно почитать следующие книги:
+<ul>
+<li>"<a href="https://www.oreilly.com/library/view/zookeeper/9781449361297/" target="_blank" rel="nofollow">ZooKeeper: Distributed Process Coordination</a>", Flavio Junqueira, Benjamin Reed</li>
+<li>"<a href="https://www.oreilly.com/library/view/apache-zookeeper-essentials/9781784391324/" target="_blank" rel="nofollow">Apache ZooKeeper Essentials</a>"</li>
+</ul>Во-вторых, есть отличные видео доклады про Zookeeper. Рекомендуются к просмотру:
+<ul>
+<li>Семинар в Яндексе: "<a href="https://habr.com/ru/company/yandex/blog/234335/" target="_blank" rel="nofollow">В чем польза ZooKeeper для разработчиков</a>"</li>
+<li><a href="https://www.youtube.com/watch?v=2RfBHqDWa60" target="_blank" rel="nofollow">ZooKeeper intro</a></li>
+<li><a href="https://www.youtube.com/watch?v=XgNIGjFnPQE&amp;feature=youtu.be" target="_blank" rel="nofollow">Centralized Application Configuration with Spring and Apache ZooKeeper</a></li>
+</ul>В-третьих, есть несколько полезных статей, которые дополнят картину мира:
+<ul>
+<li><a href="https://habr.com/ru/post/144708/" target="_blank" rel="nofollow">ZooKeeper или пишем сервис распределенных блокировок</a></li>
+<li><a href="https://ru.bmstu.wiki/Apache_ZooKeeper" target="_blank" rel="nofollow">Национальная библиотека им. Н. Э. Баумана : Apache ZooKeeper</a></li>
+<li><a href="https://data-flair.training/blogs/zookeeper-tutorial/" target="_blank" rel="nofollow">Apache ZooKeeper Tutorial – ZooKeeper Guide for Beginners</a></li>
+</ul>Вышел совсем небольшой обзор, но как вводное слово, надеюсь, будет полезным. 
+
+#Viacheslav

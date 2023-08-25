@@ -1,0 +1,558 @@
+Добавляем возможность подписаться на группу статей. (Часть 1)  - "Java-проект от А до Я"
+<p>----------------------------------------</p>
+Привет! Сегодня будем добавлять подписку на группу статей в JavaRush. Этому соответствует issue JRTB-5 на GitHub. Поясню: в Javarush есть раздел Статьи, а в нем...
+<p>----------------------------------------</p>
+Привет! Сегодня будем добавлять подписку на группу статей в JavaRush. Этому соответствует <a href="https://github.com/javarushcommunity/javarush-telegrambot/issues/5" rel="nofollow" target="_blank">issue JRTB-5</a> на GitHub.
+
+Поясню: в JavaRush есть раздел <span class="text-bold">Статьи</span>, а в нем — <span class="text-bold">Группы</span> статей. Идея состоит в том, чтобы через телеграм-бота получать уведомления о новой статье из одной или нескольких групп.<img data-max-width="800" data-id="94aff4ce-e709-489e-8d4b-d4dc84e43ca0" src="https://cdn.javarush.com/images/article/94aff4ce-e709-489e-8d4b-d4dc84e43ca0/800.jpeg" alt="“Java-проект от А до Я”: Добавляем возможность подписаться на группу статей. Часть 1 - 1"><h2>Добавляем JRTB-5</h2>Скажем, мне интересны статьи из группы <a href="https://javarush.com/groups/stories" target="_blank">Истории успеха</a>. Поэтому я хочу подписаться на обновления этой группы и получать каждый раз ссылку на новую публикацию.
+
+В рамках реализации этой задачи нам нужно научиться пользоваться открытым API для работы с группами в JavaRush. Как раз к этому моменту такая вещь подоспела. Вот <a href="https://javarush.com/swagger-ui.html" target="_blank">ссылка на описание открытого API</a>.<table><tbody>
+
+<tr><td>Друзья! Хотите сразу узнавать, когда выйдет новый код проекту или новая статья? Присоединяйтесь к моему <a href="https://t.me/joinchat/SpqRPBFo_sM6qm05" rel="nofollow" target="_blank">тг-каналу</a>. Там собираю свою статьи, мысли и open-source разработку воедино.</td></tr>
+
+</tbody></table><h3>Что такое swagger? Сейчас разберемся</h3>Про сваггер мы еще не говорили. Для тех, кто не знает, объясню вкратце: это место, где можно открыто посмотреть на API какого-то сервера и попробовать выполнить какие-то запросы к нему.
+
+Обычно в сваггере сгруппированы возможные запросы. В нашем случае есть три группы: <span class="text-bold">forum-question</span>, <span class="text-bold">group</span>, <span class="text-bold">post</span>. В каждой группе будет один и более запросов с указанием всех необходимых данных, чтобы этот запрос построить (то есть, какие дополнительные параметры можно передать, что с ними делать, какой http метод, и так далее). Советую почитать и посмотреть больше по этой теме, потому это та часть разработки, с которой столкнется почти каждый из вас.
+
+Чтобы разобраться, узнаем, какое количество групп есть в JavaRush. Для этого раскроем группу group-controller и выберем Get запрос <span class="text-bold">/api/1.0/rest/groups/count</span>. Он вернет нам количество групп в JavaRush. 
+
+Смотрим:<img data-max-width="1080" data-id="191287ca-c3c0-4682-ba9e-179c5e56d6c0" src="https://cdn.javarush.com/images/article/191287ca-c3c0-4682-ba9e-179c5e56d6c0/1080.jpeg" alt="“Java-проект от А до Я”: Добавляем возможность подписаться на группу статей. Часть 1 - 2">На изображении видно, что этот запрос поддерживает несколько параметров (query, type, filter).
+
+Чтобы попробовать этот запрос на вкус, нужно найти кнопку <span class="text-bold">Try it out</span>, после чего эти параметры можно будет настроить:<img data-max-width="1080" data-id="554ad8f1-89af-4cd9-b0ef-9b103b27c578" src="https://cdn.javarush.com/images/article/554ad8f1-89af-4cd9-b0ef-9b103b27c578/1080.jpeg" alt="“Java-проект от А до Я”: Добавляем возможность подписаться на группу статей. Часть 1 - 3">Также там можно настроить и тип, и фильтр, и кверю (здесь вообще интересно: это будет поиск по тексту в группе). Но пока запустим без каких-либо ограничений и посмотрим, сколько всего групп в JavaRush. Для этого нажмем на Execute. Чуть ниже будет ответ (в секции Server Response) на этот запрос:<img data-max-width="1080" data-id="ead1a0ef-51de-4b33-adf4-537ba73e2451" src="https://cdn.javarush.com/images/article/ead1a0ef-51de-4b33-adf4-537ba73e2451/1080.jpeg" alt="“Java-проект от А до Я”: Добавляем возможность подписаться на группу статей. Часть 1 - 4">Мы видим, что всего групп <span class="text-bold">30</span>, запрос этот выполнился за 95ms и есть набор некоторых хедеров в ответе.
+
+Далее попробуем настроить какие-то параметры. Выберем параметр type равным значению COMPANY и посмотрим, как изменится результат:<img data-max-width="1080" data-id="1e6daf9a-4b74-42d6-a69f-c8e8ab2a8b1b" src="https://cdn.javarush.com/images/article/1e6daf9a-4b74-42d6-a69f-c8e8ab2a8b1b/1080.jpeg" alt="“Java-проект от А до Я”: Добавляем возможность подписаться на группу статей. Часть 1 - 5">Их 4. Как это проверить? Легко: можно пойти на сайт, найти секцию статьи, выбрать все группы и там добавить соответствующий фильтр (<a href="https://javarush.com/groups/all?type=COMPANY" target="_blank">https://javarush.com/groups/all?type=COMPANY</a>). И да, действительно, их всего 4. Хотя реально три :D<img data-max-width="800" data-id="196b0f07-8d2e-4981-93c6-84ff93063d07" src="https://cdn.javarush.com/images/article/196b0f07-8d2e-4981-93c6-84ff93063d07/800.jpeg" alt="“Java-проект от А до Я”: Добавляем возможность подписаться на группу статей. Часть 1 - 6">Пока что сходится. К слову, если мы проверим университеты, то их пока что нет. 
+
+Ради интереса посмотрите, что будет, если поставить filter = MY в браузере, где вы залогинены в Javarush и не залогинены.
+
+Больше о сваггере — в <a href="https://habr.com/ru/post/434798/" rel="nofollow" target="_blank">этой статье на Хабре</a>.<h2>Пишем клиента к Javarush API для групп</h2>Теперь на основе открытого API напишем Java клиента, который умеет делать запросы, получать ответы и знает, какие именно объекты будут приходить. 
+
+Объекты также возьмем из сваггера, из секции <span class="text-bold">Models</span> (в самом низу страницы).
+
+Создадим новый пакет и назовем его javarushclient рядом с service, repository. В будущем мы это вынесем в отдельную библиотеку в рамках организации Javarush Community и будем использовать исключительно как зависимость.<table><tbody>
+
+<tr><td>О создании Java клиентов я уже писал в статье <a href="https://javarush.com/groups/posts/2430-gayd-po-sozdaniju-klienta-dlja-skyscanner-api-i-ego-publikacii-v-jcenver-i-maven-central" target="_blank">“Гайд по созданию клиента для Skyscanner API и его публикации в jCenter и Maven Central”</a>.</td></tr>
+
+</tbody></table>В первую очередь нужно добавить Unitrest — библиотеку для создания http запросов к JavaRush API:
+
+<pre class="language-java line-numbers"><code>
+&lt;dependency&gt;
+  &lt;groupId&gt;com.konghq&lt;/groupId&gt;
+  &lt;artifactId&gt;unirest-java&lt;/artifactId&gt;
+  &lt;version&gt;${unirest.version}&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+И выносим версию в блок properties:
+
+<pre class="language-java line-numbers"><code>
+&lt;unirest.version&gt;3.11.01&lt;/unirest.version&gt;
+</code></pre>
+Когда у нас появится зависимость, можно начинать добавлять код.
+
+Создадим клиент для групп JavaRushGroupClient и реализацию в класс JavaRushGroupClientImpl.
+
+Но сперва нужно создать DTO-шки (data transfer object) — то есть, классы, объекты которых будут носить все нужные для клиента данные. 
+
+Все модели можно посмотреть в сваггере, В самом низу есть секция <span class="text-bold">Models</span>, в которой можно их считать.
+
+Вот как выглядит <span class="text-bold">GroupDiscussionInfo</span> в сваггере:<img data-max-width="1080" data-id="60954fa4-4164-49d0-83e1-927e6c5773e5" src="https://cdn.javarush.com/images/article/60954fa4-4164-49d0-83e1-927e6c5773e5/1080.jpeg" alt="“Java-проект от А до Я”: Добавляем возможность подписаться на группу статей. Часть 1 - 7">В пакете javarushclient создадим пакет <span class="text-bold">dto</span>, в который добавим, на основе данных из сваггера, следующие классы:<ul>
+
+<li><p><span class="code">MeGroupInfoStatus</span>:</p>
+<p></p><pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient.dto;
+
+/**
+* Member group status.
+*/
+public enum MeGroupInfoStatus {
+   UNKNOWN, CANDIDATE, INVITEE, MEMBER, EDITOR, MODERATOR, ADMINISTRATOR, BANNED
+}
+</code></pre><p></p></li>
+
+<li><p><span class="code">MeGroupInfo</span>:</p>
+<p></p><pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient.dto;
+
+import lombok.Data;
+
+/**
+* Group information related to authorized user. If there is no user - will be null.
+*/
+@Data
+public class MeGroupInfo {
+   private MeGroupInfoStatus status;
+   private Integer userGroupId;
+}
+</code></pre><p></p></li>
+
+<li><p><span class="code">GroupInfoType</span>:</p>
+<p></p><pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient.dto;
+
+/**
+* Group Info type;
+*/
+public enum GroupInfoType {
+   UNKNOWN, CITY, COMPANY, COLLEGE, TECH, SPECIAL, COUNTRY
+}
+</code></pre><p></p></li>
+
+<li><p><span class="code">UserDiscussionInfo</span>:</p>
+<p></p><pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient.dto;
+
+import lombok.Data;
+
+/**
+* DTO for User discussion info.
+*/
+@Data
+public class UserDiscussionInfo {
+
+   private Boolean isBookmarked;
+   private Integer lastTime;
+   private Integer newCommentsCount;
+}
+</code></pre><p></p></li>
+
+<li><p><span class="code">GroupVisibilitysdtatus</span>:</p>
+<p></p><pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient.dto;
+
+/**
+* Group Visibility status.
+*/
+public enum GroupVisibilityStatus {
+   UNKNOWN, RESTRICTED, PUBLIC, PROTECTED, PRIVATE, DISABLED, DELETED
+}
+</code></pre><p></p></li>
+
+<li><p>Потом — <span class="code">GroupInfo</span>:</p>
+<p></p><pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient.dto;
+
+import lombok.Data;
+import lombok.ToString;
+
+/**
+* Group Info DTO class.
+*/
+@Data
+@ToString
+public class GroupInfo {
+
+   private Integer id;
+   private String avatarUrl;
+   private String createTime;
+   private String description;
+   private String key;
+   private Integer levelToEditor;
+   private MeGroupInfo meGroupInfo;
+   private String pictureUrl;
+   private String title;
+   private GroupInfoType type;
+   private Integer userCount;
+   private GroupVisibilityStatus visibilityStatus;
+}
+</code></pre><p></p></li>
+
+</ul>Так как <span class="code">GroupInfo</span> и <span class="code">GroupDiscussionInfo</span> почти полностью совпадают, свяжем их в наследовании — <span class="code">GroupDiscusionInfo</span>:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient.dto;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+
+/**
+* Group discussion info class.
+*/
+@EqualsAndHashCode(callSuper = true)
+@Data
+@ToString(callSuper = true)
+public class GroupDiscussionInfo extends GroupInfo {
+
+   private UserDiscussionInfo userDiscussionInfo;
+   private Integer commentsCount;
+}
+</code></pre>
+Также нам понадобится фильтр для запроса <span class="code">GroupFilter</span>:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient.dto;
+
+/**
+* Filters for group requests.
+*/
+public enum GroupFilter {
+  
+   UNKNOWN, MY, ALL
+}
+</code></pre>
+В запросе на получение по ID-шнику выдает GroupDiscussionInfo, а в запросе на коллекцию групп можно получить как GroupInfo, так и GroupDiscussionInfo.
+
+Так как у запросов могут быть type, query, filter, offset и limit, создадим отдельный класс <span class="code">GroupRequestArgs</span> и сделаем его классом-билдером (почитайте, что такое паттерн builder):
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient.dto;
+
+import lombok.*;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import static java.util.Objects.nonNull;
+
+/**
+* Request arguments for group requests.
+*/
+@Builder
+@Getter
+public class GroupRequestArgs {
+
+   private final String query;
+   private final GroupInfoType type;
+   private final GroupFilter filter;
+
+   /**
+    * specified where to start getting groups
+    */
+   private final Integer offset;
+   /**
+    * Limited number of groups.
+    */
+   private final Integer limit;
+
+   public Map<string, object=""> populateQueries() {
+       Map<string, object=""> queries = new HashMap&lt;&gt;();
+       if(nonNull(query)) {
+           queries.put("query", query);
+       }
+       if(nonNull(type)) {
+           queries.put("type", type);
+       }
+       if(nonNull(filter)) {
+           queries.put("filter", filter);
+       }
+       if(nonNull(offset)) {
+           queries.put("offset", offset);
+       }
+       if(nonNull(limit)) {
+           queries.put("limit", limit);
+       }
+       return queries;
+   }
+}
+</string,></string,></code></pre>
+Для поиска количества групп он несколько отличается. В нем есть только query, type и filter. И казалось бы, не хочется дублировать код. Вместе с тем, если начать их объединять, получается некрасиво в работе с билдерами. Поэтому я решил их разделить и сделать повторение кода.
+
+Вот как выглядит <span class="code">GroupCountRequestArgs</span>:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient.dto;
+
+import lombok.Builder;
+import lombok.Getter;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import static java.util.Objects.nonNull;
+
+/**
+* Request arguments for group count requests.
+*/
+@Builder
+@Getter
+public class GroupsCountRequestArgs {
+   private final String query;
+   private final GroupInfoType type;
+   private final GroupFilter filter;
+
+   public Map<string, object=""> populateQueries() {
+       Map<string, object=""> queries = new HashMap&lt;&gt;();
+       if (nonNull(query)) {
+           queries.put("query", query);
+       }
+       if (nonNull(type)) {
+           queries.put("type", type);
+       }
+       if (nonNull(filter)) {
+           queries.put("filter", filter);
+       }
+       return queries;
+   }
+}
+</string,></string,></code></pre>
+Да, я не упомянул, что в последних двух классах есть метод populateQueries, который подготовит мапу для создания запроса (увидите его далее). 
+
+Основываясь на описанных выше классах, создадим интерфейс для <span class="text-bold">JavaRushGroupClient</span>:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient;
+
+import com.github.javarushcommunity.jrtb.javarushclient.dto.GroupDiscussionInfo;
+import com.github.javarushcommunity.jrtb.javarushclient.dto.GroupInfo;
+import com.github.javarushcommunity.jrtb.javarushclient.dto.GroupRequestArgs;
+import com.github.javarushcommunity.jrtb.javarushclient.dto.GroupsCountRequestArgs;
+
+import java.util.List;
+
+/**
+ * Client for Javarush Open API corresponds to Groups.
+ */
+public interface JavaRushGroupClient {
+
+    /**
+     * Get all the {@link GroupInfo} filtered by provided {@link GroupRequestArgs}.
+     *
+     * @param requestArgs provided {@link GroupRequestArgs}.
+     * @return the collection of the {@link GroupInfo} objects.
+     */
+    List&lt;GroupInfo&gt; getGroupList(GroupRequestArgs requestArgs);
+
+    /**
+     * Get all the {@link GroupDiscussionInfo} filtered by provided {@link GroupRequestArgs}.
+     *
+     * @param requestArgs provided {@link GroupRequestArgs}
+     * @return the collection of the {@link GroupDiscussionInfo} objects.
+     */
+    List&lt;GroupDiscussionInfo&gt; getGroupDiscussionList(GroupRequestArgs requestArgs);
+
+    /**
+     * Get count of groups filtered by provided {@link GroupRequestArgs}.
+     *
+     * @param countRequestArgs provided {@link GroupsCountRequestArgs}.
+     * @return the count of the groups.
+     */
+    Integer getGroupCount(GroupsCountRequestArgs countRequestArgs);
+
+    /**
+     * Get {@link GroupDiscussionInfo} by provided ID.
+     *
+     * @param id provided ID.
+     * @return {@link GroupDiscussionInfo} object.
+     */
+    GroupDiscussionInfo getGroupById(Integer id);
+}
+</code></pre>
+Два разных запроса на случай, когда мы хотим получить информацию GroupInfo или GroupDiscussionInfo добавил. В остальном эти запросы тождественны, и разница будет лишь в том, что в одном флаг includeDiscussion будет true, а в другом — false. Поэтому вышло 4 метода, а не три.
+
+Теперь приступим к реализации:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient;
+
+import com.github.javarushcommunity.jrtb.javarushclient.dto.GroupDiscussionInfo;
+import com.github.javarushcommunity.jrtb.javarushclient.dto.GroupInfo;
+import com.github.javarushcommunity.jrtb.javarushclient.dto.GroupRequestArgs;
+import com.github.javarushcommunity.jrtb.javarushclient.dto.GroupsCountRequestArgs;
+import kong.unirest.GenericType;
+import kong.unirest.Unirest;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+
+/**
+* Implementation of the {@link JavaRushGroupClient} interface.
+*/
+@Component
+public class JavaRushGroupClientImpl implements JavaRushGroupClient {
+
+   private final String javarushApiGroupPath;
+
+   public JavaRushGroupClientImpl(@Value("${javarush.api.path}") String javarushApi) {
+       this.javarushApiGroupPath = javarushApi + "/groups";
+   }
+
+   @Override
+   public List&lt;GroupInfo&gt; getGroupList(GroupRequestArgs requestArgs) {
+       return Unirest.get(javarushApiGroupPath)
+               .queryString(requestArgs.populateQueries())
+               .asObject(new GenericType&lt;list&lt;GroupInfo&gt;&gt;() {
+               })
+               .getBody();
+   }
+
+   @Override
+   public List&lt;GroupDiscussionInfo&gt; getGroupDiscussionList(GroupRequestArgs requestArgs) {
+       return Unirest.get(javarushApiGroupPath)
+               .queryString(requestArgs.populateQueries())
+               .asObject(new GenericType&lt;list&lt;GroupDiscussionInfo&gt;&gt;() {
+               })
+               .getBody();
+   }
+
+   @Override
+   public Integer getGroupCount(GroupsCountRequestArgs countRequestArgs) {
+       return Integer.valueOf(
+               Unirest.get(String.format("%s/count", javarushApiGroupPath))
+                       .queryString(countRequestArgs.populateQueries())
+                       .asString()
+                       .getBody()
+       );
+   }
+
+   @Override
+   public GroupDiscussionInfo getGroupById(Integer id) {
+       return Unirest.get(String.format("%s/group%s", javarushApiGroupPath, id.toString()))
+               .asObject(GroupDiscussionInfo.class)
+               .getBody();
+   }
+
+
+}
+</code></pre>
+Путь к АПИшке я добавляю в конструкторе, используя уже знакомую нам аннотацию Value. Она подразумевает, что значение внутри аннотации соответствует полю в файле с пропертями. Поэтому добавим в application.properties новую строку:
+
+<pre class="language-java line-numbers"><code>
+javarush.api.path=https://javarush.com/api/1.0/rest
+</code></pre>
+Теперь это значение будет находиться в одном месте для всех клиентов АПИ, и если путь к АПИ изменится, мы его быстро обновим. 
+
+Раньше я <s>забивал гвозди микроскопом</s> получал ответ из http-запроса через Unirest, переводил его в строку и потом эту строку парсил через Jackson… Это было страшно, муторно и требовало многих дополнительных вещей. В этой <a href="https://github.com/romankh3/skyscanner-flight-api-client/blob/457dca2f16ba975b226683a742a50f40ccdb7100/src/main/java/com/github/romankh3/skyscannerflightapiclient/v1/UniRestUtil.java#L37" rel="nofollow" target="_blank">библиотеке</a> можно посмотреть, как это выглядит. Как дойдут руки — отрефакторю все. <table><tbody>
+
+<tr><td>У кого будет желание попробовать обновить эту библиотеку — добавить получение объектов только при помощи инструментов библиотеки unirest — пишите в личку или как новое issue в самой библиотеке. Для вас это будет реальный опыт работы, а мне не жалко. Проведу полноценный code review и помогу, если нужно будет.</td></tr>
+
+</tbody></table>Теперь вопрос: а работает ли наш код так, как мы ожидаем? Ответить несложно: нужно просто написать тесты для них. Как я уже не раз говорил, разработчики должны уметь писать тесты. 
+
+Поэтому, пользуясь нашим Swagger UI, будем отправлять запросы, смотреть ответы и подставлять их в тесты как ожидаемый результат. 
+
+Вы могли сразу заметить, что количество групп не статическое и может меняться. И вы правы. Вопрос лишь в том, насколько часто это количество меняется? Очень редко, так что в разрезе нескольких месяцев можно утверждать, что это значение будет статично. А если что-то изменится, обновим тесты. 
+
+Встречайте — JavaRushGroupClientTest:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.jrtb.javarushclient;
+
+import com.github.javarushcommunity.jrtb.javarushclient.dto.GroupDiscussionInfo;
+import com.github.javarushcommunity.jrtb.javarushclient.dto.GroupInfo;
+import com.github.javarushcommunity.jrtb.javarushclient.dto.GroupRequestArgs;
+import com.github.javarushcommunity.jrtb.javarushclient.dto.GroupsCountRequestArgs;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+import static com.github.javarushcommunity.jrtb.javarushclient.dto.GroupInfoType.TECH;
+
+@DisplayName("Integration-level testing for JavaRushGroupClientImplTest")
+class JavaRushGroupClientTest {
+
+   private final JavaRushGroupClient groupClient = new JavaRushGroupClientImpl("https://javarush.com/api/1.0/rest");
+
+   @Test
+   public void shouldProperlyGetGroupsWithEmptyArgs() {
+       //given
+       GroupRequestArgs args = GroupRequestArgs.builder().build();
+
+       //when
+       List&lt;GroupInfo&gt; groupList = groupClient.getGroupList(args);
+
+       //then
+       Assertions.assertNotNull(groupList);
+       Assertions.assertFalse(groupList.isEmpty());
+   }
+
+   @Test
+   public void shouldProperlyGetWithOffSetAndLimit() {
+       //given
+       GroupRequestArgs args = GroupRequestArgs.builder()
+               .offset(1)
+               .limit(3)
+               .build();
+
+       //when
+       List&lt;GroupInfo&gt; groupList = groupClient.getGroupList(args);
+
+       //then
+       Assertions.assertNotNull(groupList);
+       Assertions.assertEquals(3, groupList.size());
+   }
+
+   @Test
+   public void shouldProperlyGetGroupsDiscWithEmptyArgs() {
+       //given
+       GroupRequestArgs args = GroupRequestArgs.builder().build();
+
+       //when
+       List&lt;GroupDiscussionInfo&gt; groupList = groupClient.getGroupDiscussionList(args);
+
+       //then
+       Assertions.assertNotNull(groupList);
+       Assertions.assertFalse(groupList.isEmpty());
+   }
+
+   @Test
+   public void shouldProperlyGetGroupDiscWithOffSetAndLimit() {
+       //given
+       GroupRequestArgs args = GroupRequestArgs.builder()
+               .offset(1)
+               .limit(3)
+               .build();
+
+       //when
+       List&lt;GroupDiscussionInfo&gt; groupList = groupClient.getGroupDiscussionList(args);
+
+       //then
+       Assertions.assertNotNull(groupList);
+       Assertions.assertEquals(3, groupList.size());
+   }
+
+   @Test
+   public void shouldProperlyGetGroupCount() {
+       //given
+       GroupsCountRequestArgs args = GroupsCountRequestArgs.builder().build();
+
+       //when
+       Integer groupCount = groupClient.getGroupCount(args);
+
+       //then
+       Assertions.assertEquals(30, groupCount);
+   }
+
+   @Test
+   public void shouldProperlyGetGroupTECHCount() {
+       //given
+       GroupsCountRequestArgs args = GroupsCountRequestArgs.builder()
+               .type(TECH)
+               .build();
+
+       //when
+       Integer groupCount = groupClient.getGroupCount(args);
+
+       //then
+       Assertions.assertEquals(7, groupCount);
+   }
+
+   @Test
+   public void shouldProperlyGetGroupById() {
+       //given
+       Integer androidGroupId = 16;
+
+       //when
+       GroupDiscussionInfo groupById = groupClient.getGroupById(androidGroupId);
+
+       //then
+       Assertions.assertNotNull(groupById);
+       Assertions.assertEquals(16, groupById.getId());
+       Assertions.assertEquals(TECH, groupById.getType());
+       Assertions.assertEquals("android", groupById.getKey());
+   }
+}
+</code></pre>
+Тесты написаны в таком же стиле, как и до этого. Есть по нескольку тестов на каждый запрос. Тестировать все не имеет смысла, так как я думаю, что этот АПИ и так уже оттестирован лучшим образом.<h2>Вывод</h2>В рамках этой статьи мы добавили Java клиента для групп к JavaRush API. Как говорится, век живи — век учись. Пока писал этого клиента, воспользовался их документацией и с удобством использовал работу с объектами, которую они предоставляют. 
+
+Обращаю внимание на задачу, которую я предложил. Кому интересно — пишите личным сообщением, я более чем уверен, что это будет очень интересный опыт. 
+
+Это была первая часть. Во второй мы реализуем непосредственно команду по добавлению и (если уложимся в одну статью) добавим получение списка групп, на которых пользователь подписан. 
+
+Далее, у кого есть желание и талант к написанию текстов для бота, прошу написать мне в ЛС. Я не специалист в этом деле и любая помощь мне будет очень кстати. Оформим это все как разработку в open source, будет интересно!
+
+Ну и как обычно — <s>лайк, подписка, колокольчик</s>, ставь звезду <a href="https://github.com/javarushcommunity/javarush-telegrambot" rel="nofollow" target="_blank">нашему проекту</a>, пиши комментарии и оценивай статью!<table><tbody>
+<tr><th>Полезные ссылки</th></tr>
+<tr><td><ul><li><a href="https://javarush.com/swagger-ui.html" target="_blank">JavaRush Open API</a></li>
+<li><a href="https://habr.com/ru/post/434798/" rel="nofollow" target="_blank">Хабр: Сваггер</a></li>
+<li>Гайд по созданию джава клиента: <a href="https://javarush.com/groups/posts/2430-gayd-po-sozdaniju-klienta-dlja-skyscanner-api-i-ego-publikacii-v-jcenver-i-maven-central" target="_blank">часть 1</a>, <a href="https://javarush.com/groups/posts/2431-gayd-po-sozdaniju-klienta-dlja-skyscanner-api-i-ego-publikacii-v-jcenver-i-maven-central-chastj" target="_blank">часть 2</a></li></ul></td></tr></tbody></table><h4><a href="https://javarush.com/groups/posts/2935-java-proekt-ot-a-do-ja-pishem-realjhnihy-proekt-dlja-portfolio#articles" target="_blank">Список всех материалов серии в начале этой статьи.</a></h4>

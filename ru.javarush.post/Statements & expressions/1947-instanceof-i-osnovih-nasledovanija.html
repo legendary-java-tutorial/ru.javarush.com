@@ -1,0 +1,174 @@
+instanceof и основы наследования
+<p>----------------------------------------</p>
+Привет! В предыдущих лекциях мы уже несколько раз мельком встречались с таким понятием как наследование. Сегодня мы тоже коснемся этой темы, но тоже не слишком глубоко. Подробная лекция об этом еще будет, а сегодня скорее просто посмотрим практические примеры ...
+<p>----------------------------------------</p>
+Привет! В предыдущих лекциях мы уже несколько раз мельком встречались с таким понятием как наследование.
+Сегодня мы тоже коснемся этой темы, но тоже не слишком глубоко. Подробная лекция об этом еще будет, а сегодня скорее просто посмотрим практические примеры и познакомимся с одним интересным оператором в Java.<h2>Наследование Java</h2>Итак, что такое, собственно, наследование?
+<img data-id="ea89270a-1dd1-49c3-a6f5-33ce6165c787" data-max-width="851" alt="instanceof и основы наследования - 1" src="https://cdn.javarush.com/images/article/ea89270a-1dd1-49c3-a6f5-33ce6165c787/1024.jpeg"><strong>Наследование</strong> — это механизм в программировании, в том числе и в Java, который позволяет описать новый класс на основе уже существующего. Класс-наследник при этом получает доступ к полям и методам родительского класса.
+
+Зачем это может быть нужно?
+
+Ну, например, представь, что тебе нужно создать в программе несколько классов машин: Грузовик, Гоночная, Седан, Пикап и т.д.
+
+Даже не приступив к написанию кода, ты точно знаешь, что у этих классов очень много общего: у всех машин есть название модели, год выпуска, объем двигателя, максимальная скорость и т.д. (не говоря уже про то, что у всех них есть колеса и прочие детали).
+
+В такой ситуации ты можешь:
+<ul style="list-style-type:lower-alpha">
+<li>Создавать эти поля в каждом классе и добавлять их в новые классы машин при их создании</li>
+<li>Вынести общие для всех машин поля в родительский класс <code>Car</code>, а все классы конкретных типов машин наследовать от <code>Car</code> с помощью слова <strong>extends</strong>.</li>
+</ul>Второй вариант, разумеется, гораздо удобнее:
+
+<pre class="lang-java line-numbers"><code>
+public class Car {
+
+   private String model;
+   private int maxSpeed;
+   private int yearOfManufacture;
+
+   public Car(String model, int maxSpeed, int yearOfManufacture) {
+       this.model = model;
+       this.maxSpeed = maxSpeed;
+       this.yearOfManufacture = yearOfManufacture;
+   }
+}
+
+public class Truck extends Car {
+
+   public Truck(String model, int maxSpeed, int yearOfManufacture) {
+       super(model, maxSpeed, yearOfManufacture);
+   }
+}
+
+public class Sedan extends Car {
+   public Sedan(String model, int maxSpeed, int yearOfManufacture) {
+       super(model, maxSpeed, yearOfManufacture);
+   }
+}
+</code></pre>
+Как минимум, мы избежали ненужного дублирования кода, а к этому всегда нужно стремиться при написании программ.
+
+Кроме того, у нас есть простая и понятная структура классов: общие для всех машин поля вынесены в один класс. Если, например, у грузовиков есть какие-то специфичные поля, которых нет у остальных машин, их можно объявить в классе <code>Truck</code>.
+
+То же самое касается и методов. 
+
+У всех автомобилей есть какое-то общее поведение, которое можно описать: завести авто, газ/тормоз и т.д. Эти общие методы можно вынести в общий класс <code>Car</code>, а специфическое поведения каждого конкретного типа описать в классах-наследниках.
+
+<pre class="lang-java line-numbers"><code>
+public class Car {
+
+   public void gas() {
+       //...газ
+   }
+
+   public void brake() {
+       //...тормоз
+   }
+}
+
+
+public class F1Car extends Car {
+
+   public void pitStop() {
+      
+       //...пит-стоп делают только гоночные автомобили
+   }
+
+   public static void main(String[] args) {
+      
+       F1Car formula1Car = new F1Car();
+       formula1Car.gas();
+       formula1Car.pitStop();
+       formula1Car.brake();
+   }
+}
+</code></pre>
+Мы вынесли общие методы всех автомобилей в класс <code>Car</code>. А вот в класс-наследник <code>F1Car</code>, который описывает гоночные автомобили “Формулы-1” — пит-стопы (остановки для срочного обслуживания машины), которые делают только в гонках и выделяются специфическим поведением.
+<h2>Оператор instanceof Java</h2>Для проверки того, создан ли объект на основе какого-то класса, в Java существует специальный оператор — <strong><code>instanceof</code></strong>.
+
+Он возвращает значение <code>true</code>, если проверка показала истинность, или <code>false</code>, если результат был ложным.
+
+Давай посмотрим, как он работает на примере наших классов с машинами:
+
+<pre class="lang-java line-numbers"><code>
+public class Truck extends Car {
+
+   public static void main(String[] args) {
+
+       Truck truck = new Truck();
+       System.out.println(truck instanceof Car);
+   }
+}
+</code></pre>
+<strong>Вывод:
+
+<em>true</em></strong>
+
+Проверка с помощью оператора <code>instanceof</code> вернула <code>true</code>, поскольку у нас объект класса <code>Truck</code>, а все грузовики — это машины. Класс <code>Truck</code>— наследник класса <code>Car</code>, следовательно, все грузовики создаются на основе общего родителя — машины.
+
+Обрати внимание на оператор <code>instanceof</code>: он пишется без точки, поскольку это именно оператор, а не метод (“объект instanceof Класс”).
+
+Попробуем по-другому:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   Car car = new Car();
+   System.out.println(car instanceof Truck);
+}
+</code></pre>
+<strong>Вывод:
+
+<em>false</em></strong>
+
+Класс <code>Car</code> и, соответственно, его объект не происходят от класса <code>Truck</code>.Все грузовики — это машины, но не все машины — грузовики. Объекты <code>Car</code> не создаются на основе класса <code>Truck</code>.
+
+Еще один пример:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   Car car = new Car();
+   Truck truck = new Truck();
+   System.out.println(car instanceof Object &amp;&amp; truck instanceof Object);
+}
+</code></pre>
+<strong>Вывод:
+
+<em>True</em></strong>
+
+Здесь логика тоже проста: все классы в Java, включая те, которые ты создал, происходит от класса <code>Object</code> (хотя ты и не пишешь в них <strong>extends Object</strong> — этот механизм заложен в них неявно).
+
+Зачем это может пригодиться и при каких обстоятельствах?
+
+Наиболее распространенное применение оператора <code>instanceof</code> — это переопределение метода <code>equals()</code>.
+
+К примеру, вот как реализован метод <code>equals</code> в классе <code>String</code>:
+
+<pre class="lang-java line-numbers"><code>
+public boolean equals(Object anObject) {
+   if (this == anObject) {
+       return true;
+   }
+   if (anObject instanceof String) {
+       String anotherString = (String) anObject;
+       int n = value.length;
+       if (n == anotherString.value.length) {
+           char v1[] = value;
+           char v2[] = anotherString.value;
+           int i = 0;
+           while (n-- != 0) {
+               if (v1[i] != v2[i])
+                       return false;
+               i++;
+           }
+           return true;
+       }
+   }
+   return false;
+}
+</code></pre>
+Прежде чем сравнить строку с переданным объектом, метод проверяет: а является ли, собственно, переданный объект строкой?
+
+И уж только потом он начинает сравнивать свойства двух объектов.
+
+Без этой проверки в метод можно было бы передать любой объект, у которого есть поля <strong>value</strong> и <strong>length</strong>, и сравнивать его со строкой, что, конечно, было бы неправильно.

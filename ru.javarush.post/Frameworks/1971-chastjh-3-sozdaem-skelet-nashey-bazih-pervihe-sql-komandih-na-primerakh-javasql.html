@@ -1,0 +1,271 @@
+Часть 3. Создаем скелет нашей базы, первые SQL команды на примерах java.sql.
+<p>----------------------------------------</p>
+Вернёмся к Java-приложению. Вариант из предыдущей части был создан в HelloWorld-стиле, чтобы проконтролировать корректность начальных действий. Мы реализуем трёхзвенную (трёхслойную) архитектуру ...
+<p>----------------------------------------</p>
+<em><strong><a href='https://javarush.com/groups/posts/1952-vvedenie-v-sql' target='_blank'>Первая часть</a></strong></em> 
+<a href='https://javarush.com/groups/posts/1970-chastjh-2-struktura-subd-tablicih-i-tipih-dannihkh-sozdaem-skelet-nashey-bazih-pervihe-sql-koma' target='_blank'><em><strong>Вторая часть</strong></em></a>
+<div class='row justify-content-center jr-image-wrap'><div class='col-12 col-sm-10 col-md-8'><img data-id="4bb3cf32-35f6-4077-8e7a-55eed711c20d" data-max-width="710" alt="Часть 3. Создаем скелет нашей базы, первые SQL команды на примерах java.sql. - 1" src="https://cdn.javarush.com/images/article/4bb3cf32-35f6-4077-8e7a-55eed711c20d/1024.jpeg"></div></div><h2>Java приложение</h2><h3>3-tier организация</h3>Вернёмся к Java-приложению. Вариант из предыдущей части был создан в <em>HelloWorld</em>-стиле, чтобы проконтролировать корректность начальных действий. Мы реализуем трёхзвенную (трёхслойную) архитектуру, которую в англоязычной литературе часто называют <em><strong>3tier/3layer</strong></em>. Её краткая суть следующая: 
+
+<ul>
+<li>Все сущности оформлены в виде моделей (Model). Это — объекты, которые содержат: 
+<ul>
+<li>Набор атрибутов (приватные поля класса).</li>
+<li>Конструктор(ы).</li>
+<li>Сеттеры и геттеры для установки/чтения атрибутов.</li>
+<li>Важно, что иного кода, помимо вышеперечисленного в них нет. Часто подобные объекты называют<strong> POJO</strong> (Plain Old Java Object).</li></ul>
+<li>Всю логику работы с моделями реализует слой Service. Он формирует бизнес-правила для моделей. Например, обработку запросов от Java-приложения. Среди аргументов запросов и возвращаемых результатов часто выступают модели (или их коллекции).</li>
+<li>Слой Repository — «посредник» между СУБД и Service, работающий непосредственно с базой данных, и отвечающий за взаимодействие с ней. </li></ul></ul><img data-id="3c6bed90-e57e-4cf0-a6a7-ff9f9b41d76e" data-max-width="550" alt="Часть 3. Создаем скелет нашей базы, первые SQL команды на примерах java.sql. - 2" src="https://cdn.javarush.com/images/article/3c6bed90-e57e-4cf0-a6a7-ff9f9b41d76e/1024.jpeg">
+Зачем нам вообще нужно составлять такой конгломерат? Дело в том, что каждый слой максимально изолирован от других. Если вместо БД у нас будет набор текстовых файлов, то нам достаточно поменять только реализацию <em>Repository</em>, не трогая остальной код. Аналогично мы можем подключить/добавить другой <em>Service</em> с минимальными изменениями. Для больших систем мы можем отдать реализацию разных слоёв разным людям или экспериментировать, комбинируя оптимальные реализации разных слоёв. 
+
+Создадим пакеты <strong><em>model</em></strong>, <em><strong>repository</strong></em>, <em><strong>service</strong></em> для нашего приложения, где будут находиться соответствующие классы. К слою Service мы вернёмся в следующих частях, а пока уделим внимание моделям и репозиториям.
+<img data-id="d8cd2197-d73c-42f2-bb9c-c751e4737f6d" data-max-width="300" alt="Часть 3. Создаем скелет нашей базы, первые SQL команды на примерах java.sql. - 3" src="https://cdn.javarush.com/images/article/d8cd2197-d73c-42f2-bb9c-c751e4737f6d/1024.jpeg"><h3>Model</h3>Все наши сущности (акции, трейдеры, курсы и действия трейдеров) и их табличные эквиваленты имеют общую черту – искусственный первичный ключ. Поэтому оформим базовый класс <code><strong>BaseModel</strong></code>. Все модели будут наследоваться от него.
+
+<pre class='lang-java line-numbers'><code>
+package sql.demo.model;
+
+import java.util.Objects;
+
+// Базовый класс модели, имеющий ключ id
+public class BaseModel {
+    protected long id;
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public BaseModel() {}
+
+    public BaseModel(long id) {
+        this.id = id;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        BaseModel baseModel = (BaseModel) o;
+        return id == baseModel.id;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+}
+</code></pre>
+Ниже представлена модель акции для примера. Остальные листинги моделей вы можете посмотреть по ссылке на github-репозиторий в конце статьи.
+
+<pre class='lang-java line-numbers'><code>
+package sql.demo.model;
+
+import java.math.BigDecimal;
+
+// Модель акции
+public class Share extends BaseModel{
+    // поля SQL таблицы и соответствующие им поля модели
+    // типы данных SQL 
+    private String name;    // Наименование
+    private BigDecimal startPrice; // Начальная цена
+    private int changeProbability; // Вероятность смены курса (в процентах)
+    private int delta;   // Максимальное колебание (в процентах)стоимости акции в результате торгов
+
+
+    public Share() {
+    }
+
+    public Share(long id, String name, BigDecimal startPrice, int changeProbability, int delta) {
+        super(id);
+        this.name = name;
+        this.startPrice = startPrice;
+        this.changeProbability = changeProbability;
+        this.delta = delta;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    ... оставшиеся сеттеры/геттеры
+}
+</code></pre>
+<h3>JDBC</h3>В первой части мы научились устанавливать соединение с БД и закрывать его. Теперь пойдем дальше. Этапы работы с JDBC отображены на следующей схеме:
+<img data-id="aca4b8be-2f31-4acb-bf88-39edd8b8e3d2" data-max-width="550" alt="Часть 3. Создаем скелет нашей базы, первые SQL команды на примерах java.sql. - 4" src="https://cdn.javarush.com/images/article/aca4b8be-2f31-4acb-bf88-39edd8b8e3d2/1024.jpeg">
+<ul>
+<li><code><strong>Class.forName()</strong></code> загружает класс и регистрирует его в DriverManager;</code>
+<li><code><strong>DriverManager.getConnection()</strong></code> вернёт <code>Connection</code> – соединение с указанной в аргументе метода базой данных и использованием соответствующего JDBC драйвера (который был загружен с использованием <code>Class.forName()</code>). </li>
+<li><code><strong>createStatement()</strong></code> возвратит нам <code>Statement</code> – объект, на основе которого можно формировать запросы к БД. Существуют также:
+<ul>
+<il><code><strong>CallableStatement</strong></code> для вызова собственных СУБД SQL-функций и процедур (их называют хранимыми).</li>
+<li><code><strong>PreparedStatement</strong></code> облегчающий создание параметризованных и пакетных запросов.</li></ul></li>
+<li>Имея «на руках» <code>statement</code>, <code><strong>execute()</strong></code> позволит отправить запрос в виде команды языка запросов SQL непосредственно на выполнение СУБД и вернет ответ в виде <code>ResultSet</code>. Для удобства существуют:
+<ul>
+<li><code><strong>executeQuery()</strong></code> – для чтения данных из СУБД.</li>
+<il><code><strong>executeUpdate()</strong></code> – для модификации данных в СУБД.</li></ul></li>
+<li>Непосредственно ответ сервера в виде <code><strong><strong>ResultSet</strong></strong></code> можно обработать, итерируя его через <code><strong>first()</strong></code>, <code><strong>last()</strong></code>, <code><strong>next()</strong></code> и так далее. Отдельные поля результаты мы можем получить через геттеры: <code>getInteger()</code>, <code>getString()</code>…</li></ul>
+Следует иметь в виду, что после работы с СУБД для экономии ресурсов желательно закрыть за собой (в правильном порядке!) объекты <code>ResultSet</code>, <code>Statement</code> и <code>Connection</code> для экономии ресурсов. Помните, закрывая вышестоящий в последовательности на схеме объект, вы каскадно закроете все порождённые в процессе работы с ним объекты. Таким образом, закрытие соединения (Connection) приведёт к закрытию всех его <code>Statement</code> и всех <code>ResultSet</code>, полученных при их помощи.
+
+<h3>Реализация Repository</h3>После теоретической JDBC-части, перейдём к реализации репозитория. Архитектурно реализуем его следующим образом:
+
+<ul>
+<li>Наиболее общие части по работе с СУБД вынесем в общего предка – <code><strong>BaseTable</strong></code>;</li>
+<li>Логические операции, которые мы будем выполнять, объявим в интерфейсе <code><strong>TableOperation</code></strong>;</li>
+</ul>
+<img data-id="10789bd8-783d-45a9-be6d-193a29700bb6" data-max-width="550" alt="Часть 3. Создаем скелет нашей базы, первые SQL команды на примерах java.sql. - 5" src="https://cdn.javarush.com/images/article/10789bd8-783d-45a9-be6d-193a29700bb6/1024.jpeg">
+Новый репозиторий будет наследоваться от класса <code>BaseTable</code> и реализовывать интерфейс <code>TableOperation</code>. Таким образом, нам необходимо прописать реализацию методов, объявленных в интерфейсе <code>TableOperation</code>. При этом мы можем использовать методы родительского класса <code>BaseTable</code>. В данный момент в интерфейсе объявлены методы по созданию таблиц:
+
+<pre class='lang-java line-numbers'><code>
+package sql.demo.repository;
+import java.sql.SQLException;
+
+// Операции с таблицами
+public interface TableOperations {
+    void createTable() throws SQLException; // создание таблицы
+    void createForeignKeys() throws SQLException; // создание связей между таблицами
+    void createExtraConstraints() throws SQLException; // создание дополнительных правил для значений полей таблиц
+}
+</code></pre>
+По мере изучения материала список объявлений методов будет расширяться (<code>read()</code>, <code>update()</code>….). Новые возможности будем осуществлять в два шага:
+<ol>
+<li>Добавим очередную возможность работы с таблицей в виде нового метода интерфейса.</li>
+<li>Далее, в имплементирующих интерфейс классах, опишем программную реализацию в новых методах, порожденных интерфейсом.</li>
+</ol>
+Пример репозитория для <code>Share</code> (акций). Основная логика находится в командах создания таблиц с указанием типов данных SQL для полей и добавлении ограничений:
+
+<pre class='lang-java line-numbers'><code>
+package sql.demo.repository;
+import java.sql.SQLException;
+
+public class Shares extends BaseTable implements TableOperations{
+
+    public Shares() throws SQLException {
+        super("shares");
+    }
+
+    @Override
+    public void createTable() throws SQLException {
+        super.executeSqlStatement("CREATE TABLE shares(" +
+                "id BIGINT AUTO_INCREMENT PRIMARY KEY," +
+                "name VARCHAR(255) NOT NULL," +
+                "startPrice DECIMAL(15,2) NOT NULL DEFAULT 10," +
+                "changeProbability INTEGER NOT NULL DEFAULT 25,"+
+                "delta INTEGER NOT NULL DEFAULT 15)", "Создана таблица " + tableName);
+    } 
+
+    @Override
+    public void createForeignKeys() throws SQLException {
+    }
+
+    @Override
+    public void createExtraConstraints() throws SQLException {
+        super.executeSqlStatement(
+                " ALTER TABLE shares ADD CONSTRAINT check_shares_delta CHECK(delta <= 100 and delta > 0)",
+                "Cоздано ограничение для shares, поле delta = [1,100]");
+        super.executeSqlStatement(
+                " ALTER TABLE shares ADD CONSTRAINT check_shares_changeProbability " +
+                        "CHECK(changeProbability <= 100 and changeProbability > 0)",
+                "Cоздано ограничение для shares, поле changeProbability = 1..100");
+
+    }
+}
+</code></pre>
+Листинги других репозиториев и родительского класса доступны по ссылке на github-репозиторий в конце статьи. Разумеется, можно сделать другой дизайн программы или более тщательный рефакторинг программы: вынести общие части в родительский класс, выделить общие методы и так далее. Но основная цель цикла статей – непосредственная работа с базой данных, так что при желании дизайн программы и тому подобное, вы можете выполнить самостоятельно.
+
+Текущая структура проекта:
+<img data-id="071a4f82-c42a-467a-a7c5-942b4db3b868" data-max-width="300" alt="Часть 3. Создаем скелет нашей базы, первые SQL команды на примерах java.sql. - 6" src="https://cdn.javarush.com/images/article/071a4f82-c42a-467a-a7c5-942b4db3b868/1024.jpeg">
+Кроме репозиториев и моделей мы дополнительно создали класс <code>StockExchangeDB</code> для общего управления нашей эмуляцией. На данном этапе мы управляем репозиториями (в следующих частях перейдем на сервисы). Объявляем их, запускаем создание таблиц:
+
+<pre class='lang-java line-numbers'><code>
+package sql.demo;
+import org.h2.tools.DeleteDbFiles;
+import sql.demo.repository.*;
+import java.sql.*;
+
+public class StockExchangeDB {
+    // Блок объявления констант
+    public static final String DB_DIR = "c:/JavaPrj/SQLDemo/db";
+    public static final String DB_FILE = "stockExchange";
+    public static final String DB_URL = "jdbc:h2:/" + DB_DIR + "/" + DB_FILE;
+    public static final String DB_Driver = "org.h2.Driver";
+
+    // Таблицы СУБД
+    Traiders traiders;
+    ShareRates shareRates;
+    Shares shares;
+    TraiderShareActions traiderShareActions;
+
+    // Получить новое соединение с БД
+    public static Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(DB_URL);
+    }
+
+    // Инициализация
+    public StockExchangeDB(boolean renew) throws SQLException, ClassNotFoundException {
+        if (renew)
+            DeleteDbFiles.execute(DB_DIR, DB_FILE, false);
+        Class.forName(DB_Driver);
+        // Инициализируем таблицы
+        traiders = new Traiders();
+        shares = new Shares();
+        shareRates = new ShareRates();
+        traiderShareActions = new TraiderShareActions();
+    }
+
+    // Инициализация по умолчанию, без удаления файла БД
+    public StockExchangeDB() throws SQLException, ClassNotFoundException {
+        this(false);
+    }
+
+    // Создание всех таблиц и внешних ключей
+    public void createTablesAndForeignKeys() throws SQLException {
+        shares.createTable();
+        shareRates.createTable();
+        traiders.createTable();
+        traiderShareActions.createTable();
+        // Создание ограничений на поля таблиц
+        traiderShareActions.createExtraConstraints();
+        shares.createExtraConstraints();
+        // Создание внешних ключей (связи между таблицами)
+        shareRates.createForeignKeys();
+        traiderShareActions.createForeignKeys();
+    }
+
+
+    public static void main(String[] args) {
+        try{
+            StockExchangeDB stockExchangeDB = new StockExchangeDB(true);
+            stockExchangeDB.createTablesAndForeignKeys();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("Ошибка SQL !");
+        } catch (ClassNotFoundException e) {
+            System.out.println("JDBC драйвер для СУБД не найден!");
+        }
+    }
+}
+</code></pre>
+Результат выполнения:
+<img data-id="a4458135-c0fc-495d-9d16-d9d01885b8d1" data-max-width="550" alt="Часть 3. Создаем скелет нашей базы, первые SQL команды на примерах java.sql. - 7" src="https://cdn.javarush.com/images/article/a4458135-c0fc-495d-9d16-d9d01885b8d1/1024.jpeg">
+<h3>Резюме</h3>Во <a href='https://javarush.com/groups/posts/1970-chastjh-2-struktura-subd-tablicih-i-tipih-dannihkh-sozdaem-skelet-nashey-bazih-pervihe-sql-koma' target='_blank'>второй</a> и третьей части статьи мы узнали:
+<ul>
+<li>Типы данных SQL.</li>
+<li>Таблицы БД.</li>
+<li>Проектирование БД: структур таблиц и отношений между ними.</li>
+<li>Язык запросов SQL в части создания таблиц БД, установки ограничений на поля и связей между таблицами.</li>
+<li>Больше о взаимодействии с JDBC.</li>
+<li>Трехзвенная (трехслойная) Model/Repository/Service архитектура приложения работы с данными.</li>
+</ul><h3>Полезные ссылки</h3><ul>
+<li><a href='http://www.h2database.com/h2.pdf' rel='nofollow' target='_blank'>H2 Database Engine (English)</a>;</li>
+<li><a href='http://www.h2database.com/html/grammar.html' rel='nofollow' target='_blank'>Описание SQL команд (English)</a>;</li>
+<li><a href='http://www.h2database.com/html/datatypes.html' rel='nofollow' target='_blank'>Типы данных в H2(English)</a>;</li>
+<li><a href='https://www.drupal.org/docs/develop/coding-standards/list-of-sql-reserved-words' rel='nofollow' target='_blank'>Список зарезервированных слов SQL</a>;</li>
+<li>Книга «<a href='https://www.sql.ru/docs/sql/u_sql/index.shtml' rel='nofollow' target='_blank'>Понимание SQL (Understanding SQL)</a>» Мартина Грабера;</li>
+<li><a href='https://www.ibm.com/developerworks/ru/library/j-jtp0114/index.html' rel='nofollow' target='_blank'>Основы работы с BigDecimal</a>;</li>
+<li><a href='https://github.com/SadykovMR/jdbc-start/tree/26180844f31928c7fcda610f3b4e5c0245a4a9f2' rel='nofollow' target='_blank'>GitHub репозиторий</a></li></ul>

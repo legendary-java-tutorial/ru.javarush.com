@@ -1,0 +1,256 @@
+Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 8
+<p>----------------------------------------</p>
+Практика или теория? Что важнее? Многие скажут, что, конечно, практика важнее. Мол, практикуйтесь до упора и будет вам счастье. Смею с этим не согласиться. На собеседованиях никто и не узнает, насколько вы круты в...
+<p>----------------------------------------</p>
+Практика или теория? Что важнее? Многие скажут, что, конечно, практика важнее. Мол, практикуйтесь до упора и будет вам счастье. Смею с этим не согласиться.
+
+<img data-max-width="512" data-id="3c9e5213-e7b7-440a-819d-5b0df012b5a4" src="https://cdn.javarush.com/images/article/3c9e5213-e7b7-440a-819d-5b0df012b5a4/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 8 - 1">На собеседованиях никто и не узнает, насколько вы круты в практике. Вас будут спрашивать во весь рост именно по теории. И лишь потом, когда вы пройдете все круги собеседований и попадете на проект, вы примените ваши практические скилы.
+ 
+Вы можете возразить: иногда дают тестовое задание и практика таки нужна. Не спорю, их иногда дают, но в том-то и дело, что ИНОГДА, а вот теоретическое собеседование проходит ВСЕГДА. 
+ 
+Чувствуете разницу?
+ 
+Поэтому у вас должен быть твёрдый теоретический фундамент под ногами, укреплением которого мы сегодня и продолжим заниматься.
+ 
+А именно — мы продолжим разбор <a href="https://dou.ua/lenta/articles/interview-questions-java-developer/" rel="nofollow" target="_blank">вопросов</a>, которые часто задают на собеседованиях.<h4>71. Что будет, если мы не будем переопределять метод toString() для Enum?</h4>Предположим, у нас есть следующий <span class="code">enum</span>:
+
+<pre class="language-java line-numbers"><code>
+public enum Role {
+   STUDENT,
+   TEACHER,
+   DIRECTOR,
+   SECURITY_GUARD;
+}
+</code></pre>
+Выведем в консоли студента, вызвав у него <span class="code">toString()</span>:
+
+<pre class="language-java line-numbers"><code>
+System.out.println(Role.STUDENT.toString());
+</code></pre>
+Результат в консоли:
+
+<div class="terminal">STUDENT</div>
+ То есть по умолчанию <span class="code">toString()</span> для <span class="code">enum</span>-а — название самой константы.<h4>72. Можно ли указывать конструктор внутри Enum?</h4>Да, конечно. Именно через конструктор и задаются значения внутренних переменных enum.
+ 
+В качестве примера к предыдущему <span class="code">enum</span> добавим два поля — <span class="code">ageFrom</span> и <span class="code">ageTo</span> — чтобы обозначить возрастные рамки для каждой роли:
+ 
+<pre class="language-java line-numbers"><code>
+public enum Role {
+   STUDENT(5,18),
+   TEACHER(20,60),
+   DIRECTOR(40,70),
+   SECURITY_GUARD(18,50);
+ 
+   int ageFrom;
+   int ageTo;
+ 
+   Role(int ageFrom, int ageTo) {
+       this.ageFrom = ageFrom;
+       this.ageTo = ageTo;
+   }
+}
+</code></pre><h4>73. В чём разница между == и equals()?</h4>Это один из самых распространенных вопросов на собеседованиях на Java-разработчика.
+ 
+Начнём с того, что когда мы сравниваем простые значения (<span class="code">int</span>, <span class="code">char</span>, <span class="code">double</span>…), мы делаем это через <span class="code">==</span>, так как переменные содержат конкретные значения и мы их можем сравнить. Да и примитивные переменные не являются полноценными объектами — не наследуются от <span class="code">Object</span> и не имеют метод <span class="code">equals()</span>.
+ 
+Когда мы говорим о сравнении переменных, которые ссылаются на объекты, то <span class="code">==</span> будет сравнивать лишь значение ссылок — на тот же объект они ссылаются или нет. И даже если один объект будет идентичен другому, сравнение через <span class="code">==</span> даст отрицательный результат (<span class="text-bold"><em>false</em></span>), ведь это другой объект. 
+ 
+Как вы поняли, для сравнения ссылочных переменных используется метод <span class="code">equals()</span>. Это один из стандартных методов класса <span class="code">Object</span>, который нужен для полноценного сравнения объектов. 
+ 
+Но сразу стоит уточнить: для правильной работы этого метода его нужно переопределить, написав, как именно должны сравниваться объекты данного класса. Если вы не переопределите метод, по умолчанию он будет сравнивать объекты по <span class="code">==</span>. 
+ 
+В <span class="text-bold">IntelliJ IDEA</span> можно переопределять его автоматически (средствами IDEA) —&gt; <span class="code">alt + insert</span>, в появившемся окошке выбираем <span class="code">equals() and hashCode()</span> —&gt; выбираем, какие поля класса должны участвовать —&gt; и вуаля, автоматическая имплементация методов выполнена.
+ 
+Вот пример того, как будет выглядеть автоматически сгенерированный метод <span class="code">equals</span> для простейшего класса <span class="text-bold">Cat</span> с двумя полями — <span class="code">int age</span> и <span class="code">String name</span>:
+ 
+<pre class="language-java line-numbers"><code>
+@Override
+public boolean equals(final Object o) {
+   if (this == o) return true;
+   if (o == null || this.getClass() != o.getClass()) return false;
+   final Cat cat = (Cat) o;
+   return this.age == cat.age &amp;&amp;
+           Objects.equals(this.name, cat.name);
+}
+</code></pre>
+Если говорить о разнице <span class="code">==</span> и <span class="code">equals</span> для <span class="code">enum</span>-ов, её особо и нет.<img data-max-width="512" data-id="dd8bc05a-2f0d-4962-8340-adbce325d5ee" src="https://cdn.javarush.com/images/article/dd8bc05a-2f0d-4962-8340-adbce325d5ee/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 8 - 2">Ведь <span class="code">enum</span> хранит константы, и даже сравнивая через <span class="code">==</span> аналогичные значения, мы будем получать <span class="text-bold"><em>true</em></span>, так как ссылки будут всегда на одни и те же объекты.
+ 
+Ну и при использовании <span class="code">equals</span> у нас также будет правильно отрабатывать функционал, тем более если вы зайдёт в тело метода <span class="code">equals</span> для <span class="code">enum</span>-а, увидите, что в классе <span class="code">Enum</span> реализация метода следующая:<img data-max-width="512" data-id="fbd47289-1d8d-4174-a218-bf41e3b21c15" src="https://cdn.javarush.com/images/article/fbd47289-1d8d-4174-a218-bf41e3b21c15/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 8 - 3">То есть внутри — старое доброе сравнение по ссылкам! Подводя итог: для <span class="code">enum</span> сравнение и через <span class="code">==</span>, и через <span class="code">equals</span> корректное.<img data-max-width="512" data-id="03afea41-852b-43e3-9497-e15aab87af87" src="https://cdn.javarush.com/images/article/03afea41-852b-43e3-9497-e15aab87af87/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 8 - 4"><h2>74. Что делает метод ordinal() в Enum?</h2>При вызове метода <span class="code">int ordinal()</span> на элементе <span class="code">enum</span>-а мы получим порядковый номер с нуля этого значения в общем ряде перечислений.
+ 
+Давайте используем данный метод на одном элементе из предыдущего рассмотренного <span class="code">enum</span>-а — <span class="code">Role</span>:
+ 
+<pre class="language-java line-numbers"><code>
+System.out.println(Role.DIRECTOR.ordinal());
+</code></pre>
+ Соответственно, в консоли выведется:
+
+<div class="terminal">2</div><h4>75. Можно ли использовать Enum c TreeSet или TreeMap в Java?</h4>Использование <span class="code">enum</span> типов в <span class="code">TreeSet</span> и <span class="code">TreeMap</span> допустимо.
+ 
+И мы можем написать:
+ 
+<pre class="language-java line-numbers"><code>
+TreeSet&lt;Role&gt; treeSet = new TreeSet&lt;&gt;();
+treeSet.add(Role.SECURITY_GUARD);
+treeSet.add(Role.DIRECTOR);
+treeSet.add(Role.TEACHER);
+treeSet.add(Role.STUDENT);
+treeSet.forEach(System.out::println);
+</code></pre>
+И в консоли будет выведено:
+
+<div class="terminal">STUDENT
+TEACHER
+DIRECTOR
+SECURITY_GUARD</div>
+Мы получили вывод не по алфавиту. Дело в том, что если мы используем элементы <span class="code">enum</span>-а для значений <span class="code">TreeSet</span> или как ключи для <span class="code">TreeMap</span>, элементы сортируются по их естественному порядку (по порядку, в котором они и заданы в <span class="code">enum</span>).
+ 
+Понимание этих особенностей помогает нам писать код качественнее.<img data-max-width="512" data-id="ad6facf5-c4fa-4243-bec8-3154e39962aa" src="https://cdn.javarush.com/images/article/ad6facf5-c4fa-4243-bec8-3154e39962aa/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 8 - 5"><h4>76. Как связаны методы ordinal() и compareTo() в Enum?</h4>Как было сказано ранее, <span class="code">ordinal()</span> возвращает порядковый номер значения в общем списке перечислений.
+ 
+Также в разборе предыдущего вопроса вы увидели, что элементы перечислений, попав, например, в <span class="code">TreeSet</span> (отсортированное множество) принимают порядок, в котором они объявлены в <span class="code">enum</span>. И как мы знаем, <span class="code">TreeSet</span> и <span class="code">TreeMap</span> сортируют элементы посредством вызова у них метода <span class="code">compareTo()</span> интерфейса <span class="code">Comparable</span>.
+ 
+Из этого можно сделать предположение, что класс <span class="code">Enum</span> имплементирует интерфейс <span class="code">Comparable</span>, реализуя его в метод <span class="code">compareTo()</span>, внутри которого и используется <span class="code">ordinal()</span> для задания порядка сортировки.
+ 
+Зайдя в класс <span class="code">Enum</span>, мы видим подтверждение этого:<img data-max-width="512" data-id="cb072bbb-7029-4c7d-a023-4a5ca3713f28" src="https://cdn.javarush.com/images/article/cb072bbb-7029-4c7d-a023-4a5ca3713f28/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 8 - 6">И тело самого метода:<img data-max-width="512" data-id="bd80a553-7741-4ef9-b2c3-9b6b93affa64" src="https://cdn.javarush.com/images/article/bd80a553-7741-4ef9-b2c3-9b6b93affa64/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 8 - 7">Метод <span class="code">ordinal()</span> тут не вызывается. Вместо этого используется переменная <span class="code">ordinal</span> — порядковый номер элемента в перечислении.
+ 
+Сам же метод <span class="code">ordinal()</span> —<img data-max-width="256" data-id="19551399-798f-480b-a91e-00c554840ec2" src="https://cdn.javarush.com/images/article/19551399-798f-480b-a91e-00c554840ec2/256.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 8 - 8">— не более чем геттер для переменной <span class="code">ordinal</span>.<h4>77. Напишите пример EnumM</h4>В вопросах рассмотренных выше я уже приводил примеры <span class="code">enum</span>-ов и не вижу смысла дублировать код (например, вопрос номер 72 про конструктор в enum).<h4>78. Можно ли использовать Enum в switch case?</h4>Можно и нужно!
+ 
+Оглядываясь на свою практику, отмечу, что одним из наиболее частых мест применения <span class="code">enum</span> являются логические конструкции типа <span class="code">switch</span>.
+ 
+В таком случае вы можете предусмотреть все возможные вариации <span class="code">case</span>, и после прописания логики для всех значений <span class="code">enum</span>-а использование оператора <span class="code">default</span> может даже не понадобиться! Ведь если вы используете <span class="code">String</span> или числовое значение, например, типа <span class="code">int</span>, вам может прийти не предусмотренное значение, что в свою очередь невозможно с использованием <span class="code">enum</span>-а.
+ 
+Как бы выглядел <span class="code">switch</span> для рассмотренного ранее примера:
+ 
+<pre class="language-java line-numbers"><code>
+public void doSomething(Role role) {
+   switch (role) {
+       case STUDENT:
+           // некая логика для STUDENT
+           break;
+       case TEACHER:
+           // некая логика для TEACHER
+           break;
+       case DIRECTOR:
+           // некая логика для DIRECTOR
+           break;
+       case SECURITY_GUARD:
+           // некая логика для SECURITY_GUARD
+           break;
+   }
+}
+</code></pre><h4>79. Как получить все имеющиеся значения в экземпляре Enum?</h4>Если нужно получить все экземпляры перечисления, есть метод <span class="code">values()</span>, который возвращает массив всех доступных значений определенного <span class="code">enum</span>-а в естественно порядке (в порядке задания в <span class="code">enum</span>).
+
+Пример:
+
+<pre class="language-java line-numbers"><code>
+Role[] roles = Role.values();
+for (Role role : roles) {
+   System.out.println(role);
+}
+</code></pre>
+В консоли будет вывод:
+
+<div class="terminal">STUDENT
+TEACHER
+DIRECTOR
+SECURITY_GUARD</div><h3>Stream API</h3><h4>80.Что такое Stream в Java?</h4><span class="text-bold">Java Stream</span> — относительно новый способ взаимодействия с потоком данных, который в свою очередь позволяет более удобно и компактно обрабатывать большие данные, а также распараллеливать обработку данных между каким-то количеством потоков, что может дать прирост в производительности в использующем функционале.
+ 
+Более глубоко данную тему в двух словах не рассказать, поэтому я оставлю <a href="https://javarush.com/groups/posts/2203-stream-api" target="_blank">здесь</a> ссылку на статью, которая вам может погрузиться в данную тему.<img data-max-width="512" data-id="9d657924-451f-47f4-a7c4-a2faab285b38" src="https://cdn.javarush.com/images/article/9d657924-451f-47f4-a7c4-a2faab285b38/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 8 - 9"><h4>81. Назовите основные свойства транзакций</h4>Тема называется — Stream API, но при этом вопрос по транзакции. Хмм…
+ 
+Для начала давайте разберемся, что такое транзакция.
+ 
+<span class="text-bold">Транзакция</span> — это группа последовательных операций с базой данных, которая представляет собой логическую единицу работы с данными.
+ 
+Транзакция может быть выполнена либо целиком и успешно, соблюдая целостность данных и независимо от параллельно идущих других транзакций, либо не выполнена вообще, и тогда она не оказывает никакого эффекта.
+ 
+Итак, у транзакций есть четыре основные свойства, которые сокращенно называют <span class="text-bold">ACID</span>.
+ 
+Давайте разберем, как расшифровывается каждая буква данного сокращения:
+
+<span class="text-bold">A — Atomicity — атомарность</span> — данное свойство гарантирует, что никакая транзакция не будет зафиксирована в системе частично. Будут либо выполнены все её подоперации, либо не выполнено ни одной (<span class="text-bold">всё либо ничего</span>).
+
+<span class="text-bold">С — Consistency — согласованность</span> — свойство, гарантирующее, что каждая успешная транзакция зафиксирует только допустимые результаты. То есть, это гарантия того, что при успешной транзакции будут выполнены все правила, ограничения которые предъявляет система к конкретным данным, иначе транзакция не будет выполнена и данные в системе вернутся к прежнему состоянию.
+
+<span class="text-bold">I — Isolation — изолированность</span> — свойство, которое говорит о том, что во время выполнения транзакции параллельные транзакции не должны оказывать влияния на ее результат. Это свойство ресурсозатратно, поэтому как правило оно выполняется частично, допуская определенные уровни изоляций, которые решают определенные изоляционные проблемы. Подробнее мы это обсудим в следующем вопросе.<img data-max-width="512" data-id="abf36b60-c5c3-401a-915d-303bf37d4a3e" src="https://cdn.javarush.com/images/article/abf36b60-c5c3-401a-915d-303bf37d4a3e/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 8 - 10"><span class="text-bold">D — Durability — стойкость</span> — данное свойство гарантирует, что если пользователь получил подтверждение от системы, что транзакция выполнена, он может быть уверен, что сделанные им изменения не отменятся из-за какого-либо сбоя. То есть, вы можете быть уверены, что какой-нибудь сбой операционной системы ничего не сделает с вашими данными, если вы уже получили подтверждение успешного выполнения вашей транзакции.<h4>82. Какие есть уровни изоляции транзакций?</h4>Как я сказал ранее, обеспечение пункта ACID изолированности — ресурсозатратный процесс. Поэтому, это свойство выполняется частично. Есть различные уровни изолированности, и чем этот уровень выше, тем это более сильный удар по производительности.
+ 
+Перед тем как перейти к уровням изоляций транзакций, нам нужно рассмотреть различные <span class="text-bold">проблемы недостаточной изолированности транзакций</span>:<ul>
+
+<li><p><span class="text-bold">фантомное чтение</span> — при повторном вызове одной и той же выборки (одного и того же запроса) в рамках одной транзакции полученные данные различаются, что происходит из-за вставок данных другой транзакцией;</p></li>
+<li><p><span class="text-bold">неповторяющееся чтение</span> — при повторном вызове одной и той же выборки (одного и того же запроса) в рамках одной транзакции полученные данные различаются, что происходит из-за изменений (update) и удалений данных другой транзакцией;</p></li>
+<li><p><span class="text-bold">грязное чтение</span> — процесс чтения данных, добавленных или измененных транзакцией, которая впоследствии не подтвердится (откатится), т.е. чтение недействительных данных;</p></li>
+<li><p><span class="text-bold">потерянное обновление</span> — при одновременном изменении одних и тех же данных разными транзакциями теряются все изменения, кроме последнего (напоминает проблему “состояние гонки” в многопоточной среде).</p></li>
+
+</ul>Уровни изоляций транзакций как раз и характерезуются тем, от каких проблем изолированности они защищают.
+
+Рассмотрим в виде таблицы уровни изоляций и то, от каких проблем они защищают:<table><tbody>
+<tr>
+<th>Уровень изоляции</th>
+<th>Фантомное чтение</th>
+<th>Неповторяющееся чтение</th>
+<th>Грязное чтение</th>
+<th>Потерянное обновление</th></tr>
+<tr><th>SERIALIZABLE</th>
+<td>+</td>
+<td>+</td>
+<td>+</td>
+<td>+</td></tr>
+<tr><th>REPEATABLE READ</th>
+<td>-</td>
+<td>+</td>
+<td>+</td>
+<td>+</td></tr>
+<tr><th>READ COMMITTED</th>
+<td>-</td>
+<td>-</td>
+<td>+</td>
+<td>+</td></tr>
+<tr><th>READ UNCOMMITTED</th>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>+</td></tr>
+<tr><th>NONE</th>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td></tr>
+</tbody></table>И не забывайте обратную сторону медали: чем больший будет уровень изоляции, тем дольше будут отрабатывать транзакции (при параллельном выполнении нескольких транзакций).
+
+Если возникло желание поглубже копнуть эту тему, вот <a href="https://habr.com/ru/post/469415/" rel="nofollow" target="_blank">отличная статья</a>, с которой можно начать.<h4>83. Какая разница между Statement и PreparedStatement?</h4>И тут не сильно плавный переход на особенности технологии <span class="text-bold">JDBC</span>.
+
+Итак, для начала давайте разберемся, что вообще такое <span class="code">Statement</span>. Это объект, который используется для формирования SQL запросов.
+
+В <span class="text-bold">JDBC</span> используется три его вида — <span class="code">Statement</span>, <span class="code">PreparedStatement</span> и <span class="code">CallableStatement</span>.
+
+<span class="code">CallableStatement</span> мы сегодня рассматривать не будем: поговорим о различии между <span class="code">Statement</span> и <span class="code">PreparedStatement</span>.<ol>
+
+<li><p><span class="code">Statement</span> используется для выполнения простых SQL запросов без  входящих, динамически вставляемых параметров. <span class="code">PrepareStatement</span> используется с возможностью динамической вставки входных параметров.</p></li>
+
+<li><p>Для задания параметров в <span class="code">PreparedStatement</span> входные параметры в запросе прописываются как знаки вопроса, чтобы вместо них потом вставить некоторое значение с помощью различных сеттеров, таких как <span class="code">setDouble()</span>, <span class="code">setFloat()</span>, <span class="code">setInt()</span>, <span class="code">setTime()</span>…. В итоге вы не вставите в запрос данные не того типа.</p></li>
+
+<li><p><span class="code">PreparedStatement</span> “прекомпилирован” и использует кеширование, поэтому его исполнение может происходить немного быстрее, чем запрос из объектов <span class="code">Statement</span>. В результате SQL запросы, которые исполняются часто, в целях улучшения производительности создают в виде объектов <span class="code">PreparedStatement</span>.</p></li>
+
+<li><p><span class="code">Statement</span> уязвим к SQL инъекциям, в то время как <span class="code">PreparedStatement</span> предотвращает их. Подробнее об устранении SQL инъекций и других best practices в безопасности Java читайте в <a href="https://javarush.com/groups/posts/2713-bezopasnostjh-v-java-best-practices" target="_blank">этой статье</a>.</p></li>
+
+</ol>Если вы положили начало в изучении технологии соединения Java приложения с Базой Данных — JDBC, советую начать с <a href="https://javarush.com/groups/posts/2172-jdbc-ili-s-chego-vsje-nachinaetsja" target="_blank">этой статьи</a>.
+
+Что ж, на данном моменте мы сегодня и сделаем остановку.<img data-max-width="512" data-id="2425051e-6404-44ac-87bb-cce9ae85417c" src="https://cdn.javarush.com/images/article/2425051e-6404-44ac-87bb-cce9ae85417c/512.jpeg" alt="Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 8 - 11"><table><tbody>
+<tr><th>
+Другие материалы серии:
+</th></tr><tr><td>
+<ul><li><a href="https://javarush.com/groups/posts/3243-razbor-voprosov-i-otvetov-na-sobesedovanii-chastjh-1" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 1</a></li>
+<li><a href="https://javarush.com/groups/posts/3252-razbor-voprosov-i-otvetov-na-sobesedovanii-chastjh-2" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 2</a></li>
+<li><a href="https://javarush.com/groups/posts/3273-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-3" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 3</a></li>
+<li><a href="https://javarush.com/groups/posts/3284-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-4" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 4</a></li>
+<li><a href="https://javarush.com/groups/posts/3296-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-5" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 5</a></li>
+<li><a href="https://javarush.com/groups/posts/3341-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-6" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 6</a></li>
+<li><a href="https://javarush.com/groups/posts/3386-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-7" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 7</a></li>
+<li><a href="https://javarush.com/groups/posts/3434-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-9" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 9</a></li>
+<li><a href="https://javarush.com/groups/posts/3452-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-10" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 10</a></li>
+<li><a href="https://javarush.com/groups/posts/3464-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-11" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 11</a></li>
+<li><a href="https://javarush.com/groups/posts/3475-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-12" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 12</a></li>
+<li><a href="https://javarush.com/groups/posts/3507-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-13" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 13</a></li>
+<li><a href="https://javarush.com/groups/posts/3558-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-14" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 14</a></li>
+<li><a href="https://javarush.com/groups/posts/3592-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-15" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 15</a></li>
+<li><a href="https://javarush.com/groups/posts/3621-razbor-voprosov-i-otvetov-s-sobesedovaniy-na-java-razrabotchika-chastjh-16" target="_blank">Разбор вопросов и ответов с собеседований на Java-разработчика. Часть 16</a></li>
+</ul>
+</td></tr></tbody></table>

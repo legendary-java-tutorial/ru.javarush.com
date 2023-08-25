@@ -1,0 +1,719 @@
+Telegram bot — напоминалка через webHook на Java или скажи нет Google-календарю! Часть 1
+<p>----------------------------------------</p>
+Всем доброго времени суток! Хочу поделиться своим небольшим обучающим проектом, который затронет такие темы как: Spring boot и его друзья(data jpa, mvc), Webhook(на heroku, и да.. в этой статье мы получим работающий...
+<p>----------------------------------------</p>
+Меня зовут Владимир. Мне 43 года. И если тебе, читатель за 40, то да, после 40 можно стать програмистом, если тебе это нравится.
+Моя работа вообще никак не связана с программированием, я руководитель проекта в области автоматизации и всего такого. Но планирую сменить род деятельности.  Ох уж эти новые веяния.. менять сферу деятельности раз в 5-7 лет.
+
+<strong>Так вот</strong>:
+Проект получился не маленький так что некоторые моменты придётся опускать или говорить о них кратко, в надежде, что читатель умеет гуглить.
+На просторах интернетов полно публикаций telegram-ботов, работающих по принипу Long polling. И очень не много, работающих по принципу Webhook. Что это такое?
+
+<strong>Long polling </strong>- значит ваше приложение само будет опрашивать сервер telegram на предмет наличия сообщений с определенной периодичностью, медленно.
+<strong>Webhook </strong>- значит сервер telegram моментально будет перенаправлять сообщения на указанный вами сервер. В нашем случае, любезно предоставленный сервисом Heroku.
+Подробнее про все это и вообще про бота можно конечно же почитать на сайте Telegram - https://tlgrm.ru/docs/bots/api
+Интерфейс бота выглядит вот так:
+
+<img data-max-width="512" data-id="c3a3ec24-f4b2-4e61-97c1-68fd289c0e8b" src="https://cdn.javarush.com/images/article/c3a3ec24-f4b2-4e61-97c1-68fd289c0e8b/512.jpeg" alt="Telegram bot — напоминалка через webHook на Java или скажи нет Google-календарю! - 1">
+
+Данное приложение я рассматриваю именно как обучающий проект по той причине, что при написании этого бота я усвоил больше информации чем при обучении. Хотите научиться программировать? Начните писать код!!! Но! Тут не будет подробных инструкций как залить приложение на github, как создать базу данных. Этого всего полно в интернетах и расписано подробнейшим образом, кроме того это и так получится очень длинное чтение.
+Приложение будет работать следующим образом:
+
+Вводите описание события, вводите дату и время события, выбираете периодичность (можно на один раз, можно напоминание каждый день в определенное время, можно раз в месяц в определенное время, или раз в год). Вариации оповещений можно допиливать бесконечно, у самого идей много.
+Далее введенные данные сохраняются в базу данных(тоже развернуто бесплатно на heroku, бесплатными являются 10 000 строк)
+
+Дальше один раз в начале дня в 0:00 по серверному времени Spring извлекает из базы все события по критериям, которые должны сработать в этот день и направляет их на исполнение в установленное время. ВНИМАНИЕ!!! ЭТА ЧАСТЬ ПРОГРАММЫ ЭКСПЕРЕМЕНТАЛЬНА! СУЩЕСТВУЕТ РЕАЛИЗАЦИЯЫ БОЛЕЕ ПРОСТОЯ И ВЕРНАЯ! ТАК СДЕЛАНО СПЕЦИАЛЬНО, ЧТОБЫ ПОСМОТРЕТЬ КАК РАБОТАЕТ КЛАСС Time!
+
+Потрогать своими руками работающего бота можно набрав в телеге @calendar_event_bot но не рассчитывайте на него, ибо я над ним все еще издеваюсь.
+код - <a href="https://github.com/papoff8295/webHookBotForHabr" target="_blank" rel="nofollow">https://github.com/papoff8295/webHookBotForHabr</a>
+
+В принципе, чтобы запустить собственного вам необходимо сделать следующие шаги:
+•	Пройти регистрацию в <strong>@BotFather</strong>, это не сложно, получить токен и имя
+•	Сделать fork проекта на github
+•	Зарегестрироваться на <strong>Heroku</strong>, создать приложение(пошагово будем разбирать), сделать deploy из вашего репозитория.
+•	Создать на Heroku базу данных
+•	Заменить в репозитории соответсвующие поля на свои(токен, название таблиц в сущностях, webHookPath, user name, пароль и путь к базе, это все будет разбирать)
+•	Заставить heroku работать 24/7 с помощью <a href="https://uptimerobot.com/" target="_blank" rel="nofollow">https://uptimerobot.com/</a>
+Итоговая структура проекта у меня получилась такая:
+<img data-max-width="512" data-id="08ed8555-d260-41f6-a29b-6edcc5d5fce4" src="https://cdn.javarush.com/images/article/08ed8555-d260-41f6-a29b-6edcc5d5fce4/512.jpeg" alt="Telegram bot — напоминалка через webHook на Java или скажи нет Google-календарю! - 2">
+Начнем с создания проекта в <a href="https://start.spring.io" target="_blank" rel="nofollow">https://start.spring.io</a> Выбираем нужные нам зависимости как показано на рисунке:
+<img data-max-width="800" data-id="7cff8a6a-d73e-43dd-a9fb-5c69f99d036d" src="https://cdn.javarush.com/images/article/7cff8a6a-d73e-43dd-a9fb-5c69f99d036d/800.jpeg" alt="Telegram bot — напоминалка через webHook на Java или скажи нет Google-календарю! - 3">Выбираем собственное название для проекта и нажимаем <strong><em>Generate</em></strong>. Дальше вам предложат сохранить проект себе на диск. Остается открыть файл <strong>pom.xm</strong>l из своей среды разработки. Перед Вами готовый проект.
+
+Теперь нам осталось добавить нашу основную библиотеку. Я использовал библиотеку с <a href="https://github.com/rubenlagus/TelegramBots" target="_blank" rel="nofollow">https://github.com/rubenlagus/TelegramBots</a>
+В общем-то можно заморочиться и обойтись без нее. Ведь весь смысл работы заключается в конкатенации URL вроде такого: https://api.telegram.org/bot1866835969:AAE6gJG6ptUyqhV2XX0MxyUak4QbAGGnz10/setWebhook?url=https://e9c658b548aa.ngrok.io
+
+Немного разберем:
+<em>https://api.telegram.org</em> – сервер telegram.
+<em>bot1866835969:AAE6gJG6ptUyqhV2XX0MxyUak4QbAGGnz10/</em> - после слова bot- секретный токен, который получаете при регистрации бота.
+<em>setWebhook?url=https://e9c658b548aa.ngrok.io</em> – название метода и его параметры. В данном случае мы устанавливаем Ваш webhook сервер, на него будут приходить все сообщения.
+
+В общем я решил, что проект и так не маленький для публикации, а с ручной реализацией вообще будет нечитабельно.
+Итак, конечный вид файла <strong>pom</strong>:
+
+<pre class="language-java line-numbers"><code>
+&lt;!--?xml version="1.0" encoding="UTF-8"?--&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemalocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+   &lt;modelversion&gt;4.0.0&lt;/modelversion&gt;
+   &lt;parent&gt;
+      &lt;groupid&gt;org.springframework.boot&lt;/groupid&gt;
+      &lt;artifactid&gt;spring-boot-starter-parent&lt;/artifactid&gt;
+      &lt;version&gt;2.5.0&lt;/version&gt;
+      &lt;relativepath&gt; &lt;!-- lookup parent from repository --&gt;
+   &lt;/relativepath&gt;&lt;/parent&gt;
+   &lt;groupid&gt;ru.popov&lt;/groupid&gt;
+   &lt;artifactid&gt;telegrambot&lt;/artifactid&gt;
+   &lt;version&gt;0.0.1-SNAPSHOT&lt;/version&gt;
+   &lt;name&gt;telegrambot&lt;/name&gt;
+   &lt;description&gt;Demo project for Spring Boot&lt;/description&gt;
+   &lt;properties&gt;
+      &lt;java.version&gt;1.8&lt;/java.version&gt;
+   &lt;/properties&gt;
+   &lt;dependencies&gt;
+      &lt;dependency&gt;
+         &lt;groupid&gt;org.springframework.boot&lt;/groupid&gt;
+         &lt;artifactid&gt;spring-boot-starter-web&lt;/artifactid&gt;
+      &lt;/dependency&gt;
+
+      &lt;dependency&gt;
+         &lt;groupid&gt;org.springframework.boot&lt;/groupid&gt;
+         &lt;artifactid&gt;spring-boot-starter-data-jpa&lt;/artifactid&gt;
+      &lt;/dependency&gt;
+
+      &lt;dependency&gt;
+         &lt;groupid&gt;org.springframework.boot&lt;/groupid&gt;
+         &lt;artifactid&gt;spring-boot-starter-test&lt;/artifactid&gt;
+         &lt;scope&gt;test&lt;/scope&gt;
+      &lt;/dependency&gt;
+
+      &lt;!-- https://mvnrepository.com/artifact/org.telegram/telegrambots-spring-boot-starter --&gt;
+      &lt;dependency&gt;
+         &lt;groupid&gt;org.telegram&lt;/groupid&gt;
+         &lt;artifactid&gt;telegrambots-spring-boot-starter&lt;/artifactid&gt;
+         &lt;version&gt;5.2.0&lt;/version&gt;
+      &lt;/dependency&gt;
+
+      &lt;dependency&gt;
+         &lt;groupid&gt;org.projectlombok&lt;/groupid&gt;
+         &lt;artifactid&gt;lombok&lt;/artifactid&gt;
+         &lt;version&gt;1.18.16&lt;/version&gt;
+      &lt;/dependency&gt;
+
+      &lt;dependency&gt;
+         &lt;groupid&gt;org.postgresql&lt;/groupid&gt;
+         &lt;artifactid&gt;postgresql&lt;/artifactid&gt;
+         &lt;scope&gt;runtime&lt;/scope&gt;
+      &lt;/dependency&gt;
+
+   &lt;/dependencies&gt;
+
+   &lt;build&gt;
+      &lt;plugins&gt;
+         &lt;plugin&gt;
+            &lt;groupid&gt;org.springframework.boot&lt;/groupid&gt;
+            &lt;artifactid&gt;spring-boot-maven-plugin&lt;/artifactid&gt;
+         &lt;/plugin&gt;
+      &lt;/plugins&gt;
+   &lt;/build&gt;
+
+&lt;/project&gt;
+
+</code></pre>
+
+Все готово для написания нашего бота.
+
+Создадим класс <strong>TelegramBot</strong>. Название папок я писать не буду, можете посмотреть в структуре проекта выше.
+
+<pre class="language-java line-numbers"><code>
+@Getter
+@Setter
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class TelegramBot extends SpringWebhookBot {
+    String botPath;
+    String botUsername;
+    String botToken;
+
+    private TelegramFacade telegramFacade;
+
+    public TelegramBot(TelegramFacade telegramFacade, DefaultBotOptions options, SetWebhook setWebhook) {
+        super(options, setWebhook);
+        this.telegramFacade = telegramFacade;
+    }
+    public TelegramBot(TelegramFacade telegramFacade, SetWebhook setWebhook) {
+        super(setWebhook);
+        this.telegramFacade = telegramFacade;
+    }
+
+    @Override
+    public BotApiMethod&lt;!--?--&gt; onWebhookUpdateReceived(Update update) {
+        return telegramFacade.handleUpdate(update);
+    }
+}
+
+</code></pre>
+
+Класс расширяется от <strong>SpringWebhookBot </strong>из нашей билиотеки telegram, и нам необходимо реализовать всего один метод <em>onWebhookUpdateReceived</em>. Он принимает рапарсенный <strong>JSON</strong> в виде объекта Update и возвращает, то, что хочет от нас «услышать» сервер telegram.
+
+Тут у нас встречаются аннотации из библиотеки <strong>Lombok</strong>. <strong>Lombok</strong> – делаем жизнь программиста легче!! Ну т.е. нам не надо переопределять геттеры и сеттеры, это делает за нас Lombok, а также не надо писать идентификатор уровня доступа. Уже и не стоит писать, что этим занимаются аннотации <em>@Getter, @Setter, @FieldDefaults</em>
+
+Поле <em>botPath</em> – означает наш адрес webhook, который мы получим на Heroku позднее.
+Поле <em>botUsername</em> – означает название нашего бота, которое мы получим при регистрации нашего бота в Telegram.
+Поле <em>botToken</em> – это наш токен, который мы получим при регистрации нашего бота в Telegram.
+Поле <em>telegramFacade</em> – это наш класс, где будет происходить обработка сообщений, к нему мы вернемся немного позднее, пусть он пока будет красненьким.
+
+Теперь нам пора обратиться к <em>@BotFather</em> и получить заветный botToken и botUsername.
+<img data-max-width="512" data-id="36fa1f52-0f44-4879-b0c6-a611e3fd1960" src="https://cdn.javarush.com/images/article/36fa1f52-0f44-4879-b0c6-a611e3fd1960/512.jpeg" alt="Telegram bot — напоминалка через webHook на Java или скажи нет Google-календарю! - 4">Просто напишите ему в telegram и он все вам подскажет.
+Записываем данные в наш application.properties, полностью в конечном итоге он будет выглядеть вот так:
+
+
+<pre class="language-java line-numbers"><code>
+server#server.port=5000
+
+telegrambot.userName=@calendar_event_bot
+telegrambot.botToken=1731265488:AAFDjUSk3vu5SFfgdfh556gOOFmuml7SqEjwrmnEF5Ak
+#telegrambot.webHookPath=https://telegrambotsimpl.herokuapp.com/
+telegrambot.webHookPath=https://f5d6beeb7b93.ngrok.io
+
+
+telegrambot.adminId=39376213
+
+eventservice.period =600000
+
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.datasource.url=jdbc:postgresql://localhost:5432/telegramUsers
+spring.datasource.username=postgres
+spring.datasource.password=password
+
+#spring.datasource.url=jdbc:postgresql:ec2-54-247-158-179.eu-west-1.compute.amazonaws.com:5432/d2um126le5notq?ssl=true&amp;sslmode=require&amp;sslfactory=org.postgresql.ssl.NonValidatingFactory
+#spring.datasource.username=ulmbeywyhvsxa
+#spring.datasource.password=4c7646c69dbbgeacb98fa96e8daa6d9b1bl4894e67f3f3ddd6a27fe7b0537fd
+
+</code></pre>
+
+Данная конфигурация настроена для работы с локальной базой данных, в последствии мы сделаем необходимые изменения. Замените <em>botToken</em> и username на свои.
+
+Не годится использовать данные из application.properties напрямую в приложении. Создадим из этих данных bean или класс обертку.
+
+<pre class="language-java line-numbers"><code>
+@Component
+@Getter
+@FieldDefaults(level = AccessLevel.PRIVATE)
+
+public class TelegramBotConfig {
+    @Value("${telegrambot.webHookPath}")
+    String webHookPath;
+    @Value("${telegrambot.userName}")
+    String userName;
+    @Value("${telegrambot.botToken}")
+    String botToken;
+
+</code></pre>
+
+Здесь аннотация @Value инициализирует соответствующие строки из файла  application.properties, об этой папке Spring знает по умолчанию. А аннотация @Component создает нам Bean при запуске приложения.
+
+Займемся теперь файлом конфигурации Spring:
+
+<pre class="language-java line-numbers"><code>
+@Configuration
+public class AppConfig {
+    private final TelegramBotConfig botConfig;
+
+    public AppConfig(TelegramBotConfig botConfig) {
+        this.botConfig = botConfig;
+    }
+
+    @Bean
+    public SetWebhook setWebhookInstance() {
+        return SetWebhook.builder().url(botConfig.getWebHookPath()).build();
+    }
+
+    @Bean
+    public TelegramBot springWebhookBot(SetWebhook setWebhook, TelegramFacade telegramFacade) {
+        TelegramBot bot = new TelegramBot(telegramFacade, setWebhook);
+        bot.setBotToken(botConfig.getBotToken());
+        bot.setBotUsername(botConfig.getUserName());
+        bot.setBotPath(botConfig.getWebHookPath());
+
+        return bot;
+    }
+}
+
+</code></pre>
+
+Никакой магии тут нет, при старте Spring создает нам объекты SetWebhook и TelegramBot.
+Создадим теперь точки входа наших сообщений:
+
+<pre class="language-java line-numbers"><code>
+@RestController
+public class WebhookController {
+
+    private final TelegramBot telegramBot;
+
+    public WebhookController(TelegramBot telegramBot) {
+        this.telegramBot = telegramBot;
+    }
+
+// point for message
+    @PostMapping("/")
+    public BotApiMethod&lt;!--?--&gt; onUpdateReceived(@RequestBody Update update) {
+        return telegramBot.onWebhookUpdateReceived(update);
+    }
+
+    @GetMapping
+    public ResponseEntity get() {
+        return ResponseEntity.ok().build();
+    }
+}
+
+</code></pre>
+
+Telegram сервер отправляет на зарегистрированный адрес webhook сообщения в формате JSON методом POST, наш контроллер их принимает и передает библиотеке telegram в виде объекта Update.
+
+Метод get я сделал просто так )
+
+Теперь нам осталось реализовать какую-то логику обработки сообщений и ответа в классе <strong>TelegramFacade</strong>, я приведу его краткий код, чтобы уже можно было запускать приложение и дальше идти своим путем или перейти уже у deploy на Heroku, потом будет полная версия:
+
+<pre class="language-java line-numbers"><code>
+@Component
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class TelegramFacade {
+
+    public BotApiMethod&lt;!--?--&gt; handleUpdate(Update update) {
+
+        if (update.hasCallbackQuery()) {
+            CallbackQuery callbackQuery = update.getCallbackQuery();
+            return null;
+        } else {
+
+            Message message = update.getMessage();
+            SendMessage sendMessage = new SendMessage();
+            sendMessage.setChatId(String.valueOf(message.getChatId()));
+            if (message.hasText()) {
+                sendMessage.setText("Hello world");
+                return sendMessage;
+            }
+        }
+        return null;
+    }
+    
+}
+</code></pre>
+
+Данный метод будет отвечать на любое сообщение Hello world!
+
+Для того, что запустить наше приложение нам осталось сделать так чтобы мы могли тестировать наше приложение прямо из IDEA. Для этого нам необходимо скачать утилиту ngrok. <a href="https://ngrok.com/download" target="_blank" rel="nofollow">https://ngrok.com/download
+</a>
+Эта утилита представляет собой командную строку, которая дает нам временный адрес на 2 часа и перенаправляет все сообщения на указанный порт локального сервера. Запускаем и пишем в строке <em>ngrok http 5000</em>(или можете указать свой порт):
+<img data-max-width="800" data-id="d56ccc29-c9c9-4dad-a949-789fd941ad65" src="https://cdn.javarush.com/images/article/d56ccc29-c9c9-4dad-a949-789fd941ad65/800.jpeg" alt="Telegram bot — напоминалка через webHook на Java или скажи нет Google-календарю! - 5">Получаем результат:
+<img data-max-width="800" data-id="6d67eff5-ad5b-43aa-9685-2681639a5be5" src="https://cdn.javarush.com/images/article/6d67eff5-ad5b-43aa-9685-2681639a5be5/800.jpeg" alt="Telegram bot — напоминалка через webHook на Java или скажи нет Google-календарю! - 6">https://23b1a54ccbbd.ngrok.io – это и есть наш webhook адрес. Как вы могли заметить в файле properties мы написали server.port=5000 при старте сервера tomcat, он будет занимать порт 5000, следите чтобы эти поля были одинаковы. Также не забываем, что адрес дается на два часа. В командной строке за этим следит поле Session Expires. Когда время кончится нужно будет заново получить адрес и пройти процедуру его регистрации на telegram.
+Теперь берем строку https://api.telegram.org/bot1866835969:AAE6gJG6ptUyqhV2XX0MxyUak4QbAGGnz10/setWebhook?url=https://e9c658b548aa.ngrok.io
+И ловкими движениями рук заменяем токен на свой, url на свой, вставляем в браузер полученную строку и нажимаем enter. Должен получится вот такой результат:
+<img data-max-width="512" data-id="2fd336c1-4fb9-49d7-87fa-5fefcc144e7f" src="https://cdn.javarush.com/images/article/2fd336c1-4fb9-49d7-87fa-5fefcc144e7f/512.jpeg" alt="Telegram bot — напоминалка через webHook на Java или скажи нет Google-календарю! - 7">Все, теперь можно запускать приложение:
+<img data-max-width="512" data-id="60bfefa9-471b-42e5-9fc4-0bbc1c67dbb0" src="https://cdn.javarush.com/images/article/60bfefa9-471b-42e5-9fc4-0bbc1c67dbb0/512.jpeg" alt="Telegram bot — напоминалка через webHook на Java или скажи нет Google-календарю! - 8">Проверьте, что Ваш класс с методом <em>main</em>, был такой:
+
+<pre class="language-java line-numbers"><code>
+@SpringBootApplication
+public class TelegramBotApplication {
+
+   public static void main(String[] args) {
+      SpringApplication.run(TelegramBotApplication.class, args);
+   }
+}
+
+</code></pre>
+
+Если Вы все сделали правильно, то теперь Ваш бот будет откликаться на любое сообщение фразой – «<strong>Hello world»</strong>. Дальше можете идти своим путем.
+Если же Вы со мной и Вам интересно пойти все шаги, то приступим к написанию сущностей для базы данных и создадим саму базу данных.
+
+Начнем с базы:
+
+Как я уже говорил, полагаю, что Вы уже имеете минимальные навыки работы с базой, и у вас установлена локальная база <em>postgreSQL</em>, если нет проделайте этот путь. <a href="https://www.postgresql.org/download/" target="_blank" rel="nofollow">https://www.postgresql.org/download/</a>
+
+В файле application.properties замените логин и пароль к базе данных на свои.
+В IDEA справа есть вкладка database, в ней нужно нажать на <em>+/Data source/PostgreSQL</em>. В итоге при нажатии на <em>Test Connection</em> должны получить удовлетворительный результат:
+<img data-max-width="800" data-id="6100bf1e-01d4-4062-a1a1-e6a90fdf291b" src="https://cdn.javarush.com/images/article/6100bf1e-01d4-4062-a1a1-e6a90fdf291b/800.jpeg" alt="Telegram bot — напоминалка через webHook на Java или скажи нет Google-календарю! - 9">Теперь вы можете создать базу с таблицами  прямо из среды разработки, а можете воспользоваться web- интерфейсом <em>pgadmin</em>, который находится в меню пуск.
+
+Нам понадобятся 3 таблицы:
+
+<pre class="language-java line-numbers"><code>
+CREATE TABLE users
+(
+    id               INTEGER PRIMARY KEY UNIQUE NOT NULL,
+    name             VARCHAR,
+    time_zone        INTEGER DEFAULT 0,
+    on_off           BOOLEAN DEFAULT true
+);
+
+CREATE TABLE user_events
+(
+    user_id INTEGER ,
+    time timestamp ,
+    description varchar ,
+    event_id serial,
+    event_freq varchar default 'TIME',
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+CREATE TABLE event_cash
+(
+    time timestamp ,
+    description varchar ,
+    user_id INTEGER ,
+    id serial
+);
+</code></pre>
+
+Рекомендую создать отдельно этот скрипт, он нам пригодится для создания базы на Heroku, чтобы не писать два раза.
+
+Пройдемся немного. Сразу скажу таблица <em>event_cash</em> нам понадобиться только для работы с Heroku в виду его специфики и моего неуемного желания поработать с классом <strong>Time</strong>, в локальной версии он не пригодится.
+
+В таблицу <em>users</em> мы будем записывать <em>id</em> аккаунта пользователя telegram, его имя, которого может и не быть, будет рассчитан часовой пояс пользователя, для корректной отправки уведомлений,  а также состояние <em>on/off</em> рассылки уведомлений.
+
+В таблицу <em>user_events</em> у нас будет записываться <em>id</em> пользователя, время уведомления, описание, будет автоматически генерироваться<em> id</em> для события, и устанавливаться частота уведомлений. 
+
+В таблице <em>event_cash</em> будет записываться уведомление перед отправкой, и, если оно отправлено, то удаляться из таблицы.
+
+Таблицы готовы, давайте теперь добавим сущности.
+
+<pre class="language-java line-numbers"><code>
+@Entity
+@Table(name = "user_events")
+@Getter
+@Setter
+public class Event {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column( name = "event_id", columnDefinition = "serial")
+    private int eventId;
+
+    @Column(name = "time")
+    @NotNull(message = "Need date!")
+    private Date date;
+
+    @Column(name = "description")
+    @Size(min = 4, max = 200, message = "Description must be between 0 and 200 chars!")
+    private String description;
+
+    @Column(name = "event_freq", columnDefinition = "TIME")
+    @Enumerated(EnumType.STRING)
+    private EventFreq freq;
+
+    @ManyToOne(fetch=FetchType.EAGER)
+    @JoinColumn(name="user_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private User user;
+
+    public Event() {
+    }
+
+    public Event(int eventId,
+                 @NotNull(message = "Need date!") Date date,
+                 @Size(min = 4, max = 200, message = "Description must be between 0 and 200 chars!")
+                         String description,
+                 EventFreq freq, User user) {
+        this.eventId = eventId;
+        this.date = date;
+        this.description = description;
+        this.freq = freq;
+        this.user = user;
+    }
+}
+
+</code></pre>
+
+<pre class="language-java line-numbers"><code>
+@Entity
+@Table(name = "users")
+@Getter
+@Setter
+public class User {
+
+    @Id
+    @Column(name = "id")
+    private long id;
+
+    @Column(name = "name")
+    private String name;
+
+    @Column(name = "time_zone", columnDefinition = "default 0")
+    //sets the broadcast time of events for your time zone
+    private int timeZone;
+
+    @OneToMany(mappedBy="user")
+    private List&lt;event&gt; events;
+
+    @Column(name = "on_off")
+    // on/off send event
+    private boolean on;
+
+    public User() {
+    }
+}
+
+&lt;/event&gt;</code></pre>
+
+<pre class="language-java line-numbers"><code>
+@Entity
+@Table(name = "event_cash")
+@Getter
+@Setter
+//serves to save unhandled events after rebooting heroku
+public class EventCashEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column( name = "id", columnDefinition = "serial")
+    private long id;
+
+    @Column(name = "time")
+    private Date date;
+
+    @Column(name = "description")
+    private String description;
+
+    @Column(name = "user_id")
+    private long userId;
+
+    public EventCashEntity() {
+    }
+
+    public static EventCashEntity eventTo(Date date, String description, long userId) {
+        EventCashEntity eventCashEntity = new EventCashEntity();
+        eventCashEntity.setDate(date);
+        eventCashEntity.setDescription(description);
+        eventCashEntity.setUserId(userId);
+        return eventCashEntity;
+    }
+}
+
+</code></pre>
+
+Немного пробежимся по основным моментам.
+
+<em>@Entity</em> – помечает класс для нашего dada jpa, что этот класс является сущностью для базы данных, т.е. при доставании данных из базы они будут представлены нам в виде объекта Event, User и EventCashEntity.
+
+<em>@Table </em>– говорим как называется наша таблица в базе данных. Для того, чтобы название таблицы не подчеркивалось красным нам нужно в IDEA согласиться с предложенным вариантом исправления ошибки и нажать Assign data sources. И выбрать там нашу базу.
+
+<em>@id и @GeneratedValue</em> – используется Spring для создания базы данных если ее еще нет.
+
+<em>@Column</em> – используется для обозначения названия полей в таблице, если они не совпадают, но правила хорошего кода рекомендуют всегда это писать.
+
+Отношение <em>OneToMany</em> - рекомендую потратить время и разобраться что это такое вот тут https://en.wikibooks.org/wiki/Java_Persistence
+
+Я не смогу изложить более понятно, просто поверьте. Скажу лишь, что в данном случае аннотация <em>@OneToMany</em> говорит что у одного пользователя может быть много событий, и они будут предоставлены нам в виде списка.
+
+Теперь нам надо доставать данные из таблиц. В библиотеке <strong>SRING DATA JPA</strong> уже все за нас написано, нам надо просто создать интерфейс для каждой таблицы и расширить его от JpaRepository.
+
+<pre class="language-java line-numbers"><code>
+public interface EventRepository extends JpaRepository&lt;event, long=""&gt; {
+    Event findByEventId(long id);
+}
+public interface UserRepository extends JpaRepository&lt;user, long=""&gt; {
+
+    User findById(long id);
+}
+public interface EventCashRepository extends JpaRepository&lt;eventcashentity, long=""&gt; {
+    EventCashEntity findById(long id);
+}
+
+&lt;/eventcashentity,&gt;&lt;/user,&gt;&lt;/event,&gt;</code></pre>
+
+Основная логика работы с базой данных вынесена в сервис, так называемый <strong>Data Access Object(DAO):</strong> 
+
+<pre class="language-java line-numbers"><code>
+@Service
+public class UserDAO {
+
+    private final UserRepository userRepository;
+
+    @Autowired
+    public UserDAO(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
+    public User findByUserId(long id) {
+        return userRepository.findById(id);
+    }
+
+    public List&lt;user&gt; findAllUsers() {
+        return userRepository.findAll();
+    }
+
+    public void removeUser(User user) {
+        userRepository.delete(user);
+    }
+
+
+    public void save(User user) {
+        userRepository.save(user);
+    }
+
+    public boolean isExist(long id) {
+        User user = findByUserId(id);
+        return user != null;
+    }
+}
+@Service
+public class EventDAO {
+
+    private final UserRepository userRepository;
+    private final EventRepository eventRepository;
+
+    @Autowired
+    public EventDAO(UserRepository userRepository, EventRepository eventRepository) {
+        this.userRepository = userRepository;
+        this.eventRepository = eventRepository;
+    }
+
+    public List&lt;event&gt; findByUserId(long userId) {
+        User user = userRepository.findById(userId);
+        return user.getEvents();
+    }
+    public List&lt;event&gt; findAllEvent() {
+       return eventRepository.findAll();
+    }
+
+    public Event findByEventId(long eventId) {
+        return eventRepository.findByEventId(eventId);
+    }
+
+    public void remove(Event event) {
+        eventRepository.delete(event);
+    }
+
+    public void save(Event event) {
+        eventRepository.save(event);
+    }
+}
+
+&lt;/event&gt;&lt;/event&gt;&lt;/user&gt;</code></pre>
+
+<pre class="language-java line-numbers"><code>
+@Service
+//handles events not dispatched after reboot heroku
+public class EventCashDAO {
+
+    private EventCashRepository eventCashRepository;
+
+    @Autowired
+    public void setEventCashRepository(EventCashRepository eventCashRepository) {
+        this.eventCashRepository = eventCashRepository;
+    }
+
+    public List&lt;eventcashentity&gt; findAllEventCash() {
+        return eventCashRepository.findAll();
+    }
+
+    public void save(EventCashEntity eventCashEntity) {
+        eventCashRepository.save(eventCashEntity);
+    }
+
+    public void delete(long id) {
+        eventCashRepository.deleteById(id);
+    }
+}
+
+&lt;/eventcashentity&gt;</code></pre>
+
+В данном случае у нас нет никакой обработки данных, мы просто достаем данные  из таблиц.
+
+У нас все готово, для того, чтоб привести полный код класса T<strong>elegramFacade</strong> и начать разбирать логику.
+
+
+<pre class="language-java line-numbers"><code>
+@Component
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class TelegramFacade {
+
+    final MessageHandler messageHandler;
+    final CallbackQueryHandler callbackQueryHandler;
+    final BotStateCash botStateCash;
+
+    @Value("${telegrambot.adminId}")
+    int adminId;
+
+
+    public TelegramFacade(MessageHandler messageHandler, CallbackQueryHandler callbackQueryHandler, BotStateCash botStateCash) {
+        this.messageHandler = messageHandler;
+        this.callbackQueryHandler = callbackQueryHandler;
+        this.botStateCash = botStateCash;
+    }
+
+    public BotApiMethod&lt;!--?--&gt; handleUpdate(Update update) {
+
+        if (update.hasCallbackQuery()) {
+            CallbackQuery callbackQuery = update.getCallbackQuery();
+            return callbackQueryHandler.processCallbackQuery(callbackQuery);
+        } else {
+
+            Message message = update.getMessage();
+            if (message != null &amp;&amp; message.hasText()) {
+                return handleInputMessage(message);
+            }
+        }
+        return null;
+    }
+
+    private BotApiMethod&lt;!--?--&gt; handleInputMessage(Message message) {
+        BotState botState;
+        String inputMsg = message.getText();
+        //we process messages of the main menu and any other messages
+        //set state
+        switch (inputMsg) {
+            case "/start":
+                botState = BotState.START;
+                break;
+            case "Мои напоминания":
+                botState = BotState.MYEVENTS;
+                break;
+            case "Создать напоминание":
+                botState = BotState.CREATE;
+                break;
+            case "Отключить напоминания":
+            case "Включить напоминания":
+                botState = BotState.ONEVENT;
+                break;
+            case "All users":
+                if (message.getFrom().getId() == adminId)
+                botState = BotState.ALLUSERS;
+                else botState = BotState.START;
+                break;
+            case "All events":
+                if (message.getFrom().getId() == adminId)
+                botState = BotState.ALLEVENTS;
+                else botState = BotState.START;
+                break;
+            default:
+                botState = botStateCash.getBotStateMap().get(message.getFrom().getId()) == null?
+                        BotState.START: botStateCash.getBotStateMap().get(message.getFrom().getId());
+        }
+        //we pass the corresponding state to the handler
+        //the corresponding method will be called
+        return messageHandler.handle(message, botState);
+
+    }
+}
+
+</code></pre>
+
+Разберем для чего нужны поля
+
+<pre class="language-java line-numbers"><code>
+final MessageHandler messageHandler;
+    final CallbackQueryHandler callbackQueryHandler;
+    final BotStateCash botStateCash;
+
+</code></pre>
+
+Если мы все будем кодить в одном классе, то у нас получится портянка до луны, в связи с этим мы относим логику работы с текстовыми сообщениями в класс <strong>MessageHandler</strong>, логику работы с сообщениями callbackquery в класс <strong>СallbackQueryHandler</strong>.
+
+Настало время разобрать что такое c<em>allbackquery</em> и какие виды меню бывают. Для этого приведу еще раз картинку с интерфейсом бота:
+<img data-max-width="512" data-id="4ee859ec-45d3-4306-a11c-1385adea168f" src="https://cdn.javarush.com/images/article/4ee859ec-45d3-4306-a11c-1385adea168f/512.jpeg" alt="Telegram bot — напоминалка через webHook на Java или скажи нет Google-календарю! - 10">Бывают два типа меню. Те, которые закреплены снизу окна - основное меню, и те, которые закреплены за сообщением, например, кнопки удалить, редактировать, изменить пояс.
+
+При нажатии на кнопку основного меню отправляется одноименное сообщение, например при нажатии <em>«Мои напоминания»</em>, будет просто отправлен текст <em>«Мои напоминания»</em>.
+
+А при установке клавиатуры callbackquery, для каждой кнопки устанавливается определенное значение и будет направлено его значение без вывода на экран.
+
+Дальше у нас есть поле <strong>BotStateCash</strong>. Это специально созданный класс, который будет следить за состоянием бота, и внимание, это сложный элемент, надо напрячься.
+
+
+Было превышено кол-во символов, о чем, кстати нигде не нписано )). Так что вот ссылка на <a href="https://javarush.com/groups/posts/3494-telegram-bot--napominalka-cherez-webhook-na-java-ili-skazhi-net-google-kalendarju-chastjh-2" target="_blank" rel="nofollow">вторую часть</a>

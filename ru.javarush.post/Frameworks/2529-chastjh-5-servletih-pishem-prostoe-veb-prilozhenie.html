@@ -1,0 +1,181 @@
+Часть 5. Сервлеты, Java servlet API. Пишем простое веб-приложение
+<p>----------------------------------------</p>
+Ты уже умеешь писать Java-приложения, которые выводят текст на консоль, но еще толком не знаешь, как создать свое первое веб-приложение? Отлично, устраивайся поудобнее. В этой статье мы познакомимся с...
+<p>----------------------------------------</p>
+Этот материал — часть цикла “Введение в Enterprise-разработку”. Предыдущие статьи:
+
+<ul>
+<li><a href="https://javarush.com/groups/posts/2514-vvedenie-v-enterprise-razrabotku" target="_blank">о сети</a>;</li>
+<li><a href="https://javarush.com/groups/posts/2519-chastjh-2-pogovorim-nemnogo-ob-arkhitekture-po" target="_blank">об архитектуре ПО</a>;</li>
+<li><a href="https://javarush.com/groups/posts/2521-chastjh-3-protokolih-httphttps" target="_blank">о протоколах HTTP/HTTPS</a>;</li>
+<li><a href="https://javarush.com/groups/posts/2523-chastjh-4osnovih-maven" target="_blank">об основах Maven</a>.</li>
+</ul><img data-max-width="850" alt="Часть 5. Сервлеты, Java servlet API. Пишем простое веб-приложение - 1" src="https://cdn.javarush.com/images/article/4503fc13-8fec-4de0-b1c8-374c978e2f54/original.jpeg">Ты уже умеешь писать Java-приложения, которые выводят текст на консоль, но еще толком не знаешь, как создать свое первое веб-приложение? Отлично, устраивайся поудобнее. В этой статье мы познакомимся с сервлетами и напишем приложение, которым ты сможешь похвастать перед друзьями, не отправляя им джарник и не заставляя их качать джаву. Напишем <span class="text-bold">веб-приложение</span>.
+
+Если ты еще не знаком с подходами, которые используются в веб-программировании, советую начать чтение с первой статьи цикла “<a href="https://javarush.com/groups/posts/2514-vvedenie-v-enterprise-razrabotku" target="_blank">Введение в Enterprise-разработку</a>”.
+<h2>Что такое сервлет</h2>Для начала разберемся, что такое сервлет и почему ты так часто слышишь о нем.
+
+<span class="text-bold">Java Servlet API</span> — стандартизированный API, предназначенный для реализации на сервере и работе с клиентом по схеме запрос-ответ.  
+
+<span class="text-bold">Сервлет</span> — это класс, который умеет получать запросы от клиента и возвращать ему ответы. Да, сервлеты в Java — именно те элементы, с помощью которых строится клиент-серверная архитектура. Если помнишь, о ней мы уже говорили в одной из статей цикла. 
+
+Не будем ходить вокруг да около: давай сразу напишем немного кода.
+<h2>Что нужно для создания веб-приложения</h2>Для комфортной работы с сервлетами в Java тебе понадобится Intellij IDEA Ultimate Edition. Она платная, но можно активировать 30 дней пробного периода или же пользоваться early access версией — она всегда бесплатная.
+
+Также установи сервер нашего приложения — Apache Tomcat. Tomcat — это контейнер сервлетов: именно он обрабатывает входящие запросы извне и передает их нашему приложению. Скачать Tomcat можно по <a href="https://tomcat.apache.org/download-90.cgi" rel="nofollow" target="_blank">этой ссылке</a>. 
+
+<div class="email-subscription"><iframe frameborder="0" src="https://secure.esputnik.com.ua/4Q0Ef6d2SOs" width="100%" height="200" scrolling="no"></iframe></div><h2>Создаем первое веб-приложение</h2>Если все готово, создадим Maven-проект. Если ты не знаком с Мавеном, обрати внимание на <a href="https://javarush.com/groups/posts/2523-chastjh-4osnovih-maven" target="_blank">предыдущую статью</a>. 
+
+Ну что, начнем!
+<ol>
+<li><p>В pom.xml добавим зависимость javax.servlet-api и установим packaging war:</p>
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+   &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+   &lt;groupId&gt;org.example&lt;/groupId&gt;
+   &lt;artifactId&gt;servlets&lt;/artifactId&gt;
+   &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+   &lt;packaging&gt;war&lt;/packaging&gt;
+
+   &lt;dependencies&gt;
+       &lt;dependency&gt;
+           &lt;groupId&gt;javax.servlet&lt;/groupId&gt;
+           &lt;artifactId&gt;javax.servlet-api&lt;/artifactId&gt;
+           &lt;version&gt;4.0.1&lt;/version&gt;
+       &lt;/dependency&gt;
+   &lt;/dependencies&gt;
+&lt;/project&gt;
+</code></pre>
+<p>Класс простого сервлета:</p>
+<pre class="lang-java line-numbers"><code>
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
+
+@WebServlet("/hello")
+public class MainServlet extends HttpServlet {
+
+   @Override
+   protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+       resp.setContentType("text/html");
+       PrintWriter printWriter = resp.getWriter();
+       printWriter.write("Hello!");
+       printWriter.close();
+   }
+}
+</code></pre></li>
+<li><p>Для запуска приложения нужно создать Tomcat-конфигурацию:</p>
+<img data-max-width="850" alt="Часть 5. Сервлеты, Java servlet API. Пишем простое веб-приложение - 2" src="https://cdn.javarush.com/images/article/fc3f7404-cafa-47e4-8d83-d41a1b1be931/original.jpeg">
+<img data-max-width="850" alt="Часть 5. Сервлеты, Java servlet API. Пишем простое веб-приложение - 3" src="https://cdn.javarush.com/images/article/a0076f9e-869b-4020-ae01-fa2098a84968/original.jpeg"><p></p></li>
+<li><p>Далее указываем, какую версию Tomcat мы будем использовать, URL, по которому можно обращаться к серверу и порт. У тебя должно получиться примерно так:</p>
+<img data-max-width="850" alt="Часть 5. Сервлеты, Java servlet API. Пишем простое веб-приложение - 4" src="https://cdn.javarush.com/images/article/c264a5fe-1820-4661-a3b8-8caa49ad4979/original.jpeg"></li>
+<li><p>Осталось указать артефакт (собранный проект в jar-архив), который развернется в контейнере. Можно нажать кнопку <span class="text-bold">Fix</span> и выбрать <span class="text-bold">war exploded</span>: это значит, что после пересборки проекта артефакт будет автоматически помещаться в контейнер сервлетов. 
+<img data-max-width="300" alt="Часть 5. Сервлеты, Java servlet API. Пишем простое веб-приложение - 5" src="https://cdn.javarush.com/images/article/cefcbb77-8aba-4ee5-a0e3-bf88523bd531/original.jpeg"></p></li>
+<li><p><span class="text-bold">Application context</span> по умолчанию установлен <span class="text-bold">servlets_war_exploded</span>, а это значит, что к приложению нужно обращаться по адресу: <a href="http://localhost:8080/servlets_war_exploded" rel="nofollow" target="_blank">http://localhost:8080/servlets_war_exploded</a>.</p>
+<p>Зачем нам лишний текст? Удалим ненужное. Теперь адрес приложения у нас такой: <a href="http://localhost:8080/servlets_war_exploded" rel="nofollow" target="_blank">http://localhost:8080</a>.</p>
+<img data-max-width="800" data-id="36a496dd-ab8a-4ac8-86c4-33a9307206f7" src="/images/article/36a496dd-ab8a-4ac8-86c4-33a9307206f7/800.jpeg" class="img-fluid" alt="Часть 5. Сервлеты, Java servlet API. Пишем простое веб-приложение - 6"><p></p></li>
+<li><p>Нажимаем ОК. Видим, что у нас появилась возможность запуска приложения:</p>
+<img data-max-width="300" alt="Часть 5. Сервлеты, Java servlet API. Пишем простое веб-приложение - 7" src="https://cdn.javarush.com/images/article/23f3bfa2-e6ad-4ab7-98a6-753d9144bac6/original.jpeg">
+<p>Теперь при запуске приложения должен открыться браузер и выдать 404-ю ошибку. Это логично, ведь по адресу <a href="http://localhost:8080/servlets_war_exploded" rel="nofollow" target="_blank">http://localhost:8080/</a> должен находиться сервлет с мапингом “/”, а у нашего единственного сервлета мапинг <span class="text-green">"/hello"</span>.</p></li>
+<li><p>Обращаемся к нему по адресу <a href="http://localhost:8080/hello" rel="nofollow" target="_blank">http://localhost:8080/hello</a>, и получаем ожидаемый ответ — строку “Hello”!</p></li>
+</ol><span class="text-bold">Если все работает, давай разберем код.</span> 
+
+Чтобы <span class="text-bold">из обычного класса сделать http-сервлет</span>, его нужно унаследовать от класса HttpServlet. Над классом указываем аннотацию @WebServlet(), в которой привязываем (мапим) сервлет к конкретному пути (“/hello”). Эта аннотация появилась только в Java Servlet API 3.0, поэтому в интернете очень много примеров, где мапинг сервлетов происходит через XML-файл. Сейчас это не обязательно.
+
+Чтобы <span class="text-bold">обрабатывать GET-запросы</span>, переопределяем метод doGet(). Обрати внимание на аргументы метода — HttpServletRequest и HttpServletResponse. С объекта HttpServletRequest мы можем взять всю необходимую информацию о запросе, в HttpServletResponse можем записать наш ответ и установить необходимые заголовки.
+<h2>Работа с параметрами и сессией</h2>Усовершенствуем наш сервлет, чтобы он мог обрабатывать параметры запроса и работать с сессией:
+
+<pre class="lang-java line-numbers"><code>
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.io.PrintWriter;
+
+@WebServlet("/hello")
+public class MainServlet extends HttpServlet {
+
+   @Override
+   protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+       HttpSession session = req.getSession();
+       Integer visitCounter = (Integer) session.getAttribute("visitCounter");
+       if (visitCounter == null) {
+           visitCounter = 1;
+       } else {
+           visitCounter++;
+       }
+       session.setAttribute("visitCounter", visitCounter);
+       String username = req.getParameter("username");
+       resp.setContentType("text/html");
+       PrintWriter printWriter = resp.getWriter();
+       if (username == null) {
+           printWriter.write("Hello, Anonymous" + "&lt;br&gt;");
+       } else {
+           printWriter.write("Hello, " + username + "&lt;br&gt;");
+       }
+       printWriter.write("Page was visited " + visitCounter + " times.");
+       printWriter.close();
+   }
+}
+</code></pre>
+Сейчас сервлет работает с сессией, увеличивая счетчик visitCounter при каждом посещении страницы. Если атрибут visitCounter еще не создан (при первом посещении страницы), метод getAttribute() вернет null, поэтому нужно проводить проверку на null. То же касается и параметров запроса. Если пользователь не передал параметр username, его значение будет null. В таком случае поприветствуем пользователя как анонимного.
+
+Чтобы передать параметр в GET-запросе, используются path-variables, то есть нужно обратиться по ссылке <a href="http://localhost:8080/hello?username=Pavel" rel="nofollow" target="_blank">http://localhost:8080/hello?username=Pavel</a>. Подробней об http-запросах можно почитать в <a href="https://javarush.com/groups/posts/2521-chastjh-3-protokolih-httphttps" target="_blank">предыдущей статье</a> цикла.
+
+Теперь у нашего приложения есть минимальная логика, но немного раздражает 404-я ошибка в root-пути. Чтобы исправить ее, создадим еще один сервлет и замапим его на начальную страницу @WebServlet("/"). Задача этого сервлета — перенаправлять запросы на путь “/hello”. Сделать это можно двумя способами: с помощью forward или redirect. Пожалуй, стоит разобраться, в чем между ними разница.
+
+<span class="text-bold">forward</span> — делегирует обработку запроса другому сервлету на сервере, клиент при этом не задействуется. Для этого в метод doGet() нового сервлета нужно добавить такой код: 
+
+<pre class="lang-java line-numbers"><code>
+getServletContext().getRequestDispatcher("/hello").forward(req, resp);
+</code></pre>
+В этом коде мы обращаемся к контексту сервлетов, из него достаем диспетчер запросов нужного сервлета и просим его обработать конкретный запрос с указанными параметрами (req, resp).
+
+<span class="text-bold">redirect</span> — возвращает клиенту адрес, по которому нужно обратиться для обработки его запроса. Большинство браузеров переходит на переданную ссылку автоматически. Для реализации редиректа нужно добавить этот код:
+
+<pre class="lang-java line-numbers"><code>
+resp.sendRedirect(req.getContextPath() + "/hello");
+</code></pre>
+Мы в HttpServletResponse вызываем метод redirect() и передаем ему адрес, на который клиенту нужно обратиться. Важная деталь: http-параметры нужно также добавить в конце полного пути редиректа, что не очень удобно.
+
+В нашей ситуации предпочтительнее использовать forward, а бывает так, что лучше — redirect. Если будешь понимать разницу в их работе, не ошибешься с выбором.
+
+Код нового сервлета выглядит так:
+
+<pre class="lang-java line-numbers"><code>
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
+@WebServlet("/")
+public class IndexServlet extends HttpServlet {
+
+   @Override
+   protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+//        getServletContext().getRequestDispatcher("/hello").forward(req, resp);
+       resp.sendRedirect(req.getContextPath() + "/hello");
+   }
+}
+</code></pre>
+<h2>Итог</h2>Твое первое веб-приложение готово. В следующей статье ты узнаешь, как развернуть его без использования Intellij IDEA.
+
+Мы написали приложение, которое обрабатывает только GET-запросы. Остальные http-методы обрабатываются аналогичным образом — переопределяя соответствующие методы родительского класса.
+
+Используя такие простые сервлеты, можно строить сложные многофункциональные веб-приложения. Конечно, используя большие фреймворки типа Spring это делать намного проще. Но если очень хочется вникнуть подробнее во все возможности сервлетов, можешь почитать <a href="https://javaee.github.io/servlet-spec/downloads/servlet-4.0/servlet-4_0_FINAL.pdf" rel="nofollow" target="_blank">официальную спецификацию</a>.
+
+<a href="https://javarush.com/groups/posts/2533-chastjh-6-konteynerih-servletov" target="_blank">Часть 6. Контейнеры сервлетов</a>
+<a href="https://javarush.com/groups/posts/2536-chastjh-7-znakomstvo-s-patternom-mvc-model-view-controller" target="_blank">Часть 7. Знакомство с паттерном MVC (Model-View-Controller)</a>
+<a href="https://javarush.com/groups/posts/2537-chastjh-8-pishem-neboljhshoe-prilozhenie-na-spring-boot" target="_blank">Часть 8. Пишем небольшое приложение на spring-boot</a>

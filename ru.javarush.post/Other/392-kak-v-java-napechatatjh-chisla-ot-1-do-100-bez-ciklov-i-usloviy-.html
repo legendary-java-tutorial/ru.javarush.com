@@ -1,0 +1,166 @@
+Как в Java напечатать числа от 1 до 100 без циклов и условий? 
+<p>----------------------------------------</p>
+Этот пост предназначен в первую очередь для тех, кто готовится к собеседованиям. Именно там любят задавать подобного рода головоломки. На самом деле поставленную задачу легче и логичнее ...
+<p>----------------------------------------</p>
+Этот пост предназначен в первую очередь для тех, кто готовится к собеседованиям. Именно там любят задавать подобного рода головоломки. На самом деле поставленную задачу легче и логичнее решать именно с циклами и условиями. И, думаем, любой студент <em><strong>JavaRush</strong></em> сможет это сделать после четвертого уровня квеста <em><strong>Java Syntax</strong></em>. Но подавляющее большинство приведённых способов рассчитаны на тех, кто уже «зашёл» в <em><strong>Java Multithreading</strong></em>.   
+
+Примечание: речь идёт о том, чтобы не использовать циклы и условия непосредственно. На самом деле они неявно "вшиты" в большинство указанных решений. 
+<img data-id="2b773303-2174-43d6-93a8-b597725e2dea" data-max-width="850" alt="Как в Java напечатать числа от 1 до 100 без циклов и условий?  - 1" src="https://cdn.javarush.com/images/article/2b773303-2174-43d6-93a8-b597725e2dea/1024.jpeg"><table>
+<tr>
+<td>
+Возможно, у вас есть своё решение для этой задачки? Делитесь в комментариях! 
+</td>
+</tr>
+</table><h2>Итак, способ 1: просто напиши это!</h2>Разумеется, первое, что приходит в голову новичку — прямой перебор. Нерационально, но просто и понятно. Точно так, как мы решали задачи на первых уровнях JavaRush. 
+
+<pre class='lang-java'><code>
+System.out.println("1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 , 13 , 14 , 15 , 16 , 17 , 18 , 19 , 20 ,<br /> 21 , 22 , 23 , 24 , 25 , 26 , 27 , 28 , 29 , 30 , 31 , 32 , 33 , 34 , 35 , 36 , 37 , 38 , 39 , 40 , 41 , 42 ,<br /> 43 , 44 , 45 , 46 , 47 , 48 , 49 , 50 , 51 , 52 , 53 , 54 , 55 , 56 , 57 , 58 , 59 , 60 , 61 , 62 , 63 , 64 ,<br /> 65 , 66 , 67 , 68 , 69 , 70 , 71 , 72 , 73 , 74 , 75 , 76 , 77 , 78 , 79 , 80 , 81 , 82 , 83 , 84 , 85 , 86 , 87 , 88 , 89 , 90 , 91 , 92 , 93 , 94 , 95 , 96 ,<br /> 97 , 98 , 99 , 100");
+</code></pre>
+Но, согласитесь, это как-то скучно. Поэтому можно воспользоваться вторым способом. 
+<h2>Способ 2: используй строки и переопределение toString</h2><pre class='lang-java line-numbers'><code>
+public static void main(String[] args) {
+
+        Object[] numbers = new Object[100];
+        Arrays.fill(numbers, new Object() {    //создаем анонимный класс      
+            private int count = 0;
+            @Override
+            public String toString() {
+                return Integer.toString(++count);
+            }
+        });
+        System.out.println(Arrays.toString(numbers));
+
+    }
+</code></pre>
+Аннотация <code>@Override</code> указывает, что мы собираемся переопределить метод базового класса. В данном случае мы переопределяем <code>toString</code>. На самом деле это, как и почти все следующие варианты решения содержат циклы. Просто эти циклы вшиты в используемые методы. 
+<h2>Способ 3: используй рекурсию</h2>Чтобы понять рекурсию, нужно понять рекурсию. Рекурсия или вызов функцией самой себя — тема очень интересная, и не всегда понятная сразу. На <em><strong>JavaRush</strong></em> её проходят в квесте <em><strong>Java Collections</strong></em> (для полноты картинки), но на самом деле её можно понять и использовать (или не использовать… почему — узнаете во время изучения темы!) гораздо раньше, сразу после изучения циклов и условных переходов.  
+<table>
+<tr>
+<td><a href='https://javarush.com/quests/lectures/questharvardcs50.level04.lecture02' target='_blank'>Рекурсия в CS50</a>
+</td>
+</tr>
+</table><pre class='lang-java line-numbers'><code>
+public class Recursion {
+ 
+    public void ShowNums(int i) {
+    // метод, который печатает 
+    
+        int x = 1;
+ 
+// блок try проверяет, достигли ли мы нуля 
+        try {
+            int m = x / i;				// здесь выбрасывается исключение при i = 0
+            System.out.println(i);		
+            i--;						
+            ShowNums(i);				// а вот и рекурсивный вызов
+        }
+        catch(ArithmeticException e) {
+		// деление на нуль выбрасывает ArithmeticException
+            return;					// Останавливается при попытке деления на нуль
+        }
+        
+    }
+ 
+     public static void main(String[] args) {
+ 
+        Recursion r = new Recursion();
+        r.ShowNums(100);				// вызов метода со значением 100 
+    }
+    
+}
+</code></pre><table>
+<tr>
+<td>
+<mark>Обратите внимание:</mark> здесь вывод производится не в прямом, а в обратном порядке. Попробуйте изменить код, чтобы числа выводились так, как сказано в условии, то есть от 1 до 100. Ждём решений в комментариях!
+</td>
+</tr>
+</table><h2>Способ 4: используй семафоры</h2><pre class='lang-java line-numbers'><code>
+public class To100 {
+    public static void main(String[] args) {
+        final int max = 100;
+        new java.util.concurrent.Semaphore(max) {
+            void go() {
+                acquireUninterruptibly();
+                System.err.println(max-availablePermits());
+                go();
+            }
+        }.go();
+    }
+}
+</code></pre>
+<em><strong>Семафоры</strong></em> — это средство синхронизации для доступа к ресурсу. В Java семафоры представлены классом <code>Semaphore</code>библиотеки <code>java.util.concurrent</code>. 
+<h2>Способ 5: используй нити</h2><pre class='lang-java line-numbers'><code>
+public class Counter extends Thread{
+ 
+    private int cnt;
+ 
+    public Counter(){
+        this.cnt = 0;
+    }
+ 
+    private void increment(){
+        System.out.println(cnt++);
+        try{
+            Thread.sleep(1000);
+        }catch(Exception e){}
+        increment();
+    }
+ 
+    public void run(){
+        increment();
+    }
+ 
+    public static void main(String[] args) throws Exception{
+        Counter cntr = new Counter();
+        cntr.start();
+        cntr.join(100000);
+        cntr.interrupt();
+        System.exit(0);
+    }
+}
+</code></pre><h2>Способ 6: знай свои библиотеки!</h2>В Java есть много всего интересного. Например, класс <code>java.util.BitSet</code>. Он позволяет создать битовый вектор, размер которого изменяется динамически. То есть объект класса <code>BitSet</code> — некий упорядоченный набор битов со значениями <code>true</code> или <code>false</code>. Изначально все биты равны <code>false</code>. Для хранения набора выделяется объем памяти, необходимый для хранения вектора вплоть до старшего бита, который устанавливался или сбрасывался в программе — все превышающие его биты считаются равными <code>false</code>.
+
+<pre class='lang-java line-numbers'><code>
+public class To100 {
+    public static void main(String[] args) {
+        String set = new java.util.BitSet() {{ set(1, 100+1); }}.toString();
+        System.out.append(set, 1, set.length()-1);
+    }
+}
+</code></pre><h2>Способ 7: используй класс Vector</h2>Да, класс вектор — устаревший, и используется крайне редко. Тем не менее, почему бы и нет? 
+
+<pre class='lang-java line-numbers'><code>
+import java.util.Vector;
+ 
+public class PrintOneToHundered {
+  static int i;
+  PrintOneToHundered() {}
+  public String toString() { return ++i+""; }
+  public static void main(String[] args) {
+    Vector v1  =new Vector(); v1  .add(new PrintOneToHundered());
+    Vector v2  =new Vector(); v2  .addAll(v1 ); v2  .addAll(v1 );
+    Vector v4  =new Vector(); v4  .addAll(v2 ); v4  .addAll(v2 );
+    Vector v8  =new Vector(); v8  .addAll(v4 ); v8  .addAll(v4 );
+    Vector v16 =new Vector(); v16 .addAll(v8 ); v16 .addAll(v8 );
+    Vector v32 =new Vector(); v32 .addAll(v16); v32 .addAll(v16);
+    Vector v64 =new Vector(); v64 .addAll(v32); v64 .addAll(v32);
+    Vector v100=new Vector(); v100.addAll(v64); v100.addAll(v32); v100.addAll(v4);
+    System.out.println(v100);
+  }
+}
+
+</code></pre>
+
+<em><strong>По материалам Quora</strong></em> 
+<table>
+<tr>
+<th><p>Что еще почитать: </p>
+</th>
+</tr>
+<tr>
+<td>
+<p><a href='https://javarush.com/groups/posts/366-top-10-bibliotek-java-kotorihe-pomogut-sehkonomitjh-vremja-' target='_blank'>Топ-10 библиотек Java, которые помогут сэкономить время</a></p>
+<p><a href='https://javarush.com/groups/posts/234-luchshie-knigi-dlja-podgotovki-k-ehkzamenu-ocajp8-1z0-808-po-java-8' target='_blank'>Лучшие книги для подготовки к экзамену OCAJP8 (1Z0-808) по Java 8</a></p>
+</td>
+</tr>
+</table>

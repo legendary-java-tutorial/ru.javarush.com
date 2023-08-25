@@ -1,0 +1,117 @@
+Класс MessageFormat
+<p>----------------------------------------</p>
+Данная статья поможет понять код, используемый в task2412. В этой статье я хочу рассказать о классе MessageFormat, который используется в задаче 2412 (task2412). Класс MessageFormat предназначен для создания строк. Данный класс принимает набор объектов, форматирует их, а затем ...
+<p>----------------------------------------</p>
+В этой статье я хочу рассказать о классе <code>MessageFormat</code>, который используется в задаче 2412 (task2412).
+<img data-id="9b79ba9c-91fc-4e92-8682-836b718a243d" data-max-width="850" alt="Класс MessageFormat - 1" src="https://cdn.javarush.com/images/article/9b79ba9c-91fc-4e92-8682-836b718a243d/1024.jpeg">Класс <code>MessageFormat</code> предназначен для создания строк.
+
+Данный класс Java принимает набор объектов, форматирует их, а затем вставляет форматированные строки в шаблон в соответствующих местах. Это своего рода альтернатива (или даже дополнение) к статическому методу <code>String.format</code>.
+
+Для начала простой пример использования данного Java класса без создания объекта, а используя статический метод:
+
+<pre class="lang-java line-numbers"><code>
+        int planet = 7;
+        String event = "a disturbance in the Force";
+        String result = MessageFormat.format(
+                "At {0, time, medium} on {0, date}, there was {1} on planet {2, number, integer}.",
+                new Date(), event, planet);
+        System.out.println(result);
+</code></pre>
+Здесь вызывается статический метод <code>MessageFormat.format</code>, в который передаются аргументами шаблон строки и, собственно, объекты, которые будут вставлены в места, ограниченные скобками <code>{}</code>. В скобках задается позиция объекта начиная с <code>0</code>, а также тип форматирования, если таковой имеется.
+
+Вывод будет такой:
+
+<pre class="lang-java line-numbers"><code>
+At 21:25:54 on 28 апр. 2018 г., there was a disturbance in the Force on planet 7.
+</code></pre>
+В следующем примере уже создается объект класса <code>MessageFormat</code>:
+
+<pre class="lang-java line-numbers"><code>
+        int fileCount = 1273;
+        String diskName = "MyDisk";
+        Object[] testArgs = {fileCount, diskName};
+
+        MessageFormat form = new MessageFormat(
+                "The disk \"{1}\" contains {0} file(s).");
+
+        System.out.println(form.format(testArgs));
+</code></pre>
+При создании объекта класса <code>MessageFormat</code> в его конструктор передается шаблон строки. Далее, при вызове метода <code>format</code> у объекта, туда в качестве аргумента передается массив объектов, которые будут вставлены в шаблон строки.
+
+Вывод будет такой:
+
+<pre class="lang-java line-numbers"><code>
+The disk "MyDisk" contains 1&nbsp;273 file(s).
+</code></pre>
+Также возможно сделать так, что в зависимости от значения переменной будет выбираться необходимый текст. Своего рода реализация оператора <code>if...else</code>, только с помощью класса <code>ChoiceFormat</code>.
+
+Вот код:
+
+<pre class="lang-java line-numbers"><code>
+        MessageFormat form = new MessageFormat("Я могу {1} {0}.");
+        int count = 2;
+        String exercise = "подтянуться";
+        Object[] testArgs = {count, exercise};
+
+        double[] filelimits = {0,2,5};
+        String[] filepart = {"{0} раз","{0} раза","{0} раз"};
+        ChoiceFormat fileform = new ChoiceFormat(filelimits, filepart);
+        form.setFormatByArgumentIndex(0, fileform);
+        
+        System.out.println(form.format(testArgs));
+</code></pre>
+Данный код в зависимости от значения переменной <code>count</code> меняет вывод строки следующим образом:
+<ul>
+<li><p>если <code>count = 1</code> вывод будет такой</p>
+<pre class="lang-java line-numbers"><code>
+Я могу подтянуться 1 раз.
+</code></pre></li>
+<li><p>если <code>count = 2</code> вывод будет такой</p>
+<pre class="lang-java line-numbers"><code>
+Я могу подтянуться 2 раза.
+</code></pre></li>
+<li><p>если <code>count = 7</code> вывод будет такой</p>
+<pre class="lang-java line-numbers"><code>
+Я могу подтянуться 7 раз.
+</code></pre></li></ul>
+В данном коде создается массив <code>double[] filelimits</code>, в котором указываются пределы значений, при которых будет меняться вывод строк. А в массиве <code>String[] filepart</code> указываются те самые варианты строк, которые могут быть использованы.
+
+Условия выбора варианта строки от значения переменной определяются следующим образом: выберется вариант <code>filepart[j]</code>, если <code>filelimits[j] =&lt; count &lt; filelimits[j+1]</code>.
+
+Далее создается объект <code>ChoiceFormat fileform</code> и в его конструктор передаются массивы <code>double[] filelimits</code> и <code>String[] filepart</code>.
+
+С помощью метода <code>form.setFormatByArgumentIndex(0, fileform)</code> мы говорим объекту <code>MessageFormat form</code>, что когда вызовут метод <code>format</code>, то для индекса 0 в шаблоне строки используй форматирование, которое было задано в объекте <code>ChoiceFormat fileform</code>.
+
+Хорошо. У вас уже в принципе могла появиться мысль никогда не использовать Java класс <code>MessageFormat</code>, но знайте, что это еще не все примочки.
+
+Имеется вот такой код:
+
+<pre class="lang-java line-numbers"><code>
+        MessageFormat pattform = new MessageFormat("There {0} on {1}.\n{2} {2}");
+        int count = 0;
+        Date date = new Date();
+        Object[] testArgs = {count, "ADisk", date, date};
+
+        double[] filelimits = {0,1,2};
+        String[] filepart = {"are no files","is one file","are {0} files"};
+        ChoiceFormat fileform = new ChoiceFormat(filelimits, filepart);
+
+        Format[] testFormats
+                = {fileform, null, DateFormat.getDateInstance(DateFormat.SHORT), DateFormat.getTimeInstance(DateFormat.SHORT)};
+        pattform.setFormats(testFormats);
+        
+        System.out.println(pattform.format(testArgs));
+</code></pre>
+Здесь основная фишка в массиве <code>Format[] testFormats</code>.
+
+В данный массив мы заносим объекты (реализующие абстрактный класс <code>Format</code>), которые отвечают за форматирование объектов, определенных в массиве <code>Object[] testArgs</code>. Если объект не нуждается в форматировании, то в массиве <code>Format[] testFormats</code> записывается <code>null</code>.
+
+Далее с помощью метода <code>pattform.setFormats(testFormats)</code> мы говорим объекту <code>MessageFormat pattform</code>, что для всех индексов в шаблоне строки надо использовать форматирование, определенное в массиве <code>Format[] testFormats</code>.
+
+Для данного примера вывод будет такой:
+
+<pre class="lang-java line-numbers"><code>
+There are no files on ADisk.
+28.04.18 22:10
+</code></pre>
+На этом все и я надеюсь, что при решении задачи 2412 у вас не возникнет сложностей.

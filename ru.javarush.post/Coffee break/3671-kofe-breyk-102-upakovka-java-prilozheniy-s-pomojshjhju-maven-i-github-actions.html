@@ -1,0 +1,82 @@
+Кофе-брейк #102. Упаковка Java-приложений с помощью Maven и GitHub Actions
+<p>----------------------------------------</p>
+В этой публикации показано, как создавать рабочие процессы, которые упаковывают приложение Java с помощью Maven, а затем сохраняют его как артефакт или публикуют в GitHub Packages...
+<p>----------------------------------------</p>
+Источник: <a href="https://dev.to/cvitaa11/packaging-java-apps-with-maven-and-github-actions-4gbn" rel="nofollow" target="_blank">Dev.to</a>
+
+В этой публикации показано, как создавать рабочие процессы, которые упаковывают приложение Java с помощью Maven, а затем сохраняют его как артефакт или публикуют в GitHub Packages.
+<img data-max-width="800" data-id="e1e0bd30-9ecf-44d1-ab4a-7de4ce2a73f4" src="https://cdn.javarush.com/images/article/e1e0bd30-9ecf-44d1-ab4a-7de4ce2a73f4/800.jpeg" alt="Кофе-брейк #102. Упаковка Java-приложений с помощью Maven и GitHub Actions - 1"><h2>Среда разработки</h2>По представленной здесь <a href="https://github.com/cvitaa11/java-spring-demo" rel="nofollow" target="_blank">ссылке</a> вы можете найти репозиторий с исходным кодом. Это простое приложение Spring Boot, которое извлекает имена студентов из базы данных. Приложение выполняет загрузку с помощью Spring Initializr. 
+
+Для зависимостей мы добавили Spring Web, который используют для создания веб-приложений с использованием Spring MVC. Этот пакет также использует Apache Tomcat в качестве встроенного контейнера по умолчанию. Мы также использовали Spring Data JDBC для сохранения данных в SQL с помощью простого JDBC, и PostgreSQL Driver, который позволяет Java-приложениям подключаться к базе данных Postgres с использованием стандартного, независимого от базы данных кода Java.
+
+Для локальной разработки мы можем запустить экземпляр Postgres с Docker, используя следующую команду:
+
+<div class="terminal">docker run -d --name postgresDB -p &lt;port&gt;:5432 -e POSTGRES_PASSWORD=&lt;YourPassword&gt;-v /postgresdata:/var/lib/postgresql/data postgres:latest</div>
+Spring Boot следует многоуровневой архитектуре, в которой каждый уровень взаимодействует со слоем непосредственно под или над ним. Мы следовали этой практике и реализовали Controller, Service и Repository внутри нашего приложения и продемонстрировали принципы внедрения зависимостей. Исходный код также содержит класс <span class="code">StudentConfig</span>, который просто вставляет студента в базу данных.
+
+После успешной настройки среды разработки и написания некоторого кода мы решили перенести нашу работу в систему управления исходным кодом, в данном случае GitHub. Теперь нам нужно собрать код и опубликовать его как пакет Maven. Этот процесс можно выполнить вручную, но мы бы хотели, чтобы он выполнялся автоматически, когда изменения вносятся в ветку main. Так мы избежим ручных задач при публикации новой версии.
+
+Как и большинство других вещей, эту проблему можно решить несколькими способами, и мы будем использовать два разных подхода. Во-первых, мы опубликуем наш пакет как артефакт сборки и сделаем его доступным для загрузки, а при втором подходе мы опубликуем пакет в репозитории <a href="https://github.com/features/packages" rel="nofollow" target="_blank">GitHub Packages Maven</a>.
+<h2>Хранение данных рабочего процесса в виде артефактов</h2>В файле <span class="code">main.yaml</span> первые несколько строк сообщают нам, какие события запускают рабочий процесс. Кроме запросов push и pull в основной ветке, мы также добавили тег <span class="code">workflow_dispatch</span>, позволяющий запускать рабочий процесс вручную.
+
+В разделе “Задания” мы определили задание <span class="code">build</span>, которое запустится в средстве выполнения Ubuntu. Первые два шага проверяют основную ветку из GitHub и настраивают JDK (Java Development Kit).
+
+Далее мы создаем проект и настраиваем кеш для Maven:
+
+<div class="terminal">- name: Build Maven project
+  run: |
+    mvn -B package --file pom.xml -Dmaven.test.skip
+    mkdir staging &amp;&amp; cp target/*.jar staging
+
+- name: Set up a cache for Maven
+  uses: actions/cache@v2
+  with:
+    path: ~/.m2
+    key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+    restore-keys: ${{ runner.os }}-m2</div>
+После завершения сборки промежуточный каталог будет содержать созданный файл .jar. Каждое задание в рабочем процессе выполняется в новой виртуальной среде, что означает, что после выполнения задания <span class="code">build</span> мы не можем получить доступ к этой среде и наш файл .jar исчезнет. Вот где происходит наш последний шаг, который загружает артефакты из вашего рабочего процесса, позволяя вам обмениваться данными между заданиями и сохранять данные после завершения рабочего процесса.
+
+<div class="terminal">- name: Persist workflow data as artifacts
+  uses: actions/upload-artifact@v2
+  with:
+    name: github-actions-artifact
+    path: staging</div>
+По умолчанию артефакты, созданные рабочими процессами, хранятся в течение 90 дней, а затем автоматически удаляются. Вы можете настроить срок хранения в зависимости от типа репозитория. Когда вы настраиваете срок хранения, он применяется только к новым артефактам и не имеет обратной силы к существующим объектам.
+
+Артефакты можно найти на вкладке Actions, если щелкнуть нужный запуск рабочего процесса.
+<img data-max-width="800" data-id="9a1e97de-47d0-47e4-b1ba-e8d0d68329d5" src="https://cdn.javarush.com/images/article/9a1e97de-47d0-47e4-b1ba-e8d0d68329d5/original.png" alt="Кофе-брейк #102. Упаковка Java-приложений с помощью Maven и GitHub Actions - 2"><h2>Публикация в пакетах GitHub</h2>Вы можете настроить Apache Maven для публикации пакетов в GitHub Packages и использования пакетов, хранящихся в GitHub Packages, в качестве зависимостей в проекте Java.
+
+Помимо Maven, GitHub Packages предлагает различные реестры пакетов для часто используемых менеджеров пакетов, таких как npm, NuGet, Gradle и RubyGems. Также можно хранить Docker и другие образы OCI. Благодаря всем этим функциям вы можете создавать комплексные решения DevOps и централизовать разработку программного обеспечения на GitHub.
+
+В файле <span class="code">maven-publish.yaml</span> вы можете найти детали рабочего процесса для публикации пакета в GitHub Packages. Как и в предыдущем решении, мы указываем имя и события, которые будут запускать рабочий процесс. Затем в разделе заданий мы выбрали Ubuntu runner в качестве среды для задания <span class="code">publish</span> и определили разрешения на чтение содержимого и запись пакетов.
+
+<div class="terminal">name: Publish package to GitHub Packages
+on:
+  push:
+    branches: [main]
+jobs:
+  publish:
+    runs-on: ubuntu-latest 
+    permissions: 
+      contents: read
+      packages: write</div>
+На следующих шагах мы проверяем основную ветку и настраиваем JDK с параметром <span class="code">java-version</span>. Последний шаг — публикация пакета, для этого ему нужен личный токен доступа для аутентификации. PAT — это конфиденциальная информация, и мы не хотим хранить ее в виде простого текста, поэтому мы определили секрет на уровне репозитория и получили к нему доступ как переменную среды. Для простоты мы пропустили тесты во время развертывания.
+
+<div class="terminal">- name: Publish package
+  run: mvn --batch-mode deploy -Dmaven.test.skip
+  env:
+    GITHUB_TOKEN: ${{ secrets.TOKEN }}</div>
+Перед запуском рабочего процесса нам также нужно одно изменение конфигурации в исходном коде приложения. Внутри файла <span class="code">pom.xml</span> нам нужно передать информацию об управлении распространением пакетов.
+
+<div class="terminal">&lt;project ...&gt;
+  ...
+  &lt;distributionManagement&gt;
+    &lt;repository&gt;
+      &lt;id&gt;github&lt;/id&gt;
+      &lt;name&gt;GitHub Packages&lt;/name&gt;
+      &lt;url&gt;https://maven.pkg.github.com/cvitaa11/java-spring-demo&lt;/url&gt;
+    &lt;/repository&gt;
+  &lt;/distributionManagement&gt;
+&lt;/project&gt;</div>
+После внесения изменений в основную ветку рабочий процесс запускается автоматически, и мы можем следить за выводом журнала на вкладке Actions на странице репозитория. Когда все шаги будут выполнены, мы увидим готовый к использованию пакет Maven в нашем репозитории кода в разделе Packages.
+<img data-max-width="800" data-id="9cc1b0a3-b3dd-401e-9008-14c91b733d05" src="https://cdn.javarush.com/images/article/9cc1b0a3-b3dd-401e-9008-14c91b733d05/original.png" alt="Кофе-брейк #102. Упаковка Java-приложений с помощью Maven и GitHub Actions - 3"><img data-max-width="800" data-id="7bae1358-9e09-4c1b-86a9-e8686b7e130d" src="https://cdn.javarush.com/images/article/7bae1358-9e09-4c1b-86a9-e8686b7e130d/original.png" alt="Кофе-брейк #102. Упаковка Java-приложений с помощью Maven и GitHub Actions - 4">С помощью этих двух подходов мы успешно решили проблему автоматической публикации приложений Java в виде пакетов Maven и продемонстрировали использование GitHub Actions и GitHub Packages для создания полного решения для сквозной разработки в одном месте.

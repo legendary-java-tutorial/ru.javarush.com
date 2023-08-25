@@ -1,0 +1,186 @@
+Лямбды и ссылки на методы в ArrayList.forEach — как это работает
+<p>----------------------------------------</p>
+Для тех, кто застрял на 9 уровне в Java Syntax Zero, а также для всех, кто только начинает вникать в лямбда-выражения
+<p>----------------------------------------</p>
+Знакомство с лямбда-выражениями в квесте Java Syntax Zero начинается с крайне специфического примера:
+<pre class="language-java line-numbers"><code>
+ArrayList&lt;string&gt; list = new ArrayList&lt;&gt;();
+Collections.addAll(list, "Привет", "как", "дела?");
+
+list.forEach( (s) -&gt; System.out.println(s) );
+</code></pre>
+Авторы лекции разбирают лямбды и ссылки на методы с помощью стандартной функции forEach класса ArrayList. Лично мне было трудно понять смысл происходящего, поскольку реализация этой функции, равно как и связанного с ней интерфейса, остается «под капотом». Откуда берётся аргумент <strong>(s)</strong>, куда передаётся функция <strong>println()</strong> — вопросы, на которые нам придётся отвечать самостоятельно.
+
+К счастью, с помощью IntelliJ IDEA мы легко можем заглянуть во внутреннее устройство класса ArrayList и размотать эту лапшу от самого начала. Если вы тоже ничего не поняли и хотите разобраться, постараюсь вам в этом хоть немного помочь.
+
+<strong>Лямбда-выражение и ArrayList.forEach — как это работает</strong>
+
+Из лекции мы уже знаем, что <strong>лямбда-выражение — это реализация функционального интерфейса</strong>. То есть мы объявляем интерфейс с одной-единственной функцией, а с помощью лямбды описываем, что эта функция делает. Для этого нужно:
+1. Создать функциональный интерфейс;
+2. Создать переменную, тип которой соответствует функциональному интерфейсу;
+3. Присвоить этой переменной лямбда-выражение, которое описывает реализацию функции;
+4. Вызвать функцию через обращение к переменной (возможно, я грубоват в терминологии, но так понятнее всего).
+
+Приведу простейший пример из гугла, снабдив его подробными комментариями (спасибо авторам сайта metanit.com):
+<pre class="language-java line-numbers"><code>
+interface Operationable {
+    int calculate(int x, int y);
+    // Единственная функция в интерфейсе — значит, это функциональный интерфейс,
+    // который можно реализовать с помощью лямбды
+}
+
+public class LambdaApp {
+ 
+    public static void main(String[] args) {
+
+        // Создаём переменную operation типа Operationable (так называется наш функциональный интерфейс)
+        Operationable operation;
+        // Прописываем реализацию функции calculate с помощью лямбды, на вход подаём x и y, на выходе возвращаем их сумму
+        operation = (x,y)-&gt;x+y;
+        
+        // Теперь мы можем обратиться к функции calculate через переменную operation
+        int result = operation.calculate(10, 20);
+        System.out.println(result); //30
+    }
+}
+</code></pre>
+Теперь вернемся к примеру из лекции. В коллекцию <strong>list</strong> добавляются несколько элементов типа String. Затем элементы выводятся с помощью стандартной функции <strong>forEach</strong>, которая вызывается у объекта <strong>list</strong>. В качестве аргумента в функцию передается лямбда-выражение с каким-то странным параметром <strong>s</strong>.
+<pre class="language-java line-numbers"><code>
+ArrayList&lt;string&gt; list = new ArrayList&lt;&gt;();
+Collections.addAll(list, "Привет", "как", "дела?");
+
+list.forEach( (s) -&gt; System.out.println(s) );
+</code></pre>
+Если вы с ходу не поняли, что тут произошло, то вы не одиноки. К счастью, в IntelliJ IDEA есть замечательная комбинация клавиш <strong>Ctrl+Левая_Кнопка_Мыши</strong>. Если навести курсор на forEach и нажать эту комбинацию, откроется исходник стандартного класса ArrayList, в котором мы увидим реализацию метода <strong>forEach</strong>:
+<pre class="language-java line-numbers"><code>
+public void forEach(Consumer&lt;? super E&gt; action) {
+    Objects.requireNonNull(action);
+    final int expectedModCount = modCount;
+    final Object[] es = elementData;
+    final int size = this.size;
+    for (int i = 0; modCount == expectedModCount &amp;&amp; i &lt; size; i++)
+        action.accept(elementAt(es, i));
+    if (modCount != expectedModCount)
+        throw new ConcurrentModificationException();
+}
+</code></pre>
+Мы видим, что на вход подаётся аргумент <strong>action</strong> типа <strong>Consumer</strong>. Наведем курсор на слово <strong>Consumer</strong> и снова нажмем волшебную комбинацию <strong>Ctrl+LMB</strong>. Откроется описание интерфейса <strong>Consumer</strong>. Если убрать из него default-реализацию (нам она сейчас не важна), увидим вот такой код:
+<pre class="language-java line-numbers"><code>
+public interface Consumer&lt;t&gt; {
+   void accept(T t);
+}
+</code></pre>
+Итак. У нас есть интерфейс <strong>Consumer</strong> с единственной функцией <strong>accept</strong>, которая принимает один аргумент любого типа. Раз функция одна, значит интерфейс функциональный, и его реализацию можно прописать через лямбда-выражение.
+
+Мы уже выяснили, что в ArrayList есть функция <strong>forEach</strong>, которая принимает на вход реализацию интерфейса <strong>Consumer</strong> в качестве аргумента <strong>action</strong>. Кроме того, в функции forEach мы находим вот такой код:
+<pre class="language-java line-numbers"><code>
+for (int i = 0; modCount == expectedModCount &amp;&amp; i &lt; size; i++)
+    action.accept(elementAt(es, i));
+</code></pre>
+Цикл for по сути перебирает все элементы коллекции ArrayList. Внутри цикла мы видим вызов функции <strong>accept</strong> объекта <strong>action</strong> — помните, как мы обращались к operation.calculate? В функцию <strong>accept</strong> передаётся текущий элемент коллекции. Теперь мы наконец можем вернуться к исходному лямбда-выражению и понять, что же оно делает.
+
+Соберём весь код в одну кучу:
+<pre class="language-java line-numbers"><code>
+public interface Consumer&lt;t&gt; {
+   void accept(T t); // Функция, которую мы реализуем лямбда-выражением
+}
+
+public void forEach(Consumer&lt;? super E&gt; action) // В action хранится объект Consumer, в котором функция accept реализована нашей лямбдой {
+    Objects.requireNonNull(action);
+    final int expectedModCount = modCount;
+    final Object[] es = elementData;
+    final int size = this.size;
+    for (int i = 0; modCount == expectedModCount &amp;&amp; i &lt; size; i++)
+        action.accept(elementAt(es, i)); // Вызываем нашу реализацию функции accept интерфейса Consumer для каждого элемента коллекции
+    if (modCount != expectedModCount)
+        throw new ConcurrentModificationException();
+}
+	
+//...
+
+list.forEach( (s) -&gt; System.out.println(s) );
+</code></pre>
+Наше лямбда-выражение — это реализация функции <strong>accept</strong>, описанной в интерфейсе <strong>Consumer</strong>. С помощью лямбды мы прописали, что функция <strong>accept</strong> принимает аргумент <strong>s</strong> и выводит его на экран. Лямбда-выражение было передано в функцию <strong>forEach</strong> в качестве ее аргумента <strong>action</strong>, который как раз и хранит в себе реализацию интерфейса <strong>Consumer</strong>. Теперь функция forEach может вызвать нашу реализацию интерфейса Consumer с помощью вот такой строки:
+<pre class="language-java line-numbers"><code>
+action.accept(elementAt(es, i));
+</code></pre>
+Таким образом, входной аргумент <strong>s</strong> в лямбда-выражении — это <strong>очередной элемент коллекции ArrayList</strong>, который передается в нашу реализацию <strong>интерфейса Consumer</strong>. На этом всё: логику работы лямбда-выражения в ArrayList.forEach мы разобрали.
+
+<strong>Ссылка на метод в ArrayList.forEach — а это как работает?</strong>
+
+Следующим шагом в лекции разбираются ссылки на методы. Правда, разбираются они как-то совсем странно — после прочтения лекции у меня не было никаких шансов понять, что же делает этот код:
+<pre class="language-java line-numbers"><code>
+list.forEach( System.out::println );
+</code></pre>
+Для начала вновь немного теории. <strong>Ссылка на метод</strong> — это, если очень грубо, <strong>реализация функционального интерфейса, описанная другой функцией</strong>. Опять же начну с простого примера:
+<pre class="language-java line-numbers"><code>
+public interface Operationable {
+    int calculate(int x, int y);
+    // Единственная функция в интерфейсе — значит, это функциональный интерфейс
+}
+
+public static class Calculator {
+    // Создадим статический класс Calculator и пропишем в нём метод methodReference.
+    // Именно он будет реализовывать функцию calculate из интерфейса Operationable.
+    public static int methodReference(int x, int y) {
+        return x+y;
+    }
+}
+
+public static void main(String[] args) {
+    // Создаём переменную operation типа Operationable (так называется наш функциональный интерфейс)
+    Operationable operation;
+    // Теперь реализацией интерфейса будет не лямбда-выражение, а метод methodReference из нашего класса Calculator
+    operation = Calculator::methodReference;
+
+    // Теперь мы можем обратиться к функции интерфейса через переменную operation
+    int result = operation.calculate(10, 20);
+    System.out.println(result); //30
+}
+</code></pre>
+
+Вернёмся к примеру из лекции:
+<pre class="language-java line-numbers"><code>
+list.forEach( System.out::println );
+</code></pre>
+Напомню, что <strong>System.out</strong> — это объект типа PrintStream, у которого есть функция <strong>println</strong>. Давайте наведём курсор на <strong>println</strong> и щёлкнем <strong>Ctrl+LMB</strong>:
+<pre class="language-java line-numbers"><code>
+public void println(String x) {
+    if (getClass() == PrintStream.class) {
+        writeln(String.valueOf(x));
+    } else {
+        synchronized (this) {
+            print(x);
+            newLine();
+        }
+    }
+}
+</code></pre>
+Отметим две ключевые особенности:
+1. Функция <strong>println</strong> ничего не возвращает (void). 
+2. Функция <strong>println</strong> получает на вход один аргумент.
+
+Ничего не напоминает?
+<pre class="language-java line-numbers"><code>
+public interface Consumer&lt;t&gt; {
+   void accept(T t);
+}
+</code></pre>
+Всё правильно — сигнатура функции <strong>accept</strong> — это более общий случай сигнатуры метода <strong>println</strong>! Значит, последний можно с успехом использовать в качестве ссылки на метод — то есть <strong>println становится конкретной реализацией функции accept</strong>:
+<pre class="language-java line-numbers"><code>
+list.forEach( System.out::println );
+</code></pre>
+Мы передали функцию <strong>println</strong> объекта <strong>System.out</strong> в качестве аргумента функции <strong>forEach</strong>. Принцип тот же, что и с лямбдой: теперь forEach может передать элемент коллекции в функцию println через обращение <strong>action.accept(elementAt(es, i))</strong>. Фактически теперь это можно читать как <strong>System.out.println(elementAt(es, i))</strong>.
+<pre class="language-java line-numbers"><code>
+public void forEach(Consumer&lt;? super E&gt; action) // В action хранится объект Consumer, в котором функция accept реализована методом println {
+        Objects.requireNonNull(action);
+        final int expectedModCount = modCount;
+        final Object[] es = elementData;
+        final int size = this.size;
+        for (int i = 0; modCount == expectedModCount &amp;&amp; i &lt; size; i++)
+            action.accept(elementAt(es, i)); // Функция accept теперь реализована методом System.out.println!
+        if (modCount != expectedModCount)
+            throw new ConcurrentModificationException();
+    }
+</code></pre>
+Надеюсь, что я хоть немного прояснил ситуацию для тех, кто впервые знакомится с лямбдами и ссылками на методы. В заключение порекомендую известнейшую книгу "Java: руководство для начинающих" под авторством Роберта Шилдта — на мой взгляд, лямбды и ссылки на функции в ней описаны довольно толково.

@@ -1,0 +1,709 @@
+JUnit part I
+<p>----------------------------------------</p>
+JUnit :: или как полюбить валидатор JavaRush. Кратко о том, зачем этот зверь нам нужен? JUnit  — это фреймворк автоматического тестирования вашего хорошего или не совсем хорошего кода. Можно сказать:  —  зачем мне эти качели, я и так смогу легко, и просто протестировать свой ...
+
+<p>----------------------------------------</p>
+<h2>JUnit :: или как полюбить валидатор JavaRush</h2><img data-id="5ac1672d-d635-4607-9210-76617efd1e69" data-max-width="850" alt="JUnit part I - 1" src="https://cdn.javarush.com/images/article/5ac1672d-d635-4607-9210-76617efd1e69/1024.jpeg">Кратко о том, зачем этот зверь нам нужен? <strong>JUnit </strong> — это фреймворк автоматического тестирования вашего хорошего <strong>или не совсем хорошего</strong> кода. Можно сказать:  —  зачем мне эти качели, я и так смогу легко, и просто протестировать свой хороший Java код. Можно много писать вступительной лирики, но поэт из меня никакой, перейдём лучше к делу…
+
+<h2>Создаем объект</h2>И так, чтобы что-то тестировать, нам для начала нужен объект тестирования. Перед нами стоит задача.
+<ol>
+<li>Нам нужен объект, который будет хранить информацию о Пользователе.<br>
+<ol style="list-style-type:lower-alpha">
+<li>Id — нужно считать по порядку добавления нового пользователя.</li>
+<li>Имя пользователя.</li>
+<li>Его возраст.</li>
+<li>Пол (male/female)</li>
+</ol>
+</li>
+<li><p>Нужно предусмотреть хранение списка пользователей.</p></li>
+<li><p>Класс должен уметь.</p>
+<ol style="list-style-type:lower-alpha">
+<li>Формировать список всех пользователей.</li>
+<li>Формировать список пользователей по полу (MALE/FEMALE).</li>
+<li>Возвращать количество пользователей в общем списке, и посчитать количество по признаку пола пользователя.</li>
+<li>Посчитать общую сумму по возрасту пользователей, так же учесть по признаку пола.</li>
+<li>Посчитать средний возраст, как общий так и по признаку пола.</li>
+</ol></li></ol>И так, приступим к созданию объекта…
+
+Создадим Java класс <code>User</code> он будет содержать поля:
+
+<pre class="lang-java line-numbers"><code>
+private int id;
+private String name;
+private int age;
+private Sex sex;
+</code></pre>
+Для хранения данных о пользователе этого достаточно, посмотрим что там еще нужно по задаче.
+
+Нам нужно как-то хранить всех пользователей, сделаем в нашем классе статическое поле <code>allUsers</code>, думаю нормально если это будет <code>Map&lt;Integer, User&gt;</code>
+
+<pre class="lang-java line-numbers"><code>
+private static Map&lt;Integer, User&gt; allUsers;
+</code></pre>
+Еще нам как-то нужно присваивать порядковый номер пользователям, создадим статическое поле счетчик, который при создании нового пользователя, будет присваивать порядковый <code>Id </code>пользователю.
+
+<pre class="lang-java line-numbers"><code>
+private static int countId = 0;
+</code></pre>
+Так, с полями вроде разобрались, напишем конструктор для нашего объекта, и гетеры для полей <code>id</code>, <code>name</code>, <code>age</code>, <code>sex</code>. C гетерами там ничего сложного нет, попросим помощи у <strong>IDEA</strong>, она никогда не откажет, а конструктор сделаем немного с хитростью. 
+
+Конструктор будет уметь. Инициализировать поля, проверять есть ли такой объект в <code>allUsers</code>, если такого объекта нет, то увеличиваем наш счетчик <code>countId++</code>, и добавляем его в список всех пользователей. А так же инициализировать поле <code>allUsers </code>ели оно еще не было инициализировано.
+
+Для удобства поиска одинаковых объектов, переопределим методы <code>equals()</code> и <code>hashCode()</code>, опять попросим помощи у любимой <strong>IDEA </strong>и будем сравнивать по полям <code>name</code>, <code>age</code>, <code>sex</code>. Плюс создадим приватный метод <code>hasUser()</code>, который будет проверять есть ли такой объект в списке.
+
+<pre class="lang-java line-numbers"><code>
+@Override
+public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    User user = (User) o;
+    return age == user.age &amp;&amp;
+            Objects.equals(name, user.name) &amp;&amp;
+            sex == user.sex;
+}
+
+@Override
+public int hashCode() {
+
+    return Objects.hash(name, age, sex);
+}
+</code></pre>
+Конструктор в итоге у меня получился такой.
+
+<pre class="lang-java line-numbers"><code>
+public User(String name, int age, Sex sex) {
+    if (allUsers == null){
+        allUsers = new HashMap&lt;&gt;();
+    }
+
+    this.name = name;
+    this.age = age;
+    this.sex = sex;
+
+    if (!hasUser()){
+        countId++;
+        this.id = countId;
+        allUsers.put(id, this);
+    }
+}
+</code></pre>
+и вспомогательный приватный метод
+
+<pre class="lang-java line-numbers"><code>
+private boolean hasUser(){
+    for (User user : allUsers.values()){
+        if (user.equals(this) &amp;&amp; user.hashCode() == this.hashCode()){
+            return true;
+        }
+    }
+    return false;
+}
+</code></pre>
+а также переопределим <code>toString()</code>
+
+<pre class="lang-java line-numbers"><code>
+@Override
+public String toString() {
+    return "User{" +
+            "id=" + id +
+            ", name='" + name + '\'' +
+            ", age=" + age +
+            ", sex=" + sex +
+            '}';
+}
+</code></pre>
+Теперь пришло время, реализовать логику требуемых методов. Так как логика в основном будет работать со статическими полями, методы тоже сделаем статическими, для объектов они не нужны.
+
+<ol style="list-style-type:lower-alpha">
+<li>Формировать список всех пользователей.</li>
+<li>Формировать список пользователей по полу(MALE/FEMALE).</li>
+<p>С пунктами<strong> a</strong> и <strong>b</strong> хорошо справится метод <code>getAllUsers()</code> который будет возвращать лист всех <code>User</code>, и перегруженный метод <code>getAllUsers(Sex sex)</code> он будет возвращать список, в зависимости от переданного параметра <code>Sex</code>.</p>
+
+<pre class="lang-java line-numbers"><code>
+public static List&lt;User&gt; getAllUsers(){
+    return new ArrayList&lt;&gt;(allUsers.values());
+}
+
+public static List&lt;User&gt; getAllUsers(Sex sex){
+    List&lt;User&gt; listAllUsers = new ArrayList&lt;&gt;();
+    for (User user : allUsers.values()){
+        if (user.sex == sex){
+            listAllUsers.add(user);
+        }
+    }
+    return listAllUsers;
+}
+</code></pre>
+</li><br>
+<li><p>Возвращать количество пользователей в общем списке, и посчитать количество по признаку пола пользователя.</p>
+
+<pre class="lang-java line-numbers"><code>
+public static int getHowManyUsers(){
+    return allUsers.size();
+}
+
+public static int getHowManyUsers(Sex sex){
+    return getAllUsers(sex).size();
+}
+</code></pre>
+</li><br>
+<li><p>Посчитать общую сумму по возрасту пользователей, так же учесть по признаку пола. Для этой задачи сделаем методы.</p>
+<pre class="lang-java line-numbers"><code>
+public static int getAllAgeUsers(){
+    int countAge = 0;
+    for (User user : allUsers.values()){
+        countAge += user.age;
+    }
+    return countAge;
+}
+
+public static int getAllAgeUsers(Sex sex){
+    int countAge = 0;
+    for (User user : getAllUsers(sex)){
+        countAge += user.age;
+    }
+    return countAge;
+}
+</code></pre>
+</li><br>
+<li><p>Посчитать средний возраст, как общий так и по признаку пола.</p>
+
+<pre class="lang-java line-numbers"><code>
+public static int getAverageAgeOfAllUsers(){
+    return getAllAgeUsers() / getHowManyUsers();
+}
+
+public static int getAverageAgeOfAllUsers(Sex sex){
+    return getAllAgeUsers(sex) / getHowManyUsers(sex);
+}
+</code></pre>
+
+<p>Отлично, требуемый объект и его поведение мы описали. Теперь можно переходить к <strong>JUnit</strong>, но для начала покажу как примерно будет выглядеть простой тест если мы его будет делать в <strong>main</strong>.</p>
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+    new User("Евгений", 35, Sex.MALE);
+    new User("Марина", 34, Sex.FEMALE);
+    new User("Алина", 7, Sex.FEMALE);
+
+
+    System.out.println("Все пользователи:");
+    User.getAllUsers().forEach(System.out::println);
+    System.out.println("Все пользователи: MALE");
+    User.getAllUsers(Sex.MALE).forEach(System.out::println);
+    System.out.println("Все пользователи: FEMALE");
+    User.getAllUsers(Sex.FEMALE).forEach(System.out::println);
+    System.out.println("================================================");
+    System.out.println("       всех пользователей: " + User.getHowManyUsers());
+    System.out.println("  всех пользователей MALE: " + User.getHowManyUsers(Sex.MALE));
+    System.out.println("всех пользователей FEMALE: " + User.getHowManyUsers(Sex.FEMALE));
+    System.out.println("================================================");
+    System.out.println("       общий возраст всех пользователей: " + User.getAllAgeUsers());
+    System.out.println("  общий возраст всех пользователей MALE: " + User.getAllAgeUsers(Sex.MALE));
+    System.out.println("общий возраст всех пользователей FEMALE: " + User.getAllAgeUsers(Sex.FEMALE));
+    System.out.println("================================================");
+    System.out.println("       средний возраст всех пользователей: " + User.getAverageAgeOfAllUsers());
+    System.out.println("  средний возраст всех пользователей MALE: " + User.getAverageAgeOfAllUsers(Sex.MALE));
+    System.out.println("средний возраст всех пользователей FEMALE: " + User.getAverageAgeOfAllUsers(Sex.FEMALE));
+    System.out.println("================================================");
+}
+</code></pre>
+<p>Вывод в консоль получим примерно такой, а дальше сравниваем получили ли мы нормальную работу. Можно конечно углубиться, написать логику сравнения, и посмотреть, что скажет наше вычисление, при том что мы не будем уверены, что все смогли предусмотреть.</p>
+
+<pre class="lang-java line-numbers"><code>
+//output
+Все пользователи:
+User{id=1, name='Евгений', age=35, sex=MALE}
+User{id=2, name='Марина', age=34, sex=FEMALE}
+User{id=3, name='Алина', age=7, sex=FEMALE}
+Все пользователи: MALE
+User{id=1, name='Евгений', age=35, sex=MALE}
+Все пользователи: FEMALE
+User{id=2, name='Марина', age=34, sex=FEMALE}
+User{id=3, name='Алина', age=7, sex=FEMALE}
+================================================
+       всех пользователей: 3
+  всех пользователей MALE: 1
+всех пользователей FEMALE: 2
+================================================
+       общий возраст всех пользователей: 76
+  общий возраст всех пользователей MALE: 35
+общий возраст всех пользователей FEMALE: 41
+================================================
+       средний возраст всех пользователей: 25
+  средний возраст всех пользователей MALE: 35
+средний возраст всех пользователей FEMALE: 20
+================================================
+
+Process finished with exit code 0
+</code></pre>
+<p>Нас этот исход не устраивает, долой тесты <strong>main</strong>, нам нужен <strong>JUnit</strong>. </p>
+</li></ol><h2>Как подключить JUnit к проекту</h2>Возникает вопрос, как его подключить к проекту. Для знающих вариант с <strong>Maven</strong>брать не буду, так как это совсем другая история. ;)
+
+Открываем структуру проекта Ctrl + Alt + Shift + S  -&gt;  Libraries -&gt; жмем + (New Project Library) -&gt; выбираем from Maven
+<img data-id="60d014be-e4a9-4466-a69c-ffbb4feeaa84" data-max-width="379" alt="JUnit part I - 2" src="https://cdn.javarush.com/images/article/60d014be-e4a9-4466-a69c-ffbb4feeaa84/1024.jpeg">дальше видим такое окно, в строку поиска вводим “ junit:junit:4.12 ” ждем пока найдет -&gt; OK! -&gt; OK! 
+<img data-id="1f14af36-aa08-4bdb-a2d8-d437743eceb6" data-max-width="850" alt="JUnit part I - 3" src="https://cdn.javarush.com/images/article/1f14af36-aa08-4bdb-a2d8-d437743eceb6/1024.jpeg">Должен получиться такой результат
+<img data-id="c6573664-97d2-464a-8276-16bf6b499f4e" data-max-width="850" alt="JUnit part I - 4" src="https://cdn.javarush.com/images/article/c6573664-97d2-464a-8276-16bf6b499f4e/1024.jpeg">Жмем OK, поздравлю JUnit добавлен к проекту. Едем дальше.
+
+Теперь нам нужно создать тесты для нашего Java класса, ставим курсор на название класса <code>User </code>-&gt; жмем Alt + Enter -&gt; выбираем create Test. 
+
+Мы должны увидеть окно, в котором нам нужно выбрать библиотеку JUnit4 -&gt; выбрать методы которые собираемся тестировать -&gt; OK
+<img data-id="b42cfcee-a5c5-47fe-a511-5d4cddfe2ca3" data-max-width="491" alt="JUnit part I - 5" src="https://cdn.javarush.com/images/article/b42cfcee-a5c5-47fe-a511-5d4cddfe2ca3/1024.jpeg">Идея сама создаст класс <code>UserTest</code>, это и есть класс, в котором мы будем покрывать наш код тестами. Приступим:
+<h2>Наш первый @Test</h2>Создадим наш первый <strong>@Test</strong> метода <code>getAllUsers()</code> – это метод который должен вернуть всех пользователей. Тест будет выглядеть примерно так:
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void getAllUsers() {
+    //создаем тестовые данные
+    User user = new User("Евгений", 35, Sex.MALE);
+    User user1 = new User("Марина", 34, Sex.FEMALE);
+    User user2 = new User("Алина", 7, Sex.FEMALE);
+
+    //создаем список expected и заполняем его данными нашего метода
+    List&lt;User&gt; expected = User.getAllUsers();
+
+    //создаем список actual в него помещаем данные для сравнения
+    //то что мы предпологиаем метод должен вернуть
+    List&lt;User&gt; actual = new ArrayList&lt;&gt;();
+    actual.add(user);
+    actual.add(user1);
+    actual.add(user2);
+
+    //запускаем тест, в случае если список expected и actual не будут равны
+    //тест будет провален, о результатах теста читаем в консоли
+    Assert.assertEquals(expected, actual);
+}
+</code></pre>
+Тут мы создаем несколько тестовых пользователей -&gt; создаем список <code>expected </code>в который поместим пользователей которых нам вернет метод <code>getAllUsers()</code> -&gt; создадим список <code>actual </code>в который поместим пользователей которых мы предполагаем что метод <code>getAllUsers()</code должен нам вернуть -&gt; вызываем статический метод класса <code>Assert.assertEquals(actual, expected)</code> ему мы и передадим списки, инспектируемый и актуальный. Этот метод проверит объекты в предоставленных списках и выдаст результат теста. Метод будет сравнивать все поля объектов, даже пройдется по полям родителей, если есть наследование. 
+
+Запускаем первый тест...
+<img data-id="d52ef023-f2f2-401b-a4c1-89eb21139cc0" data-max-width="850" alt="JUnit part I - 6" src="https://cdn.javarush.com/images/article/d52ef023-f2f2-401b-a4c1-89eb21139cc0/1024.jpeg">Тест выполнен успешно. Теперь попробуем сделать так, чтобы тест был провален, для этого нам нужно изменить один из списков теста, сделаем это путем, закомментировав добавление одного пользователя в список <code>actual</code>, 
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void getAllUsers() {
+    //создаем тестовые данные
+    User user = new User("Евгений", 35, Sex.MALE);
+    User user1 = new User("Марина", 34, Sex.FEMALE);
+    User user2 = new User("Алина", 7, Sex.FEMALE);
+
+    //создаем список expected и заполняем его данными нашего метода
+    List&lt;User&gt; expected = User.getAllUsers();
+
+    //создаем список actual в него помещаем данные для сравнения
+    //то что мы предпологиаем метод должен вернуть
+    List&lt;User&gt; actual = new ArrayList&lt;&gt;();
+    actual.add(user);
+    actual.add(user1);
+    //actual.add(user2);
+
+    //запускаем тест, в случае если список expected и actual не будут равны
+    //тест будет провален, о результатах теста читаем в консоли
+    Assert.assertEquals(expected, actual);
+}
+</code></pre>
+запускаем тест и видим следующее:
+<img data-id="548d0ae9-6537-4a4a-bc45-3c0c07fb26ff" data-max-width="1159" alt="JUnit part I - 7" src="https://cdn.javarush.com/images/article/548d0ae9-6537-4a4a-bc45-3c0c07fb26ff/1024.jpeg">Теперь мы можем немного разобрать причину провала теста. Тут мы видим, что в инспектируемом списке больше пользователей чем в актуальном. Это и есть причина провала. А в main мы можем проверить так? JUnit : main = 1 : 0. Давайте посмотрим как будет выглядеть тест, если в нем будут полностью разные объекты, сделаем это так:
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void getAllUsers() {
+    //создаем тестовые данные
+    User user = new User("Евгений", 35, Sex.MALE);
+    User user1 = new User("Марина", 34, Sex.FEMALE);
+    User user2 = new User("Алина", 7, Sex.FEMALE);
+
+    //создаем список expected и заполняем его данными нашего метода
+    List&lt;User&gt; expected = User.getAllUsers();
+
+    //создаем список actual в него помещаем данные для сравнения
+    //то что мы предпологиаем метод должен вернуть
+    List&lt;User&gt; actual = new ArrayList&lt;&gt;();
+    actual.add(new User("User1", 1, Sex.MALE));
+    actual.add(new User("User2", 2, Sex.FEMALE));
+    actual.add(new User("User3", 3, Sex.MALE));
+
+    //запускаем тест, в случае если список expected и actual не будут равны
+    //тест будет провален, о результатах теста читаем в консоли
+    Assert.assertEquals(expected, actual);
+}
+</code></pre>
+вот что будет в консоли:
+<img data-id="73e765f3-3477-4f57-91a5-e3a0bdb676eb" data-max-width="850" alt="JUnit part I - 8" src="https://cdn.javarush.com/images/article/73e765f3-3477-4f57-91a5-e3a0bdb676eb/1024.jpeg">тут сразу видно что в сравниваемых списках разные пользователи, еще мы можем кликнуть на &amp;ltClick to see difference&gt; получим такое окно, где можно посмотреть подробно с какими данными у нас проблема. <strong>IDEA </strong>подсветит все поля в которых есть различия.
+<img data-id="3d52c80c-942c-4f85-9951-ba0369b6ef96" data-max-width="1079" alt="JUnit part I - 9" src="https://cdn.javarush.com/images/article/3d52c80c-942c-4f85-9951-ba0369b6ef96/1024.jpeg"><code>main</code> такое может? — нет. JUnit : main = 2 : 0
+
+Ну что, пойдем дальше у нас еще куча методов, которые нужно покрыть тестами ), но подождите, а ведь будет не плохо, проверить, а не будет ли нам метод <code>getAllUsers()</code> возвращать <code>null</code>, ведь примерно так нас на задачах <strong>JavaRush </strong>ловит валидатор ). Сделаем это, делов то на три копейки …
+
+<pre class="lang-java line-numbers"><code>
+@Test
+public void getAllUsers_NO_NULL() {
+    //добавим проверку на null
+    List&lt;User&gt; expected = User.getAllUsers();
+    Assert.assertNotNull(expected);
+}
+</code></pre>
+Да, да примерно так валидатор ловит наш <s>говно</s> код на <code>null</code> ;) Теперь запустим этот тест, и посмотрим, что он нам покажет. А покажет он ошибку, как ???? как же тут можно было допустить ошибку теста)))
+<img data-id="101cd6d1-e29e-414a-ba19-414da3657393" data-max-width="1103" alt="JUnit part I - 10" src="https://cdn.javarush.com/images/article/101cd6d1-e29e-414a-ba19-414da3657393/1024.jpeg">И тут мы можем пожинать первые плоды покрытия своего кода тестами. Как вы помните, поле <code>allUsers </code>мы инициализировали в конструкторе, и значит при вызове метода <code>getAllUsers()</code>, мы обратимся к объекту, который еще не был инициализирован. Будем править, уберем инициализацию из конструктора, и сделаем ее при объявлении поля. 
+
+<pre class="lang-java line-numbers"><code>
+private static Map&lt;Integer, User&gt; allUsers = new HashMap&lt;&gt;();
+
+    public User(String name, int age, Sex sex) {
+        this.name = name;
+        this.age = age;
+        this.sex = sex;
+
+        if (!hasUser()) {
+            countId++;
+            this.id = countId;
+            allUsers.put(id, this);
+        }
+    }
+</code></pre>
+Запустим тест, теперь все хорошо.
+<img data-id="fcc40693-5ec5-4e58-8c44-695f26cee29b" data-max-width="850" alt="JUnit part I - 11" src="https://cdn.javarush.com/images/article/fcc40693-5ec5-4e58-8c44-695f26cee29b/1024.jpeg">не думаю что в main легко будет отловить NPE, думаю вы согласитесь что счет JUnit : main = 3 : 0
+
+Дальше я все методы покрою тестами, и дам вам посмотреть, как это будет выглядеть...
+
+Теперь класс тестов у нас выглядит так:
+
+<pre class="lang-java line-numbers"><code>
+package user;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.Assert.*;
+
+public class UserTest {
+
+    @Test
+    public void getAllUsers() {
+        //создаем тестовые данные
+        User user = new User("Евгений", 35, Sex.MALE);
+        User user1 = new User("Марина", 34, Sex.FEMALE);
+        User user2 = new User("Алина", 7, Sex.FEMALE);
+
+        //создаем список expected и заполняем его данными нашего метода
+        List&lt;User&gt; expected = User.getAllUsers();
+
+        //создаем список actual в него помещаем данные для сравнения
+        //то что мы предпологиаем метод должен вернуть
+        List&lt;User&gt; actual = new ArrayList&lt;&gt;();
+        actual.add(user);
+        actual.add(user1);
+        actual.add(user2);
+
+        //запускаем тест, в случае если список expected и actual не будут равны
+        //тест будет провален, о результатах теста читаем в консоли
+        Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void getAllUsers_NO_NULL() {
+        //добавим проверку на null
+        List&lt;User&gt; expected = User.getAllUsers();
+        Assert.assertNotNull(expected);
+    }
+
+    @Test
+    public void getAllUsers_MALE() {
+        User user = new User("Евгений", 35, Sex.MALE);
+        User user1 = new User("Марина", 34, Sex.FEMALE);
+        User user2 = new User("Алина", 7, Sex.FEMALE);
+
+        List&lt;User&gt; expected = User.getAllUsers(Sex.MALE);
+
+        List&lt;User&gt; actual = new ArrayList&lt;&gt;();
+        actual.add(user);
+
+        Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void getAllUsers_MALE_NO_NULL() {
+        //добавим проверку на null
+        List&lt;User&gt; expected = User.getAllUsers(Sex.MALE);
+        Assert.assertNotNull(expected);
+    }
+
+    @Test
+    public void getAllUsers_FEMALE() {
+        User user = new User("Евгений", 35, Sex.MALE);
+        User user1 = new User("Марина", 34, Sex.FEMALE);
+        User user2 = new User("Алина", 7, Sex.FEMALE);
+
+        List&lt;User&gt; expected = User.getAllUsers(Sex.FEMALE);
+
+        List&lt;User&gt; actual = new ArrayList&lt;&gt;();
+        actual.add(user1);
+        actual.add(user2);
+
+        Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void getAllUsers_FEMALE_NO_NULL() {
+        //добавим проверку на null
+        List&lt;User&gt; expected = User.getAllUsers(Sex.FEMALE);
+        Assert.assertNotNull(expected);
+    }
+
+    @Test
+    public void getHowManyUsers() {
+        User user = new User("Евгений", 35, Sex.MALE);
+        User user1 = new User("Марина", 34, Sex.FEMALE);
+        User user2 = new User("Алина", 7, Sex.FEMALE);
+
+        int expected = User.getHowManyUsers();
+
+        int actual = 3;
+
+        Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void getHowManyUsers_MALE() {
+        User user = new User("Евгений", 35, Sex.MALE);
+        User user1 = new User("Марина", 34, Sex.FEMALE);
+        User user2 = new User("Алина", 7, Sex.FEMALE);
+
+        int expected = User.getHowManyUsers(Sex.MALE);
+
+        int actual = 1;
+
+        Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void getHowManyUsers_FEMALE() {
+        User user = new User("Евгений", 35, Sex.MALE);
+        User user1 = new User("Марина", 34, Sex.FEMALE);
+        User user2 = new User("Алина", 7, Sex.FEMALE);
+
+        int expected = User.getHowManyUsers(Sex.FEMALE);
+
+        int actual = 2;
+
+        Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void getAllAgeUsers() {
+        User user = new User("Евгений", 35, Sex.MALE);
+        User user1 = new User("Марина", 34, Sex.FEMALE);
+        User user2 = new User("Алина", 7, Sex.FEMALE);
+
+        int expected = User.getAllAgeUsers();
+
+        int actual = 35 + 34 + 7;
+
+        Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void getAllAgeUsers_MALE() {
+        User user = new User("Евгений", 35, Sex.MALE);
+        User user1 = new User("Марина", 34, Sex.FEMALE);
+        User user2 = new User("Алина", 7, Sex.FEMALE);
+
+        int expected = User.getAllAgeUsers(Sex.MALE);
+
+        int actual = 35;
+
+        Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void getAllAgeUsers_FEMALE() {
+        User user = new User("Евгений", 35, Sex.MALE);
+        User user1 = new User("Марина", 34, Sex.FEMALE);
+        User user2 = new User("Алина", 7, Sex.FEMALE);
+
+        int expected = User.getAllAgeUsers(Sex.FEMALE);
+
+        int actual = 34 + 7;
+
+        Assert.assertEquals(expected, actual);
+    }
+}
+</code></pre>
+Да не маленький получился, а что же будет при работе с большими проектами. Что же тут можно сократить, оценив все можно заметить, что тестовые данные мы создаем в каждом тесте, и тут нам на помощь приходят аннотации. Возьмем  <code>@Before</code> — Аннотация <code>@Before</code> указывает на то, что метод будет выполнятся перед каждым тестируемым методом <code>@Test</code>.
+
+Вот так теперь будет выглядеть наш класс тестов с аннотацией <code>@Before</code>:
+
+<pre class="lang-java line-numbers"><code>
+package user;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.Assert.*;
+
+public class UserTest {
+    private User user;
+    private User user1;
+    private User user2;
+
+    @Before
+    public void setUp() throws Exception {
+        user = new User("Евгений", 35, Sex.MALE);
+        user1 = new User("Марина", 34, Sex.FEMALE);
+        user2 = new User("Алина", 7, Sex.FEMALE);
+    }
+
+    @Test
+    public void getAllUsers() {
+        List&lt;User&gt; expected = User.getAllUsers();
+
+        List&lt;User&gt; actual = new ArrayList&lt;&gt;();
+        actual.add(user);
+        actual.add(user1);
+        actual.add(user2);
+
+        Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void getAllUsers_NO_NULL() {
+        List&lt;User&gt; expected = User.getAllUsers();
+        Assert.assertNotNull(expected);
+    }
+
+    @Test
+    public void getAllUsers_MALE() {
+        List&lt;User&gt; expected = User.getAllUsers(Sex.MALE);
+
+        List&lt;User&gt; actual = new ArrayList&lt;&gt;();
+        actual.add(user);
+
+        Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void getAllUsers_MALE_NO_NULL() {
+        //добавим проверку на null
+        List&lt;User&gt; expected = User.getAllUsers(Sex.MALE);
+        Assert.assertNotNull(expected);
+    }
+
+    @Test
+    public void getAllUsers_FEMALE() {
+        List&lt;User&gt; expected = User.getAllUsers(Sex.FEMALE);
+
+        List&lt;User&gt; actual = new ArrayList&lt;&gt;();
+        actual.add(user1);
+        actual.add(user2);
+
+        Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void getAllUsers_FEMALE_NO_NULL() {
+        //добавим проверку на null
+        List&lt;User&gt; expected = User.getAllUsers(Sex.FEMALE);
+        Assert.assertNotNull(expected);
+    }
+
+    @Test
+    public void getHowManyUsers() {
+        int expected = User.getHowManyUsers();
+
+        int actual = 3;
+
+        Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void getHowManyUsers_MALE() {
+        int expected = User.getHowManyUsers(Sex.MALE);
+
+        int actual = 1;
+
+        Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void getHowManyUsers_FEMALE() {
+        int expected = User.getHowManyUsers(Sex.FEMALE);
+
+        int actual = 2;
+
+        Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void getAllAgeUsers() {
+        int expected = User.getAllAgeUsers();
+
+        int actual = 35 + 34 + 7;
+
+        Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void getAllAgeUsers_MALE() {
+        int expected = User.getAllAgeUsers(Sex.MALE);
+
+        int actual = 35;
+
+        Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void getAllAgeUsers_FEMALE() {
+        int expected = User.getAllAgeUsers(Sex.FEMALE);
+
+        int actual = 34 + 7;
+
+        Assert.assertEquals(expected, actual);
+    }
+}
+</code></pre>
+Ну как вам, уже веселее и легче читать ;)
+
+Вот список аннотаций для JUnit с ними однозначно жить проще.
+
+<pre class="lang-java line-numbers"><code>
+@Test – определяет что метод method() является тестовым.
+@Before – указывает на то, что метод будет выполнятся перед каждым тестируемым методом @Test.
+@After – указывает на то что метод будет выполнятся после каждого тестируемого метода @Test
+@BeforeClass – указывает на то, что метод будет выполнятся в начале всех тестов, 
+а точней в момент запуска тестов(перед всеми тестами @Test).
+@AfterClass – указывает на то, что метод будет выполнятся после всех тестов.
+@Ignore – говорит, что метод будет проигнорирован в момент проведения тестирования.
+(expected = Exception.class) – указывает на то, что в данном тестовом методе 
+вы преднамеренно ожидаете Exception.
+(timeout = 100) – указывает, что тестируемый метод не должен занимать больше чем 100 миллисекунд.
+</code></pre>
+Основные методы класса <code>Assert</code> для проверки:
+
+<pre class="lang-java line-numbers"><code>
+fail(String) – указывает на то что бы тестовый метод завалился при этом выводя текстовое сообщение.
+assertTrue([message], boolean condition) – проверяет, что логическое условие истинно.
+assertsEquals([String message], expected, actual) – проверяет, что два значения совпадают. 
+Примечание: для массивов проверяются ссылки, а не содержание массивов.
+assertNull([message], object) – проверяет, что объект является пустым null.
+assertNotNull([message], object) – проверяет, что объект не является пустым null.
+assertSame([String], expected, actual) – проверяет, что обе переменные относятся к одному объекту.
+assertNotSame([String], expected, actual) – проверяет, что обе переменные относятся к разным объектам.
+</code></pre>
+Вот так мы можем добавить зависимость JUnit 4.12 в Maven
+
+<pre class="lang-java line-numbers"><code>
+&lt;dependency&gt;
+  &lt;groupId&gt;junit&lt;/groupId&gt;
+  &lt;artifactId&gt;junit&lt;/artifactId&gt;
+  &lt;version&gt;4.12&lt;/version&gt;
+  &lt;scope&gt;test&lt;/scope&gt;
+&lt;/dependency&gt;
+</code></pre>
+<em>продолжение тут -&gt; <a href='https://javarush.com/groups/posts/606-junit-part-ii' target='_blank'>JUnit part II</a></em>

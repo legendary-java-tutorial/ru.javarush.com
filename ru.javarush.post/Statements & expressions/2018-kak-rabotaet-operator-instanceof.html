@@ -1,0 +1,223 @@
+Оператор Instanceof в Java
+<p>----------------------------------------</p>
+Привет! Сегодня мы поговорим об операторе instanceof, рассмотрим примеры его использования и затронем некоторые связанные с его работой моменты :) На ранних уровнях JavaRush ты уже сталкивался с этим оператором. Помнишь, зачем он нужен? Если нет — не беда ...
+<p>----------------------------------------</p>
+Привет! Сегодня мы поговорим об операторе instanceof, рассмотрим примеры его использования и затронем некоторые связанные с его работой моменты :)
+
+На ранних уровнях JavaRush ты уже сталкивался с этим оператором. Помнишь, зачем он нужен? Если нет — не беда, давай вспомним вместе. 
+
+Оператор instanceof нужен, чтобы проверить, был ли объект, на который ссылается переменная X, создан на основе какого-либо класса Y.
+
+Звучит просто. Почему же мы вернулись к этой теме?
+
+Прежде всего потому, что теперь ты хорошо знаком с механизмом наследования в Java и остальными принципами ООП. Тема <strong>instanceof</strong> будет гораздо понятнее, и мы рассмотрим более продвинутые примеры использования.
+
+Поехали!<img data-id="07641b08-01b6-493f-95a9-19806340e0c4" data-max-width="850" alt="Как работает оператор Instanceof - 1" src="https://cdn.javarush.com/images/article/07641b08-01b6-493f-95a9-19806340e0c4/1024.jpeg">Ты наверняка помнишь, что оператор instanceof возвращает значение <em>true</em>, если проверка показала истинность, или <em>false</em>, если результат был ложным.
+
+Следовательно, чаще всего он встречается в разного рода проверочных условиях (<code>if…else</code>).
+
+Начнем с примеров попроще:
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) {
+
+       Integer x = new Integer(22);
+
+       System.out.println(x instanceof Integer);
+   }
+}
+</code></pre>
+Как думаешь, что будет выведено в консоль?
+
+Ну, здесь это очевидно :) Объект <code><strong>х</strong></code> является Integer, поэтому результатом будет <em>true</em>.
+
+Вывод в консоль:
+true
+
+Попробуем проверить его на принадлежность, например, к String:
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) {
+
+       Integer x = new Integer(22);
+
+       System.out.println(x instanceof String);// ошибка!
+   }
+}
+</code></pre>
+Мы получили ошибку. Причем обрати внимание: компилятор выдал ее еще до выполнения кода! Он сразу увидел, что Integer и String не могут быть автоматически преобразованы друг к другу и не состоят в связях наследования. Следовательно, объект класса Integer не создастся на основе String.
+
+Это удобно и помогает избежать странных ошибок уже во время выполнения программы, так что тут компилятор нас выручил :)
+
+Теперь давай попробуем рассмотреть примеры посложнее. Раз уж мы упомянули наследование, поработаем вот с такой небольшой системой классов:
+
+<pre class="lang-java line-numbers"><code>
+public class Animal {
+  
+}
+
+public class Cat extends Animal {
+  
+}
+
+public class MaineCoon extends Cat {
+  
+}
+</code></pre>
+Мы уже знаем, как ведет себя instanceof, когда мы проверяем принадлежность объекта к какому-то классу в обычной ситуации, но что будет, если мы добавим сюда отношение «родитель-потомок»?
+<img data-id="29f7097b-2628-4f8d-8fc2-517405e1677e" data-max-width="850" alt="Как работает оператор Instanceof - 2" src="https://cdn.javarush.com/images/article/29f7097b-2628-4f8d-8fc2-517405e1677e/1024.jpeg">
+Например, как думаешь, что выдаст вот такая проверка:
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) {
+
+       Cat cat = new Cat();
+
+       System.out.println(cat instanceof Animal);
+
+       System.out.println(cat instanceof MaineCoon);
+
+   }
+}
+</code></pre>
+Вывод:
+true
+false
+
+Главный вопрос, на который нужно ответить, — как именно instanceof расшифровывает понятие «объект создан на основе класса»?
+ 
+У нас в результате получилось <code>Сat instanceof Animal == true</code>, но ведь к такой формулировке можно и придраться. Почему это объект <code>Cat</code> создается на основе класса <code>Animal</code>? Разве он не создается только на основе собственного класса?
+
+Ответ достаточно прост, и ты, возможно, уже додумался до него. 
+
+Вспомни порядок вызова конструкторов и инициализации переменных при создании объекта. Мы уже рассматривали эту тему в <a href="https://javarush.com/groups/posts/1927-konstruktorih-bazovihkh-klassov--" target="_blank">статье о конструкторе классов</a>. 
+
+Вот пример из той лекции:
+
+<pre class="lang-java line-numbers"><code>
+public class Animal {
+
+   String brain = "Изначальное значение brain в классе Animal";
+   String heart = "Изначальное значение heart в классе Animal";
+
+   public static int animalCount = 7700000;
+
+   public Animal(String brain, String heart) {
+       System.out.println("Выполняется конструктор базового класса Animal");
+       System.out.println("Были ли уже проинициализированы переменные класса Animal?");
+       System.out.println("Текущее значение статической переменной animalCount = " + animalCount);
+       System.out.println("Текущее значение brain в классе Animal = " + this.brain);
+       System.out.println("Текущее значение heart в классе Animal = " + this.heart);
+
+       this.brain = brain;
+       this.heart = heart;
+       System.out.println("Конструктор базового класса Animal завершил работу!");
+       System.out.println("Текущее значение brain = " + this.brain);
+       System.out.println("Текущее значение heart = " + this.heart);
+   }
+}
+
+class Cat extends Animal {
+
+   String tail = "Изначальное значение tail в классе Cat";
+
+   static int catsCount = 37;
+
+   public Cat(String brain, String heart, String tail) {
+       super(brain, heart);
+       System.out.println("Конструктор класса Cat начал работу (конструктор Animal уже был выполнен)");
+       System.out.println("Текущее значение статической переменной catsCount = " + catsCount);
+       System.out.println("Текущее значение tail = " + this.tail);
+       this.tail = tail;
+       System.out.println("Текущее значение tail = " + this.tail);
+   }
+
+   public static void main(String[] args) {
+       Cat cat = new Cat("Мозг", "Сердце", "Хвост");
+   }
+}
+</code></pre>
+И если ты его запустишь в IDE, вывод в консоль будет выглядеть так:
+
+<em>Выполняется конструктор базового класса Animal
+Были ли уже проинициализированы переменные класса Animal?
+Текущее значение статической переменной animalCount = 7700000
+Текущее значение brain в классе Animal = Изначальное значение brain в классе Animal
+Текущее значение heart в классе Animal = Изначальное значение heart в классе Animal
+Конструктор базового класса Animal завершил работу!
+Текущее значение brain = Мозг
+Текущее значение heart = Сердце
+Конструктор класса Cat начал работу (конструктор Animal уже был выполнен)
+Текущее значение статической переменной catsCount = 37
+Текущее значение tail = Изначальное значение tail в классе Cat
+Текущее значение tail = Хвост</em>
+
+Теперь вспомнил? :)
+
+Конструктор базового класса, если он есть, всегда вызывается первым при создании любого объекта. Instanceof руководствуется именно этим принципом, когда пытается определить, был ли объект <code>А</code> создан на основе класса <code>Б</code>. Если конструктор базового класса вызван, значит никаких сомнений быть не может. 
+
+Со второй проверкой все проще:
+
+<pre class="lang-java line-numbers"><code>
+System.out.println(cat instanceof MaineCoon);
+</code></pre>
+Конструктор <code>MaineCoon</code> не вызывался при создании <code>Cat</code>, что логично. Ведь <code>MaineCoon</code> — потомок <code>Cat</code>, а не предок. Но шаблоном для <code>Cat</code> он не является.
+
+Ок, с этим вроде понятно.
+
+А что будет, если мы сделаем вот так:
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) {
+
+       Cat cat = new MaineCoon();
+
+       System.out.println(cat instanceof Cat);
+       System.out.println(cat instanceof MaineCoon);
+
+
+   }
+}
+</code></pre>
+Хм...тут уже посложнее. Давай попробуем порассуждать.
+
+У нас есть переменная типа <code>Cat</code>, и ей мы присвоили объект типа <code>MaineCoon</code>. Кстати, а почему это вообще работает? Разве так можно делать?
+
+Можно. Ведь любой мейн-кун — это кошка. Если не совсем понятно, вспомни пример с расширением примитивных типов:
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) {
+
+       long x = 1024;
+      
+   }
+}
+</code></pre>
+Число <em>1024</em> — это <em>short</em>: он легко помещается в переменную <em>long</em>, ведь по количеству байт для него достаточно места (помнишь пример с матрешками?).
+
+Объект-потомок всегда можно присвоить в переменную-предка. Пока просто запомни это, а в следующих лекциях мы еще разберем этот процесс.
+
+Так что же выведет наш пример?
+
+<pre class="lang-java line-numbers"><code>
+Cat cat = new MaineCoon();
+System.out.println(cat instanceof Cat);
+System.out.println(cat instanceof MaineCoon);
+</code></pre>
+Что будет проверять instanceof: нашу переменную класса <code>Cat</code> или наш объект класса <code>MaineCoon</code>? На самом деле, ответить на этот вопрос просто. Нужно всего лишь еще раз прочитать определение нашего оператора:
+
+Оператор instanceof нужен для того, чтобы проверить, был ли объект, на которую ссылается переменная <code>X</code>, создан на основе какого-либо класса <code>Y</code>.
+
+<strong>Оператор instanceof проверяет именно происхождение объекта, а не переменной.</strong>
+
+Поэтому в примере оба раза в консоли выведет <strong><em>true</em></strong>: у нас объект типа <code>MaineCoon</code>. Естественно, он был создан на основе класса <code>MaineCoon</code>, но и на основе родительского класса <code>Cat</code> тоже!

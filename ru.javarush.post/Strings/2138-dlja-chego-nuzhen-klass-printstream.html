@@ -1,0 +1,200 @@
+Для чего нужен класс PrintStream
+<p>----------------------------------------</p>
+Привет!
+
+Сегодня поговорим о классе PrintStream и всем, что он умеет делать. Собственно, с двумя методами класса PrintStream ты уже знаком. Это методы print() и println(), которыми ты пользуешься, наверное, каждый день :)
+
+<p>----------------------------------------</p>
+Привет!
+
+Сегодня поговорим о классе <code>PrintStream</code> и всем, что он умеет делать. 
+<img data-max-width="850" alt="Для чего нужен класс PrintStream - 1" src="https://cdn.javarush.com/images/article/6568fd9d-eb81-4733-9780-80a8d02bd868/original.jpeg">Собственно, с двумя методами класса <code>PrintStream</code> ты уже знаком. Это методы <code><span class="text-bold">print()</span></code> и <code><span class="text-bold">println()</span></code>, которыми ты пользуешься, наверное, каждый день :)
+
+Поскольку переменная <code><span class="text-bold">System.out</span></code> является объектом <code>PrintStream</code>, вызывая метод <code><span class="text-bold">System.out.println()</span></code>, ты вызываешь метод именно этого класса.
+
+<span class="text-bold">Общее назначение класса <code>PrintStream</code> — вывод информации в какой-то поток.</span>
+
+У данного класса есть несколько конструкторов. Вот несколько наиболее распространенных:
+<ul>
+<li><code><span class="text-bold">PrintStream(OutputStream outputStream)</span></code></li>
+<li><code><span class="text-bold">PrintStream(File outputFile) throws FileNotFoundException</span></code></li>
+<li><code><span class="text-bold">PrintStream(String outputFileName) throws FileNotFoundException</span></code></li>
+</ul>Как видишь, мы можем передать в конструктор объекта <code>PrintStream</code>, например, название файла, в который необходимо вывести данные.
+
+Или же, как альтернативу, сам объект <code>File</code>.
+
+Давай рассмотрим, как это работает на примерах:
+
+<pre class="lang-java line-numbers"><code>
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
+
+public class Main {
+
+   public static void main(String arr[]) throws FileNotFoundException
+   {
+       PrintStream filePrintStream = new PrintStream(new File("C:\\Users\\Username\\Desktop\\test.txt"));
+
+       filePrintStream.println(222);
+       filePrintStream.println("Hello world");
+       filePrintStream.println(false);
+   }
+}
+</code></pre>
+Этот код создаст на рабочем столе файл <code>test.txt</code> (если он там еще не существует) и запишет туда последовательно наши число, строку и <code>boolean</code>-переменную.
+
+Вот содержимое нашего файла после работы программы:
+
+<pre><code>
+222
+Hello world!
+false
+</code></pre>
+Как мы и сказали выше, не обязательно передавать сам объект файла <code>File</code>. Достаточно просто указать в конструкторе путь к нему:
+
+<pre class="lang-java line-numbers"><code>
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
+
+public class Main {
+
+   public static void main(String arr[]) throws FileNotFoundException
+   {
+       PrintStream filePrintStream = new PrintStream("C:\\Users\\Username\\Desktop\\test.txt");
+
+       filePrintStream.println(222);
+       filePrintStream.println("Hello world");
+       filePrintStream.println(false);
+   }
+}
+</code></pre>
+Этот код сделает то же, что и предыдущий.
+
+Еще один интересный метод, на который стоит обратить внимание, — <code><span class="text-bold">printf()</span></code>, или вывод форматированной строки. Что значит «форматированная строка»?
+
+Чтобы объяснить, приведу пример:
+
+<pre class="lang-java line-numbers"><code>
+import java.io.IOException;
+import java.io.PrintStream;
+
+public class Main {
+
+   public static void main(String[] args) throws IOException {
+
+       PrintStream printStream = new PrintStream("C:\\Users\\Евгений\\Desktop\\test.txt");
+
+       printStream.println("Hello!");
+       printStream.println("I'm robot!");
+
+       printStream.printf("My name is %s, my age is %d!", "Amigo", 18);
+
+       printStream.close();
+
+   }
+}
+</code></pre>
+Здесь вместо того, чтобы явно записывать в строке имя и возраст нашего робота, мы как бы оставляем для этой информации «свободное место» с помощью указателей <code><span class="text-bold">%s</span></code> и <code><span class="text-bold">%d</span></code>.
+
+А те данные, которые должны оказаться в этих местах, мы передаем в качестве параметров. В нашем случае это строка «<em>Amigo</em>» и число 18. Мы могли бы, например, создать еще одно пространство: скажем, <code><span class="text-bold">%b</span></code>, и передать еще один параметр.
+
+Для чего это нужно? <span class="text-bold">Прежде всего, для повышения гибкости.</span>
+
+Если в твоей программе необходимо будет часто выводить приветственное сообщение, для каждого нового робота тебе придется вручную набирать нужный текст. Ты не сможешь даже вынести этот текст в константу: имена и возраст-то у всех разные!
+
+Но используя новый метод, ты можешь вывести строку с приветствием в константу, а при необходимости просто менять параметры в методе <code>printf()</code>.
+
+<pre class="lang-java line-numbers"><code>
+import java.io.IOException;
+import java.io.PrintStream;
+
+public class Main {
+
+   private static final String GREETINGS_MESSAGE = "My name is %s, my age is %d!";
+
+   public static void main(String[] args) throws IOException {
+
+       PrintStream printStream = new PrintStream("C:\\Users\\Евгений\\Desktop\\test.txt");
+
+       printStream.println("Hello!");
+       printStream.println("We are robots!");
+
+       printStream.printf(GREETINGS_MESSAGE, "Amigo", 18);
+       printStream.printf(GREETINGS_MESSAGE, "R2-D2", 35);
+       printStream.printf(GREETINGS_MESSAGE, "C-3PO", 35);
+
+       printStream.close();
+   }
+}
+</code></pre><h2>Подмена System.in</h2>В этой лекции мы будем «бороться с системой» и научимся подменять переменную <code>System.in</code> и перенаправлять системный вывод в нужное нам место.
+<img data-max-width="850" alt="Для чего нужен класс PrintStream - 2" src="https://cdn.javarush.com/images/article/944dbcf5-771c-4cd2-bb0b-b3f5c59a07a1/original.jpeg">Ты мог подзабыть что такое <code>System.in</code>, но эту конструкцию ни один студент JavaRush не забудет никогда:
+
+<pre class="lang-java line-numbers"><code>
+BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+</code></pre>
+<code>System.in</code> (как и <code>System.out</code>) — это статическая переменная класса <code>System</code>. Но, в отличие от <code>System.out</code>, она относится к другому классу, а именно — к <code>InputStream</code>.
+
+По умолчанию <code>System.in</code> — это поток, считывающий данные с системного устройства — клавиатуры. Однако, как и в случае с <code>System.out</code>, мы можем подменить источник данных, и чтение будет происходить не с клавиатуры, а из нужного нам места!
+
+Давай рассмотрим пример:
+
+<pre class="lang-java line-numbers"><code>
+import java.io.*;
+
+public class Main {
+
+   public static void main(String[] args) throws IOException {
+      
+       String greetings = "Привет! Меня зовут Амиго!\nЯ изучаю Java на сайте JavaRush.\nОднажды я стану крутым программистом!\n";
+       byte[] bytes = greetings.getBytes();
+
+       InputStream inputStream = new ByteArrayInputStream(bytes);
+
+       System.setIn(inputStream);
+
+       BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+
+       String str;
+
+       while ((str = reader.readLine())!= null) {
+
+           System.out.println(str);
+       }
+      
+   }
+}
+</code></pre>
+Итак, что же мы сделали?
+
+Обычно <code>System.in</code> «привязана» к клавиатуре. Но мы не хотим, чтобы данные читались с клавиатуры: пусть читаются из обычной строки с текстом!
+
+Мы создали строку, и получили ее в виде массива байт. Зачем нам байты? Дело в том, что <code>InputStream</code> — абстрактный класс, и мы не можем создать его экземпляр. Придется выбрать какой-то класс из числа его наследников. Для примера можем взять <code>ByteArrayInputStream</code>. Он простой, и по одному названию понятно, как он работает: источником данных для него является массив байт.
+
+Так что мы создаем этот самый массив байт и передаем в конструктор нашему <code>stream</code>’у, который будет читать данные.
+
+По сути, все уже готово! Теперь нам достаточно использовать метод <code>System.setIn()</code>, чтобы явно установить значение переменной <code>in</code>. В случае с <code>out</code>, как ты помнишь, установить значение переменной явно тоже было нельзя: приходилось использовать специальный метод <code>setOut()</code>.
+
+После того, как мы присвоили созданный нами <code>InputStream</code> переменной <code>System.in</code>, надо проверить, сработала ли наша задумка.
+
+В этом нам поможет старый знакомый — <code>BufferedReader</code>.
+
+В обычной ситуации этот код привел бы к тому, что у тебя в Intellij IDEa открылась бы консоль, и оттуда считывались данные, которые ты вводил с клавиатуры. 
+
+<pre class="lang-java line-numbers"><code>
+BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+
+       String str;
+
+       while ((str = reader.readLine())!= null) {
+
+           System.out.println(str);
+       }
+</code></pre>
+Но запустив его теперь ты увидишь, что в консоль просто выведется наш текст из программы, никакого считывания с клавиатуры не будет. Мы подменили источник данных, теперь им является не клавиатура, а наша строка! 
+
+Вот так легко и просто :) 
+
+В сегодняшней лекции мы познакомились с новым классом и рассмотрели новый небольшой «хак» по работе с вводом-выводом. Самое время вернуться к курсу и решить несколько задач :)
+
+Увидимся на следующей лекции!

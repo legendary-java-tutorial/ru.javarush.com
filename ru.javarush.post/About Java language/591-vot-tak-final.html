@@ -1,0 +1,106 @@
+Вот так final…
+<p>----------------------------------------</p>
+final, String и никакой магии. #Конкурс #Самое начало/ В java есть ключевое слово – final. Оно может применяться к классам, методам, переменным (в том числе аргументам методов). Для класса это означает, что класс не сможет иметь подклассов, т.е. запрещено наследование...
+<p>----------------------------------------</p>
+В java есть ключевое слово – <code>final</code>. Оно может применяться к классам, методам, переменным (в том числе аргументам методов).
+<img data-max-width="800" data-id="20d3f761-ddee-4db8-ad37-793dddf19f4a" src="/images/article/20d3f761-ddee-4db8-ad37-793dddf19f4a/800.jpeg" class="img-fluid" alt="Вот так final… - 1">Для класса это означает, что класс не сможет иметь подклассов, т.е. запрещено наследование. Это полезно при создании <code>immutable</code> (неизменяемых) объектов, например, класс <code>String</code> объявлен, как <code>final</code>.
+
+<pre class="lang-java line-numbers"><code>
+    public final class String{
+    }
+    
+    class SubString extends String{ //Ошибка компиляции
+    }
+</code></pre>
+Следует также отметить, что к абстрактным классам (с ключевым словом <code>abstract</code>), нельзя применить модификатор <code>final</code>, т.к. это взаимоисключающие понятия.
+
+Для метода <code>final</code> означает, что он не может быть переопределен в подклассах. Это полезно, когда мы хотим, чтобы исходную реализацию нельзя было переопределить.
+
+<pre class="lang-java line-numbers"><code>
+    public class SuperClass{
+        public final void printReport(){
+            System.out.println("Report");
+        }
+    }
+
+    class SubClass extends SuperClass{ 
+        public void printReport(){  //Ошибка компиляции
+            System.out.println("MyReport");
+        }
+    }
+</code></pre>
+Для переменных примитивного типа это означает, что однажды присвоенное значение не может быть изменено.
+
+Для ссылочных переменных это означает, что после присвоения объекта, нельзя изменить ссылку на данный объект. <strong>Это важно!</strong> Ссылку изменить нельзя, но состояние объекта изменять можно.
+
+С java 8 появилось понятие — <code>effectively final</code>. Применяется оно только к переменным (в том числе аргументам методов). Суть в том, что не смотря на явное отсутствие ключевого слова <code>final</code>, значение переменной не изменяется после инициализации. Другими словами, к такой переменной можно подставить слово <code>final</code> без ошибки компиляции. <code>effectively final</code> переменные могут быть использованы внутри локальных классов (<code>Local Inner Classes</code>), анонимных классов (<code>Anonymous Inner Classes</code>), стримах (Stream API).
+
+<pre class="lang-java line-numbers"><code>
+        public void someMethod(){
+            // В примере ниже и a и b - effectively final, тк значения устанавливаютcя однажды:
+            int a = 1;
+            int b;
+            if (a == 2) b = 3;
+            else b = 4;
+            // с НЕ является effectively final, т.к. значение изменяется
+            int c = 10;
+            c++;
+            
+            Stream.of(1, 2).forEach(s-&gt; System.out.println(s + a)); //Ок
+            Stream.of(1, 2).forEach(s-&gt; System.out.println(s + c)); //Ошибка компиляции
+        }
+</code></pre>
+А теперь давайте устроим небольшое собеседование. <strong>Ведь основана цель прохождения курса JavaRush – это стать Java разработчиком и устроиться на интересную и хорошо оплачиваемую работу.</strong>
+
+И так, начнем.
+<ol>
+<li><p>Что можно сказать про массив, когда он объявлен<code>final</code>?</p></li>
+<li><p>Известно, что класс <code>String</code> — <code>immutable</code>, класс объявлен <code>final</code>, значение строки хранится в массиве <code>char</code>, который отмечен ключевым словом <code>final</code>.</p></li></ol>
+<pre class="lang-java line-numbers"><code>
+public final class String
+    implements java.io.Serializable, Comparable&lt;String&gt;, CharSequence {
+    /** The value is used for character storage. */
+    private final char value[];
+
+</code></pre>
+Можно ли подменить значение у объекта <code>String</code> (не меняя ссылки на объект)?
+
+Это реальные вопросы с собеседования. И как показывает практика, многие отвечаю на них не правильно. Понимание использования ключевого слова <code>final</code>, особенно для ссылочных переменных — очень важно.
+
+Пока вы размышляете, небольшое отступление к команде JavaRush. Просьба добавить в текстовом редакторе некий блок, позволяющий скрывать содержимое, а при нажатии по нему — показывать это содержимое.
+Ответы:
+<ol>
+<li><p>Т.к. массив – это объект, то <code>final</code> означает, что после присвоения ссылки на объект, уже нельзя ее изменить, но можно изменять состояние объекта.</p>
+<pre class="lang-java line-numbers"><code>
+        final int[] array = {1,2,3,4,5};
+        array[0] = 9;	//ок, т.к. изменяем содержимое массива – {9,2,3,4,5}
+        array = new int[5]; //ошибка компиляции
+</code></pre></li>
+<li><p>Да, можно. Ключевой момент – это понимание использования колючего слова <code>final</code> с объектами. Для подмены значения использует ReflectionAPI.</p></li></ol>
+<pre class="lang-java line-numbers"><code>
+import java.lang.reflect.Field;
+
+class B {
+    public static void main(String[] args) throws Exception {
+        String value = "Old value";
+        System.out.println(value);
+
+        //Получаем поле value в классе String
+        Field field = value.getClass().getDeclaredField("value");
+        //Разрешаем изменять его
+        field.setAccessible(true);
+        //Устанавливаем новое значение
+        field.set(value, "JavaRush".toCharArray());
+
+        System.out.println(value);
+
+        /* Вывод:
+         * Old value
+         * JavaRush
+         */
+    }
+}
+</code></pre>
+Обратите внимание, что если бы мы попытались изменить подобным образом финальную переменную примитивного типа, то ничего бы не вышло. Предлагаю вам самостоятельно в этом убедить: создать Java класс, например, с <code>final int</code> полем и попробовать изменить его значение через Reflection API.
+
+Всем удачи!

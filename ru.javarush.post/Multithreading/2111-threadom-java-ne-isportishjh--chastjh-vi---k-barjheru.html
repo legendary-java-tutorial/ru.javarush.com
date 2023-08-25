@@ -1,0 +1,222 @@
+Thread'ом Java не испортишь: Часть VI — К барьеру!
+<p>----------------------------------------</p>
+В завершающей части нашего небольшого пути по вспоминанию основ многопоточности в Java рассмотрим доступные в Java синхронизаторы и подведём итоги, решив, что можно почитать и посмотреть ещё. Потоки — штука интересная. В прошлых обзорах мы рассмотрели ...
+<p>----------------------------------------</p>
+<h2>Вступление</h2>Потоки — штука интересная. В прошлых обзорах мы рассмотрели некоторые доступные средства для реализации многопоточности. Давайте посмотрим, что мы можем сделать ещё интересного. К этому моменту мы многое что знаем. Например, из "<a href="https://javarush.com/groups/posts/2047-threadom-java-ne-isportishjh--chastjh-i---potoki" target="_blank" rel="nofollow">Thread'ом Java не испортишь: Часть I — потоки</a>"  мы знаем, что поток — это Thread. Мы знаем, что поток выполняет некоторую задачу. Если мы хотим, чтобы нашу задачи могли запустить (<code>run</code>), то мы должны указать потоку некий <code>Runnable</code>.
+<img data-max-width="800" data-id="149aed84-6a69-4a07-a0ea-747b52edd8cb" src="/images/article/149aed84-6a69-4a07-a0ea-747b52edd8cb/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть VI — К барьеру! - 1">Чтобы вспомнить, можем воспользоваться <a href="https://www.tutorialspoint.com/compile_java_online.php" target="_blank" rel="nofollow">Tutorialspoint Java Online Compiler</a>'ом:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String []args){
+	Runnable task = () -&gt; {
+ 		Thread thread = Thread.currentThread();
+		System.out.println("Hello from " + thread.getName());
+	};
+	Thread thread = new Thread(task);
+	thread.start();
+}
+</code></pre>
+Так же мы знаем о том, что у нас есть такое понятие, как лок. О нем мы читали в "<a href="https://javarush.com/groups/posts/2048-threadom-java-ne-isportishjh--chastjh-ii---sinkhronizacija" target="_blank" rel="nofollow">Thread'ом Java не испортишь: Часть II — синхронизация</a>". Поток может занимать лок и тогда другой поток, который попытается занять лок, будет вынужден ждать освобождения лока:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.concurrent.locks.*;
+
+public class HelloWorld{
+	public static void main(String []args){
+		Lock lock = new ReentrantLock();
+		Runnable task = () -&gt; {
+			lock.lock();
+			Thread thread = Thread.currentThread();
+			System.out.println("Hello from " + thread.getName());
+			lock.unlock();
+		};
+		Thread thread = new Thread(task);
+		thread.start();
+	}
+}
+</code></pre>
+Думаю, пора поговорить о том, что мы ещё можем интересное сделать.
+<h2>Семафоры</h2>Самое простое средство контроля за тем, сколько потоков могут одновременно работать — семафор. Как на железной дороге. Горит зелёный — можно. Горит красный — ждём. Что мы ждём от семафора? Разрешения. Разрешение на английском — permit. Чтобы получить разрешение — его нужно получить, что на английском будет acquire. А когда разрешение больше не нужно мы его должны отдать, то есть освободить его или избавится от него, что на английском будет release. Посмотрим, как это работает.
+
+Нам потребуется импорт класса <code>java.util.concurrent.Semaphore</code>.
+
+Пример:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) throws InterruptedException {
+	Semaphore semaphore = new Semaphore(0);
+	Runnable task = () -&gt; {
+		try {
+			semaphore.acquire();
+			System.out.println("Finished");
+			semaphore.release();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	};
+	new Thread(task).start();
+	Thread.sleep(5000);
+	semaphore.release(1);
+}
+</code></pre>
+Как видим, запомнив английские слова, мы понимаем, как работает семафор. Интересно, что главное условие — на "счету" семафора должен быть положительное количество permit'ов. Поэтому, инициировать его можно и с минусом. И запрашивать (acquire) можно больше, чем 1.
+<h2>CountDownLatch</h2>Следующий механизм — <code>CountDownLatch</code>. CountDown на английском — это отсчёт, а Latch — задвижка или защёлка. То есть если переводить, то это защёлка с отсчётом.
+
+Тут нам понадобится соответствующий импорт класса <code>java.util.concurrent.CountDownLatch</code>.
+
+Это похоже на бега или гонки, когда все собираются у стартовой линии и когда все готовы — дают разрешение, и все одновременно стартуют. Пример:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+	CountDownLatch countDownLatch = new CountDownLatch(3);
+	Runnable task = () -&gt; {
+		try {
+			countDownLatch.countDown();
+			System.out.println("Countdown: " + countDownLatch.getCount());
+			countDownLatch.await();
+			System.out.println("Finished");
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	};
+	for (int i = 0; i &lt; 3; i++) {
+		new Thread(task).start();
+ 	}
+}
+</code></pre>
+await на английском — ожидать. То есть мы сначала говорим <code>countDown</code>. Как говорит гугл переводчик, count down — "an act of counting numerals in reverse order to zero", то есть выполнить действие по обратному отсчёту, цель которого — досчитать до нуля. А дальше говорим <code>await</code> — то есть ожидать, пока значение счётчика не станет ноль.
+
+Интересно, что такой счётчик — одноразовый. Как сказано в JavaDoc — "When threads must repeatedly count down in this way, instead use a CyclicBarrier", то есть если нужен многоразовый счёт — надо использовать другой вариант, который называется <code>CyclicBarrier</code>.
+<h2>CyclicBarrier</h2>Как и следует из названия, <code>CyclicBarrier</code> — это циклический барьер.
+Нам понадобится импорт класса <code>java.util.concurrent.CyclicBarrier</code>.
+
+Посмотрим на пример:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) throws InterruptedException {
+	Runnable action = () -&gt; System.out.println("На старт!");
+	CyclicBarrier berrier = new CyclicBarrier(3, action);
+	Runnable task = () -&gt; {
+		try {
+			berrier.await();
+			System.out.println("Finished");
+		} catch (BrokenBarrierException | InterruptedException e) {
+			e.printStackTrace();
+		}
+	};
+	System.out.println("Limit: " + berrier.getParties());
+	for (int i = 0; i &lt; 3; i++) {
+		new Thread(task).start();
+	}
+}
+</code></pre>
+Как видим, поток выполняет <code>await</code>, то есть ожидает. При этом уменьшается значение барьера. Барьер считается сломанным (<code>berrier.isBroken()</code>), когда отсчёт дошёл до нуля.
+
+Чтобы сбросить барьер, нужно вызвать <code>berrier.reset()</code>, чего не хватало в <code>CountDownLatch</code>.
+<h2>Exchanger</h2>Следующее средство — <code>Exchanger</code>. Exchange с английского переводится как обмен или обмениваться. А <code>Exchanger</code> — обменник, то есть то, через что обмениваются. Посмотрим на простейший пример:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+	Exchanger&lt;String&gt; exchanger = new Exchanger&lt;&gt;();
+	Runnable task = () -&gt; {
+		try {
+			Thread thread = Thread.currentThread();
+			String withThreadName = exchanger.exchange(thread.getName());
+			System.out.println(thread.getName() + " обменялся с " + withThreadName);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	};
+	new Thread(task).start();
+	new Thread(task).start();
+}
+</code></pre>
+Тут мы запускаем два потока. Каждый из них выполняет метод exchange и ожидает, когда другой поток так жевыполнит метод exchange. Таким образом, потоки обменяются между собой переданными аргументами.
+
+Интересная штука. Ничего ли она вам не напоминает?
+
+А напоминает он <code>SynchronousQueue</code>, которая лежит в основе <code>cachedThreadPool</code>'а.
+
+Для наглядности — пример:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) throws InterruptedException {
+	SynchronousQueue&lt;String&gt; queue = new SynchronousQueue&lt;&gt;();
+	Runnable task = () -&gt; {
+		try {
+			System.out.println(queue.take());
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	};
+	new Thread(task).start();
+	queue.put("Message");
+}
+</code></pre>
+В примере видно, что запустив новый поток, данный поток уйдёт в ожидание, т.к. в очереди будет пусто. А дальше <code>main</code> поток положит в очередь текст "Message". При этом он сам остановится на время, которой нужно, пока не получат из очереди этот текстовый элемент.
+
+По этой теме так же можно почитать "<a href="https://stackoverflow.com/questions/9735709/synchronousqueue-vs-exchanger" target="_blank" rel="nofollow">SynchronousQueue Vs Exchanger</a>".
+<h2>Phaser</h2>И напоследок самое сладкое — <code>Phaser</code>.
+
+Нам понадобится импорт класса <code>java.util.concurrent.Phaser</code>. Посмотрим на простой пример:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) throws InterruptedException {
+        Phaser phaser = new Phaser();
+        // Вызывая метод register, мы регистрируем текущий поток (main) как участника
+        phaser.register();
+        System.out.println("Phasecount is " + phaser.getPhase());
+        testPhaser(phaser);
+        testPhaser(phaser);
+        testPhaser(phaser);
+        // Через 3 секунды прибываем к барьеру и снимаемся регистрацию. Кол-во прибывших = кол-во регистраций = пуск
+        Thread.sleep(3000);
+        phaser.arriveAndDeregister();
+        System.out.println("Phasecount is " + phaser.getPhase());
+    }
+
+    private static void testPhaser(final Phaser phaser) {
+        // Говорим, что будет +1 участник на Phaser
+        phaser.register();
+        // Запускаем новый поток
+        new Thread(() -&gt; {
+            String name = Thread.currentThread().getName();
+            System.out.println(name + " arrived");
+            phaser.arriveAndAwaitAdvance(); //threads register arrival to the phaser.
+            System.out.println(name + " after passing barrier");
+        }).start();
+    }
+</code></pre>
+Из примера видно, что барьер при использовании <code>Phaser</code>'а прорывается, когда количество регистраций совпадает с количеством прибывших к барьеру.
+
+Подробнее можно ознакомиться с <code>Phaser</code>'ом в статье с хабра "<a href="https://habr.com/post/117185/" target="_blank" rel="nofollow">Новый синхронизатор Phaser</a>".
+<h2>Итоги</h2>Как видно из примеров, существуют различные способы синхронизации потоков.
+
+Ранее я постарался уже вспомнить что-то из многопоточности, надеюсь прошлые части были полезны.
+
+Говорят, что путь к многопоточности начинается с книги "Java Concurrency in Practice". Хотя она вышла в 2006 году, люди отвечают, что книга довольно фундаментальна и до сих пор держит удар. Например, можно прочитать обсуждения здесь: "<a href="https://stackoverflow.com/questions/10202768/is-java-concurrency-in-practice-still-valid" target="_blank" rel="nofollow">Is Java Concurrency In Practice still valid?</a>". 
+
+Также полезно прочитать ссылки из обсуждения. Например, там есть ссылка на книгу "<a href="https://www.manning.com/books/the-well-grounded-java-developer" target="_blank" rel="nofollow">The Well-Grounded Java Developer</a>", в которой стоит обратить на "<a href="https://livebook.manning.com/#!/book/the-well-grounded-java-developer/chapter-4/" target="_blank" rel="nofollow">Chapter 4. Modern concurrency</a>". 
+
+Есть ещё целый обзор на эту же тему: "<a href="https://javarevisited.blogspot.com/2018/07/is-java-concurrency-in-practice-still-relevant-in-era-of-java8.html" target="_blank" rel="nofollow">Is Java cocurrency in pracitce still relevant in era of java 8</a>". Там также есть советы по поводу того, что ещё следует почитать, чтобы действительно понять эту тему.
+
+После этого, можно присмотреться к такой замечательной книге, как "<a href="https://www.oreilly.com/library/view/oca-ocp/9781119363392/fcover.xhtml" target="_blank" rel="nofollow">OCA OCP JavaSE 8 Programmer Practice Tests</a>". Нас интересует вторая часть, то есть OCP. И там есть тесты в "∫". В этой книге есть как вопросы, так и ответы со объяснением. Например:
+<img data-max-width="800" data-id="0289b09a-0d27-45d4-8338-d94fc2a2f45b" src="/images/article/0289b09a-0d27-45d4-8338-d94fc2a2f45b/800.webp" class="img-fluid" alt="Thread'ом Java не испортишь: Часть VI — К барьеру! - 3">Многие могут начать говорить, что это очередное заучивание методов. С одной стороны — да. С другой стороны, на этот вопрос можно дать ответ, вспомнив, что <code>ExecutorService</code> — это своего рода "апгрейд" <code>Executor</code>'а. А <code>Executor</code> призван просто скрыть способ создания потоков, но не основной способ их выполнения, то есть запуск в новом потоке <code>Runnable</code>. Поэтому <code>execute(Callable)</code> и нет, т.к. в <code>ExecutorService</code> к <code>Executor</code>'у просто добавили методы <code>submit</code>, которые умеют возвращать <code>Future</code>. Как видите, мы можем и заучить список методов, но куда проще догадаться, зная природу самих классов.
+
+Ну и немного дополнительных материалов по теме:
+<ul>
+<li>"<a href="https://habr.com/post/277669/" target="_blank" rel="nofollow">Справочник по синхронизаторам java.util.concurrent.*</a>"</li>
+<li>"<a href="http://java-online.ru/concurrent-synchronizers.xhtml" target="_blank" rel="nofollow">Синхронизаторы пакета concurrent</a>"</li>
+<li>Юрий Ткач "<a href="https://www.youtube.com/watch?v=XkAjmCIY2WI" target="_blank" rel="nofollow">Синхронизаторы - Concurrency #4 - Advanced Java</a>"</li></ul>#Viacheslav<table>
+<tbody><tr>
+<th>Что еще почитать:
+</th>
+</tr>
+<tr>
+<td><a href="https://javarush.com/groups/posts/2047-threadom-java-ne-isportishjh--chastjh-i---potoki" target="_blank">Thread'ом Java не испортишь: Часть I — потоки</a><br>
+<a href="https://javarush.com/groups/posts/2048-threadom-java-ne-isportishjh--chastjh-ii---sinkhronizacija" target="_blank">Thread'ом Java не испортишь: Часть II — синхронизация</a><br>
+<a href="https://javarush.com/groups/posts/2060-threadom-java-ne-isportishjh--chastjh-iii---vzaimodeystvie" target="_blank">Thread'ом Java не испортишь : Часть III - взаимодействие</a><br>
+<a href="https://javarush.com/groups/posts/2065-threadom-java-ne-isportishjh--chastjh-iv---callable-future-i-druzjhja" target="_blank">Thread'ом Java не испортишь : Часть IV - Callable, Future и друзья</a><br>
+<a href="https://javarush.com/groups/posts/2078-threadom-java-ne-isportishjh--chastjh-v---executor-threadpool-fork-join-pool" target="_blank">Thread'ом Java не испортишь: Часть V - Executor, ThreadPool, Fork Join</a>
+</td>
+</tr>
+</tbody></table>

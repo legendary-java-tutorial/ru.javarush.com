@@ -1,0 +1,201 @@
+Регулярные выражения в Java, часть 4
+<p>----------------------------------------</p>
+Предлагаем вашему вниманию перевод краткого руководства по регулярным выражениям в языке Java, написанного Джеффом Фрисеном (Jeff Friesen) для сайта javaworld. Для простоты чтения мы разделили статью на несколько частей.
+<p>----------------------------------------</p>
+Предлагаем вашему вниманию перевод краткого руководства по регулярным выражениям в языке Java, написанного Джеффом Фрисеном (Jeff Friesen) для сайта <a href="https://www.javaworld.com/article/3195301/learn-java/java-101-regular-expressions-in-java-part-2.html?page=2" target="_blank">javaworld</a>. Для простоты чтения мы разделили статью на несколько частей.
+<img data-max-width="800" data-id="1e0c1623-25d7-4a5c-8476-f610d0b89429" src="/images/article/1e0c1623-25d7-4a5c-8476-f610d0b89429/800.jpeg" class="img-fluid" alt="Регулярные выражения в Java, часть 4 - 1">
+<a href="https://javarush.com/groups/posts/136-reguljarnihe-vihrazhenija-v-java-chastjh-1" target="_blank">Регулярные выражения в Java, часть 1</a>
+<a href="https://javarush.com/groups/posts/154-reguljarnihe-vihrazhenija-v-java-chastjh-2" target="_blank">Регулярные выражения в Java, часть 2</a>
+<a href="https://javarush.com/groups/posts/186-reguljarnihe-vihrazhenija-v-java-chastjh-3" target="_blank">Регулярные выражения в Java, часть 3
+</a>
+<h2>Методы для работы с захватываемыми группами</h2>Исходный код приложения <code>RegexDemo</code> включает вызов метода <code>m.group()</code>. 
+
+Метод <code>group()</code> – один из нескольких методов класса <code>Matcher</code>, ориентированных на работу с захватываемыми группами:
+<ul>
+<li><p>Метод <code>int groupCount()</code> возвращает число захватываемых групп в шаблоне сопоставителя. Это количество не учитывает специальную захватываемую группу номер 0, соответствующую шаблону в целом.</p></li>
+<li><p>Метод <code>String group()</code> возвращает символы предыдущего найденного совпадения. Чтобы сообщить об успешном поиске по пустой строке, этот метод возвращает пустую строку. Если сопоставитель еще не выполнял поиска или предыдущая операция поиска завершилась неудачей, генерируется исключение <code>IllegalStateException</code>.</p></li>
+<li><p>Метод <code>String group(int group)</code> напоминает предыдущий метод, за исключением того, что возвращает символы предыдущего найденного совпадения, захваченные группой, номер которой задается параметром <code>group</code>. Обратите внимание, что <code>group(0)</code> эквивалентно <code>group()</code>. Если в шаблоне нет захватываемой группы с заданным номером, метод генерирует исключение <code>IndexOutOfBoundsException</code>. Если сопоставитель еще не выполнял поиска или предыдущая операция поиска завершилась неудачей, генерируется исключение <code>IllegalStateException</code>.</p></li>
+<li><p>Метод <code>String group(String name)</code> возвращает символы предыдущего найденного совпадения, захваченные группой name. Если захватываемой группы name в шаблоне нет, генерируется исключение <code>IllegalArgumentException</code>. Если сопоставитель еще не выполнял поиска или предыдущая операция поиска завершилась неудачей, генерируется исключение <code>IllegalStateException</code>.</p></li>
+</ul>Следующий пример демонстрирует использование методов <code>groupCount()</code> и <code>group(int group)</code>:
+
+<pre class="lang-java line-numbers"><code>
+Pattern p = Pattern.compile("(.(.(.)))");
+Matcher m = p.matcher("abc");
+m.find();
+System.out.println(m.groupCount());
+for (int i = 0; i &lt;= m.groupCount(); i++)
+System.out.println(i + ": " + m.group(i));
+</code></pre>
+Результаты выполнения:
+
+<pre class="lang-java line-numbers"><code>
+3
+0: abc
+1: abc 
+2: bc 
+3: c
+</code></pre>
+<img data-max-width="800" data-id="c110d579-e4b1-43a3-a0f0-598e96f20e16" src="/images/article/c110d579-e4b1-43a3-a0f0-598e96f20e16/800.jpeg" class="img-fluid" alt="Регулярные выражения в Java, часть 4 - 2"><h2>Методы для определения позиций совпадений</h2>
+Класс <code>Matcher</code> предоставляет несколько методов, возвращающих начальную и конечную позиции совпадения:
+<ul>
+<li><p>Метод <code>int start()</code> возвращает начальную позицию предыдущего найденного совпадения. Если сопоставитель еще не выполнял поиска или предыдущая операция поиска завершилась неудачей, генерируется исключение <code>IllegalStateException</code>.</p></li>
+<li><p>Метод <code>int start(int group)</code> напоминает предыдущий метод, но возвращает начальную позицию предыдущего найденного совпадения для группы, номер которой задается параметром <code>group</code>. Если в шаблоне нет захватываемой группы с заданным номером, метод генерирует исключение <code>IndexOutOfBoundsException</code>. Если сопоставитель еще не выполнял поиска или предыдущая операция поиска завершилась неудачей, генерируется исключение <code>IllegalStateException</code>.</p></li>
+<li><p>Метод <code>int start(String name)</code> напоминает предыдущий метод, но возвращает начальную позицию предыдущего найденного совпадения для группы с названием <code>name</code>. Если захватываемой группы <code>name</code> в шаблоне нет, генерируется исключение <code>IllegalArgumentException</code>. Если сопоставитель еще не выполнял поиска или предыдущая операция поиска завершилась неудачей, генерируется исключение <code>IllegalStateException</code>.</p></li>
+<li><p>Метод <code>int end()</code> возвращает позицию последнего из символов предыдущего найденного совпадения плюс 1. Если сопоставитель еще не выполнял поиска или предыдущая операция поиска завершилась неудачей, генерируется исключение <code>IllegalStateException</code>.</p></li>
+<li><p>Метод <code>int end(int group)</code> напоминает предыдущий метод, но возвращает конечную позицию предыдущего найденного совпадения для группы, номер которой задается параметром <code>group</code>. Если в шаблоне нет захватываемой группы с заданным номером, метод генерирует исключение <code>IndexOutOfBoundsException</code>. Если сопоставитель еще не выполнял поиска или предыдущая операция поиска завершилась неудачей, генерируется исключение <code>IllegalStateException</code>.</p></li>
+<li><p>Метод <code>int end(String name)</code> напоминает предыдущий метод, но возвращает конечную позицию предыдущего найденного совпадения для группы с названием <code>name</code>. Если захватываемой группы <code>name</code> в шаблоне нет, генерируется исключение <code>IllegalArgumentException</code>. Если сопоставитель еще не выполнял поиска или предыдущая операция поиска завершилась неудачей, генерируется исключение <code>IllegalStateException</code>.</p></li>
+</ul>Следующий пример демонстрирует два метода определения местоположения совпадений, выводящих начальную/конечную позиции совпадения для захватываемой группы номер 2:
+
+<pre class="lang-java line-numbers"><code>
+Pattern p = Pattern.compile("(.(.(.)))");
+Matcher m = p.matcher("abcabcabc");
+while (m.find())
+{
+   System.out.println("Найдено " + m.group(2));
+   System.out.println("  начинается с позиции " + m.start(2) +
+                      " и заканчивается на позиции " + (m.end(2) - 1));
+   System.out.println();
+}
+</code></pre>
+В результате выполнения этого примера выводится следующее:
+
+<pre class="lang-java line-numbers"><code>
+Найдено bc
+начинается с позиции 1 и заканчивается на позиции 2
+Найдено bc
+начинается с позиции 4 и заканчивается на позиции 5 
+Найдено bc
+начинается с позиции 7 и заканчивается на позиции 8
+</code></pre><h2>Методы класса PatternSyntaxException</h2>Экземпляр класса <code>PatternSyntaxException</code> описывает синтаксическую ошибку в регулярном выражении. Генерирует такое исключение из методов <code>compile()</code> и <code>matches()</code> класса <code>Pattern</code>, а формируется посредством следующего конструктора:
+
+<code>PatternSyntaxException(String desc, String regex, int index)</code>
+
+Этот конструктор сохраняет указанное описание (<code>desc</code>), <a href="https://javarush.com/groups/posts/2013-reguljarnihe-vihrazhenija-v-java" target="_blank">регулярное выражение</a> (<code>regex</code>) и позицию, на которой произошла синтаксическая ошибка. Если место синтаксической ошибки неизвестно, значение <code>index</code> устанавливается равным <code>-1</code>.
+
+Скорее всего, вам никогда не понадобится создавать экземпляры класса <code>PatternSyntaxException</code>. Тем не менее, нужно будет извлекать вышеупомянутые значения при создании форматированного сообщения об ошибке. Для этого можно воспользоваться следующими методами:
+<ul>
+<li>Метод <code>String getDescription()</code> возвращает описание синтаксической ошибки.</li>
+<li>Метод <code>int getIndex()</code> возвращает или позицию, на которой произошла ошибка, или -1, если позиция неизвестна.</li>
+<li>Метод <code>String getPattern()</code> возвращает ошибочное регулярное выражение.</li>
+</ul>Кроме того, унаследованный метод <code>String getMessage()</code> возвращает многострочную строку со значениями, возвращенными из предыдущих методов вместе с визуальным указанием на место синтаксической ошибки в шаблоне.
+
+Что представляет собой синтаксическая ошибка? Вот пример:
+
+<code>java RegexDemo (?itree Treehouse</code>
+
+В данном случае мы забыли указать закрывающий метасимвол скобки (<code>)</code>) во вложенном флаговом выражении. Вот что выводится в результате этой ошибки:
+
+<pre class="lang-java line-numbers"><code>
+regex = (?itree
+input = Treehouse
+<code>Неправильное регулярное выражение: Unknown inline modifier near index 3
+(?itree</code>
+   ^
+Описание: Unknown inline modifier
+Позиция: 3
+Неправильный шаблон: (?itree
+</code></pre><h2>Создание полезных приложений с регулярными выражениями при помощи API Regex</h2>Регулярные выражения позволяют создавать приложения для обработки текста, обладающие большими возможностями. В этом разделе мы покажем вам два удобных приложения, которые, надеемся, побудят вас далее исследовать классы и методы API Regex. Во втором приложении вы познакомитесь с Lexan: библиотекой многоразового кода для выполнения лексического анализа.
+<img data-max-width="800" data-id="61f26bdb-8d85-4cd0-b113-02be78f5a480" src="/images/article/61f26bdb-8d85-4cd0-b113-02be78f5a480/800.jpeg" class="img-fluid" alt="Регулярные выражения в Java, часть 4 - 3"><h2>Регулярные выражения и документация</h2>Документирование – одна из обязательных задач при разработке профессионально выполненного программного обеспечения. К счастью, регулярные выражения могут помочь вам со многими аспектами создания документации. Код в листинге 1 извлекает строки, содержащие однострочные и многострочные комментарии в стиле языка C, из исходного файла и записывает их в другой файл. Чтобы код работал, комментарии должны быть расположены в одной строке.
+
+Листинг 1. Извлечение комментариев
+
+<pre class="lang-java line-numbers"><code>
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+
+public class ExtCmnt
+{
+   public static void main(String[] args)
+   {
+      if (args.length != 2)
+      {
+         System.err.println("Способ применения: java ExtCmnt infile outfile");
+         return;
+      }
+
+      Pattern p;
+      try
+      {
+         // Следующий шаблон определяет многострочные комментарии,
+         // располагающиеся в одной строке (например, /* одна строка */)
+            // и однострочные комментарии (например, // какая-то строка).
+            // Комментарий может располагаться в любом месте строки.
+
+         p = Pattern.compile(".*/\\*.*\\*/|.*//.*$");
+      }
+      catch (PatternSyntaxException pse)
+      {
+         System.err.printf("Синтаксическая ошибка в регулярном выражении: %s%n", pse.getMessage());
+         System.err.printf("Описание ошибки: %s%n", pse.getDescription());
+         System.err.printf("Позиция ошибки: %s%n", pse.getIndex());
+         System.err.printf("Ошибочный шаблон: %s%n", pse.getPattern());
+         return;
+      }
+
+      try (FileReader fr = new FileReader(args[0]);
+           BufferedReader br = new BufferedReader(fr);
+           FileWriter fw = new FileWriter(args[1]);
+           BufferedWriter bw = new BufferedWriter(fw))
+      {
+         Matcher m = p.matcher("");
+         String line;
+         while ((line = br.readLine()) != null)
+         {
+            m.reset(line);
+            if (m.matches()) /* Должна соответствовать вся строка */
+            {
+               bw.write(line);
+               bw.newLine();
+            }
+         }
+      }
+      catch (IOException ioe)
+      {
+         System.err.println(ioe.getMessage());
+         return;
+      }
+   }
+}
+</code></pre>
+Метод <code>main()</code> из листинга 1 сначала проверяет правильность синтаксиса командной строки, после чего компилирует предназначенное для обнаружения одно- и многострочных комментариев регулярное выражение в объект класса <code>Pattern</code>. Если не возникает исключения <code>PatternSyntaxException</code>, метод <code>main()</code> открывает исходный файл, создает целевой файл, получает сопоставитель для сопоставления каждой прочитанной строки с шаблоном, после чего читает исходный файл построчно. Для каждой строки выполняется сопоставление её с шаблоном комментария. В случае успеха, метод <code>main()</code> записывает строку (с последующим символом новой строки) в целевой файл (мы рассмотрим логику файлового ввода/вывода в будущем учебном пособии Java 101).
+
+Скомпилируйте листинг 1 следующим образом:
+
+<code>javac ExtCmnt.java</code>
+
+Выполните приложение с файлом <code>ExtCmnt.java</code> в качестве входного:
+
+<code>java ExtCmnt ExtCmnt.java out</code>
+
+Вы должны получить в файле out следующие результаты:
+
+<pre class="lang-java line-numbers"><code>
+         // Следующий шаблон определяет многострочные комментарии,
+         // располагающиеся в одной строке (например, /* одна строка */)
+            // и однострочные комментарии (например, // какая-то строка).
+            // Комментарий может располагаться в любом месте строки.
+        p = Pattern.compile(".*/\\*.*\\*/|.*//.*$");
+            if (m.matches()) /* Должна соответствовать вся строка */
+</code></pre>
+В строке шаблона <code>.*/\\*.*\\*/|.*//.*$</code>, метасимвол вертикальной черты <code>|</code> играет роль логического оператора ИЛИ, указывающего на необходимость сопоставителю использовать левый операнд из конструкции данного регулярного выражения для поиска соответствия в тексте сопоставителя. Если соответствий нет, сопоставитель использует правый операнд из конструкции данного регулярного выражения для еще одной попытки поиска (метасимволы скобок в захватываемой группе тоже формируют логический оператор).
+<a href="https://javarush.com/groups/posts/247-reguljarnihe-vihrazhenija-v-java-chastjh-5" target="_blank">Регулярные выражения в Java, часть 5</a>
+<table>
+<tbody><tr>
+<th><p>Что еще почитать:</p>
+</th>
+</tr>
+<tr>
+<td><ul>
+<li><a href="https://javarush.com/groups/posts/264-populjarno-o-ljambda-vihrazhenijakh-v-java-s-primerami-i-zadachami-chastjh-1-" target="_blank">Популярно о лямбда-выражениях в Java. С примерами и задачами. Часть 1</a></li>
+<li><a href="https://javarush.com/groups/posts/305-sozdanie-prosteyshego-web-proekta-v-intellij-idea-enterprise-edition-poshagovo-s-kartinkami" target="_blank">Создание простейшего веб-проекта в IntelliJ Idea Enterprise. Пошагово, с картинками</a></li>
+<li><a href="https://javarush.com/groups/posts/234-luchshie-knigi-dlja-podgotovki-k-ehkzamenu-ocajp8-1z0-808-po-java-8" target="_blank">Лучшие книги для подготовки к экзамену OCAJP8 (1Z0-808) по Java 8</a></li>
+</ul></td>
+</tr>
+</tbody></table>

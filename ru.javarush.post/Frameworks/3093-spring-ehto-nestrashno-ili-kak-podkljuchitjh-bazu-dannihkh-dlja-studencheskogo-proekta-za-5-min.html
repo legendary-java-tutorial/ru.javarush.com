@@ -1,0 +1,66 @@
+Spring — это не страшно, или как подключить базу данных для студенческого проекта за 5 минут
+<p>----------------------------------------</p>
+Подключаем h2. Для начала создадим  web сервер на Spring Boot. B pom файл в блок  добавим следущие зависимости. Первая зависимость нужна для работы Spring с базой данных. Вторая зависимость h2...
+<p>----------------------------------------</p>
+<a href="https://javarush.com/groups/posts/3092-spring-ehto-nestrashno" target="_blank" rel="nofollow"><strong>СОДЕРЖАНИЕ ЦИКЛА СТАТЕЙ</strong></a>
+
+Для начала создадим  <a href="https://javarush.com/groups/posts/3092-spring-ehto-nestrashno" target="_blank" rel="nofollow">web сервер на Spring Boot</a>.
+
+B <span>pom</span> файл в блок <span>&lt;dependencies&gt;</span> добавим следущие зависимости:
+
+<pre class="language-java line-numbers"><code>
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-data-jpa&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.h2database&lt;/groupId&gt;
+            &lt;artifactId&gt;h2&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+</code></pre>
+Первая зависимость нужна для работы Spring с базой данных.
+
+Вторая зависимость h2 (эйч ту) займется эмуляцией базы данных без скачиваний, установок и сложных конфигураций.
+
+Теперь хочу, что бы вы задали себе вопрос: "Кем я хочу стать? Monkey-кодером, который не в состоянии написать что-то сам? Или разработчиком?"
+
+Если хотите стать разработчиком, то обязательно прочитайте <a href="https://javarush.com/groups/posts/537-post-blagodarnosti-i-vpechatlenija-ot-spring-in-action" target="_blank" rel="nofollow">хорошую книгу про смысл и концепцию Spring</a>, или хотя бы цикл <a href="https://javarush.com/groups/posts/spring-framework-java-1" target="_blank" rel="nofollow">статей</a>. Прямо сейчас можете поискать информацию в интернете о том, что такое бины, сущности, внедрение зависимостей в Spring, способы конфигурации бинов.
+
+Вернемся к нашим базам.
+
+Вся конфигурация будет состоять в следующем:
+
+В <span>resourses</span> создаем файл <span>application.yml</span> (название очень важно!), заполняем содержимым:
+
+<pre class="language-java line-numbers"><code>
+spring:
+  datasource:
+    driverClassName: org.h2.Driver
+    url: jdbc:h2:mem:test;
+    username: sa
+    password:
+    h2:
+      console:
+        enabled: true
+  jpa:
+    hibernate:
+        ddl-auto: create
+    generate-ddl: true
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+</code></pre>
+Посмотрим на datasource:
+
+<span>driverClassName:</span> указывает, какой тип базы мы будем использовать,  у нас это h2. Если бы мы установили Postgres, то написали бы <span>rg.postgresql.Driver</span>;
+<span>url:</span> — это место, где располагается база, у нас она располагается непосредсвенно в памяти проекта, о чем говорит слово <span>mem</span> (от memory — память), то есть при рестарте приложения база будет создана заново. Можно вместо  <span>jdbc:h2:mem:test;</span> написать <span>jdbc:h2:~/test;</span>, и база будет храниться в папке проекта. Опять же, если бы у нас был установлен Postgres, то написали бы что то вроде <span>jdbc:postgresql://localhost:5432/mydb</span>.
+
+Теперь <span>jpa</span>:
+
+<span>hibernate.ddl-auto:</span> говорит, что делать со схемой базы при перезапуске приложения. Сейчас тут стоит <span>create</span> — значит, создавать заново, также может стоять <span>update</span> — дополнять базу, <span>create-drop</span> — очищать при запуске.
+Слово <span>hibernate</span> тут не спроста, почитайте про него в интернете, потому что он нам будет нужен.
+
+Остальные слова сейчас не важны.
+
+<a href="https://javarush.com/groups/posts/3094-spring-ehto-nestrashno-ili-kak-napolnitjh-h2-bazu-dannihkh-i-nemnogo-hibernate" target="_blank" rel="nofollow">Дальше посмотрим, как эту базу можно наполнить и как с ней работать.</a>

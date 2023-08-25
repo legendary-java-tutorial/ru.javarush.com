@@ -1,0 +1,291 @@
+Spring — это не страшно, или как задать вопрос БД
+<p>----------------------------------------</p>
+Делаем запросы к БД
+<p>----------------------------------------</p>
+<a href="https://javarush.com/groups/posts/3092-spring-ehto-nestrashno" target="_blank" rel="nofollow"><strong>СОДЕРЖАНИЕ ЦИКЛА СТАТЕЙ</strong></a>
+
+Сегодня мы доразбираем работу с базой в  рамках нашего проекта. Если вы все делали правильно, то у вас должен быть pom вот с такими зависимостями:
+<pre class="language-java line-numbers"><code>
+&lt;properties&gt;
+    &lt;maven.compiler.source&gt;1.8&lt;/maven.compiler.source&gt;
+    &lt;maven.compiler.target&gt;1.8&lt;/maven.compiler.target&gt;
+    &lt;java.version&gt;1.8&lt;/java.version&gt;
+&lt;/properties&gt;
+&lt;parent&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-parent&lt;/artifactId&gt;
+    &lt;version&gt;2.2.0.RELEASE&lt;/version&gt;
+    &lt;relativePath/&gt;&lt;!-- lookup parent from repository --&gt;
+&lt;/parent&gt;
+&lt;dependencies&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-boot-starter-web&lt;/artifactId&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-boot-starter-data-jpa&lt;/artifactId&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;com.h2database&lt;/groupId&gt;
+        &lt;artifactId&gt;h2&lt;/artifactId&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.projectlombok&lt;/groupId&gt;
+        &lt;artifactId&gt;lombok&lt;/artifactId&gt;
+    &lt;/dependency&gt;
+&lt;/dependencies&gt;
+</code></pre>
+
+И вот такая структура проекта:
+<img data-id="b16712c2-0df1-4676-afe9-1a2770d8b1ef" src="/images/article/b16712c2-0df1-4676-afe9-1a2770d8b1ef/800.jpeg" alt="Spring — это не страшно, или как задать вопрос БД - 1">
+
+Знаете кого мы давно не вспоминали? Это application.yml, мы поговорили не много о нем в одной из прошлых статей. А теперь давайте возьмем и удалим его! Да, да delete и все!
+Если мы запустим сейчас проект, то все будет работать как и раньше, попробуйте это сделать.  Это произошло по тому, что Spring сам сконфигурировался на  дефолных настройках. Теперь надо вернуть наш ямл файл обратно в папку ресурсы, он нам еще пригодиться:
+application.yml (наименование должно быть таким же)
+<pre class="language-java line-numbers"><code>
+spring:
+  datasource:
+    driverClassName: org.h2.Driver
+    url: jdbc:h2:mem:test;
+    username: sa
+    password:
+    h2:
+      console:
+        enabled: true
+  jpa:
+    hibernate.ddl-auto: create
+    generate-ddl: true
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+</code></pre>
+В прошлый раз мы с помощью методов интерфейса JpaRepository&lt;&gt; реализовали несколько запросов к базе:
+<pre class="language-java line-numbers"><code>
+//сохранить одну запись в таблицу фруктов
+public void save(FruitEntity fruitEntity){
+    fruitRepository.save(fruitEntity);
+}
+//получить все записи из таблицы фруктов
+public List&lt;FruitEntity&gt; getAll(){
+   return fruitRepository.findAll();
+}
+//сохранить несколько записей в таблицу фруктов
+public void saveAll(List&lt;FruitEntity&gt; fruits){
+    fruitRepository.saveAll(fruits);
+}
+</code></pre>
+Если вы почитали про <a href="https://sql-academy.org/ru/guide" target="_blank" rel="nofollow">SQL</a>, как я вас просил в прошлый раз, то вы должны знать, что такие действия с БД должны выполняться с помощью запросов  SQL . Но в проекте на это нет и намека, даже в логах консоли нет ни чего похожего.
+Давайте их найдем, открываем application.yml, находим там срочку show-sql: (показать sql) и меняем false на true. Запускаем проект и смотрим в консоль, логи наполнились новыми записями очень похожими на SQL, на самом деле большинство из них понять не мудрено, например: 
+<pre class="language-java line-numbers"><code>
+Hibernate: drop table fruit_table if exists //удалить таблицу fruit_table  если она есть
+Hibernate: drop table provider_table if exists
+Hibernate: create table fruit_table (id_fruit integer not null, fruit_name varchar(255), provider_code integer, primary key (id_fruit))//создать таблицу fruit_table с полями id_fruit тип integer not null, fruit_name  тип varchar(255), provider_code тип integer, назначить первичным ключем поле id_fruit
+Hibernate: create table provider_table (id_provider integer not null, provider_name varchar(255), primary key (id_provider))
+</code></pre>
+Но вот эта запись, может вызвать много вопросов из-за своих знаков вопросов:
+<pre class="language-java line-numbers"><code>
+Hibernate: insert into fruit_table (fruit_name, provider_code, id_fruit) values (?, ?, ?)
+</code></pre>
+Давайте мыслить логически: Во-первых мы видим слово Hibernate, значит этот скрытный парень приложил тут свою мохнатую лапу. Прочитав про него в интернете, мы узнаем, что мистер <a href="https://javahelp.online/osnovy/hibernate-java" target="_blank" rel="nofollow">Hiber</a>  это реализация ORM-модели. Объектно-реляционная модель описывает отношения между программными объектами и записями в БД. 
+Зафиксировали эту мысль, продолжаем мыслить логически: 
+С одной стороны, у нас есть объект <em>FruitEntity</em> у него есть три поля: <em>Integer id; String fruitName; Integer providerCode.</em> 
+С другой  стороны, у нас есть таблица в БД <em>fruit_table</em> с полями <em>id_fruit</em> тип <em>integer,</em> <em>fruit_name</em>  тип <em>varchar(255)</em>, <em>provider_code</em> тип <em>integer.</em>
+Грубо говоря Hibernate берет объект <em>FruitEntity</em>, вытаскивает значения полей объекта и записывает их в соответствующие поля таблицы.
+У меня к вам вопрос: Смотрите, в классе <em>InitiateUtils</em> мы реализовали заполнение таблицы фруктов, но почему то мы тут задали значение только двум полям, где третье?
+<pre class="language-java line-numbers"><code>
+new FruitEntity()
+        .setFruitName("Fruit1")//раз
+        .setProviderCode(Math.abs(new Random().nextInt() % 10)),//два
+                                            //три???
+</code></pre>
+Уверен вы разберетесь в этом сами, к тому же мы мельком касались этого вопроса в позапрошлой статье. Для начала разберитесь какого поля тут нет, а дальше вы все поймете.
+Ну что ж, Hiber молодец, нагенерировал за нас кучу запросов.
+Но и мы не лыком шиты, давайте в классе <em>FruitService</em> реализуем еще несколько методов из интерфейса <em>JpaRepository&lt;&gt;</em>
+<pre class="language-java line-numbers"><code>
+//возвращает запись из таблицы по id
+public Optional&lt;FruitEntity&gt; getById(Integer id){
+   return fruitRepository.findById(id);
+}
+
+//удаляет запись из таблицы по id
+public void delById(Integer id){
+    fruitRepository.deleteById(id);
+}
+
+//возвращает true или false при поиске в таблице Фруктов объекта который соответствует типу FruitEntity или принадлежит к типу объекта который наследуется от FruitEntity
+public Boolean exist(Example&lt;? extends FruitEntity&gt; example){
+    return fruitRepository.exists(example);
+}
+</code></pre>
+Реализуйте такие же методы в классе ProviderService. Затем используйте их в классе <em>InitiateUtils</em> для <em>FruitEntity</em> и <em>ProviderEntity</em>, результат выведете в консоль. (Кстати, если вы не знали то быстро написать  “System.out.println()” можно если набрать sout и нажать ентер, таже штука работает с  “public static void main(String[] args){}” достаточно набрать psvm ну <a href="https://я-кодер.рф/горячие-клавиши-в-intellij-idea/" target="_blank" rel="nofollow">и так далее</a>).
+
+Я думаю вы уже справились и мы готовы идти дальше. Давайте зайдем в интерфейс <em>FruitRepository</em> и начнем в нем набирать (именно набирать а не копировать) следующий метод: List&lt;FruitEntity&gt; f 
+Должна получиться следующая штука
+<img data-id="e1068275-8299-473e-9a3c-9ec67faba7e6" src="/images/article/e1068275-8299-473e-9a3c-9ec67faba7e6/800.jpeg" alt="Spring — это не страшно, или как задать вопрос БД - 2">
+Просто называете метод как будто составляете запрос:
+findById(Integer id) - найдет объект по id;
+countFruitEntityByFruitName(String name) - посчитает количество фруктов с определенным именем;
+Это <a href="https://sysout.ru/spring-data-jpa-zaprosy-generiruemye-po-imeni-metoda/" target="_blank" rel="nofollow">запросы, генерируемые по имени метода</a>  обязательно почитайте про них и реализуйте в классе <em>FruitService</em> метод <em>between(Integer from, Integer to)</em> для поиска List&lt;FruitEntity&gt; по значениям поля <em>provider_code</em> входящим в определенный интервал, результат работы выведете в консоль. Например: найти все фрукты, у которых номер поставщика находиться между 5 и 7. Не торопитесь читать дальше, пока не реализуете метод, это не долго.
+
+Как вы могли прочитать в статье про запросы по имени метода: «Все запросы так не напишешь, но простые можно.»
+Для более сложных запросов используется аннотация @Query и вместо SQL здесь используется <a href="https://ru.bmstu.wiki/JPQL_(Java_Persistence_Query_Language)" target="_blank" rel="nofollow">JPQL</a>(тоже возмите на заметку эту статью), для нашего проекта можно сделать JOIN запросы, так:
+<pre class="language-java line-numbers"><code>
+ package ru.java.rush.repositories;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+import ru.java.rush.entities.FruitEntity;
+
+import java.util.List;
+
+@Repository
+public interface FruitRepository extends JpaRepository&lt;FruitEntity,Integer&gt; {
+
+    @Query("select f.fruitName, p.providerName from  FruitEntity f left join ProviderEntity p on f.providerCode = p.id")
+    List&lt;String&gt; joinSting();
+
+}
+</code></pre>
+Стандартный SQL запрос был бы таким: 
+<em>"select fruit_table.fruit_name, provider_table.provider_name from  fruit_table left join provider_table on fruit_table.provider_сode = provider_table.id".</em>
+
+Здесь легко можно установить соответствие:
+f<em>ruit_table</em> это <em>FruitEntiy f,</em> где <em>FruitEntiy</em> это тип переменной, <em>f</em> это ее наименование, то есть SQL работает с таблицами и полями, а JPQL с объектами и их полями.
+Опять же <em>fruit_table.fruit_name</em> это <em>f.fruitName</em>; 
+
+Так как мы работаем с объектами то можем и объект вывести:
+Напишем еще один метод FruitRepository
+<pre class="language-java line-numbers"><code>
+@Query("select f from  FruitEntity f  join ProviderEntity p on f.providerCode = p.id")
+List&lt;FruitEntity&gt; joinFruit();
+</code></pre>
+Реализуем оба метода в классе FruitService
+<pre class="language-java line-numbers"><code>
+public List&lt;String&gt; joinString(){
+   return fruitRepository.joinSting();
+}
+
+public List&lt;FruitEntity&gt; joinFruit(){
+    return fruitRepository.joinFruit();
+}
+</code></pre>
+Звучит не плохо, но все равно для сложных запросов используют старый добрый SQL 
+<pre class="language-java line-numbers"><code>
+    @Query(
+            value = "select fruit_table.fruit_name, provider_table.provider_name from  fruit_table  join provider_table on fruit_table.provider_code = provider_table.id_provider",  //по идее эту портянку надо засунуть в какой нибудь  Enum
+            nativeQuery = true) //нужно только пометить только nativeQuery = true
+    ListList&lt;String&gt; joinSqlFruit();
+</code></pre>
+
+И используем их всех в классе <em>InitiateUtils</em>
+<pre class="language-java line-numbers"><code>
+System.out.println("\nТаблица фруктов и их поставщиков");
+for (String join : fruitService.joinString()) {
+    System.out.println(join);
+}
+
+System.out.println("\nТаблица фруктов и их поставщиков");
+for (FruitEntity join : fruitService.joinFruit()) {
+    System.out.println(join);
+}
+
+System.out.println("\nТаблица фруктов и их поставщиков");
+        for (String join : fruitService.joinSqlFruit()) {
+            System.out.println(join);
+        }
+</code></pre>
+Запускаем проект и видим в консоли новые логи:
+<em>Таблица фруктов и их поставщиков
+Fruit1,null
+Fruit2,Provider5
+Fruit3,Provider2
+Fruit4,Provider5
+Fruit5,null
+Fruit6,null
+Fruit7,null
+Fruit8,null
+Fruit9,null
+
+Таблица фруктов и их поставщиков
+FruitEntity(id=2, fruitName=Fruit2, providerCode=5)
+FruitEntity(id=3, fruitName=Fruit3, providerCode=2)
+FruitEntity(id=4, fruitName=Fruit4, providerCode=5)
+
+Таблица фруктов и их поставщиков
+Fruit2,Provider5
+Fruit3,Provider2
+Fruit4,Provider5
+</em>
+
+Да, если вам уже надоели "псевдо" и просто SQL запросы в консоли, можете в ямл файле вернуть false на место.
+
+Почему в первой таблице есть null, это вы узнаете если почитаете про <a href="https://sql-academy.org/ru/guide" target="_blank" rel="nofollow">JOIN SQL </a> .
+И так, с запросами к БД мы закончили, я уверен, что у вас осталось много вопросов, но я надеюсь, что вы будете искать на них ответы, пути поиска я попытался подсветить.
+
+Давайте попытаемся с резюмировать все что мы узнали за это время:
+1.	Можно запустить веб сервер на Spring и это не сложно.
+2.	Для понимания как это все работает необходимо погрузиться в теорию.
+<a href="https://javarush.com/groups/posts/537-post-blagodarnosti-i-vpechatlenija-ot-spring-in-action" target="_blank" rel="nofollow">Про книгу</a>
+<a href="https://javarush.com/groups/posts/spring-framework-java-1" target="_blank" rel="nofollow">Статья про спринг</a>
+<a href="https://javarush.com/groups/posts/1763-36-urovenjh---tozhe-ne-nashjel-otvetih-na-voprosih-iz-sobesedovaniy" target="_blank" rel="nofollow">Статья про полезные вещи</a>
+3.	А что бы понимание перешло в физический код надо кодить, и прежде чем идти дальше, набейте руку на простых проектах на spring-boot.
+И лучше не копировать написанный код, а переписывать его.
+
+Я выложу проект, который мы с вами пилили сюда, но буду надеяться на вашу сознательность и уверен вы не будете бездумно копипастить.
+<a href="https://bitbucket.org/FromJava/jd/src/master/" target="_blank" rel="nofollow">Ссылка на репозиторий</a>
+git clone https://FromJava@bitbucket.org/FromJava/jd.git
+<a href="https://javarush.com/groups/posts/2818-podruzhim-git-s-intellij-idea" target="_blank" rel="nofollow">Для тех кто не знает как пользоваться этой ссылкой</a>
+
+Рекомендую реализовать два тренировочных проекта:
+<strong>Проект про покраску машин:</strong>
+
+Первый класс:
+<em>CarEntity{
+Integer id;
+String modelName;
+String color;
+}</em>
+
+Второй класс:
+<em>ColorEntity{
+Integer id;
+String color;
+Integer price;
+}</em>
+
+Наполните базу (придумайте реалистичные названия так будет легче для понимания), реализуйте: , entity, repositories, services, создайте стандартные и межтабличные запросы (Сколько стоит покраска  BMW  в красный цвет? Какой цвет самый дорогой? Напишите модели в консоль в алфавитном порядке и т.д.);
+
+<strong>Проект про библиотеку:</strong>
+
+Первый класс:
+<em>BookEntity{
+Integer id;
+String nameBook;
+Integer yearCreat;
+Integer autorId;
+}</em>
+
+Второй класс:
+<em>AutorEntity{
+Integer id;
+String firstNameAutor;
+String lastNameAutor;
+}</em>
+Наполните базу (придумайте реалистичные названия так будет легче для понимания), реализуйте: entity, repositories, services, создайте стандартные и межтабличные запросы (Кто написал какую книгу? Какая книга написана раньше всех? Какие книги были написаны с 1800 по 1900? Кто из авторов написал больше всего книг?);
+Примеры для заполнения базы проекта <strong>"Библиотека"</strong>
+<em>Таблица книг
+BookEntity(id=1, nameBook=Горе от ума, yearCreat=1824, authorId=1)
+BookEntity(id=2, nameBook=Война и мир, yearCreat=1863, authorId=2)
+BookEntity(id=3, nameBook=Мцыри, yearCreat=1838, authorId=3)
+BookEntity(id=4, nameBook=Евгений Онегин, yearCreat=1833, authorId=4)
+
+Таблица авторов
+AuthorEntity(id=1, firstNameAuthor=Александр, lastNameAuthor=Грибоедов)
+AuthorEntity(id=2, firstNameAuthor=Лев, lastNameAuthor=Толстой)
+AuthorEntity(id=3, firstNameAuthor=Михаил, lastNameAuthor=Лермонтов)
+AuthorEntity(id=4, firstNameAuthor=Александр, lastNameAuthor=Пушкин)</em>
+
+Всем удачи, <a href="https://javarush.com/groups/posts/3102-spring--ehto-ne-strashno-ili-kratkostjh-sestra-talanta" target="_blank" rel="nofollow">еще увидимся!</a>

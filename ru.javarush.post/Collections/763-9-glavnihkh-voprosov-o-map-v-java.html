@@ -1,0 +1,147 @@
+9 главных вопросов о Map в Java
+<p>----------------------------------------</p>
+Напомним, что Map — это структурированные данные, состоящие из набора пар ключ-значение, и каждый ключ может использоваться только один раз в одной Map. Эта тема раскрывает 9 основных вопросов об использовании Map в Java и её воплощённых (имплементированных) классах ...
+<p>----------------------------------------</p>
+Напомним, что <strong><a href="https://javarush.com/groups/posts/1940-klass-hashmap-" target="_blank">Map</a></strong> — это структурированные данные, состоящие из набора пар ключ-значение, и каждый ключ может использоваться только один раз в одной Map. Эта тема раскрывает 9 основных вопросов об использовании <a href="https://docs.oracle.com/javase/7/docs/api/java/util/Map.html" rel="nofollow" target="_blank">Map</a> в Java и её воплощённых (имплементированных) классах. Для простоты, я буду использовать в примерах <a href="https://docs.oracle.com/javase/tutorial/java/generics/" rel="nofollow" target="_blank">обобщения</a>. Потому, я буду писать просто Map, не конкретизируя спецификатор Map. Но вы можете полагать, что оба значения <strong>K</strong> и <strong>V</strong> сопоставимы, что означает <strong>K</strong> расширяет <strong>Comparable</strong> и <strong>V</strong> так же расширяет <strong>Comparable</strong>.<img data-id="599e88a7-47f9-44de-986e-fa3ff12917c6" data-max-width="850" alt="9 главных вопросов о Map в Java - 1" src="https://cdn.javarush.com/images/article/599e88a7-47f9-44de-986e-fa3ff12917c6/1024.jpeg"><h2>0. Обращение Map в List</h2>В Java, интерфейс <a href="https://docs.oracle.com/javase/7/docs/api/java/util/Map.html" rel="nofollow" target="_blank">Map</a> предлагает три вида коллекций: набор ключей, набор значений и набор ключ-значение. Все они могут быть обращены в <a href="https://docs.oracle.com/javase/7/docs/api/java/util/List.html" rel="nofollow" target="_blank">List</a> при помощи конструктора или метода <code>addAll()</code>. Следующая вырезка кода демонстрирует как сделать <a href="https://docs.oracle.com/javase/7/docs/api/java/util/ArrayList.html" rel="nofollow" target="_blank">ArrayList</a> из Map.
+
+<pre class="lang-java line-numbers"><code>
+//лист ключей
+List keyList = new ArrayList(Map.keySet());
+//лист значений
+List valueList = new ArrayList(Map.valueSet());
+//лист ключ-значения
+List entryList = new ArrayList(Map.entrySet());
+</code></pre><h2>1. Пройтись по всем значениям в Map</h2>Проход по каждой паре ключ-значение — самая базовая, основная процедура прохода по Map. В Java, каждая пара хранится в поле Map называемом <a href="https://docs.oracle.com/javase/7/docs/api/java/util/Map.Entry.html" rel="nofollow" target="_blank">Map.Entry</a>. <code>Map.entrySet()</code> возвращает набор ключ-значений, потому самым эффективным способом пройтись по всем значениям Map будет:
+
+<pre class="lang-java line-numbers"><code>
+for(Entry entry: Map.entrySet()) {
+  //получить ключ
+  K key = entry.getKey();
+  //получить значение
+  V value = entry.getValue();
+}
+</code></pre>
+Так же мы можем использовать <code>Iterator</code>, особенно в версиях младше JDK 1.5
+
+<pre class="lang-java line-numbers"><code>
+Iterator itr = Map.entrySet().iterator();
+while(itr.hasNext()) {
+  Entry entry = itr.next();
+  //получить ключ
+  K key = entry.getKey();
+  //получить значение
+  V value = entry.getValue();
+}
+</code></pre><h2>2. Упорядочивание Map по ключам</h2>Упорядочивание Map по ключам ещё одна часто встречаемая процедура. Первый способ: добавить <a href="https://docs.oracle.com/javase/7/docs/api/java/util/Map.Entry.html" rel="nofollow" target="_blank">Map.Entry</a> в список, и упорядочить с использованием компаратора, что сортирует по значениям.
+
+<pre class="lang-java line-numbers"><code>
+List list = new ArrayList(Map.entrySet());
+Collections.sort(list, new Comparator() {
+ 
+  @Override
+  public int compare(Entry e1, Entry e2) {
+    return e1.getKey().compareTo(e2.getKey());
+  }
+});
+</code></pre>
+Другой способ: использовать <a href="https://docs.oracle.com/javase/7/docs/api/java/util/SortedMap.html" rel="nofollow" target="_blank">SortedMap</a>, которая ко всему, ещё и выстраивает свои ключи по порядку. Но, все ключи при этом должны воплощать <a href="https://docs.oracle.com/javase/7/docs/api/java/lang/Comparable.html" rel="nofollow" target="_blank">Comparable</a> или приниматься компаратором.
+
+Один из имплементированных классов <code>SortedMap</code> — <a href="https://docs.oracle.com/javase/7/docs/api/java/util/TreeMap.html" rel="nofollow" target="_blank">TreeMap</a>. Её конструктор принимает компаратор. Следующий код показывает как превратить обычную <code>Map</code> в упорядоченную.
+
+<pre class="lang-java line-numbers"><code>
+SortedMap sortedMap = new TreeMap(new Comparator() {
+ 
+  @Override
+  public int compare(K k1, K k2) {
+    return k1.compareTo(k2);
+  }
+ 
+});
+sortedMap.putAll(Map);
+</code></pre><h2>3. Упорядочивание Map по значениям</h2>Добавление Map в список и последующая сортировка работают и в данном случае, но нужно в этот раз брать <code>Entry.getValue()</code>. Код ниже почти такой же как и раньше.
+
+<pre class="lang-java line-numbers"><code>
+List list = new ArrayList(Map.entrySet());
+Collections.sort(list, new Comparator() {
+ 
+  @Override
+  public int compare(Entry e1, Entry e2) {
+    return e1.getValue().compareTo(e2.getValue());
+  }
+ 
+});
+</code></pre>
+Мы всё ещё можем использовать <code>SortedMap</code> в данном случае, но только если значения уникальны. В таком случае, вы можете обратить пару ключ-значение в значение-ключ. Это решение обладает строгим ограничением, и не рекомендуется мною.
+<h2>4. Инициализация статической/неизменной Map</h2>Когда вы желаете, что бы Map оставалась неизменной, хорошим способом будет скопировать оную в неизменяемую (immutable) Map. Такая защитная техника программирования поможет вам создать не только безопасную для использования, но и так же потокобезопасную Map.
+
+Для инициализации статической/неизменной Map, мы можем использовать инициализатор <code>static</code> (см. ниже). Проблема данного кода в том, что не смотря на объявление Map как <code>static final</code>, мы всё ещё можем работать с ней после инициализации, например <code>Test.Map.put(3,"three");</code>. Так что это не настоящая неизменность.
+
+Для создания неизменяемой Map с использованием статического инициализатора, нам нужен супер анонимный класс, который мы добавим в неизменяемую Map на последнем шаге инициализации. Пожалуйста, посмотрите на вторую часть кода. Когда будет выброшено <a href="https://docs.oracle.com/javase/7/docs/api/java/lang/UnsupportedOperationException.html" rel="nofollow" target="_blank">UnsupportedOperationException</a>, если вы запустите <code>Test.Map.put(3,"three");</code>.
+
+<pre class="lang-java line-numbers"><code>
+public class Test {
+ 
+  private static final Map Map;
+  static {
+    Map = new HashMap();
+    Map.put(1, "one");
+    Map.put(2, "two");
+  }
+}
+public class Test {
+ 
+  private static final Map Map;
+  static {
+    Map aMap = new HashMap();
+    aMap.put(1, "one");
+    aMap.put(2, "two");
+    Map = Collections.unmodifiableMap(aMap);
+  }
+}
+</code></pre>
+Библиотека <a href="https://github.com/google/guava" rel="nofollow" target="_blank">Guava</a> так же поддерживает различные способы инициализации статических и неизменных коллекций. Чтобы изучить подробнее преимущества утилиты Guava для неизменных коллекций, обратитесь к разделу <a href="https://github.com/google/guava" rel="nofollow" target="_blank">Неизменные коллекции в Инструкции Guava</a>.
+<h2>5. Разница между HashMap, TreeMap, и Hashtable</h2>Есть три основных воплощения интерфейса <a href="https://docs.oracle.com/javase/7/docs/api/java/util/Map.html" rel="nofollow" target="_blank">Map</a> в Java: <a href="https://docs.oracle.com/javase/7/docs/api/java/util/HashMap.html" rel="nofollow" target="_blank">HashMap</a>, <a href="https://docs.oracle.com/javase/7/docs/api/java/util/TreeMap.html" rel="nofollow" target="_blank">TreeMap</a>, и <a href="https://docs.oracle.com/javase/7/docs/api/java/util/Hashtable.html" rel="nofollow" target="_blank">Hashtable</a>. Главные отличия заключаются в следующем:
+<ul>
+    <li><strong>Порядок прохода</strong>. <a href="https://javarush.com/groups/posts/732-kak-rabotaet-hashmap-v-java" target="_blank">HashMap</a> и HashTable не дают гарантий по упорядоченности в Map; в частности, они не гарантируют что порядок останется тем же самым в течении времени. Но <code>TreeMap</code> будет упорядочивать все значения в "естественном порядке" ключей или по компаратору.</li>
+    <li><strong>Допустимые пары ключ-значение.</strong> <code>HashMap</code> позволяет иметь ключ null и значение null. <code>HashTable</code> не позволяет ключ null или значение null. Если <code>TreeMap</code> использует естественный порядок или компаратор не позволяет использовать ключ null, будет выброшено исключение.</li>
+    <li><strong>Синхронизация</strong>. Только <code>HashTable</code> синхронизирована, остальные — нет. Но, "если потокобезопасное воплощение не нужно, рекомендуется использовать <code>HashMap</code> вместо <code>HashTable</code>".</li>
+</ul>
+Более подробное сравнение
+
+<pre class="lang-java"><code>
+.                       | HashMap | HashTable | TreeMap
+-------------------------------------------------------
+
+Упорядочивание          |нет      |нет        | да
+null в ключ-значение    | да-да   | нет-нет   | нет-да
+синхронизировано        | нет     | да        | нет
+производительность      | O(1)    | O(1)      | O(log n)
+воплощение              | корзины | корзины   | красно-чёрное дерево
+</code></pre>
+Прочтите подробнее об отношениях <a href="https://www.programcreek.com/2013/03/hashmap-vs-treemap-vs-hashtable-vs-linkedhashmap/" rel="nofollow" target="_blank">HashMap vs. TreeMap vs. Hashtable vs. LinkedHashMap</a>.
+<h2>6. Map с реверсивным поиском/просмотром</h2>Иногда, нам нужен набор пар ключ-ключ, что подразумевает значения так же уникальны, как и ключи (паттерн один-к-одному). Такое постоянство позволяет создать "инвертированный просмотр/поиск" по Map. То есть, мы можем найти ключ по его значению. Такая структура данных называется <a href="https://en.wikipedia.org/wiki/Bidirectional_map" rel="nofollow" target="_blank">двунаправленная Map</a>, которая к сожалению, не поддерживается JDK.
+
+Обе Apache Common Collections и Guava предлагают воплощение двунаправленной Map, называемые BidiMap и BiMap, соответственно. 
+
+Обе вводят ограничение, которое задаёт соответствие 1:1 между ключами и значениями.
+<h2>7. Поверхностная копия Map</h2>Почти все, если не все, Map в Java содержат конструктор копирования другой Map. Но процедура копирования не синхронизирована. Что означает когда один поток копирует Map, другой может изменить её структуру. Для предотвращения внезапной рассинхронизации копирования, один из них должен использовать в таком случае <code>Collections.synchronizedMap()</code>.
+
+<pre class="lang-java line-numbers"><code>
+Map copiedMap = Collections.synchronizedMap(Map);
+</code></pre>
+Другой интересный способ поверхностного копирования — использование метода <code>clone()</code>. Но он НЕ рекомендуется даже создателем фреймворка коллекций Java, Джошуа Блохом. В споре "<a href="https://www.artima.com/intv/bloch13.html" rel="nofollow" target="_blank">Конструктор копирования против клонирования</a>", он занимает позицию:
+
+Цитата:<em> "Я часто привожу публичный метод clone в конкретных классах, поскольку люди ожидают их там увидеть. ... это позор, что Клонирование сломано, но это случилось. ... Клонирование это слабое место, и я думаю люди должны быть предупреждены о его ограничениях."</em>
+
+По этой причине, я даже не показываю вам, как использовать метод <code>clone()</code> для копирования Map 
+<h2>8. Создание пустой Map</h2>Если <code>Map</code> неизменна, используйте:
+
+<pre class="lang-java line-numbers"><code>
+Map = Collections.emptyMap();
+</code></pre>
+Или, используйте любое другое воплощение. Например:
+
+<pre class="lang-java line-numbers"><code>
+Map = new HashMap();
+</code></pre>
+КОНЕЦ

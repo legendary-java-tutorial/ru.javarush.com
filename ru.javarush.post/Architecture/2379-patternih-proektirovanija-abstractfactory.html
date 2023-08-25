@@ -1,0 +1,309 @@
+Паттерны проектирования: AbstractFactory
+<p>----------------------------------------</p>
+Абстрактная фабрика, как и все фабричные паттерны, помогает нам правильно организовать создание новых объектов. С ее помощью мы управляем “выпуском” различных семейств взаимосвязанных объектов.Различные семейства взаимосвязанных объектов…
+<p>----------------------------------------</p>
+Привет! Сегодня мы продолжим изучать паттерны проектирования и поговорим об <strong>абстрактной фабрике</strong>. 
+<img data-max-width="850" alt="Паттерны проектирования: AbstractFactory - 1" src="https://cdn.javarush.com/images/article/1817e6d7-9806-46df-b607-e877a3ef222c/original.jpeg">Чем займемся на лекции:
+<ul>
+<li>обсудим, что такое абстрактная фабрика и какую проблему данный паттерн решает;</li>
+<li>создадим каркас кроссплатформенного приложения для заказа кофе с пользовательским интерфейсом;</li>
+<li>изучим инструкцию по применению данного паттерна с диаграммой и кодом;</li>
+<li>в качестве бонуса, в лекции спрятана пасхалка, благодаря которой ты научишься определять имя операционной системы с помощью Java и в зависимости от результата выполнять то или иное действие.</li>
+</ul>Для полного понимания данного паттерна тебе необходимо хорошо разбираться в таких темах: 
+<ul>
+<li>наследование в Java;</li>
+<li>абстрактные классы и методы в Java.</li>
+</ul><h2>Какие проблемы решает паттерн абстрактная фабрика?</h2>Абстрактная фабрика, как и все фабричные паттерны, помогает нам правильно организовать создание новых объектов. С ее помощью мы управляем “выпуском” различных семейств взаимосвязанных объектов. 
+
+Различные семейства взаимосвязанных объектов…Что это? Не переживай: на практике все проще, чем может показаться. 
+
+Начнем с того, что может быть семейством взаимосвязанных объектов? Предположим, мы разрабатываем с тобой стратегию, и  в ней есть несколько боевых единиц:
+<ul>
+<li>пехота;</li>
+<li>кавалерия;</li>
+<li>лучники.</li>
+</ul>Эти типы боевых единиц связаны между собой, ведь они несут службу в одной армии. Мы можем сказать, что перечисленные выше категории — это семейство взаимосвязанных объектов. С этим разобрались. 
+
+Но паттерн абстрактная фабрика применяют для организации создания <strong>различных</strong> семейств взаимосвязанных объектов. 
+
+Здесь тоже ничего сложного. Продолжим пример со стратегией. В них, как правило, есть несколько различных противоборствующих сторон. У разных сторон боевые единицы могут существенно различаться внешне. Пехотинцы, всадники и лучники римской армии — не то же самое, что пехотинцы, всадники и лучники викингов. 
+
+В рамках стратегии, солдаты разных армий — это различные семейства взаимосвязанных объектов. 
+
+Было бы забавно, если по ошибке программиста в рядах римских пехотинцев разгуливал солдат во французском мундире времен Наполеона, с мушкетом наперевес. 
+
+Именно для решения такой проблемы нужен шаблон проектирования абстрактная фабрика. Нет, не проблемы конфузов путешествий во времени, а создания различных групп взаимосвязанных объектов.
+
+Абстрактная фабрика предоставляет интерфейс создания всех имеющихся продуктов (объектов семейства). У абстрактной фабрики, как правило, есть несколько реализаций. Каждая из них отвечает за создание продуктов одной из вариаций. 
+
+В рамках стратегии у нас была бы абстрактная фабрика, создающая абстрактных пехотинцев, лучников и кавалеристов, а также реализации этой фабрики. Фабрика, создающая римских легионеров и, к примеру, фабрика, создающая воинов карфагена. 
+
+Абстракция — важнейший принцип данного паттерна. Клиенты фабрики работают с ней и с продуктами только через абстрактные интерфейсы. Поэтому можно не задумываться о том, каких воинов мы сейчас создаем, а передать эту обязанность какой-нибудь конкретной реализации абстрактной фабрики. 
+<h2>Продолжаем автоматизировать кофейню</h2>На <a href="https://javarush.com/groups/posts/2372--patternih-proektirovanija-factorymethod" target="_blank">прошлой лекции</a> мы изучили паттерн фабричный метод, с помощью которого нам удалось расширить кофейный бизнес и открыть несколько новых точек по продаже кофе. 
+
+Сегодня мы продолжим работу по модернизации нашего дела. С помощью паттерна абстрактная фабрика мы заложим фундамент для нового десктопного приложения для заказа кофе онлайн. 
+
+Когда пишем приложение для десктопа, мы всегда должны думать о кроссплатформенности. Наше приложение должно работать и на macOS, и на Windows (спойлер: Linux останется тебе в качестве домашнего задания).
+
+Как будет выглядеть наше приложение? Довольно просто: это будет форма, которая состоит из текстового поля, поля выбора и кнопки. Если у тебя есть опыт использования разных операционных систем, ты точно заметил, что на винде кнопки отрисовываются не так, как на маке. Как, впрочем, и все остальное... 
+
+Итак, начнем. В роли семейств продуктов, как ты наверное уже понял, у нас будут выступать элементы графического интерфейса:
+<ul>
+<li>кнопки;</li>
+<li>текстовые поля;</li>
+<li>поля для выбора.</li>
+</ul>Дисклеймер. Внутри каждого интерфейса мы могли бы определить методы, вроде <code>onClick</code>, <code>onValueChanged</code> или <code>onInputChanged</code>. Т.е. методы, которые позволят нам обрабатывать различные события (нажатие кнопки, ввод текста, выбор значения в поле выбора). Все это сознательно опущено, чтобы не перегружать пример и сделать его более наглядным для изучения фабричного паттерна.
+
+Давай определим абстрактные интерфейсы для наших продуктов:
+
+<pre class="lang-java line-numbers"><code>
+public interface Button {}
+public interface Select {}
+public interface TextField {}
+</code></pre>
+Для каждой операционной системы мы должны создавать элементы интерфейса в стиле данной операционной системы. Мы пишем для Windows и MacOS. 
+
+Создадим реализации под Windows:
+
+<pre class="lang-java line-numbers"><code>
+public class WindowsButton implements Button {
+}
+
+public class WindowsSelect implements Select {
+}
+
+public class WindowsTextField implements TextField {
+}
+</code></pre>
+Теперь то же самое для MacOS:
+
+<pre class="lang-java line-numbers"><code>
+public class MacButton implements Button {
+}
+
+public class MacSelect implements Select {
+}
+
+public class MacTextField implements TextField {
+}
+</code></pre>
+Отлично. Теперь мы можем приступить к нашей абстрактной фабрике, которая будет создавать все существующие абстрактные типы продуктов:
+
+<pre class="lang-java line-numbers"><code>
+public interface GUIFactory {
+
+    Button createButton();
+    TextField createTextField();
+    Select createSelect();
+
+}
+</code></pre>
+Превосходно. Как видишь, пока что ничего сложного. Дальше все также просто. По аналогии с продуктами, создаем различные реализации нашей фабрики для каждой OS. Начнем с Windows:
+
+<pre class="lang-java line-numbers"><code>
+public class WindowsGUIFactory implements GUIFactory {
+    public WindowsGUIFactory() {
+        System.out.println("Creating gui factory for Windows OS");
+    }
+
+    public Button createButton() {
+        System.out.println("Creating Button for Windows OS");
+        return new WindowsButton();
+    }
+
+    public TextField createTextField() {
+        System.out.println("Creating TextField for Windows OS");
+        return new WindowsTextField();
+    }
+
+    public Select createSelect() {
+        System.out.println("Creating Select for Windows OS");
+        return new WindowsSelect();
+    }
+}
+</code></pre>
+Вывод в консоль внутри методов и конструкторе добавлен для дальнейшей демонстрации работы. 
+
+Теперь для macOS:
+
+<pre class="lang-java line-numbers"><code>
+public class MacGUIFactory implements GUIFactory {
+    public MacGUIFactory() {
+        System.out.println("Creating gui factory for macOS");
+    }
+
+    @Override
+    public Button createButton() {
+        System.out.println("Creating Button for macOS");
+        return new MacButton();
+    }
+
+    @Override
+    public TextField createTextField() {
+        System.out.println("Creating TextField for macOS");
+        return new MacTextField();
+    }
+
+    @Override
+    public Select createSelect() {
+        System.out.println("Creating Select for macOS");
+        return new MacSelect();
+    }
+}
+</code></pre>
+Заметь: каждый метод, согласно сигнатуре, возвращает абстрактный тип. Но внутри метода мы создаем конкретную реализацию продукта. Это единственное место, где мы контролируем создание конкретных экземпляров. 
+
+Теперь пришло время написать класс формы. Это Java-класс, поля которого являются элементами интерфейса: 
+
+<pre class="lang-java line-numbers"><code>
+public class OrderCoffeeForm {
+    private final TextField customerNameTextField;
+    private final Select coffeTypeSelect;
+    private final Button orderButton;
+
+    public OrderCoffeeForm(GUIFactory factory) {
+        System.out.println("Creating order coffee form");
+        customerNameTextField = factory.createTextField();
+        coffeTypeSelect = factory.createSelect();
+        orderButton = factory.createButton();
+    }
+}
+</code></pre>
+В конструктор формы передается абстрактная фабрика, которая создает элементы интерфейса. Мы будем передавать в конструктор нужную реализацию фабрики, чтобы у нас создавались элементы интерфейса под ту или иную ОС.
+
+<pre class="lang-java line-numbers"><code>
+public class Application {
+    private OrderCoffeeForm orderCoffeeForm;
+
+    public void drawOrderCoffeeForm() {
+        // Определим имя операционной системы, получив значение системной проперти через System.getProperty
+        String osName = System.getProperty("os.name").toLowerCase();
+        GUIFactory guiFactory;
+
+        if (osName.startsWith("win")) { // Для windows
+            guiFactory = new WindowsGUIFactory();
+        } else if (osName.startsWith("mac")) { // Для mac
+            guiFactory = new MacGUIFactory();
+        } else {
+            System.out.println("Unknown OS, can't draw form :( ");
+            return;
+        }
+        orderCoffeeForm = new OrderCoffeeForm(guiFactory);
+    }
+
+    public static void main(String[] args) {
+        Application application = new Application();
+        application.drawOrderCoffeeForm();
+    }
+}
+</code></pre>
+<strong>Если мы запустим приложение на винде, получим следующий вывод: </strong>
+
+<pre><code>
+Creating gui factory for Windows OS
+Creating order coffee form
+Creating TextField for Windows OS
+Creating Select for Windows OS
+Creating Button for Windows OS
+</code></pre>
+<strong>На маке вывод будет следующим:</strong> 
+
+<pre><code>
+Creating gui factory for macOS
+Creating order coffee form
+Creating TextField for macOS
+Creating Select for macOS
+Creating Button for macOS
+</code></pre>
+На линуксе: 
+
+<pre><code>
+Unknown OS, can't draw form :( 
+</code></pre>
+Ну а мы с тобой делаем следующий вывод. Мы написали каркас для приложения с графическим пользовательским интерфейсом, в котором создаются ровно те элементы интерфейса, которые уместны в данной ОС. 
+
+Повторим тезисно, что мы создали:
+<ul>
+<li>Семейство продуктов: поле для ввода, поле выбора и кнопку.</li>
+<li>Различные реализации семейства данных продуктов, для Windows и macOS.</li>
+<li>Абстрактную фабрику, внутри которой определили интерфейс для создания наших продуктов.</li>
+<li>Две реализации нашей фабрики, каждая из которых отвечает за создание определенного семейства продуктов.</li>
+<li>Форму, Java-класс, полями которого являются абстрактные элементы интерфейса, которые инициализируются в конструкторе нужными значениями с помощью абстрактной фабрики.</li>
+<li>Класс приложения. Внутри него мы создаем форму, которой передаем в конструктор нужную реализацию нашей фабрики.</li>
+</ul>Итого: мы реализовали паттерн абстрактная фабрика. 
+<h2>Абстрактная фабрика: инструкция по применению</h2>Абстрактная фабрика — шаблон проектирования для управления созданием различных семейств продуктов без привязки к конкретным классам продуктов. 
+
+Применяя данный шаблон, необходимо:
+<ol>
+<li>Определить сами семейства продуктов. Предположим, у нас имеются их два:
+<ul style="list-style-type: lower-alpha">
+<li><code>SpecificProductA1</code>, <code>SpecificProductB1</code></li>
+<li><code>SpecificProductA2</code>, <code>SpecificProductB2</code></li>
+</ul></li>
+<li>Для каждого продукта внутри семейства определить абстрактный класс (интерфейс). В нашем случае это: 
+<ul style="list-style-type: lower-alpha">
+<li><code>ProductA</code></li>
+<li><code>ProductB</code></li>
+</ul>
+</li><li>Внутри каждого семейства продуктов, каждый продукт должен реализовывать интерфейс, определенный на шаге 2.</li>
+<li>Создать абстрактную фабрику, с методами create для каждого продукта, определенного на шаге 2. В нашем случае такими методами будут:
+<ul style="list-style-type: lower-alpha">
+<li><code>ProductA createProductA();</code></li>
+<li><code>ProductB createProductB();</code></li>
+</ul></li>
+<li>Создать реализации абстрактной фабрики так, чтобы каждая реализация управляла созданием продуктов одного семейства. Для этого внутри каждой реализации абстрактной фабрики необходимо реализовать все методы create, так, чтобы внутри них создавались и возвращались конкретные реализации продуктов.</li>
+</ol>Ниже представлена UML диаграмма, которая иллюстрирует описанную выше инструкцию: 
+<img data-max-width="1024" data-id="4253c521-0ac6-4b0c-aaf9-01359cd82036" src="/images/article/4253c521-0ac6-4b0c-aaf9-01359cd82036/1024.jpeg" class="img-fluid" alt="Паттерны проектирования: AbstractFactory - 3">Теперь напишем код по данной инструкции: 
+
+<pre class="lang-java line-numbers"><code>
+    // Определим общие интерфейсы продуктов
+    public interface ProductA {}
+    public interface ProductB {}
+
+    // Создадим различные реализации (семейства) наших продуктов
+    public class SpecificProductA1 implements ProductA {}
+    public class SpecificProductB1 implements ProductB {}
+
+    public class SpecificProductA2 implements ProductA {}
+    public class SpecificProductB2 implements ProductB {}
+
+    // Создадим абстрактную фабрику
+    public interface AbstractFactory {
+        ProductA createProductA();
+        ProductB createProductB();
+    }
+
+    // Создадим реализацию абстрактной фабрики для создания продуктов семейства 1
+    public class SpecificFactory1 implements AbstractFactory {
+
+        @Override
+        public ProductA createProductA() {
+            return new SpecificProductA1();
+        }
+
+        @Override
+        public ProductB createProductB() {
+            return new SpecificProductB1();
+        }
+    }
+
+    // Создадим реализацию абстрактной фабрики для создания продуктов семейства 1
+    public class SpecificFactory2 implements AbstractFactory {
+
+        @Override
+        public ProductA createProductA() {
+            return new SpecificProductA2();
+        }
+
+        @Override
+        public ProductB createProductB() {
+            return new SpecificProductB2();
+        }
+    }
+</code></pre><h2>Домашнее задание</h2>Для закрепления материала ты можешь сделать 2 вещи:
+<ol>
+<li>Доработать приложение для заказа кофе так, чтобы оно работало и на Linux.</li>
+<li>Создать свою собственную абстрактную фабрику для выпуска юнитов какой-либо стратегии. Это может быть как историческая стратегия с реальными армиями, так и фэнтези с орками, гномами и эльфами. Главное, чтобы тебе было интересно. Прояви изобретательность, расставь выводы в консоль и получай удовольствие от изучения паттернов!</li>
+
+
+</ol>

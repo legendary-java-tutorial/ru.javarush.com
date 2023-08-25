@@ -1,0 +1,213 @@
+Паттерн проектирования Factory
+<p>----------------------------------------</p>
+Привет, друг! Сегодня мы продолжим изучать с тобой паттерны проектирования. В этой лекции будем говорить о Фабрике. Обсудим с тобой, какую проблему решают с помощью данного шаблона, посмотрим на примере, как фабрика помогает открывать кофейню...
+<p>----------------------------------------</p>
+Привет, друг! Сегодня мы продолжим изучать с тобой паттерны проектирования. В этой лекции будем говорить о Фабрике. Обсудим с тобой, какую проблему решают с помощью данного шаблона, посмотрим на примере, как фабрика помогает открывать кофейню. А еще я я дам тебе 5 простых шагов для создания фабрики. 
+
+<img data-max-width="800" data-id="c63d71f2-b30f-49c4-8860-53096a4511eb" src="/images/article/c63d71f2-b30f-49c4-8860-53096a4511eb/800.jpeg" class="img-fluid" alt="Паттерн проектирования Factory - 1">Чтобы быть со всеми на одной волне и легко улавливать суть, тебе должны быть знакомы такие темы: 
+<ul>
+<li>Наследование в Java</li>
+<li>Сужение и расширение ссылочных типов в Java</li>
+<li>Взаимодействие между различными классами и объектами</li>
+</ul><h2>Что такое Фабрика?</h2>Шаблон проектирования Фабрика позволяет управлять созданием объектов. 
+
+Процесс создания нового объекта не то чтобы прост, но и не слишком сложен. Все мы знаем, что для создания нового объекта необходимо использовать оператор <code><span class="text-bold">new</span></code>. И может показаться, что здесь нечем управлять, однако это не так. 
+
+Сложности могут возникнуть, когда в нашем приложении есть некоторый класс, у которого есть множество наследников, и необходимо создавать экземпляр определенного класса в зависимости от некоторых условий. 
+
+<span class="text-bold">Фабрика</span> — это шаблон проектирования, который помогает решить проблему создания различных объектов в зависимости от некоторых условий. 
+
+Абстрактно, не правда ли? Больше конкретики и ясности появится, когда мы рассмотрим пример ниже. 
+<h2>Создаем различные виды кофе</h2>Предположим, мы хотим автоматизировать кофейню. Нам необходимо научиться готовить различные виды кофе. Для этого в нашем приложении мы создадим класс кофе и его производные: американо, капучино, эспрессо, латте — те виды кофе, которые мы будем готовить. 
+
+Начнем с общего кофейного класса:
+
+<pre class="lang-java line-numbers"><code>
+public class Coffee {
+    public void grindCoffee(){
+        // перемалываем кофе
+    }
+    public void makeCoffee(){
+        // делаем кофе
+    }
+    public void pourIntoCup(){
+        // наливаем в чашку
+    }
+}
+</code></pre>
+Далее создадим его наследников:
+
+<pre class="lang-java line-numbers"><code>
+public class Americano extends Coffee {}
+public class Cappuccino extends Coffee {}
+public class CaffeLatte extends Coffee {}
+public class Espresso extends Coffee {}
+</code></pre>
+Наши клиенты будут заказывать какой-либо вид кофе, и эту информацию нужно передавать программе. Это можно сделать разными способами, например использовать <code>String</code>. Но лучше всего для этих целей подойдет <code>enum</code>. Создадим <code>enum</code> и определим в нем типы кофе, на которые мы принимаем заказы: 
+
+<pre class="lang-java line-numbers"><code>
+public enum CoffeeType {
+    ESPRESSO,
+    AMERICANO,
+    CAFFE_LATTE,
+    CAPPUCCINO
+}
+</code></pre>
+Отлично, теперь напишем код нашей кофейни: 
+
+<pre class="lang-java line-numbers"><code>
+public class CoffeeShop {
+    
+    public Coffee orderCoffee(CoffeeType type) {
+        Coffee coffee = null;
+        
+        switch (type) {
+            case AMERICANO:
+                coffee = new Americano();
+                break;
+            case ESPRESSO:
+                coffee = new Espresso();
+                break;
+            case CAPPUCCINO:
+                coffee = new Cappucсino();
+                break;
+            case CAFFE_LATTE:
+                coffee = new CaffeLatte();
+                break;
+        }
+
+        coffee.grindCoffee();
+        coffee.makeCoffee();
+        coffee.pourIntoCup();
+
+        System.out.println("Вот ваш кофе! Спасибо, приходите еще!");
+        return coffee;
+    }
+}
+</code></pre>
+Метод <code>orderCoffee</code> можно разделить на две составляющие: 
+<ol>
+<li>Создание конкретного экземпляра кофе в блоке <code>switch-case</code>. Именно здесь происходит то, что делает Фабрика — создание конкретного типа в зависимости от условий.</li>
+<li>Само приготовление — перемолка, приготовление и разлитие в чашку.</li>
+</ol>Что важно знать, если нужно будет вносить в метод изменения в будущем: 
+<ol>
+<li>Сам алгоритм приготовления (перемолка, приготовление и разлитие в чашку) останется неизменным (по крайней мере мы на это рассчитываем).</li>
+<li>А вот ассортимент кофе может измениться. Возможно, мы начнем готовить мока.. Мокка.. Моккачи… Господь с ним, новый вид кофе.</li>
+</ol>Мы уже сейчас можем предположить, что в будущем, с определенной долей вероятности, нам придется вносить изменения в метод, в блок <code>switch-case</code>. 
+
+Также возможно, в нашей кофейне метод <code>orderCoffee</code> будет не единственным местом, в котором мы будем создавать различные виды кофе. Следовательно, вносить изменения придется в нескольких местах. 
+
+Тебе уже наверняка понятно, к чему я клоню. Нам нужно рефакторить. Вынести блок, отвечающий за создание кофе, в отдельный класс по двум причинам:
+<ol>
+<li>Мы сможем переиспользовать логику создания кофе в других местах.</li>
+<li>Если ассортимент изменится, нам не придется править код везде, где будет использоваться создание кофе. Достаточно будет изменить код только в одном месте.</li>
+</ol>Иными словами, пришло время запилить фабрику. 
+<h2>Пилим нашу первую фабрику</h2>Для этого создадим новый класс, который будет отвечать только за создание нужных экземпляров классов кофе:
+
+<pre class="lang-java line-numbers"><code>
+public class SimpleCoffeeFactory {
+    public Coffee createCoffee (CoffeeType type) {
+        Coffee coffee = null;
+
+        switch (type) {
+            case AMERICANO:
+                coffee = new Americano();
+                break;
+            case ESPRESSO:
+                coffee = new Espresso();
+                break;
+            case CAPPUCCINO:
+                coffee = new Cappucino();
+                break;
+            case CAFFE_LATTE:
+                coffee = new CaffeLatte();
+                break;
+        }
+        
+        return coffee;
+    }
+}
+</code></pre>
+Поздравляю тебя! Мы только что реализовали шаблон проектирования Фабрика в самом его простейшем виде. 
+
+Хотя все могло быть еще проще, если сделать метод <code>createCoffee</code> статичным. Но тогда мы потеряли бы две возможности: 
+<ol>
+<li>Наследоваться от <code>SimpleCoffeeFactory</code> и переопределять метод <code>createCoffee</code>.</li>
+<li>Внедрять нужную реализацию фабрики в наши классы.</li>
+</ol>Кстати о внедрении. Нам нужно вернуться в кофейню и внедрить нашу фабрику по созданию кофе.
+<h2>Внедрение фабрики в кофейню</h2>Перепишем класс нашей кофейни с использованием фабрики: 
+
+<pre class="lang-java line-numbers"><code>
+public class CoffeeShop {
+
+    private final SimpleCoffeeFactory coffeeFactory;
+
+    public CoffeeShop(SimpleCoffeeFactory coffeeFactory) {
+        this.coffeeFactory = coffeeFactory;
+    }
+
+    public Coffee orderCoffee(CoffeeType type) {
+        Coffee coffee = coffeeFactory.createCoffee(type);
+        coffee.grindCoffee();
+        coffee.makeCoffee();
+        coffee.pourIntoCup();
+
+        System.out.println("Вот ваш кофе! Спасибо, приходите еще!");
+        return coffee;
+    }
+}
+</code></pre>
+Отлично. Теперь схематично и лаконично попробуем описать структуру шаблона проектирования Фабрика.
+<h2>5 шагов к открытию собственной фабрики</h2>Шаг 1. У тебя в программе класс с несколькими потомками, как на картинке ниже: 
+<img data-max-width="800" data-id="04a99b11-fd01-4899-aecc-6a9a92b524be" src="/images/article/04a99b11-fd01-4899-aecc-6a9a92b524be/800.jpeg" class="img-fluid" alt="Паттерн проектирования Factory - 2">Шаг 2. Ты создаешь <code>enum</code>, в котором определяешь enum-переменную для каждого класса-наследника: 
+
+<pre class="lang-java line-numbers"><code>
+    enum CatType {
+        LION,
+        TIGER,
+        BARSIK
+    }
+</code></pre>
+Шаг 3. Ты строишь свою фабрику. Называешь её <code>MyClassFactory</code>, код ниже: 
+
+<pre class="lang-java line-numbers"><code>
+class CatFactory {}
+</code></pre>
+Шаг 4. Ты создаешь в своей фабрике метод <code>createMyClass</code>, который принимает в себя переменную-<code>enum</code> <code>MyClassType</code>. Код ниже: 
+
+<pre class="lang-java line-numbers"><code>
+    class CatFactory {
+        public Cat createCat(CatType type) {
+            
+        }
+    }
+</code></pre>
+Шаг 5. Ты пишешь в теле метода блок <code>switch-case</code>, в котором перебираешь все enum значения и создаешь экземпляр класса, соответствующий <code>enum</code> значению:
+
+<pre class="lang-java line-numbers"><code>
+class CatFactory {
+        public Cat createCat(CatType type) {
+            Cat cat = null;
+            
+            switch (type) {
+                case LION:
+                    cat =  new Barsik();
+                    break;
+                case TIGER:
+                    cat = new Tiger();
+                    break;
+                case BARSIK:
+                    cat =  new Lion();
+                    break;
+            }
+            
+            return cat;
+        }
+    }
+</code></pre>
+Like a boss.
+<h2>Как тренироваться</h2>Читать — хорошо, писать код —еще лучше. Если в твоем имени четное количество букв, попробуй создать свою виртуальную пиццерию. 
+
+Если в твоем имени нечетное количество букв, попробуй создать виртуальный суши-бар.
+
+Если ты безымянный — тебе повезло. Сегодня можешь отдыхать. 

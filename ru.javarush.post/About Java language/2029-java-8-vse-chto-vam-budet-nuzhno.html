@@ -1,0 +1,136 @@
+Java 8. Все что вам будет нужно
+<p>----------------------------------------</p>
+Вольный перевод статьи с английского ресурса на русский о том, что такое Java 8. Почитав ее я понял, что статья толковая и вполне подходит для первого взгляда. Добро пожаловать в мое представление Java 8. Эта статья проведет тебя шаг за шагом дволь всех новый фич с Java 7 в Java 8 ...
+<p>----------------------------------------</p>
+<h2>Java 8 Tutorial</h2><blockquote>"Java до сих пор жива, и люди начинают понимать это."</blockquote>
+Добро пожаловать в мое представление Java 8. Эта статья проведет тебя шаг за шагом дволь всех новый фич с Java 7 в Java 8. При помощи быстрых и простых примеров кода, мы сможем выучить как использовать <strong>Default Interfaces</strong>, <strong>Method references</strong> и <strong>Repeatable annotations</strong>. В конце статьи мы познакомимся со Stream API.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="eefdcae9-668b-48e2-8c4a-879a4926635c" data-max-width="710" alt="Java 8. Все что вам будет нужно - 1" src="https://cdn.javarush.com/images/article/eefdcae9-668b-48e2-8c4a-879a4926635c/1024.jpeg"></div></div>Без лишней болтовни — только код и комментарии к нему!  Вперед!
+<h2>Default Methods for Interfaces</h2>Java 8 позволяет нам добавлять не абстрактные методы(которые реализованы) в интерфейсы путем добавления ключевого слова <code>default</code>. Эта возможность так же известна как <strong>Extention Methods</strong>. Ниже представлен первый пример:
+
+<pre class="lang-java line-numbers"><code>
+interface Formula {
+    double calculate(int a);
+
+    default double sqrt(int a) {
+        return Math.sqrt(a);
+    }
+}
+</code></pre>
+Помимо абстрактного метода <code>calculate</code>, в интерфейсе <code>Formula</code> так же определен дефолтный метод <code>sqrt</code>. Классы, реализующие этот интерфейс, должны только реализовать метод <code>calculate</code>. Дефолтный метод <code>sqrt</code> может быть использован "из коробки".
+
+<pre class="lang-java line-numbers"><code>
+Formula formula = new Formula() {
+    @Override
+    public double calculate(int a) {
+        return sqrt(a * 100);
+    }
+};
+
+formula.calculate(100);     // 100.0
+formula.sqrt(16);           // 4.0
+</code></pre>
+Интерфейс <code>Formula</code> реализован как как анонимный класс. Код избыточный: 6 строк для реализации <code>sqrt(a * 100)</code>. Как мы увидим в следующей секции, есть более красивый способ для реализации одиночного метода в Java 8.
+<h2>Lambda expressions</h2>Давайте начнем с простого примера сортировки списка строк в предыдущих версиях Java:
+
+<pre class="lang-java line-numbers"><code>
+List&lt;String&gt; names = Arrays.asList("peter", "anna", "mike", "xenia");
+
+Collections.sort(names, new Comparator&lt;String&gt;() {
+    @Override
+    public int compare(String a, String b) {
+        return b.compareTo(a);
+    }
+});
+</code></pre>
+Статический метод <code>Collections.sort</code> принимает список и сомпаратор в том порядке, в котором нужно сортировать список. Всегда можно создать анонимный класс компаратора и передать его. 
+
+Вместо создания анонимного класса, в Java 8 можно сделать более короткую запись, лямбда выражения.
+
+<pre class="lang-java line-numbers"><code>
+Collections.sort(names, (String a, String b) -&gt; {
+    return b.compareTo(a);
+});
+</code></pre>
+Как вы видите код намного короче и проще для чтения. Но это можно сделать еще короче:
+
+<pre class="lang-java line-numbers"><code>
+Collections.sort(names, (String a, String b) -&gt; b.compareTo(a));
+</code></pre>
+Для тела с одной строкой можно пропустить <code>{}</code> и слово <code>return</code>. Но можно сделать это еще короче:
+
+<pre class="lang-java line-numbers"><code>
+Collections.sort(names, (a, b) -&gt; b.compareTo(a));
+</code></pre>
+Java компилятор знает о типах аргументов, так что их можно пропустить также. Давайте копнем глубже в лямбда выражения и поймем как их можно использовать.
+<h2>Functional Interfaces</h2>Как лямбда выражения вписываются в систему Java типов? Каждая лямбда соответствует типу, описываемому в интерфейсе. Поэтому функциональный интерфейс должен содержать только один абстрактный метод. Каждое лямбда выражение этого типа будет соответствовать этому абстрактному методу. С момента того, что дефолтные методы не абстрактные, поэтому вы вольны создать дефолтные методы в функциональные интерфейсы сколько нужно.
+
+Мы также можем использовать произвольные интерфейсы как лямбда выражения в случае если в этом интерфейсе только один абстрактный метод. Чтобы соответствовать этим требованиям нужно добавить <code>@FucntionalInterface</code> аннотацию. Компилятор знает о ней и выбросит исключение, если если захотите поставить больше одного абстрактного метода. Пример:
+
+<pre class="lang-java line-numbers"><code>
+@FunctionalInterface
+interface Converter&lt;F, T&gt; {
+    T convert(F from);
+}
+</code></pre>
+<pre class="lang-java line-numbers"><code>
+Converter&lt;String, Integer&gt; converter = (from) -&gt; Integer.valueOf(from);
+Integer converted = converter.convert("123");
+System.out.println(converted);    // 123
+</code></pre>
+Держите в уме, что код будет также скомпилирован, если <code>@FunctionalInterface</code> аннотация будет пропущена.
+<h2>Method and Constructor References</h2>Пример выше может быть также сделан еще более меньше путем использования method references:
+
+<pre class="lang-java line-numbers"><code>
+Converter&lt;String, Integer&gt; converter = Integer::valueOf;
+Integer converted = converter.convert("123");
+System.out.println(converted);   // 123
+</code></pre>
+Java 8 позволяет вам передавать ссылки на метод или констрктор путем добавления <code>::</code>. Пример выше показывает как можно ссылаться на статический метод, не смотря на это мы также можем ссылаться на нестатические методы:
+
+<pre class="lang-java line-numbers"><code>
+class Something {
+    String startsWith(String s) {
+        return String.valueOf(s.charAt(0));
+    }
+}
+</code></pre>
+<pre class="lang-java line-numbers"><code>
+Something something = new Something();
+Converter&lt;String, String&gt; converter = something::startsWith;
+String converted = converter.convert("Java");
+System.out.println(converted);    // "J"
+</code></pre>
+Давайте посмотрим, как <code>::</code> работает с конструкторами. Для начала мы определим в качестве примера класс с разными конструкторами:
+
+<pre class="lang-java line-numbers"><code>
+class Person {
+    String firstName;
+    String lastName;
+
+    Person() {}
+
+    Person(String firstName, String lastName) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+    }
+}
+</code></pre>
+Далее определеим интерфейс для создания новых объектов:
+
+<pre class="lang-java line-numbers"><code>
+interface PersonFactory&lt;P extends Person&gt; {
+    P create(String firstName, String lastName);
+}
+</code></pre>
+Вместо того, чтобы реализовывать фабрику по создания, мы соединим воедино все это спомощью <code>::</code> для конструкторов:
+
+<pre class="lang-java line-numbers"><code>
+PersonFactory&lt;Person&gt; personFactory = Person::new;
+Person person = personFactory.create("Peter", "Parker");
+</code></pre>
+Мы создали ссылку на конструктор через <code>Person::new</code>. Java компилятор автоматически выберет правильный конструктор, который соответствует сигнатуре метода <code>PersonFactory.create</code>.
+
+
+... Продолжение следует. К сожалению я не нашел, как можно сохранить черновик статьи, а это реально странно, а сеанс времени на перевод окончен - поэтому доделаю позже. Всем знающим и понимающим английский — <a href="https://winterbe.com/posts/2014/03/16/java-8-tutorial/" target="_blank" rel="nofollow">Оринигалая Статья</a>. Если есть предложения по исправлению перевода — пишите любыми доступным вам способом.
+
+<a href="https://github.com/romankh3/" target="_blank" rel="nofollow">Мой Github aккаунт</a>

@@ -1,0 +1,237 @@
+Spring — это не страшно, продолжаем наполнять БД
+<p>----------------------------------------</p>
+Продолжаем наполнять БД
+<p>----------------------------------------</p>
+<a href="https://javarush.com/groups/posts/3092-spring-ehto-nestrashno" target="_blank" rel="nofollow"><strong>СОДЕРЖАНИЕ ЦИКЛА СТАТЕЙ</strong></a>
+
+Берем проект из предыдущих частей и продолжаем над ним работать.
+Добавим к существующей сущности Fruit (фрукты) новую Provider (поставщик).
+На ProviderEntity повесим еще одну аннотацию от ломбока <a href="https://easyjava.ru/java/lombok/gettery-i-settery-v-lombok/" target="_blank" rel="nofollow">@Accessors(chain = true)</a>, она позволяет  автоматически сгенерировать сеттеры, которые возвращают this  вместо void и вызывать их в стиле билдера. Так же повесьте эту аннотацию на FruitEntity
+B пакете entities создаем новый класс
+<pre class="language-java line-numbers"><code>
+
+import lombok.Data;
+import lombok.experimental.Accessors;
+import org.hibernate.annotations.GenericGenerator;
+
+import javax.persistence.*;
+
+@Accessors(chain = true) //зачем она нужна увидим позже
+@Entity
+@Data
+@Table(name = "provider_table")
+public class ProviderEntity {
+
+    @Id
+    @Column(name = "id_provider")
+    @GenericGenerator(name = "generator", strategy = "increment")
+    @GeneratedValue(generator = "generator")
+    private Integer id;
+
+    @Column(name = "provider_name")
+    private String providerName;
+
+}
+</code></pre>
+
+Так же по уже знакомой схеме создаем:
+interface ProviderRepositiry;
+<pre class="language-java line-numbers"><code>
+package ru.java.rush.repositories;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import ru.java.rush.entities.ProviderEntity;
+
+@Repository
+public interface ProviderRepository extends JpaRepository&lt;ProviderEntity,Integer&gt; {
+}
+</code></pre>
+class ProviderServise; 
+      <pre class="language-java line-numbers"><code>
+package ru.java.rush.services;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import ru.java.rush.entities.ProviderEntity;
+import ru.java.rush.repositories.ProviderRepository;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class ProviderService {
+
+    private final ProviderRepository providerRepository;
+
+    public void saveAll(List&lt;ProvidErentity&gt; providerEntity){
+        providerRepository.saveAll(providerEntity);
+    }
+
+    public void save(ProviderEntity providerEntity){
+        providerRepository.save(providerEntity);
+    }
+    
+    public List&lt;ProviderEntity&gt; getAll(){ //аналогично добавте метод поиска getAll() в сервис фруктов
+       return providerRepository.findAll();
+    }
+}
+</code></pre>
+
+Сделаем наполнение базы более интересным.
+ Переходим в класс утилиты 
+<pre class="language-java line-numbers"><code>
+package ru.java.rush.utils;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Service;
+import ru.java.rush.services.FruitService;
+
+@Service
+@RequiredArgsConstructor
+public class InitiateUtils implements CommandLineRunner {
+
+    private final FruitService fruitService;
+
+    @Override
+    public void run(String... args) throws Exception {
+
+        //здесь будем много писать
+ 
+    }
+}
+</code></pre>
+
+Благодаря @Accessors(chain = true) мы можем заполнить (проинициализировать) <em>List</em> следующим образом:
+Попытайтесь это не копировать, а написать руками, а потом и понять:
+
+<pre class="language-java line-numbers"><code>
+ List&lt;FruitEntity&gt; fruit = new ArrayList&lt;&gt;(   //тут создаем обычный ArrayList
+                Arrays.asList(                              //здесь мы создаем обертку, которая превращает список объектов FruitEntity в List
+                        new FruitEntity()                 //создаем экземпляр класса FruitEntity 
+                                .setFruitName("Fruit1")       //через сеттеры заполняем поля сущности
+                                .setProviderCode(1)
+                )
+        );
+</code></pre>
+без @Accessors(chain = true) это было бы так 
+<pre class="language-java line-numbers"><code>
+List&lt;FruitEntity&gt; fruit = new ArrayList&lt;&gt;();
+        FruitEntity fruitEntity = new FruitEntity();
+        fruitEntity.setFruitName("Fruit1");
+        fruitEntity.setProviderCode(1);
+        fruit.add(fruitEntity);;
+</code></pre>
+Вроде и не велика разница, там строчек и тут пять строчек, но что если нужно внести двадцать штук объектов в лист? Такая бы портянка получилась!
+Она и так не маленькая, смотрим, читаем, копируем 
+<em>InitiateUtils</em> который должен быть
+<pre class="language-java line-numbers"><code>
+package ru.java.rush.utils;
+
+import ...;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+
+
+@Service
+@RequiredArgsConstructor
+public class InitiateUtils implements CommandLineRunner {
+
+    private final FruitService fruitService;
+    private final ProviderService providerService;
+
+
+    @Override
+    public void run(String... args) throws Exception {
+//инициализируем таблицу с фруктами
+        List&lt;FruitEntity&gt; fruit = new ArrayList&lt;&gt;(
+                Arrays.asList(
+                        new FruitEntity()
+                                .setFruitName("Fruit1")
+                                .setProviderCode(Math.abs(new Random().nextInt() % 10)),//сюда добавлен метод рандомного числа от 0 до 10
+                        new FruitEntity()
+                                .setFruitName("Fruit2")
+                                .setProviderCode(Math.abs(new Random().nextInt() % 10)),
+                        new FruitEntity()
+                                .setFruitName("Fruit3")
+                                .setProviderCode(Math.abs(new Random().nextInt() % 10)),
+                        new FruitEntity()
+                                .setFruitName("Fruit4")
+                                .setProviderCode(Math.abs(new Random().nextInt() % 10)),
+                        new FruitEntity()
+                                .setFruitName("Fruit5")
+                                .setProviderCode(Math.abs(new Random().nextInt() % 10)),
+                        new FruitEntity()
+                                .setFruitName("Fruit6")
+                                .setProviderCode(Math.abs(new Random().nextInt() % 10)),
+                        new FruitEntity()
+                                .setFruitName("Fruit7")
+                                .setProviderCode(Math.abs(new Random().nextInt() % 10)),
+                        new FruitEntity()
+                                .setFruitName("Fruit8")
+                                .setProviderCode(Math.abs(new Random().nextInt() % 10)),
+                        new FruitEntity()
+                                .setFruitName("Fruit9")
+                                .setProviderCode(Math.abs(new Random().nextInt() % 10))
+                )
+        );
+        
+//инициализируем таблицу с поставщиками
+        List&lt;ProviderEntity&gt; provider = new ArrayList&lt;&gt;(
+                Arrays.asList(
+                        new ProviderEntity()
+                                .setProviderName("Provider1"),
+                        new ProviderEntity()
+                                .setProviderName("Provider2"),
+                        new ProviderEntity()
+                                .setProviderName("Provider3"),
+                        new ProviderEntity()
+                                .setProviderName("Provider4"),
+                        new ProviderEntity()
+                                .setProviderName("Provider5")
+                )
+        );
+
+       fruitService.saveAll(fruit);//сохраняем List фруктов
+
+        System.out.println("\nТаблица фруктов");
+        for (FruitEntity fruitEntity : fruitService.getAll()) {
+            System.out.println(fruitEntity);
+        }
+
+        providerService.saveAll(provider);//сохраняем List поставщиков
+
+        System.out.println("\nТаблица поставщиков");
+        for (ProviderEntity providerEntity : providerService.getAll()) {
+            System.out.println(providerEntity);
+        }
+    }
+}
+</code></pre>
+
+Давайте запустим и по смотрим:
+
+<em>Таблица фруктов
+FruitEntity(id=1, fruitName=Fruit1, providerCode=2)
+FruitEntity(id=2, fruitName=Fruit2, providerCode=8)
+FruitEntity(id=3, fruitName=Fruit3, providerCode=4)
+FruitEntity(id=4, fruitName=Fruit4, providerCode=7)
+FruitEntity(id=5, fruitName=Fruit5, providerCode=9)
+FruitEntity(id=6, fruitName=Fruit6, providerCode=2)
+FruitEntity(id=7, fruitName=Fruit7, providerCode=6)
+FruitEntity(id=8, fruitName=Fruit8, providerCode=5)
+FruitEntity(id=9, fruitName=Fruit9, providerCode=6)
+
+Таблица поставщиков
+ProviderEntity(id=1, providerName=Provider1)
+ProviderEntity(id=2, providerName=Provider2)
+ProviderEntity(id=3, providerName=Provider3)
+ProviderEntity(id=4, providerName=Provider4)
+ProviderEntity(id=5, providerName=Provider5)</em>
+
+Дальше будем делать запросы к БД по сложнее, для этого хорошо бы понимать <a href="https://sql-academy.org/ru/guide" target="_blank" rel="nofollow">SQL</a>.
+<a href="https://javarush.com/groups/posts/3099-spring-ehto-ne-strashno--ili-kak-zadatjh-vopros-bd" target="_blank" rel="nofollow">Следующая статья</a>

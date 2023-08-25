@@ -1,0 +1,498 @@
+Операторы перехода в Java
+<p>----------------------------------------</p>
+Привет! Сегодня поговорим об операторах перехода в языке Java: return, break, continue, goto. Для начала определимся с тем, что это вообще такое. Как известно, в обычной ситуации программа выполняется линейно  — сверху вниз, команда за командой...
+<p>----------------------------------------</p>
+Привет! Сегодня поговорим об операторах перехода в языке Java:<ul><li><code>return</code></li>
+<li><code>break</code></li>
+<li><code>continue</code></li>
+<li><code>goto</code></li></ul>Для начала определимся с тем, что это вообще такое. Как известно, в обычной ситуации программа выполняется линейно — сверху вниз, команда за командой.
+
+Линейный ход программы могут изменить так называемые управляющие конструкции: например, ветвления (<code>if</code>) и циклы (<code>for</code>, <code>while</code> и тд). 
+
+Помимо управляющих конструкций, линейное выполнение программы могут изменить операторы перехода. Они отвечают за перенаправление выполнения программы в определенное место, которое зависит от контекста и конкретного оператора.<img data-max-width="800" data-id="13645bca-3b89-47ca-8857-8fd9f5925b22" src="/images/article/13645bca-3b89-47ca-8857-8fd9f5925b22/800.jpeg" alt="Операторы перехода в Java - 1">Давай рассмотрим каждый из четырех операторов повнимательнее.<h2>return</h2>Именно с этим оператором чаще всего в первую очередь знакомятся новички. Оператор <code>return</code> завершает работу метода, в котором его вызвали, и выполнение программы возвращается туда, откуда данный метод вызван. 
+
+У <code>return</code> есть две формы:<ol><li>Немедленно заканчивает выполнение метода.</li>
+<li>Немедленно заканчивает выполнение метода и возвращает какое-то значение в качестве результата работы метода.</li></ol>Синтаксис обеих форм: 
+
+<pre class="lang-java line-numbers"><code>
+return;
+return value; // где value — некоторое возвращаемое значение
+</code></pre>
+В методах, которые возвращают некоторое значение, обязателен как минимум один оператор <code>return</code> с возвращаемым значением, который гарантированно вызовется, и недопустимо наличие оператора <code>return</code> без возвращаемого значения. 
+
+Рассмотрим примеры ниже:
+
+<pre class="lang-java line-numbers"><code>
+    public int sum(int a, int b) {
+        return a + b;
+    }
+    
+    public String getGreetings(String name) {
+        return "Hello " + name;
+    }
+
+    public int max(int x, int y) {
+        if (x &gt; y) {
+            return x;
+        } else {
+            return y;
+        }
+    }
+</code></pre>
+В методах, которые не возвращают значений (методы <code>void</code>) допустимо, но не обязательно, наличие как минимум одного оператора <code>return</code> без возвращаемого значения, и недопустимо наличие ни одного оператора <code>return</code> с возвращаемым значением. 
+
+Рассмотрим это на примерах ниже: 
+
+<pre class="lang-java line-numbers"><code>
+    public void print(String s) {
+        // наличие return в void методах не обязательно
+        System.out.println(s);
+    }
+
+    //Метод выведет в консоль число, если оно нечетное
+    public void printIfOdd(int number) {
+        if (number % 2 == 0) {
+            // Если число четное, метод завершит свою работу
+            // Наличие return в void методах опционально
+            return;
+        }
+
+        System.out.println(number);
+    }
+
+    // Метод выведет в консоль наибольшее значение из массива
+    private void printMaxInArray(int[] array) {
+        if (array == null || array.length == 0) {
+            /*
+             Если массив пуст, метод завершит свою работу.
+             Иногда полезно проверять подобным образом аргументы метода вначале и прерывать выполнение метода, если аргументы не подходят для дальнейшей корректной работы
+            */
+            System.out.println("Empty array");
+            return;
+        }
+
+        int max = array[1];
+        for (int i = 1; i &lt; array.length; i++) {
+            if (array[i] &gt; max) {
+                max = array[i];
+            }
+        }
+        System.out.println(max);
+    }
+
+</code></pre><h2>labels (метки)</h2>Прежде чем рассматривать операторы <code>break</code> и <code>continue</code>, хотелось бы поговорить о метках в ЯП Java. Это важно, потому что в некоторых ситуациях операторы <code>break</code> и <code>continue</code> используются совместно с метками.
+
+Но для начала попробуйте ответить на вопрос, скомпилируется ли такой код: 
+
+<pre class="lang-java line-numbers"><code>
+    public static void main(String[] args) {
+        https://www.google.com/
+        System.out.println("Interesting...");
+    }
+</code></pre>
+Метка — это именованная часть кода. Сама по себе метка не несет никакой функциональности. Это что-то вроде закладки в коде, которую программист намерен использовать впоследствии. 
+
+Метка в коде определяется весьма просто — через имя и двоеточие. Например:<ul><li><code>labelName:</code></li>
+<li><code>outerLoop:</code></li>
+<li><code>printing:</code></li>
+<li><code>anyWordYouLike:</code></li></ul>А вот так выглядят метки внутри Java-кода:
+
+<pre class="lang-java line-numbers"><code>
+    public static void main(String[] args) {
+        definePrintName:
+        System.out.println("Таблица Умножения");
+
+        loop1:
+        for (int i = 1; i &lt;= 10; i++) {
+            loop2:
+            for (int j = 1; j &lt;= 10; j++) {
+                System.out.printf("%4d", i * j);
+            }
+            System.out.println();
+        }
+    }
+</code></pre>
+Вывод метода <code>main</code> будет следующим: 
+
+<pre class="lang-java line-numbers"><code>
+Таблица Умножения
+   1   2   3   4   5   6   7   8   9   10
+   2   4   6   8   10  12  14  16  18  20
+   3   6   9   12  15  18  21  24  27  30
+   4   8   12  16  20  24  28  32  36  40
+   5   10  15  20  25  30  35  40  45  50
+   6   12  18  24  30  36  42  48  54  60
+   7   14  21  28  35  42  49  56  63  70
+   8   16  24  32  40  48  56  64  72  80
+   9   18  27  36  45  54  63  72  81  90
+  10  20  30  40  50  60  70  80  90  100
+
+Process finished with exit code 0
+</code></pre>
+
+В примере выше <code>definePrintName</code>, <code>loop1:</code> и <code>loop2:</code> — это метки. 
+
+<code>loop1:</code> и <code>loop2:</code> “отмечают” два цикла — внешний и внутренний. 
+
+Использование меток мы рассмотрим в разделе ниже. А пока, если вы ответили “нет” на вопрос скомпилируется ли такой код: 
+
+<pre class="lang-java line-numbers"><code>
+  public static void main(String[] args) {
+        https://www.google.com/
+        System.out.println("Interesting...");
+    }
+</code></pre>
+Попробуйте ответить на него еще раз, с помощью IDE.<h2>break</h2>Оператор <code>break</code> используется в двух случаях: 
+<ol><li>Для завершения какой-либо ветки выполнения в блоке switch-case.</li>
+<li>Для прерывания выполнения цикла.</li></ol>У оператора есть две формы: с маркировкой (меткой) и без. Синтаксис обеих форм такой:
+
+<pre class="lang-java line-numbers"><code>
+break labelName; // Синтаксис оператора с меткой
+break; // Синтаксис оператора без метки
+</code></pre>
+В блоках switch-case оператор <code>break</code> используется без меток: 
+
+<pre class="lang-java line-numbers"><code>
+    public static void main(String[] args) {
+        int dayOfWeekInt = 4;
+        String dayOfWeek;
+        switch (dayOfWeekInt) {
+            case 1:
+                dayOfWeek = "Понедельник";
+                break;
+            case 2:
+                dayOfWeek = "Вторник";
+                break;
+            case 3:
+                dayOfWeek = "Среда";
+                break;
+            case 4:
+                dayOfWeek = "Четверг";
+                break;
+            case 5:
+                dayOfWeek = "Пятница";
+                break;
+            case 6:
+                dayOfWeek = "Суббота";
+                break;
+            case 7:
+                dayOfWeek = "Воскресенье";
+                break;
+            default:
+                dayOfWeek = "Неизвестный день";
+                break;
+        }
+
+        System.out.println("Сегодня " + dayOfWeek);
+    }
+</code></pre>
+В циклах оператор <code>break</code> используют для прерывания дальнейших итераций после того, как достигнуты определенные условия. Часто такое можно встретить, когда необходимо перебрать массив или коллекцию элементов и найти в ней какой-то элемент, удовлетворяющий нужным условиям. 
+
+Рассмотрим такой пример. У нас есть массив и нам необходимо определить, содержит ли массив отрицательные элементы: 
+
+<pre class="lang-java line-numbers"><code>
+int a[] = {1,2,234,-123,12,-2,312,0,412,433};
+boolean arrayHasNegativeElements = false;
+
+for (int i = 0; i &lt; a.length; i++) {
+   if (a[i] &lt; 0) {
+       /*
+        Как только найдется
+        хотя бы один отрицательный элемент,
+        мы прервем цикл с помощью
+        оператора break, потому что
+        мы выяснили то, что нас интересовало,
+        и дальнейший перебор элементов не имеет смысла.
+        */
+       arrayHasNegativeElements = true;
+       break;
+   }
+}
+
+</code></pre>
+Рассмотрим тот же пример с различными циклами. 
+
+Цикл <code>for-each</code>: 
+
+<pre class="lang-java line-numbers"><code>
+    public static void main(String[] args) {
+        int a[] = {1,2,234,-123,12,-2,312,0,412,433};
+        boolean arrayHasNegativeElements = false;
+
+        for (int number : a) {
+            if (number &lt; 0) {
+                arrayHasNegativeElements = true;
+                break;
+            }
+        }
+    }
+</code></pre>
+Цикл <code>while</code>: 
+
+<pre class="lang-java line-numbers"><code>
+    public static void main(String[] args) {
+        int a[] = {1,2,234,-123,12,-2,312,0,412,433};
+        boolean arrayHasNegativeElements = false;
+
+        int counter = 0;
+        while (counter &lt; a.length) {
+            if (a[counter] &lt; 0) {
+                arrayHasNegativeElements = true;
+                break;
+            }
+            counter ++;
+        }
+    }
+</code></pre>
+Цикл <code>do-while</code>: 
+
+<pre class="lang-java line-numbers"><code>
+    public static void main(String[] args) {
+        int a[] = {1,2,234,-123,12,-2,312,0,412,433};
+        boolean arrayHasNegativeElements = false;
+
+        int counter = 0;
+        do {
+            if (a[counter] &lt; 0) {
+                arrayHasNegativeElements = true;
+                break;
+            }
+            counter ++;
+        } while (counter &lt; a.length);
+    }
+</code></pre>
+Еще одним примером оператора <code>break</code> в циклах является прерывание бесконечного цикла при достижении определенных условий.
+
+Приведем пример программы, выводящей строку, которую ввел пользователь до тех пор, пока юзер не введёт слово “stop”: 
+
+<pre class="lang-java line-numbers"><code>
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        String line;
+
+        while (true) {
+            line = scanner.nextLine();
+            if ("stop".equals(line)){
+                /*
+                 Прерываем бесконечный цикл,
+                 при достижении
+                 определенного условия
+                 */
+                break;
+            }
+            System.out.println("Пользователь ввел: " + line);
+        }
+    }
+</code></pre>
+Рассмотрим использование оператора <code>break</code> совместно с меткой. Прерывание с меткой используется в случаях с несколькими циклами, причем вложенными один в другой.
+
+В таком случае один из циклов (или же все циклы) помечается меткой. Далее оператор <code>break</code> совместно с указанием метки прерывает нужный цикл. 
+
+Рассмотрим пример, в котором нам необходимо понять, есть ли отрицательный элемент, но только не в массиве, а в матрице:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+   int[][] a = {
+           {1, 2, 3},
+           {-412, 12, 0},
+           {1223, 474, -54}
+   };
+
+   boolean hasNegative = false;
+
+   searchNegative:
+       for (int i = 0; i &lt; a.length; i++) {
+           for (int j = 0; j &lt; a[i].length; j++) {
+               if (a[i][j] &lt; 0) {
+                   /*
+                       Если использовать break без метки,
+                       тогда прервется вложенный цикл for,
+                       но внешний продолжит выполнять свои итерации
+                       и поиск продолжится.
+                      
+                       Поэтому мы "помечаем" внешний цикл меткой `searchNegative`
+                       и прерываем внешний цикл оператором break совместно с нужной меткой.
+                    */
+                   hasNegative = true;
+                   break searchNegative;
+               }
+           }
+       }
+}
+
+</code></pre><h2>сontinue</h2>У оператора <code>continue</code> также есть две формы — с меткой и без: 
+
+<pre class="lang-java line-numbers"><code>
+continue; // форма оператора без метки
+continue labelName; // форма оператора с меткой
+</code></pre>
+В отличии от оператора <code>break</code>, который прерывает все оставшиеся итерации цикла, оператор <code>continue</code> прерывает текущую итерацию и приводит к запуску следующей.<img data-max-width="800" data-id="40509fbf-b49e-4e83-b495-8b854180eee8" src="/images/article/40509fbf-b49e-4e83-b495-8b854180eee8/800.jpeg" alt="Операторы перехода в Java - 2">Такое может быть полезно, если нужно провести некоторые операции над элементами, которые удовлетворяют определенным условиям. 
+
+Скажем, у нас есть строка, и мы хотим посчитать количество слов, начинающихся с буквы “м”:
+
+<pre class="lang-java line-numbers"><code>
+    public static void main(String[] args) {
+        String sentence = "Мама мыла раму";
+        String[] words = sentence.split(" ");
+
+        int mWordsCount = 0;
+
+        for (int i = 0; i &lt; words.length; i++) {
+            if ( ! words[i].toLowerCase().startsWith("м")) {
+                /*
+                 Если слово не начинается с буквы м, 
+                 то текущая итерация прервется и цикл
+                 ПРОДОЛЖИТ выполнение со следующей итерации
+                 */
+                continue;
+            }
+
+            mWordsCount ++;
+        }
+
+        System.out.println("Кол-во слов, начинающихся с буквы М в предложении: " + "[" + sentence + "] = " + mWordsCount);
+    }
+</code></pre>
+После выполнения данного кода будет такой вывод в консоли: 
+
+<pre class="lang-java line-numbers"><code>
+Кол-во слов, начинающихся с буквы М в предложении: [Мама мыла раму] = 2
+</code></pre>
+Оператор <code>continue</code> совместно с меткой также используется при переборе элементов. 
+
+Представим себе матрицу, в которой нам нужно посчитать  количество строк с отрицательными элементами: 
+
+<pre class="lang-java line-numbers"><code>
+    public static void main(String[] args) {
+        int[][] a = {
+                {1, 23, -1, 23, -12},
+                {21, 21, 0, 23, 123, 45},
+                {123, 3},
+                {123, -5, 4, -3},
+                {-1, -2, -3}
+        };
+
+        int rowsWithNegativeElementsCount = 0;
+
+        rowsLoop:
+        // Проходим по каждой строке
+            for (int[] arr : a) {
+                for (int number : arr) {
+                    if (number &lt; 0) {
+                        /*
+                         Если в текущей строке найдется 
+                         хотя бы 1 отрицательный элемент, 
+                         тогда мы увеличим переменную счетчик,
+                         и с помощью оператора continue rowsLoop
+                         прервем текущую итерацию внешнего цикла и 
+                         принудительно начнем следующую
+                         */
+                        rowsWithNegativeElementsCount ++;
+                        continue rowsLoop;
+                    }
+                }
+            }
+
+        System.out.println("Rows With Negative Elements Count = " + rowsWithNegativeElementsCount);
+    }
+</code></pre>
+Выводом данного кода будет: 
+
+<pre class="lang-java line-numbers"><code>
+Rows With Negative Elements Count = 3
+</code></pre>
+Стоит сказать, что операторы <code>break</code>, <code>continue</code> и <code>return</code> можно по-разному использовать для достижения одной и той же функциональности. 
+
+Так, можно переписать последний пример и вместо <code>continue</code> использовать <code>break</code>:
+
+<pre class="lang-java line-numbers"><code>
+    public static void main(String[] args) {
+        int[][] a = {
+                {1, 23, -1, 23, -12},
+                {21, 21, 0, 23, 123, 45},
+                {123, 3},
+                {123, -5, 4, -3},
+                {-1, -2, -3}
+        };
+
+        int rowsWithNegativeElementsCount = 0;
+
+        for (int[] arr : a) {
+            for (int number : arr) {
+                if (number &lt; 0) {
+                    rowsWithNegativeElementsCount ++;
+                    break;
+                }
+            }
+        }
+
+        System.out.println("Rows With Negative Elements Count = " + rowsWithNegativeElementsCount);
+    }
+</code></pre>
+Разница между <code>break</code> и <code>continue</code> с меткой заключается в том, что <code>break</code> завершает итерации цикла, в котором он написан. А <code>continue</code> с меткой пропускает текущую итерацию цикла отмеченного меткой. В некоторых ситуациях можно заменять одно на другое, и в функциональности программы все останется прежним. О том, что лучше выбрать (спойлер: читаемость кода), расскажем немного ниже. 
+
+Оператор <code>break</code> можно заменить не только на <code>continue</code> с меткой, но и на <code>return</code>. Только перед этим нужно вынести вложенный цикл в отдельный метод: 
+
+<pre class="lang-java line-numbers"><code>
+    public static void main(String[] args) {
+        int[][] a = {
+                {1, 23, -1, 23, -12},
+                {21, 21, 0, 23, 123, 45},
+                {123, 3},
+                {123, -5, 4, -3},
+                {-1, -2, -3}
+        };
+
+        int rowsWithNegativeElementsCount = 0;
+
+        for (int[] arr : a) {
+            if (arrayHasNegativeElements(arr)) {
+                rowsWithNegativeElementsCount ++;
+            }
+        }
+
+        System.out.println("Rows With Negative Elements Count = " + rowsWithNegativeElementsCount);
+    }
+
+    static boolean arrayHasNegativeElements(int[] array) {
+        for (int number : array) {
+            if (number &lt; 0) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+</code></pre>
+Уйма способов написать одно и то же. Какой же выбрать? В промышленном программировании в этом вопросе решает легкость восприятия кода. Чем проще написано, тем лучше. 
+
+Чем больше вложенных циклов, тем сложнее воспринимать код. Особенно если циклы отмечены различными метками, которые используются в прерываниях и продолжениях (<code>break</code> и <code>continue</code>).
+
+Если есть возможность не использовать метки, лучше так и делать. В ином случае старайтесь писать максимально понятно и красиво.<h2>goto</h2>В некоторых языках программирования существует оператор <code>goto</code>. Обычно он перенаправляет выполнение кода в какую-либо часть программы, помеченную меткой. Но в Java <code>goto</code>, можно сказать, и есть, и нет. Давайте разбираться. 
+
+<a href="https://docs.oracle.com/javase/tutorial/java/nutsandbolts/_keywords.html" rel="nofollow" target="_blank">Список ключевых слов в Java</a> включает слово <code>goto</code>. Однако данный оператор помечен как not used (не используется). Дело в том, что Джеймс Гослинг, создатель ЯП Java изначально заложил в JVM поддержку оператора <code>goto</code>. Однако впоследствии эту фичу выпилили. 
+
+Одна из причин заключается в том, что блоки кода содержащие оператор <code>goto</code>, читались не так хорошо, как блоки кода, выполняющие те же функции, но без <code>goto</code>, а с альтернативными подходами (<code>break</code>, <code>continue</code>, вынесение блока кода в методы). Были, собственно и другие, как например:<ul><li>сложность чтения и понимания кода, в котором есть операторы <code>goto</code>;</li>
+<li>усложнение оптимизации кода компилятору (а иногда и невозможность);</li>
+<li>повышение вероятности создания трудно уловимых ошибок в коде.</li></ul>Для многих не секрет, что в некоторых языках программирования оператор <code>goto</code> вполне успешно функционирует. Однако программисты избегают его использование. Почитать о причинах этого можно в одной <a href="https://habr.com/ru/post/114211/" rel="nofollow" target="_blank">статье на хабре</a>.
+
+Но зачем тогда оставлять <code>goto</code> в списке зарезервированных слов? Все просто: на будущее. Если, к примеру, по всему миру в коде Java разработчиков переменные, методы или классы будут называться <code>goto</code>, если этот оператор вернут в одной из будущих версий Java, весь старый код сломается. Чтобы избежать такого сценария, <code>goto</code> остался в списке ключевых слов Java, но не несет в себе никакой функциональности. 
+
+Возможно когда-нибудь <code>goto</code> вернется в наши ряды, но вероятность этого невысока.<h2>Итоги</h2>Мы рассмотрели различные операторы перехода в Java:<ol><li><code>return</code> — завершение метода, возвращение значения из метода.
+<ul><li>с возвращаемым значением:
+методы, которые возвращают значения;</li>
+<li>без возвращаемого значения:
+<code>void</code> методы.</li></ul></li>
+<li><code>break</code> — прерывание циклов, switch-case блоки.
+<ul><li>с метками:
+циклы различной вложенности;</li>
+<li>без меток:
+ветки switch-case блока;
+прерывание цикла, в котором был вызван.</li></ul></li>
+<li><code>continue</code>.
+<ul><li>с метками:
+циклы различной вложенности;</li>
+<li>без меток:
+продолжение цикла, в котором был вызван.</li></ul></li>
+<li><code>goto</code>.
+<ul><li>есть в списке ключевых слов, но не используется.</li></ul></li></ol>Вывод из всего этого простой: лучше отдавать предпочтение наиболее простым подходам, которые облегчают читаемость кода. Старайся не перегружать код многоуровневыми циклами, вложенными друг в друга с обилием меток, прерываний и продолжений.<a href="https://javarush.com/welcome" target="_blank"></a><a href="https://javarush.com/welcome" target="_blank"><img id="click_banner3_3_articles" data-max-width="1080" data-id="34d9a475-039b-4e8f-9db6-54b2d25fc60c" src="/images/article/34d9a475-039b-4e8f-9db6-54b2d25fc60c/1080.jpeg" alt="Операторы перехода в Java - 3"></a>

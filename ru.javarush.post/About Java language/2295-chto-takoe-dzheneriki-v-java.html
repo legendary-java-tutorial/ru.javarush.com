@@ -1,0 +1,290 @@
+Что такое дженерики в Java
+<p>----------------------------------------</p>
+Привет! Сегодня мы поговорим о дженериках. Надо сказать, что ты выучишь много нового! Дженерикам будет посвящена не только эта, но еще и несколько следующих лекций. Поэтому, если эта тема тебе интересна — тебе повезло: сегодня ты узнаешь многое об особенностях дженериков...
+<p>----------------------------------------</p>
+Привет! Сегодня мы поговорим о дженериках.
+
+Надо сказать, что ты выучишь много нового! Дженерикам будет посвящена не только эта, но еще и несколько следующих лекций.
+
+<img data-id="ef0243e8-203a-43b2-9157-32c9c6e20057" data-max-width="850" alt="Что такое дженерики в Java - 1" src="https://cdn.javarush.com/images/article/ef0243e8-203a-43b2-9157-32c9c6e20057/1024.jpeg">
+Поэтому, если эта тема тебе интересна — тебе повезло: сегодня ты узнаешь многое об особенностях дженериков. Ну а если нет — смирись и расслабься! :) Это очень важная тема, и знать ее нужно. 
+
+Давай начнем с простого: «что» и «зачем».
+
+Что такое дженерики?
+
+<strong>Дженерики — это типы с параметром.</strong>
+
+При создании дженерика ты указываешь не только его тип, но и тип данных, с которыми он должен работать.
+
+Думаю, самый очевидный пример уже пришел тебе в голову — это ArrayList! Вот как мы обычно создаем его в программе:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.ArrayList;
+import java.util.List;
+
+public class Main {
+
+   public static void main(String[] args) {
+
+       List&lt;String&gt; myList1 = new ArrayList&lt;&gt;();
+       myList1.add("Test String 1");
+       myList1.add("Test String 2");
+   }
+}
+</code></pre>
+Как нетрудно догадаться, особенность списка заключается в том, что в него нельзя будет «запихивать» все подряд: он работает исключительно с объектами <code>String</code>.
+
+Теперь давай сделаем небольшой экскурс в историю Java и попробуем ответить на вопрос: «зачем?». Для этого мы сами напишем упрощенную версию класса ArrayList.
+
+Наш список умеет только добавлять данные во внутренний массив и получать эти данные:
+
+<pre class="lang-java line-numbers"><code>
+public class MyListClass {
+
+   private Object[] data;
+   private int count;
+
+   public MyListClass() {
+       this.data = new Object[10];
+       this.count = 0;
+   }
+
+   public void add(Object o) {
+       this.data[count] = o;
+       count++;
+   }
+
+   public Object[] getData() {
+       return data;
+   }
+}
+</code></pre>
+Допустим, мы хотим, чтобы наш список хранил только числа <code>Integer</code>. Дженериков у нас нет.
+
+Мы не можем явно указать проверку o instance of <code>Integer</code> в методе <code>add()</code>. Тогда весь наш класс будет пригоден только для <code>Integer</code>, и нам придется писать такой же класс для всех существующих в мире типов данных!
+
+Мы решаем положиться на наших программистов, и просто оставим в коде комментарий, чтобы они не добавляли туда ничего лишнего:
+
+<pre class="lang-java line-numbers"><code>
+//use it ONLY with Integer data type
+public void add(Object o) {
+   this.data[count] = o;
+   count++;
+}
+</code></pre>
+Один из программистов прозевал этот комментарий и попытался по невнимательности положить в список числа вперемешку со строками, а потом посчитать их сумму:
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) {
+
+       MyListClass list = new MyListClass();
+       list.add(100);
+       list.add(200);
+       list.add("Lolkek");
+       list.add("Shalala");
+
+       Integer sum1 = (Integer) list.getData()[0] + (Integer) list.getData()[1];
+       System.out.println(sum1);
+
+       Integer sum2 = (Integer) list.getData()[2] + (Integer) list.getData()[3];
+       System.out.println(sum2);
+   }
+}
+</code></pre>
+<strong>Вывод в консоль:
+
+<em>300
+Exception in thread "main" java.lang.ClassCastException: java.lang.String cannot be cast to java.lang.Integer
+	at Main.main(Main.java:14)</em></strong>
+
+Что худшее в этой ситуации?
+
+Далеко не невнимательность программиста. Худшее то, что <strong>неправильный код попал в важное место нашей программы и успешно скомпилировался</strong>.
+
+Теперь мы увидим ошибку не на этапе написания кода, а только на этапе тестирования (и это в лучшем случае!).
+
+<strong>Исправление ошибок на более поздних этапах разработки стоит намного больше — и денег, и времени.</strong>
+
+Именно в этом заключается преимущество дженериков: класс-дженерик позволит незадачливому программисту обнаружить ошибку сразу же. Код просто не скомпилируется!
+
+<pre class="lang-java line-numbers"><code>
+import java.util.ArrayList;
+import java.util.List;
+
+public class Main {
+
+   public static void main(String[] args) {
+
+       List&lt;Integer&gt; myList1 = new ArrayList&lt;&gt;();
+      
+       myList1.add(100);
+       myList1.add(100);
+       myList1.add("Lolkek");//ошибка!
+       myList1.add("Shalala");//ошибка!
+   }
+}
+</code></pre>
+Программист сразу «очухается» и моментально исправится.
+
+Кстати, нам не обязательно было создавать свой собственный класс-<code>List</code>, чтобы увидеть ошибку такого рода.
+
+Достаточно просто убрать скобки с указанием типа (<code>&lt;Integer&gt;</code>) из обычного ArrayList!
+
+<pre class="lang-java line-numbers"><code>
+import java.util.ArrayList;
+import java.util.List;
+
+public class Main {
+
+   public static void main(String[] args) {
+
+      List list = new ArrayList();
+
+      list.add(100);
+      list.add(200);
+      list.add("Lolkek");
+      list.add("Shalala");
+
+       System.out.println((Integer) list.get(0) + (Integer) list.get(1));
+       System.out.println((Integer) list.get(2) + (Integer) list.get(3));
+   }
+}
+</code></pre>
+<strong>Вывод в консоль:
+
+<em>300
+Exception in thread "main" java.lang.ClassCastException: java.lang.String cannot be cast to java.lang.Integer
+	at Main.main(Main.java:16)</em></strong>
+
+То есть даже используя «родные» средства Java, можно допустить такую ошибку и создать небезопасную коллекцию.
+
+Однако, если вставить этот код в IDEa, мы увидим предупреждение: “<em>Unchecked call to add(E) as a member of raw type of java.util.List</em>”
+
+Нам подсказывают, что при добавлении элемента в коллекцию без дженериков что-то может пойти не так.
+
+Но что значит фраза «raw type»?
+
+Дословный перевод будет вполне точным — «<strong>сырой тип</strong>» или «<strong>грязный тип</strong>».
+
+<strong><code>Raw type</code> — это класс-дженерик, из которого удалили его тип.</strong>
+
+Иными словами, <code>List myList1</code> — это <code>Raw type</code>. Противоположностью <code>raw type</code> является <code>generic type</code> — класс-дженерик (также известный как <code>parameterized type</code>), созданный правильно, с указанием типа. Например, <code>List&lt;String&gt; myList1</code>.
+
+У тебя мог возникнуть вопрос: а почему в языке вообще позволено использовать <code>raw types</code>? 
+
+Причина проста. Создатели Java оставили в языке поддержку <code>raw types</code> чтобы не создавать проблем с совместимостью. К моменту выхода Java 5.0 (в этой версии впервые появились дженерики) было написано уже очень много кода с использованием <code>raw types</code>.
+
+Поэтому такая возможность сохраняется и сейчас.
+
+Мы уже не раз упоминали классическую книгу Джошуа Блоха «Effective Java» в лекциях.
+
+Как один из создателей языка, он не обошел в книге и тему использования <code>raw types</code> и <code>generic types</code>.
+<img data-id="a80f8588-2815-48ba-82f0-b0d770ad7f28" data-max-width="400" alt="Что такое дженерики в Java - 2" src="https://cdn.javarush.com/images/article/a80f8588-2815-48ba-82f0-b0d770ad7f28/1024.jpeg">Глава 23 этой книги носит весьма красноречивое название: <strong>«Не используйте raw types в новом коде»</strong>
+
+Это то, что нужно запомнить. При использовании классов-дженериков ни в коем случае не превращай <code>generic type</code> в <code>raw type</code>.
+<h2>Типизированные методы</h2>Java позволяет тебе типизировать отдельные методы, создавая так называемые generic methods.
+
+Чем такие методы удобны? Прежде всего тем, что позволяют работать с разными типами параметров. Если к разным типам можно безопасно применять одну и ту же логику, дженерик-метод будет отличным решением. Рассмотрим пример.
+
+Допустим, у нас есть какой-то список <code><strong>myList1</strong></code>. Мы хотим удалить из него все значения, и заполнить все освободившиеся места новым значением.
+
+Вот так будет выглядеть наш класс с дженерик-методом:
+
+<pre class="lang-java line-numbers"><code>
+public class TestClass {
+
+   public static &lt;T&gt; void fill(List&lt;T&gt; list, T val) {
+       for (int i = 0; i &lt; list.size(); i++)
+           list.set(i, val);
+   }
+
+   public static void main(String[] args) {
+
+       List&lt;String&gt; strings = new ArrayList&lt;&gt;();
+       strings.add("Старая строка 1");
+       strings.add("Старая строка 2");
+       strings.add("Старая строка 3");
+
+       fill(strings, "Новая строка");
+
+       System.out.println(strings);
+
+       List&lt;Integer&gt; numbers = new ArrayList&lt;&gt;();
+       numbers.add(1);
+       numbers.add(2);
+       numbers.add(3);
+
+       fill(numbers, 888);
+       System.out.println(numbers);
+   }
+}
+</code></pre>
+Обрати внимание на синтаксис, он выглядит немного необычно:
+
+<pre class="lang-java line-numbers"><code>
+public static &lt;T&gt; void fill(List&lt;T&gt; list, T val)
+</code></pre>
+Перед типом возвращаемого значения написано &lt;T&gt;, что указывает на дженерик метод. В данном случае метод принимает на вход 2 параметра: список объектов T и еще один отдельный объект Т.
+
+За счет использования &lt;T&gt; и достигается типизация метода: мы не можем передать туда список строк и число. Список строк и строку, список чисел и число, список наших объектов <code>Cat</code> и еще один объект <code>Cat</code> — только так.
+
+В методе <code>main()</code> наглядно демонстрируется, что метод <code>fill()</code> легко работает с разными типами данных.
+
+Сначала он принимает на вход список строк и строку, а потом — список чисел и число.
+
+<strong>Вывод в консоль:
+
+<em>[Новая строка, Новая строка, Новая строка]
+[888, 888, 888]</em></strong>
+
+Представь, если бы логика метода <code>fill()</code> нужна была бы нам для 30 разных классов, и у нас не было бы дженерик-методов.
+
+Мы вынуждены были бы писать один и тот же метод 30 раз, просто для разных типов данных! Но благодаря generic-методам мы можем использовать наш код повторно! :)
+<h2>Типизированные классы</h2>Ты можешь не только пользоваться представленными в Java дженерик-классами, но и создавать собственные!
+
+Вот простой пример:
+
+<pre class="lang-java line-numbers"><code>
+public class Box&lt;T&gt; {
+
+   private T t;
+
+   public void set(T t) {
+       this.t = t;
+   }
+
+   public T get() {
+       return t;
+   }
+
+   public static void main(String[] args) {
+
+       Box&lt;String&gt; stringBox = new Box&lt;&gt;();
+
+       stringBox.set("Старая строка");
+       System.out.println(stringBox.get());
+       stringBox.set("Новая строка");
+
+       System.out.println(stringBox.get());
+      
+       stringBox.set(12345);//ошибка компиляции!
+   }
+}
+</code></pre>
+Наш класс <code>Box&lt;T&gt;</code> («коробка») является типизированным. Назначив для него при создании тип данных (<code>&lt;T&gt;</code>), мы уже не сможем помещать в него объекты других типов.
+
+Это видно в примере. При создании мы указали, что наш объект будет работать со строками:
+
+<pre class="lang-java line-numbers"><code>
+Box&lt;String&gt; stringBox = new Box&lt;&gt;();
+</code></pre>
+И когда в последней строке кода мы пытаемся положить внутрь коробки число 12345, получаем ошибку компиляции!
+
+Вот так просто мы создали свой собственный дженерик-класс! :)
+
+На этом наша сегодняшняя лекция подходит к концу. Но мы не прощаемся с дженериками! В следующий лекциях поговорим о более продвинутых возможностях, поэтому не прощаемся! )
+
+Успехов в обучении! :)

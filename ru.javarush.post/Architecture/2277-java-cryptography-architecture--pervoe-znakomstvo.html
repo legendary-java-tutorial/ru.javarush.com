@@ -1,0 +1,411 @@
+Java Cryptography Architecture: Первое знакомство
+<p>----------------------------------------</p>
+Безопасность обмена данными — одно из важнейших свойств современных приложений. С древних времён люди придумывали хитрые способы, которые с развитием человечества стали целой наукой Криптографией. Естественно, Java не осталась в стороне и предложила разработчикам...
+<p>----------------------------------------</p>
+Безопасность обмена данными — одно из важнейших свойств современных приложений. С древних времён люди придумывали хитрые способы, которые с развитием человечества стали целой наукой Криптографией. Естественно, Java не осталась в стороне и предложила разработчикам Java Cryptography Architecture (JCA). Данный обзор должен дать первые представления о том, как это работает.<h2 id="Предисловие">Предисловие</h2>Предлагаю перенестись на время в прошлое. Перед нами Древний Рим. И перед нами Гай Юлий Цезарь, который отправляет своим полководцам послание. Давайте посмотрим, что в этом сообщении:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="c858d61a-9a97-44b3-bd21-7204fc2c2e85" data-max-width="458" alt="Java Cryptography Architecture: Первое знакомство - 2" src="https://cdn.javarush.com/images/article/c858d61a-9a97-44b3-bd21-7204fc2c2e85/1024.jpeg"></div></div>Что же может это значить: <code>"ЕСКЕУГЬГМХИФЯ Е УЛП"</code>?
+
+Давайте откроем Java Online Compiler, например: <a href="https://repl.it/languages/java" target="_blank" rel="nofollow">repl.it</a>
+
+<pre class="lang-java line-numbers"><code>
+class Main {
+  public static void main(String[] args) {
+    String code = "ЕСКЕУГЬГМХИФЯ Е УЛП";
+    for (char symbol : code.toCharArray()) {
+      if (symbol != ' ') {
+        symbol = (char) (symbol - 3);
+      }
+      System.out.print(symbol);
+    }
+  }
+}
+</code></pre>
+Перед нами — простейшая реализация "Шифра Цезаря" (Caesar Cipher). Согласно труду древнеримского историка Светония под названием "Жизнь двенадцати цезарей" именно так Цезарь шифровал послания к своим полководцам. И это - один из самых древних упоминаний использования такой вещи, как <strong>Криптография</strong>. Слово "криптография" происходит от древнегреческих слов "скрытый" и "пишу", т.е. это наука о методах обеспечения конфиденциальности.
+
+В Java есть своя поддержка криптографии и называется она - <strong>Java Cryptography Architecture</strong> (JCA).
+
+Описание можно найти в официальной документации от Oracle — "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html#Introduction" target="_blank" rel="nofollow">Java Cryptography Architecture (JCA)</a>". Предлагаю посмотреть, какие возможности мы получаем благодаря JCA.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="189" alt="Java Cryptography Architecture: Первое знакомство - 3" src="https://cdn.javarush.com/images/article/f16acbfe-a661-4817-bc9a-1663d4501d74/original.jpeg"></div></div><h2 id="JCA">JCA</h2>Как мы уже ранее узнали, в Java для работы с криптографией предлагает Java Cryptography Architecture (JCA). Данная архитектура содержит API (т.е. некоторый набор интерфейсов) и провайдеры (которые их реализуют):
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="d197e3a6-3ee3-4d27-928e-58ebf6d2c408" data-max-width="300" alt="Java Cryptography Architecture: Первое знакомство - 4" src="https://cdn.javarush.com/images/article/d197e3a6-3ee3-4d27-928e-58ebf6d2c408/1024.jpeg"></div></div>Как сказано в документации, "<strong>The Java platform includes a number of built-in providers</strong>". То есть платформа Java предоставляет набор встроенных провайдеров, которые при необходимости можно дополнить. Это можно увидеть самим:
+
+<pre class="lang-java line-numbers"><code>
+import java.security.Provider;
+import java.security.Security;
+class Main {
+  public static void main(String[] args) {
+    Provider[] providers = Security.getProviders();
+    for (Provider p : providers) {
+      System.out.println(p.getName());
+    }
+  }
+}
+</code></pre>
+Зарегистрировать сторонний провайдер очень просто. Например:
+
+<code>Security.addProvider(new BouncyCastleProvider());</code>
+
+Данный пример подключает один из самых известных провайдеров — <a href="https://www.bouncycastle.org/" target="_blank" rel="nofollow">BouncyCastle</a>.
+
+Но в данном обзоре мы будем пользоваться только базовыми средствами, без сторонних библиотек. Наш основной документ: "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html" target="_blank" rel="nofollow">Java Cryptography Architecture (JCA)</a>".  Понимание работы JCA поможет проще понять технологии, в рамках которых активно используется этот самый JCA. Например: HTTPS (см. "<a href="https://javarush.com/groups/posts/2279-ot-http-do-https" target="_blank" rel="nofollow">От HTTP до HTTPS</a>").
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="0cf266c7-9cb0-45ba-9d05-2c25a7be716b" data-max-width="316" alt="Java Cryptography Architecture: Первое знакомство - 5" src="https://cdn.javarush.com/images/article/0cf266c7-9cb0-45ba-9d05-2c25a7be716b/1024.jpeg"></div></div><h2 id="MessageDigest">MessageDigest</h2>Первое про что упоминается в документации JCA — это MessageDigest. 
+Вообще Digest на русском будет так же — дайджест и соответствует по смыслу "краткое изложение". Но в криптографии дайджестом называется хэш-сумма. А ещё можно легко запомнить, что на английском Digest можно перевести ещё как переваривать. Подробнее можно прочитать в документации JCA в разделе "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html#MessageDigest" target="_blank" rel="nofollow">MessageDigest</a>".
+
+Как сказано в документации, MessageDigest генерирует фиксированного размера результат, называемый digest или hash.
+
+Хэширование — это односторонняя функция, т.е. если мы что-то захэшировали, то из результата (т.е. из хэша) мы не можем получить первоисточник. Но если хэшируется одинаковые объекты (например, строки из одинаковых символов), то их хэш должен совпадать. Как сказано в документации, такой хэш называется иногда ещё "контрольной суммой" (checksums) или "цифровым слепком/отпечатком" "digital fingerprints" данных.
+
+Хэширование может выполняться используя разные алгоритмы.  Доступные алгоритмы можно посмотреть в документе "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#MessageDigest" target="_blank" rel="nofollow">Java Cryptography Architecture Standard Algorithm Name Documentation for JDK 8</a>".
+
+Давайте выполним хэширование и выведем хэш в консоль:
+
+<pre class="lang-java line-numbers"><code>
+import javax.xml.bind.DatatypeConverter;
+import java.security.*;
+public class Main {
+  public static void main(String[] args) {
+    try {
+      MessageDigest digester = MessageDigest.getInstance("SHA-512");
+      byte[] input = "Secret string".getBytes();
+      byte[] digest = digester.digest(input);
+      System.out.println(DatatypeConverter.printHexBinary(digest));
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+}
+</code></pre>
+Хэширование может быть полезно, например, при хранении паролей. Так как хэш вводимого пароля можно сверить с ранее сохранённым хэшем. Если хэши совпали, значит и пароль тоже совпал.
+
+Для ещё более безопасного хэширования используют такое понятие, как "соль" (salt). Соль можно реализовать при помощи класса <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html#SecureRandom" target="_blank" rel="nofollow">SecureRandom</a>.
+Перед выполнением метода digest опишем добавление "соли":
+
+<pre class="lang-java line-numbers"><code>
+byte[] salt = new byte[16];
+SecureRandom.getInstanceStrong().nextBytes(salt);
+digester.update(salt);
+</code></pre>
+Но хэш — функция односторонняя. А что делать, если хочется иметь возможность зашифровать и расшифровать?
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="7fc1178f-c80c-4f5b-9a21-812f45504d18" data-max-width="288" alt="Java Cryptography Architecture: Первое знакомство - 6" src="https://cdn.javarush.com/images/article/7fc1178f-c80c-4f5b-9a21-812f45504d18/1024.jpeg"></div></div><h2 id="Симметричное_шифрование">Симметричное шифрование (symmetric key cryptography)</h2>Симметричное шифрование — это шифрование, при котором для шифрования и дешифрования используется один и тот же ключ. 
+
+Для того, чтобы использовать симметричное шифрование нам нужен ключ. Чтоб его получить используем <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html#KeyGenerator" target="_blank" rel="nofollow">KeyGenerator</a>.
+Кроме того, нам понадобится класс, представляющий собой шифр (<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html#Cipher" target="_blank" rel="nofollow">Cipher</a>).
+
+Как сказано в документации JCA в разделе "<strong>Creating a Cipher Object</strong>", чтобы создать Cipher нужно указать в строке не просто алгоритм, а "трансформацию". Описание трансформации выглядит следующим образом: "algorithm/mode/padding":
+<ul>
+<li><strong>Алгоритм</strong>: тут смотрим в стандартных именах для "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#Cipher" target="_blank" rel="nofollow">Cipher (Encryption) Algorithms</a>". Рекомендуется использовать AES.</li>
+<li><strong>Режим</strong>: режим шифрования. Например: ECB или CBC (об этом мы поговорим чуть дальше)</li>
+<li><strong>Отступ/разбивка</strong>: каждый блок данных шифруется отдельно. Данный параметр определяет, какой объём данных считать за 1 блок.</li>
+</ul>Для примера, возьмём следующую трансформацию: <code>"AES/ECB/PKCS5Padding"</code>. 
+
+То есть алгоритм шифрования — AES, режим шифрования ECB (сокращение для Electronic Codebook), размер блока - PKCS5Padding. PKCS5Padding говорит, что размер одного блока - 2 байта (16 бит).
+
+Режим шифрования Electronic Codebook предполагает последовательное шифрование каждого из блоков:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="05234cac-36e5-4a9a-a34e-a751bf9a70e3" data-max-width="547" alt="Java Cryptography Architecture: Первое знакомство - 7" src="https://cdn.javarush.com/images/article/05234cac-36e5-4a9a-a34e-a751bf9a70e3/1024.jpeg"></div></div>Выглядеть в коде это может следующим образом:
+
+<pre class="lang-java line-numbers"><code>
+import javax.xml.bind.DatatypeConverter;
+import javax.crypto.*;
+import java.security.Key;
+public class Main {
+  public static void main(String[] args) throws Exception {
+    String text = "secret!!secret!!secret!!secret!!";
+    // Generate new key
+    KeyGenerator keygen = KeyGenerator.getInstance("AES");
+    keygen.init(256);
+    Key key = keygen.generateKey();
+    // Encrypt with key
+    String transformation = "AES/ECB/PKCS5Padding";
+    Cipher cipher = Cipher.getInstance(transformation);
+    cipher.init(Cipher.ENCRYPT_MODE, key);
+    byte[] encrypted = cipher.doFinal(text.getBytes());
+    System.out.println(DatatypeConverter.printHexBinary(encrypted));
+    // Decrypt with key
+    cipher.init(Cipher.DECRYPT_MODE, key);
+    String result = new String(cipher.doFinal(encrypted));
+    System.out.println(result);
+  }
+}
+</code></pre>
+Если мы выполним, то ожидаемо увидим повтор, т.к. мы указали 32 символа. Эти символы составляют 2 блока по 16 бит:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="f6c33a57-014a-41a4-9ca0-47f5d2ee76b4" data-max-width="592" alt="Java Cryptography Architecture: Первое знакомство - 8" src="https://cdn.javarush.com/images/article/f6c33a57-014a-41a4-9ca0-47f5d2ee76b4/1024.jpeg"></div></div>Чтобы избежать в таком случае повтора следует использовать другой режим — Cipher Block Chaining (CBC).
+
+Данный режим вводит понятие Initialization Vector (представлен классом IvParameterSpec). А так же благодаря этому режиму результат генерации прошлого блока будет использован для генерации следующего:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="19a3fe6c-1a1a-4de7-916a-9859506f2655" data-max-width="401" alt="Java Cryptography Architecture: Первое знакомство - 9" src="https://cdn.javarush.com/images/article/19a3fe6c-1a1a-4de7-916a-9859506f2655/1024.jpeg"></div></div>Напишем теперь это в коде:
+
+<pre class="lang-java line-numbers"><code>
+import javax.xml.bind.DatatypeConverter;
+import javax.crypto.*;
+import java.security.*;
+import javax.crypto.spec.IvParameterSpec;
+public class Main {
+  public static void main(String[] args) throws Exception {
+    // Initialization Vector
+    SecureRandom random = SecureRandom.getInstanceStrong();
+    byte[] rnd = new byte[16];
+    random.nextBytes(rnd);
+    IvParameterSpec ivSpec = new IvParameterSpec(rnd);
+    // Prepare key
+    KeyGenerator keygen = KeyGenerator.getInstance("AES");
+    keygen.init(256);
+    Key key = keygen.generateKey();
+    // CBC
+    String text = "secret!!secret!!secret!!secret!!";
+    String transformation = "AES/CBC/PKCS5Padding";
+    Cipher cipher = Cipher.getInstance(transformation);
+    cipher.init(Cipher.ENCRYPT_MODE, key, ivSpec);
+    byte[] enc = cipher.doFinal(text.getBytes());
+    System.out.println(DatatypeConverter.printHexBinary(enc));
+    // Decrypt
+    cipher.init(Cipher.DECRYPT_MODE, key, ivSpec);
+    String result = new String(cipher.doFinal(enc));
+    System.out.println(result);
+  }
+}
+</code></pre>
+Как мы видим — в результате мы не видим повторяющихся блоков шифра. По этой причине режим ECB не рекомендуется, т.к. даёт возможность увидеть повторы и использовать это знание для дешифровки. Подробнее про ECB и CBC советую прочитать материал: "<a href="https://docplayer.ru/46528105-1-rezhim-elektronnoy-kodovoy-knigi-v-russkom-variante-rezhim-prostoy-zameny.html" target="_blank" rel="nofollow">Режим электронной кодовой книги</a>". Но симметричное шифрование имеет очевидную проблему - нужно как-то передать ключ от того, кто шифрует, тому, кто шифрует. И на этом пути этот ключ можно перехватить и тогда будет возможность перехватывать данные. И эту проблему призвано решить ассиметричное шифрование.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="221" alt="Java Cryptography Architecture: Первое знакомство - 10" src="https://cdn.javarush.com/images/article/8e7d8a58-c813-4434-bf78-b3c7c58c7292/original.jpeg"></div></div><h2 id="Ассиметричное_шифрование">Ассиметричное шифрование (asymmetric cryptography)</h2>Ассиметричное шифрование или же Public-key cryptography — это такой способ шифрования, при котором используется пара ключей: private key (хранится от всех в секрете) и public key (доступен публично).
+
+Такое разделение нужно для того, чтобы безопасно обмениваться открытым ключом между сторонами обмена информацией, при этом хранить секретный ключ в безопасности.
+
+В создании пары ключей нам уже недостаточно KeyGenerator, нам нужен <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html#KeyPairGenerator" target="_blank" rel="nofollow">KeyPairGenerator</a>.
+
+Посмотрим на пример:
+
+<pre class="lang-java line-numbers"><code>
+import javax.crypto.*;
+import java.security.*;
+public class Main {
+  public static void main(String[] args) throws Exception {
+    KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+    generator.initialize(1024);
+    KeyPair keyPair = generator.generateKeyPair();
+    // Encrypt with PRIVATE KEY
+    Cipher cipher = Cipher.getInstance("RSA");
+    cipher.init(Cipher.ENCRYPT_MODE, keyPair.getPublic());
+    byte[] data = cipher.doFinal("Hello!".getBytes());
+    // Decrypt with PUBLIC KEY
+    cipher.init(Cipher.DECRYPT_MODE, keyPair.getPrivate());
+    byte[] result = cipher.doFinal(data);
+    System.out.println(new String(result));
+  }
+}
+</code></pre>
+Тут важно понимать, что используя ассиметричное шифрование мы всегда из KeyPair используем один ключ для шифрования, а другой — для дешифрования. Но т.к. смысл шифрования в том, чтобы расшифровать смог только получатель, то шифруется публичным ключом, а расшифровывается только приватным.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="246" alt="Java Cryptography Architecture: Первое знакомство - 11" src="https://cdn.javarush.com/images/article/47f718fc-9a00-436f-a2fc-bd181e25f42c/original.jpeg"></div></div><h2 id="Цифровая_подпись">Цифровая подпись</h2>Как мы видели выше, зная public key можно отправлять данные так, чтобы их смог расшифровать только владелец private key. То есть суть ассиметричного шифрования в том, что шифрует кто угодно, а читаем только мы. Есть и обратная процедура - цифровая подпись, представленная классом <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html#Signature" target="_blank" rel="nofollow">Signature</a>. 
+
+Цифровая подпись может использовать следующие алгоритмы: "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#Signature" target="_blank" rel="nofollow">Signature Algorithms</a>".
+Документация по JCA предлагает приглядеться к этим двум: DSAwithMD5 и RSAwithMD5
+
+Что лучше DSA или RSA и в чём их отличие можно прочитать здесь: "<a href="https://www.jscape.com/blog/bid/82975/Which-Works-Best-for-Encrypted-File-Transfers-RSA-or-DSA" target="_blank" rel="nofollow">Which Works Best for Encrypted File Transfers - RSA or DSA?</a>".
+
+Или почитать обсуждения здесь: "<a href="https://security.stackexchange.com/questions/5096/rsa-vs-dsa-for-ssh-authentication-keys" target="_blank" rel="nofollow">RSA vs. DSA for SSH authentication keys</a>".
+
+Итак, цифровая подпись. Нам потребуется, как и раньше, пара ключей KeyPair и новый класс Signature. Если Вы до сих пор тестировали в онлайн компиляторах, то следующий пример может для них оказаться несколько тяжёлым. У меня пример выполнился только тут: <a href="https://rextester.com/l/java_online_compiler" target="_blank" rel="nofollow">rextester.com</a>.
+
+Импортируем необходимые нам классы:
+
+<pre class="lang-java line-numbers"><code>
+import javax.crypto.*;
+import java.security.*;
+</code></pre>
+А так же перепишем main метод:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) throws Exception {
+    // Generate keys
+    KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+    SecureRandom random = SecureRandom.getInstanceStrong();
+    generator.initialize(2048, random);
+    KeyPair keyPair = generator.generateKeyPair();
+    // Digital Signature
+    Signature dsa = Signature.getInstance("SHA256withRSA");
+    dsa.initSign(keyPair.getPrivate());
+    // Update and sign the data
+    Cipher cipher = Cipher.getInstance("RSA");
+    cipher.init(Cipher.ENCRYPT_MODE, keyPair.getPublic());
+    byte[] data = cipher.doFinal("Hello!".getBytes());
+    dsa.update(data);
+    byte[] signature = dsa.sign();
+    // Verify signature
+    dsa.initVerify(keyPair.getPublic());
+    dsa.update(data);
+    boolean verifies = dsa.verify(signature);
+    System.out.println("Signature is ok: " + verifies);
+    // Decrypt if signature is correct
+    if (verifies) {
+      cipher.init(Cipher.DECRYPT_MODE, keyPair.getPrivate());
+      byte[] result = cipher.doFinal(data);
+      System.out.println(new String(result));
+    }
+}
+</code></pre>
+Вот таким образом работает цифровая подпись.
+
+Цифровая подпись — интересная тема. Советую посмотреть на эту тему доклад: 
+<a href="https://www.youtube.com/watch?v=WK6y5Jm8eHA&amp;t=1762s" target="_blank" rel="nofollow"><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="3cab9610-ad30-40ab-bf11-541c3a22090a" data-max-width="719" alt="Java Cryptography Architecture: Первое знакомство - 12" src="https://cdn.javarush.com/images/article/3cab9610-ad30-40ab-bf11-541c3a22090a/1024.jpeg"></div></div></a>Выше мы увидели, как стороны обмениваются данными. Нет ли какого-то стандартного интерфейса для этого взаимодействия, предусмотренного в JCA? Оказывается - есть. Давайте рассмотрим его.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="188" alt="Java Cryptography Architecture: Первое знакомство - 13" src="https://cdn.javarush.com/images/article/7c98eab3-a01e-4fb1-8687-d962b899446c/original.jpeg"></div></div><h2 id="KeyAgreement">KeyAgreement</h2>Java Cryptography Architecture вводит важный инструмент — Key agreement is a protocol. Представлен он классом <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html#KeyAgreement" target="_blank" rel="nofollow">KeyAgreement</a>. 
+
+Как сказано в документации JCA, этот протокол позволяет установить одинаковый криптографический ключ для нескольких сторон, при этом никакой секретной информации между сторонами не передаётся. Звучит странно? Тогда давайте посмотрим на пример:
+
+<pre class="lang-java line-numbers"><code>
+// 1. Одна из сторон (Алиса) генерирует пару ключей. Encoded публичный ключ отдаёт.
+KeyPairGenerator generator = KeyPairGenerator.getInstance("DH");
+KeyPair aliceKeyPair = generator.generateKeyPair();
+byte[] alicePubKeyEncoded = aliceKeyPair.getPublic().getEncoded();
+
+// 2. Другая сторона (например, Боб) получает открытый ключ Алисы
+KeyFactory bobKeyFactory = KeyFactory.getInstance("DH");
+X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(alicePubKeyEncoded);
+PublicKey alicePubKey = bobKeyFactory.generatePublic(x509KeySpec);
+// Параметры, которые использовала Алиса при генерации ключей
+DHParameterSpec dhParamFromAlicePubKey = ((DHPublicKey)alicePubKey).getParams();
+// Создаёт свою пару ключей. Отдаёт свой Encoded открытый ключ
+KeyPairGenerator bobKpairGen = KeyPairGenerator.getInstance("DH");
+bobKpairGen.initialize(dhParamFromAlicePubKey);
+KeyPair bobKeyPair = bobKpairGen.generateKeyPair();
+byte[] bobPubKeyEncoded = bobKeyPair.getPublic().getEncoded();
+
+Теперь, у Алисы есть открытый ключ Боба, а у Боба есть открытый ключ Алисы. Что дальше?
+Как сказано в документации JCA, у нас есть инструмент KeyAgreement, https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html#KeyAgreement который позволяет установить одинаковые ключи шифрования без необходимости обмениваться секретной информацией (т.е. без обмена private key). Соглашение выглядит следующим образом:
+// 3. Соглашение по протоколу Диффи-Хеллмана (Diffie–Hellman, DH)
+KeyAgreement aliceKeyAgree = KeyAgreement.getInstance("DH");
+aliceKeyAgree.init(aliceKeyPair.getPrivate());
+// Алиса на основе ключа боба и своего private key создаёт общий shared ключ
+KeyFactory aliceKeyFactory = KeyFactory.getInstance("DH");
+x509KeySpec = new X509EncodedKeySpec(bobPubKeyEncoded);
+PublicKey bobPubKey = aliceKeyFactory.generatePublic(x509KeySpec);
+aliceKeyAgree.doPhase(bobPubKey, true);
+byte[] aliceSharedSecret = aliceKeyAgree.generateSecret();
+SecretKeySpec aliceAesKey = new SecretKeySpec(aliceSharedSecret, 0, 16, "AES");
+// Боб на основе ключа Алисы и своего private key создаёт общий shared ключ
+KeyAgreement bobKeyAgree = KeyAgreement.getInstance("DH");
+bobKeyAgree.init(bobKeyPair.getPrivate());
+bobKeyAgree.doPhase(alicePubKey, true);
+byte[] bobSharedSecret = bobKeyAgree.generateSecret();
+SecretKeySpec bobAesKey = new SecretKeySpec(bobSharedSecret, 0, 16, "AES");
+// Общий ключ у Алисы и Боба одинаков
+System.out.println("Shared keys are equals: " + Arrays.equals(aliceSharedSecret, bobSharedSecret));
+
+Далее Боб и Алиса, используя общий ключ, про который больше никто не знает, обмениваются зашифрованными данными:
+// 4. Боб шифрует сообщение для Алисы
+Cipher bobCipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+bobCipher.init(Cipher.ENCRYPT_MODE, bobAesKey);
+byte[] ciphertext = bobCipher.doFinal("Hello, Alice!".getBytes());
+// Передаёт Алисе параметры, с которыми выполнялась шифровка
+byte[] encodedParamsFromBob = bobCipher.getParameters().getEncoded();
+
+// 5. Алиса принимает сообщение и расшифровывает его
+AlgorithmParameters aesParams = AlgorithmParameters.getInstance("AES");
+aesParams.init(encodedParamsFromBob);
+Cipher aliceCipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+aliceCipher.init(Cipher.DECRYPT_MODE, aliceAesKey, aesParams);
+byte[] recovered = aliceCipher.doFinal(ciphertext);
+System.out.println(new String(recovered));
+</code></pre>
+Данный пример был взят из примером документации JCA: "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html#DH2Ex" target="_blank" rel="nofollow">Diffie-Hellman Key Exchange between 2 Parties</a>". 
+
+Примерно так выглядит работа ассиметричного шифрования в исполнении Java Cryptography Architecture с использованием Key agreement protocol'а.
+Подробнее про ассиметричное шифрование рекомендуются видео:
+<ul>
+<li><a href="https://www.youtube.com/watch?v=Cr4f6Cwjugs" target="_blank" rel="nofollow">Асимметричное шифрование. Как это работает?</a></li>
+<li><a href="https://www.youtube.com/watch?v=PYPCU4vyjfM" target="_blank" rel="nofollow">Урок 10 протокол Диффи-Хеллмана</a></li>
+</ul><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="196" alt="Java Cryptography Architecture: Первое знакомство - 14" src="https://cdn.javarush.com/images/article/1318d366-a118-466a-865f-1cf33ecb033d/original.jpeg"></div></div><h2 id="Сертификаты">Сертификаты</h2>Ну и на сладкое у нас осталось не менее важное — сертификаты.
+
+Обычно сертификаты генерируются при помощи утилиты keytool, входящей в поставку jdk. Подробнее можно прочитать, например, тут: "<a href="https://community.pivotal.io/s/article/Generating-a-self-signed-SSL-certificate-using-the-Java-keytool-command" target="_blank" rel="nofollow">Generating a self-signed SSL certificate using the Java keytool command</a>".
+
+Так же можно прочитать в руководствах от Oracle. Например, тут: "<a href="https://docs.oracle.com/cd/E19798-01/821-1841/gjrgy/" target="_blank" rel="nofollow">To Use keytool to Create a Server Certificate</a>".
+
+Для примера воспользуемся <a href="https://www.tutorialspoint.com/compile_java_online.php" target="_blank" rel="nofollow">Tutorialspoint Java Online Compiler</a>'ом:
+
+<pre class="lang-java line-numbers"><code>
+import sun.security.tools.keytool.CertAndKeyGen;
+import sun.security.x509.*;
+import java.security.cert.*;
+import java.security.*;
+// Compiler args: -XDignore.symbol.file
+public class Main {
+  public static void main(String[] args) throws Exception {
+    CertAndKeyGen certGen = new CertAndKeyGen("RSA", "SHA256WithRSA", null);
+    // generate it with 2048 bits
+    certGen.generate(2048);
+    PrivateKey privateKey = certGen.getPrivateKey();
+    X509Key publicKey = certGen.getPublicKey();
+    // prepare the validity of the certificate
+    long validSecs = (long) 365 * 24 * 60 * 60; // valid for one year
+    // enter your details according to your application
+    X500Name principal = new X500Name("CN=My Application,O=My Organisation,L=My City,C=DE");
+    // add the certificate information, currently only valid for one year.
+    X509Certificate cert = certGen.getSelfCertificate(principal, validSecs);
+    // Public Key from Cert equals Public Key from generator
+    PublicKey publicKeyFromCert = cert.getPublicKey();
+    System.out.println(publicKeyFromCert.equals(publicKey));
+  }
+}
+</code></pre>
+Как мы видим, сертификат предоставляет возможность предоставить публичный ключ. У этого способа есть недостаток — мы используем <code>sun.security</code>, что считается рискованным, т.к. этот пакет не является частью публичного Java API. Именно поэтому при компиляции необходимо указать параметр — <code>XDignore.symbol.file</code>.
+
+Есть ещё один способ — создать сертификат вручную. Минус в том, что используется внутреннее API, которое не задокументировано. Однако, знать про него полезно. Как минимум, потому что наглядно видно, как используется спецификация RFC-2459: "<a href="https://www.ietf.org/rfc/rfc2459.txt" target="_blank" rel="nofollow">Internet X.509 Public Key Infrastructure</a>".
+
+Вот пример:
+
+<pre class="lang-java line-numbers"><code>
+// 1. Генерируем пару ключей
+KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+keyPairGenerator.initialize(4096);
+KeyPair keyPair = keyPairGenerator.generateKeyPair();
+// 2. Определяем данные сертификата
+// Определяем срок действия сертификата
+Date from = new Date();
+Date to = new Date(from.getTime() + 365 * 1000L * 24L * 60L * 60L);
+CertificateValidity interval = new CertificateValidity(from, to);
+// Определяем subject name, т.е. имя того, с чем ассоциирован публичный ключ
+// CN = Common Name. Через точку с запятой могут быть указаны также другие атрибуты
+// См. https://docs.oracle.com/cd/E24191_01/common/tutorials/authz_cert_attributes.html
+X500Name owner = new X500Name("cn=Unknown");
+// Уникальный в пределах CA, т.е. Certificate Authority (тот, кто выдаёт сертификат) номер
+BigInteger number = new BigInteger(64, new SecureRandom());
+CertificateSerialNumber serialNumber = new CertificateSerialNumber(number);
+// Определяем алгоритм подписи сертификата
+AlgorithmId algorithmId = new AlgorithmId(AlgorithmId.md5WithRSAEncryption_oid);
+CertificateAlgorithmId certificateAlgorithmId = new CertificateAlgorithmId(algorithmId);
+// 3. По подготовленной информации создаём сертификат
+X509CertInfo info = new X509CertInfo();
+info.set(X509CertInfo.VALIDITY, interval);
+info.set(X509CertInfo.SERIAL_NUMBER, serialNumber);
+info.set(X509CertInfo.SUBJECT, owner);
+info.set(X509CertInfo.ISSUER, owner);
+info.set(X509CertInfo.KEY, new CertificateX509Key(keyPair.getPublic()));
+info.set(X509CertInfo.VERSION, new CertificateVersion(CertificateVersion.V3));
+info.set(X509CertInfo.ALGORITHM_ID, certificateAlgorithmId);
+// 4. Подписываем сертификат
+X509CertImpl certificate = new X509CertImpl(info);
+certificate.sign(keyPair.getPrivate(), "SHA256withRSA");
+// 5. Проверка сертификата
+try {
+	// В случае ошибки здесь будет брошено исключение. Например: java.security.SignatureException
+	certificate.verify(keyPair.getPublic());
+} catch (Exception e) {
+	throw new IllegalStateException(e);
+}
+</code></pre>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="b327b810-a68c-4ec3-b90b-8ab3211ae217" data-max-width="337" alt="Java Cryptography Architecture: Первое знакомство - 15" src="https://cdn.javarush.com/images/article/b327b810-a68c-4ec3-b90b-8ab3211ae217/1024.jpeg"></div></div><h2 id="Хранилище_ключей">Хранилище ключей (KeyStore)</h2>Последнее, о чём хотелось бы поговорить, это о хранилище ключей и сертификатов, которое называется KeyStore. Понятно, что постоянно генерировать сертификаты и ключи — дорого и бессмысленно. Поэтому их надо как-то безопасно хранить. Для этого есть средство — KeyStore. Хранилище ключей описано в документации JCA в главе "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html#KeyManagement" target="_blank" rel="nofollow">KeyManagement</a>". 
+
+API для работы с ним очень понятное. Вот небольшой пример:
+
+<pre class="lang-java line-numbers"><code>
+KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+keyStore.load(null, null);
+String alias = "EntityAlias";
+java.security.cert.Certificate[] chain = {certificate};
+keyStore.setKeyEntry(alias, keyPair.getPrivate(), "keyPassword".toCharArray(), chain);
+// Загрузка содержимого (Private Key + Certificate)
+Key key = keyStore.getKey(alias, "keyPassword".toCharArray());
+Certificate[] certificateChain = keyStore.getCertificateChain(alias);
+// Сохранение KeyStore на диск
+File file = File.createTempFile("security_", ".ks");
+System.out.println(file.getAbsolutePath());
+try (FileOutputStream fos = new FileOutputStream(file)) {
+	keyStore.store(fos, "keyStorePassword".toCharArray());
+}
+</code></pre>
+Как видно из примера, сначала выполняется <code>load</code> для KeyStore. Но в нашем случае мы указали первый атрибут null, т.е. источника для KeyStore нет. Значит KeyStore создаётся пустой, чтобы его дальше сохранить. Второй параметр тоже null, т.к. мы создаём новый KeyStore. Если бы мы загружали KeyStore из файла, то тут нужно было бы указать пароль (по аналогии с методом KeyStore с названием store).<h2>Итог</h2>Вот мы и рассмотрели с Вами самые основные и элементарные действия в рамках Java Cryptography Architecture (оно же JCA). Мы увидели, что такое симметричное и ассиметричное шифрование и как это реализовано в JCA. Мы увидели, как создаются сертификаты и цифровые подписи, а так же как используются. Это всё лишь основы основ, за которыми стоит ещё много сложных и интересных вещей. Надеюсь, данные обзорный материал будет полезен и заинтересует Вас на дальнейшее изучение данного направления.

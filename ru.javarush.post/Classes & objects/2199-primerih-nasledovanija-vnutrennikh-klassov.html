@@ -1,0 +1,509 @@
+Наследование внутренних классов (nested classes)
+<p>----------------------------------------</p>
+Привет! Сегодня мы рассмотрим работу важного механизма — наследование во вложенных классах. Не знаю, задумывался ли ты раньше о том, что будешь делать, когда понадобится унаследовать вложенный класс от какого-то другого. Если нет, поверь: такая ситуация может сбить...
+<p>----------------------------------------</p>
+Привет! Сегодня мы рассмотрим работу важного механизма — наследование во вложенных классах.
+
+Не знаю, задумывался ли ты раньше о том, что будешь делать, когда понадобится унаследовать вложенный класс от какого-то другого. 
+
+Если нет, поверь: такая ситуация может сбить с толку, ведь нюансов здесь очень много:
+<ol>
+<li>Мы наследуем вложенный класс от какого-то класса или мы наследуем другой класс от вложенного?</li>
+<li>Является ли наследник/наследуемый обычным публичным классом, или это тоже вложенный класс?</li>
+<li>Наконец, какой именно тип вложенных классов мы используем во всех этих ситуациях?</li>
+</ol>Если отвечать на все эти вопросы, возможных вариантов ответа будет такое множество, что голова пойдет кругом :)
+
+Как известно, чтобы решить сложную задачу, нужно разделить ее на части попроще.
+
+Мы так и поступим. Рассмотрим по очереди каждую группу вложенных классов с двух точек зрения: кто может наследоваться от этого типа вложенных классов, и от кого может наследоваться он.
+
+Начнем со статических вложенных классов (static nested classes).
+<h2>Статические вложенные классы</h2><img data-max-width="800" data-id="38408bb5-63e5-4767-a433-23f407c76447" src="/images/article/38408bb5-63e5-4767-a433-23f407c76447/800.jpeg" class="img-fluid" alt="Примеры наследования внутренних классов - 2">Их правила наследования — самые простые. Здесь можно делать практически все, что душе угодно.
+
+Статический вложенный класс может быть унаследован от:
+<ul>
+<li>обычного класса</li>
+<li>статического вложенного класса, который объявлен во внешнем классе или его предках</li>
+</ul>Вспомним пример из лекции про статические вложенные классы.
+
+<pre class="lang-java line-numbers"><code>
+public class Boeing737 {
+
+   private int manufactureYear;
+   private static int maxPassengersCount = 300;
+
+   public Boeing737(int manufactureYear) {
+       this.manufactureYear = manufactureYear;
+   }
+
+   public int getManufactureYear() {
+       return manufactureYear;
+   }
+
+   public static class Drawing {
+      
+       public static int getMaxPassengersCount() {
+          
+           return maxPassengersCount;
+       }
+   }
+}
+</code></pre>
+Попробуем изменить код и создать статический вложенный класс <code>Drawing</code> и его потомка — <code>Boeing737Drawing</code>.
+
+<pre class="lang-java line-numbers"><code>
+public class Boeing737 {
+
+   private int manufactureYear;
+   private static int maxPassengersCount = 300;
+
+   public Boeing737(int manufactureYear) {
+       this.manufactureYear = manufactureYear;
+   }
+
+   public int getManufactureYear() {
+       return manufactureYear;
+   }
+
+   public static class Drawing {
+      
+   }
+  
+   public static class Boeing737Drawing extends Drawing {
+
+       public static int getMaxPassengersCount() {
+
+           return maxPassengersCount;
+       }
+   }
+}
+</code></pre>
+Как видишь, никаких проблем. Мы можем вообще вынести класс <code>Drawing</code> и сделать его обычным публичным классом вместо статического вложенного — ничего не изменится.
+
+<pre class="lang-java line-numbers"><code>
+public class Drawing {
+  
+}
+
+public class Boeing737 {
+
+   private int manufactureYear;
+   private static int maxPassengersCount = 300;
+
+   public Boeing737(int manufactureYear) {
+       this.manufactureYear = manufactureYear;
+   }
+
+   public int getManufactureYear() {
+       return manufactureYear;
+   }
+
+   public static class Boeing737Drawing extends Drawing {
+
+       public static int getMaxPassengersCount() {
+
+           return maxPassengersCount;
+       }
+   }
+}
+</code></pre>
+С этим разобрались.
+
+А какие же классы могут наследоваться от статического вложенного?
+
+Практические любые! Вложенные/обычные, статические/нестатические — неважно.
+
+Вот здесь мы наследуем внутренний класс <code>Boeing737Drawing</code> от статического вложенного <code>Drawing</code>:
+
+<pre class="lang-java line-numbers"><code>
+public class Boeing737 {
+
+   private int manufactureYear;
+   private static int maxPassengersCount = 300;
+
+   public Boeing737(int manufactureYear) {
+       this.manufactureYear = manufactureYear;
+   }
+
+   public int getManufactureYear() {
+       return manufactureYear;
+   }
+
+   public static class Drawing {
+      
+   }
+
+   public class Boeing737Drawing extends Drawing {
+
+       public int getMaxPassengersCount() {
+
+           return maxPassengersCount;
+       }
+   }
+}
+</code></pre>
+Создать экземпляр <code>Boeing737Drawing</code> можно вот так:
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) {
+
+      Boeing737 boeing737 = new Boeing737(1990);
+      Boeing737.Boeing737Drawing drawing = boeing737.new Boeing737Drawing();
+      System.out.println(drawing.getMaxPassengersCount());
+
+   }
+
+}
+</code></pre>
+Хотя наш класс <code>Boeing737Drawing</code> наследован от статического класса, сам он не статический! Поэтому ему всегда будет нужен экземпляр внешнего класса.
+
+Мы можем вынести класс <code>Boeing737Drawing</code> из класса <code>Boeing737</code> и сделать его просто публичным классом. Ничего не изменится — он так же может наследоваться от статического вложенного <code>Drawing</code>.
+
+<pre class="lang-java line-numbers"><code>
+public class Boeing737 {
+
+   private int manufactureYear;
+   public static int maxPassengersCount = 300;
+
+   public Boeing737(int manufactureYear) {
+       this.manufactureYear = manufactureYear;
+   }
+
+   public int getManufactureYear() {
+       return manufactureYear;
+   }
+
+   public static class Drawing {
+
+   }
+}
+
+public class Boeing737Drawing extends Boeing737.Drawing {
+
+   public int getMaxPassengersCount() {
+
+       return Boeing737.maxPassengersCount;
+   
+}
+</code></pre>
+Единственный важный момент: в этом случае нам нужно сделать статическую переменную <code>maxPassengersCount</code> публичной. 
+
+Если она останется приватной, доступа у обычного публичного класса к ней не будет. 
+
+Со статическими классами разобрались! :)
+
+Теперь перейдем к внутренним классам. Их, как ты помнишь, 3 вида: просто внутренние классы (inner classes), локальные классы и анонимные внутренние классы.
+<img data-max-width="800" data-id="e7150584-6d9a-4e66-a3ba-c23a8399a5e3" src="/images/article/e7150584-6d9a-4e66-a3ba-c23a8399a5e3/800.jpeg" class="img-fluid" alt="Примеры наследования внутренних классов - 3">Опять же, давай двигаться от простого к сложному :)
+<h2>Анонимные внутренние классы</h2>Анонимный внутренний класс не может наследоваться от другого класса.
+
+Никакой другой класс не может наследоваться от анонимного класса.
+
+Проще некуда! :)
+<h2>Локальные классы</h2>Локальные классы (если ты вдруг забыл) объявляются внутри блока кода другого класса. Чаще всего — внутри какого-то метода этого внешнего класса.
+
+Логично, что от локального класса могут наследоваться только другие локальные классы внутри того же метода (или блока).
+
+Вот пример:
+
+<pre class="lang-java line-numbers"><code>
+public class PhoneNumberValidator {
+
+   public void validatePhoneNumber(final String number) {
+
+       class PhoneNumber {
+
+           private String phoneNumber;
+
+           public PhoneNumber() {
+               this.phoneNumber = number;
+           }
+
+           public String getPhoneNumber() {
+               return phoneNumber;
+           }
+
+           public void setPhoneNumber(String phoneNumber) {
+               this.phoneNumber = phoneNumber;
+           }
+       }
+
+       class CellPhoneNumber extends PhoneNumber {
+
+       }
+
+       class LandlinePhoneNumber extends PhoneNumber {
+          
+          
+       }
+
+       //...код валидации номера
+   }
+}
+</code></pre>
+Это код из нашей лекции про локальные классы. Внутри класса-валидатора номеров у нас есть локальный класс <code>PhoneNumber</code> — номер телефона.
+
+Если для наших целей понадобится выделить из него две отдельные сущности, например, номер мобильника и номер стационарного телефона, сделать это мы можем только внутри этого же метода.
+
+Причина проста: область видимости локального класса — в пределах метода (блока), где он объявлен. Поэтому как-то использовать его снаружи (в том числе и для наследования) мы не сможем.
+
+Однако, возможности для наследования у самого локального класса более широкие!
+
+Локальный класс может наследоваться от:
+<ol>
+<li>Обычного класса.</li>
+<li>Внутреннего класса (inner class), который объявлен в том же классе, что и local class, либо в его предках.</li>
+<li>От другого локального класса, объявленного в том же методе (блоке).</li>
+</ol>Первый и третий пункт выглядят очевидно, а вот второй —- немного запутанно :/
+
+Рассмотрим два примера.
+
+Пример 1 — «наследование локального класса от Внутреннего класса (inner class), который был объявлен в том же классе, что и local class»:
+
+<pre class="lang-java line-numbers"><code>
+public class PhoneNumberValidator {
+
+   class PhoneNumber {
+
+       private String phoneNumber;
+
+       public PhoneNumber(String phoneNumber) {
+           this.phoneNumber = phoneNumber;
+       }
+
+       public String getPhoneNumber() {
+           return phoneNumber;
+       }
+
+       public void setPhoneNumber(String phoneNumber) {
+           this.phoneNumber = phoneNumber;
+       }
+   }
+
+   public void validatePhoneNumber(final String number) {
+
+       class CellPhoneNumber extends PhoneNumber {
+
+           public CellPhoneNumber(String phoneNumber) {
+               super(number);
+           }
+       }
+
+       class LandlinePhoneNumber extends PhoneNumber {
+
+           public LandlinePhoneNumber(String phoneNumber) {
+               super(number);
+           }
+       }
+
+       //...код валидации номера
+   }
+}
+</code></pre>
+Здесь мы вынесли класс <code>PhoneNumber</code> из метода <code>validatePhoneNumber()</code> и сделали его внутренним вместо локального.
+
+Это не мешает нам наследовать 2 наших локальных класса от него.
+
+Пример 2 – «...либо в предках этого класса».
+
+Вот тут уже интереснее.
+
+Мы можем вынести <code>PhoneNumber</code> еще выше по цепочке наследования. Давай объявим абстрактный класс <code>AbstractPhoneNumberValidator</code>, который станет предком для нашего <code>PhoneNumberValidator</code>:
+
+<pre class="lang-java line-numbers"><code>
+public abstract class AbstractPhoneNumberValidator {
+
+   class PhoneNumber {
+
+       private String phoneNumber;
+
+       public PhoneNumber(String phoneNumber) {
+           this.phoneNumber = phoneNumber;
+       }
+
+       public String getPhoneNumber() {
+           return phoneNumber;
+       }
+
+       public void setPhoneNumber(String phoneNumber) {
+           this.phoneNumber = phoneNumber;
+       }
+   }
+
+}
+</code></pre>
+Как видишь, мы не только объявили его, но и перенесли в него внутренний класс <code>PhoneNumber</code>.
+
+Тем не менее, в его классе-потомке — <code>PhoneNumberValidator</code> — локальные классы в методах без проблем могут наследоваться от <code>PhoneNumber</code>!
+
+<pre class="lang-java line-numbers"><code>
+public class PhoneNumberValidator extends AbstractPhoneNumberValidator {
+
+   public void validatePhoneNumber(final String number) {
+
+       class CellPhoneNumber extends PhoneNumber {
+
+           public CellPhoneNumber(String phoneNumber) {
+               super(number);
+           }
+       }
+
+       class LandlinePhoneNumber extends PhoneNumber {
+
+           public LandlinePhoneNumber(String phoneNumber) {
+               super(number);
+           }
+       }
+
+       //...код валидации номера
+   }
+}
+</code></pre>
+Благодаря связи через наследование локальные классы внутри класса-потомка «видят» внутренние классы внутри предка. 
+
+И, наконец, переходим к последней группе :)
+<h2>Внутренние классы (inner classes)</h2>От внутреннего класса может наследоваться другой внутренний класс, объявленный в том же самом внешнем классе (или в его наследнике).
+
+Рассмотрим это на нашем примере с велосипедами из лекции про внутренние классы.
+
+<pre class="lang-java line-numbers"><code>
+public class Bicycle {
+
+   private String model;
+   private int mawWeight;
+
+   public Bicycle(String model, int mawWeight) {
+       this.model = model;
+       this.mawWeight = mawWeight;
+   }
+
+   public void start() {
+       System.out.println("Поехали!");
+   }
+
+   class Seat {
+
+       public void up() {
+
+           System.out.println("Сидение поднято выше!");
+       }
+
+       public void down() {
+
+           System.out.println("Сидение опущено ниже!");
+       }
+   }
+
+   class SportSeat extends Seat {
+      
+       //...методы
+   }
+}
+</code></pre>
+Здесь мы внутри класса <code>Bicycle</code> объявили внутренний класс <code>Seat</code> — сиденье. От него унаследован специальный подвид гоночных сидений — <code>SportSeat</code>.
+
+Однако, мы могли создать отдельный тип «гоночных велосипедов» и вынести его в отдельный класс:
+
+<pre class="lang-java line-numbers"><code>
+public class SportBicycle extends Bicycle {
+  
+   public SportBicycle(String model, int mawWeight) {
+       super(model, mawWeight);
+   }
+
+  
+   class SportSeat extends Seat {
+
+       public void up() {
+
+           System.out.println("Сидение поднято выше!");
+       }
+
+       public void down() {
+
+           System.out.println("Сидение опущено ниже!");
+       }
+   }
+}
+</code></pre>
+Так тоже можно. Внутренний класс потомка (<code>SportBicycle.SportSeat</code>) «видит» внутренние классы предка и может от них наследоваться.
+
+У наследования от внутренних классов есть одна очень важная особенность!
+
+В предыдущих двух примерах у нас <code>SportSeat</code> был внутренним.
+
+Но что, если мы решим сделать <code>SportSeat</code> обычным публичным классом, который при этом наследуется от внутреннего класса <code>Seat</code>?
+
+<pre class="lang-java line-numbers"><code>
+//ошибка! No inclosing instance of  type 'Bicycle' is in scope
+class SportSeat extends Bicycle.Seat {
+
+   public SportSeat() {
+
+   }
+
+   public void up() {
+
+       System.out.println("Сидение поднято выше!");
+   }
+
+   public void down() {
+
+       System.out.println("Сидение опущено ниже!");
+   }
+}
+</code></pre>
+Мы получили ошибку! Сможешь догадаться с чем она связана? :)
+
+Все просто.
+
+Когда мы говорили о внутреннем классе <code>Bicycle.Seat</code>, упоминали, что в конструктор внутреннего класса неявно передается ссылка на объект внешнего класса. 
+
+Поэтому без создания объекта <code>Bicycle</code> нельзя создать объект <code>Seat</code>.
+
+А что же с созданием <code>SportSeat</code>? У него нет такого встроенного механизма неявной передачи ссылки на объект внешнего класса в конструкторе, как в <code>Seat</code>. 
+
+Тем не менее, без объекта <code>Bicycle</code> мы, так же как в случае с <code>Seat</code>, не можем создать объект <code>SportSeat</code>.
+
+Поэтому нам остается только одно — передать в конструктор <code>SportSeat</code> ссылку на объект <code>Bicycle</code> явно.
+
+Вот как это делается:
+
+<pre class="lang-java line-numbers"><code>
+class SportSeat extends Bicycle.Seat {
+
+   public SportSeat(Bicycle bicycle) {
+
+       bicycle.super();
+   }
+
+   public void up() {
+
+       System.out.println("Сидение поднято выше!");
+   }
+
+   public void down() {
+
+       System.out.println("Сидение опущено ниже!");
+   }
+}
+</code></pre>
+Для этого мы используем специальное слово <code>super();</code>
+
+Теперь, если мы захотим создать объект <code>SportSeat</code>, нам ничто не помешает это сделать:
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) {
+
+       Bicycle bicycle = new Bicycle("Peugeot", 120);
+       SportSeat peugeotSportSeat = new SportSeat(bicycle);
+
+   }
+}
+</code></pre>
+Фух, лекция получилась немаленькой :)
+Но зато ты узнал много нового!
+А теперь — самое время решить несколько задач! :)

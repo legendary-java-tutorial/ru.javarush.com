@@ -1,0 +1,494 @@
+Ошибки начинающих java-программистов. Часть 2
+<p>----------------------------------------</p>
+Входной точкой любой Java программы должен быть статичный метод main. Так как этот метод статичный, нельзя из него вызывать нестатичные методы класса. Об этом часто забывают студенты и пытаются вызывать методы, не создавая экземпляр класса. Эту ошибку обычно ...
+<p>----------------------------------------</p>
+<a href='https://javarush.com/groups/posts/1392-oshibki-nachinajujshikh-java-programmistov-chastjh-1' target='_blank'>Ошибки начинающих java-программистов. Часть 1</a>
+<h2>9. Вызов нестатичных методов класса из метода main()</h2>Входной точкой любой Java программы должен быть статичный метод <code><strong>main</strong></code>:
+<div class='row justify-content-center jr-image-wrap'><div class='col-12 col-sm-10 col-md-8'><img data-id="122dcac2-0fa9-4132-8e68-b2fcf35c06c3" data-max-width="710" alt="Ошибки начинающих java-программистов. Часть 2 - 1" src="https://cdn.javarush.com/images/article/122dcac2-0fa9-4132-8e68-b2fcf35c06c3/1024.jpeg"></div></div><pre class='lang-java line-numbers'><code>
+public static void main(String[] args) {
+  ...
+}
+</code></pre>
+Так как этот метод статичный, нельзя из него вызывать нестатичные методы класса. Об этом часто забывают студенты и пытаются вызывать методы, не создавая экземпляр класса. Эту ошибку обычно допускают в самом начале обучения, когда студенты пишут маленькие программы.
+
+<strong>Ошибочный пример:</strong>
+
+<pre class='lang-java line-numbers'><code>
+public class DivTest {
+    boolean divisible(int x, int y) {
+        return (x % y == 0);
+    }
+
+    public static void main(String[] args) {
+        int v1 = 14;
+        int v2 = 9;
+
+        // на следующие строки компилятор выдаст ошибку
+        if (divisible(v1, v2)) {
+            System.out.println(v1 + " is a multiple of " + v2);
+        } else {
+            System.out.println(v2 + " does not divide " + v1);
+        }
+    }
+}
+</code></pre>
+Есть 2 способа исправления ошибки: сделать нужный метод статичным или создать экземпляр класса. Чтобы правильно выбрать нужный способ, задайте себе вопрос: использует ли метод поля или другие методы класса. Если да, то следует создать экземпляр класса и вызвать у него метод, иначе следует сделать метод статичным.
+
+<strong>Исправленный пример 1:</strong>
+
+<pre class='lang-java line-numbers'><code>
+public class DivTest {
+    int modulus;
+
+    public DivTest(int m) { 
+      modulus = m; 
+    }
+    
+    boolean divisible(int x) {
+        return (x % modulus == 0);
+    }
+
+    public static void main(String[] args) {
+        int v1 = 14;
+        int v2 = 9;
+
+        DivTest tester = new DivTest(v2);
+
+        if (tester.divisible(v1) {
+            System.out.println(v1 + " is a multiple of " + v2);
+        } else {
+            System.out.println(v2 + " does not divide " + v1);
+        }
+    }
+}
+</code></pre>
+<strong>Исправленный пример 2:</strong>
+
+<pre class='lang-java line-numbers'><code>
+public class DivTest {
+    static boolean divisible(int x, int y) {
+        return (x % y == 0);
+    }
+
+    public static void main(String[] args) {
+        int v1 = 14;
+        int v2 = 9;
+
+        if (divisible(v1, v2)) {
+            System.out.println(v1 + " is a multiple of " + v2);
+        } else {
+            System.out.println(v2 + " does not divide " + v1);
+        }
+    }
+}
+</code></pre>
+<h2>10. Использование объектов класса String как параметров метода.</h2>В Java класс <code>java.lang.String</code> хранит строковые данные. Однако, строки в Java
+<ol>
+<li>обладают постоянством (то есть их нельзя изменять),</li>
+<li>являются объектами.</li>
+</ol>Поэтому с ними нельзя обращаться как просто с буфером символов, это неизменяемые объекты. Иногда студенты передают строки, ошибочно расчитывая на то, что строка-объект будет передана как массив символов по ссылке (как в C или C++). Компилятор обычно не считает это ошибкой.
+
+<strong>Ошибочный пример.</strong>
+
+<pre class='lang-java line-numbers'><code>
+public static void main(String args[]) {
+   String test1 = "Today is ";
+   appendTodaysDate(test1);
+   System.out.println(test1);
+}
+
+/* прим. редактора: закомментированный метод должен иметь модификатор
+    static (здесь автором допущена ошибка №9)
+public void appendTodaysDate(String line) {
+    line = line + (new Date()).toString();
+}
+*/
+
+public static void appendTodaysDate(String line) {
+    line = line + (new Date()).toString();
+}
+</code></pre>
+В примере выше студент хочет изменить значение локальной переменной <code>test1</code>, присваивая новое значение параметру <code>line</code> в методе <code>appendTodaysDate</code>. Естественно это не сработает. Значение <code>line</code> изменится, но значение <code>test1</code> останется прежним.
+
+Эта ошибка возникает из-за непонимания того, что (1) java объекты всегда передаются по ссылке и (2) строки в Java неизменяемы. Нужно осмыслить, что объекты-строки никогда не изменяют своего значения, а все операции над строками создают новый объект.
+
+Чтобы исправить ошибку в примере выше, нужно или возвращать строку из метода, или передавать объект <code>StringBuffer</code> как параметр методу вместо <code>String</code>.
+
+<strong>Исправленный пример 1:</strong>
+
+<pre class='lang-java line-numbers'><code>
+public static void main(String args[]) {
+   String test1 = "Today is ";
+   test1 = appendTodaysDate(test1);
+   System.out.println(test1);
+}
+
+public static String appendTodaysDate(String line) {
+    return (line + (new Date()).toString());
+}
+</code></pre>
+<strong>Исправленный пример 2:</strong>
+
+<pre class='lang-java line-numbers'><code>
+public static void main(String args[]) {
+   StringBuffer test1 = new StringBuffer("Today is ");
+   appendTodaysDate(test1);
+   System.out.println(test1.toString());
+}
+
+public static void appendTodaysDate(StringBuffer line) {
+    line.append((new Date()).toString());
+}
+</code></pre>
+<table>
+<tr>
+<td><p>прим. перев.<br />
+вообще-то понять в чем ошибка не так просто. Так как объекты передаются по ссылке, то значит <code>line</code> ссылается туда же, куда и <code>test1</code>. А значит создавая новый <code>line</code>, мы создаем новый <code>test1</code>.В неправильном примере все выглядит так, как будто передача <code>String</code> идет по значению, а не по ссылке.</p>
+</td>
+</tr>
+</table><h2>11. Объявление конструктора как метода</h2>Конструкторы объектов в Java внешне похожы на обычные методы. Единственные отличия - у конструктора не указывается тип возвращаемого значения и название совпадает с именем класса. К несчастью, Java допускает задание имени метода, совпадающего с названием класса.
+
+В примере ниже, студент хочет проинициализировать поле класса <code>Vector list</code> при создании класса. Этого не произойдет, так как метод <code>'IntList'</code> - это не конструктор.
+
+<strong>Ошибочный пример.</strong>
+
+<pre class='lang-java line-numbers'><code>
+public class IntList {
+    Vector list;
+
+    // Выглядит как конструктор, но на самом деле это метод
+    public void IntList() {
+        list = new Vector();
+    }
+
+    public append(int n) {
+        list.addElement(new Integer(n));
+    }
+}
+</code></pre>
+Код выдаст исключение <code>NullPointerException</code> при первом же ображении к полю <code>list</code>. Ошибку легко исправить: нужно просто убрать возвращаемое значение из заголовка метода.
+
+<strong>Исправленный пример:</strong>
+
+<pre class='lang-java line-numbers'><code>
+public class IntList {
+    Vector list;
+
+    // Это конструктор
+    public IntList() {
+        list = new Vector();
+    }
+
+    public append(int n) {
+        list.addElement(new Integer(n));
+    }
+}
+</code></pre>
+<h2>12. Забыл привести объект к нужному типу</h2>Как и во всех других объектно-ориентированных языках, в Java можно обращаться к объекту как к его суперклассу. Это называется <code>'upcasting'</code>, он выполняется в Java автоматически. Однако, если переменная, поле класса или возвращаемое значение метода объявлено как суперкласс, поля и методы подкласса будут невидимы. Обращение к суперклассу как к подклассу называется <code>'downcasting'</code>, его нужно прописывать самостоятельно (то есть привести объект к нужному подклассу).
+
+Студенты часто забывают о приведении оъекта к подклассу. Чаще всего это случается при использовании массивов объектов <strong>Object</strong> и коллекций из пакета <code>java.util</code> (имеется ввиду <strong>Collection Framework</strong>). В примере ниже объект <code>String</code> заносится в массив, а затем извлекается из массива для сравнения с другой строкой. Компилятор обнаружит ошибку и не станет компилировать код, пока не будет явно указано приведение типов.
+
+<strong>Ошибочный пример.</strong>
+
+<pre class='lang-java line-numbers'><code>
+Object arr[] = new Object[10];
+arr[0] = "m"; 
+arr[1] = new Character('m');
+
+String arg = args[0];
+if (arr[0].compareTo(arg) < 0) {
+    System.out.println(arg + " comes before " + arr[0]);
+}
+</code></pre>
+Смысл приведения типов для некоторых оказывается затруднительным. Особенно часто затруднения вызывают динамические методы. В примере выше, 
+если бы использовался метод <code>equals</code> вместо <code>compareTo</code>, компилятор бы не выдал ошибку, и код бы правильно отработал, так как вызвался бы метод <code>equals</code> именно класса <code>String</code>. Нужно понять, что динамическое связывание отличается от <code>downcasting</code>.
+
+<strong>Исправленный пример:</strong>
+
+<pre class='lang-java line-numbers'><code>
+Object arr[] = new Object[10];
+arr[0] = "m"; 
+arr[1] = new Character('m');
+
+String arg = args[0];
+if ( ((String) arr[0]).compareTo(arg) < 0) {
+    System.out.println(arg + " comes before " + arr[0]);
+}
+</code></pre>
+<h2>13. Использование интерфейсов.</h2>Для многих студентов не совсем ясна разница между классами и интерфейсами. Поэтому, некоторые студенты пытаются реализовать интерфейсы, такие как <code>Observer</code> или <code>Runnable</code>, с помощью ключевого слова <strong>extends</strong>, вместо<strong> implements</strong>. 
+
+Для исправления ошибки, нужно просто исправить ключевое слово на верное.
+
+<strong>Ошибочный пример:</strong>
+
+<pre class='lang-java line-numbers'><code>
+public class SharkSim extends Runnable {
+    float length;
+    ...
+}
+</code></pre>
+<strong>Исправленный пример:</strong>
+
+<pre class='lang-java line-numbers'><code>
+public class SharkSim implements Runnable {
+    float length;
+    ...
+}
+</code></pre>
+Связанная с этим ошибка: неправильный порядок блоков <strong>extends</strong> и <strong>implements</strong>. Согласно спецификации Java, объявление о расширении класса должно идти перед объявлениями о реализации интерфейсов. Также, для интерфейсов ключевое слово <strong>implements</strong> нужно писать всего 1 раз, несколько интерфейсов разделяются запятыми.
+
+<strong>Еще ряд ошибочных примеров:</strong>
+
+
+<pre class='lang-java line-numbers'><code>
+// Неправильный порядок
+public class SharkSim implements Swimmer extends Animal {
+    float length;
+    ...
+}
+
+// ключевое слово implements встречается несколько раз
+public class DiverSim implements Swimmer implements Runnable {
+    int airLeft;
+    ...
+}
+</code></pre>
+<strong>Исправленные примеры:</strong>
+
+<pre class='lang-java line-numbers'><code>
+// Правильный порядок
+public class SharkSim extends Animal implements Swimmer {
+    float length;
+    ...
+}
+
+// Несколько интерфейсов разделяются запятыми
+public class DiverSim implements Swimmer, Runnable {
+    int airLeft;
+    ...
+}
+</code></pre>
+<h2>14. Забыл использовать значение, возвращаемое методом суперкласса</h2>Java позволяет вызывать из подкласса аналогичный метод суперкласса с 
+помощью ключевого слова keyword. Иногда студентам приходится вызывать методы суперкласса, но при этом часто они забывают использовать возвращаемое значение. Особенно часто это случается у тех студентов, которые ещe не осмыслили методы и их возвращаемые значения.
+
+В примере ниже студент хочет вставить результат метода <code>toString()</code> суперкласса в результат метода <code>toString()</code> подкласса. При этом он не использует возвращаемое значение метода суперкласса.
+
+<strong>Ошибочный пример: </strong>
+
+<pre class='lang-java line-numbers'><code>
+public class GraphicalRectangle extends Rectangle {
+      Color fillColor;
+      boolean beveled;
+      ...
+      public String toString() {
+          super();
+          return("color=" + fillColor + ", beveled=" + beveled);
+      }
+}
+</code></pre>
+Для исправления ошибки обычно достаточно присвоить возвращаемое значение локальной переменной, и затем использовать эту переменную при вычислении результата метода подкласса.
+
+<strong>Исправленный пример:</strong>
+
+<pre class='lang-java line-numbers'><code>
+public class GraphicalRectangle extends Rectangle {
+      Color fillColor;
+      boolean beveled;
+      ...
+      public String toString() {
+          String rectStr = super();
+          return(rectStr + " - " +
+         "color=" + fillColor + ", beveled=" + beveled);
+      }
+}
+</code></pre>
+<h2>15. Забыл добавить AWT компоненты</h2>В AWT используется простая модель построения графического интерфейса: каждый компонент интерфейса должен быть сначала создан с помощью своего конструктора, а затем помещен в окно приложения с помощью метода <code>add()</code> родительского компонента. Таким образом, интерфейс на AWT получает иерархическую структуру.
+
+Студенты иногда забывают об этих 2х шагах. Они создают компонент, но забывают разместить его в окне приожения. Это не вызовет ошибок на этапе компиляции, компонент просто не отобразится в окне приложения.
+
+<strong>Ошибочный пример.</strong>
+
+<pre class='lang-java line-numbers'><code>
+public class TestFrame extends Frame implements ActionListener {
+    public Button exit;
+
+    public TestFrame() {
+        super("Test Frame");
+        exit = new Button("Quit");
+    }
+}
+</code></pre>
+Чтобы исправить эту ошибку, необходимо просто добавить компоненты к своим родителям. Пример ниже показывает, как это сделать. Необходимо заметить, что часто студент, забывший добавить компонент в окно приложения, также забывает назначить слушателей событий для этого компонента.
+
+<strong>Исправленный пример:</strong>
+
+<pre class='lang-java line-numbers'><code>
+public class TestFrame extends Frame implements ActionListener {
+    public Button exit;
+
+    public TestFrame() {
+        super("Test Frame");
+
+        exit = new Button("Quit");
+
+        Panel controlPanel = new Panel();
+        controlPanel.add(exit);
+
+        add("Center", controlPanel);
+
+        exit.addActionListener(this);
+    }
+
+    public void actionPerformed(ActionEvent e) {
+        System.exit(0);
+    }
+}
+</code></pre>
+<h2>17. Забыл запустить поток</h2>Многопоточность в Java реализуется с помощью класса <code><strong>java.lang.Thread</strong></code>. Жизненный цикл потока состоит из 4х этапов: проинициализирован, запущен, заблокирован и остановлен. ТОлько что созданный поток находится в проинициализированном состоянии. Чтобы перевести его в запущенное состояние, необходимо вызвать его метод <code><strong>start()</strong></code>. Иногда студенты создают потоки, но забывают запустить их. Обычно ошибка возникает при недостаточных знаниях студента о параллельном программировании и многопоточности. (прим. перев.: не вижу связи) Чтобы исправить ошибку, необходимо просто запустить поток.
+
+В примере ниже, студент хочет создать анимацию картинки используя интерфейс <code><strong>Runnable</strong></code>, но он забыл запустить поток.
+
+<strong>Ошибочный пример</strong>
+
+<pre class='lang-java line-numbers'><code>
+public class AnimCanvas extends Canvas implements Runnable {
+        protected Thread myThread;
+        public AnimCanvas() {
+                myThread = new Thread(this);
+        }
+
+        // метод run() не будет вызван,
+        // потому что поток не запущен.
+        public void run() {
+                for(int n = 0; n < 10000; n++) {
+                   try { 
+                     Thread.sleep(100); 
+                   } catch (InterruptedException e) { }
+                   
+                   animateStep(n);
+                }       
+        }
+        ...
+}
+</code></pre>
+<strong>Исправленный пример:</strong>
+
+<pre class='lang-java line-numbers'><code>
+public class AnimCanvas extends Canvas implements Runnable {
+        static final int LIMIT = 10000;
+        protected Thread myThread;
+
+        public AnimCanvas() {
+                myThread = new Thread(this);
+                myThread.start();
+        }
+
+        public void run() {
+                for(int n = 0; n &lt; LIMIT; n++) {
+                        try { 
+                          Thread.sleep(100); 
+                        } catch (InterruptedException e) { }
+
+                        animateStep(n);
+                }
+        }
+        ...
+}
+</code></pre>
+Жизненный цикл потока и связь потоков и классов, реализующих интерфейс <code><strong>Runnable</strong></code> — это очень важная часть программирования на Java, и не будет лишним заострить свое внимание на этом.
+
+<h2>18. Использование запрещенного метода <strong>readLine()</strong> класса <strong>java.io.DataInputStream</strong></h2>В Java версии 1.0 для считывания строки текста необходимо было использовать метод <code><strong>readLine()</strong></code> класса <code><strong>java.io.DataInputStream</strong></code>. В Java версии 1.1 был добавлен целый набор классов для ввода-вывода, обеспечивающий операции ввода-вывода для текста: классы <code><strong>Reader</strong></code> и <code><strong>Writer</strong></code>. Таким образом с версии 1.1 для чтения строки текста надо использовать метод <code><strong>readLine()</strong></code> класса <code><strong>java.io.BufferedReader</strong></code>. Студенты 
+могут не знать об этом изменении, особенно если они обучались по старым книгам. (прим. перев. вообще-то уже не актуально. вряд ли кто-то 
+станет сейчас учиться по книгам 10-летней давности).
+
+Старый метод <code><strong>readLine()</strong></code> оставлен в JDK, но объявлен как запрещенный, что часто смущает студентов. Необходимо понять, что использование метода <code><strong>readLine()</strong></code> класса <code><strong>java.io.DataInputStream</strong></code> не является неправильным, оно просто устарело. Необходимо использовать класс <code><strong>BufferedReader</strong></code>.
+
+<strong>Ошибочный пример:</strong>
+
+<pre class='lang-java line-numbers'><code>
+public class LineReader {
+    private DataInputStream dis;
+
+    public LineReader(InputStream is) {
+        dis = new DataInputStream(is);
+    }
+
+    public String getLine() { 
+        String ret = null;
+
+        try {
+          ret = dis.readLine();  // Неправильно! Запрещено.
+        } catch (IOException ie) { }
+
+        return ret;
+    }
+}
+</code></pre>
+
+<strong>Исправленный пример:</strong>
+
+<pre class='lang-java line-numbers'><code>
+public class LineReader {
+    private BufferedReader br;
+
+    public LineReader(InputStream is) {
+        br = new BufferedReader(new InputStreamReader(is));
+    }
+
+    public String getLine() { 
+        String ret = null;
+
+        try {
+          ret = br.readLine(); 
+        } catch (IOException ie) { }
+
+        return ret;
+    }
+}
+</code></pre>
+Есть и другие запрещенные методы в версиях, более поздних чем 1.0, но этот встречается чаще всего.
+
+<h2>19. Использование типа double как float</h2>Как и в большинстве других языков, в Java поддерживаются операции над числами с плавающей точкой (дробными числами). В Java есть 2 типа-примитива для чисел с плавающей точкой: <code><strong>double</strong></code> для чисел с 64-битной точностью по стандарту IEEE, и <code><strong>float</strong></code>, для чисел с 32-битной точностью по стандарту IEEE. Трудность заключается в использовании десятичных чисел, таких как 1.75, 12.9e17 или -0.00003 — компилятор присваивает им тип <code><strong>double</strong></code>.
+
+Java не производит приведение типов в операциях, в которых может произойти потеря точности. Такое приведение типов должен осуществлять программист. 
+
+Например, Java не позволит присвоить значение типа <code><strong>int</strong></code> переменной типа <code><strong>byte</strong></code> без приведения типов, как показано в примере ниже.
+
+<pre class='lang-java line-numbers'><code>
+byte byteValue1 = 17; /* неправильно! */
+byte byteValue2 = (byte)19; /* правильно */
+</code></pre>
+Так как дробные числа представлены типом <code><strong>double</strong></code>, и присваивание <code><strong>double</strong></code> переменной типа <code><strong>float</strong></code> может привести к потере точности, компилятор пожалуется на любую попытку использовать дробные числа как <code><strong>float</strong></code>. Так что использование присваиваний, приведенных ниже, не даст классу откомпилироваться.
+
+<pre class='lang-java line-numbers'><code>
+float realValue1 = -1.7;          /* неправильно! */
+float realValue2 = (float)(-1.9); /* правильно */
+</code></pre>
+Это присваивание сработало бы в C или C++, для Java все гораздо строже. Есть 3 способа избавиться от этой ошибки.
+
+Можно использовать тип <code><strong>double</strong></code> вместо типа <code><strong>float</strong></code>. Это наиболее простое решение. На самом деле нет особого смысла использовать 32-битную арифметику вместо 64-битной, разницу в скорости все равно скушает JVM (к тому же в современных процессорах все дробные числа приводятся к формату 80-битного регистра процессора перед любой операцией). Единственный плюс использования <code><strong>float</strong></code> — это то, что они занимают меньше памяти, что бывает полезно при работе с большим числом дробных переменых.
+
+Можно использовать модификатор для обозначения типа числа, чтобы сообщить компилятору как хранить число. Модификатор для типа <code><strong>float - 'f'</strong></code>. Таким образом, компилятор присвоит числу 1.75 тип <code><strong>double</strong></code>, а <code><strong>1.75f - float</strong></code>. Например:
+
+<pre class='lang-java line-numbers'><code>
+float realValue1 = 1.7;    /* неправильно! */
+float realValue2 = 1.9f;   /* правильно */
+</code></pre>
+Можно использовать явное приведение типов. Это наименее элегантный способ, но он полезен при конвертации переменной типа <code><strong>double</strong></code> в тип <code><strong>float</strong></code>. Пример: 
+
+<pre class='lang-java line-numbers'><code>
+float realValue1 = 1.7f; 
+double realValue2 = 1.9;
+realValue1 = (float)realValue2;
+</code></pre>
+Подробнее о числах с плавающей точкой можно почитать здесь и здесь.
+<table>
+<tr>
+<td><p><em>-- комментарий переводчика --</em><br />
+Все.<br />
+В примере 10 на самом деле допущена ошибка 9. я ее сразу заметил, но забыл написать примечание. а исправлять не стал чтобы не было расхождений с первоисточником.
+</td>
+</tr>
+</table>Автор: А.Грасоff™
+
+<em>Ссылка на первоисточник: <a href="http://www.sql.ru/faq/faq_topic.aspx?fid=566" rel="nofollow" >Ошибки начинающих java-программистов</a></em>

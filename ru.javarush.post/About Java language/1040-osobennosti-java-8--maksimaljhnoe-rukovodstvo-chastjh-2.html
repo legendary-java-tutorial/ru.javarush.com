@@ -1,0 +1,377 @@
+Особенности Java 8 – максимальное руководство (часть 2)
+<p>----------------------------------------</p>
+В Java 8 добавили много новых классов и расширили существующие в целях оказания более эффективной поддержки современного параллелизма, функционального программирования, даты/времени и многого другого ...
+<p>----------------------------------------</p>
+Вторая часть перевода статьи <a href="http://www.javacodegeeks.com/2014/05/java-8-features-tutorial.html#repeating_annotations" rel="nofollow" >Java 8 Features – The ULTIMATE Guide</a>. Первая часть <a href="https://javarush.com/groups/posts/1037-osobennosti-java-8--maksimaljhnoe-rukovodstvo-chastjh-1">тут</a> (ссылка может поменяться).
+<img data-id="e5a056c9-a4d8-459d-ab03-92b947e98d24" data-max-width="850" alt="Особенности Java 8 – максимальное руководство (часть 2) - 1" src="https://cdn.javarush.com/images/article/e5a056c9-a4d8-459d-ab03-92b947e98d24/1024.jpeg"><h2>5. Новые возможности в библиотеках Java 8</h2>В Java 8 добавили много новых классов и расширили существующие в целях оказания более эффективной поддержки современного параллелизма, функционального программирования, даты/времени и многого другого.
+<h3>5.1. Класс Optional</h3>Знаменитый <a href="https://examples.javacodegeeks.com/java-basics/exceptions/java-lang-nullpointerexception-how-to-handle-null-pointer-exception/" rel="nofollow" >NullPointerException</a> на сегодняшний день является самой популярной причиной сбоев приложений Java. Давным давно прекрасный проект <a href="https://github.com/google/guava" rel="nofollow" >Google Guava</a> представил <code>Optional</code> как решение <code>NullPointerException</code>, тем самым препятствуя загрязнению кода проверками на null, как следствие поощряя написание более чистый код. Вдохновленные Google Guava класс <code>Optional</code> сейчас часть Java 8.
+
+<code>Optional</code> всего лишь контейнер: он может содержать <em>значение</em> или некоторый тип <code>Т</code> или просто быть null. Он предоставляет много полезных методов так что явные проверки на null теперь не имеют оправданий. Обратитесь к <a href="http://docs.oracle.com/javase/8/docs/api/" rel="nofollow" >официальной документации</a> для более детальной информации.
+
+Давайте посмотрим на два небольших примера использования <code>Optional</code>: с использованием null и без него.
+
+<pre class='lang-java line-numbers'><code>
+Optional&lt;String&gt; fullName = Optional.ofNullable( null );
+System.out.println( "Full Name is set? " + fullName.isPresent() );       
+System.out.println( "Full Name: " + fullName.orElseGet( () -&gt; "[none]" ) );
+System.out.println( fullName.map( s -&gt; "Hey " + s + "!" ).orElse( "Hey Stranger!" ) );
+</code></pre>
+Метод <code>isPresent()</code> возвращает <em>true</em> если экземпляр <code>Optional</code> содержит не null значение и <em>false</em> в противном случае. Метод <code>orElseGet()</code> содержит запасной механизм результата, если <code>Optional</code> содержит null, принимая функции для генерации значения по умолчанию. Метод <a href='https://javarush.com/groups/posts/763-9-glavnihkh-voprosov-o-map-v-java' target='_blank'>map</a>() преобразует текущее значение <code>Optional</code> и возвращает новый экземпляр <code>Optional</code>. Метод <code>orElse()</code> похож на <code>orElseGet()</code>, но вместо функции он принимает значение по умолчанию. Вот вывод данной программы:
+
+<pre class='lang-java line-numbers'><code>
+Full Name is set? false
+Full Name: [none]
+Hey Stranger!
+</code></pre>
+Давайте кратко рассмотрим другой пример:
+
+<pre class='lang-java line-numbers'><code>
+Optional&lt;String&gt; firstName = Optional.of( "Tom" );
+System.out.println( "First Name is set? " + firstName.isPresent() );       
+System.out.println( "First Name: " + firstName.orElseGet( () -&gt; "[none]" ) );
+System.out.println( firstName.map( s -&gt; "Hey " + s + "!" ).orElse( "Hey Stranger!" ) );
+System.out.println();
+</code></pre>
+Результат будет таким:
+
+<pre class='lang-java line-numbers'><code>
+First Name is set? true
+First Name: Tom
+Hey Tom!
+</code></pre>
+Для более детальной информации обратитесь к <a href="https://docs.oracle.com/javase/8/docs/api/java/util/Optional.html" rel="nofollow" >официальной документации</a>.
+<h3>5.2. Потоки</h3>Недавно <a href="https://docs.oracle.com/javase/8/docs/api/java/util/Optional.html" rel="nofollow" >добавленный Stream API</a> (<code>java.util.stream</code>) представляет реальное программирование в функциональном стиле в Java. Это, безусловно, наиболее полное дополнение к библиотеке Java, которое позволяет разработчикам Java быть значительно более эффективными, а также дает возможность им создать эффективный, чистый и краткий код.
+
+Stream API значительно упрощает обработку коллекций (но не ограничиваясь только ими, как мы увидим позже). Возьмем для примера простой класс <code>Task</code>.
+
+<pre class='lang-java line-numbers'><code>
+public class Streams  {
+    private enum Status {
+        OPEN, CLOSED
+    };
+	     
+    private static final class Task {
+        private final Status status;
+        private final Integer points;
+ 
+        Task( final Status status, final Integer points ) {
+            this.status = status;
+            this.points = points;
+        }
+         
+        public Integer getPoints() {
+            return points;
+        }
+	         
+        public Status getStatus() {
+            return status;
+        }
+	         
+        @Override
+        public String toString() {
+            return String.format( "[%s, %d]", status, points );
+        }
+    }
+}
+</code></pre>
+Task имеет некоторое представление о очках (или псевдо-сложностях) и может быть либо <em>OPEN</em> либо <em>CLOSE</em>. Давайте введем небольшую коллекцию задач, чтобы поиграть с ними.
+
+<pre class='lang-java line-numbers'><code>
+final Collection&lt;Task&gt; tasks = Arrays.asList(
+    new Task( Status.OPEN, 5 ),
+    new Task( Status.OPEN, 13 ),
+    new Task( Status.CLOSED, 8 )
+);
+</code></pre>
+Первый вопрос, который мы намерены выяснить, это сколько очков содержат задачи со статусом <em>OPEN</em> сейчас? До Java 8 обычным решением для этого было бы использование итератора <code>foreach</code>. Но в Java 8 ответ в потоках: последовательность элементов, которые поддерживают последовательные и параллельные агрегатные операции.
+
+<pre class='lang-java line-numbers'><code>
+// Подсчет общего количества очков всех активных задач с использованием sum()
+final long totalPointsOfOpenTasks = tasks
+    .stream()
+    .filter( task -&gt; task.getStatus() == Status.OPEN )
+    .mapToInt( Task::getPoints )
+    .sum();
+	         
+System.out.println( "Total points: " + totalPointsOfOpenTasks );
+</code></pre>
+И вывод на консоль будет выглядеть как:
+
+<pre class='lang-java line-numbers'><code>
+Total points: 18
+</code></pre>
+Рассмотрим что здесь происходит. Во-первых, коллекция задач конвертируется в потоковое представление. Затем операция <code>filter</code> отфильтровывает все задачи со статусом <em>CLOSED</em>. На следующем шаге операция <code>mapToInt</code> преобразует поток <code>Task</code>s в поток <code>Integer</code>s используя метод <code>Task::getPoints</code> для каждого экземпляра <code>Task</code>. И наконец, все очки суммируются с использованием метода <code>sum</code>, который предоставляет конечный результат.
+
+Прежде чем перейти к следующим примерам, есть некоторые замечания о потоках, которые нужно иметь в виду (более детально <a href="https://docs.oracle.com/javase/8/docs/api/java/util/stream/package-summary.html#StreamOps" rel="nofollow" >здесь</a>). Операции <code>stream</code> делятся на <em>промежуточные</em> и <em>конечные</em> операции.
+
+<em>Промежуточные операции</em> возвращают новый поток. Они всегда ленивые, при выполнении промежуточных операций, таких как <code>filter</code>, они не выполняют фильтрацию на самом деле, вместо этого создается новый поток, который по завершению формирования, содержит элементы исходного потока, которые соответствуют заданному предикату.
+
+<em>Конечные операции</em>, такие как <code>forEach</code> и <code>sum</code>, могут пройти через поток для получения результата или побочного эффекта. После того как конечная операция выполняется, поток считается использованным и не может быть больше использован. Практически во всех случаях конечные операции стремятся завершить свое прохождение по базовому источнику данных.
+
+Другая ценная возможность потоков – это поддержка параллельных процессов из коробки. Давайте посмотрим на этот пример, который находит сумму очков всех задач.
+
+<pre class='lang-java line-numbers'><code>
+// Calculate total points of all tasks
+final double totalPoints = tasks
+   .stream()
+   .parallel()
+   .map( task -&gt; task.getPoints() ) // or map( Task::getPoints )
+   .reduce( 0, Integer::sum );
+	     
+System.out.println( "Total points (all tasks): " + totalPoints );
+</code></pre>
+Это очень похоже на первый пример, за исключением того, что мы пытаемся обработать все задачи <em>параллельно</em> и рассчитать конечный результат используя метод <code>reduce</code>.
+
+Вот вывод в консоль:
+
+<pre class='lang-java line-numbers'><code>
+Total points (all tasks): 26.0
+</code></pre>
+Часто возникает необходимость в группировке элементов по определенному критерию. Пример демонстрирует как потоки могут помочь с этим.
+
+<pre class='lang-java line-numbers'><code>
+// Группировка задач по их статусу
+final Map&lt;Status, List&lt;Task&gt;&gt; map = tasks
+    .stream()
+    .collect( Collectors.groupingBy( Task::getStatus ) );
+System.out.println( map );
+</code></pre>
+Вывод в консоль будет следующим:
+
+<pre class='lang-java line-numbers'><code>
+{CLOSED=[[CLOSED, 8]], OPEN=[[OPEN, 5], [OPEN, 13]]}
+</code></pre>
+Чтобы закончить с примерами для задач, давайте вычислим общий процент (или вес) каждой задачи в коллекции основанный на общем количестве очков:
+
+<pre class='lang-java line-numbers'><code>
+// Подсчет веса каждой задачи (как процент от общего количества очков)
+final Collection&lt;String&gt; result = tasks
+    .stream()                                        // Stream&lt;String&gt;
+    .mapToInt( Task::getPoints )                     // IntStream
+    .asLongStream()                                  // LongStream
+    .mapToDouble( points -> points / totalPoints )   // DoubleStream
+    .boxed()                                         // Stream&lt;Double&gt;
+    .mapToLong( weigth -&gt; ( long )( weigth * 100 ) ) // LongStream
+    .mapToObj( percentage -&gt; percentage + "%" )      // Stream&lt;String&gt;
+    .collect( Collectors.toList() );                 // List&lt;String&gt;
+	         
+System.out.println( result );
+</code></pre>
+Вывод в консоль будет таким:
+
+<pre class='lang-java line-numbers'><code>
+[19%, 50%, 30%]
+</code></pre>
+И наконец, как мы отмечали ранее, Stream API предназначено не только для коллекций Java. Типичная операция ввода-вывода, такая как чтение текстовых файлов построчно, является очень хорошим кандидатом для использования потоковой обработки. Вот небольшой пример для подтверждения этого.
+
+<pre class='lang-java line-numbers'><code>
+final Path path = new File( filename ).toPath();
+try( Stream&lt;String&gt; lines = Files.lines( path, StandardCharsets.UTF_8 ) ) {
+    lines.onClose( () -&gt; System.out.println("Done!") ).forEach( System.out::println );
+}
+</code></pre>
+Метод <code>onConsole</code>, который вызывается в потоке, возвращает эквивалентный поток с дополнительным закрытым обработчиком. Закрытый обработчик вызывается когда метод <code>close()</code> вызывается в потоке.
+
+Stream API вместе с <a href="https://www.javacodegeeks.com/2014/05/java-8-features-tutorial.html#lambdas_and_functional" rel="nofollow" >лямбдами</a> и <a href="https://www.javacodegeeks.com/2014/05/java-8-features-tutorial.html#_Method_References" rel="nofollow" >ссылочными методами</a> в совокупности с методами по умолчанию и статическими методами в Java 8 являются ответами современным парадигмам в разработке программного обеспечения. Для более детальной информации обращайтесь к <a href="https://docs.oracle.com/javase/tutorial/collections/streams/index.html" rel="nofollow" >официальной документации</a>.
+<h3>5.3. API для даты/времени (JSR 310)</h3>Java 8 дает новый взгляд на управление датой и временем предоставляя новый <a href="https://jcp.org/en/jsr/detail?id=310" rel="nofollow" >API для даты и времени (JSR 310)</a>. Манипуляции с датой и временем являются одной из худших болевых точек для Java разработчиков. Стандартный <code>java.util.Date</code> следующий за <code>java.util.Calendar</code> в общем не улучшил ситуацию (возможно, сделал ее даже более запутанной).
+
+Вот как родился <a href="https://www.joda.org/joda-time/" rel="nofollow" >Joda-Time</a>: прекрасная альтернатива <a href="https://jcp.org/en/jsr/detail?id=310" rel="nofollow" >API даты/времени для Java</a>. Новый API для даты/времени в Java 8 (JSR 310) находится под сильным влиянием <a href="https://www.joda.org/joda-time/" rel="nofollow" >Joda-Time</a> и взял лучшее из нее. Новый пакет <code>java.time</code> содержит <a href="https://www.javacodegeeks.com/2014/03/whats-new-in-java-8-date-api.html" rel="nofollow" >все классы для даты, времени, даты/времени, часовых поясов, продолжительностей и манипуляций со временем</a>. В дизайне API неизменяемость была учтена очень серьезно: изменения не допускаются (жесткий урок извлеченный из <code>java.util.Calendar</code>). Если требуется модификация – будет возвращен новый экземпляр соответствующего класса.
+
+Давайте посмотрим на основные классы и примеры их использования. Первый класс <code>Clock</code>, который предоставляет доступ к текущему мгновению, дате и времени, используя часовой пояс. <code>Clock</code> может быть использован вместо <code>System.currentTimeMillis()</code> и <code>TimeZone.getDefault()</code>.
+
+<pre class='lang-java line-numbers'><code>
+// Получить системное время как смещение UTC
+final Clock clock = Clock.systemUTC();
+System.out.println( clock.instant() );
+System.out.println( clock.millis() );
+</code></pre>
+Пример вывод на консоль:
+
+<pre class='lang-java line-numbers'><code>
+2014-04-12T15:19:29.282Z
+1397315969360
+</code></pre>
+Другие новые классы, которые мы будем рассматривать – это <code>LocaleDate</code> и <code>LocalTime</code>. <code>LocaleDate</code> содержит только часть даты без часового пояса в календарной системе ISO-8601. Соответственно, <code>LocalTime</code> содержит только часть времениcode>.
+
+<pre class='lang-java line-numbers'><code>
+// получить местную дату и время время
+final LocalDate date = LocalDate.now();
+final LocalDate dateFromClock = LocalDate.now( clock );
+         
+System.out.println( date );
+System.out.println( dateFromClock );
+	         
+// получить местную дату и время время
+final LocalTime time = LocalTime.now();
+final LocalTime timeFromClock = LocalTime.now( clock );
+	         
+System.out.println( time );
+System.out.println( timeFromClock );
+</code></pre>
+Пример вывода на консоль:
+
+<pre class='lang-java line-numbers'><code>
+2014-04-12
+2014-04-12
+11:25:54.568
+15:25:54.568
+</code></pre>
+<code>LocalDateTime</code> объединяет вместе <code>LocaleDate</code> и <code>LocalTime</code> и содержит дату и время, но без часового пояса в календарной системе ISO-8601. Простой пример приведен ниже.
+
+<pre class='lang-java line-numbers'><code>
+// Get the local date/time
+final LocalDateTime datetime = LocalDateTime.now();
+final LocalDateTime datetimeFromClock = LocalDateTime.now( clock );
+	         
+System.out.println( datetime );
+System.out.println( datetimeFromClock );
+</code></pre>
+Пример вывода на консоль:
+
+<pre class='lang-java line-numbers'><code>
+2014-04-12T11:37:52.309
+2014-04-12T15:37:52.309
+</code></pre>
+В случае, если вам нужна дата/время для конкретного часового пояса, вам поможет <code>ZonedDateTime</code>. Он содержит дату и время в календарной системе ISO-8601. Вот несколько примеров для разных часовых поясов.
+
+<pre class='lang-java line-numbers'><code>
+// Получение даты/времени для временной зоны
+final ZonedDateTime zonedDatetime = ZonedDateTime.now();
+final ZonedDateTime zonedDatetimeFromClock = ZonedDateTime.now( clock );
+final ZonedDateTime zonedDatetimeFromZone = ZonedDateTime.now( ZoneId.of( "America/Los_Angeles" ) );
+	         
+System.out.println( zonedDatetime );
+System.out.println( zonedDatetimeFromClock );
+System.out.println( zonedDatetimeFromZone );
+</code></pre>
+Пример вывода на консоль:
+
+<pre class='lang-java line-numbers'><code>
+2014-04-12T11:47:01.017-04:00[America/New_York]
+2014-04-12T15:47:01.017Z
+2014-04-12T08:47:01.017-07:00[America/Los_Angeles]
+</code></pre>
+И, наконец, давайте взглянем на класс <code>Duration</code>: промежуток времени в секундах и наносекундах. Это делает вычисление между двумя датами очень простым. Давайте посмотрим как это сделать:
+
+<pre class='lang-java line-numbers'><code>
+// Получаем разницу между двумя датами
+final LocalDateTime from = LocalDateTime.of( 2014, Month.APRIL, 16, 0, 0, 0 );
+final LocalDateTime to = LocalDateTime.of( 2015, Month.APRIL, 16, 23, 59, 59 );
+	 
+final Duration duration = Duration.between( from, to );
+System.out.println( "Duration in days: " + duration.toDays() );
+System.out.println( "Duration in hours: " + duration.toHours() );
+</code></pre>
+В приведенном выше примере вычисляется продолжительность (в днях и часах) между двумя датами, <em>16 апреля 2014</em> и <em>16 апреля 2015</em>. Вот пример вывода на консоль:
+
+<pre class='lang-java line-numbers'><code>
+Duration in days: 365
+Duration in hours: 8783
+</code></pre>
+Общее впечатление о новой дате/времени в Java 8 очень, очень положительное. Частично потому, что изменения основаны на проверенном в боях фундаменте (Joda-Time), частично потому, что в этот раз этот вопрос пересматривался серьезно и голоса разработчиков были услышаны. Для получения деталей обратитесь к <a href="https://docs.oracle.com/javase/tutorial/datetime/index.html" rel="nofollow" >официальной документации</a>.
+<h3>5.4. Движок Nashorn JavaScript</h3><a href="https://www.javacodegeeks.com/2014/02/java-8-compiling-lambda-expressions-in-the-new-nashorn-js-engine.html" rel="nofollow" >Java 8 поставляется с новым движком Nashorn JavaScript</a>, который позволяет вести разработку и запуск определенных видов приложений JavaScript на JVM. Движок Nashorn JavaScript это просто еще одна реализация javax.script.ScriptEngine, которая выполняет тот же набор правил для разрешения взаимодействия Java и JavaScript. Вот небольшой пример.
+
+<pre class='lang-java line-numbers'><code>
+ScriptEngineManager manager = new ScriptEngineManager();
+ScriptEngine engine = manager.getEngineByName( "JavaScript" );
+         
+System.out.println( engine.getClass().getName() );
+System.out.println( "Result:" + engine.eval( "function f() { return 1; }; f() + 1;" ) );
+</code></pre>
+Пример вывода на консоль:
+
+<pre class='lang-java line-numbers'><code>
+jdk.nashorn.api.scripting.NashornScriptEngine
+Result: 2
+</code></pre>
+<h3>5.5. Base64</h3>Наконец, <a href="https://www.javacodegeeks.com/2014/04/base64-in-java-8-its-not-too-late-to-join-in-the-fun.html" rel="nofollow" >поддержка кодирования Base64</a> нашла свое место в стандартной библиотеке Java с появлением релиза Java 8. Это очень просто в использовании, пример демонстрирует это.
+
+<pre class='lang-java line-numbers'><code>
+package com.javacodegeeks.java8.base64;
+	 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+	 
+public class Base64s {
+    public static void main(String[] args) {
+        final String text = "Base64 finally in Java 8!";
+	         
+        final String encoded = Base64
+            .getEncoder()
+            .encodeToString( text.getBytes( StandardCharsets.UTF_8 ) );
+        System.out.println( encoded );
+	         
+        final String decoded = new String(
+            Base64.getDecoder().decode( encoded ),
+            StandardCharsets.UTF_8 );
+        System.out.println( decoded );
+    }
+}
+</code></pre>
+Вывод в консоль программы показывает как кодированный так и декодированный текст:
+
+<pre class='lang-java line-numbers'><code>
+QmFzZTY0IGZpbmFsbHkgaW4gSmF2YSA4IQ==
+Base64 finally in Java 8!
+</code></pre>
+Есть также классы URL-дружественные кодеры/декодеры, а также MIME-дружественные кодеры/декодеры (<code>Base64.getUrlEncoder()</code> / <code>Base64.getUrlDecoder()</code>, <code>Base64.getMimeEncoder()</code> / <code>Base64.getMimeDecoder()</code>).
+<h3>5.6. Параллельные массивы</h3>Релиз Java 8 добавляет много новых методов для параллельной обработки массивов. Возможно, наиболее важным из них является <code>parallelSort()</code>, который может значительно ускорить сортировку на многоядерных машинах. Небольшой пример ниже демонстрирует семейство новых методов (<code>parallelXxx</code>) в действии.
+
+<pre class='lang-java line-numbers'><code>
+package com.javacodegeeks.java8.parallel.arrays;
+	 
+import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
+	 
+public class ParallelArrays {
+    public static void main( String[] args ) {
+        long[] arrayOfLong = new long [ 20000 ];       
+	         
+        Arrays.parallelSetAll( arrayOfLong,
+            index -&gt; ThreadLocalRandom.current().nextInt( 1000000 ) );
+        Arrays.stream( arrayOfLong ).limit( 10 ).forEach(
+            i -&gt; System.out.print( i + " " ) );
+        System.out.println();
+	         
+        Arrays.parallelSort( arrayOfLong );    
+        Arrays.stream( arrayOfLong ).limit( 10 ).forEach(
+            i -&gt; System.out.print( i + " " ) );
+        System.out.println();
+    }
+}
+</code></pre>
+Этот небольшой фрагмент кода использует метод <code>parallelSetAll()</code> для заполнения массива 20000 случайными значениями. После этого применяется <code>parallelSort()</code>. Программа выводит первые 10 элементов до и после сортировки, чтобы показать, что массив действительно отсортирован. Пример вывода программы может выглядеть следующим образом (Обратите внимание, что элементы массива заданы случайным образом).
+
+<pre class='lang-java line-numbers'><code>
+Unsorted: 591217 891976 443951 424479 766825 351964 242997 642839 119108 552378
+Sorted: 39 220 263 268 325 607 655 678 723 793
+</code></pre>
+<h3>5.7. Параллелизм</h3>Новые методы были добавлены к классу <code>java.util.concurrent.ConcurrentHashMap</code> для поддержки агрегатных операций на основе недавно добавленных объектов потоков и лямбда выражений.  Также новые методы были добавлены в класс <code>java.util.concurrent.ForkJoinPool</code> для поддержки общего пула (посмотрите также наш <a href="http://academy.javacodegeeks.com/course/java-concurrency-essentials/" rel="nofollow" >бесплатный курс по параллелизму Java</a>).
+
+Новый класс <code>java.util.concurrent.locks.StampedLock</code> был добавлен для обеспечения блокировки на основе возможностей с тремя режимами доступа для управления чтением/записью (он может быть рассмотрен как лучшая альтернатива для не очень хорошего <code>java.util.concurrent.locks.ReadWriteLock</code>).
+
+Новые классы, которые были добавлены в пакет <code>java.util.concurrent.atomic</code>:
+<ul>
+<li>DoubleAccumulator</li>
+<li>DoubleAdder</li>
+<li>LongAccumulator</li>
+<li>LongAdder</li>
+</ul><h3>6. Новые функции в среде выполнения Java (JVM)</h3>Область <code>PermGen</code> упразднена и <a href="https://www.javacodegeeks.com/2013/02/java-8-from-permgen-to-metaspace.html" rel="nofollow" >была заменена на Metaspace</a> (JEP 122). JVM опции <code>-XX:PermSize</code> и <code>-XX:MaxPermSize</code> были заменены на <code>-XX:MetaSpaceSize</code> и <code>-XX:MaxMetaspaceSize</code> соответственно.
+<h3>7. Заключение</h3>Будущее здесь: Java 8 продвинуло свою платформу вперед предоставив возможности, которые позволяют разработчикам быть более продуктивными. Еще слишком рано для перевода производственных систем на Java 8, но в ближайшие несколько месяцев эта адаптация должна медленно начинать расти. Тем не менее настало время для начала подготовки вашей кодовой базы для совместимости с Java 8 и быть готовым включить изменения Java 8, когда она окажется достаточно безопасной и стабильной.
+
+В качестве подтверждения принятия сообществом Java 8, недавно <a href="https://spring.io/blog/2014/03/27/spring-framework-4-0-3-released-with-java-8-support-now-production-ready" rel="nofollow" >Pivotal был выпущен Spring Framework с production поддержкой Java 8</a>.
+
+<em>Вы можете внести свой вклад о захватывающих новых возможностях в Java 8 в комментариях.</em>
+<h3>8. Источники</h3>Некоторые дополнительные ресурсы, которые глубоко обсуждают различные аспекты функций Java 8:
+<ul>
+<li><a href='http://www.oracle.com/technetwork/java/javase/8-whats-new-2157071.html' rel='nofollow' target='_blank'>What’s New in JDK 8</a></li>
+<li><a href='http://docs.oracle.com/javase/tutorial/' rel='nofollow' target='_blank'>The Java Tutorials</a></li>
+<li><a href='http://blog.arungupta.me/2014/03/wildfly8-jdk8-netbeans8-javaee7-excellent-combo-enterprise-java/' rel='nofollow' target='_blank'>WildFly 8, JDK 8, NetBeans 8, Java EE 7</a></li>
+<li><a href='http://winterbe.com/posts/2014/03/16/java-8-tutorial/' rel='nofollow' target='_blank'>Java 8 Tutorial</a></li>
+<li><a href='http://marxsoftware.blogspot.ca/2014/03/jdeps.html' rel='nofollow' target='_blank'>JDK 8 Command-line Static Dependency Checker</a></li>
+<li><a href='http://marxsoftware.blogspot.ca/2014/03/illuminating-javadoc-of-jdk-8.html' rel='nofollow' target='_blank'>The Illuminating Javadoc of JDK 8</a></li>
+<li><a href="http://blog.jooq.org/2014/04/04/java-8-friday-the-dark-side-of-java-8/" rel="nofollow" >The Dark Side of Java 8</a></li>
+<li><a href="http://www.eclipse.org/downloads/java8/" rel="nofollow" >Installing Java™ 8 Support in Eclipse Kepler SR2</a></li>
+<li><a href="http://www.baeldung.com/java8" rel="nofollow" >Java 8</a></li>
+<li><a href="http://www.oracle.com/technetwork/articles/java/jf14-nashorn-2126515.html" rel="nofollow" >Oracle Nashorn. A Next-Generation JavaScript Engine for the JVM</a></li>
+</ul>

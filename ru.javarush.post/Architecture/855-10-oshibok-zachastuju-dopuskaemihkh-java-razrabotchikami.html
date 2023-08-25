@@ -1,0 +1,162 @@
+10 ошибок зачастую допускаемых Java разработчиками
+<p>----------------------------------------</p>
+Этот список включает 10 ошибок зачастую допускаемых Java разработчиками: преобразование массива в ArrayList, проверка массива на наличие конкретного значения, удаление элемента из List в цикле, Hashtable против HashMap ...
+<p>----------------------------------------</p>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="8a010f66-0ac3-4c65-9206-2d4a1f7fb012" data-max-width="710" alt="10 ошибок зачастую допускаемых Java разработчиками - 1" src="https://cdn.javarush.com/images/article/8a010f66-0ac3-4c65-9206-2d4a1f7fb012/1024.jpeg"></div></div>Этот список включает 10 ошибок зачастую допускаемых <em>Java</em> разработчиками.
+<ol>
+<li><p><strong>Преобразование массива в <a href="https://javarush.com/quests/lectures/questsyntax.level07.lecture05" target="_blank">ArrayList</a>.</strong></p>
+<p>Для преобразования массива в <em>ArrayList</em>, разработчики часто используют такой способ:</p>
+<pre class="lang-java line-numbers"><code>
+List&lt;String&gt; list = Arrays.asList(arr);
+</code></pre>
+<p><code>Arrays.asList()</code> вернет объект класса <code>ArrayList</code> который является внутренним приватным статическим классом <code>(private static class)</code> класса <code>Arrays</code>, а это <strong>не</strong> класс <code>java.util.ArrayList.</code> Класс <code>java.util.Arrays.ArrayList</code> содержит методы <code>set()</code>, <code>get()</code>, <code>contains()</code>, но не содержит никаких методов для добавления элементов, его размер <strong>фиксирован</strong>. Для создания настоящего <code>java.util.ArrayList</code> следует сделать так:</p>
+
+
+<pre class="lang-java line-numbers"><code>
+ArrayList&lt;String&gt; arrayList = new ArrayList&lt;String&gt;(Arrays.asList(arr));
+</code></pre>
+<p>Конструктор класса <code>java.util.ArrayList</code> может принимать в качестве параметра все объекты реализующие интерфейс <code>Collection</code>, реализацию которого унаследовал и класс <code>java.util.Arrays.ArrayList</code></p>
+<p>(private static class ArrayList&lt;E&gt; extends AbstractList&lt;E&gt; implements RandomAccess, java.io.Serializable).</p></li>
+<li><p><strong>Проверка массива на наличие конкретного значения.</strong></p>
+<p>Разработчики часто поступают так:</p>
+<pre class="lang-java line-numbers"><code>
+Set&lt;String&gt; set = new HashSet&lt;String&gt;(Arrays.asList(arr));
+return set.contains(targetValue);
+</code></pre>
+<p>Код получается рабочий, но нет необходимости преобразовывать <code>List</code> в <code>Set</code>. Преобразование в <code>Set</code> займет дополнительное время. На самом же деле все просто:</p>
+
+<pre class="lang-java line-numbers"><code>
+Arrays.asList(arr).contains(targetValue);
+</code></pre>
+<p>или</p>
+<pre class="lang-java line-numbers"><code>
+for(String s: arr){
+	if(s.equals(targetValue))
+		return true;
+}
+return false;
+</code></pre>
+<p>Первый способ значительно короче.</p></li>
+<li><p><strong>Удаление элемента из <code>List</code> в цикле</strong></p>
+<p>Рассмотрим следующий код, удаляющий элементы в цикле:</p>
+<pre class="lang-java line-numbers"><code>
+ArrayList&lt;String&gt; list = new ArrayList&lt;String&gt;(Arrays.asList("a", "b", "c", "d"));
+for (int i = 0; i &lt; list.size(); i++) {
+	list.remove(i);
+}
+System.out.println(list);
+</code></pre>
+<p><strong>Вывод:</strong></p>
+<pre class="lang-java line-numbers"><code>
+[b, d]
+</code></pre>
+<p>Получается серьезная ошибка. Когда элемент удален, размер <code>List</code> уменьшается и индексы элементов меняются.</p>
+<p>Так что откажитесь от такого способа, если вы хотите удалить несколько элементов в цикле используя индекс.</p>
+<p>Возможно вы знаете что использование итератора правильное решение для удаления элементов в цикле, и вы знаете что цикл в стиле <code>for-each</code> работатет как итератор, но это не так.</p>
+<p>Рассмотрим следующий код:</p>
+
+<pre class="lang-java line-numbers"><code>
+ArrayList&lt;String&gt; list = new ArrayList&lt;String&gt;(Arrays.asList("a", "b", "c", "d"));
+ 
+for (String s : list) {
+	if (s.equals("a"))
+		list.remove(s);
+}
+</code></pre>
+<p>Мы получим исключение <a href="https://www.programcreek.com/2014/01/java-util-concurrentmodificationexception/" rel="nofollow" target="_blank">ConcurrentModificationException</a>.</p>
+<p>Правильно поступить так:</p>
+
+<pre class="lang-java line-numbers"><code>
+ArrayList&lt;String&gt; list = new ArrayList&lt;String&gt;(Arrays.asList("a", "b", "c", "d"));
+Iterator&lt;String&gt; iter = list.iterator();
+while (iter.hasNext()) {
+	String s = iter.next();
+ 
+	if (s.equals("a")) {
+		iter.remove();
+	}
+}
+</code></pre>
+<p>Метод <code>next()</code> должен быть вызван до метода <code>remove()</code>. </p>
+В цикле в стиле <code>for-each</code>, компилятор вызовет метод <code>remove()</code>, а уже потом <code>next()</code>, что вызовет ошибку <code>ConcurrentModificationException</code>. Вы можете посмотреть код <code>ArrayList.iterator()</code>.<p></p></li>
+<li><p><strong><code>Hashtable</code> против <code>HashMap</code>.</strong></p>
+<p>Из-за соответствующей реализации, <em>Hashtable</em> — это название структуры данных.</p>
+<p>Но в <em>Java</em> название для структуры данных это <code>HashMap</code>. Одно из ключевых отличий между <code>Hashtable</code> и <code>HashMap</code> это то, что <code>Hashtable</code> синхронизирован.Так что не стоит использовать <code>Hashtable</code> там где больше подходит <code>HashMap</code>.</p>
+<p><a href="https://www.programcreek.com/2013/03/hashmap-vs-treemap-vs-hashtable-vs-linkedhashmap/" rel="nofollow" target="_blank">HashMap vs. TreeMap vs. Hashtable vs. LinkedHashMap</a>.</p>
+<p><a href="https://www.programcreek.com/2013/09/top-9-questions-for-java-map/" rel="nofollow" target="_blank">10 основных вопросов про интерфейс Map</a></p></li>
+<li><p><strong>Использование коллекций без ограничений по содержимому</strong></p>
+<p>В <em>Java</em> часто путают коллекции без ограничений по содержимому, и коллекции с маской по типу содержимого. К примеру, для множеств - <code>Set</code> это коллекция без ограничений по содержимому, а <code>Set&lt;?&gt;</code> — коллекция у которой все-таки есть ограничения, но эти ограничения ничего на самом деле не ограничивают. Рассмотрим следующий код, где <code>List</code> без ограничений используется в качестве параметра метода: </p>
+<pre class="lang-java line-numbers"><code>
+public static void add(List list, Object o){
+	list.add(o);
+}
+public static void main(String[] args){
+	List&lt;String&gt; list = new ArrayList&lt;String&gt;();
+	add(list, 10);
+	String s = list.get(0);
+}
+</code></pre>
+<p>Данный код выбросит исключение:</p>
+<pre class="lang-java line-numbers"><code>
+Exception in thread "main" java.lang.ClassCastException: java.lang.Integer cannot be cast to java.lang.String
+	at …
+</code></pre>
+<p>Использование коллекций без ограничений по содержимому очень опасно, потому что вы не можете быть уверенными в том что там лежит внутри. А для того чтобы понять всю глубину разницы между <code>Set</code>, <code>Set&lt;?&gt;</code> и <code>Set&lt;Object&gt;</code> — почитайте вот <a href="https://www.programcreek.com/2013/12/raw-type-set-vs-unbounded-wildcard-set/" rel="nofollow" target="_blank">эту</a> и <a href="https://www.programcreek.com/2011/12/java-type-erasure-mechanism-example/" rel="nofollow" target="_blank">эту</a> ссылки.</p></li>
+<li><p><strong>Уровень доступа</strong></p>
+<p>Очень часто для полей класса разработчики используют модификатор доступа <code>public</code>. Так проще получить значение поля напрямую. Правильнее использовать как можно более ограниченный доступ к членам класса.</p>
+<p><a href="https://www.programcreek.com/2011/11/java-access-level-public-protected-private/" rel="nofollow" target="_blank">public, default, protected, and private</a>.</p></li>
+<li><strong><code>ArrayList</code> против <code>LinkedList</code></strong><p></p>
+<p>Когда разработчики не знают чем отличается <code>ArrayList</code> от <code>LinkedList</code>, они используют первый в силу его большей известности. Однако, есть огромная разница в производительности между ними. На самом деле, выбор между ними должен быть продиктован их внутренними особенностями — <code>ArrayList</code> позволяет быстро производить доступ к произвольному элементу массива, а <code>LinkedList</code> — быстро добавлять/удалять элементы в массиве. Почитайте статью по ссылке <a href="https://www.programcreek.com/2013/03/arraylist-vs-linkedlist-vs-vector/" rel="nofollow" target="_blank">ArrayList vs. LinkedList</a> чтобы понять причины их разной производительности.</p></li>
+<li><strong><code>Mutable</code> (Изменяемый) против <code>Immutable</code> (Неизменяемый)</strong><p></p>
+<p>Неизменяемый объект имеет много преимуществ: простота, безопасность и т.д. Но он требует отдельного объекта для каждого нового значения, и за слишком большое количество объектов придется заплатить понижением производительности. Должен быть баланс при выборе между изменяемым и неизменяемым обьектом.</p>
+<p>В основном чтобы избежать подготовки промежуточных объектов используется изменяемый объект. Один из классических примеров это конкатенация большого количества строк. Если вы используете неизменяемый объект типа <code>String</code>, то вы создаете много объектов, которые сразу попадут в сборщик мусора. Это тратит время и энергию процессора, поэтому правильное решение это использование изменяемых обьектов (например <code>StringBuilder</code>).</p>
+
+<pre class="lang-java line-numbers"><code>
+String result="";
+for(String s: arr){
+	result = result + s;
+}
+</code></pre>
+<p>Еще один пример использования изменяемых объектов — передача такого объекта в метод. Это позволит вернуть результат в нем же, без создания лишних объектов. При работе с объектами большого размера, к примеру коллекциями, передача коллекции в метод для сортировки и возвращение результата в другой коллекции приводит к совершенно излишнему расходу ресурсов. (<a href="https://stackoverflow.com/questions/23616211/why-we-need-mutable-classes" rel="nofollow" target="_blank">Ответ пользователя dasblinkenlight на Stack Overflow</a>).</p>
+<p><a href="https://www.programcreek.com/2013/04/why-string-is-immutable-in-java/" rel="nofollow" target="_blank">Почему объект класса String неизменяем?</a></p></li>
+<li><p><strong>Конструкторы классов <code>Super</code> и <code>Sub</code></strong></p>
+<img data-id="88741a90-f767-4430-aa92-ba5ab0753838" data-max-width="387" alt="10 ошибок зачастую допускаемых Java разработчиками - 2" src="https://cdn.javarush.com/images/article/88741a90-f767-4430-aa92-ba5ab0753838/1024.jpeg">
+<p>Данная ошибка компиляции вызвана тем, что у класса-предка не определен конструктор по умолчанию. В <em>Java</em>, если вы сами не опишите конструктор класса, компилятор сам создаст конструктор по умолчанию, не требующий никаких аргументов. Если же конструктор описан в классе <code>Super</code>, как <code>Super(String s){}</code>, компилятор сам ничего добавлять не будет. Что мы и наблюдаем в нашем примере.</p>
+<p>Конструктор класса <code>Sub</code>, не важно какой из них, вызовет конструктор по умолчанию класса <code>Super</code>, так как не указано ничего другого. Поскольку конструктора по умолчанию в классе <code>Super</code> нет — это приведет к ошибке компиляции.</p>
+<p>Первый вариант решения данной проблемы — добавить конструктор по умолчанию в класс <code>Super</code></p>
+<pre class="lang-java line-numbers"><code>
+public Super(){
+    System.out.println("Super");
+}
+</code></pre>
+<p>Второй вариант — удалите описанный нами конструктор из класса <code>Super</code>, чтобы компилятор создал конструктор по умолчанию.</p>
+<p>И последний вариант — добавьте вызов <code>super(value)</code> в конструкторы класса <code>Sub</code>, чтобы вместо конструктора по умолчанию вызывался существующий конструктор класса <code>Super</code></p>
+<p><a href="https://www.programcreek.com/2013/04/what-are-the-frequently-asked-questions-about-constructors-in-java/" rel="nofollow" target="_blank">Constructor of Super and Sub</a></p></li>
+<li><p><strong> " " или конструктор?</strong></p>
+<p>Есть два способа создать строку:</p>
+<pre class="lang-java line-numbers"><code>
+//1. использовать двойные кавычки
+String x = "abc";
+</code></pre><br>
+
+<pre class="lang-java line-numbers"><code>
+//2. использовать конструктор
+String y = new String("abc");
+</code></pre>
+<p>В чем же между ними разница?</p>
+<p>Вы можете понять это из следующих примеров:</p>
+<pre class="lang-java line-numbers"><code>
+String a = "abcd";
+String b = "abcd";
+System.out.println(a == b);  // True
+System.out.println(a.equals(b)); // True
+&nbsp;
+String c = new String("abcd");
+String d = new String("abcd");
+System.out.println(c == d);  // False
+System.out.println(c.equals(d)); // True
+</code></pre>
+<p>Для того чтобы подробнее узнать о том как строки хранятся в памяти, читайте <a href="https://www.programcreek.com/2014/03/create-java-string-by-double-quotes-vs-by-constructor/" rel="nofollow" target="_blank">Create Java String Using "" or Constructor?</a>.</p></li></ol>
+<strong>Планы на будущее.</strong>
+
+Этот список основан на моем анализе огромного количества Open Source проектов с гитхаба, вопросов со Stack Overflow, и популярных запросов в Google. Не берусь доказать что они действительно входят в десятку самых серьезных ошибок, но они на самом деле очень распространены.

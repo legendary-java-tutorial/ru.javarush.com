@@ -1,0 +1,701 @@
+Клёвые оптимизации SQL, не зависящие от стоимостной модели. Часть 3 
+<p>----------------------------------------</p>
+Пять простых оптимизаций, которые можно реализовать на основе одних лишь метаданных (т. е. ограничений) и самого запроса. Предлагаем вам адаптацию статьи Лукаса Эдера, рассчитанную на тех, кто имеет общее ...
+<p>----------------------------------------</p>
+<a href='https://javarush.com/groups/posts/292-kljevihe-optimizacii-sql-ne-zavisjajshie-ot-stoimostnoy-modeli' target='_blank'>Клёвые оптимизации SQL, не зависящие от стоимостной модели. Часть 1</a>
+<a href='https://javarush.com/groups/posts/331-kljevihe-optimizacii-sql-ne-zavisjajshie-ot-stoimostnoy-modeli-chastjh-2' target='_blank'>Клёвые оптимизации SQL, не зависящие от стоимостной модели. Часть 2</a>
+<img data-id="2ed50f4d-fa3a-4d5f-9e07-b968f60ba4f3" data-max-width="850" alt="Клёвые оптимизации SQL, не зависящие от стоимостной модели. Часть 3  - 1" src="https://cdn.javarush.com/images/article/2ed50f4d-fa3a-4d5f-9e07-b968f60ba4f3/1024.jpeg"><h2>6. Слияние предикатов</h2>Это — интересная возможность, на которой я когда-то споткнулся, ошибочно предположив, что моя СУБД на такое способна.
+
+Рассмотрим следующий запрос:
+
+<pre class='lang-java line-numbers'><code>
+SELECT *
+FROM actor
+WHERE actor_id IN (2, 3, 4)
+AND actor_id IN (1, 2, 3);
+</code></pre>
+Очевидно, что два предиката пересекаются и их можно слить воедино. Можно ожидать, что база данных преобразует вышеприведенный запрос в следующее:
+
+<pre class='lang-java line-numbers'><code>
+SELECT *
+FROM actor
+WHERE actor_id IN (2, 3);
+</code></pre>
+Выглядит совершенно очевидным, правда? Это – более сложный случай транзитивного замыкания. Еще один его случай — слияние двух диапазонов. При выполнении запроса:
+
+<pre class='lang-java line-numbers'><code>
+SELECT *
+FROM film
+WHERE film_id BETWEEN 1 AND 100
+AND film_id BETWEEN 99 AND 200
+</code></pre>
+мы надеемся, что база данных перепишет запрос следующим образом:
+
+<pre class='lang-java line-numbers'><code>
+SELECT *
+FROM film
+WHERE film_id BETWEEN 99 AND 100
+</code></pre>
+Кардинальность второго варианта будет равна 2 строкам, но в первом база данных может не понять, что диапазоны можно объединить, и выберет полный просмотр таблицы, хотя должна была бы воспользоваться индексом.
+
+<strong><em>Какие же базы данных способны на эти оптимизации?</em></strong>
+<h3>DB2</h3><em>Слияние предикатов IN</em>
+
+Да
+
+<pre class='lang-java line-numbers'><code>
+Explain Plan
+--------------------------------------------------
+ID | Operation         |               Rows | Cost
+ 1 | RETURN            |                    |   11
+ 2 |  FETCH ACTOR      |   2 of 2 (100.00%) |   11
+ 3 |   IXSCAN PK_ACTOR | 2 of 200 (  1.00%) |    0
+
+Predicate Information
+<strong>3 - SARG Q3.ACTOR_ID IN (2, 3)</strong>
+</code></pre>
+
+<em>Слияние диапазонных предикатов</em>
+
+Да (но пусть план не вводит вас в заблуждение!)
+
+<pre class='lang-java line-numbers'><code>
+Explain Plan
+--------------------------------------------------
+ID | Operation        |                Rows | Cost
+ 1 | RETURN           |                     |   13
+ 2 |  FETCH FILM      |    2 of 2 (100.00%) |   13
+<strong> 3 |   IXSCAN PK_FILM | 2 of 1000 (   .20%) |    6</strong>
+
+Predicate Information
+<strong>3 - START (99 <= Q1.FILM_ID)
+      STOP (Q1.FILM_ID <= 100)</strong>
+      SARG (Q1.FILM_ID <= 200)
+      SARG (1 <= Q1.FILM_ID)
+</code></pre>
+Как вы можете видеть, предикат был оптимизирован не полностью. Фильтр (SARG), проверяющий на попадание между нижней и верхней границами объединенного диапазона, на месте, но более важны операции START и STOP, указывающие на быстрый доступ по индексу. Кроме того, кардинальность тоже такая, какая и должна быть.
+
+Если хотите убедиться, выполните запрос со следующим невозможный предикатом
+
+<pre class='lang-java line-numbers'><code>
+SELECT *
+FROM film
+WHERE film_id BETWEEN 1 AND 2
+AND film_id BETWEEN 199 AND 200;
+</code></pre>
+и вы получите правильный план:
+
+<pre class='lang-java line-numbers'><code>
+Explain Plan
+-----------------------------------
+ID | Operation      |   Rows | Cost
+ 1 | RETURN         |        |    0
+ 2 |  TBSCAN GENROW | 0 of 0 |    0
+
+Predicate Information
+ 2 - RESID (1 = 0)
+</code></pre>
+<h3>MySQL</h3><em>Слияние предикатов IN</em>
+
+Опять же, к сожалению, MySQL плохо отображает информацию о предикате. Планы для обоих запросов совпадают:
+
+<pre class='lang-java line-numbers'><code>
+ID  TABLE  TYPE   KEY      ROWS  FILTERED  EXTRA
+------------------------------------------------------
+1   actor  range  PRIMARY  2     100.00    Using where
+</code></pre>
+Два раза одна кардинальность, два раза <em><strong>"Using where"</strong></em> без какого-либо намека на то, что на самом деле происходит внутри <em><strong>"where"</strong></em>. Но исходя из кардинальности, мы можем сделать вывод, что преобразование было выполнено правильно. Можно взглянуть на это с другой стороны, для чего выполним запрос:
+
+<pre class='lang-java line-numbers'><code>
+SELECT * FROM actor
+WHERE actor_id IN (3, 4, 5)
+AND actor_id IN (1, 2, 3);
+</code></pre>
+Который должен оказаться преобразован в следующее:
+
+<pre class='lang-java line-numbers'><code>
+
+SELECT * FROM actor
+WHERE actor_id = 3;
+</code></pre>
+И, действительно, это и происходит:
+
+<pre class='lang-java line-numbers'><code>
+ID  TABLE  TYPE   KEY      ROWS  FILTERED  EXTRA
+------------------------------------------------------
+1   actor  const  PRIMARY  1     100.00
+</code></pre>
+Обратите внимание на то, что TYPE=range поменялся на TYPE=const.
+
+Итак, можем сделать вывод, что да, MySQL выполняет данную оптимизацию.
+
+<em>Слияние диапазонных предикатов</em>
+
+Опять же, план запроса ничего не дает:
+
+<pre class='lang-java line-numbers'><code>
+ID  TABLE  TYPE   KEY      ROWS  FILTERED  EXTRA
+------------------------------------------------------
+1   film   range  PRIMARY  2     100.00    Using where
+</code></pre>
+Но можно подтвердить выполнение оптимизации с помощью следующего "невозможного" предиката:
+
+<pre class='lang-java line-numbers'><code>
+SELECT *
+FROM film
+WHERE film_id BETWEEN 1 AND 2
+AND film_id BETWEEN 199 AND 200
+</code></pre>
+в случае которого план меняется на вот такой:
+
+<pre class='lang-java line-numbers'><code>
+ID  TABLE  EXTRA
+-----------------------------------------
+1          no matching row in const table
+</code></pre>
+Итак, опять хорошие новости относительно MySQL.
+<h3>Oracle</h3><em>Слияние предикатов IN</em>
+
+Да
+
+<pre class='lang-java line-numbers'><code>
+----------------------------------------------------------
+| Id  | Operation                    | Name     | E-Rows |
+----------------------------------------------------------
+|   0 | SELECT STATEMENT             |          |        |
+|   1 |  INLIST ITERATOR             |          |        |
+|   2 |   TABLE ACCESS BY INDEX ROWID| ACTOR    |      2 |
+|*  3 |    INDEX UNIQUE SCAN         | PK_ACTOR |      2 |
+----------------------------------------------------------
+
+Predicate Information (identified by operation id):
+---------------------------------------------------
+
+<strong>   3 - access(("ACTOR_ID"=2 OR "ACTOR_ID"=3))</strong>
+</code></pre>
+Примененный предикат включает только значения <em><strong>2</strong></em> и <em><strong>3</strong></em>, так что преобразование сработало правильно.
+
+<em>Слияние диапазонных предикатов</em>
+
+Опять же — да:
+<pre class='lang-java line-numbers'><code>
+----------------------------------------------------------------
+| Id  | Operation                           | Name    | E-Rows |
+----------------------------------------------------------------
+|   0 | SELECT STATEMENT                    |         |        |
+|   1 |  TABLE ACCESS BY INDEX ROWID BATCHED| FILM    |      2 |
+|*  2 |   INDEX RANGE SCAN                  | PK_FILM |      2 |
+----------------------------------------------------------------
+
+Predicate Information (identified by operation id):
+---------------------------------------------------
+
+<strong>   2 - access("FILM_ID">=99 AND "FILM_ID"<=100)</strong>
+</code></pre>
+<h3>PostgreSQL</h3><em>Слияние предикатов IN</em>
+
+Увы, нет, оптимизации не происходит!
+
+<pre class='lang-java line-numbers'><code>
+QUERY PLAN
+-----------------------------------------------------------------------------------------------
+Seq Scan on actor  (cost=0.00..5.50 rows=1 width=25)
+  Filter: ((actor_id = ANY ('{2,3,4}'::integer[])) AND (actor_id = ANY ('{1,2,3}'::integer[])))
+</code></pre>
+Оба предиката по-прежнему присутствуют в плане выполнения, да и оценка кардинальности ошибочна, должно быть <em><strong>2</strong></em>, а не <em><strong>1</strong></em>. Если преобразовать запрос вручную, мы получили бы следующий план запроса:
+
+<pre class='lang-java line-numbers'><code>
+QUERY PLAN
+-----------------------------------------------------
+Seq Scan on actor  (cost=0.00..4.50 rows=2 width=25)
+  Filter: (actor_id = ANY ('{2,3}'::integer[]))
+</code></pre>
+В частности, мы видим неправильный план в случае, когда два предиката не пересекаются и формируется "невозможный" предикат:
+
+<pre class='lang-java line-numbers'><code>
+SELECT *
+FROM actor
+WHERE actor_id IN (2, 3, 4)
+AND actor_id IN (7, 8, 9)
+Опять неправильный план:
+QUERY PLAN
+-----------------------------------------------------------------------------------------------
+Seq Scan on actor  (cost=0.00..5.50 rows=1 width=25)
+  Filter: ((actor_id = ANY ('{2,3,4}'::integer[])) AND (actor_id = ANY ('{7,8,9}'::integer[])))
+</code></pre>
+Облом!
+
+<em>Слияние диапазонных предикатов</em>
+
+Выглядит не лучше:
+
+<pre class='lang-java line-numbers'><code>
+QUERY PLAN
+--------------------------------------------------------------------------------------------
+Index Scan using film_pkey on film  (cost=0.28..8.30 rows=1 width=386)
+  Index Cond: ((film_id >= 1) AND (film_id <= 100) AND (film_id >= 99) AND (film_id <= 200))
+</code></pre>
+Сложно сказать, получилось или нет. В конце концов, мы получили правильный план с разумной кардинальностью, так что все может работать, как и на DB2. Но что произойдет, опять же, если создать "невозможный" предикат?
+
+<pre class='lang-java line-numbers'><code>
+SELECT *
+FROM film
+WHERE film_id BETWEEN 1 AND 2
+AND film_id BETWEEN 199 AND 200;
+</code></pre>
+План стал хуже:
+
+<pre class='lang-java line-numbers'><code>
+QUERY PLAN
+-------------------------------------------------------------------------------------------
+Index Scan using film_pkey on film  (cost=0.28..8.42 rows=5 width=386)
+  Index Cond: ((film_id >= 1) AND (film_id >= 2) AND (film_id >= 199) AND (film_id >= 200))
+</code></pre>
+Кардинальность повысилась, вместо того, чтобы понизиться. И, в конце концов, такой запрос вообще не должен выполняться. Жирный минус PostgreSQL.
+<h3>SQL Server</h3><em>Слияние предикатов IN</em>
+
+Да, всё работает:
+
+<pre class='lang-java line-numbers'><code>
+  |--Nested Loops(Inner Join)
+       |--Index Seek(SEEK:([actor_id]=(2) OR [actor_id]=(3)))
+       |--RID Lookup(OBJECT:([actor]))
+</code></pre>
+<em>Слияние диапазонных предикатов</em>
+
+Опять же похоже на случай DB2:
+
+<pre class='lang-java line-numbers'><code>
+  |--Nested Loops(Inner Join)
+       |--Index Seek(SEEK:([film_id] >= (1) AND [film_id] <= (100)), WHERE:([film_id]>=(99) AND [film_id]<=(200)))
+       |--RID Lookup(OBJECT:([film]))
+</code></pre>
+К сожалению, обратите внимание на различие между <em><strong>SEEK</strong></em> и <em><strong>WHERE</strong></em>. Хотелось бы видеть диапазон <em><strong>[99, 100]</strong></em> в <em><strong>SEEK</strong></em>, как в DB2, поскольку <em><strong>SEEK</strong></em> выполняется быстро благодаря доступу по индексу за время <em><strong>O(log N)</strong></em>, в то время как время доступа <em><strong>WHERE</strong></em> растет линейно, порядка <em><strong>O(N)</strong></em>.
+
+Облом!
+Мне кажется, что это программная ошибка, ведь невозможный предикат приводит к гораздо более обоснованному:
+
+<pre class='lang-java line-numbers'><code>
+|--Constant Scan
+</code></pre>
+<h3>Резюме</h3>
+Не забывайте, что есть множество предикатов, которые сливаются правильно в одних базах данных, а в других – нет. Если сомневаетесь – обязательно проверьте план выполнения!
+<table style="text-align: center">
+<thead>
+<tr>
+<th style="text-align: center">База данных</th>
+<th style="text-align: center">Слияние IN</th>
+<th style="text-align: center">Слияние диапазонов</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DB2 LUW 10.5</td>
+<td>Да</td>
+<td>Да</td>
+</tr>
+<tr>
+<td>MySQL 8.0.2</td>
+<td>Да</td>
+<td>Да</td>
+</tr>
+<tr>
+<td>Oracle 12.2.0.1</td>
+<td>Да</td>
+<td>Да</td>
+</tr>
+<tr>
+<td>PostgreSQL 9.6</td>
+<td>Нет</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>SQL Server 2014</td>
+<td>Да</td>
+<td>Нет</td>
+</tr>
+</tbody>
+</table><h2>7. Доказуемо пустые множества</h2>Это особенно крутая возможность. Мы уже видели выше <a href='https://javarush.com/groups/posts/292-kljevihe-optimizacii-sql-ne-zavisjajshie-ot-stoimostnoy-modeli' target='_blank'>невозможные предикаты и ненужные обращения к таблицам</a>. Что если выполнить это снова, но теперь при помощи <em><strong>JOIN</strong></em>? Сработает ли тут устранение <em><strong>JOIN</strong></em>?
+
+Попробуем выполнить следующие запросы:
+
+Предикат <em><strong>IS NULL</strong></em> на столбце с ограничением <em><strong>NOT NULL</strong></em>
+
+Предикат в предложении <em><strong>WHERE</strong></em> не может быть равен <em><strong>TRUE</strong></em>, поскольку на столбце <em><strong>FILM_ID</strong></em> задано ограничение <em><strong>NOT NULL</strong></em>.
+
+<pre class='lang-java line-numbers'><code>
+SELECT first_name, last_name
+FROM actor a
+JOIN (
+  SELECT *
+  FROM film_actor
+  WHERE film_id IS NULL
+) fa ON a.actor_id = fa.actor_id;
+</code></pre>
+Производная таблица <em><strong>FA</strong></em> не вернет ни одного столбца, ведь из-за ограничения <em><strong>NOT NULL</strong></em> на столбце <em><strong>FA.FILM_ID</strong></em> она доказуемо пуста. А поскольку <em><strong>INNER JOIN</strong></em> с пустой таблицей тоже никаких строк не возвращает, обращаться к таблице <em><strong>ACTOR</strong></em> необходимости нет, так что вышеприведенный запрос должен быть переписан примерно вот так:
+
+<pre class='lang-java line-numbers'><code>
+SELECT NULL AS first_name, NULL AS last_name
+WHERE 1 = 0;
+</code></pre>
+Пересечение столбцов, допускающих неопределенное значение, со столбцами с ограничением <em><strong>NOT NULL</strong></em>
+
+В принципе, это эквивалентно предыдущему примеру, только с немного более запутанным синтаксисом:
+
+<pre class='lang-java line-numbers'><code>
+SELECT *
+FROM actor a
+JOIN (
+  SELECT actor_id, film_id
+  FROM film_actor
+  INTERSECT
+  SELECT NULL, NULL
+  FROM dual
+) fa ON a.actor_id = fa.actor_id;
+</code></pre>
+В силу ограничений <em><strong>NOT NULL</strong></em> на обоих столбцах <em><strong>FA.ACTOR_ID</strong></em> и <em><strong>FA.FILM_ID</strong></em>, их пересечение с кортежем <em><strong>(NULL, NULL)</strong></em> никаких результатов не вернет, так что производная таблица доказуемо пуста, и, следовательно, внутреннее соединение можно устранить.
+
+И еще раз, с подзапросом <em><strong>EXISTS</strong></em>
+
+Наконец, повторим вышеприведенный запрос, но на этом раз <a href='https://blog.jooq.org/2017/01/12/a-probably-incomplete-comprehensive-guide-to-the-many-different-ways-to-join-tables-in-sql/' target='_blank'>с полусоединением вместо внутреннего соединения</a>. Сначала с невозможным предикатом:
+
+<pre class='lang-java line-numbers'><code>
+SELECT *
+FROM actor a
+WHERE a.actor_id IN (
+  SELECT actor_id
+  FROM film_actor
+  WHERE actor_id IS NULL
+);
+</code></pre>
+... а затем опять с пересечением.
+
+<pre class='lang-java line-numbers'><code>
+SELECT *
+FROM actor a
+WHERE a.actor_id IN (
+  SELECT actor_id
+  FROM film_actor
+  INTERSECT
+  SELECT NULL
+  FROM sysibm.dual
+)
+</code></pre>
+Вперед. Посмотрим, какие базы данных умеют выполнять эти оптимизации.
+<h3>DB2</h3><em>Соединение доказуемо пустого множества (предикат <em><strong>IS NULL</strong></em>):</em>
+
+<pre class='lang-java line-numbers'><code>
+Explain Plan
+-----------------------------------
+*ID | Operation      |   Rows | Cost
+ 1 | RETURN         |        |    0
+ 2 |  TBSCAN GENROW | 0 of 0 |    0
+
+Predicate Information
+ 2 - RESID (1 = 0)
+</code></pre>
+<em>Соединение доказуемо пустого множества <em><strong>(INTERSECT)</strong></em>:</em>
+
+<pre class='lang-java line-numbers'><code>
+Explain Plan
+-----------------------------------
+ID | Operation      |   Rows | Cost
+ 1 | RETURN         |        |    0
+ 2 |  TBSCAN GENROW | 0 of 0 |    0
+
+Predicate Information
+ 2 - RESID (1 = 0)
+</code></pre>
+<em>Полусоединение доказуемо пустого множества (предикат <em><strong>IS NULL</strong></em>):</em>
+
+<pre class='lang-java line-numbers'><code>
+Explain Plan
+-----------------------------------
+ID | Operation      |   Rows | Cost
+ 1 | RETURN         |        |    0
+ 2 |  TBSCAN GENROW | 0 of 0 |    0
+
+Predicate Information
+ 2 - RESID (1 = 0)
+</code></pre>
+<em>Полусоединение доказуемо пустого множества <em><strong>(INTERSECT)</strong></em>:</em>
+
+<pre class='lang-java line-numbers'><code>
+Explain Plan
+-----------------------------------
+ID | Operation      |   Rows | Cost
+ 1 | RETURN         |        |    0
+ 2 |  TBSCAN GENROW | 0 of 0 |    0
+
+Predicate Information
+ 2 - RESID (1 = 0)
+</code></pre>
+Вау, круто! Похоже, победитель забега!
+<h3>MySQL</h3><em>Соединение доказуемо пустого множества (предикат <em><strong>IS NULL</strong></em>):</em>
+
+<pre class='lang-java line-numbers'><code>
+ID  TABLE   EXTRA
+----------------------------
+1           Impossible WHERE
+</code></pre>
+Круто, я не ожидал!
+
+<em>Соединение доказуемо пустого множества <em><strong>(INTERSECT)</strong></em>:</em>
+
+Увы, MySQL не поддерживает <em><strong>INTERSECT</strong></em>.
+
+<em>Полусоединение доказуемо пустого множества (предикат <em><strong>IS NULL</strong></em>):</em>
+
+<pre class='lang-java line-numbers'><code>
+ID  TABLE   EXTRA
+----------------------------
+1           Impossible WHERE
+</code></pre>
+
+<em>Полусоединение доказуемо пустого множества <em><strong>(INTERSECT)</strong></em>:</em>
+
+Увы, MySQL не поддерживает <em><strong>INTERSECT</strong></em>.
+
+Но все равно, MySQL демонстрирует отличный результат!
+<h3>Oracle</h3><em>Соединение доказуемо пустого множества (предикат <em><strong>IS NULL</strong></em>):
+</em>
+<pre class='lang-java line-numbers'><code>
+---------------------------------------------------------------------------
+| Id  | Operation              | Name          | Starts | E-Rows | A-Rows |
+---------------------------------------------------------------------------
+|   0 | SELECT STATEMENT       |               |      1 |        |      0 |
+|*  1 |  FILTER                |               |      1 |        |      0 |
+|*  2 |   HASH JOIN            |               |      0 |   5462 |      0 |
+|   3 |    TABLE ACCESS FULL   | ACTOR         |      0 |    200 |      0 |
+|   4 |    INDEX FAST FULL SCAN| PK_FILM_ACTOR |      0 |   5462 |      0 |
+---------------------------------------------------------------------------
+
+Predicate Information (identified by operation id):
+---------------------------------------------------
+
+   1 - filter(NULL IS NOT NULL)
+   2 - access("A"."ACTOR_ID"="FILM_ACTOR"."ACTOR_ID")
+</code></pre>
+Опять же, очень странный план выполнения в Oracle, но фильтр <em><strong>NULL IS NOT NULL</strong></em> на месте, и он находится перед всеми остальными операциями, которые, таким образом, не выполняются.
+
+<em>Соединение доказуемо пустого множества <em><strong>(INTERSECT)</strong></em>:</em>
+
+<pre class='lang-java line-numbers'><code>
+---------------------------------------------------------------------------------
+| Id  | Operation                    | Name          | Starts | E-Rows | A-Rows |
+---------------------------------------------------------------------------------
+|   0 | SELECT STATEMENT             |               |      1 |        |      0 |
+|   1 |  NESTED LOOPS                |               |      1 |      1 |      0 |
+|   2 |   NESTED LOOPS               |               |      1 |      1 |      0 |
+|   3 |    VIEW                      |               |      1 |      1 |      0 |
+|   4 |     INTERSECTION             |               |      1 |        |      0 |
+|   5 |      SORT UNIQUE             |               |      1 |   5462 |   5463 |
+|   6 |       INDEX FAST FULL SCAN   | PK_FILM_ACTOR |      1 |   5462 |   5463 |
+|   7 |      FAST DUAL               |               |      1 |      1 |      1 |
+|*  8 |    INDEX UNIQUE SCAN         | PK_ACTOR      |      0 |      1 |      0 |
+|   9 |   TABLE ACCESS BY INDEX ROWID| ACTOR         |      0 |      1 |      0 |
+---------------------------------------------------------------------------------
+
+Predicate Information (identified by operation id):
+---------------------------------------------------
+
+   8 - access("A"."ACTOR_ID"="FA"."ACTOR_ID")
+</code></pre>
+Забавно. Как видим, при этом плане выполнения происходит просмотр всего первичного ключа таблицы <em><strong>FILM_ACTOR</strong></em>. Это может избавить от обращения к таблице <em><strong>ACTOR</strong></em> и индексу первичного ключа, поскольку сначала обрабатывается производная таблица (в которой нет ни одной строки), но операций с Id=5 и 6 все же тут быть не должно. Облом!
+
+<em>Полусоединение доказуемо пустого множества (предикат <em><strong>IS NULL</strong></em>):</em>
+
+А это снова выполняется правильно:
+<pre class='lang-java line-numbers'><code>
+-------------------------------------------------------------------------------------
+| Id  | Operation              | Name                    | Starts | E-Rows | A-Rows |
+-------------------------------------------------------------------------------------
+|   0 | SELECT STATEMENT       |                         |      1 |        |      0 |
+|*  1 |  FILTER                |                         |      1 |        |      0 |
+|*  2 |   HASH JOIN SEMI       |                         |      0 |    200 |      0 |
+|   3 |    TABLE ACCESS FULL   | ACTOR                   |      0 |    200 |      0 |
+|   4 |    INDEX FAST FULL SCAN| IDX_FK_FILM_ACTOR_ACTOR |      0 |   5462 |      0 |
+-------------------------------------------------------------------------------------
+
+Predicate Information (identified by operation id):
+---------------------------------------------------
+
+   1 - filter(NULL IS NOT NULL)
+   2 - access("A"."ACTOR_ID"="ACTOR_ID")
+</code></pre>
+... с тем же странным планом выполнения, содержащим не выполняемое поддерево.
+
+<em>Полусоединение доказуемо пустого множества <em><strong>(INTERSECT)</strong></em>:</em>
+
+Опять же, никакой оптимизации:
+
+<pre class='lang-java line-numbers'><code>
+-------------------------------------------------------------------------------------------
+| Id  | Operation                    | Name                    | Starts | E-Rows | A-Rows |
+-------------------------------------------------------------------------------------------
+|   0 | SELECT STATEMENT             |                         |      1 |        |      0 |
+|   1 |  NESTED LOOPS                |                         |      1 |      1 |      0 |
+|   2 |   NESTED LOOPS               |                         |      1 |      1 |      0 |
+|   3 |    VIEW                      | VW_NSO_1                |      1 |      1 |      0 |
+|   4 |     INTERSECTION             |                         |      1 |        |      0 |
+|   5 |      SORT UNIQUE             |                         |      1 |   5462 |    200 |
+|   6 |       INDEX FAST FULL SCAN   | IDX_FK_FILM_ACTOR_ACTOR |      1 |   5462 |   5463 |
+|   7 |      FAST DUAL               |                         |      1 |      1 |      1 |
+|*  8 |    INDEX UNIQUE SCAN         | PK_ACTOR                |      0 |      1 |      0 |
+|   9 |   TABLE ACCESS BY INDEX ROWID| ACTOR                   |      0 |      1 |      0 |
+-------------------------------------------------------------------------------------------
+
+Predicate Information (identified by operation id):
+---------------------------------------------------
+
+   8 - access("A"."ACTOR_ID"="ACTOR_ID")
+</code></pre>
+Не слишком хорошие результаты!
+<h3>PostgreSQL</h3>К вящему разочарованию, PostgreSQL в этом эксперименте показывает себя не с лучшей стороны!
+
+<em>Соединение доказуемо пустого множества (предикат <em><strong>IS NULL</strong></em>):</em>
+
+Не-а:
+
+<pre class='lang-java line-numbers'><code>
+QUERY PLAN
+--------------------------------------------------------------------------------------------
+Hash Join  (cost=8.31..13.07 rows=1 width=13)
+  Hash Cond: (a.actor_id = film_actor.actor_id)
+  ->  Seq Scan on actor a  (cost=0.00..4.00 rows=200 width=17)
+  ->  Hash  (cost=8.30..8.30 rows=1 width=2)
+        ->  Index Scan using idx_fk_film_id on film_actor  (cost=0.28..8.30 rows=1 width=2)
+              Index Cond: (film_id IS NULL)
+</code></pre>
+<em>Соединение доказуемо пустого множества <em><strong>(INTERSECT)</strong></em>:</em>
+
+Еще хуже:
+
+<pre class='lang-java line-numbers'><code>
+QUERY PLAN
+---------------------------------------------------------------------------------------------------
+Hash Join  (cost=166.60..171.36 rows=1 width=29)
+  Hash Cond: (a.actor_id = fa.actor_id)
+  ->  Seq Scan on actor a  (cost=0.00..4.00 rows=200 width=25)
+  ->  Hash  (cost=166.59..166.59 rows=1 width=4)
+        ->  Subquery Scan on fa  (cost=0.00..166.59 rows=1 width=4)
+              ->  HashSetOp Intersect  (cost=0.00..166.58 rows=1 width=8)
+                    ->  Append  (cost=0.00..139.26 rows=5463 width=8)
+                          ->  Subquery Scan on "*SELECT* 2"  (cost=0.00..0.02 rows=1 width=8)
+                                ->  Result  (cost=0.00..0.01 rows=1 width=4)
+                          ->  Subquery Scan on "*SELECT* 1"  (cost=0.00..139.24 rows=5462 width=8)
+                                ->  Seq Scan on film_actor  (cost=0.00..84.62 rows=5462 width=4)
+</code></pre>
+<em>Полусоединение доказуемо пустого множества (предикат <em><strong>IS NULL</strong></em>)</em>:
+
+Так же, как и в случае со внутренним соединением:
+
+<pre class='lang-java line-numbers'><code>
+QUERY PLAN
+-------------------------------------------------------------------------------------------------
+Hash Semi Join  (cost=6.06..10.60 rows=1 width=25)
+  Hash Cond: (a.actor_id = film_actor.actor_id)
+  ->  Seq Scan on actor a  (cost=0.00..4.00 rows=200 width=25)
+  ->  Hash  (cost=6.05..6.05 rows=1 width=2)
+        ->  Index Only Scan using film_actor_pkey on film_actor  (cost=0.28..6.05 rows=1 width=2)
+              Index Cond: (actor_id IS NULL)
+</code></pre>
+<em>Полусоединение доказуемо пустого множества <em><strong>(INTERSECT)</strong></em></em>:
+
+Как и ожидалось:
+
+<pre class='lang-java line-numbers'><code>
+QUERY PLAN
+--------------------------------------------------------------------------------------------------
+Hash Semi Join  (cost=152.94..157.48 rows=1 width=25)
+  Hash Cond: (a.actor_id = "ANY_subquery".actor_id)
+  ->  Seq Scan on actor a  (cost=0.00..4.00 rows=200 width=25)
+  ->  Hash  (cost=152.93..152.93 rows=1 width=2)
+        ->  Subquery Scan on "ANY_subquery"  (cost=0.00..152.93 rows=1 width=2)
+              ->  HashSetOp Intersect  (cost=0.00..152.92 rows=1 width=6)
+                    ->  Append  (cost=0.00..139.26 rows=5463 width=6)
+                          ->  Subquery Scan on "*SELECT* 2"  (cost=0.00..0.02 rows=1 width=6)
+                                ->  Result  (cost=0.00..0.01 rows=1 width=2)
+                          ->  Subquery Scan on "*SELECT* 1"  (cost=0.00..139.24 rows=5462 width=6)
+                                ->  Seq Scan on film_actor  (cost=0.00..84.62 rows=5462 width=2)
+</code></pre>
+<h3>SQL Server</h3>SQL Server тут во всей красе, как и DB2!
+
+<em>Соединение доказуемо пустого множества (предикат <em><strong>IS NULL</strong></em>)</em>:
+
+<pre class='lang-java line-numbers'><code>
+  |--Constant Scan
+</code></pre>
+<em>Соединение доказуемо пустого множества <em><strong>(INTERSECT)</strong></em></em>:
+
+<pre class='lang-java line-numbers'><code>
+  |--Constant Scan
+</code></pre>
+<em>Полусоединение доказуемо пустого множества (предикат <em><strong>IS NULL</strong></em>)</em>:
+
+<pre class='lang-java line-numbers'><code>
+  |--Constant Scan
+</code></pre>
+<em>Полусоединение доказуемо пустого множества <em><strong>(INTERSECT)</strong></em></em>:
+
+<pre class='lang-java line-numbers'><code>
+  |--Constant Scan
+</code></pre>
+<h3>Резюме</h3><table style="text-align: center">
+<thead>
+<tr>
+<th style="text-align: center">База данных</th>
+<th style="text-align: center">JOIN / NULL</th>
+<th style="text-align: center">JOIN / INTERSECT</th>
+<th style="text-align: center">SEMI JOIN / NULL</th>
+<th style="text-align: center">SEMI JOIN / INTERSECT</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DB2 LUW 10.5</td>
+<td>Да</td>
+<td>Да</td>
+<td>Да</td>
+<td>Да</td>
+</tr>
+<tr>
+<td>MySQL 8.0.2</td>
+<td>Да</td>
+<td>Не поддерживается</td>
+<td>Да</td>
+<td>Не поддерживается</td>
+</tr>
+<tr>
+<td>Oracle 12.2.0.1</td>
+<td>Да</td>
+<td>Нет</td>
+<td>Да</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>PostgreSQL 9.6</td>
+<td>Нет</td>
+<td>Нет</td>
+<td>Нет</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>SQL Server 2014</td>
+<td>Да</td>
+<td>Да</td>
+<td>Да</td>
+<td>Да</td>
+</tr>
+</tbody>
+</table>Заметим, что это можно выполнить и множеством других способов. Не стесняйтесь комментировать и предлагать свои собственные варианты создания "доказуемо пустых множеств", чтобы проверить оптимизацию их этими базами данных.
+<table>
+<tr><th>Что еще почитать?</th>
+</tr>
+<tr>
+<td>
+<p><a href='https://javarush.com/groups/posts/273-problemih-s-proizvoditeljhnostjhju-sql-voznikajujshie-iz-za-nenuzhnoy-no-objazateljhnoy-rabotih' target='_blank'>Проблемы с производительностью SQL, возникающие из-за "ненужной, но обязательной работы"</a></p>
+<p><a href='https://javarush.com/groups/posts/414-kljevihe-optimizacii-sql-ne-zavisjajshie-ot-stoimostnoy-modeli-chastjh-4-' target='_blank'>Клёвые оптимизации SQL, не зависящие от стоимостной модели. Часть 4</a></p>
+</td>
+</tr>
+</table>

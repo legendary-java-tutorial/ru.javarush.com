@@ -1,0 +1,137 @@
+Регулярные выражения в Java
+<p>----------------------------------------</p>
+Регулярное выражение это своего рода шаблон, который может быть применен к тексту (String, в Java). Java предоставляет пакет java.util.regex для сопоставления с регулярными выражениями. Регулярные выражения очень похожи на язык программирования Perl и очень просты ...
+<p>----------------------------------------</p>
+<img data-id="5247f479-7e7a-4cd5-9ba4-d010a8aec8d8" data-max-width="570" alt="RegEx" src="https://cdn.javarush.com/images/article/5247f479-7e7a-4cd5-9ba4-d010a8aec8d8/1024.jpeg">Регулярное выражение это своего рода шаблон, который может быть применен к тексту (String, в Java). Java предоставляет пакет <em>java.util.regex</em> для сопоставления с регулярными выражениями. Регулярные выражения очень похожи на язык программирования Perl и очень просты в освоении.
+Регулярное выражение или соответствует тексту (его части) или нет.
+
+* Если регулярное выражение совпадает с частю текста, то мы можем найти еe.
+** Если регулярное выражение составное, то мы можем легко выяснить, какая часть регулярного выражения совпадает с какой частью текста.
+
+<h2>Первый пример</h2>Регулярное выражение "<code>[a-z] +</code>" соответствует всем строчныем буквам в тексте.
+<code>[a-z]</code> означает любой символ от <code>a</code> до <code>z</code> включительно, и <code>+</code> означает "один или более" символов.
+
+Предположим, что мы поставляем строку "code 2 learn java tutorial ".
+
+Как это сделать в Java
+
+Во-первых, вы должны составить шаблон:
+
+<pre class='lang-java line-numbers'><code>
+import java.util.regex.*;
+Pattern p = Pattern.compile(“[a-z]+”);
+</code></pre>
+Далее вы должны создать <code>matcher</code> для текста, отправив сообщение на схеме:
+
+<pre class='lang-java line-numbers'><code>
+Matcher m = p.matcher(“code 2 learn java tutorial”);
+</code></pre>
+<strong>ПРИМЕЧАНИЕ:</strong>
+Ни <code>Pattern</code> ни <code>Matcher</code> не имеют конструкторов, мы создаем их с помощью методов класса <code>Pattern</code>.
+
+<code><strong>Pattern Class:</strong></code> Объект класса составляет представление регулярного выражения. Класс Pattern не предусматривает никаких публичных конструкторов. Чтобы создать шаблон, необходимо сначала вызвать один из публичных статических методов, которые затем возвращают объект класса <code>Pattern</code>. Эти методы принимают регулярное выражение в качестве аргумента.
+
+<code><strong>Matcher Class:</strong></code> Объект "Искатель" является двигателем, который интерпретирует шаблон и выполняет операции сопоставления с входной строкой. Как и <code>Pattern</code> класс, <code>Matcher</code> не имеет публичных конструкторов. Вы получаете объект <code>Matcher</code> вызовом метода <code>matcher</code>, на объекте класса <code>Pattern</code>.
+
+После того как мы выполнили эти шаги, и теперь у нас есть экземпляр класса <code>Matcher m </code>,и теперь мы можем проверить, был найден шаблон или нет, и если да, то в какой позиции, и т.д.
+
+<code>m.matches()</code> возвращает true, если шаблон соответствует всей строке, иначе false.
+<code>m.lookingAt()</code> возвращает true, если шаблон соответствует началу строки, и false в противном случае.
+<code>m.find ()</code> возвращает true, если шаблон совпадает с любой частью текста.
+<table>
+<tr>
+<th>Что еще почитать:</th>
+</tr>
+<tr>
+<td>
+<p><a href='https://javarush.com/groups/java-developer' target='_blank'><em><strong>Группа Java Developer:</strong></em></a></p><ul>
+<li><p><a href='https://javarush.com/groups/posts/2013-reguljarnihe-vihrazhenija-v-java' target='_blank'>Регулярные выражения в Java</a></p></li></ul>
+</td>
+</tr>
+</table><h2>Находим совпадение</h2>После успешного сопостовления, <strong>m.start()</strong> вернет индекс первого символа, совпавшего и <strong>m.end()</strong> вернет индекс последнего совпавшего символа, плюс один.
+
+Если была предпринята неудачная попытка и совпадения не нашлось, <code>m.start()</code> и <code>m.end()</code> будут бросать <code>IllegalStateException</code><ul>
+<li>Это <code>RuntimeException</code>, так что вам не придется его ловить.</li></ul>
+Может показаться странным, что <code>m.end()</code> возвращает индекс последнего совпавшего символа плюс один, но это именно то, что требуется большинству методов класса <code>String</code>.
+<ul>
+<li>Например, <code>“Now is the time“.substring(m.start(), m.end())</code> </li></ul>вернет ту же самую строку.
+
+Взглянем на код:
+
+<pre class='lang-java line-numbers'><code>
+import java.util.regex.*;
+
+public class RegexTest {
+    public static void main(String args[]) {
+        String pattern = "[a-z]+";
+        String text = "code 2 learn java tutorial";
+        Pattern p = Pattern.compile(pattern);
+        Matcher m = p.matcher(text);
+        while(m.find()) {
+            System.out.print(text.substring(m.start(), m.end()) + "*");
+        }
+    }
+}
+</code></pre>
+<pre class='lang-java line-numbers'><code>
+Output: code*learn*java*tutorial*
+</code></pre>
+<h2>Дополнительные методы</h2>Если есть совпадение, то:
+<ul>
+<li><code>m.replaceFirst(replacement)</code> возвращает новую строку, где первая подстрока, совпавшая с шаблоном будет заменена на <code>replacement</code></li>
+<li><code>m.replaceAll(replacement)</code> возвращает новую строку, где каждая подстрока, совпавшая с шаблоном будет заменена</li>
+<li><code>m.find(StartIndex)</code> находи следующее соответствие, начиная с указанного индекса</li>
+<li><code>m.reset()</code> сбрасывает шаблон</li>
+<li><code>m.reset(NewText)</code> сбрасывает искатель, и дает ему новый текст (может быть <code>String</code>, <code>StringBuffer</code> или <code>CharBuffer</code>)</li></ul>
+
+<h2>Синтаксис регулярных выражений</h2><ul>
+  <li><code>^</code> Соответствует началу строки.</li>
+  <li><code>$</code> Соответствует концу строки.</li>
+  <li><code>.</code> Соответствует любому одиночному символу, кроме символа новой строки. Использование опции m позволяет ему соответствовать новой строке.</li>
+  <li><code>[...]</code> Соответствует любой одиночный символ в скобках.</li>
+  <li><code>[^ ...]</code> Соответствует любому одному символу, не в скобках.</li>
+  <li><code>\A</code> Начало всю строку.</li>
+  <li><code>\z</code> Конец всей строки.</li>
+  <li><code>\Z</code> Конец всей строки, кроме конечного терминатора линии.</li>
+  <li><code>re*</code> Соответствует 0 или более вхождений предшествующего выражения.</li>
+  <li><code>re+</code> Одно или более совпадений предыдущего выражения.</li>
+  <li><code>re?</code> Соответствует 0 или 1 местонахождению предыдущего выражения.</li>
+  <li><code>re{n}</code> Соответствует ровно N Количество вхождений предшествующего выражения.</li>
+  <li><code>re{n,}</code> Соответствует N или более вхождений предшествующего выражения.</li>
+  <li><code>re{n, m}</code> Соответствует не менее n и не более m вхождений предыдущего выражения.</li>
+  <li><code>a|b</code> Соответствует a или b.</li>
+  <li><code>(re)</code> Группа регулярных выражений и помнящая найденный текст.</li>
+  <li><code>(?: re)</code> Группы регулярных выражений, не помнящая найденный текст.</li>
+  <li><code>(?> re)</code> Соответствует независимому шаблону без возвратов.</li>
+  <li><code>\w</code> Соответствует буквам и цифрам [a-zA-Z_0-9].</li>
+  <li><code>\W</code> Это не буквы и не цифры.</li>
+  <li><code>\s</code> Соответствует пробелам. Эквивалентно  [\t\n\r\f].</li>
+  <li><code>\S</code> Не пробельные символы.</li>
+  <li><code>\d</code> Соответствует цифрам. Эквивалентно [0-9].</li>
+  <li><code>\D</code> Соответствует не цифрам.</li>
+  <li><code>\G</code> Соответствует точки последнего совпадения.</li>
+  <li><code>\n</code> Соответствует новой строке.</li>
+  <li><code>\b</code> Совпадает на границе слова.</li>
+  <li><code>\B</code> Совпадает не на границе слова.</li>
+  <li><code>\n, \t, etc.</code> Символы новой строки, возврата каретки, вкладки и т.д.</li>
+  <li><code>\Q</code> Цитата все символы до \ E.</li>
+  <li><code>\E</code> Заканчивается цитирование начатое с \ Q.</li>
+</ul><div>
+  <ul>
+    <li>
+      <a href="https://www.javacodegeeks.com/2012/02/regular-expressions-in-java-soft.html" rel="nofollow" >Оригинал перевода</a>
+    </li>
+    <li>
+      <a href="https://regexone.com/" rel="nofollow" >Отличный туториал</a>
+    </li>
+    <li>
+      <a href="https://stackoverflow.com/questions/22937618/reference-what-does-this-regex-mean/22944075#22944075" rel="nofollow" >Reference — What does this regex mean?</a>
+    </li>
+    <li>
+      <a href="https://regex101.com/" rel="nofollow" >Визуализатор для проверки</a>
+    </li>
+    <li>
+      <a href="https://www.debuggex.com/" rel="nofollow" >Отличный дебаггер с визуализацией</a>
+    </li>
+  </ul>
+</div>

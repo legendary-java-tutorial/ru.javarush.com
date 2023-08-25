@@ -1,0 +1,87 @@
+ThreadGroup
+<p>----------------------------------------</p>
+Добрый день и с новым годом!
+Помогите немного доразобраться с многопоточностью, а именно с ThreadGroup.
+Гуглил, читал, понял основную суть: назначение - безоп
+<p>----------------------------------------</p>
+Добрый день и с новым годом!
+Помогите немного доразобраться с многопоточностью, а именно с ThreadGroup.
+Гуглил, читал, понял основную суть: назначение - безопасность, комплексное управление с помощью организации группировки.
+
+
+<blockquote>Потоки объединяются в группы потоков (thread groups) по соображениям улучшения управляемости и безопасности. Одна группа потоков может принадлежать другой группе, составляя иерархию с основной (системной) группой на верхнем уровне. Потоки, относящиеся к группе, могут управляться единовременно – вы вправе прервать работу сразу всех потоков группы либо установить для них единое максимальное значение приоритета выполнения. Группы потоков могут быть использованы также для определения доменов безопасности. Потоки внутри группы обычно наделены возможностями взаимного влияния, распространяемого и на потоки вложенных групп. Говоря о "влиянии", мы подразумеваем, что вызов любого метода способен воздействовать на характеристики Поведения потока, скажем, изменять его приоритет или осуществлять прерывание.</blockquote> (источник: <a href="http://src-code.net/upravlenie-potokami-bezopasnost-i-threadgroup-java/" rel="nofollow" >Тыц</a>)
+
+<blockquote>Для того, чтобы отдельный поток не мог начать останавливать и прерывать все потоки подряд, введено понятие группы. Поток может оказывать влияние только на потоки, которые находятся в одной с ним группе. Группу потоков представляет класс ThreadGroup. Такая организация позволяет защитить потоки от нежелательного внешнего воздействия. Группа потоков может содержать другие группы, что позволяет организовать все потоки и группы в иерархическое дерево, в котором каждый объект ThreadGroup, за исключением корневого, имеет родителя.</blockquote> (источник: <a href="http://www.intuit.ru/studies/courses/16/16/lecture/27129?page=5" rel="nofollow" >Тыц</a> )
+
+Прочитав разные статьи, решил написать маленький код, в котором бы у меня не получилось из одного потока одной группы прервать потоки другой группы. И что-то не получилось: <strong>даёт прерывать(((</strong>
+
+Мой код:
+<code>public class Test {
+    public static ArrayList<Thread> threads = new ArrayList<Thread>();
+    public static ArrayList<ThreadGroup> groups = new ArrayList<ThreadGroup>();
+
+    public static void main(String[] args) throws InterruptedException {
+
+        final ThreadGroup group1 = new ThreadGroup("GROUP 1");
+        final ThreadGroup group2 = new ThreadGroup("GROUP 2");
+        final ThreadGroup group3 = new ThreadGroup("GROUP 3");
+        groups.add(group1);
+        groups.add(group2);
+        groups.add(group3);
+
+
+
+        for (int i = 0; i < groups.size(); i++) {
+            for (int j = 1; j < 5; j++) {
+                Thread thread = new Thread(groups.get(i), "THREAD №" + j) {
+                    @Override
+                    public void run() {
+                        while (!isInterrupted()) {
+                            try {
+                                Thread.sleep(500);
+                            } catch (InterruptedException e) {
+                                System.out.println(getName() + " : " +
+                                        getThreadGroup().getName() + " прервана");
+                            }
+                        }
+                    }
+                };
+                threads.add(thread);
+                thread.start();
+            }
+        }
+
+        Thread thread = new Thread(group1, "THREAD №5") {
+            @Override
+            public void run() {
+                group2.interrupt();
+                while (true);
+            }
+        };
+        thread.start();
+        threads.add(thread);
+
+        for (Thread t : threads) System.out.println(t);
+    }
+}</code>
+
+Почему получается прервать?
+
+Вот вывод:
+<code>Thread[THREAD №1,5,GROUP 1]
+Thread[THREAD №2,5,GROUP 1]
+Thread[THREAD №3,5,GROUP 1]
+Thread[THREAD №4,5,GROUP 1]
+Thread[THREAD №1,5,GROUP 2]
+Thread[THREAD №2,5,GROUP 2]
+Thread[THREAD №3,5,GROUP 2]
+Thread[THREAD №4,5,GROUP 2]
+Thread[THREAD №1,5,GROUP 3]
+Thread[THREAD №2,5,GROUP 3]
+Thread[THREAD №3,5,GROUP 3]
+Thread[THREAD №4,5,GROUP 3]
+Thread[THREAD №5,5,GROUP 1]
+THREAD №1 : GROUP 2 прервана
+THREAD №2 : GROUP 2 прервана
+THREAD №4 : GROUP 2 прервана
+THREAD №3 : GROUP 2 прервана</code>

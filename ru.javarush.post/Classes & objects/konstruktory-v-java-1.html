@@ -1,0 +1,483 @@
+Конструкторы в Java
+<p>----------------------------------------</p>
+Привет! Сегодня мы разберем очень важную тему, которая касается наших объектов. Тут без преувеличения можно сказать, что этими знаниями ты будешь пользоваться каждый день в реальной работе! Мы поговорим о конструкторах.Ты, возможно, слышишь этот термин впервые ...
+<p>----------------------------------------</p>
+Привет! Сегодня мы разберем очень важную тему, которая касается наших объектов. Тут без преувеличения можно сказать, что этими знаниями ты будешь пользоваться каждый день в реальной работе!
+
+Мы поговорим о конструкторах.
+
+Ты, возможно, слышишь этот термин впервые, но на самом деле наверняка пользовался конструкторами, только сам не замечал этого :) Мы убедимся в этом позже.
+
+<h2>Что такое конструктор в Java и зачем он нужен?</h2>Рассмотрим два примера.
+
+<pre class="lang-java line-numbers"><code>
+public class Car {
+
+   String model;
+   int maxSpeed;
+
+   public static void main(String[] args) {
+
+       Car bugatti = new Car();
+       bugatti.model = "Bugatti Veyron";
+       bugatti.maxSpeed = 407;
+
+   }
+}
+</code></pre>
+Мы создали наш автомобиль и установили для него модель и максимальную скорость. Однако в реальном проекте у объекта <span class="code">Car</span> явно будет не 2 поля. А, например, 16 полей! 
+
+<pre class="lang-java line-numbers"><code>
+public class Car {
+
+   String model;//модель
+   int maxSpeed;//максимальная скорость
+   int wheels;//ширина дисков
+   double engineVolume;//объем двигателя
+   String color;//цвет
+   int yearOfIssue;//год выпуска
+   String ownerFirstName;//имя владельца
+   String ownerLastName;//фамилия владельца
+   long price;//цена
+   boolean isNew;//новая или нет
+   int placesInTheSalon;//число мест в салоне
+   String salonMaterial;//материал салона
+   boolean insurance;//застрахована ли
+   String manufacturerCountry;//страна-производитель
+   int trunkVolume;//объем багажника
+   int accelerationTo100km;//разгон до 100 км/час в секундах
+
+
+   public static void main(String[] args) {
+       Car bugatti = new Car();
+
+       bugatti.color = "blue";
+       bugatti.accelerationTo100km = 3;
+       bugatti.engineVolume = 6.3;
+       bugatti.manufacturerCountry = "Italy";
+       bugatti.ownerFirstName = "Amigo";
+       bugatti.yearOfIssue = 2016;
+       bugatti.insurance = true;
+       bugatti.price = 2000000;
+       bugatti.isNew = false;
+       bugatti.placesInTheSalon = 2;
+       bugatti.maxSpeed = 407;
+       bugatti.model = "Bugatti Veyron";
+
+   }
+
+}
+</code></pre>
+Мы создали новый объект <span class="code">Car</span>.
+
+Одна проблема: <em>полей-то у нас 16, а проинициализировали мы только 12</em>! Попробуй сейчас по коду найти те, которые мы забыли! Не так-то просто, да?
+
+В такой ситуации программист может легко ошибиться и пропустить инициализацию какого-то поля. В итоге поведение программы станет ошибочным:
+
+<pre class="lang-java line-numbers"><code>
+public class Car {
+
+   String model;//модель
+   int maxSpeed;//максимальная скорость
+   int wheels;//ширина дисков
+   double engineVolume;//объем двигателя
+   String color;//цвет
+   int yearOfIssue;//год выпуска
+   String ownerFirstName;//имя владельца
+   String ownerLastName;//фамилия владельца
+   long price;//цена
+   boolean isNew;//новая или нет
+   int placesInTheSalon;//число мест в салоне
+   String salonMaterial;//материал салона
+   boolean insurance;//застрахована ли
+   String manufacturerCountry;//страна-производитель
+   int trunkVolume;//объем багажника
+   int accelerationTo100km;//разгон до 100 км/час в секундах
+
+
+   public static void main(String[] args) {
+       Car bugatti = new Car();
+
+       bugatti.color = "blue";
+       bugatti.accelerationTo100km = 3;
+       bugatti.engineVolume = 6.3;
+       bugatti.manufacturerCountry = "Italy";
+       bugatti.ownerFirstName = "Amigo";
+       bugatti.yearOfIssue = 2016;
+       bugatti.insurance = true;
+       bugatti.price = 2000000;
+       bugatti.isNew = false;
+       bugatti.placesInTheSalon = 2;
+       bugatti.maxSpeed = 407;
+       bugatti.model = "Bugatti Veyron";
+
+       System.out.println("Модель Bugatti Veyron. Объем двигателя - " + bugatti.engineVolume + ", багажника - " + bugatti.trunkVolume + ", салон сделан из " + bugatti.salonMaterial +
+       ", ширина дисков - " + bugatti.wheels + ". Была приоберетена в 2018 году господином " + bugatti.ownerLastName);
+
+   }
+
+}
+</code></pre>
+Вывод в консоль:
+
+<div class="terminal">Модель Bugatti Veyron. Объем двигателя — 6.3, багажника — 0, салон сделан из null, ширина дисков — 0. Была приобретена в 2018 году господином null</div>
+Вашему покупателю, отдавшему 2 миллиона долларов за машину, явно не понравится, что его назвали “господином null”!
+
+А если серьезно, в итоге в нашей программе оказался некорректно созданный объект — машина с шириной дисков 0 (то есть вообще без дисков), отсутствующим багажником, салоном, сделанным из неизвестного материала, да еще и принадлежащая непонятно кому.
+ 
+Можно только представить, как такая ошибка может “выстрелить” при работе программы!
+
+Нам нужно как-то избежать подобных ситуаций. Надо, чтобы в нашей программе было ограничение: при создании нового объекта машины для него всегда должны быть указаны, например, модель и максимальная скорость. Иначе — не позволять создание объекта.
+
+С этой задачей легко справляются функции-конструкторы.
+
+Они получили свое название не просто так. Конструктор создает своеобразный “каркас” класса, которому каждый новый объект класса должен соответствовать. 
+
+Давай для удобства вернемся к более простому варианту класса <span class="code">Car</span> с двумя полями.
+
+С учетом наших требований, конструктор для класса <span class="code">Car</span> будет выглядеть так:
+
+<pre class="lang-java line-numbers"><code>
+public Car(String model, int maxSpeed) {
+   this.model = model;
+   this.maxSpeed = maxSpeed;
+}
+</code></pre>
+А создание объекта теперь выглядит так:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+   Car bugatti = new Car("Bugatti Veyron", 407);
+}
+</code></pre>
+<mark>Обрати внимание</mark>, как создается конструктор.
+
+Он похож на обычный метод, но у него нет типа возвращаемого значения. При этом в конструкторе указывается название класса, тоже с большой буквы. В нашем случае — <span class="code">Car</span>.
+
+Кроме того, в конструкторе используется новое для тебя ключевое слово <span class="code">this</span>.
+
+"this" по-английски — "этот, этого". Это слово указывает на конкретный предмет. 
+
+Код в конструкторе: 
+
+<pre class="lang-java line-numbers"><code>
+public Car(String model, int maxSpeed) {
+   this.model = model;
+   this.maxSpeed = maxSpeed;
+}
+</code></pre>
+можно перевести почти дословно:
+
+"<span class="code">model</span> для этой машины (которую мы сейчас создаем) <span class="code">=</span> аргументу <span class="code">model</span>, который указан в конструкторе. <span class="code">maxSpeed</span> для этой машины (которую мы создаем) <span class="code">=</span> аргументу <span class="code">maxSpeed</span>, который указан в конструкторе."
+
+Так и произошло:
+
+<pre class="lang-java line-numbers"><code>
+public class Car {
+
+   String model;
+   int maxSpeed;
+
+   public Car(String model, int maxSpeed) {
+       this.model = model;
+       this.maxSpeed = maxSpeed;
+   }
+
+   public static void main(String[] args) {
+       Car bugatti = new Car("Bugatti Veyron", 407);
+       System.out.println(bugatti.model);
+       System.out.println(bugatti.maxSpeed);
+   }
+
+}
+</code></pre>
+Вывод в консоль:
+
+<div class="terminal">Bugatti Veyron
+407
+</div>
+Конструктор успешно присвоил нужные значения.
+
+Ты, возможно, заметил, что конструктор очень похож на обычный метод! Так оно и есть: конструктор — это метод, только немного специфичный :)
+
+Так же как в метод, в наш конструктор мы передали параметры. И так же как вызов метода, вызов конструктора не сработает, если их не указать:
+
+<pre class="lang-java line-numbers"><code>
+public class Car {
+
+   String model;
+   int maxSpeed;
+
+   public Car(String model, int maxSpeed) {
+       this.model = model;
+       this.maxSpeed = maxSpeed;
+   }
+
+   public static void main(String[] args) {
+       Car bugatti = new Car(); //ошибка!
+   }
+  
+}
+</code></pre>
+Видишь, конструктор сделал то, чего мы пытались добиться. Теперь нельзя создать машину без скорости или без модели!
+
+На этом сходство конструкторов и методов не заканчивается. Так же, как и методы, конструкторы можно перегружать.
+
+Представь, что у тебя дома живут 2 кота. Одного из них ты взял еще котенком, а второго ты принес домой с улицы уже взрослым и не знаешь точно, сколько ему лет. 
+
+Значит, наша программа должна уметь создавать котов двух видов — с именем и возрастом для первого кота, и только с именем — для второго кота.
+
+Для этого мы перегрузим конструктор:
+
+<pre class="lang-java line-numbers"><code>
+public class Cat {
+
+   String name;
+   int age;
+
+   //для первого кота
+   public Cat(String name, int age) {
+       this.name = name;
+       this.age = age;
+   }
+
+   //для второго кота
+   public Cat(String name) {
+       this.name = name;
+   }
+
+   public static void main(String[] args) {
+
+       Cat barsik = new Cat("Barsik", 5);
+       Cat streetCatNamedBob = new Cat("Bob");
+   }
+
+}
+</code></pre>
+К изначальному конструктору с параметрами “имя” и “возраст” мы добавили еще один, только с именем. Точно так же мы перегружали методы в прошлых уроках.
+
+Теперь мы успешно можем создать оба варианта котов :)
+<img data-id="1bbbe961-5852-43a2-8aab-8cc0754840b7" data-max-width="850" alt="Зачем нужны конструкторы? - 2" src="https://cdn.javarush.com/images/article/1bbbe961-5852-43a2-8aab-8cc0754840b7/1024.jpeg">Помнишь, в начале лекции мы говорили, что ты уже пользовался конструкторами, только сам не замечал этого?
+
+Так и есть. Дело в том, что у каждого класса в Java есть так называемый конструктор по умолчанию.
+
+У него нет никаких аргументов, но он срабатывает каждый раз при создании любого объекта любого класса.
+
+<pre class="lang-java line-numbers"><code>
+public class Cat {
+
+   public static void main(String[] args) {
+
+       Cat barsik = new Cat(); //вот здесь сработал конструктор по умолчанию
+   }
+}
+</code></pre>
+На первый взгляд это незаметно. Ну создали объект и создали, где тут работа конструктора?
+
+Чтобы это увидеть, давай прямо руками напишем для класса <span class="code">Cat</span> пустой конструктор, а внутри него выведем какую-нибудь фразу в консоль. Если она выведется, значит конструктор отработал.
+
+<pre class="lang-java line-numbers"><code>
+public class Cat {
+
+   public Cat() {
+       System.out.println("Создали кота!");
+   }
+
+   public static void main(String[] args) {
+
+       Cat barsik = new Cat(); //вот здесь сработал конструктор по умолчанию
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<div class="terminal">Создали кота!
+</div>
+Вот и подтверждение! Конструктор по умолчанию всегда незримо присутствует в твоих классах. Но тебе нужно знать еще одну его особенность.
+
+Дефолтный конструктор исчезает из класса, когда ты создаешь какой-то конструктор с аргументами.
+
+Доказательство этого, на самом деле, мы уже видели выше. Вот в этом коде:
+
+<pre class="lang-java line-numbers"><code>
+public class Cat {
+
+   String name;
+   int age;
+
+   public Cat(String name, int age) {
+       this.name = name;
+       this.age = age;
+   }
+
+   public static void main(String[] args) {
+
+       Cat barsik = new Cat(); //ошибка!
+   }
+}
+</code></pre>
+Мы не смогли создать кота без имени и возраста, потому что определили конструктор для <span class="code">Cat</span>: строка + число. Дефолтный конструктор сразу после этого исчез из класса. Поэтому обязательно запомни: если тебе в твоем классе нужно несколько конструкторов, включая пустой, его нужно создать отдельно.
+
+Например, мы создаем программу для ветеринарной клиники. Наша клиника хочет делать добрые дела и помогать бездомным котикам, про которых мы не знаем ни имени, ни возраста.
+
+Тогда наш код должен выглядеть так:
+
+<pre class="lang-java line-numbers"><code>
+public class Cat {
+
+   String name;
+   int age;
+
+   //для домашних котов
+   public Cat(String name, int age) {
+       this.name = name;
+       this.age = age;
+   }
+
+   //для уличных котов
+   public Cat() {
+   }
+
+   public static void main(String[] args) {
+
+       Cat barsik = new Cat("Barsik", 5);
+       Cat streetCat = new Cat();
+   }
+}
+</code></pre>
+Теперь, когда мы явно прописали конструктор по умолчанию, мы можем создавать котов обоих типов :)
+
+Для конструктора (как и для любого метода) очень важен порядок следования аргументов. Поменяем в нашем конструкторе аргументы имени и возраста местами.
+
+<pre class="lang-java line-numbers"><code>
+public class Cat {
+
+   String name;
+   int age;
+
+   public Cat(int age, String name) {
+       this.name = name;
+       this.age = age;
+   }
+
+   public static void main(String[] args) {
+
+       Cat barsik = new Cat("Барсик", 10); //ошибка!
+   }
+}
+</code></pre>
+Ошибка! Конструктор четко описывает: при создании объекта Cat ему должны быть переданы число и строка, именно в таком порядке. Поэтому наш код не срабатывает.
+
+Обязательно запомни это и учитывай при создании своих собственных классов:
+
+<pre class="lang-java line-numbers"><code>
+public Cat(String name, int age) {
+   this.name = name;
+   this.age = age;
+}
+
+public Cat(int age, String name) {
+   this.age = age;
+   this.name = name;
+}
+</code></pre>
+Это два абсолютно разных конструктора!
+Если выразить в одном предложении ответ на вопрос “Зачем нужен конструктор?”, можно сказать: для того, чтобы объекты всегда находились в правильном состоянии. Когда ты используешь конструкторы, все твои переменные будут корректно проинициализированы, и в программе не будет машин со скоростью 0 и прочих “неправильных” объектов.
+
+Их использование очень выгодно прежде всего для самого программиста.
+
+Если ты будешь инициализировать поля самостоятельно, велик риск что-нибудь пропустить и ошибиться. А с конструктором такого не будет: если ты передал в него не все требуемые аргументы или перепутал их типы, компилятор сразу же выдаст ошибку. 
+
+Отдельно стоит сказать о том, что внутрь конструктора не стоит помещать логику твоей программы. Для этого в твоем распоряжении есть методы, в которых ты можешь описать весь нужный тебе функционал.
+
+Давай посмотрим, почему логика в конструкторе — это плохая идея:
+
+<pre class="lang-java line-numbers"><code>
+public class CarFactory {
+
+   String name;
+   int age;
+   int carsCount;
+
+   public CarFactory(String name, int age, int carsCount) {
+   this.name = name;
+   this.age = age;
+   this.carsCount = carsCount;
+
+   System.out.println("Наша автомобильная фабрика называется " + this.name);
+   System.out.println("Она была основана " + this.age + " лет назад" );
+   System.out.println("За это время на ней было произведено " + this.carsCount +  " автомобилей");
+   System.out.println("В среднем она производит " + (this.carsCount/this.age) + " машин в год");
+}
+
+   public static void main(String[] args) {
+
+       CarFactory ford = new CarFactory("Ford", 115 , 50000000);
+   }
+}
+</code></pre>
+У нас есть класс <span class="code">CarFactory</span>, описывающий фабрику по производству автомобилей. Внутри конструктора мы инициализируем все поля, и сюда же помещаем логику: выводим в консоль некоторую информацию о фабрике. Казалось бы — ничего плохого в этом нет, программа прекрасно отработала.
+
+Вывод в консоль:
+
+<div class="terminal">Наша автомобильная фабрика называется Ford
+Она была основана 115 лет назад
+За это время на ней было произведено 50000000 автомобилей
+В среднем она производит 434782 машин в год
+</div>
+Но на самом деле мы заложили мину замедленного действия. И подобный код может очень легко привести к ошибкам.
+
+Представим себе, что теперь мы говорим не о Ford, а о новой фабрике "Amigo Motors", которая существует меньше года и произвела 1000 машин:
+
+<pre class="lang-java line-numbers"><code>
+public class CarFactory {
+
+   String name;
+   int age;
+   int carsCount;
+
+   public CarFactory(String name, int age, int carsCount) {
+   this.name = name;
+   this.age = age;
+   this.carsCount = carsCount;
+
+   System.out.println("Наша автомобильная фабрика называется " + this.name);
+   System.out.println("Она была основана " + this.age + " лет назад" );
+   System.out.println("За это время на ней было произведено " + this.carsCount +  " автомобилей");
+   System.out.println("В среднем она производит " + (this.carsCount/this.age) + " машин в год");
+}
+
+
+   public static void main(String[] args) {
+
+       CarFactory ford = new CarFactory("Amigo Motors", 0 , 1000);
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<div class="terminal">Наша автомобильная фабрика называется Amigo Motors
+Exception in thread "main" java.lang.ArithmeticException: / by zero
+Она была основана 0 лет назад
+За это время на ней было произведено 1000 автомобилей
+	at CarFactory.&lt;init&gt;(CarFactory.java:15)
+	at CarFactory.main(CarFactory.java:23)
+
+Process finished with exit code 1&lt;/init&gt;
+</div>
+Приехали! Программа завершилась с какой-то непонятной ошибкой. Попробуешь догадаться, в чем причина?
+
+Причина — в логике, которую мы поместили в конструктор. А конкретно — вот в этой строке:
+
+<pre class="lang-java line-numbers"><code>
+System.out.println("В среднем она производит " + (this.carsCount/this.age) + " машин в год");
+</code></pre>
+Здесь мы выполняем вычисление и делим количество произведенных машин на возраст фабрики. А поскольку наша фабрика новая (то есть ей 0 лет) — в результате получается деление на 0, которое в математике запрещено.
+
+В результате программа завершается с ошибкой.
+
+Как же нам стоило поступить?
+ 
+Вынести всю логику в отдельный метод и назвать его, например, <span class="code">printFactoryInfo()</span>. В качестве параметра ему можно передать объект <span class="code">CarFactory</span>. Туда же можно поместить всю логику, и заодно — обработку возможных ошибок, наподобие нашей с нулем лет.
+
+Каждому свое. Конструкторы нужны для корректного задания состояния объекта. Для бизнес-логики у нас есть методы. Не стоит смешивать одно с другим.

@@ -1,0 +1,80 @@
+Continuous Integration
+<p>----------------------------------------</p>
+CI или надёжность прежде всего! Приветствую, коллеги! Надоело насиловать свой комп постоянной сборкой проекта? Тогда это статья для вас! В ней я постараюсь кратко и понятно изложить материал касательно Continuous Integration ( дальше просто CI ), отвечу на такие ...
+<p>----------------------------------------</p>
+Приветствую, коллеги!
+Надоело насиловать свой комп постоянной сборкой проекта? Тогда это статья для вас! 
+
+<img data-id="2b30da53-9a38-4f8c-9b6c-9e8023c0c913" data-max-width="850" alt="Continuous Integration - 1" src="https://cdn.javarush.com/images/article/2b30da53-9a38-4f8c-9b6c-9e8023c0c913/1024.jpeg">В этой статье я постараюсь кратко и понятно изложить материал касательно Continuous Integration ( дальше просто CI ), отвечу на такие простые вопросы как: <em>"Что это?", "Зачем?" и "Почему?"</em> и приведу пример тестового проекта. Данная статья рассчитана на опытного пользователя, который как минимум знаком с <em>Build System: Maven</em>, умеет пользоваться <em>Git</em>'ом и знает как пушить проекты на <em>GitHub</em>;
+<h2>"Что такое Continuous Integration?"</h2>Посмотрим что нам на этот вопрос скажет <a href="https://ru.wikipedia.org/wiki/Непрерывная_интеграция" target="_blank" rel="nofollow">Wiki</a>:
+
+<em>Непрерывная интеграция (CI, англ. Continuous Integration) — это практика разработки программного обеспечения, которая заключается в слиянии рабочих копий в общую основную ветвь разработки несколько раз в день и выполнении частых автоматизированных сборок проекта для скорейшего выявления потенциальных дефектов и решения интеграционных проблем.</em>
+
+Страшно, не правда ли? Давайте попробуем объяснить этот термин простыми словами:
+
+<em>Непрерывная интеграция - это система для сборки и автоматизированного тестирования программного обеспечения с определенными конфигами на определенных машинах с целью обнаружения багов и несовместимостей.</em>
+
+Okey, no problem, с этим разобрались, но возникает следующий логический вопрос:
+<h2>Зачем нам CI?</h2>Просто представим, вы пишете не маленький проект, и возникает необходимость добавить/изменить функционал. Вы его успешно пишете, пишете тесты, запускаете, и вроде бы все отлично, но нет. Бывают ситуации когда изменение одной функциональности влияет на другую, другая на третью и так далее, пока где-то не проскочит бага и вылетит ошибка. Да, вы можете сказать это скорей всего плохо спроектированный проект, и возможно вы будете правы, но что если нет, и эти связи действительно должны быть? И что если вы пишете создаете проект не один, что зачастую так и бывает?  Вы запустили тесты своего только что написанного функционала, и они дали положительный результат. Вы сделали быстренько commit, затем push куда-то и уже думаете как будете дома курить сигару попивая дорого виски, но нет. Увы, ваш коллега, или босс, неважно кто, говорит что из-за вашего коммита упала вся сборка. Вы с недоумением говорите что вы же программист, вы протестили все. Но зачастую просто нет времени постоянно тестить весь проект, и вы протестили лишь свой кусок кода, в который внесли изменения, а не всю сборку в целом.
+
+Здесь нам на помощь приходит CI. При каждом push на какой-либо ресурс, CI будет собирать ваш проект с нуля, запускать <em>ВСЕ </em>тесты, и только если все тесты пройдут и проект соберется, сборка получит статус <em>passing</em>. В противном случае у вас будет возможность сделать comeback, и посмотреть, что пошло не так.
+
+Итак, настало время задаться вопросом <strong>"Почему так и а не иначе?"</strong> и заглянуть на программную реализацию.
+
+<strong>Пример</strong>
+Как я уже говорил, статья рассчитана на тех, кто знаком с Maven и Git'ом. Поэтому я буду надеяться на то, что вы знаете как и что я делаю помимо настройки CI и т д.
+<ol>
+<li><p>Во-первых, давайте создадим простой тестовый проект Maven и создадим в нем класс который выводит на экран "Hello World!" и выполняет какую-либо простую операцию, и напишем для этого класса самый простой тест.</p>
+
+<p>В результате у нас должна получится примитивная структура проекта:</p>
+
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="30bd474a-80a8-41af-bcf3-bba1f544d20e" data-max-width="470" alt="Continuous Integration - 2" src="https://cdn.javarush.com/images/article/30bd474a-80a8-41af-bcf3-bba1f544d20e/1024.jpeg"></div></div>
+<p>Все исходники будут на моем GitHub. Без разницы что вы напишете в своем Main, и какие будут тесты.</p></li>
+
+<li><p>Делаем push нашего проекта на GitHub.</p></li>
+
+<li><p>Теперь самое интересное. Из CI я выбрал <a href="https://ru.wikipedia.org/wiki/Travis_CI" target="_blank" rel="nofollow">Travis CI</a> по причине его доступности и надежности. В качестве хостинга исходного кода Travis берет GitHub.</p>
+<p>Итак, заходим на сайт <a href="https://travis-ci.org/" target="_blank" rel="nofollow">Travis CI</a> и авторизируемся через GitHub. В профиле подключаем наш проект:</p>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="2f53a5c3-d439-4ef2-b3ec-c564389ec6cb" data-max-width="590" alt="Continuous Integration - 3" src="https://cdn.javarush.com/images/article/2f53a5c3-d439-4ef2-b3ec-c564389ec6cb/1024.jpeg"></div></div>
+<p>Все готово для сборки при каждом push, но вопрос <strong>КАК</strong> собирать?</p></li>
+<li><p>Возвращаемся в нашу всеми любимую IDEA и создаем файл <em>.travis.yml </em></p>
+<p>Данный файл отвечает за config сборки Travis. Рассмотрим наиболее популярную настройку:</p>
+<ul>
+<li>Нужно указать <a href="https://docs.travis-ci.com/user/languages/java/" target="_blank" rel="nofollow">language</a>, на котором реализован проект;</li>
+<li>Указать путь к <a href="https://docs.travis-ci.com/user/caching/" target="_blank" rel="nofollow">directories</a> что бы сборка выполнялась быстрее;</li>
+<li>Указать способ <a href="https://docs.travis-ci.com/user/notifications/" target="_blank" rel="nofollow">notifications</a> о успешной или не успешной сборке.</li></ul>
+<p>Вот так примерно должен выглядеть типичный Travis config:</p>
+
+<pre class="lang-yaml line-numbers"><code>
+# https://docs.travis-ci.com/user/languages/java/
+language: java
+jdk: oraclejdk9
+
+# Improve Build Speed https://dzone.com/articles/travis-ci-tutorial-java-projects
+cache:
+  directories:
+  - $HOME/.m2
+
+# Notifications https://docs.travis-ci.com/user/notifications/
+notifications:
+  email:
+    recipients:
+      - qThegamEp@gmail.com
+    on_success: always # default: change
+    on_failure: always # default: always
+</code></pre> 
+<p>Я добавил комментарии, с ссылками для ясности.</p></li>
+<li><p>Делаем снова push на GitHub и открываем сайт <a href="https://travis-ci.org/" target="_blank" rel="nofollow">Travis</a>, выбираем проект и следим за сборкой. В итоге получаем уведомление об успешной сборке:</p>
+<img data-id="5fd6b0db-23cf-40f0-b3aa-f33c3532a807" data-max-width="1518" alt="Continuous Integration - 4" src="https://cdn.javarush.com/images/article/5fd6b0db-23cf-40f0-b3aa-f33c3532a807/1024.jpeg">
+<img data-id="15a35c3d-2c98-42e8-af13-2b96e9b490e1" data-max-width="1505" alt="Continuous Integration - 5" src="https://cdn.javarush.com/images/article/15a35c3d-2c98-42e8-af13-2b96e9b490e1/1024.jpeg">
+<p>Также на сайте можем увидеть бейджик с успешной сборкой нашего проекта, который мы можем вставить в наш README.md:</p>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="97" alt="Continuous Integration - 6" src="https://cdn.javarush.com/images/article/e7ddfa25-19d1-471d-b009-c202704ab45a/original.jpeg"></div></div></li></ol><strong>Полезные ссылки:</strong>
+<ul>
+<li><p>Мой <a href="https://github.com/qThegamEp/ForJavaRushPublication.git" target="_blank" rel="nofollow">тестовый проект</a> который вы можете посмотреть/скачать, если вдруг что-то не поняли;</p></li>
+<li><p>Собственно сам сайт <a href="https://travis-ci.org/" target="_blank" rel="nofollow">Travis CI</a>;</p></li>
+<li><p><a href="https://docs.travis-ci.com/user/getting-started/" target="_blank" rel="nofollow">Туториал</a> на официальном сайте по настройке и использованию Travis CI;</p></li>
+<li><p>Хорошее <a href="https://www.youtube.com/watch?v=tE2AUdrqQQk&amp;t=398s" target="_blank" rel="nofollow">видео</a>;</p></li>
+<li>Еще один <a href="https://dzone.com/articles/travis-ci-tutorial-java-projects" target="_blank" rel="nofollow">туториал</a>;</p></li>
+<li><p><a href="https://javarush.com/groups/posts/602-codecov" target="_blank" rel="nofollow">Следующая статья</a></p></li>
+</ul><em>Могут быть ошибки, ОтЧиПяТкИ в тексте.
+Спасибо за внимание! </em>

@@ -1,0 +1,139 @@
+Краткое знакомство с Gradle
+<p>----------------------------------------</p>
+Небольшой обзор того, что же такое системы сборки и что есть Gradle. Как пользоваться базовыми вещами и что это совсем не сложно. Кроме того, данный обзор должен подружить вас с документацией Gradle, ведь написана она у них на 5+.
+<p>----------------------------------------</p>
+<h2>Введение</h2>Темой данного обзора будет система автоматической сборки Gradle. По английски системы сборки называются <strong>Build Tools</strong>.
+<img data-id="afbc5974-563b-41dd-a72e-250d2b9ed91e" data-max-width="850" alt="Краткое знакомство с Gradle - 1" src="https://cdn.javarush.com/images/article/afbc5974-563b-41dd-a72e-250d2b9ed91e/1024.jpeg">Зачем это вообще нужно? Ручная сборка проектов на Java довольно трудоёмкий процесс. Нужно правильно указать нужные проекту библиотеки и фрэймворки, от которых проект зависит. Здесь можно прочитать отличную статью на хабре: "<a href="https://habr.com/post/125210/" target="_blank" rel="nofollow">Работа с Java в командной строке</a>".
+
+Рано или поздно вы начнёте создавать какие-то скрипты для автоматизации этого процесса. А теперь представте что так делают все разработчики по всему миру и каждый пишет заново то, что кто-то уже написал для своего проекта. И тогда появились в свет системы сборки проектов, которые автоматизируют этот процесс. Кроме того, позволяют с одной стороны собрать Вам проект так, как Вы этого хотите, с другой стороны предоставляют вам более менее стандартизированные средства.
+
+Альтернативой Gradle является система автоматической сборки Maven. Эти две системы сборки с одной стороны разные, а с другой стороны имеют и ряд сходств. На эту тему на сайте Gradle есть материал: "<a href="https://guides.gradle.org/migrating-from-maven/" target="_blank" rel="nofollow">Migrating from Maven to Gradle</a>". 
+
+Как сказано в этом руководстве, Gradle и Maven имеют разницу во взгляде на то, как собирать проект. Gradle основан на графе задач (task), которые могут зависеть друг от друга. Задачи выполняют какую-то работу. Maven же использует модель определённых фаз (phase), к которым присоединяются определённые "цели" (goals). В этих goals и выполняется какая-то работа. Однако, при таких разных подходах обе системы сборки следуют одному соглашению и управление зависимостями происходит схоже.
+
+Чтобы начать использовать Gradle необходимо его скачать. 
+
+В google или в yandex вводим "Gradle Build Tool" и в первых результатах видим официальный сайт: <a href="https://gradle.org" target="_blank" rel="nofollow">https://gradle.org</a>.  На главной странице Gradle есть ссылка с текстом "Docs", которая ведёт на <a href="https://docs.gradle.org/current/userguide/userguide.html" target="_blank" rel="nofollow">документацию Gradle</a>.
+
+Для начала нам нужно установить (Install) Gradle, поэтому нам интересен раздел документации "<a href="https://docs.gradle.org/current/userguide/installation.html" target="_blank" rel="nofollow">Installing Gradle</a>".
+Существует множество способов установки, в том числе способ "по старинке", т.е. вручную ("<a href="https://docs.gradle.org/current/userguide/installation.html#installing_manually" target="_blank" rel="nofollow">Installing manually</a>").
+Скачиваем согласно инструкции файл типа "<strong>binary-only</strong>", который будет иметь название вида gradle-5.1.1-bin.zip. Далее распаковываем архив и настраиваем переменную среды окружения PATH согласно инструкции.
+
+Главное, после выполнения инструкции команда <code>gradle -v</code> показывает версию установленного Gradle.
+
+Может возникнуть проблема с тем, что при определении расположения система найдёт Gradle не там, где Вы хотите. Поэтому, на Windows можно выполнить (на *nix есть свои аналоги):
+
+<code>for %i in (gradle.bat) do @echo.   %~$PATH:i</code>
+
+Теперь, пожалуй, можно начинать знакомство.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="04d69ad0-4f3f-4651-ad66-62bd6cdf33c0" data-max-width="336" alt="Краткое знакомство с Gradle - 2" src="https://cdn.javarush.com/images/article/04d69ad0-4f3f-4651-ad66-62bd6cdf33c0/1024.jpeg"></div></div><h2>Инициализация проекта Gradle</h2>Сразу хочется отметить, что Gradle — это про выполнение задач, называемых <strong>task</strong> (буду называть их тасками). Таски предоставляются различными плагинами (<strong>plugins</strong>). Подробнее про плагины советую прочитать в официальной документации: "<a href="https://docs.gradle.org/current/userguide/plugins.html" target="_blank" rel="nofollow">Using Gradle Plugins</a>". 
+
+Есть набор "Core Plugins", которые есть всегда, когда установлен Gradle. Есть разные категории этих плагинов, но нас интересует категория "<a href="https://docs.gradle.org/current/userguide/plugin_reference.html#utility" target="_blank" rel="nofollow">Utility</a>".
+
+В этом наборе есть плагин "<a href="https://docs.gradle.org/current/userguide/build_init_plugin.html" target="_blank" rel="nofollow">Build Init Plugin</a>", который предоставляет таски для инициализации (Initialization) Gradle проекта. Нас интересует создание типа проекта: "<a href="https://docs.gradle.org/current/userguide/build_init_plugin.html#sec:javaapplication_" target="_blank" rel="nofollow">java-application</a>". 
+
+Выполним Gradle таск:
+
+<code>gradle init --type java-application</code>
+
+Ответим попутно на некоторые вопросы, например о том, что мы хотим использовать Groovy DSL (стандартный язык описания задач для Gradle) и фрэймворк тестирования JUnit (об этом мы поговорим в другом обзоре).
+
+После создания мы получим следующий набор файлов:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="237" alt="Краткое знакомство с Gradle - 3" src="https://cdn.javarush.com/images/article/b45eb10d-f1ba-4b64-805f-f4fee4e972d6/original.jpeg"></div></div>Во-первых, после инициализации мы получаем преднастроенный на нашу версию Gradle специальный враппер - это такой специальный скрипт. Про него подробнее советую прочитать в официальной документации — "<a href="https://docs.gradle.org/current/userguide/gradle_wrapper.html" target="_blank" rel="nofollow">The Gradle Wrapper</a>".
+
+Во-вторых, мы видим Gradle Build Script – файл build.gradle. Это – главный файл, в котором описывается то, какие библиотеки и фрэймворки использует наш проект, какие плагины нужно подключить к проекту и описывает различные таски. Подробнее про данный файл советую прочитать в официальной документации: "<a href="https://docs.gradle.org/current/userguide/tutorial_using_tasks.html" target="_blank" rel="nofollow">Build Script Basics</a>".
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="189" alt="Краткое знакомство с Gradle - 4" src="https://cdn.javarush.com/images/article/0255e737-65fe-46d4-963b-6d00d43c9660/original.jpeg"></div></div><h2>Plugins и Tasks</h2>Если посмотреть сейчас на на содержимое Build Script, то мы увидим секцию plugins:
+
+<pre class="lang-java line-numbers"><code>
+plugins {
+    id 'java'
+    id 'application'
+}
+</code></pre>
+Это те самые плагины, про которые мы говорили ранее. А если есть плагины, то есть и задачи, которые нам теперь доступны. Мы можем выполнить команду gradle tasks и увидеть, что мы сейчас можем сделать с проектом:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="2ae2cca9-a5a8-460f-8908-4da768bc303f" data-max-width="671" alt="Краткое знакомство с Gradle - 5" src="https://cdn.javarush.com/images/article/2ae2cca9-a5a8-460f-8908-4da768bc303f/1024.jpeg"></div></div>Например, выполнив <code>gradle run</code> мы запустим main класс нашего java приложения:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="cece9b1b-aa2a-44a7-8a15-a84b25b08c12" data-max-width="370" alt="Краткое знакомство с Gradle - 6" src="https://cdn.javarush.com/images/article/cece9b1b-aa2a-44a7-8a15-a84b25b08c12/1024.jpeg"></div></div>Как мы видим, снизу написано так же <code>2 actionable tasks: 1 executed, 1 up-to-date</code>
+Что это значит? Это значит, что всего было выполнено 2 таска: Причём 1 действительно выполнен, а один не выполнялся, т.к. он up-to-date, то есть состояние актуальное и ничего выполнено не было.
+
+Мы можем выполнить так называемый "Dry Run": <code>gradle run -m</code>
+
+Выполним эту команду, мы увидим, какие будут выполнены таски, чтобы выполнить таск run:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="233" alt="Краткое знакомство с Gradle - 7" src="https://cdn.javarush.com/images/article/83ec6123-0a03-42a7-a10c-74ae439ebe41/original.jpeg"></div></div>Как мы видим, всего было выполнено целых 4 задачи: прежде чем выполнился run он выполнил по зависимости таск classes. Тас classes сам имеет 2 зависимости и поэтому он выполнил ещё и compileJava и processResources.
+
+Когда мы выполняем задачу, мы можем выполнить её с просмотром определённого уровня логов (уровень логирования определяет, на сколько важные сообщения мы хотим видеть). Например, мы можем выполнить <code>gradle run -i</code>. Это нам будет показывать в том числе информационные сообщения вида:
+
+<pre class="lang-java line-numbers"><code>
+Task :classes UP-TO-DATE
+Skipping task ':classes' as it has no actions.
+</code></pre>
+Подробнее про логирование в Gradle советую обратиться к официальной документации: "<a href="https://docs.gradle.org/current/userguide/logging.html" target="_blank" rel="nofollow">Gradle Logging</a>".
+
+Как мы видим, таск classes был пропущен, потому что он <strong>UP-TO-DATE</strong>, то есть состояние актуальное, ничего делать не надо, поэтому действий не было (no actions). Это из-за того, что по умолчанию в Gradle есть "<strong>Up-to-date checks</strong>" или так называемый инкрементальный билд. Подробнее про этот механизм можно почитать в документации Gradle: "<a href="https://docs.gradle.org/current/userguide/more_about_tasks.html#sec:up_to_date_checks" target="_blank" rel="nofollow">Up-to-date checks (AKA Incremental Build)</a>". 
+
+Но этот механизм можно отключить, выполнив таск с указанием флага --rerun-tasks. Например, <code>gradle run --rerun-tasks</code>.
+
+Тогда мы увидим: <strong>2 actionable tasks: 2 executed</strong>
+
+Как видно, количество выполненных тасков учитывает только первый уровень графа, то есть сам таск run и те таски, от которых он напрямую зависит, то есть classes. Таски, от которых зависит classes здесь не считаются (хотя они и выполняются, когда выполняется таск classes).
+
+Про задачи так же следует прочитать:
+<ul>
+<li>"<a href="https://docs.gradle.org/current/userguide/more_about_tasks.html#sec:adding_dependencies_to_tasks" target="_blank" rel="nofollow">Authoring Tasks</a>": Описывает создание собственных задач.</li>
+<li>"<a href="https://guides.gradle.org/writing-gradle-tasks/" target="_blank" rel="nofollow">Writing Custom Gradle Tasks</a>": Руководство step by step по созданию задач.</li>
+<li>"<a href="https://docs.gradle.org/current/userguide/tutorial_using_tasks.html" target="_blank" rel="nofollow">Build Script Basics</a>": Основа про задачи и их использование.</li>
+</ul><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="b7a55e21-2b4c-4868-bf58-4162f1dc23f2" data-max-width="361" alt="Краткое знакомство с Gradle - 8" src="https://cdn.javarush.com/images/article/b7a55e21-2b4c-4868-bf58-4162f1dc23f2/1024.jpeg"></div></div><h2>Dependencies</h2>Одной из главных задач любой системы сборки – управление зависимостями, то есть тем, какие библиотеки/фрэймворки нужны нашему проекту. Система сборки должна обеспечить их наличие в нужный момент и нужным образом собрать конечный артефакт нашего приложения. По умолчанию после gradle init для java-application мы увидим следующее содержимое в билд скрипте:
+
+<pre class="lang-java line-numbers"><code>
+dependencies {
+    implementation 'com.google.guava:guava:26.0-jre'
+    testImplementation 'junit:junit:4.12'
+}
+</code></pre>
+Тут сразу понятно, что мы подключаем. Но без некоторого понимания непонятно, что за implementation и testImplementation? Тут надо опять обратиться к документации Gradle, благо документация у Gradle написана прекрасно.
+
+Называется это "<a href="https://docs.gradle.org/current/userguide/managing_dependency_configurations.html" target="_blank" rel="nofollow">Managing Dependency Configurations</a>". Как сказано в документации, каждая зависимость объявляется с некоторым scope - областью, в рамках которой данная зависимость будет доступна. Этот скоуп (scope) и обозначается некоторой конфигурацией (configuration), каждая из которых имеет уникальное имя.
+Так же интересно, что множество Gradle плагинов добавляют предзаданные конфигурации.
+
+Чтобы узнать, какие у нас есть конфигурации можно выполнить:
+
+<code>gradle --console plain dependencies</code>
+
+Таким образом мы увидим список всех доступных конфигураций и относящихся к ним зависимостей. Мы можем отфильтровать этот список так, чтобы видеть только сами доступные конфигурации:
+
+<code>gradle --console plain dependencies | find " - "</code>
+
+Как же понять, что нам использовать? Тут немного придётся почитать. Т.к. мы используем плагин "Java", то начнём с его документации и раздела "<a href="https://docs.gradle.org/current/userguide/java_plugin.html#sec:java_plugin_and_dependency_management" target="_blank" rel="nofollow">Dependency management</a>".
+
+Тут мы видим, что раньше была конфигурация (он же скоуп), называемая "compile" и обозначала "зависимость, нужная во время компиляции". Но потом его заменили (на англ. Superseded) на implementation. Подробнее про замену можно прочитать в разделе "<a href="https://docs.gradle.org/current/userguide/java_library_plugin.html#sec:java_library_separation" target="_blank" rel="nofollow">API and implementation separation</a>". Получается, эта зависимость будет на "compile classpath". 
+
+Но иногда мы хотим, чтобы наша зависимость была включена в итоговый артефакт. Зачем? Например, у нас будет выполняемый jar, который должен сам в себе содержать всё необходимое. Что же тогда нам делать?
+
+Во-первых, такой поддержки "из коробки" (то есть по умолчанию, без каких-либо дополнительных действий) нет. Объясняется это тем, что каждый хочет архив собрать по своему, а Gradle старается быть минималистичным. Мы так же не можем исполльзовать jar архивы на classpath (без дополнительных манипуляций в коде), т.к. это так не работает (Подробнее см. "<a href="https://docs.oracle.com/javase/tutorial/deployment/jar/downman.html" target="_blank" rel="nofollow">Oracle: Adding Classes to the JAR File's Classpath</a>").
+
+Поэтому, самым красивым способом является следующий код в билд скрипте:
+
+<pre class="lang-java line-numbers"><code>
+jar {
+    manifest {
+        attributes 'Main-Class': 'jrgradle.App'
+    }
+    from configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+}
+</code></pre>
+В настройках таска jar мы указываем то, что будет добавлено в манифест jar-файла (см. "<a href="https://docs.oracle.com/javase/tutorial/deployment/jar/appman.html" target="_blank" rel="nofollow">Oracle: Setting an Application's Entry Point</a>"). А дальше мы говорим, что все зависимости, которые нужны были для компиляции, мы их включим в jar.
+
+Альтернативой может послужить использование плагина "<a href="https://imperceptiblethoughts.com/shadow/getting-started/#default-java-groovy-tasks" target="_blank" rel="nofollow">Gradle Shadow Plugin</a>".
+
+Может показаться сложным, но другие плагины могут упрощать жизнь. Например, при создании веб-приложения (в отличии от обычного выполняемого java приложения) мы будем использовать особый плагин - "<a href="https://docs.gradle.org/current/userguide/war_plugin.html#sec:war_default_settings" target="_blank" rel="nofollow">Gradle War Plugin</a>", который имеет другое поведение и там жизнь наша будет проще (все нужные зависимости будут сложены в отдельный особый каталог самим плагином. Такая работа регламентируется тем, как должны быть устроены веб-приложения. Но это уже совсем другая история).
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="243" alt="Краткое знакомство с Gradle - 9" src="https://cdn.javarush.com/images/article/140b1f88-309a-4b55-ba85-6832f0302abf/original.jpeg"></div></div><h2>Итоги</h2><strong>Gradle</strong> – является отличным выбором в качестве систем сборки проектов. Подтверждением тому является то, что его используют разработчики таких известных проектов, как Spring и Hibernate. Выше были рассмотрены лишь самые базовые вещи. За ними скрыт миллион особенностей и возможностей, которые появляются у разработчиков. Gradle так же поддерживает создание многомодульных проектов, что не рассмотрено в данном обзоре, но есть отличный tutorial у самого Gradle: "<a href="https://guides.gradle.org/creating-multi-project-builds/" target="_blank" rel="nofollow">Creating Multi-project Builds</a>".
+
+Надеюсь, данный обзор так же продемонстрировал, что документация у Gradle написана на 5+ и по ней легко можно найти нужное, если понимать, куда примерно смотреть. А это придёт, когда понимаешь основы. Кроме того, у Gradle шикарные tutorial.
+
+Закончить хочется небольшим списком того, что ещё можно посмотреть по Gradle:
+<ul>
+<li><a href="https://gradle.org/training/" target="_blank" rel="nofollow">Gradle Training</a> (Часто бесплатные).</li>
+<li><a href="https://www.udacity.com/course/gradle-for-android-and-java--ud867" target="_blank" rel="nofollow">Gradle for Android and Java</a></li>
+<li><a href="https://guides.gradle.org/building-java-web-applications/#add_a_gradle_build_file" target="_blank" rel="nofollow">Building Java Web Applications</a></li>
+<li><a href="https://www.youtube.com/watch?v=NZJTYPLb0iE" target="_blank" rel="nofollow">Евгений Борисов — Power of Gradle (2013)</a></li></ul><a href="https://www.youtube.com/watch?v=NZJTYPLb0iE" target="_blank" rel="nofollow"><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="7bb0d406-1166-498e-ace6-dbdda54fcc0c" data-max-width="474" alt="Краткое знакомство с Gradle - 10" src="https://cdn.javarush.com/images/article/7bb0d406-1166-498e-ace6-dbdda54fcc0c/1024.jpeg"></div></div></a>
+
+#Viacheslav

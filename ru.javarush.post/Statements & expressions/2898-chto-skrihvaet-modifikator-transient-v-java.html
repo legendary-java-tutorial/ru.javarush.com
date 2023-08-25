@@ -1,0 +1,224 @@
+Что скрывает модификатор transient в Java
+<p>----------------------------------------</p>
+Привет! В сегодняшней статье мы рассмотрим модификатор transient в Java. Поговорим о том, зачем данный модификатор нужен и как его правильно использовать. Поехали! Вспомним сериализацию. Модификатор transient используется в процессе...
+<p>----------------------------------------</p>
+Привет! В сегодняшней статье мы рассмотрим модификатор transient в Java. Поговорим о том, зачем данный модификатор нужен и как его правильно использовать. Поехали!
+
+<img data-max-width="800" data-id="988347f4-3872-43e5-92c3-c0c53f8eed00" src="/images/article/988347f4-3872-43e5-92c3-c0c53f8eed00/800.jpeg" alt="Что скрывает модификатор transient в Java - 1"><h2>Вспомним сериализацию</h2>Модификатор <code>transient</code> используется в процессе сериализации и десериализации объектов. Поэтому для начала кратко поговорим об этом.<img data-max-width="800" data-id="550e5dc5-b724-4c53-b1f2-809df0eb95a3" src="/images/article/550e5dc5-b724-4c53-b1f2-809df0eb95a3/800.jpeg" alt="Что скрывает модификатор transient в Java - 2">Предположим, у нас есть некоторый объект, а у него — поля, каждое из которых имеет какое-то значение. Все это называется состоянием объекта. Сериализация — это конвертация состояния объекта в последовательность байт. Данные байты сохраняются, как правило, в каком-либо файле. 
+
+Десериализация — это обратный процесс. Представим, что мы сериализовали объект в байты и сохранили данный набор байтов в некотором файле. При десериализации программе нужно:<ol><li>Считать набор байтов из файла.</li>
+<li>Сконструировать из данного набора байтов исходный объект и задать каждому полю значение, которое было у объекта на момент сериализации.</li></ol>Когда это может быть полезным? Например, когда мы хотим, чтобы при завершении работы программа сохраняла свое состояние, и при следующем включении восстанавливала его. Когда вы завершаете работу IntelliJ IDEA, при следующем включении, скорее всего, у вас открыты те же вкладки и классы<h2>Вспомним сериализацию на практике</h2>Что же, теперь рассмотрим сериализацию на практике. Если хочется получше разобраться в теме, советуем почитать материал <a href="https://javarush.com/groups/posts/2022-serializacija-i-deserializacija-v-java" target="_blank">Сериализация и десериализация в Java</a>. Ну а в этой статье мы пройдемся по верхам и перейдем сразу к примерам.
+
+Предположим, у нас есть класс <code>User</code> с набором некоторых полей, геттерами и сеттерами, а также методом <code>toString</code>:
+
+<pre class="lang-java line-numbers"><code>
+public class User implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    private String firstName;
+    private String lastName;
+    private String email;
+    private LocalDate birthDate;
+    private String login;
+    private String password;
+
+    public User() {}
+
+    public User(String firstName, String lastName, String email, LocalDate birthDate, String login, String password) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.birthDate = birthDate;
+        this.login = login;
+        this.password = password;
+    }
+
+    /*
+        Геттеры, Сеттеры
+     */
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", email='" + email + '\'' +
+                ", birthDate=" + birthDate +
+                ", login='" + login + '\'' +
+                ", password='" + password + '\'' +
+                '}';
+    }
+}</code></pre>
+Мы хотим сериализовывать объекты данного класса в дальнейшем. Напишем метод, который принимает объект <code>User</code> и строку <code>path</code> — путь до файла, в котором мы сохраним байты: 
+
+<pre class="lang-java line-numbers"><code>
+    static void serialize(User user, String path) throws IOException {
+        FileOutputStream outputStream = null;
+        ObjectOutputStream objectOutputStream = null;
+        try {
+            //создаем 2 потока для сериализации объекта и сохранения его в файл
+            outputStream = new FileOutputStream(path);
+            objectOutputStream = new ObjectOutputStream(outputStream);
+
+            // сохраняем объект в файл
+            objectOutputStream.writeObject(user);
+        } finally {
+            // Закроем потоки в блоке finally
+            if (objectOutputStream != null) {
+                objectOutputStream.close();
+            }
+            if (outputStream != null) {
+                outputStream.close();
+            }
+        }
+    }
+</code></pre>
+Также напишем метод для десериализации. Метод принимает строку <code>path</code> (путь до файла из которого объект будет “загружен”) и возвращает объект типа <code>User</code>: 
+
+<pre class="lang-java line-numbers"><code>
+    static User deserialize(String path) throws IOException, ClassNotFoundException {
+        FileInputStream fileInputStream = null;
+        ObjectInputStream objectInputStream = null;
+
+        try {
+
+            //создаем 2 потока для десериализации объекта из файла
+            fileInputStream = new FileInputStream(path);
+            objectInputStream = new ObjectInputStream(fileInputStream);
+
+            //загружаем объект из файла
+            return  (User) objectInputStream.readObject();
+        } finally {
+            if (fileInputStream != null) {
+                fileInputStream.close();
+            }
+            if (objectInputStream != null) {
+                objectInputStream.close();
+            }
+        }
+    }
+</code></pre>
+Все инструменты готовы к работе. Пришло время расщеплять на <s>атомы</s> байты. Напишем метод <code>main</code>, в котором создадим объект класса <code>User</code> и сериализуем его. Затем загрузим и сравним с тем, что было изначально: 
+
+<pre class="lang-java line-numbers"><code>
+    public static void main(String[] args) throws IOException, ClassNotFoundException {
+        // вставьте свой путь до файла
+        final String path = "/home/zor/user.ser";
+
+        //создаем наш объект
+        User user = new User();
+        user.setFirstName("Stefan");
+        user.setLastName("Smith");
+        user.setEmail("ssmith@email.com");
+        user.setBirthDate(LocalDate.of(1991, 7, 16));
+        user.setLogin("ssmith");
+        user.setPassword("gemma_arterton_4ever_in_my_heart91");
+
+        System.out.println("Initial user: " + user + "\r\n");
+
+
+        serialize(user, path);
+        User loadedUser = deserialize(path);
+        System.out.println("Loaded user from file: " + loadedUser + "\r\n");
+    }
+</code></pre>
+Если запустить метод, мы увидим следующий вывод: 
+
+<pre class="lang-java line-numbers"><code>
+Initial user: User{firstName='Stefan', lastName='Smith', email='ssmith@email.com', birthDate=1991-07-16, login='ssmith', password='gemma_arterton_4ever_in_my_heart91'}
+
+Loaded user from file: User{firstName='Stefan', lastName='Smith', email='ssmith@email.com', birthDate=1991-07-16, login='ssmith', password='gemma_arterton_4ever_in_my_heart91'}
+</code></pre>
+Как видно из вывода, объекты идентичны. Но есть маленькое но… И это как раз то место, когда в игру вступает <s>испанский стыд</s> <code>transient</code>.<h2>Модификатор (ну наконец-таки) <code>transient</code></h2>Никого не смутило, что мы пароль пользователя сохранили? Особенно такой пароль… Да-да, мы сами его придумали, но все же… 
+
+Порой бывают ситуации, когда некоторые поля невозможно сериализовать, или лучше этого не делать. 
+
+В примере выше хотелось бы сохранять все поля, за исключением пароля.
+
+Как это добиться? Ответ: использовать модификатор <code>transient</code>. 
+
+<span class="text-bold"><code>transient</code></span> — это модификатор, указываемый перед полем класса (подобно другим модификаторам, таким как <code>public</code>, <code>final</code> и т.д.) для обозначения того, что данное поле не должно быть сериализовано. 
+
+Поля, помеченные ключевым словом <code>transient</code>, не сериализуются. 
+
+Теперь отредактируем пример с нашим пользователем, чтобы исправить небольшой конфуз и не сохранять пароль пользователя. Для этого отметим соответствующее поле в классе ключевым словом <code>transient</code>: 
+
+<pre class="lang-java line-numbers"><code>
+public class User implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    private String firstName;
+    private String lastName;
+    private String email;
+    private LocalDate birthDate;
+    private String login;
+    private transient String password;
+    
+    /*
+        Конструкторы, геттеры, сеттеры, toString...
+     */
+}
+</code></pre>
+Если мы еще раз запустим метод <code>main</code> из примера выше, увидим, что пароль не сохранился: 
+
+<pre class="lang-java line-numbers"><code>
+Initial user: User{firstName='Stefan', lastName='Smith', email='ssmith@email.com', birthDate=1991-07-16, login='ssmith', password='gemma_arterton_4ever_in_my_heart91'}
+
+Loaded user from file: User{firstName='Stefan', lastName='Smith', email='ssmith@email.com', birthDate=1991-07-16, login='ssmith', password='null'}
+</code></pre>
+Отлично, мы добились поставленной цели и не сохраняем конфиденциальную информацию. Особенно такую информацию… (простите)<h2>Когда использовать transient?</h2>Пример с пользователем был нужен для того, чтобы погрузиться в контекст сериализации. Теперь поговорим предметнее о том, когда следует использовать модификатор <code>transient</code>.<h3><ul><li>Поля, которые вычисляются программно</li></ul></h3>В некоторых классах иногда бывают такие поля, которые вычисляются на основе других полей или же другой информации. Вычисляются, так сказать, на лету. 
+
+Чтобы привести пример такого поля, представим себе заказ в интернет-магазине или же в каком-нибудь сервисе доставки еды. Каждый заказ, помимо прочей информации, состоит из списка товаров и итоговой стоимости. Она, в свою очередь, складывается из суммарной стоимости каждого товара. Выходит, что итоговую стоимость не стоит задавать “руками”: ее нужно вычислять программно, суммируя стоимость всех товаров. 
+
+Подобные поля, которые следует вычислять программно, не нужно сериализовывать. Поэтому помечаем их модификатором <code>transient</code>. 
+
+<pre class="lang-java line-numbers"><code>
+class Order implements Serializable {
+
+    private List<item> items; 
+    private transient BigDecimal totalAmount; //вычисляется на ходу
+
+}
+</item></code></pre><h3><ul><li>Поля с приватной информацией</li></ul></h3>Также бывают некоторые классы, которые хранят приватную информацию. Пример такого класса мы рассматривали в начале статьи. Не стоит допускать утечки такой информации за пределы JVM. Поэтому поля с подобными данными необходимо помечать модификатором <code>transient</code>, если вы собираетесь сериализовывать такой класс.<h3><ul><li>Поля, которые не реализуют интерфейс <code>Serializable</code></li></ul></h3>Иногда класс содержит поля — объекты других классов, которые не реализуют интерфейс <code>Serializable</code>. Пример таких полей — логгеры, потоки ввода-вывода, объекты, которые хранят соединения с базой данных и прочие служебные классы. 
+
+Если попытаться сериализовать объект, который содержит несериализуемые поля, возникнет ошибка <code>java.io.NotSerializableException</code>. Чтобы избежать этого, все поля, которые не реализуют интерфейс <code>Serializable</code>, необходимо помечать модификатором <code>transient</code>. 
+
+<pre class="lang-java line-numbers"><code>
+public class FileReader implements Serializable {
+    // Первые 2 поля не реализуют Serializable
+    // Помечаем их как transient поля
+    private transient InputStream is; 
+    private transient BufferedReader buf;
+    private String fileName;
+
+    // Constructors, Getters, Setters
+
+    public String readFile() throws IOException {
+        try {
+            is = new FileInputStream(fileName);
+            buf = new BufferedReader(new InputStreamReader(is));
+            String line = buf.readLine();
+            StringBuilder sb = new StringBuilder();
+            while (line != null) {
+                sb.append(line).append("\n");
+                line = buf.readLine();
+            }
+            return sb.toString();
+        } finally {
+            if (buf != null) {
+                buf.close();
+            }
+            if (is != null) {
+                is.close();
+            }
+        }
+    }
+}
+</code></pre><h3><ul><li>Поля с информацией о состоянии объекта</li></ul></h3>Ну и последнее. Не нужно сериализовывать поля, которые не являются частью информации о состоянии объекта. Примеры выше попадают под это правило. Но также сюда можно включить и все прочие поля, добавленные для дебага или для выполнения какой то служебной функции, которые не несут информации о состоянии объекта.<h2><code>transient</code> и <code>final</code></h2><h2>Итоги</h2>На этом все. Сегодня мы говорили о модификаторе <code>transient</code>:<ol><li>Вспомнили сериализацию в теории и на практике.</li>
+<li>Поняли, что для того, чтобы не сериализовать некоторые поля класса, их нужно помечать модификатором <code>transient</code>.</li>
+<li>Обсудили, в каких ситуациях следует использовать данный модификатор. Таких ситуаций оказалось четыре:<ol type="a"><li>поля, которые вычисляются программно;</li>
+<li>поля, которые содержат секретную информацию;</li>
+<li>поля, которые не реализуют интерфейс <code>Serializable</code>;</li>
+<li>поля, которые не являются частью состояния объекта.</li></ol></li></ol><a href="https://javarush.com/welcome" target="_blank"><img id="click_banner3_2_articles" data-max-width="1080" data-id="deec882e-11ae-4106-9d98-3373d0fafd6e" src="/images/article/deec882e-11ae-4106-9d98-3373d0fafd6e/1080.jpeg" alt="Что скрывает модификатор transient в Java - 3"></a>

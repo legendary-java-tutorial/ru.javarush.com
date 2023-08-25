@@ -1,0 +1,157 @@
+Паттерн проектирования Мост (Bridge Pattern)
+<p>----------------------------------------</p>
+Привет! Продолжаем разбираться в обширной и очень полезной теме — паттерны проектирования. Сегодня поговорим о Bridge. Как и другие паттерны, Bridge служит для решения типичных проблем, с которыми сталкивается разработчик при проектировании архитектуры программного...
+<p>----------------------------------------</p>
+Привет! Продолжаем разбираться в обширной и очень полезной теме — паттерны проектирования. 
+
+Сегодня поговорим о Bridge. Как и другие паттерны, Bridge служит для решения типичных проблем, с которыми сталкивается разработчик при проектировании архитектуры программного обеспечения. Давай сегодня изучим его особенности и узнаем, как его стоит использовать.
+<h2>Что представляет собой паттерн Bridge?</h2>Паттерн Bridge (Мост) — структурный шаблон проектирования. То есть, его основная задача — создание полноценной структуры из классов и объектов. Bridge решает эту задачу путем разделения одного или нескольких классов на отдельные иерархии — <em>абстракцию</em> и <em>реализацию</em>. Изменение функционала в одной иерархии не влечет за собой изменения в другой.
+
+Вроде все понятно, но по факту это определение звучит очень широко и не дает ответ на главный вопрос: “Что представляет собой паттерн Bridge?”. 
+
+Думаю, с этим тебе будет проще разобраться на практике. Давай сразу смоделируем классический пример для паттерна Bridge.
+
+У нас есть абстрактный класс <code>Shape</code>, который обобщенно описывает геометрическую фигуру:
+<ul>
+<li><p>Shape.java</p>
+<pre class="lang-java line-numbers"><code>
+public abstract class Shape {
+   public abstract void draw();
+}
+</code></pre>
+<p>Когда мы решим добавить фигуры треугольника и прямоугольника, мы унаследуемся от класса <code>Shape</code>:</p></li>
+<li><p>Rectangle.java:</p><p>
+</p><pre class="lang-java line-numbers"><code>
+public class Rectangle extends Shape {
+   @Override
+   public void draw() {
+       System.out.println("Drawing rectangle");
+   }
+}
+</code></pre></li>
+<li><p>Triangle.java:</p>
+<pre class="lang-java line-numbers"><code>
+public class Triangle extends Shape {
+   @Override
+   public void draw() {
+       System.out.println("Drawing triangle");
+   }
+}
+</code></pre></li>
+</ul>Выглядит все просто до того момента, пока мы не вводим понятие “цвета”. То есть, у каждой фигуры будет свой цвет, от которого будет зависеть функционал метода <code>draw()</code>. Чтобы иметь различные реализации метода <code>draw()</code>, нам необходимо создать класс для каждой фигуры, соответствующий цвету. Если три цвета, то шесть классов: <code>TriangleBlack</code>, <code>TriangleGreen</code>, <code>TriangleRed</code>, <code>RectangleBlack</code>, <code>RectangleGreen</code> и <code>RectangleRed</code>.
+
+Шесть классов — не такая уж и большая проблема. Но! Если нам нужно будет добавить новую фигуру или цвет, количество классов будет расти в геометрической прогрессии. 
+
+Как выйти из сложившейся ситуации? Хранение цвета в поле и перебор вариантов через условные конструкции — не лучший выход. Хорошее решение — <span class="text-bold">вывести цвет в отдельный интерфейс</span>. 
+
+Сказано — сделано: давай создадим интерфейс <code>Color</code> и три его имплементации — <code>BlackColor</code>, <code>GreenColor</code> и <code>RedColor</code>:
+<ul>
+<li><p>Color.java:</p>
+<pre class="lang-java line-numbers"><code>
+public interface Color {
+   void fillColor();
+}
+</code></pre></li>
+<li><p>BlackColor.java:</p>
+<pre class="lang-java line-numbers"><code>
+public class BlackColor implements Color {
+   @Override
+   public void fillColor() {
+       System.out.println("Filling in black color");
+   }
+}
+</code></pre></li>
+<li><p>GreenColor.java</p>
+<pre class="lang-java line-numbers"><code>
+public class GreenColor implements Color {
+   @Override
+   public void fillColor() {
+       System.out.println("Filling in green color");
+   }
+}
+</code></pre></li>
+<li><p>RedColor.java</p>
+<pre class="lang-java line-numbers"><code>
+public class RedColor implements Color {
+   @Override
+   public void fillColor() {
+       System.out.println("Filling in red color");
+   }
+}
+</code></pre>
+<p>Теперь добавим поле типа <code>Color</code> в класс <code>Shape</code> — его значение будем получать в конструкторе.</p></li>
+<li><p>Shape.java:</p>
+<pre class="lang-java line-numbers"><code>
+public abstract class Shape {
+   protected Color color;
+  
+   public Shape(Color color) {
+       this.color = color;
+   }
+
+   public abstract void draw();
+}
+</code></pre>
+<p>Переменную <code>color</code> мы будем использовать в реализациях <code>Shape</code>. А это значит, что фигуры теперь могут использовать функционал интерфейса <code>Color</code>.</p></li>
+<li><p>Rectangle.java</p>
+<pre class="lang-java line-numbers"><code>
+public class Rectangle extends Shape {
+
+   public Rectangle(Color color) {
+       super(color);
+   }
+
+   @Override
+   public void draw() {
+       System.out.println("Drawing rectangle");
+       color.fillColor();
+   }
+}
+</code></pre></li>
+</ul>Ну вот! Теперь мы можем плодить различные цвета и геометрические фигуры хоть до бесконечности, увеличивая количество классов в арифметической прогрессии. Поле <code>Color color</code> и является мостом (bridge), который взаимосвязывает две отдельные иерархии классов.
+<h2>Устройство Bridge: что такое абстракция и реализация</h2>Давай рассмотрим с тобой диаграмму классов, которая описывает паттерн Bridge:
+<img src="/images/article/215876ee-86c8-4dbd-865d-c2e0e562b4cb/original.png" class="img-fluid" alt="Знакомство с паттерном проектирования Bridge - 2">Здесь можно увидеть две независимые структуры, которые могут модифицироваться, не затрагивая функционал друг друга. 
+
+В нашем случае это:
+<ul>
+<li>Abstraction — класс <code>Shape</code>;</li>
+<li>RefinedAbstraction — классы <code>Triangle</code>, <code>Rectangle</code>;</li>
+<li>Implementor — интерфейс <code>Color</code>;</li>
+<li>ConcreteImplementor — классы <code>BlackColor</code>, <code>GreenColor</code> и <code>RedColor</code>.</li>
+</ul>Класс <code>Shape</code> представляет собой Абстракцию — механизм управления раскраской фигур в различные цвета, который делегирует Реализацию интерфейсу <code>Color</code>.
+
+Классы <code>Triangle</code>, <code>Rectangle</code> являются реальными объектами, которые используют механизм, предложенный классом <code>Shape</code>.
+
+<code>BlackColor</code>, <code>GreenColor</code> и <code>RedColor</code> — конкретные имплементации в ветке Реализация. Их часто называют платформой.
+<h2>Где используют паттерн Bridge</h2>Огромный плюс использования этого паттерна заключается в том, что можно вносить изменения в функционал классов одной ветки, не ломая при этом логику другой. Также такой подход помогает уменьшить связанность классов программы.
+
+Главное условие применения паттернов — “следовать инструкции”: не совать их куда попало! Собственно, давай разберемся, в каких случаях точно нужно использовать Bridge:
+<ol>
+<li><p>Если необходимо расширить количество сущностей в две стороны (геометрические фигуры, цвета).</p></li>
+<li><p>Если есть желание разделить большой класс, который не отвечает принципу Single responsibility, на более маленькие классы с узкопрофильным функционалом.</p></li>
+<li><p>При возможной необходимости вносить изменения в логику работы неких сущностей во время работы программы.</p></li>
+<li><p>При необходимости спрятать реализацию от клиентов класса (библиотеки).</p></li>
+</ol>При использовании паттерна каждый раз нужно помнить, что он добавляет дополнительные сущности в код — не совсем логично применять его в проекте, где всего одна геометрическая фигура и один-два возможных ее цвета.
+<h2>Плюсы и минусы паттерна</h2>Как и другие паттерны, у Моста есть и преимущества, и недостатки.
+
+<span class="text-bold">Преимущества Bridge:</span>
+<ol>
+<li>Улучшает масштабируемость кода — можно добавлять функционал, не боясь сломать что-то в другой части программы.</li>
+<li>Уменьшает количество подклассов — работает при необходимости расширения количества сущностей в две стороны (например, количество фигур и количество цветов).</li>
+<li>Дает возможность отдельно работать над двумя самостоятельными ветками Абстракции и Реализации — это могут делать два разных разработчика, не вникая в детали кода друг друга.</li>
+<li>Уменьшение связанности классов — единственное место связки двух классов — это мост (поле <code>Color color</code>).</li>
+</ol><span class="text-bold">Недостатки Bridge:</span>
+<ol>
+<li>В зависимости от конкретной ситуации и структуры проекта в целом, возможно негативное влияние на продуктивность программы (например, если нужно инициализировать большее количество объектов).</li>
+<li>Усложняет читаемость кода из-за необходимости навигации между классами.</li>
+</ol><h2>Отличие от паттерна Strategy</h2>Паттерн Bridge часто путают с другим шаблоном проектирования — Strategy. Они оба используют композицию (в примере с фигурами и цветами мы использовали агрегацию, но паттерн Bridge может использовать и композицию), делегируя работу другим объектам. Но разница между ними есть, и она огромная. Паттерн Strategy является поведенческим паттерном: он решает совсем другие задачи. Strategy обеспечивает взаимозаменяемость алгоритмов, в то время как Bridge отделяет абстракцию от реализации, чтобы обеспечить возможность выбора между различными имплементациями. То есть, Bridge, в отличие от Strategy, применяется к целым конструкциям или иерархическим структурам.
+
+Паттерн Bridge может стать хорошим оружием в арсенале разработчика, главное нащупать те ситуации где стоит применить его, или воспользоваться каким-то другим шаблоном. Если ты еще не знаком с другими шаблонами, почитай вот эти материалы:
+<ul>
+<li><a href="https://javarush.com/groups/posts/2365-patternih-proektirovanija-singleton" target="_blank">Singleton</a></li>
+<li><a href="https://javarush.com/groups/posts/2370-pattern-proektirovanija-factory" target="_blank">Factory</a></li>
+<li><a href="https://javarush.com/groups/posts/2379-patternih-proektirovanija-abstractfactory" target="_blank">Abstract Factory</a></li>
+<li><a href="https://javarush.com/groups/posts/2372--patternih-proektirovanija-factorymethod" target="_blank">FactoryMethod</a></li>
+<li><a href="https://javarush.com/groups/posts/2368-pattern-proektirovanija-proxy" target="_blank">Proxy</a></li>
+<li><a href="https://javarush.com/groups/posts/2361-kakie-zadachi-reshaet-shablon-proektirovanija-adapter" target="_blank">Adapter</a></li>
+</ul>

@@ -1,0 +1,173 @@
+SpringBoot + Flyway - "Java-проект от А до Я"
+<p>----------------------------------------</p>
+Минимальное количество теории, как вы любите))) Итоговое сравнение Flyway/Liquibase опускаем на неопределенное время и переходим к сути. А то и так уже он затянулся. Чтобы дважды не описывать Flyway, решил его сразу добавлять в наш будущий проект JRTB...
+<p>----------------------------------------</p>
+<em>Статья из серии о создании Java-проекта (ссылки на другие материалы — в конце). Ее цель — разбор ключевых технологий, итог — написание телеграм-бота. В этой части пробуем запустить SpringBoot и к нему — Flyway.</em>
+
+Минимальное количество теории, как вы любите)))
+
+Итоговое сравнение Flyway/Liquibase опускаем на неопределенное время и переходим к сути. А то и так уже он затянулся. Чтобы дважды не описывать Flyway, решил его сразу добавлять в наш будущий проект JRTB.<img data-max-width="800" data-id="10982e53-5c2b-4cd8-a8db-e2fdc7244188" src="https://cdn.javarush.com/images/article/10982e53-5c2b-4cd8-a8db-e2fdc7244188/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 1"><h3>Что в рамках этого нам нужно сделать?</h3><ol>
+<li>Запустить SpringBoot приложение на базе Maven.</li>
+<li>Добавить туда Flyway: благо, они легко интегрируются.</li>
+<li>Добавить схему таблиц, которые есть у нас в примере базы данных.</li>
+
+</ol>Таким образом мы научимся работать с Flyway.
+
+Почему отдельным проектом, а не сразу в наш JRTB? Потому что позже любой, кто захочет понять, как это сделать, будет иметь проект с примером и статью, которая описывает работу с ней. 
+
+Ну что ж, поехали!<h2>Что такое flyway</h2>Чтобы что-то использовать, нужно для начала выяснить, что это такое и зачем.
+
+<span class="text-bold">Flyway</span> — это инструмент для контроля версии базы данных. 
+
+Слова известные, но как-то понимания не добавилось, да? Попробуем описать проблему, которую решает flyway. 
+
+Допустим, у нас есть проект. Как и все в нашем мире, он не совершенен, поэтому спланировать и составить окончательную версию проекта не получилось. Каждый раз появляются те или иные неучтенные нюансы. Проект в своей работе использует БД. 
+
+Разумеется, при изменении проекта может измениться и структура базы данных. 
+Допустим, мы добавляем новое поле для одной из сущностей нашего проекта. Как это сделать? <ol>
+
+<li>Добавить это поле в нашу сущность, обновить все, чтобы бизнес логика работала.</li>
+<li>Обновить базу данных. Единственный возможный способ — сделать это вручную. Для этого нужно зайти и прописать необходимый sql скрипт.</li>
+
+</ol>Из второго пункта возникает много вопросов:<ol type="a">
+<li>а если у нас не одно место, где мы разворачиваем наш проект, то это в каждом из них нужно делать?</li>
+<li>а если мы захотим вернуться назад, как мы узнаем, в каком именно состоянии сейчас находится структура БД?</li>
+<li>как мы будем уверены, что изменение БД прошло успешно?</li>
+<li>как получить возможность отследить все изменения БД, которые прошли на проекте?</li>
+
+</ol>Если делать руками, то ответы будут не лучшие…
+
+Чтобы избежать всех этих трудностей, можно воспользоваться инструментом для миграции БД. Одним из таких и является Flyway.
+
+В чем заключается его работа?
+
+В рамках проекта мы храним отдельные sql файлы (так называемые миграции), которые хранят в себе все то, что мы делаем с БД за один раз. Все миграции идут строго в определенном порядке, что позволяет отследить изменения в структуре и данных БД (часто при помощи миграции добавляют тестовые данные в проект, чтобы при разворачивании его на какой-то сервер он уже имел какие-то значения, при помощи которых можно тестировать проект).
+
+После того, как пройдут тесты, при сборке проекта запускаются миграции. Они соединяются с базой данных и проводят миграции.
+
+Если миграции уже были проведены на этой базе данных, то flyway их просто пропустит (у него в БД в отдельной таблице хранятся данные о миграциях, об их состоянии, что помогает управлять ими), а если какая-то миграция прошла неуспешно, то сборка проекта и его монтирование (деплой) на сервер остановятся. 
+
+Я постарался описать как можно подробнее. Если все еще не до конца ясно — не беда: в практике придет и понимание. <h2>Запускаем SpringBoot + Flyway</h2><h3>Что такое Spring Boot</h3>А что же такое запускаем?... Чтобы понять, что и зачем мы делаем, нужно определиться с тем, что такое SpringBoot.
+
+Вначале быстро поговорим (ну ооочень быстро) о <span class="text-bold">Spring</span>. На данный момент это де-факто промышленный стандарт в разработке серверных приложений на Java. 
+
+Стандарт чего? Как вам так объяснить. Spring — это скелет приложения, на который мы потом набрасываем “мясо” — нашу бизнес-логику. При помощи спринга (здесь и далее буду использовать эту кальку, чтобы не тратить время на переключение языка :D ))
+
+Спринг дает нам старт, с которого мы начинаем все делать. Он <s>многоликий</s> многомодульный:<ol>
+
+<li>Хочешь работать с базой данных? Хочешь с реляционной? Хочешь с нереляционной? Вот, пожалуйста, у нас Spring Data.</li>
+<li>Хочешь работать с http запросами? Вот тебе, пожалуйста, Spring web (Spring MVC).</li>
+<li>Тебе нужен контейнер для всех объектов в одном месте? Вот Spring Core.</li>
+<li>Нужно настроить безопасность на проекте, да так, чтобы были разные роли и субординация? Spring Security.</li>
+<li>Ты только подумал о том, что хорошо бы иметь такую штуку, так окажется, что у Спринга уже есть то, что тебе нужно, и оно быстро и легко интегрируется. </li>
+
+</ol>Поэтому можно сказать, что это не просто фреймворк (такая бооольшая библиотека), а уже целая экосистема, которая развивается бешеными темпами.
+
+Чтобы понять, что из себя представляет Spring Core, то есть база, к которой подключаются модули, советую посмотреть <a href="https://www.youtube.com/watch?v=rd6wxPzXQvo&amp;t=4178s" rel="nofollow" target="_blank">живое демо</a> по созданию собственного фреймворка. Ведет его Евгений Борисов, очень крутой чувак в области Java и спринга. Проделайте все то, что он сделал, и работа спринга вам станет более понятной. 
+
+SpringBoot, в свою очередь, — это вершина всего того, что у них есть. Магия чистой воды. Минимум настроек для того, чтобы сделать первый запуск приложения. 
+
+Разумеется, это не даст вам понимания, как им пользоваться и что нужно делать.
+Но перед тем, как бросаться в глубь разработки, нужно посмотреть на все с высоты птичьего полета.<h3>Запускаем SpringBoot</h3>Так как мы уже разбирались в том, что такое мавен, давайте создадим новый проект для наших нужд. Для этого просто нужно перейти на сайт, специально созданный для этого дела. Называется он <a href="https://start.spring.io/" rel="nofollow" target="_blank">Spring Initializr</a>.<img data-max-width="1024" data-id="6c7e470c-dd6d-4f7f-ac1d-03988f1b02d6" src="https://cdn.javarush.com/images/article/6c7e470c-dd6d-4f7f-ac1d-03988f1b02d6/1024.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 2">Здесь нужно заполнить и выбрать необходимое:<ol>
+<li>Инструмент по сборке проекта — gradle или maven. Как видите, об Ant уже и не вспоминают. Это хорошая подсказка о том, каким средствам сборки стоит уделить время.</li>
+<li>Язык, на котором можно писать — java, kotlin, groovy. Здесь все просто: все они JVM подобные и спокойно запускают Java код. К слову, стоит посмотреть и на Котлин. Груви уже откровенно стал неинтересным (было время, когда на груви переходили, но оно быстро прошло).</li>
+<li>Версию спринга… Здесь нужно понимать, что версии главной части спринга и его модулей согласованы. </li>
+<li>Данные о проекте. Я уже описывал эти вещи.</li>
+<li>Выбираем, в какой архив будет собираться — Jar или War.</li>
+<li>Ну и версию джавы нашей любимой. А то в последнее время развелось этих версий… много) То ждали годами, а теперь по две в год. </li>
+
+</ol>В нашем случае будем публиковать этот проект в организации <a href="https://github.com/javarushcommunity" rel="nofollow" target="_blank">JavaRush Community</a>, поэтому и данные о проекте будут соответствующие:<ol>
+
+<li>Maven — не зря же мы говорили с вами об этом ранее.</li>
+<li>Java — наша родимая :D</li>
+<li>Версию возьмем 2.2.11. Почему не самую новую? Потому что чем новее, тем больше шансов, что там могут быть какие-то косяки. Для нас не принципиально, какая именно версия, а более старая будет надежнее. Поэтому выбираем 2.2.11.</li>
+<li>Group: <span class="text-bold">com.github.javarushcommunity</span></li>
+<li>Artifact: <span class="text-bold">springboot-flyway-demo</span></li>
+<li>Name: <span class="text-bold">SpringBoot + Flyway Demo</span></li>
+<li>Description: <span class="text-bold">Project demonstrates integration between SpringBoot and Flyway</span>. (Да, умение писать документацию — это важная часть разработки:))</li>
+<li>Package name: <span class="text-bold">com.github.javarushcommunity.springbootflywaydemo</span>. Здесь за нас сразу же создадут базовый пакет с классом, который запустит наше приложение. </li>
+<li>Packaging: <span class="text-bold">Jar</span></li>
+<li>Java: 8. Не будем идти впереди паровоза и возьмем старую добрую восьмерку. Почему не 11? А зачем? Для нашего примера не вижу смысла.</li>
+
+</ol><img data-max-width="800" data-id="5246a501-4cd3-4676-b7c1-daa40095db02" src="https://cdn.javarush.com/images/article/5246a501-4cd3-4676-b7c1-daa40095db02/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 3">А теперь добавим модули. Нам нужно найти интеграцию с Flyway. Можно еще добавить что-то связанное с MySQL и Spring Data. Добавим еще ломбок (это очень нужная вещь, просто поверьте пока что :D))
+
+Для этого дела нажимаем на <span class="text-bold">ADD DEPENDENCIES</span>… и выберем все, что нужно:<img data-max-width="1080" data-id="698cd505-dfd6-4f98-82a4-91b30a594ded" src="https://cdn.javarush.com/images/article/698cd505-dfd6-4f98-82a4-91b30a594ded/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 4">Вот так добавим Flyway.<img data-max-width="1080" data-id="750b5a4d-6ffd-4884-bc93-f5bb7beaed38" src="https://cdn.javarush.com/images/article/750b5a4d-6ffd-4884-bc93-f5bb7beaed38/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 5">Ломбок…
+
+И так далее. В итоге получим:<img data-max-width="800" data-id="c607ca61-d95c-4eb4-9cd7-e60c3419e889" src="https://cdn.javarush.com/images/article/c607ca61-d95c-4eb4-9cd7-e60c3419e889/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 6">Хух… заполнили все))
+
+Теперь жмем <span class="text-bold">GENERATE…</span> и все — архив со сгенерированным проектом готов :)
+
+Там еще есть такая крутая штука как <span class="text-bold">SHARE…</span>, которая дает вам ссылку на страницу, которую вы только что заполнили. То есть, <a href="https://start.spring.io/#!type=maven-project&amp;language=java&amp;platformVersion=2.2.11.RELEASE&amp;packaging=jar&amp;jvmVersion=1.8&amp;groupId=com.github.javarushcommunity&amp;artifactId=springboot-flyway-demo&amp;name=SpringBoot%20%2B%20Flyway%20Demo&amp;description=Project%20demonstrates%20integration%20between%20SpringBoot%20and%20Flyway.&amp;packageName=com.github.javarushcommunity.springbootflywaydemo&amp;dependencies=lombok,mysql,flyway,data-jpa" rel="nofollow" target="_blank">вот та, которую я генерировал</a>. И даже если у вас что-то пойдет не так, всегда можно будет проверить по ссылке. 
+
+Далее нам нужно привязать созданный проект к гит репозиторию, поэтому клонируем созданный проект <a href="https://github.com/template-repository/template-repository" rel="nofollow" target="_blank">springboot-flyway-demo</a> и качаем его через IDEA.
+
+Для этого, нужно открыть идею и выбрать <span class="text-bold">File -&gt; New -&gt; Project from Existing Sources…</span>:<img data-max-width="1024" data-id="4d8f6a79-a80e-4511-afb9-a03b4fa6e665" src="https://cdn.javarush.com/images/article/4d8f6a79-a80e-4511-afb9-a03b4fa6e665/1024.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 7">Теперь добавляем URL и нажимаем <span class="text-bold">Clone</span>.
+
+Следующим шагом нужно перенести внутренности сгенерированного проекта внутрь того, что мы клонировали. Запутал? Сейчас покажу.
+
+Разархивировал и получил такой набор файлов:<img data-max-width="800" data-id="ba6a8d83-6598-4351-a088-afd454e11516" src="https://cdn.javarush.com/images/article/ba6a8d83-6598-4351-a088-afd454e11516/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 8">Вот их и нужно перенести в клонированный проект.
+
+Как и в прошлой статье, добавим pom.xml как мавен проект:<img data-max-width="512" data-id="0042e996-a164-4d0c-b5f4-1a7f9d5f0913" src="https://cdn.javarush.com/images/article/0042e996-a164-4d0c-b5f4-1a7f9d5f0913/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 9">Теперь нам интересно посмотреть на то, что нам сгенерировали. 
+
+Если открыть все папки в src и далее, то будет видна обычная иерархия в мавен проектов, которую мы разбирали <a href="https://javarush.com/groups/posts/3119-java-proekt-ot-a-do-ja-vse-chto-vih-khoteli-znatjh-o-maven" target="_blank">в предыдущей статье</a>. Кто не читал — почитайте!<img data-max-width="512" data-id="41d9959c-cf9a-4822-89da-f73bc6d8363d" src="https://cdn.javarush.com/images/article/41d9959c-cf9a-4822-89da-f73bc6d8363d/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 10">Видно, что у нас есть Application класс, и при помощи него запустится наше SpringBoot приложение.
+
+Благодаря плагину в мавене для SpringBoot, у нас появился нужный нам таск для мавена, а именно — spring-boot:run. Где мы можем найти эту информацию?
+
+Справа, открыв плашку Maven и наш проект:<img data-max-width="512" data-id="ae997f33-00de-4c77-92ad-38ce59acc96b" src="https://cdn.javarush.com/images/article/ae997f33-00de-4c77-92ad-38ce59acc96b/512.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 11">Будет ошибка, и ее так мы не сможем прочесть, увидим что-то такое:<img data-max-width="1080" data-id="489e0f24-a8f5-4273-968f-bc50c4030830" src="https://cdn.javarush.com/images/article/489e0f24-a8f5-4273-968f-bc50c4030830/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 12">Чтобы получить больше информации, для быстроты мы можем запустить main метод Application классе:<img data-max-width="800" data-id="02a2408a-4eb2-4c2c-8646-d2eb4c18e75c" src="https://cdn.javarush.com/images/article/02a2408a-4eb2-4c2c-8646-d2eb4c18e75c/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 13">И тогда уже увидим реальную причину:<img data-max-width="1080" data-id="39a661fd-61ab-4125-a8b3-67c2b6253ea4" src="https://cdn.javarush.com/images/article/39a661fd-61ab-4125-a8b3-67c2b6253ea4/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 14">Здесь уже информации поболее и можно с ней что-то делать. Что не так? У нас есть зависимости, связанные с БД, и поэтому нужно предоставить настройки для подключения к оной. 
+
+Для этого дела гуглим, находим, что нужно добавить следующие конфигурации в application.properties:
+
+<pre class="language-java line-numbers"><code>
+spring.datasource.url=jdbc:mysql://localhost:3306/flyway_demo_db
+spring.datasource.username=root
+spring.datasource.password=root
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+</code></pre>
+Запускаем еще раз main метод и получаем:<img data-max-width="1080" data-id="aaaa0ee4-7790-4c60-892c-2d94577adad2" src="https://cdn.javarush.com/images/article/aaaa0ee4-7790-4c60-892c-2d94577adad2/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 15">Теперь нужно добавить хотя бы одну миграцию. Чтобы правильно составить миграцию, нужно взять следующий шаблон: <span class="code">V&lt;VERSION&gt;__&lt;NAME&gt;.sql</span>
+
+Руководствуясь им, создадим файл миграции с именем <span class="text-bold">V00001__Create_country_table.sql</span> в соответствующей папке:  <span class="text-bold">/src/main/resources/db.migration/</span>. 
+
+В ней создадим таблицу country. Скрипт возьмем из <a href="https://javarush.com/groups/posts/2957-java-proekt-ot-a-do-ja-razbiraem-bazih-dannihkh-i-jazihk-sql-chastjh-2" target="_blank">второй статьи о БД</a>.<img data-max-width="1080" data-id="800b2f5e-f7dd-49ab-9992-a77d437e3cce" src="https://cdn.javarush.com/images/article/800b2f5e-f7dd-49ab-9992-a77d437e3cce/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 16">Перед запуском зайдем и создадим БД для работы: flyway_demo_db. Сделаем это через MysqlWorkbench:<img data-max-width="1080" data-id="035bd6fb-4e11-4cee-9238-0b28da78ebfd" src="https://cdn.javarush.com/images/article/035bd6fb-4e11-4cee-9238-0b28da78ebfd/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 17">Теперь-то можно запустить еще раз main метод:<img data-max-width="1080" data-id="0c3f684e-2710-472a-bc02-2ada5b58e7e9" src="https://cdn.javarush.com/images/article/0c3f684e-2710-472a-bc02-2ada5b58e7e9/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 18">Все получилось, но так как у нас ничего еще нет в проекте, он закончил работу. Однако видно из логов (что такое логи — <a href="https://javarush.com/groups/posts/2388#discussion" target="_blank">вот почитайте</a>), что:<ol>
+
+<li>Успешно подключились к БД.</li>
+<li>Прошла валидация миграции и с ней все ок.</li>
+<li>Flyway создал таблицу для управления миграциями. </li>
+<li>И то, что начала миграция 00001 — создание country прошла успешно.</li>
+
+</ol>Чтобы это проверить, можно сходить и посмотреть, что делается в БД.
+
+Так что зайдем на наш MySQL сервер и посмотрим, что там с таблицами в бд flyway_demo_db:
+
+<span class="text-bold">$ USE flyway_demo_db;
+$ SHOW TABLES;</span><img data-max-width="1024" data-id="9e9c928a-fddd-4d7d-b6d2-aca9ee36b2d1" src="https://cdn.javarush.com/images/article/9e9c928a-fddd-4d7d-b6d2-aca9ee36b2d1/1024.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 19">Как я и ожидал, прошла миграция, в ходе которой создалась таблица country и появилась таблица flyway_schema_history, которая хранит информацию по миграциям. Пойдем дальше и посмотрим какие там есть записи (и есть ли вообще они).
+
+<span class="text-bold">$ SELECT * FROM flyway_schema_history;</span><img data-max-width="1024" data-id="f2602d4b-22d4-429b-96e3-43f0de11e710" src="https://cdn.javarush.com/images/article/f2602d4b-22d4-429b-96e3-43f0de11e710/1024.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 20">Вот и запись, одна-единственная. В ней — много интересных данных. Версия, описание миграции, какой тип SQL (и, может быть, еще XML), имя самого скрипта, чексумма (<em>это что-то типа hashcode, при помощи которого проверяется, изменилась или нет миграция. Делается это на случай, если мы провели миграцию в БД и потом ее поправили: делать этого нельзя, все правки вносятся только посредством новой миграции и чтобы этого не было, чек сумма следит за этим</em>), имя sql юзера, дата обработки миграции, время на выполнение и результат (успешно или не успешно).
+
+Миграция, написанная один раз, не должна быть изменена  будущем. Даже если в ней находится дефект. Все изменения проходят только посредством новой миграции. Это очень важно.
+
+Чтобы показать, что будет, давайте немного изменим наш скрипт и попробуем запустить его вновь.
+
+Добавим в нашу миграцию одну запись в таблицу country:<img data-max-width="1080" data-id="89f91cfe-3c9c-4715-8446-3289acb2a0a8" src="https://cdn.javarush.com/images/article/89f91cfe-3c9c-4715-8446-3289acb2a0a8/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 21">и запустим main метод и вот что получим:<img data-max-width="1080" data-id="564653d5-9145-4d3b-a12c-dca0b6b3e443" src="https://cdn.javarush.com/images/article/564653d5-9145-4d3b-a12c-dca0b6b3e443/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 22">Как я и ожидал, flyway распознал, что скрипт был изменен и не провел миграцию. 
+
+В некоторых случаях действительно бывает необходимо запустить обновленную миграцию и чтобы flyway это пропустил, нужно удалить запись в таблице flyway_schema_history и уже после этого накатить обновленную миграцию. Это не нормальное поведение и так не должно быть, но знать о таком способе разрешения проблемы также нужно. 
+
+Разобрались с первой миграцией. Теперь хотелось бы добавить еще одну миграцию, с данными о странах, как было в статье о БД:
+
+файл <span class="text-bold">V00002__Add_test_data_to_country.sql</span><img data-max-width="1080" data-id="86cd9ab4-4c11-4bb5-a113-51db21e678a9" src="https://cdn.javarush.com/images/article/86cd9ab4-4c11-4bb5-a113-51db21e678a9/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 23">И запустим опять main метод:<img data-max-width="1080" data-id="7f8d8fa6-fd73-4004-b2d7-160d5e7de3dc" src="https://cdn.javarush.com/images/article/7f8d8fa6-fd73-4004-b2d7-160d5e7de3dc/1080.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 24">Из логов видно, что перед началом запуска миграции БД была в версии 00001, поэтому запустятся все миграции после этой версии. Далее, запустилась версия 00002 и прошла успешно.
+
+Проверим, или уже верите мне, что три записи в country будут уже находится в БД?))
+
+Я бы проверил, поэтому пруф:<img data-max-width="256" data-id="6806330f-aa25-46b8-a184-dfed4a7c59eb" src="https://cdn.javarush.com/images/article/6806330f-aa25-46b8-a184-dfed4a7c59eb/256.jpeg" alt="&quot;Java-проект от А до Я&quot;: SpringBoot + Flyway - 25">Вот как-то так. Если запустить еще раз проект, то flyway просто пропустит накатывание миграций, так как база данных полностью соответствует необходимой версии.<h2>Вывод</h2>В этот раз мы научились худо-бедно понимать и использовать инструмент для миграции БД в связке со SpringBoot. Эта информация необходима для понимания того, что такое инструмент контроля версий баз данных на примере Flyway.
+
+Друзья, исходники проекта, который я показал, <a href="https://github.com/javarushcommunity/springboot-flyway-demo" rel="nofollow" target="_blank">опубликованы у нас в организации на гитхабе</a>.
+
+Если вам нравится пример, <a href="https://github.com/javarushcommunity/springboot-flyway-demo/stargazers" rel="nofollow" target="_blank">ставьте ему звезду</a>, и я буду понимать, что моя работа полезна и ее реально стоит продолжать.
+
+Традиционно предлагаю подписаться на <a href="https://github.com/romankh3" rel="nofollow" target="_blank">мой гитхаб аккаунт</a>. Через него я веду всю свою работу по open source и все те демо проекты, которые неизменно сопровождают мои статьи.
+
+Всем спасибо за прочтение. В следующий раз уже будем писать наше приложение. Будет еще в будущем необходимая теория по докеру, но мы ее густо разбавим практикой.<h3>Полезные ссылки</h3>Сегодня не так уж и много полезных ссылок. Обратите внимание на видео Евгения, оно действительно стоит того!<ol>
+<li><a href="https://start.spring.io/" rel="nofollow" target="_blank">Сайт для создания проектов на спринге</a></li>
+<li><a href="https://www.youtube.com/watch?v=rd6wxPzXQvo&amp;t=4178s" rel="nofollow" target="_blank">Евгений Борисов — Spring-построитель</a></li>
+<li><a href="https://docs.spring.io/spring-boot/docs/current/reference/html/howto.html#howto-execute-flyway-database-migrations-on-startup" rel="nofollow" target="_blank">Документация в спринге по Flyway</a></li></ol>
+
+<h4><a href="https://javarush.com/groups/posts/2935-java-proekt-ot-a-do-ja-pishem-realjhnihy-proekt-dlja-portfolio#articles" target="_blank">Список всех материалов серии в начале этой статьи.</a></h4>

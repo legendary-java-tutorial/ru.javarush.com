@@ -1,0 +1,152 @@
+Паттерн проектирования декоратор с примерами
+<p>----------------------------------------</p>
+Паттерн проектирования декоратор позволяет нам динамически добавлять функциональность объекту без влияния на поведение объектов того же самого класса.
+<p>----------------------------------------</p>
+Паттерн проектирования декоратор позволяет нам динамически добавлять функциональность объекту без влияния на поведение объектов того же самого класса. Звучит несколько запутанно, но когда увидите код все станет понятнее.
+
+<strong>Особенности</strong>
+
+— Декоратор позволяет добавлять функциональность существующему объекту без изменения его структуру, то есть исходный класс не меняется
+— Паттерн проектирования декоратор — это структурный паттерн, который обеспечивает обертку для существующего класса
+— Создаются классы-декораторы, которые оборачивают исходный класс и предоставляют дополнительную функциональность, сохраняя сигнатуры методов исходного класса нетронутыми
+— Паттерн проектирования декоратор чаще всего используется для следования принципу единой ответственности (single responsibility из SOLID), поскольку мы не нагружаем исходный класс дополнительными обязанностями, а разделяем их на классы-декораторы
+— Декоратор структурно почти аналогичен паттерну «цепочка ответственности» (chain of responsibility)
+
+<strong>Необходимо учитывать следующие ключевые моменты</strong>
+
+— Декоратор полезен для возможности модифицировать поведение объекта во время рантайма. Такой код легко поддерживать и расширять.
+— Недостатком этого паттерна является то, что используется большое количество однотипных объектов-декораторов
+— Паттерн декоратор часто используется в классах Java IO (FileReader, BufferedReader и т. д.)
+
+<strong>Что сделаем</strong>
+
+— Создадим интерфейс
+— Создадим конкретные реализации этого интерфейса
+— Создадим абстрактный декоратор, реализующий этот интерфейс
+— Создадим конкретный декоратор, наследующийся от абстрактного декоратора
+— Используем конкретный декоратор для "декорирования" конкретных реализаций интерфейса
+
+<strong>Реализация:</strong>
+
+Мы создадим интерфейс Shape и конкретные классы, реализующие этот интерфейс. Затем мы создадим абстрактный класс-декоратор ShapeDecorator, реализующий интерфейс Shape и имеющий объект Shape в качестве поля класса.
+<img data-id="4d032716-0725-4738-aaa5-88bd15b6d368" src="https://cdn.javarush.com/images/article/4d032716-0725-4738-aaa5-88bd15b6d368/1024.jpeg" alt="Паттерн проектирования декоратор с примерами - 1">
+— Shape —  имя интерфейса
+— Классы Rectangle, Triangle и класс Circle будут конкретными классами, реализующими интерфейс Shape
+— ShapeDecorator — это абстрактный класс-декоратор, реализующий тот же интерфейс Shape
+— RedShapeDecorator — конкретный класс, реализующий ShapeDecorator
+— Demo — демонстрационный класс, в котором мы будем использовать RedShapeDecorator для декорирования объектов Shape
+
+<strong>Шаг 1</strong>: создаем интерфейс Shape
+
+<pre class="language-java line-numbers"><code>
+public interface Shape {
+    void draw();
+}
+</code></pre>
+
+<strong>Шаг 2</strong>: создадим несколько реализаций этого интерфейса. В примере ниже будет только круг, а по факту создадим еще парочку: прямоугольник и треугольник.
+
+<pre class="language-java line-numbers"><code>
+public class Circle implements Shape{
+    @Override
+    public void draw() {
+        System.out.println("Я круг!");
+    }
+}
+</code></pre>
+
+<strong>Шаг 3</strong>: создадим абстрактный декоратор, реализующий интерфейс Shape
+
+<pre class="language-java line-numbers"><code>
+public abstract class ShapeDecorator implements Shape {
+    
+    protected Shape decoratedShape;
+    
+    //Конструктор, принимающий объект Shape
+    public ShapeDecorator(Shape decoratedShape) {
+        this.decoratedShape = decoratedShape;
+    }
+    
+    public void draw() {
+        decoratedShape.draw();
+    }
+}
+</code></pre>
+
+<strong>Шаг 4</strong>: создадим конкретный класс-декоратор, наследующийся от абстрактного класса
+
+<pre class="language-java line-numbers"><code>
+public class RedShapeDecorator extends ShapeDecorator{
+
+    public RedShapeDecorator(Shape decoratedShape) {
+        super(decoratedShape);
+    }
+
+    @Override
+    public void draw() {
+        decoratedShape.draw();
+        setRedBorder(decoratedShape);
+    }
+
+    private void setRedBorder(Shape decoratedShape) {
+        System.out.println("Сообщение от RedShapeDecorator. Цвет границы: красный");
+    }
+}
+</code></pre>
+
+<strong>Шаг 5</strong>: используем RedShapeDecorator чтобы раскрасить наши объекты
+
+<pre class="language-java line-numbers"><code>
+public class Demo {
+    public static void main(String[] args)
+    {
+        Shape circle = new Circle();
+        Shape redCircle= new RedShapeDecorator(new Circle());
+        Shape redRectangle= new RedShapeDecorator(new Rectangle());
+        Shape redTriangle = new RedShapeDecorator(new Triangle());
+
+        System.out.println("\nОбычный круг:");
+        circle.draw();
+
+        System.out.println("\nКруг с красной границей:");
+        redCircle.draw();
+
+        System.out.println("\nПрямоугольник с красной границей:");
+        redRectangle.draw();
+
+        System.out.println("\nТреугольник с красной границей:");
+        redTriangle.draw();
+    }
+}
+</code></pre>
+
+<strong>Шаг 6</strong>: смотрим в консоль и радуемся
+
+<pre class="language-java line-numbers"><code>
+Обычный круг:
+Я круг!
+
+Круг с красной границей:
+Я круг!
+Сообщение от RedShapeDecorator. Цвет границы: красный
+
+Прямоугольник с красной границей:
+Я прямоугольник!
+Сообщение от RedShapeDecorator. Цвет границы: красный
+
+Треугольник с красной границей:
+Я треугольник!
+Сообщение от RedShapeDecorator. Цвет границы: красный
+</code></pre>
+
+Разобрав на примере паттерн проектирования декоратор, можно сделать вывод, что его использование оправдано в следующих случаях:
+
+— Когда мы хотим добавить, улучшить или, возможно, удалить поведение или состояние объекта
+— Когда мы просто хотим изменить функциональность одного конкретного объекта класса, а остальные оставить без изменений
+
+Спасибо! 
+
+<a href="https://github.com/sbv239/Design-patterns-examples/tree/master/src/Decorator" target="_blank" rel="nofollow">Репозиторий с файлами проекта</a>
+За основу <a href="https://www.geeksforgeeks.org/decorator-design-pattern-in-java-with-example/" target="_blank" rel="nofollow">взята статья</a> с сайта geeksforgeeks.org
+
+<a href="https://t.me/java_wine" target="_blank" rel="nofollow">Мой блог</a> начинающего Java Dev

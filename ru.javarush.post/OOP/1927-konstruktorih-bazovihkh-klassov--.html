@@ -1,0 +1,269 @@
+Конструкторы базовых классов  
+<p>----------------------------------------</p>
+Привет! В прошлый раз мы говорили о конструкторах, и узнали о них достаточно много. Сейчас мы поговорим о такой вещи, как конструкторы базовых классов. Что такое базовый класс? Дело в том, что в Java несколько разных классов могут иметь общее происхождение ...
+<p>----------------------------------------</p>
+Привет! В прошлый раз мы говорили о <a href="https://javarush.com/groups/posts/konstruktory-v-java-1" target="_blank">конструкторах</a>, и узнали о них достаточно много. Сейчас мы поговорим о такой вещи, как конструкторы базовых классов.
+
+Что такое <span class="text-bold">базовый класс</span>? 
+
+Дело в том, что в Java несколько разных классов могут иметь общее происхождение. 
+<img data-id="25f9b7a8-2cbe-446d-b325-58a02ded49ad" data-max-width="850" alt="Конструкторы базовых классов   - 2" src="https://cdn.javarush.com/images/article/25f9b7a8-2cbe-446d-b325-58a02ded49ad/1024.jpeg">Это называется <span class="text-bold">наследованием</span>. У нескольких классов-потомков может быть один общий класс-предок.
+
+Например, представим что у нас есть класс <code>Animal</code> (животное):
+
+<pre class="lang-java line-numbers"><code>
+public class Animal {
+  
+   String name;
+   int age;
+}
+</code></pre>
+Мы можем создать для него, например, 2 класса-потомка — <code>Cat</code> и <code>Dog</code>. Это делается с использованием ключевого слова <code>extends</code>.
+
+<pre class="lang-java line-numbers"><code>
+public class Cat extends Animal {
+
+}
+
+public class Dog extends Animal {
+  
+}
+</code></pre>
+Это может нам пригодиться в будущем. Например, если будет задача ловить мышей — создадим в программе объект <code>Cat</code>. Если задача бегать за палочкой — тут мы используем объект <code>Dog</code>. А если будем создавать программу, симулирующую ветеринарную клинику — она будет работать с классом <code>Animal</code> (чтобы уметь лечить и кошек, и собак).
+
+Очень важно запомнить на будущее, что <span class="text-bold">при создании объекта в первую очередь вызывается конструктор его базового класса</span>, а только потом — конструктор самого класса, объект которого мы создаем.
+
+То есть при создании объекта <code>Cat</code> сначала отработает конструктор класса <code>Animal</code>, а только потом конструктор <code>Cat</code>.
+
+Чтобы убедиться в этом — добавим в конструкторы <code>Cat</code> и <code>Animal</code> вывод в консоль.
+
+<pre class="lang-java line-numbers"><code>
+public class Animal {
+
+   public Animal() {
+       System.out.println("Отработал конструктор Animal");
+   }
+}
+
+
+public class Cat extends Animal {
+
+   public Cat() {
+       System.out.println("Отработал конструктор Cat!");
+   }
+
+   public static void main(String[] args) {
+       Cat cat = new Cat();
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+Отработал конструктор Animal
+Отработал конструктор Cat!
+</code></pre>
+Действительно, все так и работает!
+
+Для чего это нужно? Например, чтобы не дублировать общие поля двух классов. Например, у каждого животного есть сердце и мозг, но не у каждого есть хвост.
+
+Мы можем объявить общие для всех животных поля <code>brain</code> и <code>heart</code> в родительском классе <code>Animal</code>, а поле <code>tail</code> — в подклассе <code>Cat</code>. 
+
+Теперь мы создадим конструктор для класса <code>Cat</code>, куда передадим все 3 поля.
+
+<pre class="lang-java line-numbers"><code>
+public class Cat extends Animal {
+
+   String tail;
+
+   public Cat(String brain, String heart, String tail) {
+       this.brain = brain;
+       this.heart = heart;
+       this.tail = tail;
+   }
+
+   public static void main(String[] args) {
+       Cat cat = new Cat("Мозг", "Сердце", "Хвост");
+   }
+}
+</code></pre>
+<mark>Обрати внимание:</mark> конструктор успешно работает, хотя в классе <code>Cat</code> нет полей <code>brain</code> и <code>heart</code>. 
+
+Эти поля “подтянулись” из базового класса <code>Animal</code>. У класса-наследника есть доступ к полям базового класса, поэтому в нашем классе <code>Cat</code> они видны. Поэтому нам не нужно в классе <code>Cat</code> дублировать эти поля — мы можем взять их из класса <code>Animal</code>.
+
+Более того, мы можем явно вызвать конструктор базового класса в конструкторе класса-потомка. Базовый класс еще называют “<span class="text-bold">суперклассом</span>”, поэтому в Java для его обозначения используется ключевое слово <code>super</code>.
+
+В предыдущем примере
+
+<pre class="lang-java line-numbers"><code>
+public Cat(String brain, String heart, String tail) {
+       this.brain = brain;
+       this.heart = heart;
+       this.tail = tail;
+   }
+</code></pre>
+Мы отдельно присваивали каждое поле, которое есть в нашем родительском классе. На самом деле этого можно не делать.
+
+Достаточно вызвать конструктор родительского класса и передать ему нужные параметры:
+
+<pre class="lang-java line-numbers"><code>
+public class Animal {
+
+   String brain;
+   String heart;
+
+   public Animal(String brain, String heart) {
+       this.brain = brain;
+       this.heart = heart;
+   }
+
+public class Cat extends Animal {
+
+   String tail;
+
+   public Cat(String brain, String heart, String tail) {
+       super(brain, heart);
+       this.tail = tail;
+   }
+
+   public static void main(String[] args) {
+       Cat cat = new Cat("Мозг", "Сердце", "Хвост");
+   }
+}
+</code></pre>
+В конструкторе <code>Cat</code> мы вызвали конструктор <code>Animal</code> и передали в него два поля. Нам осталось явно проинициализировать только одно поле — <code>tail</code>, которого в <code>Animal</code> нет.
+
+Помнишь, мы говорили о том, что при создании объекта в первую очередь вызывается конструктор класса-родителя? Так вот, именно поэтому слово <code>super()</code> всегда должно стоять в конструкторе первым!
+
+Иначе логика работы конструкторов будет нарушена и программа выдаст ошибку.
+
+<pre class="lang-java line-numbers"><code>
+public class Cat extends Animal {
+
+   String tail;
+
+   public Cat(String brain, String heart, String tail) {
+       this.tail = tail;
+       super(brain, heart);//ошибка!
+   }
+
+   public static void main(String[] args) {
+       Cat cat = new Cat("Мозг", "Сердце", "Хвост");
+   }
+}
+</code></pre>
+Компилятор знает, что при создании объекта класса-потомка сначала вызывается конструктор базового класса. И если ты попытаешься вручную изменить это поведение - он не позволит этого сделать.
+<h2>Процесс создания объекта.</h2>Выше мы с тобой рассмотрели пример с базовым и родительским классом — <code>Animal</code> и <code>Cat</code>.
+
+Теперь на примере этих двух классов мы рассмотрим процесс создания объекта и инициализации переменных.
+
+Мы знаем, что переменные бывают <span class="text-bold">статическими</span> и <span class="text-bold">переменными</span> экземпляра (нестатическими). Также мы знаем, что в базовом классе <code>Animal</code> есть свои переменные, а в классе-потомке <code>Cat</code> — свои.
+
+Добавим к классу <code>Animal</code> и <code>Cat</code> по одной статической переменной для наглядности.
+
+Переменная <code>animalCount</code> в классе <code>Animal</code> будет означать общее число видов животных на земле, а переменная <code>catsCount</code> — число видов семейства кошачьих.
+
+Кроме того, присвоим всем нестатическим переменным у обоих классов стартовые значения (которое потом изменится в конструкторе).
+
+<pre class="lang-java line-numbers"><code>
+public class Animal {
+
+   String brain = "Изначальное значение brain в классе Animal";
+   String heart = "Изначальное значение heart в классе Animal";
+
+   public static int animalCount = 7700000;
+
+   public Animal(String brain, String heart) {
+       System.out.println("Выполняется конструктор базового класса Animal");
+       System.out.println("Были ли уже проинициализированы переменные класса Animal?");
+       System.out.println("Текущее значение статической переменной animalCount = " + animalCount);
+       System.out.println("Текущее значение brain в классе Animal = " + this.brain);
+       System.out.println("Текущее значение heart в классе Animal = " + this.heart);
+       System.out.println("Были ли уже проинициализированы переменные класса Cat?");
+       System.out.println("Текущее значение статической переменной catsCount = " + Cat.catsCount);
+
+       this.brain = brain;
+       this.heart = heart;
+       System.out.println("Конструктор базового класса Animal завершил работу!");
+       System.out.println("Текущее значение brain = " + this.brain);
+       System.out.println("Текущее значение heart = " + this.heart);
+   }
+}
+
+public class Cat extends Animal {
+
+   String tail = "Изначальное значение tail в классе Cat";
+
+   static int catsCount = 37;
+
+   public Cat(String brain, String heart, String tail) {
+       super(brain, heart);
+       System.out.println("Конструктор класса Cat начал работу (конструктор Animal уже был выполнен)");
+       System.out.println("Текущее значение статической переменной catsCount = " + catsCount);
+       System.out.println("Текущее значение tail = " + this.tail);
+       this.tail = tail;
+       System.out.println("Текущее значение tail = " + this.tail);
+   }
+
+   public static void main(String[] args) {
+       Cat cat = new Cat("Мозг", "Сердце", "Хвост");
+   }
+}
+</code></pre>
+Итак, мы создаем новый объект класса <code>Cat</code>, унаследованного от <code>Animal</code>. Добавим в нашу программу подробный консольный вывод, чтобы посмотреть что и в каком порядке будет происходить.
+
+Вот что будет выведено в консоль в результате создания объекта <code>Cat</code>:
+
+<pre><code>
+Выполняется конструктор базового класса Animal
+Были ли уже проинициализированы переменные класса Animal?
+Текущее значение статической переменной animalCount = 7700000
+Текущее значение brain в классе Animal = Изначальное значение brain в классе Animal
+Текущее значение heart в классе Animal = Изначальное значение heart в классе Animal
+Были ли уже проинициализированы переменные класса Cat?
+Текущее значение статической переменной catsCount = 37
+Конструктор базового класса Animal завершил работу!
+Текущее значение brain = Мозг
+Текущее значение heart = Сердце
+Конструктор класса Cat начал работу (конструктор Animal уже был выполнен)
+Текущее значение статической переменной catsCount = 37
+Текущее значение tail = Изначальное значение tail в классе Cat
+Текущее значение tail = Хвост
+</code></pre>
+Итак, теперь мы наглядно видим в каком порядке происходит инициализация переменных и вызов конструкторов при создании нового объекта:
+<ol>
+<li><p>Инициализируются <span class="text-bold">статические</span> переменные <span class="text-bold">базового класса</span> (<code>Animal</code>). В нашем случае — переменной <code>animalCount</code> класса <code>Animal</code> присваивается значение 7700000.</p></li>
+<li><p>Инициализируются <span class="text-bold">статические</span> переменные <span class="text-bold">класса-потомка</span> (<code>Cat</code>). Обрати внимание — мы все еще внутри конструктора <code>Animal</code>, а в консоли уже написано:</p>
+<pre><code>
+    Выполняется конструктор базового класса Animal
+    Были ли уже проинициализированы переменные класса Animal?
+    Текущее значение статической переменной animalCount = 7700000
+    Текущее значение brain в классе Animal = Изначальное значение brain в классе Animal
+    Текущее значение heart в классе Animal = Изначальное значение heart в классе Animal
+    Были ли уже проинициализированы переменные класса Cat?
+    Текущее значение статической переменной catsCount = 37
+</code></pre></li>
+<li><p>Дальше инициализируются <span class="text-bold">нестатические</span> переменные <span class="text-bold">базового класса</span>. Мы специально присвоили им первоначальные значения, которые потом в конструкторе  меняются на новые. Конструктор <code>Animal</code> еще не отработал до конца, но первоначальные значения <code>brain</code> и <code>heart</code> уже присвоены:</p>
+    <pre><code>
+    Выполняется конструктор базового класса Animal
+    Были ли уже проинициализированы переменные класса Animal?
+    Текущее значение статической переменной animalCount = 7700000
+    Текущее значение brain в классе Animal = Изначальное значение brain в классе Animal
+    Текущее значение heart в классе Animal = Изначальное значение heart в классе Animal
+</code></pre></li>
+<li><p>Начинает работу <span class="text-bold">конструктор базового класса</span>.</p>
+<p>В том, что этот этап идет только четвертым по счету, мы уже убедились: в первых трех пунктах на момент начала работы конструктора <code>Animal</code> многим переменным уже присвоены значения.</p></li>
+<li><p>Инициализация <span class="text-bold">нестатических</span> полей <span class="text-bold">дочернего класса</span> (<code>Cat</code>).</p>
+<p>Она происходит раньше, чем конструктор <code>Cat</code> начинает работу.</p>
+<p>На момент, когда он начал работу, у переменной <code>tail</code> уже было значение:</p>
+<pre><code>
+Конструктор класса Cat начал работу (конструктор Animal уже был выполнен)
+Текущее значение статической переменной catsCount = 37
+Текущее значение tail = Изначальное значение tail в классе Cat
+</code></pre></li>
+<li><p>Вызывается <span class="text-bold">конструктор класса потомка</span> <code>Cat</code></p></li></ol>Вот так выглядит процесс создания объекта в Java!
+Надо сказать, что мы не большие поклонники зубрежки, но <span class="text-bold">порядок инициализации переменных и вызова конструкторов лучше выучить наизусть и запомнить на будущее</span>.
+
+Это сильно увеличит твое понимание хода работы программы, и состояния твоих объектов в каждый конкретный момент.
+
+Тем более, что часто у классов нет прямых родительских классов (суперклассов/ базовых классов). В таком случае пункты, связанные с базовым классом, не будут выполняться.

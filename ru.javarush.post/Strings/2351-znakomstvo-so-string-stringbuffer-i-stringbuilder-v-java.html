@@ -1,0 +1,234 @@
+Знакомство со String, StringBuffer и StringBuilder в Java
+<p>----------------------------------------</p>
+Для работы с текстовыми данными в Java есть три класса: String, StringBuffer и StringBuilder. С первым каждый разработчик сталкивается еще в самом начале изучения языка. А что насчет оставшихся двух? Какие у них есть различия, и когда лучше использовать тот или иной класс...
+<p>----------------------------------------</p>
+Для работы с текстовыми данными в Java есть три класса: <strong>String</strong>, <strong>StringBuffer</strong> и <strong>StringBuilder</strong>. С первым каждый разработчик сталкивается еще в самом начале изучения языка. А что насчет оставшихся двух? Какие у них есть различия, и когда лучше использовать тот или иной класс? В общем-то, разница между ними небольшая, но лучше во всем разобраться на практике :)
+<ul>
+<li><a href="#Класс-String">Класс String в Java</a></li>
+<li><a href="#Класс-StringBuffer">Класс StringBuffer в Java</a></li>
+<li><a href="#Класс-StringBuilder">Класс StringBuilder в Java</a></li>
+</ul><img data-id="485e3702-c4b1-4b66-ba72-1306cfbd0690" data-max-width="850" alt="Знакомство со String, StringBuffer и StringBuilder в Java - 1" src="https://cdn.javarush.com/images/article/485e3702-c4b1-4b66-ba72-1306cfbd0690/1024.jpeg"><h2 id="Класс-String">Класс String</h2>Этот класс представляет собой последовательность символов. Все определенные в программ строковые литералы, вроде "This is String" — это экземпляры класса String.
+
+<strong>У String есть две фундаментальные особенности:</strong><ul>
+<li>это immutable (неизменный) класс</li>
+<li>это final класс</li>
+</ul>В общем, у класса String не может быть наследников (<code>final</code>) и экземпляры класса нельзя изменить после создания (<code>immutable</code>). 
+
+Это дает классу String несколько важных преимуществ:
+<ol>
+<li><p>Благодаря неизменности, хэшкод экземпляра класса String кэшируется. Его не нужно вычислять каждый раз, потому что значения полей объекта никогда не изменятся после его создания. Это дает высокую производительность при использовании данного класса в качестве ключа для <code>HashMap</code>.</p></li>
+<li><p>Класс String можно использовать в многопоточной среде без дополнительной синхронизации.</p></li>
+<li><p>Еще одна особенность класса String — для него перегружен оператор "<code>+</code>" в Java. Поэтому конкатенация (сложение) строк выполняется довольно просто:</p></li>
+</ol><pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+    String command = "Follow" + " " + "the" + " " + "white" + " " + "rabbit";
+    System.out.println(command); // Follow the white rabbit
+}
+</code></pre>
+Под капотом конкатенация строк выполняется классом StringBuilder либо StringBuffer (на усмотрение компилятора) и методом <code>append</code> (об этих классах поговорим чуть позже). 
+
+Если мы будем складывать экземпляры класса String с экземплярами других классов, последние будут приводиться к строковому представлению: 
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {       
+    Boolean b = Boolean.TRUE;
+    String result = "b is " + b;    
+    System.out.println(result); //b is true
+}
+</code></pre>
+Это еще одно интересное свойство класса String: объекты любых классов можно привести к строковому представлению, используя метод <code>toString()</code>, определенный в классе <code>Object</code> и наследуемый всеми остальными классами. 
+
+Часто метод toString() у объекта вызывается неявно. Например когда мы выводим что-то на экран или складываем String с объектом другого класса. 
+
+У класса String есть еще одна особенность. Все строковые литералы, определенные в Java коде, вроде "asdf", на этапе компиляции кэшируются и добавляются в так называемый пул строк. 
+
+Если мы запустим следующий код: 
+
+<pre class="lang-java line-numbers"><code>
+String a = "Wake up, Neo";
+String b = "Wake up, Neo";
+
+System.out.println(a == b);
+</code></pre>
+Мы увидим в консоли <em>true</em>, потому что переменные <code>a</code> и <code>b</code> в действительности будут ссылаться на один и тот же экземпляр класса String, добавленный в пул строк на этапе компиляции. То есть, разные экземпляры класса с одинаковым значением не создаются, и память экономится.
+<h3>Недостатки:</h3>Нетрудно догадаться, что класс String нужен в первую очередь для работы со строками. Но в некоторых случаях перечисленные выше особенности класса String могут превратиться из достоинств в недостатки. 
+
+После создания строк в коде Java-программы с ними часто совершается множество операций:
+<ul>
+<li>перевод строк в разные регистры;</li>
+<li>извлечение подстрок;</li>
+<li>конкатенация;</li>
+<li>и т.д.</li>
+</ul>Давайте посмотрим на этот код:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+    String s = " Wake up, Neo! ";
+    s = s.toUpperCase();
+    s = s.trim();
+
+    System.out.println("\"" + s + "\"");
+}
+</code></pre>
+С первого взгляда кажется, что мы всего-то перевели строку "Wake up, Neo!" в верхний регистр, удалили из данной строки лишние пробелы и обернули в кавычки. 
+
+На самом деле, в силу неизменности класса String, в результате каждой операции создаются новые экземпляры строк, а старые отбрасываются, порождая большое количество мусора.
+
+Как же избежать нерационального использования памяти? 
+<h2 id="Класс-StringBuffer">Класс StringBuffer</h2>Чтобы справиться с созданием временного мусора из-за модификаций объекта String, можно использовать класс StringBuffer. 
+
+Это <code>mutable</code> класс, т.е. изменяемый. Объект класса StringBuffer может содержать в себе определенный набор символов, длину и значение которого можно изменить через вызов определенных методов. 
+
+Посмотрим, как работает данный класс. 
+
+Для создания нового объекта используется один из его конструкторов, например:
+<ul>
+<li>StringBuffer() — создаст пустой (не содержащий символов) объект</li>
+<li>StringBuffer(String str) — создаст объект на основе переменной str (содержащий все символы str в той же последовательности)</li>
+</ul>
+Практика:
+<pre class="lang-java line-numbers"><code>
+StringBuffer sb = new StringBuffer();
+StringBuffer sb2 = new StringBuffer("Not empty");
+</code></pre>
+Конкатенация строк через StringBuffer в Java выполняется с помощью метода <code>append</code>. 
+
+Вообще метод <code>append</code> в классе StringBuffer перегружен таким образом, что может принимать в себя практически любой тип данных:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+    StringBuffer sb = new StringBuffer();
+
+    sb.append(new Integer(2));
+    sb.append("; ");
+    sb.append(false);
+    sb.append("; ");
+    sb.append(Arrays.asList(1,2,3));
+    sb.append("; ");
+
+    System.out.println(sb); // 2; false; [1, 2, 3]; 
+}
+</code></pre>
+Метод <code>append</code> возвращает объект, на котором был вызван (как и многие другие методы), что позволяет вызывать его “цепочкой”. Пример выше можно написать так: 
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+    StringBuffer sb = new StringBuffer();
+
+    sb.append(new Integer(2))
+            .append("; ")
+            .append(false)
+            .append("; ")
+            .append(Arrays.asList(1,2,3))
+            .append("; ");
+
+    System.out.println(sb); // 2; false; [1, 2, 3];
+}
+</code></pre>
+Для работы со строками у класса StringBuffer есть ряд методов. Перечислим основные:
+<ul>
+<li><code>delete(int start, int end)</code> — удаляет подстроку символов начиная с позиции <code>start</code>, заканчивая <code>end</code></li>
+<li><code>deleteCharAt(int index)</code> — удаляет символ в позиции <code>index</code></li>
+<li><code>insert(int offset, String str)</code> — вставляет строку <code>str</code> в позицию <code>offset</code>. Метод <code>insert</code> также перегружен и может принимать различные аргументы</li>
+<li><code>replace(int start, int end, String str)</code> — заменит все символы начиная с позиции <code>start</code> до позиции <code>end</code> на <code>str</code></li>
+<li><code>reverse()</code> — меняет порядок всех символов на противоположный</li>
+<il><code>substring(int start)</code> — вернет подстроку, начиная с позиции <code>start</code>
+<li><code>substring(int start, int end)</code> — вернет подстроку, начиная с позиции <code>start</code> до позиции <code>end</code></li>
+</il></ul>Полный список методов и конструкторов есть в <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/StringBuffer.html" rel="nofollow" target="_blank">официальной документации</a>.
+
+Как работают указанные выше методы? Посмотрим на практике:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+     String numbers = "0123456789";
+
+     StringBuffer sb = new StringBuffer(numbers);
+
+     System.out.println(sb.substring(3)); // 3456789
+     System.out.println(sb.substring(4, 8)); // 4567
+     System.out.println(sb.replace(3, 5, "ABCDE")); // 012ABCDE56789
+
+     sb = new StringBuffer(numbers);
+     System.out.println(sb.reverse()); // 9876543210
+     sb.reverse(); // Вернем изначальный порядок
+
+     sb = new StringBuffer(numbers);
+     System.out.println(sb.delete(5, 9)); // 012349
+     System.out.println(sb.deleteCharAt(1)); // 02349
+     System.out.println(sb.insert(1, "One")); // 0One2349
+    }
+</code></pre><h3>Преимущества:</h3><ol>
+<li><p>Как уже сказано, StringBuffer — изменяемый класс, поэтому при работе с ним не возникает такого же количества мусора в памяти, как со String. Поэтому если над строками проводится много модификаций, лучше использовать <code>StringBuffer</code>.</p></li>
+<li><p>StringBuffer — потокобезопасный класс. Его методы синхронизированы, а экземпляры могут быть использованы несколькими потоками одновременно.</p></li>
+</ol><h3>Недостатки:</h3>С одной стороны, потокобезопасность — преимущество класса, а другой — недостаток. Синхронизированные методы работают медленнее не сихнронизированных.
+
+И здесь в игру вступает StringBuilder. Давайте разберемся, что это за класс Java — StringBuilder, какие методы есть и в чем его особенности.  
+<h2 id="Класс-StringBuilder">Класс StringBuilder</h2>StringBuilder в Java — класс, представляющий последовательность символов. Он очень похож на StringBuffer во всем, кроме потокобезопасности.   
+
+StringBuilder предоставляет API, аналогичный API StringBuffer’a.
+
+Продемонстрируем это на уже знакомом примере, заменив объявление переменных со StringBufer’а на StringBuilder: 
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+    String numbers = "0123456789";
+
+    StringBuilder sb = new StringBuilder(numbers);
+
+    System.out.println(sb.substring(3)); //3456789
+    System.out.println(sb.substring(4, 8)); //4567
+    System.out.println(sb.replace(3, 5, "ABCDE")); //012ABCDE56789
+
+    sb = new StringBuilder(numbers);
+    System.out.println(sb.reverse()); //9876543210
+    sb.reverse(); // Вернем изначальный порядок
+
+    sb = new StringBuilder(numbers);
+    System.out.println(sb.delete(5, 9)); //012349
+    System.out.println(sb.deleteCharAt(1)); //02349
+    System.out.println(sb.insert(1, "One")); //0One2349
+}
+</code></pre>
+Разница лишь в том, что StringBuffer потокобезопасен, и все его методы синхронизированы, а StringBuilder — нет. Это единственная особенность.
+
+StringBuilder в Java работает быстрее StringBuffer’а благодаря несинхронизированности методов. 
+
+Поэтому в большинстве случаев, кроме многопоточной среды, лучше использовать для программы на Java StringBuilder.
+Резюмируем все в сравнительной таблице трех классов: 
+<center><h3>String vs StringBuffer vs StringBuilder</h3></center><table>
+<tbody><tr>
+<th></th>
+<th>String</th>
+<th>StringBuffer</th>
+<th>StringBuilder</th>
+</tr>
+<tr>
+<td>Изменяемость</td>
+<td><code>Immutable</code> (нет)</td>
+<td><code>mutable</code> (да)</td>
+<td><code>mutable</code> (да)</td>
+</tr>
+<tr>
+<td>Расширяемость</td>
+<td><code>final</code> (нет)</td>
+<td><code>final</code> (нет)</td>
+<td><code>final</code> (нет)</td>
+</tr>
+<tr>
+<td>Потокобезопасность</td>
+<td>Да, за счет неизменяемости</td>
+<td>Да, за счет синхронизации</td>
+<td>Нет</td>
+</tr>
+<tr><td>Когда использовать</td>
+<td>При работе со строками, которые редко будут модифицироваться</td>
+<td>При работе со строками, которые часто будут модифицироваться в многопоточной среде</td>
+<td>При работе со строками, которые часто будут модифицироваться, в однопоточной среде</td>
+</tr>
+</tbody></table>Изучить данную тему более подробно можно на втором уровне квеста Java Multithreading на курсе JavaRush:
+<ul><a>
+</a><li><a></a><a href="https://javarush.com/quests/lectures/questmultithreading.level02.lecture03" target="_blank">Внутреннее устройство String, метод substring</a></li>
+<li><a href="https://javarush.com/quests/lectures/questmultithreading.level02.lecture08" target="_blank">StringBuilder, StringBuffer</a></li>
+<li><a href="https://javarush.com/quests/lectures/questmultithreading.level02.lecture09" target="_blank">Задачи по StringBuilder, StringBuffer</a></li>
+</ul>

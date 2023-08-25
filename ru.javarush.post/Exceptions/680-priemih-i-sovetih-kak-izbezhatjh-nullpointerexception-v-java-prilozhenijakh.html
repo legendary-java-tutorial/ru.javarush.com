@@ -1,0 +1,78 @@
+Приемы и советы. Как избежать NullPointerException в Java приложениях
+<p>----------------------------------------</p>
+Сегодня я покажу вам простые приемы того как избежать NullPointerException в ваших приложениях. Им легко следовать, но при этом они заметно повышают надежность и качество вашего кода ...
+<p>----------------------------------------</p>
+
+<img data-id="8b1c5b74-498c-4613-b31f-5830673999e2" data-max-width="850" alt="Приемы и советы. Как избежать NullPointerException в Java приложениях - 1" src="https://cdn.javarush.com/images/article/8b1c5b74-498c-4613-b31f-5830673999e2/1024.jpeg">Сегодня я покажу вам простые приемы того как избежать NullPointerException в ваших приложениях. Им легко следовать, но при этом они заметно повышают надежность и качество вашего кода. Более того, по моему опыту, один первый совет окажет заметное влияние на качество вашего кода. Если вы знаете какие-то еще приемы программирования на Java, не стесняйтесь делиться ими в комментариях.
+<img data-id="9305fa75-212c-4902-8562-2d01d2562c30" data-max-width="625" alt="Приемы и советы. Как избежать NullPointerException в Java приложениях - 2" src="https://cdn.javarush.com/images/article/9305fa75-212c-4902-8562-2d01d2562c30/1024.jpeg"><h2>Вызывайте методы equals() и equalsIgnoreCase() у известной строки литерала, а не у неизвестного объекта</h2>Всегда вызывайте метод <code>equals()</code> у известной строки, про которую вы знаете, что она не <code>null</code>. Метод <code>equals()</code> симметричен, то есть вызов <code>a.equals(b)</code> и <code>b.equals(a)</code> даст одинаковый результат (если <code>a</code> и <code>b</code> не <code>null</code>), и по этой причине многие программисты не уделяют внимание тому, у каких объектов вызывается <code>equals()</code>, у <code>a</code> или у <code>b</code>. Одним из побочных эффектов этого становится NullPointerException, в случае если метод вызывается у <code>null</code>.
+
+<pre class="lang-java line-numbers"><code>
+Object unknownObject = null;
+
+//плохой способ - может вызвать NullPointerException
+if(unknownObject.equals("knownObject")){
+   System.err.println("This may result in NullPointerException if unknownObject is null");
+}
+
+//правильный способ - исключение NullPointerException не возникнет, даже если unknownObject null
+if("knownObject".equals(unknownObject)){
+    System.err.println("better coding avoided NullPointerException");
+}
+</code></pre>
+Это был самый простой совет, как избежать NullPointerException, но он один приводит к громадным улучшениям, поскольку метод <code>equals()</code> встречается повсеместно.
+<h2>Выбирайте valueOf(), а не toString(), в случаях, когда оба дают один результат</h2>Поскольку вызов <code>toString()</code> у ссылки со значением <code>null</code> вызывает исключение NullPointerException, лучше использовать вызов <code>valueOf()</code>, когда мы можем получить тот же результат, поскольку вызов <code>valueOf()</code> от <code>null</code> возвращает <code>null</code>. Особенно это касается классов оберток, таких как <code>Integer</code>, <code>Float</code>, <code>Double</code> или <code>BigDecimal</code>.
+
+<pre class="lang-java line-numbers"><code>
+BigDecimal bd = getPrice();
+System.out.println(String.valueOf(bd)); //не выбрасывает NPE
+System.out.println(bd.toString()); //выбрасывает "Exception in thread "main" java.lang.NullPointerException"
+</code></pre>
+Используйте эти советы, когда не уверены может ли объект быть <code>null</code> или нет.
+<h2>Используйте <code>null</code>-безопасные методы и библиотеки</h2>Существует множество опенсорсных библиотек, которые берут на себе тяжелое бремя проверки на <code>null</code>. Одна из наиболее распространенных — <code>StringUtils</code> от Apache Commons. Используя такие методы как <code>StringUtils.isBlank()</code>, <code>isNumeric()</code>, <code>isWhiteSpace()</code> и т.д. вы можете не беспокоится о возникновении NullPointerException.
+
+<pre class="lang-java line-numbers"><code>
+//Методы StringUtils являются null-безопасными, они не вызовут NullPointerException
+System.out.println(StringUtils.isEmpty(null));
+System.out.println(StringUtils.isBlank(null));
+System.out.println(StringUtils.isNumeric(null));
+System.out.println(StringUtils.isAllUpperCase(null));
+</code></pre>
+
+Вывод:
+
+<em>true
+true
+false
+false</em>
+
+И все же перед использованием, не забудьте прочесть документацию <code>null</code>-безопасных методов и классов. Это еще один из лучших Java приемов, который, не требуя значительных усилий, ведет к огромным улучшениям.
+<h2>Старайтесь не возвращать <code>null</code> из метода, лучше верните пустую коллекцию</h2>Это еще один хороший совет по программированию на Java, который Джошуа Блох описывает в своей  книге "Java. Эффективное программирование". Возвращая пустые коллекции или массивы, убедитесь, что при вызове базовых методов вроде <code>size()</code> или <code>length()</code> не возникнет NullPointerException. В классе <code>Collections</code> специально объявлены удобные реализации пустых списков, множеств и словарей: <code>Collections.EMPTY_LIST</code>, <code>Collections.EMPTY_SET</code> and <code>Collections.EMPTY_MAP</code>. 
+
+Например:
+
+<pre class="lang-java line-numbers"><code>
+public List getOrders(Customer customer){
+   List result = Collections.EMPTY_LIST;
+   return result;
+}
+</code></pre>
+Аналогично можно использовать <code>Collections.EMPTY_SET</code> и <code>Collections.EMPTY_MAP</code> вместо того, чтобы возвращать <code>null</code>.
+<h2>Используйте аннотации @NotNull и @Nullable</h2>В описании ваших методов вы можете определить соглашение <code>null</code>-безопасности методов, используя аннотации <code>@NotNull</code> и @Nullable чтобы показать может метод возвращать <code>null</code> или нет. Современные компиляторы и IDE могут использовать эти аннотации для анализы вашего кода и выдавать соответствующие советы, например, о пропущенной проверке на <code>null</code>, или наоборот, о возможности убрать лишнюю проверку, засоряющую код. Такие аннотации, например, поддерживают IntelliJ IDE и FindBugs, кроме этого они входят в JSR 305. Но даже если ваша IDE и не поддерживает такие аннотации, они сами по себе будут хорошей документацией. Глядя на <code>@NotNull</code> и <code>@Nullable</code> программисту будет проще понять где нужно добавлять проверку на <code>null</code>, а где — нет. Это, кстати, довольно новая среди Java программистов практика, и должно пройти время, чтобы она распространилась.
+<h2>Избегайте ненужной автоупаковки и автораспаковки в вашем коде</h2>Мало того, что это ведет к созданию лишних временных объектов, автоупаковка еще может вызывать NullPointerException, если класс обертки — <code>null</code>. Например, следующий код "свалится" в NullPointerException, если запись о человеке  не содержит телефона и возвращает <code>null</code>.
+
+<pre class="lang-java line-numbers"><code>
+Person ram = new Person("ram");
+int phone = ram.getPhone();
+</code></pre>
+При использовании автоупаковки или автораспаковки не только равенства, но и неравенства <code>&lt;</code>, &gt;<code>&gt;</code> могут приводить к NullPointerException.
+<h2>Следуйте соглашениям и определяйте разумные значения по-умолчанию.</h2>Один из лучших способов избежать NullPointerException в Java — правильное объявление соглашений о кодировании и следование им. Большинство исключений NullPointerException возникают тогда, когда объект пытаются создать, не обладая всеми необходимыми для него данными и зависимостями. Запретив создание незавершенных объектов, изящно отклоняя подобные запросы, вы избавите себя в будущем от большого числа NullPointerException. Аналогично, если вы разрешаете создание объекта, то вы должны подобрать разумное значение по-умолчанию. Например, объект класса <code>Employee</code> не может быть создан без имени и <code>id</code>, но может не иметь номер телефона. В таком случае у объектов <code>Employee</code>, лишенных номера, вместо <code>null</code> может возвращаться ноль. Хотя подобное поведение объекта стоит заранее продумать  — быть может, что проще будет проверить на <code>null</code>, нежели звонить по несуществующему номеру. В таком случае наличие дополнительных условий на то, какие поля <code>null</code>, а какие — нет, поможет принять правильное решение. В целом выбор между немедленным падением программы или присвоением <code>null</code> — это важное решение в проектировании, и сделав выбор вы должны ему последовательно следовать.
+<h2>Задавайте ограничения на уровне СУБД</h2> Используя базу данных для хранения объектов вашей программы, таких как покупатели (Customers) или заказы (Orders), будет разумно задать "<code>null</code>-овость" ваших объектов на уровне СУБД, при помощи соответствующих ограничений на таблицы. Базы данных часто содержат информацию из разных источников, и введение проверок на пропущенные значения повысит целостность ваших данных. Кроме этого наличие проверок на null на уровне СУБД, уменьшит их в вашем Java коде: загружая данные из БД в Java-объекты, вы можете быть уверены в их наличии и убрать лишние "<code>!= null</code>" из кода программы.
+<h2>Используйте шаблон Null-объекта</h2>Создание специальных <code>Null</code>-объектов — еще один способ избежать NullPointerExcpetion в Java. Предположим, что какой-то метод в нашем приложении возвращает объект, с которым впоследствии работает программа, вызавая его методы. Например, метод <code>Collection.iterator()</code> возвращает объект класса <code>Iterator</code>, который используется для прохода по коллекции. Тогда если у изначального объекта нет никакого итератора, вместо <code>null</code> можно вернуть специальный <code>Null</code>-объект, у которого есть метод <code>hasNext()</code>, всегда возвращающий <code>false</code>.
+
+Вот и все дорогой читатель, на этом я заканчиваю свои советы по избавлению Java программ от ошибок NullPointerException. Вы оцените, на сколько могут быть полезны эти простые и не обременительные правила.
+
+Напоминаю, что если вы хотите поделиться какими-то еще приемами по NullPointerException в программах на Java, не стесняйтесь делать это в комментариях.
+
+<em>Переведено специально для студентов JavaRush.</em>
+
+<a href="https://javarevisited.blogspot.com/2013/05/ava-tips-and-best-practices-to-avoid-nullpointerexception-program-application.html" rel="nofollow" target="_blank">Оригинал</a>

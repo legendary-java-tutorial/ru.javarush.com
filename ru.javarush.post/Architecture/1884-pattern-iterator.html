@@ -1,0 +1,301 @@
+Паттерн Iterator
+<p>----------------------------------------</p>
+Сегодня поговорим о том, что такое Iterator в Java и зачем он нужен. Как ты уже, вероятно, знаешь, в Java есть замечательный интерфейс Collection, реализующий интерфейс Iterator. Сразу оговорюсь, не следует путать интерфейс iterator с паттерном iterator в Java!  
+<p>----------------------------------------</p>
+Сегодня поговорим о том, что такое <strong>Iterator в Java</strong> и зачем он нужен.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="499ff0f3-5e99-4225-81e1-b35090c4136c" data-max-width="710" alt="Паттерн Iterator - 1" src="https://cdn.javarush.com/images/article/499ff0f3-5e99-4225-81e1-b35090c4136c/1024.jpeg"></div></div>Как ты уже, вероятно, знаешь, в Java есть замечательный интерфейс Collection, реализующий интерфейс Iterator. Сразу оговорюсь, не следует путать интерфейс iterator с паттерном iterator в Java!  
+
+И дабы внести ясность, для начала разберёмся именно с интерфейсом. 
+<table>
+<tbody><tr>
+<td>
+Дословно <strong>«Iterator»</strong> можно перевести как <strong>«переборщик»</strong>. То есть это некая сущность, способная перебрать все элементы в коллекции. При этом она позволяет это сделать без вникания во внутреннюю структуру и устройство коллекций.
+</td>
+</tr>
+</tbody></table> 
+Представим на секунду, что iterator в Java отсутствует. В таком случае всем и каждому придётся нырнуть в самые глубины коллекций и по-настоящему разобраться, чем отличается,  <code>ArrayList</code> от <code>LinkedList</code> и <code>HashSet</code> от <code>TreeSet</code>.
+<h2>Методы, которые должен имплементировать Iterator</h2><code>boolean hasNext()</code> — если в итерируемом объекте (пока что это Collection) остались еще значение — метод вернет <code>true</code>, если значения кончились <code>false</code>.
+
+<code>E next()</code> — возвращает следующий элемент коллекции (объекта). Если элементов больше нет (не было проверки <code>hasNext()</code>, а мы вызвали <code>next()</code>, достигнув конца коллекции), метод бросит <code>NoSuchElementException</code>.
+
+<code>void remove()</code> — удалит элемент, который был в последний раз получен методом <code>next()</code>. Метод может бросить:
+<ul>
+<li><code>UnsupportedOperationException</code>, если данный итератор не поддерживает метод <code>remove()</code> (в случае с read-only коллекциями, например)</li>
+<li><code>IllegalStateException</code>, если метод <code>next()</code> еще не был вызван, или если <code>remove()</code> уже был вызван после последнего вызова <code>next()</code>. </li></ul>
+Итак, iterator для List — самая распространенная имплементация. Итератор идет от начала коллекции к ее концу: смотрит есть ли в наличии следующий элемент и возвращает его, если таковой находится. На основе этого несложного алгоритма построен цикл <code>for-each</code>.
+
+Его расширение — ListIterator. Рассмотрим дополнительные методы java list iterator. Ты их, скорее всего, знаешь:
+<ul>
+<li><code>void add(E e)</code> — вставляет элемент <code>E</code> в <code>List<e></e></code>;</li>
+<li><code>boolean hasPrevious()</code> — вернет <code>true</code>, если при обратном переборе <code>List</code> имеются элементы;</li>
+<li><code>int nextIndex()</code>— вернет индекс следующего элемента;</li>
+<li><code>E previous()</code> — вернет предыдущий элемент листа;</li>
+<li><code>int previousIndex()</code> — вернет индекс предыдущего элемента;</li>
+<li><code>void set(E e)</code> — заменит элемент, возвращенный последним вызовом <code>next()</code> или <code>previous()</code> на элемент <code>e</code>. </li>
+</ul>Рассмотрим небольшой пример. Создадим <code>List</code>, содержащий в себе строки приветствия обучающихся:
+
+<pre class="lang-java line-numbers"><code>
+List&lt;String&gt; list = new ArrayList&lt;&gt;();
+list.add("Привет");
+list.add("Обучающимся");
+list.add("На");
+list.add("JavaRush");
+</code></pre>
+Теперь получим для него итератор и выведем в консоль все содержащиеся строки:
+
+<pre class="lang-java line-numbers"><code>
+Iterator iterator = list.iterator();
+while (iterator.hasNext()) {
+    System.out.println(iterator.next());
+}
+</code></pre>
+Сейчас будет «узкое место»: Java Collections как ты, вероятно, знаешь (а если не знаешь, разберись), расширяют интерфейс <code>Iterable</code>, но это не означает, что только <code>List</code>, <code>Set</code> и <code>Queue</code> поддерживают итератор. Для <code>java Map iterator</code> также поддерживается,  но его необходимо вызывать для <code>Map.entrySet()</code>:
+
+<pre class="lang-java line-numbers"><code>
+Map&lt;String, Integer&gt; map = new HashMap&lt;&gt;();
+Iterator mapIterator = map.entrySet().iterator();
+</code></pre>
+Тогда метод <code>next() </code>будет возвращать объект <code>Entry</code>, содержащий в себе пару «ключ»-«значение». 
+
+Дальше все аналогично с <code>List</code>:
+
+<pre class="lang-java line-numbers"><code>
+while (mapIterator.hasNext()) {
+    Map.Entry&lt;String, Integer&gt; entry = mapIterator.next();
+    System.out.println("Key: " + entry.getKey());
+    System.out.println("Value: " + entry.getValue());
+}
+</code></pre>
+Ты думаешь: «Стоп. Мы говорим про интерфейс, а в заголовке статьи написано «Паттерн». То есть, паттерн iterator – это интерфейс Iterator? Или интерфейс —  это паттерн?» Если это слово встречается впервые, даю справку: паттерн — это шаблон проектирования, некое поведение, которого должен придерживаться класс или множество взаимосвязанных классов. <strong>Итератор</strong> в java может быть реализован для любого объекта, внутренняя структура которого подразумевает перебор, при этом можно изменить сигнатуру обсуждаемых методов. Главное при реализации паттерна – логика, которой должен придерживаться класс.
+
+<strong>Интерфейс итератор</strong> – частная реализация одноименного паттерна, применяемая как к готовым структурам (<code>List, Set, Queue, Map</code>), так и к прочим, на усмотрение программиста. Расширяя интерфейс Iterator, ты реализуешь паттерн, но для реализации паттерна не обязательно расширять интерфейс. Простая аналогия: все рыбы плавают, но не всё, что плавает – рыбы.
+
+В качестве примера я решил взять… слово.  А конкретнее — существительное. Оно состоит из частей: приставки, корня, суффикса и окончания. Для частей слова создадим интерфейс <code>WordPart</code> и классы, расширяющие его: <code>Prefix, Root, Suffix и Ending</code>:
+
+<pre class="lang-java line-numbers"><code>
+interface WordPart {
+    String getWordPart();
+}
+
+static class Root implements WordPart {
+
+    private String part;
+
+    public Root(String part) {
+        this.part = part;
+    }
+
+    @Override
+    public String getWordPart() {
+        return part;
+    }
+}
+
+static class Prefix implements WordPart {
+
+    private String part;
+
+    public Prefix(String part) {
+        this.part = part;
+    }
+
+    @Override
+    public String getWordPart() {
+        return part;
+    }
+}
+
+static class Suffix implements WordPart {
+
+    private String part;
+
+    public Suffix(String part) {
+        this.part = part;
+    }
+
+    @Override
+    public String getWordPart() {
+        return part;
+    }
+}
+
+static class Ending implements WordPart {
+
+    private String part;
+
+    public Ending(String part) {
+        this.part = part;
+    }
+
+    @Override
+    public String getWordPart() {
+        return part;
+    }
+}
+</code></pre>
+Тогда класс <code>Word</code> (слово) будет содержать в себе части, а кроме них добавим целое число, отражающее количество частей в слове:
+
+<pre class="lang-java line-numbers"><code>
+public class Word {
+
+    private Root root;
+    private Prefix prefix;
+    private Suffix suffix;
+    private Ending ending;
+    private int partCount;
+
+    public Word(Root root, Prefix prefix, Suffix suffix, Ending ending) {
+        this.root = root;
+        this.prefix = prefix;
+        this.suffix = suffix;
+        this.ending = ending;
+        this.partCount = 4;
+    }
+
+    public Word(Root root, Prefix prefix, Suffix suffix) {
+        this.root = root;
+        this.prefix = prefix;
+        this.suffix = suffix;
+        this.partCount = 3;
+
+    }
+
+    public Word(Root root, Prefix prefix) {
+        this.root = root;
+        this.prefix = prefix;
+        this.partCount = 2;
+    }
+
+    public Word(Root root) {
+        this.root = root;
+        this.partCount = 1;
+    }
+
+    public Root getRoot() {
+        return root;
+    }
+
+    public Prefix getPrefix() {
+        return prefix;
+    }
+
+    public Suffix getSuffix() {
+        return suffix;
+    }
+
+    public Ending getEnding() {
+        return ending;
+    }
+
+    public int getPartCount() {
+        return partCount;
+    }
+
+    public boolean hasRoot() {
+        return this.root != null;
+    }
+
+    public boolean hasPrefix() {
+        return this.prefix != null;
+    }
+
+    public boolean hasSuffix() {
+        return this.suffix != null;
+    }
+
+    public boolean hasEnding() {
+        return this.ending != null;
+    }
+
+</code></pre>
+Окей, у нас есть четыре перегруженных конструктора (для простоты, предположим, что суффикс у нас может быть только один). Существительное не может состоять из одной приставки, поэтому для конструктора с одним параметром будем устанавливать корень.
+
+Теперь напишем реализацию паттерна итератор: WordIterator, переопределяющий 2 метода: <code>hasNext()</code> и <code>next()</code>:
+
+<pre class="lang-java line-numbers"><code>
+public class WordIterator implements Iterator&lt;Word.WordPart&gt; {
+
+    private Word word;
+    private int wordPartsCount;
+
+    public WordIterator(Word word) {
+        this.word = word;
+        this.wordPartsCount = word.getPartCount();
+    }
+
+    @Override
+    public boolean hasNext() {
+        if (wordPartsCount == 4) {
+            return word.hasPrefix() || word.hasRoot() || word.hasSuffix() || word.hasEnding();
+        } else if (wordPartsCount == 3) {
+            return word.hasPrefix() || word.hasRoot() || word.hasSuffix();
+        } else if (wordPartsCount == 2) {
+            return word.hasPrefix() || word.hasRoot();
+        } else if (wordPartsCount == 1) {
+            return word.hasRoot();
+        }
+        return false;
+    }
+
+    @Override
+    public Word.WordPart next() throws NoSuchElementException {
+        if (wordPartsCount &lt;= 0) {
+            throw new NoSuchElementException("No more elements in this word!");
+        }
+
+        try {
+            if (wordPartsCount == 4) {
+                return word.getEnding();
+            }
+            if (wordPartsCount == 3) {
+                return word.getSuffix();
+            }
+            if (wordPartsCount == 2) {
+                return word.getPrefix();
+            }
+            return word.getRoot();
+        } finally {
+            wordPartsCount--;
+        }
+    }
+}
+</code></pre>
+Осталось назначить итератор классу <code>Word</code>:
+
+<pre class="lang-java line-numbers"><code>
+public class Word implements Iterable&lt;Word.WordPart&gt; {
+	…
+	@Override
+	public Iterator&lt;WordPart&gt;iterator() {
+    		return new WordIterator(this);
+	}
+	…
+}
+</code></pre>
+Теперь проведем морфемный разбор слова «перебежка»:
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+    public static void main(String[] args) {
+        Word.Root root = new Word.Root("беж");
+        Word.Prefix prefix = new Word.Prefix("пере");
+        Word.Suffix suffix = new Word.Suffix("к");
+        Word.Ending ending = new Word.Ending("a");
+
+        Word word = new Word(root, prefix, suffix, ending);
+
+        Iterator wordIterator = word.iterator();
+        while (wordIterator.hasNext()) {
+            Word.WordPart part = (Word.WordPart) wordIterator.next();
+            System.out.println(part.getClass() + ": " + part.getWordPart());
+        }
+    }
+}
+</code></pre>
+Обрати внимание, в своей реализации паттерна iterator я выбрал следующий порядок вывода: 
+<ol>
+<li>окончание</li>
+<li>суффикс</li>
+<li>приставка</li>
+<li>корень</li>
+</ol>При проектировании собственного итератора, ты сам можешь задать алгоритм итерации, как захочешь. Успехов в обучении!

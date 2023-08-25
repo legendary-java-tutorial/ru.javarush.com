@@ -1,0 +1,280 @@
+Удаление элемента из списка ArrayList в Java
+<p>----------------------------------------</p>
+Привет! В прошлой лекции мы познакомились с классом ArrayList, а также научились совершать наиболее распространенные операции с ним. Кроме того, мы выделили достаточно много отличий ArrayList от обычного массива. Но одну из тем мы обошли стороной, а именно ...
+<p>----------------------------------------</p>
+Привет! В прошлой лекции мы познакомились с классом <span class="code">ArrayList</span>, а также научились совершать наиболее распространенные операции с ним.
+
+Кроме того, мы выделили достаточно много отличий ArrayList от обычного массива.
+
+Теперь рассмотрим удаление элемента из списка ArrayList. 
+
+Мы уже говорили, что удаление элементов в обычном массиве делается не очень удобно.<img data-id="64b84739-acaf-495e-a1cb-5e7697e86a32" data-max-width="850" alt="Удаление элемента из списка ArrayList - 1" src="https://cdn.javarush.com/images/article/64b84739-acaf-495e-a1cb-5e7697e86a32/1024.jpeg">Поскольку мы не можем удалить саму ячейку, нам остается только “обнулить” ее значение:
+
+<pre class="lang-java line-numbers"><code>
+public class Cat {
+
+   private String name;
+
+   public Cat(String name) {
+       this.name = name;
+   }
+
+   public static void main(String[] args) {
+
+       Cat[] cats = new Cat[3];
+       cats[0] = new Cat("Томас");
+       cats[1] = new Cat("Бегемот");
+       cats[2] = new Cat("Филипп Маркович");
+
+       cats[1] = null;
+
+       System.out.println(Arrays.toString(cats));
+   }
+
+   
+@Override
+   public String toString() {
+       return "Cat{" +
+               "name='" + name + '\'' +
+               '}';
+   }
+}
+</code></pre>
+Вывод:
+
+<pre><code>
+[Cat{name='Томас'}, null, Cat{name='Филипп Маркович'}]
+</code></pre>
+Но при обнулении в массиве остается “дыра”. Мы ведь удаляем не ячейку, а только ее содержимое. Представь что будет, если у нас массив из 50 котов, 17 из которых мы удалили таким способом. У нас будет массив с 17-ю дырами, и поди уследи за ними! Помнить наизусть номера пустых ячеек, куда можно записывать новые значения — нереально. Один раз ошибешься — и перезапишешь ячейку с нужной ссылкой на объект.
+
+Есть, конечно, возможность сделать чуть аккуратнее: после удаления сдвинуть элементы массива к началу, так, чтобы “дыра” оказалась в конце:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   Cat[] cats = new Cat[4];
+   cats[0] = new Cat("Томас");
+   cats[1] = new Cat("Бегемот");
+   cats[2] = new Cat("Филипп Маркович");
+   cats[3] = new Cat("Пушок");
+
+   cats[1] = null;
+
+   for (int i = 2; i &lt; cats.length-1; i++) {
+       //перемещаем элементы к началу, чтобы пустая ячейка оказалась в конце
+       cats[i-1] = cats[i];
+       cats[i] = null;
+   }
+
+   System.out.println(Arrays.toString(cats));
+}
+</code></pre>
+Вывод:
+
+<pre><code>
+[Cat{name='Томас'}, Cat{name='Филипп Маркович'}, Cat{name='Пушок'}, null]
+</code></pre>
+Теперь вроде как выглядит получше, но это вряд ли можно назвать стабильным решением. Как минимум потому, что нам придется каждый раз писать этот код руками, когда мы будем удалять элемент из массива! 
+
+Плохой вариант.
+
+Можно было бы пойти другим путем, и создать отдельный метод:
+
+<pre class="lang-java line-numbers"><code>
+public void deleteCat(Cat[] cats, int indexToDelete) {
+   //...удаляем кота по индексу и сдвигаем элементы
+}
+</code></pre>
+Но от этого толку тоже мало: этот метод умеет работать только с объектами <code>Cat</code>, а с другими не умеет. 
+
+То есть если в программе будет еще 100 классов, с которыми мы захотим использовать массивы, нам придется в каждом из них писать такой же метод с точно такой же логикой. Это вообще провал -_-
+
+Но в классе ArrayList эта проблема успешно решена! В нем реализован специальный метод для удаления элементов — <code>remove()</code>:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   ArrayList&lt;Cat&gt; cats = new ArrayList&lt;&gt;();
+   Cat thomas = new Cat("Томас");
+   Cat behemoth = new Cat("Бегемот");
+   Cat philipp = new Cat("Филипп Маркович");
+   Cat pushok = new Cat("Пушок");
+
+   cats.add(thomas);
+   cats.add(behemoth);
+   cats.add(philipp);
+   cats.add(pushok);
+   System.out.println(cats.toString());
+
+   cats.remove(1);
+
+   System.out.println(cats.toString());
+}
+</code></pre>
+Мы передали в метод индекс нашего объекта, и он был удален (также как в массиве).
+
+У метода <code>remove()</code> есть две особенности.
+
+<span class="text-bold">Во-первых</span>, он не оставляет “дыр”. В нем <span class="text-bold">уже реализована логика сдвига элементов</span> при удалении элемента из середины, которую мы ранее писали руками.
+
+Посмотри вывод предыдущего кода в консоль:
+
+<pre><code>
+[Cat{name='Томас'}, Cat{name='Бегемот'}, Cat{name='Филипп Маркович'}, Cat{name='Пушок'}]
+[Cat{name='Томас'}, Cat{name='Филипп Маркович'}, Cat{name='Пушок'}]
+</code></pre>
+Мы удалили из середины одного кота, и остальные были передвинуты так, чтобы не оставалось пробелов.
+
+<span class="text-bold">Во-вторых</span>, он может удалять объект не только по индексу(как обычный массив), но и <span class="text-bold">по ссылке на объект</span>:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   ArrayList&lt;Cat&gt; cats = new ArrayList&lt;&gt;();
+   Cat thomas = new Cat("Томас");
+   Cat behemoth = new Cat("Бегемот");
+   Cat philipp = new Cat("Филипп Маркович");
+   Cat pushok = new Cat("Пушок");
+
+   cats.add(thomas);
+   cats.add(behemoth);
+   cats.add(philipp);
+   cats.add(pushok);
+   System.out.println(cats.toString());
+
+   cats.remove(philipp);
+
+   System.out.println(cats.toString());
+}
+</code></pre>
+Вывод:
+
+<pre><code>
+[Cat{name='Томас'}, Cat{name='Бегемот'}, Cat{name='Филипп Маркович'}, Cat{name='Пушок'}]
+[Cat{name='Томас'}, Cat{name='Бегемот'}, Cat{name='Пушок'}]
+</code></pre>
+Это может быть очень удобно, если не хочется всегда держать в голове индекс нужного объекта.
+
+С обычным удалением вроде разобрались. Теперь давай представим такую ситуацию: мы хотим перебрать наш список элементов и удалить кота <em>с определенным именем.</em>
+
+Используем для этого специальный оператор цикла <code>for</code> — <code>for each</code>. С ним можно ознакомиться подробнее в <a href="https://javarush.com/quests/lectures/questsyntaxpro.level13.lecture01" target="_blank">этой лекции</a>.
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   ArrayList&lt;Cat&gt; cats = new ArrayList&lt;&gt;();
+   Cat thomas = new Cat("Томас");
+   Cat behemoth = new Cat("Бегемот");
+   Cat philipp = new Cat("Филипп Маркович");
+   Cat pushok = new Cat("Пушок");
+
+   cats.add(thomas);
+   cats.add(behemoth);
+   cats.add(philipp);
+   cats.add(pushok);
+
+   for (Cat cat: cats) {
+
+       if (cat.name.equals("Бегемот")) {
+           cats.remove(cat);
+       }
+   }
+
+   System.out.println(cats);
+}
+</code></pre>
+Вроде бы код выглядит вполне логично. Однако результат может тебя сильно удивить:
+
+<pre><code>
+Exception in thread "main" java.util.ConcurrentModificationException
+  at java.util.ArrayList$Itr.checkForComodification(ArrayList.java:859)
+  at java.util.ArrayList$Itr.next(ArrayList.java:831)
+  at Cat.main(Cat.java:25)
+</code></pre>
+Какая-то ошибка, причем неясно, с чего вдруг она возникла. В этом процессе есть ряд нюансов, с которыми нужно разобраться.
+
+Общее правило, которое тебе нужно запомнить:
+
+<span class="text-bold">Нельзя проводить одновременно итерацию (перебор) коллекции и изменение ее элементов.</span>
+
+Да-да, именно изменение, а не только удаление. Если ты попытаешься в нашем коде заменить удаление кота на вставку новых, результат будет тот же:
+
+<pre class="lang-java line-numbers"><code>
+for (Cat cat: cats) {
+
+   cats.add(new Cat("Сейлем Сэйберхеген"));
+}
+
+System.out.println(cats);
+</code></pre>
+
+<pre><code>
+Exception in thread "main" java.util.ConcurrentModificationException
+  at java.util.ArrayList$Itr.checkForComodification(ArrayList.java:859)
+  at java.util.ArrayList$Itr.next(ArrayList.java:831)
+  at Cat.main(Cat.java:25)
+</code></pre>
+Мы поменяли одну операцию на другую, но результат не изменился: та же ошибка <code>ConcurrentModificationException</code>. Она возникает именно тогда, когда мы пытаемся нарушить правило и изменить список во время итерации по нему.
+
+В Java для удаления элементов во время перебора нужно использовать специальный объект — итератор (класс <code>Iterator</code>).
+
+Класс <code>Iterator</code> отвечает за безопасный проход по списку элементов. 
+
+Он достаточно прост, поскольку имеет всего 3 метода:
+<ul>
+<li><code>hasNext()</code> — возвращает <code>true</code> или <code>false</code> в зависимости от того, есть ли в списке следующий элемент, или мы уже дошли до последнего.</li>
+<li><code>next()</code> — возвращает следующий элемент списка</li>
+<li><code>remove()</code> — удаляет элемент из списка</li>
+</ul>Как видишь, итератор буквально “заточен” под наши нужды, и при этом в нем нет ничего сложного.
+
+Например, мы хотим проверить, есть ли в нашем списке следующий элемент, и если есть — вывести его в консоль:
+
+<pre class="lang-java line-numbers"><code>
+Iterator&lt;Cat&gt; catIterator = cats.iterator();//создаем итератор
+while(catIterator.hasNext()) {//до тех пор, пока в списке есть элементы
+  
+   Cat nextCat = catIterator.next();//получаем следующий элемент
+   System.out.println(nextCat);//выводим его в консоль
+}
+</code></pre>
+Вывод:
+
+<pre><code>
+Cat{name='Томас'}
+Cat{name='Бегемот'}
+Cat{name='Филипп Маркович'}
+Cat{name='Пушок'}
+</code></pre>
+Как видишь, в классе <code>ArrayList</code> уже реализован специальный метод для создания итератора — <code>iterator()</code>.
+
+Кроме того, обрати внимание, что при создании итератора мы указываем класс объектов, с которыми он должен будет работать (<code>&lt;Cat&gt;</code>).
+
+В конечном итоге, мы легко решаем нашу изначальную задачу с помощью итератора.
+Например, удалим кота с именем “Филипп Маркович”:
+
+<pre class="lang-java line-numbers"><code>
+Iterator&lt;Cat&gt; catIterator = cats.iterator();//создаем итератор
+while(catIterator.hasNext()) {//до тех пор, пока в списке есть элементы
+
+   Cat nextCat = catIterator.next();//получаем следующий элемент
+   if (nextCat.name.equals("Филипп Маркович")) {
+       catIterator.remove();//удаляем кота с нужным именем
+   }
+}
+
+System.out.println(cats);
+</code></pre>
+Вывод:
+
+<pre><code>
+[Cat{name='Томас'}, Cat{name='Бегемот'}, Cat{name='Пушок'}]
+</code></pre>
+Возможно ты заметил, что мы не указывали ни индекс элемента, ни имя переменной-ссылки в методе итератора <code>remove()</code>!
+
+Итератор умнее, чем может показаться: метод <code>remove()</code> удаляет последний элемент, который был возвращен итератором. Как видишь, он сработал именно так, как было нужно :)
+
+Вот в принципе все, что тебе нужно знать об удалении элементов из <code>ArrayList</code>. Точнее — почти все.
+
+В следующей лекции мы заглянем во “внутренности” этого класса, и посмотрим, что же там происходит во время совершения операций :)
+
+До встречи!

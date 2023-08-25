@@ -1,0 +1,129 @@
+Парсинг html библиотекой jsoup 
+<p>----------------------------------------</p>
+Парсинг это извлечение неструктурированной информации. Сбор информации с сайтов - нередкая задача. Нам нужен инструмент, который легко с ней справится. В этой статье я расскажу как парсить html страницу библиотекой jsoup.
+<p>----------------------------------------</p>
+Итак мы хотим получить конкретную информацию с сайта. Пошагово разберем как это сделать.
+
+<img data-id="ada5448a-5249-41c0-9627-e3a3edf2c76f" src="/images/article/ada5448a-5249-41c0-9627-e3a3edf2c76f/800.jpeg" alt="Парсинг html библиотекой jsoup  - 1">Для начала нам нужно получить объект <code>Document</code>. Это представление нашей html страницы. В Jsoup есть несколько способов превратить сайт в объект <code>Document</code>.
+<strong>Подключиться к серверу</strong><pre class="lang-java line-numbers"><code>
+Document document = Jsoup.connect("https://hh.ru/").get();
+</code></pre>
+Jsoup сам подключается к сайту. Данный способ самый простой, но он годится только для тестирования. Есть более удобные и гибкие http клиенты. Также имейте ввиду, каким бы http клиентом вы не пользовались, добавляйте в запрос заголовок <code>User-Agent</code> с значением например <code>Chrome/81.0.4044.138</code>. По этому заголовку сервер определяет с какого устройстрва вы подключились. Без этого заголовка сервер считает вас ботом и может забанить.
+<strong>Из файла</strong>;<pre class="lang-java line-numbers"><code>
+File file = new File("hh-test.html");
+Document document = Jsoup.parse(file, "UTF-8", "hh.ru");
+</code></pre>
+Это основной способ получения объекта <code>Document</code>. Последний аргумент  <code>"hh.ru"</code> - базовый URI. Это нужно для создания абсолютных ссылок из относительных, которые присутствуют на сайте.
+<strong>Из строки</strong><pre class="lang-java line-numbers"><code>
+String html =
+                "&lt;html&gt;                                                                       " +
+                "    &lt;head&gt;                                                                   " +
+                "        &lt;title href=\"hh.ru/vacancy?home\"&gt;                                  " +
+                "            Работа в Москве, поиск персонала и публикация вакансий - hh.ru   " +
+                "        &lt;/title&gt;                                                             " +
+                "    &lt;/head&gt;                                                                  " +
+                "    &lt;body&gt;                                                                   " +
+                "        &lt;div class=\"header main\"&gt;                                          " +
+                "            &lt;h1&gt;Работа найдется для каждого&lt;/h1&gt;                             " +
+                "            &lt;div&gt;Поиск вакансий&lt;/div&gt;                                        " +
+                "        &lt;/div&gt;                                                               " +
+                "        &lt;div class=\"content\"&gt;                                              " +
+                "            &lt;div&gt;Вакансии дня&lt;/div&gt;                                          " +
+                "            &lt;div id=\"123\"&gt;Компании дня&lt;/div&gt;                               " +
+                "            &lt;div&gt;Работа из дома&lt;/div&gt;                                        " +
+                "        &lt;/div&gt;                                                               " +
+                "    &lt;/body&gt;                                                                  " +
+                "&lt;/html&gt;                                                                      ";
+
+        Document document = Jsoup.parse(html, "hh.ru");
+</code></pre>
+Далее я буду демонстрировать библиотеку на этом html, который представляет упрощенный сайт.
+<strong>Получение тега</strong>
+Основная задача при парсинге -  получить нужный тег. Делать мы это будем при помощи метода <code>select</code>. Обратите внимание, что он всегда возвращает список тегов. Если теги не найдены, то список будет пустым.
+
+В аргумент метода нужно передать css селектор, по которому ищутся теги. На селекторах  я остановлюсь подробнее, потому что вся работа сводится к написанию правильного селектора. Обычно нам нужно составить его так, чтобы он возвращал один тег.
+
+<pre class="lang-java line-numbers"><code>
+Elements h1 = document.select("h1");
+System.out.println(h1);
+</code></pre>
+Получить теги теги <code>h1</code>
+
+Вывод:
+
+<pre><code>
+&lt;h1&gt;Работа найдется для каждого&lt;/h1&gt;
+</code></pre>
+<pre class="lang-java line-numbers"><code>
+Elements titleElem = document.select("head &gt; title");
+</code></pre>
+Получить теги <code>title</code>.
+
+Знак <code>&gt;</code> выбирает теги <code>title</code> вложенные в тег <code>head</code> 
+
+<pre class="lang-java line-numbers"><code>
+Elements divs = document.select("body &gt; div");
+</code></pre>
+Получить теги <code>div</code> вложенные в <code>body</code> 
+
+<pre class="lang-java line-numbers"><code>
+Elements firstDiv = document.select("body &gt; div:nth-child(1)");
+</code></pre>
+Получить первый тег <code>div</code> вложенный в <code>body</code>. 
+
+Получать тег по порядковому номеру плохой способ, потому что его положение на сайте может поменяться. Лучше определить тег по абсолютным параметрам. Такими параметрами являются атрибуты <code>class</code> и <code>id</code>
+
+<pre class="lang-java line-numbers"><code>
+Elements contentElem = document.select("body &gt; div.content");
+</code></pre>
+Получить тег <code>div</code> c классом "content", вложенный в <code>body</code> 
+
+<pre class="lang-java line-numbers"><code>
+Elements idElem = document.select("#123");
+</code></pre>
+Получить теги c id "123"
+
+<pre class="lang-java line-numbers"><code>
+Elements divHeader = document.select("body &gt; div.header.main :not(h1)");
+</code></pre>
+Получить теги <code>div</code> c классом "header" и "main", вложенные в <code>body</code>,  но без тегов <code>h1</code>
+
+Вывод:
+
+<pre><code>
+&lt;div&gt;
+ Поиск вакансий
+&lt;/div&gt;
+</code></pre><strong>Методы Elements</strong>
+Когда мы получили список <code>Elements</code> можно извлечь данные из него. Напомню, что обычно селектором ищется один тег, т.е. у <code>Elements</code> должен быть размер 1.
+
+<pre class="lang-java line-numbers"><code>
+  elements.size();
+</code></pre>
+количество найденных тегов
+
+<pre class="lang-java line-numbers"><code>
+elements.get(0);
+</code></pre>
+получить первый тег из списка найденных
+
+<pre class="lang-java line-numbers"><code>
+elements.text();
+</code></pre>
+текст вложенный в тег
+
+<pre class="lang-java line-numbers"><code>
+elements.attr("href");
+</code></pre>
+значение атрибута "href"
+
+<pre class="lang-java line-numbers"><code>
+elements.outerHtml();
+</code></pre>
+строковое представление тега
+
+Если вам нужно быстро получить селектор элемента - в браузере откройте панель разработчика (f12), нажмите правой кнопкой на элемент, "просмотреть код", нажмите правой кнопкой на тег, далее "Copy" "Copy selector". Такой селектор будет не оптимальным, но для быстрого результата вполне подходит.
+<img data-id="a5f2979f-2492-41d2-ab93-775c4d21d101" src="/images/article/a5f2979f-2492-41d2-ab93-775c4d21d101/800.jpeg" alt="Парсинг html библиотекой jsoup  - 1"><a href="https://javarush.com/welcome" target="_blank" rel="nofollow"><img data-id="05127839-f8fd-4bd8-9322-716da1f7ae8c" src="/images/article/05127839-f8fd-4bd8-9322-716da1f7ae8c/1024.jpeg" alt="Парсинг html библиотекой jsoup  - 3"></a><strong>Заключение</strong> 
+Это основы работы с библиотекой Jsoup. Но этого вполне достаточно, чтобы парсить сайты. Для уверенной работы вам нужна только практика написания селекторов в реальных сайтах.
+
+P.s. Данная библиотека используется для решения большой задачи на 38 уровне

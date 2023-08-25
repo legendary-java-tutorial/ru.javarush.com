@@ -1,0 +1,150 @@
+9 вещей о NULL в Java
+<p>----------------------------------------</p>
+Java и null неразрывно связаны. Едва ли существует Java-программист, не встречавшийся с "null pointer exception" и это печальный факт. Даже изобретатель концепции "null" назвал ее своей ошибкой на миллиард долларов, тогда зачем Java поддерживает ее? 
+<p>----------------------------------------</p>
+<strong>Java</strong> и <strong>null</strong> неразрывно связаны. Едва ли существует Java-программист, не встречавшийся с "<em>null pointer exception</em>" и это печальный факт. Даже изобретатель концепции "null" назвал ее своей ошибкой на миллиард долларов, тогда зачем Java поддерживает ее? null был здесь долгое время, и я полагаю, создатели Java знают, что он создает больше проблем чем решает, так почему же они все еще мирятся с этим. И это удивляет меня еще больше, потому что философией Java было упростить вещи, вот почему они больше не возятся с указателями, перегрузкой операторов и множественным наследованием, но почему null?<img data-id="1764355b-7eba-461f-8dc5-04182d843a96" data-max-width="850" alt="9 вещей о NULL в Java - 1" src="https://cdn.javarush.com/images/article/1764355b-7eba-461f-8dc5-04182d843a96/1024.jpeg">Ну, я действительно не знаю ответ на этот вопрос, но, что я точно знаю, не имеет значения сколько бы null критиковался Java-программистами и open-source сообществом, мы должны жить с ним. Вместо того чтобы сожалеть, лучше узнать больше и быть уверенным что мы используем null правильно.
+<h2>Почему Вы должны узнать о null в Java?</h2>Потому что, если Вы не обратите внимания на null, будьте уверены, Java заставит страдать от ужасного <code>java.lang.NullPointerException</code> и Вы выучите этот урок, но пойдете более трудным путем. Написание устойчивого к "падениям" кода -  это искусство и Ваша команда, заказчики и пользователи оценят это. По моему опыту, одна из основных причин <code>NullPointerException</code> это недостаток знаний о null в Java. Многие из Вас уже знакомы с null, остальные смогу узнать некоторые старые и новые вещи о ключевом слове null. Давайте повторим или узнаем некоторые важные вещи о null в Java.
+<h2>Что есть null в Java</h2>Как я говорил, null очень-очень важная концепция в Java. Первоначально он был изобретен для обозначения отсутствия чего-либо, например, отсутствие пользователя, ресурса или чего угодно, но уже в течение года озадачил Java-программистов множеством <code>null pointer exception</code>. В этом уроке, мы узнаем основные факты о ключевом слове null в Java, изучим некоторые приемы как избежать неприятностей с <code>null pointer exceptions</code> и минимизировать проверки на null.
+<ol>
+<li><p>Перво-наперво, null это ключевое слово в Java, так же как <code>public</code>, <code>static</code> или <code>final</code>. Регистр учитывается, Вы не можете писать null как Null или NULL, компилятор не распознает его и будет выброшена ошибка.</p>
+<pre class="lang-java line-numbers"><code>
+Object obj = NULL; // Not Ok
+Object obj1 = null //Ok
+</code></pre>
+<p>Зачастую, с этим встречаются программисты, перешедшие с других языков программирования, но при использовании современных IDE проблема становится незначительной. В наши дни, IDE вроде Eclipse или NetBeans могут исправлять эту ошибку пока Вы набираете код, но в эпоху Notepad, Vim и Emacs, это была распространенная проблема, которая могла съесть кучу драгоценного времени.</p></li>
+<li><p>Так же, как каждый примитив имеет значение по умолчанию, например, у <code>int</code> это 0, у boolean это false, null это значение по умолчанию любых ссылочных типов, проще говоря, для всех объектов. Так же, как при создании логической переменной ее значение по умолчанию равно false, так и любые ссылочные переменные в Java по умолчанию будут равны null. Это истинно для всех типов переменных: переменной-члена или локальной переменной, переменной экземпляра или статической переменной, кроме того, компилятор будет ругаться, если Вы используете локальную переменную не проинициализировав ее.</p>
+<pre class="lang-java line-numbers"><code>
+private static Object myObj;
+public static void main(String args[]){
+    System.out.println("What is value of myObjc : " + myObj);
+}
+What is value of myObjc : null
+</code></pre>
+<p>Это истинно как для статических, так и для не статических объектов, как Вы можете видеть здесь, я сделал <code>myObj</code> статической ссылкой, так что я могу использовать ее непосредственно в методе <code>main</code>, который является статическим методом и не позволяет обращаться к не статическим переменным изнутри.</p></li>
+<li><p>Несмотря на распространенное заблуждение, null это не объект (<code>Object</code>) и ни тип.  Это просто специальное значение, которое может быть назначено любому ссылочному типу, и Вы можете привести null к любому типу, как показано ниже:</p>
+<pre class="lang-java line-numbers"><code>
+String str = null; // null can be assigned to String 
+Integer itr = null; // you can assign null to Integer also 
+Double dbl = null; // null can also be assigned to Double 
+String myStr = (String) null; // null can be type cast to String 
+Integer myItr = (Integer) null; // it can also be type casted to Integer 
+Double myDbl = (Double) null; // yes it's possible, no error
+</code></pre>
+<p>Как Вы можете видеть, приведение null к любому ссылочному типу пройдет успешно как во время компиляции, так и во время выполнения программы. В отличии от того, что многие из Вас возможно подумали, это не приведет к выбрасыванию <code>NullPointerException</code>.</p></li>
+<li><p>null может быть назначен только ссылочному типу, Вы не можете назначить null примитивной переменной вроде <code>int</code>, <code>double</code>, <code>float</code> или <code>boolean</code>. Компилятор выразит Вам свое недовольство если Вы сделаете как показано ниже:</p>
+<pre class="lang-java line-numbers"><code>
+int i = null; // type mismatch : cannot convert from null to int 
+short s = null; // type mismatch : cannot convert from null to short 
+byte b = null: // type mismatch : cannot convert from null to byte 
+double d = null; //type mismatch : cannot convert from null to double 
+
+Integer itr = null; // this is ok 
+int j = itr; // this is also ok, but NullPointerException at runtime
+
+</code></pre>
+<p>Как Вы можете видеть, когда мы непосредственно присваиваем null примитиву, то получаем ошибку процесса компиляции, но, если присвоить null объекту класса-обертки, а затем присвоить этот объект соответствующему примитивному типу, компилятор не отреагирует, но мы будем вознаграждены <code>null pointer exception</code> во время выполнения. Это происходит из-за авто упаковки (<code>autoboxing</code>) в Java, и мы еще встретимся с ним в следующем пункте.</p></li>
+<li><p>Любой класс-обертка со значением null будет выбрасывать <code>java.lang.NullPointerException</code> когда Java распакует(<code>unbox</code>) его в примитивную переменную. Некоторые программисты делают ошибку допуская, что авто упаковка(<code>autoboxing</code>) позаботится о конвертации null в значение по умолчанию для соответствующего примитивного типа, например, 0 для <code>int</code>, false для <code>boolean</code> и т.д., но это не верно, в чем можно убедиться ниже:</p>
+<pre class="lang-java line-numbers"><code>
+Integer iAmNull = null; 
+int i = iAmNull; // Remember - No Compilation Error
+</code></pre>
+<p>Но, когда Вы запустите данный фрагмент кода, в консоли Вы увидите</p>
+<pre class="lang-java line-numbers"><code>
+Exception in thread "main" java.lang.NullPointerException
+</code></pre>
+<p>Это часто происходит при работе с <code>HashMap</code> и <code>Integer key</code>. Выполнение кода, показанного ниже прервется, как только Вы его запустите.</p>
+<pre class="lang-java line-numbers"><code>
+import java.util.HashMap; 
+import java.util.Map; 
+/** 
+* An example of Autoboxing and NullPointerExcpetion
+* 
+* @author WINDOWS 8 
+*/ 
+public class Test { 
+    public static void main(String args[]) throws InterruptedException { 
+        Map numberAndCount = new HashMap&lt;&gt;(); 
+        int[] numbers = {3, 5, 7,9, 11, 13, 17, 19, 2, 3, 5, 33, 12, 5}; 
+        for(int i : numbers){ 
+            int count = numberAndCount.get(i); 
+            numberAndCount.put(i, count++); // NullPointerException here 
+        } 
+    } 
+}
+</code></pre><br>
+<pre class="lang-java line-numbers"><code>
+Output: Exception in thread "main" java.lang.NullPointerException at Test.main(Test.java:25)
+</code></pre>
+<p>Этот код выглядит очень простым и безобидным. Вы просто подсчитываете сколько раз число встречается в массиве, классическая техника нахождения дубликатов. Разработчик берет предыдущее подсчитанное количество, увеличивает его на единицу и вставляет обратно в <code>Map</code>. Он мог бы подумать, что авто-упаковка позаботится о преобразовании <code>Integer</code> в <code>int</code>, как это делается в момент вызова метода <code>put()</code>, но он забывает, что если для числа подсчет еще не проводился, метод <code>get()</code> вернет из <code>HashMap</code> null, не ноль, потому что значение по умолчанию для Integer это null, а не 0, и авто-упаковка выбросит <code>null pointer exception</code> при попытке сконвертировать Integer в переменную <code>int</code>.</p></li>
+<li><p>Оператор <code>instanceof</code> будет возвращать false если в качестве параметра указать любую ссылочную переменную со значением null или null сам по себе. Пример:</p>
+<pre class="lang-java line-numbers"><code>
+Integer iAmNull = null; 
+if(iAmNull instanceof Integer){ 
+    System.out.println("iAmNull is instance of Integer"); 
+}else{ 
+    System.out.println("iAmNull is NOT an instance of Integer"); 
+}
+</code></pre><br>
+<pre class="lang-java line-numbers"><code>
+Output : iAmNull is NOT an instance of Integer
+</code></pre>
+<p>Это важное свойство оператора <code>instanceof</code>, которое делает его полезным для проверки приведения типов.</p></li>
+<li><p>Вы знаете, что Вы не можете вызвать нестатический метод у ссылочной переменной со значением null, это вызовет <code>NullPointerException</code>, но Вы можете не знать, что Вы можете вызвать статический метода у ссылочной переменной со значением null. Т.к. статические методы используют статическое связывание, они не выбрасывают <code>NullPointerException</code>. Вот пример:</p>
+<pre class="lang-java line-numbers"><code>
+public class Testing { 
+    public static void main(String args[]){ 
+        Testing myObject = null; 
+        myObject.iAmStaticMethod(); 
+        myObject.iAmNonStaticMethod(); 
+    } 
+    private static void iAmStaticMethod(){ 
+        System.out.println("I am static method, can be called by null reference"); 
+    } 
+    private void iAmNonStaticMethod(){ 
+        System.out.println("I am NON static method, don't date to call me by null"); 
+    } 
+}
+</code></pre><br>
+<pre class="lang-java line-numbers"><code>
+Output: I am static method, can be called by null reference 
+Exception in thread "main" java.lang.NullPointerException 
+at Testing.main(Testing.java:11)
+</code></pre></li>
+<li><p>Вы можете послать null в качестве параметра метода, принимающего любой ссылочный тип, к примеру:</p>
+<pre class="lang-java line-numbers"><code>
+ public void print(Object obj)
+</code></pre>
+<p>может быть вызван как</p>
+<pre class="lang-java line-numbers"><code>
+print(null)
+</code></pre>
+<p>Это нормально с точки зрения компилятора, но дальнейшее поведение полностью зависит от метода. Null-безопасный метод не выбросит <code>NullPointerException</code>, а просто корректно завершится. Если бизнес логика позволяет, рекомендуется писать null-безопасные методы.</p></li>
+<li><p>Вы можете сравнивать null используя операторы <code>==</code> (равно) и <code>!=</code> (не равно), но не можете использовать его с другими арифметическими или логическими операторами, вроде <code>&lt;</code> (меньше) или <code>&gt;</code> (больше). В отличии от SQL, в Java <code>null == null</code> вернет true, как показано ниже:</p>
+
+<pre class="lang-java line-numbers"><code>
+public class Test {
+	public static void main(String args[]) throws InterruptedException {
+		String abc = null; 
+		String cde = null; 
+		if(abc == cde){ 
+			System.out.println("null == null is true in Java"); 
+		} 
+		if(null != null){ 
+			System.out.println("null != null is false in Java"); 
+		} 
+		// classical null check 
+		if(abc == null){ 
+			// do something 
+		} 
+		// not ok, compile time error 
+		if(abc &gt; null){ 
+		
+		} 
+	} 
+}
+</code></pre><br>
+<pre class="lang-java line-numbers"><code>
+Output: 
+null == null is true in Java
+</code></pre></li></ol>
+Это все о null в Java. Наработав некоторый опыт в Java-программировании и используя простые уловки, чтобы избежать <code>NullPointerException</code>, Вы сможете сделать Ваш код безопасным. Т.к. значение null может рассматриваться как пустое или неинициализированное значение, это часто является источником путаницы, вот почему так важно документировать поведение метода при входящем значении null. Всегда помните, null это значение по умолчанию ссылочных переменных, и Вы не можете вызывать методы экземпляра или получать доступ к переменным экземпляра используя null-ссылку в Java.

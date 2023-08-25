@@ -1,0 +1,279 @@
+Реализация мультиязычности приложения
+<p>----------------------------------------</p>
+Сегодня мы поговорим о мультиязычности. Итак, что это? Мультиязычность, иначе говоря, интернационализация — это часть разработки приложения, которое может быть адаптировано для нескольких языков без перекройки логики программы...
+<p>----------------------------------------</p>
+
+<img data-max-width="550" alt="Реализация мультиязычности приложения - 1" src="https://cdn.javarush.com/images/article/5382905e-f72b-47e0-895a-c609523b8be0/original.jpeg"><h2>Сегодня мы поговорим о мультиязычности. Итак, что это?</h2>Мультиязычность, иначе говоря, <span class="text-bold">интернационализация</span> — это часть разработки приложения, которое может быть адаптировано для нескольких языков без перекройки логики программы.
+
+Рассмотрим ситуацию: вы создаете веб-приложение крупной торговой компании для жителей большого количества стран, в которых говорят, например, на таких языках как русский, английский, испанский. Вам необходимо сделать его удобным для всех пользователей.
+
+Задумка такая: у русскоязычного читателя должна быть возможность видеть ваши данные на русском языке, американцу будет удобнее прочитать материал на английском, а испанцу — на испанском (неожиданно, да?)
+<img data-max-width="850" alt="Реализация мультиязычности приложения - 2" src="https://cdn.javarush.com/images/article/059b5fbd-c759-4181-8ac5-af9e7fa31889/oroginal.jpeg">Рассмотрим сегодня <span class="text-bold">несколько моделей интернационализации</span>, и для одной из них (которая больше всего нравится мне:) рассмотрим реализацию на Java.
+
+В качестве подопытного кролика сегодня у нас будет табличка с данными о фильмах.
+
+Не будем особо извращаться, поэтому колонок у нас будет немного. Для примера — самое ОК. И переводить мы будем названия фильмов (режиссеры — так, для массовки):
+<img data-max-width="550" alt="Реализация мультиязычности приложения - 3" src="https://cdn.javarush.com/images/article/8d423472-1a1b-4d91-aa12-4f74af373b9c/original.jpeg"><h2>1. Таблица с переводом под каждый язык</h2>Суть данной модели: у каждого языка есть отдельная таблица в БД, в которой содержатся все ячейки, требующие перевода.
+
+Недостаток данного способа заключается в том, что каждый раз, когда у нас добавляется новый язык, необходимо добавлять новую таблицу. То есть представим себе, что у нашего заказчика ну ооочень хорошо пошли дела, и он расширяет свое приложение для многих стран (собственно, и языков) мира. А значит, нужно будет добавлять по табличке на язык.
+
+В итоге у нас будет БД, наполовину или почти полностью состоящая из вспомогательных табличек переводов:
+<img data-max-width="550" alt="Реализация мультиязычности приложения - 4" src="https://cdn.javarush.com/images/article/943cbd5c-dacf-4a99-9215-492ab226780d/original.jpeg">
+<span class="text-bold">Схема самих фильмов:</span>
+<img data-max-width="300" alt="Реализация мультиязычности приложения - 5" src="https://cdn.javarush.com/images/article/996cfade-6a51-4b0e-8b06-37522e94b368/original.jpeg"><span class="text-bold">Таблицы переводов:</span>
+
+<ul>
+<li>Русский
+<img data-max-width="409" alt="Реализация мультиязычности приложения - 6" src="https://cdn.javarush.com/images/article/346bd999-52b5-4e16-ad8d-dde299462dbb/original.jpeg"></li>
+<li>Испанский
+<img data-max-width="550" alt="Реализация мультиязычности приложения - 7" src="https://cdn.javarush.com/images/article/c7c3ab9f-9481-4b10-96c3-029556ba57b6/original.jpeg"></li>
+<li>Английский
+<img data-max-width="550" alt="Реализация мультиязычности приложения - 8" src="https://cdn.javarush.com/images/article/1722b814-cc3b-4e9c-969f-69cde278c563/original.jpeg"></li>
+</ul><h2>2. Одна на всех</h2>В каждой таблице, которая относится к определённой модели, добавляется поле с идентификатором для таблички языка. Соответственно, в БД есть и эта табличка с переводами.
+
+Проблема в том, что одному объекту может соответствовать несколько переводов (языков). В итоге произойдет дублирование сущностей, а это сильно путает и усложняет логику, и это не есть хорошо.
+
+<span class="text-bold">Смотрим UML:</span>
+<img data-max-width="550" alt="Реализация мультиязычности приложения - 9" src="https://cdn.javarush.com/images/article/261c20b3-12eb-4856-b833-1dd378e64234/original.jpeg">
+<span class="text-bold">Таблица movies:</span>
+<img data-max-width="300" alt="Реализация мультиязычности приложения - 10" src="https://cdn.javarush.com/images/article/96b41aba-a8da-4923-82e2-971238d04477/original.jpeg">
+<span class="text-bold">Таблица languages:</span>
+<img data-max-width="550" alt="Реализация мультиязычности приложения - 11" src="https://cdn.javarush.com/images/article/a5b610c1-a5d6-4535-ac63-2ed0a7ab1862/original.jpeg">
+<h2>3. По колонке на язык</h2>Для каждой колонки для каждого языка в таблице создается отдельная колонка перевода.
+
+Минус такого подхода в том, что опять же, если будет добавляться большое количество языков, нужно будет каждый раз менять структуру базы данных, а это считается плохим подходом. Также представьте, насколько будут раздуваться таблички, требующие интернационализации.
+
+Возможно, стоит задуматься о такой модели, когда заранее известно количество поддерживаемых языков, их не слишком много, и каждая модель должна существовать во всех языковых вариациях.
+
+<span class="text-bold">UML:</span>
+<img data-max-width="300" alt="Реализация мультиязычности приложения - 12" src="https://cdn.javarush.com/images/article/7bbfb01f-c7f1-4ad6-a857-3f7d148b142f/original.jpeg"><span class="text-bold">Таблица  All inclusive:</span>
+<img data-max-width="550" alt="Реализация мультиязычности приложения - 13" src="https://cdn.javarush.com/images/article/128d0715-11d6-4252-b398-895ca56f0e98/original.jpeg">
+<h2>4. Внешний перевод</h2>Этот вариант реализуется за счет подключения внешних средств (Google translate, Bing translate, etc.).
+
+Его применяют, если нужно предоставить информацию как можно большему количеству посетителей, и этой информации много. Очень много. В таком случае можно принять решения не хранить прямо информацию в БД на всех языках, а динамически её переводить. Но при это стоит помнить, что качество машинного перевода зачастую оставляет желать лучшего. Вариант может рассматриваться лишь как очень экономный (когда нет ресурсов на перевод каждой публикации).
+
+Частой проблемой с точки зрения правильности перевода является то, что плохо знающие язык переводчики выбирают неправильное значение слова и путают пользователя, вынуждая его самостоятельно додумывать смысл написанного на кнопке.
+
+Ещё важно не только правильно перевести предложение, но и подвести его смысл к конкретному языку и национальности. У разработчиков возникает много проблем из-за родов в некоторых языках. Им приходится дублировать фразу в коде в зависимости от пола пользователя, а также учитывать, что не только у существительных есть род, но и прилагательные и глаголы по-разному склоняются.
+
+Бывают случаи, когда выбрав не английский язык в приложении, наряду со словами выбранного языка всё равно встречаются непереведенные элементы. Ещё хуже, если отображаются несколько языков и получается своеобразный Вавилон, где всё смешалось, и пользователь не может разобраться в приложении
+
+Например: <a href="https://cloud.google.com/translate/" rel="nofollow" target="_blank">https://cloud.google.com/translate/</a>
+<h2>5. Вспомогательные файлы на уровне приложения</h2>Создаются отдельные файлы для хранения переводов. Может быть по файлу на язык или по файлу на язык на одну табличку (более мелкое дробление). Вариант часто используется в силу того, что в этих файлах можно хранить много текстов, а значит, таблицы и сама БД не будут раздуваться. Удобство заключается ещё в том, что не нужно за этими полями стучаться в БД, и в коде файлы можно динамически подменять в зависимости от запрошенного языка.
+
+В итоге файл служит для нас словарем, в котором ключ — язык, значение — текст.
+
+Но мы не ограниченны приведенным ниже форматом ".properties", а форматы этих файлов могут широко отличаться — JSON, XML, etc.
+
+Слабые стороны в том, что в этом случае сильно снижается нормализация базы данных.  Также целостность данных зависит уже не только от базы данных, но и от механизма сериализации.
+
+<a href="https://javarush.com/groups/posts/1557-konstantih-i-internacionalizacija" target="_blank">Отличная статья на эту тему</a>
+ 
+<span class="text-bold">Пример файлов-словарей с переводами:</span>
+<img data-max-width="300" alt="Реализация мультиязычности приложения - 14" src="https://cdn.javarush.com/images/article/06ebc7df-0874-43d2-b095-ec56533cee40/original.jpeg"><ul>
+<li>Английский
+<img data-max-width="550" alt="Реализация мультиязычности приложения - 15" src="https://cdn.javarush.com/images/article/ae40a2c2-848d-4000-baf8-9d667fabe67c/original.jpeg"></li>
+<li>Русский
+<img data-max-width="550" alt="Реализация мультиязычности приложения - 16" src="https://cdn.javarush.com/images/article/a04aa63b-0d5d-4e7e-af1a-f6670ad0baa1/original.jpeg"></li>
+<li>Испанский
+<img data-max-width="550" alt="Реализация мультиязычности приложения - 17" src="https://cdn.javarush.com/images/article/b00dcc38-6726-4427-962b-1df427287a46/original.jpeg"></li>
+</ul><h2>6. Вспомогательная таблица переводов под каждую таблицу</h2>Как по мне, наиболее гибкое решение.
+
+Суть данного подхода заключается в создании отдельной таблицы под языки. Когда нужно реализовать возможность переводов для рассматриваемой таблицы, создается связь с таблицей языков, а в таблице связей есть id языка, id элемента и колонки с переводами.
+
+Всё не так страшно, как звучит. Данный подход позволяет реализовать достаточно гибкую расширяемость поддерживаемых языков. Давайте посмотрим наглядно.
+
+<span class="text-bold">UML:</span>
+<img data-max-width="550" alt="Реализация мультиязычности приложения - 18" src="https://cdn.javarush.com/images/article/86565c56-8765-46bd-aa48-0092a62b255e/original.jpeg"><span class="text-bold">Таблица с фильмами:</span>
+<img data-max-width="300" alt="Реализация мультиязычности приложения - 19" src="https://cdn.javarush.com/images/article/6672ea09-391f-45f8-a2a0-9c81bc923fdf/original.jpeg"><span class="text-bold">Таблица языков:</span>
+<img data-max-width="300" alt="Реализация мультиязычности приложения - 20" src="https://cdn.javarush.com/images/article/5414d809-6b41-49c3-9dc6-b926a27422ef/original.jpeg"><span class="text-bold">Таблица переводов:</span>
+<img data-max-width="550" alt="Реализация мультиязычности приложения - 21" src="https://cdn.javarush.com/images/article/acbc2501-047c-473e-805b-be23a92f7c91/original.jpeg">И, как я говорил выше, давайте рассмотрим реализацию одного из вариантов в Java-коде (как вы поняли, это будет последний вариант). В самом приложении ничего такого: мы пройдёмся от контроллеров до слоев дао. Будем рассматривать на  методе create — для примера этого хватит с головой.
+
+Итак поехали))
+
+Наша сущность — фильм:
+
+<pre class="lang-java line-numbers"><code>
+@Builder
+@Getter
+public class Movie {
+
+   private Long id;
+
+   private String producer;
+}
+</code></pre>
+Ничего интересного, просто реализация модели первой таблицы.
+
+<span class="text-bold">Контроллер с конвертерами dto (Data Transfer Object):</span>
+
+<pre class="lang-java line-numbers"><code>
+@RestController
+@RequiredArgsConstructor
+@RequestMapping(path = "/cities")
+public class MovieController {
+
+   private final MovieService movieService;
+
+   @PostMapping
+   public ResponseEntity&lt;moviedto&gt; create(MovieDTO movieDTO) {
+       return new ResponseEntity&lt;&gt;(toDTO(movieService.create(fromDTO(movieDTO), movieDTO.getNameTranslations()), movieDTO.getNameTranslations()), HttpStatus.CREATED);
+   }
+
+   private Movie fromDTO(MovieDTO dto) {
+       return Movie.builder()
+               .id(dto.getId())
+               .producer(dto.getProducer())
+               .build();
+   }
+
+   private MovieDTO toDTO(Movie movie, Map&lt;string, string=""&gt; nameTranslation) {
+       return MovieDTO.builder()
+               .id(movie.getId())
+               .producer(movie.getProducer())
+               .nameTranslations(nameTranslation)
+               .build();
+   }
+}
+</code></pre>В DTO мы передаем переводы в качестве мап, key — сокращение языка, value — значение перевода (имя фильма).
+
+<span class="text-bold">DTO:</span>
+
+<pre class="lang-java line-numbers"><code>
+@Builder
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+public class MovieDTO {
+
+   @JsonProperty("id")
+   private Long id;
+
+   @JsonProperty("name")
+   private String producer;
+
+   @JsonProperty("nameTranslations")
+   private Map&lt;String, String&gt; nameTranslations;//example = "{'en': 'The Matrix', 'ru' : 'Матрица'}"
+}
+</code></pre>
+Здесь мы видим сам класс dto, как и написал выше, map для переводов, остальные поля — отображение модели Movie
+
+<span class="text-bold">Переходим к сервису фильмов:</span>
+
+<pre class="lang-java line-numbers"><code>
+public interface MovieService {
+
+   Movie create(Movie movie, Map<string, string=""> nameList);
+}
+</string,></code></pre>
+<span class="text-bold">Его реализация:</span>
+
+<pre class="lang-java line-numbers"><code>
+@Service
+@RequiredArgsConstructor
+public class MovieServiceImpl implements MovieService {
+
+   private final MovieDAO movieDAO;
+   private LanguageService languageService;
+
+   @Override
+   public Movie create(Movie movie, Map&lt;string, string=""&gt; nameList) {
+       movieDAO.create(movie);
+       Map&lt;Long, String&gt; map = new HashMap&lt;&gt;();
+       nameList.forEach((x, y) -&gt; map.put(languageService.getIdByLangCode(x), y));
+       movieDAO.createTranslator(movie.getId(), map);
+       return movie;
+   }
+}
+</code></pre>
+Здесь мы видим использование относительно стороннего сервиса LanguageService, для вытягивания id языка, по его сокращению. И уже с этим идентификатором  мы сохраняем наши переводы (так же в виде map) в таблицу связи.
+
+<span class="text-bold">Посмотрим на DAO:</span>
+
+<pre class="lang-java line-numbers"><code>
+public interface MovieDAO {
+
+   void create(Movie movie);
+
+   void createTranslator(Long movieId, Map&lt;Long,String&gt; nameTranslations);
+}
+</code></pre>
+<span class="text-bold">Реализация:</span>
+
+<pre class="lang-java line-numbers"><code>
+@RequiredArgsConstructor
+@Repository
+public class MovieDAOImpl implements MovieDAO {
+   private final JdbcTemplate jdbcTemplate;
+
+   private static final String CREATE_MOVIE = "INSERT INTO movies(id, producer) VALUES(?, ?)";
+
+   private static final String CREATE_TRANSLATOR = "INSERT INTO movies_translator(movies_id, language_id, name) VALUES(?, ?, ?)";
+
+   @Override
+   public void create(Movie movie) {
+       jdbcTemplate.update(CREATE_MOVIE, movie.getId(), movie.getProducer());
+   }
+
+   @Override
+   public void createTranslator(Long movieId, Map&lt;Long, String&gt; nameTranslations) {
+       nameTranslations.forEach((x, y) -&gt; jdbcTemplate.update(CREATE_TRANSLATOR, movieId, x, y));
+   }
+}
+</code></pre>
+Здесь мы видим сохранение  сущности и языков к ней (словаря). И да, здесь используется Spring JDBC: считаю его предпочтительней для новичков, так как он более прозрачен.
+ 
+Переходим к «стороннему» сервису.
+
+<span class="text-bold">Сервис языка:</span>
+
+<pre class="lang-java line-numbers"><code>
+public interface LanguageService {
+
+   Long getIdByLangCode(String lang);
+}
+</code></pre>
+<span class="text-bold">Реализация:</span>
+
+<pre class="lang-java line-numbers"><code>
+@Service
+@RequiredArgsConstructor
+public class LanguageServiceImpl implements LanguageService {
+   private final LanguageDAO languageDAO;
+
+   @Override
+   public Long getIdByLangCode(String lang) {
+       return languageDAO.getIdByLangCode(lang);
+   }
+}
+</code></pre>
+Ничего особенного, поиск по сокращенному имени.
+
+<span class="text-bold">DAO:</span>
+
+<pre class="lang-java line-numbers"><code>
+public interface LanguageDAO {
+
+   Long getIdByLangCode(String lang);
+}
+</code></pre>
+<span class="text-bold">Реализация:</span>
+<pre class="lang-java line-numbers"><code>
+@RequiredArgsConstructor
+@Repository
+public class LanguageDAOImpl implements LanguageDAO {
+   private final JdbcTemplate jdbcTemplate;
+
+   private static final String FIND_ID_BY_LANG_CODE = "SELECT id FROM languages WHERE lang_code = ?";
+
+   @Override
+   public Long getIdByLangCode(String lang) {
+       return jdbcTemplate.queryForObject(FIND_ID_BY_LANG_CODE, Long.class, lang);
+   }
+}
+</code></pre>
+<span class="text-bold">Структура:</span>
+<img data-max-width="308" alt="Реализация мультиязычности приложения - 23" src="https://cdn.javarush.com/images/article/5056902c-8f2f-4f14-86ed-2ea48bdeb1a0/original.jpeg">Все описанные выше модели имеют право на жизнь. Решать, какую именно использовать, нужно исходя из ситуации. Конечно, это не все: есть ещё много различных подходов, среди которых — использование разных БД для разных языков, использование кешей, различных фреймворков и так далее.
+
+На этом у меня сегодня сегодня все и…
+<img data-max-width="550" alt="Реализация мультиязычности приложения - 24" src="https://cdn.javarush.com/images/article/612eea3b-2c54-477d-bc21-3e3d52d3d5c8/original.jpeg">

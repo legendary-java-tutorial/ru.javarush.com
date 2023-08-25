@@ -1,0 +1,112 @@
+Что такое Deadlock в Java? 
+<p>----------------------------------------</p>
+Уровень знаний, необходимых для понимания статьи: вы прошли квесты Java Syntax и Java Core, и сейчас в процессе изучения Java Multithreading. Deadlock или дедлок или взаимная блокировка — это ошибка, которая происходит когда нити имеют циклическую зависимость от пары ...
+<p>----------------------------------------</p>
+Уровень знаний, необходимых для понимания статьи: вы прошли квесты Java Syntax и Java Core, и сейчас в процессе изучения Java Multithreading.  
+
+Deadlock или дедлок в Java или взаимная блокировка — это ошибка, которая происходит когда нити имеют циклическую зависимость от пары синхронизированных объектов. Представьте, что одна нить входит в монитор объекта <code>x</code>, а другая — объекта <code>y</code>. Если нить в объекте <code>x</code> пытается вызвать любой синхронизированный метод объекта <code>y</code>, а объект <code>y</code> в то же самое время пытается вызвать любой синхронизированный метод объекта <code>x</code>, то нити застрянут в процессе ожидания.<img data-id="5f05102e-df6d-4f7d-82b0-ebb3f9e4e11f" data-max-width="850" alt="Что такое Deadlock?  - 1" src="https://cdn.javarush.com/images/article/5f05102e-df6d-4f7d-82b0-ebb3f9e4e11f/1024.jpeg">Ниже — пример из туториала java docs о таком понятии, как deadlock. Где тут происходит блокировка нитей? 
+
+<pre class="lang-java line-numbers"><code>
+public class Deadlock {
+    static class Friend {
+        private final String name;
+        public Friend(String name) {
+            this.name = name;
+        }
+        public String getName() {
+            return this.name;
+        }
+        public synchronized void bow(Friend bower) {
+            System.out.format("%s: %s" + "  has bowed to me!%n", this.name, bower.getName());
+            bower.bowBack(this);
+        }
+        public synchronized void bowBack(Friend bower) {
+            System.out.format("%s: %s"
+                + " has bowed back to me!%n",
+                this.name, bower.getName());            
+        }
+    }
+
+    public static void main(String[] args) {
+        final Friend alphonse =
+            new Friend("Alphonse");
+        final Friend gaston =
+            new Friend("Gaston");
+        new Thread(new Runnable() {
+            @Override
+            public void run() { 
+               // System.out.println("Thread 1");
+                alphonse.bow(gaston); 
+               // System.out.println("Th: gaston bowed to alphonse");
+            }
+        }).start();
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() { 
+              //  System.out.println("Thread 2");
+                gaston.bow(alphonse);
+              //  System.out.println("2.gaston waiting alph bowed");
+            }
+        }).start();
+    }
+}
+</code></pre>
+Здесь нужно понять две важные вещи:
+<ol>
+<li> Что именно делает каждая из одновременно выполняющихся нитей?</li>
+<li>Какие локи используются?</li>
+</ol>Начнем с конца. Допустим, вы создали два объекта класса <code>Friend</code>: <code>alphonse</code> и <code>gaston</code>. У каждого из них есть свой лок. Таким образом, этих локов два: альфонсов и гастонов. При входе в синхронизированный метод объекта, его лок запирается, а когда из метода выходят, он  освобождается (или отпирается).
+
+Теперь о нитях. Назовем первую нить <code>Alphonse</code> (с большой буквы, чтобы отличить от объекта alphonse). Вот что она делает (обозначим её буквой <code>A</code>, сокращённо от <code>Alphonse</code>): 
+
+<pre class="lang-java line-numbers"><code>
+A: alphonse.bow(gaston) — получает лок alphonse;
+A: gaston.bowBack(alphonse) — получает лок gaston;
+A: возвращается из обоих методов, тем самым освобождая лок. 
+</code></pre>
+А вот чем в это время занята нить <code>Gaston</code>: 
+
+<pre class="lang-java line-numbers"><code>
+G: gaston.bow(alphonse) — получает лок gaston;
+G: alphonse.bowBack(gaston) — получает лок alphonse;
+G: возвращается из обоих методов, тем самым освобождая лок. 
+</code></pre>
+Теперь сведем эти данные вместе и получим ответ. Нити могут переплетаться (то есть, их события совершатся) в разных порядках. Дедлок получится, например, если порядок будет таким:
+
+<pre class="lang-java line-numbers"><code>
+A: alphonse.bow(gaston) — получает лок alphonse
+G: gaston.bow(alphonse) — получает лок gaston
+G: пытается вызвать alphonse.bowBack(gaston), но блокируется, ожидая лока alphonse
+A: пытается вызвать gaston.bowBack(alphonse), но блокируется, ожидая лока gaston
+</code></pre>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="c42c278d-3ce4-45b4-95e5-c7b8c8c024c3" data-max-width="710" alt="Что такое Deadlock?  - 2" src="https://cdn.javarush.com/images/article/c42c278d-3ce4-45b4-95e5-c7b8c8c024c3/1024.jpeg"></div></div>В этом случае обе нити заблокированы и каждая ожидает, что другая отдаст лок. Но ни одна это не сделает, потому что для этого нужно завершить свой метод, а он заблокирован другой нитью. Поэтому они застряли на месте, случился <code>deadlock</code>.
+
+Впрочем, возможно и другое переплетение, в котором одна из нитей успеет завершиться до начала второй:
+
+<pre class="lang-java line-numbers"><code>
+A: alphonse.bow(gaston) — получает лок alphonse
+A: gaston.bowBack(alphonse) — получает лок gaston
+A: возвращается из обоих методов, открывая оба лока
+G: gaston.bow(alphonse) — получает лок gaston
+G: alphonse.bowBack(gaston) — получает лок alphonse
+G: возвращается из обоих методов, открывая оба лока
+</code></pre>
+В этом случае взаимной блокировки нитей нет. Например, добавлен какой-то метод, позволяющий другой нити успеть выполниться.
+
+Когда результат зависит от порядка одновременно происходящих событий (запланированного порядка или скорости выполнения), такой процесс называется race condition по-русски — «состояние гонки». Не все race condition потенциально производят дедлок, однако, по моему опыту, дедлоки происходят только в race condition.
+
+<strong>Автор ответа:</strong> <a href="https://stackoverflow.com/users/2535549/dave-lillethun" target="_blank">Dave Lillethun</a>
+
+<table>
+<tbody><tr>
+<th>Что еще почитать:</th>
+</tr>
+<tr>
+<td>
+<p><strong><em>Группа Java Developer:</em></strong></p>
+<p><a href="https://javarush.com/groups/posts/292-kljevihe-optimizacii-sql-ne-zavisjajshie-ot-stoimostnoy-modeli" target="_blank">Клёвые оптимизации SQL, не зависящие от стоимостной модели. Часть 1</a></p>
+<p><a href="https://javarush.com/groups/posts/136-reguljarnihe-vihrazhenija-v-java-chastjh-1" target="_blank">Регулярные выражения в Java, часть 1</a></p>
+</td>
+</tr>
+</tbody></table>

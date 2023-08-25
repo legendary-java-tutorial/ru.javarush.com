@@ -1,0 +1,507 @@
+Основы XML для Java программиста. Часть 3.2 из 3 - DOM
+<p>----------------------------------------</p>
+Инструмент для обработки XML файлов - DOM. Привет всем читателям статьи, эта часть посвящена DOM. Следующая будет посвящена JAXB и, на этом, цикл основ XML будет завершен. Сначала будет немного теории ...
+<p>----------------------------------------</p>
+&lt;h2&gt;Вступление&lt;/h2&gt;Привет всем читателям статьи, эта часть посвящена DOM. Следующая будет посвящена JAXB и, на этом, цикл основ XML будет завершен. Сначала будет немного теории, а далее только практика. Давайте приступать.
+<img data-id="1d0b7928-9e8f-49c6-a11d-ace017b3d880" data-max-width="850" alt="" src="https://cdn.javarush.com/images/article/1d0b7928-9e8f-49c6-a11d-ace017b3d880/1024.jpeg">&lt;h2&gt;DOM (Document Object Model) - ТЕОРИЯ&lt;/h2&gt;DOM-обработчик устроен так, что он считывает сразу весь XML и сохраняет его, создавая иерархию в виде дерева, по которой мы можем спокойно двигаться и получать доступ к нужным нам элементам.
+<img data-id="c2becd36-05d0-4381-abfa-9026dc9afc7a" data-max-width="960" alt="" src="https://cdn.javarush.com/images/article/c2becd36-05d0-4381-abfa-9026dc9afc7a/1024.jpeg">Таким образом, мы можем, имея ссылку на верхний элемент, получить все ссылки на его внутренние элементы. При чем элементы, которые внутри элемента – дети этого элемента, а он – их родитель.
+
+Однажды считав весь XML в память, мы просто будем путешествовать по его структуре и выполнять нужные нам действия.
+
+Немного уже о программной части DOM в Java: в DOM есть множество интерфейсов, которые созданы, чтобы описывать разные данные. Все эти интерфейсы наследуют один общий интерфейс – Node (узел). Потому, по сути, самый частый тип данных в DOM – это Node (узел), который может быть всем.
+
+<em>У каждого Node есть следующие полезные методы для извлечения информации:</em>
+<ol>
+<li><code>getNodeName</code> – получить имя узла.</li>
+<li><code>getNodeValue</code> – получить значение узла.</li>
+<li><code>getNodeType</code> – получить тип узла.</li>
+<li><code>getParentNode</code> – получить узел, внутри которого находится данный узел.</li>
+<li><code>getChildNodes</code> – получить все производные узлы (узлы, которые внутри данного узла).</li>
+<li><code>getAttributes</code> – получить все атрибуты узла.</li>
+<li><code>getOwnerDocument</code> – получить документ этого узла.</li>
+<li><code>getFirstChild/getLastChild</code> – получить первый/последний производный узел.</li>
+<li><code>getLocalName</code> – полезно при обработка пространств имён, чтобы получить имя без префикса. </li>
+<li><code>getTextContent</code> – возвращает весь текст внутри элемента и всех элементов внутри данного элемента, включая переносы строчек и пробелы.</li>
+</ol><em>Примечание по 9 методу: он будет всегда возвращать null, если в DocumentFactory вы не воспользовались методом setNamespaceAware(true), чтобы запустить обработку пространств имён.</em>
+
+Теперь, важная деталь: методы общие для всех Node, но в Node у нас может быть как элемент, так и атрибут. И тут вопросы: какое значение может быть у элемента? Какие производные узлы могут быть у атрибута? И другие не состыковки.
+
+А все довольно просто: <strong>каждый метод будет работать в зависимости от типа Node</strong>. Достаточно использовать логику, конечно, чтобы не запутаться. Например: какие атрибуты способны быть у атрибутов? Какое еще значение у элемента? Однако, чтобы самому не пробовать все, в официальных доках есть очень полезная табличка по работе каждого метода в зависимости от типа Node:
+<img data-id="65235fba-742a-439d-8681-b03b39071e96" data-max-width="1024" alt="" src="https://cdn.javarush.com/images/article/65235fba-742a-439d-8681-b03b39071e96/1024.jpeg">Качество плохое получилось, так что ссылка на документацию (таблица вверху страницы): <a href="https://docs.oracle.com/javase/7/docs/api/org/w3c/dom/Node.html" target="_blank" rel="nofollow">Документация Node</a>
+
+Самое важное, что нужно запомнить:
+<ol>
+<li>Атрибуты есть ТОЛЬКО у элементов.</li>
+<li>У элементов НЕТ значения.</li>
+<li>Имя узла-элемента совпадает с именем тега, а узла-атрибута с именем атрибута.</li>
+</ol>&lt;h2&gt;DOM (Document Object Model) – ПРАКТИКА&lt;/h2&gt;В практической части мы будем разбирать разного рода задачки по поиску информации в XML. Так же взяты две задачи из прошлой статьи для сравнения удобства. Давайте начинать, а начать хорошо было бы с импортов:
+
+<pre class="lang-java line-numbers"><code>
+import org.w3c.dom.Document;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
+import java.io.IOException;
+</code></pre>
+Даю импорты, чтобы вы не спутали классы :)
+
+<strong>Задача №1 – нам нужно достать информацию о всех сотрудниках и вывести её в консоль из следующего XML файла:</strong>
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8" standalone="yes"?&gt;
+&lt;company&gt;
+    &lt;name&gt;IT-Heaven&lt;/name&gt;
+    &lt;offices&gt;
+        &lt;office floor="1" room="1"&gt;
+            &lt;employees&gt;
+                &lt;employee name="Maksim" job="Middle Software Developer" /&gt;
+                &lt;employee name="Ivan" job="Junior Software Developer" /&gt;
+                &lt;employee name="Franklin" job="Junior Software Developer" /&gt;
+            &lt;/employees&gt;
+        &lt;/office&gt;
+        &lt;office floor="1" room="2"&gt;
+            &lt;employees&gt;
+                &lt;employee name="Herald" job="Middle Software Developer" /&gt;
+                &lt;employee name="Adam" job="Middle Software Developer" /&gt;
+                &lt;employee name="Leroy" job="Junior Software Developer" /&gt;
+            &lt;/employees&gt;
+        &lt;/office&gt;
+    &lt;/offices&gt;
+&lt;/company&gt;
+</code></pre>
+Как мы можем видеть, у нас вся информация сохранена в элементах employee. Для того, чтобы где-то хранить её у нас в программе, давайте создадим класс <code>Employee</code>:
+
+<pre class="lang-java line-numbers"><code>
+public class Employee {
+    private String name, job;
+
+    public Employee(String name, String job) {
+        this.name = name;
+        this.job = job;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getJob() {
+        return job;
+    }
+}
+</code></pre>
+Теперь, когда у нас есть описание структуры для хранения данных, нам нужна коллекция, которая будет хранить сотрудников. Её мы будем создавать в самом коде. Так же нам нужно создать Document на основе нашего XML:
+
+<pre class="lang-java line-numbers"><code>
+public class DOMExample {
+    // Список для сотрудников из XML файла
+    private static ArrayList&lt;Employee&gt; employees = new ArrayList&lt;&gt;();
+    
+    public static void main(String[] args) throws ParserConfigurationException, SAXException, IOException {
+        // Получение фабрики, чтобы после получить билдер документов.
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        
+        // Получили из фабрики билдер, который парсит XML, создает структуру Document в виде иерархического дерева.
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        
+        // Запарсили XML, создав структуру Document. Теперь у нас есть доступ ко всем элементам, каким нам нужно.
+        Document document = builder.parse(new File("resource/xml_file1.xml")); 
+    }
+}
+</code></pre>
+После получения документа, мы обладаем неограниченной властью над всей структурой XML файла. Мы можем получать любые элементы в любое время, возвращаться обратно, чтобы проверить какие-либо данные и, в целом, более гибкий подход, чем был у нас в SAX.
+
+В контексте данной задачи, нам нужно просто извлечь все элементы employee, а после извлечь всю информацию про них. <em>Это достаточно просто:</em>
+
+<pre class="lang-java line-numbers"><code>
+public class DOMExample {
+    // Список для сотрудников из XML файла
+    private static ArrayList&lt;Employee&gt; employees = new ArrayList&lt;&gt;();
+
+    public static void main(String[] args) throws ParserConfigurationException, SAXException, IOException {
+        // Получение фабрики, чтобы после получить билдер документов.
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+
+        // Получили из фабрики билдер, который парсит XML, создает структуру Document в виде иерархического дерева.
+        DocumentBuilder builder = factory.newDocumentBuilder();
+
+        // Запарсили XML, создав структуру Document. Теперь у нас есть доступ ко всем элементам, каким нам нужно.
+        Document document = builder.parse(new File("resource/xml_file1.xml"));
+
+        // Получение списка всех элементов employee внутри корневого элемента (getDocumentElement возвращает ROOT элемент XML файла).
+        NodeList employeeElements = document.getDocumentElement().getElementsByTagName("employee");
+
+        // Перебор всех элементов employee
+        for (int i = 0; i &lt; employeeElements.getLength(); i++) {
+            Node employee = employeeElements.item(i);
+
+            // Получение атрибутов каждого элемента
+            NamedNodeMap attributes = employee.getAttributes();
+
+            // Добавление сотрудника. Атрибут - тоже Node, потому нам нужно получить значение атрибута с помощью метода getNodeValue()
+            employees.add(new Employee(attributes.getNamedItem("name").getNodeValue(), attributes.getNamedItem("job").getNodeValue()));
+        }
+
+        // Вывод информации о каждом сотруднике
+        for (Employee employee : employees)
+            System.out.println(String.format("Информации о сотруднике: имя - %s, должность - %s.", employee.getName(), employee.getJob()));
+    }
+}
+</code></pre>
+Описание данного решения прямо в решении. Желательно после просмотра кода, вернуться обратно к теории и прочитать еще раз. На самом деле, все понятно инстинктивно. Прочитайте внимательно комментарии и вопросов быть не должно, а если остались – можете написать в комментариях, я отвечу, или в лычку, или просто запустить свою ИДЕЮ и самому попробовать поиграться с кодом, если вы еще этого не сделали.
+
+<em>Таким образом, после запуска кода мы получили следующие выходные данные:</em>
+
+<pre class="lang-java line-numbers"><code>
+Информации о сотруднике: имя - Maksim, должность - Middle Software Developer.
+Информации о сотруднике: имя - Ivan, должность - Junior Software Developer.
+Информации о сотруднике: имя - Franklin, должность - Junior Software Developer.
+Информации о сотруднике: имя - Herald, должность - Middle Software Developer.
+Информации о сотруднике: имя - Adam, должность - Middle Software Developer.
+Информации о сотруднике: имя - Leroy, должность - Junior Software Developer.
+</code></pre>
+Как можно заметить, задача успешно выполнена! Давайте переходить к следующей задаче :)
+
+<strong>Задача №2 – вводится с консоли имя элемента, про который нужно вывести информацию об всех элементах внутри его и их атрибутах со следующего XML файла:</strong>
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;root&gt;
+    &lt;oracle&gt;
+        &lt;connection value="jdbc:oracle:thin:@10.220.140.48:1521:test1" /&gt;
+        &lt;user value="secretOracleUsername" /&gt;
+        &lt;password value="111" /&gt;
+    &lt;/oracle&gt;
+
+    &lt;mysql&gt;
+        &lt;connection value="jdbc:mysql:thin:@10.220.140.48:1521:test1" /&gt;
+        &lt;user value="secretMySQLUsername" /&gt;
+        &lt;password value="222" /&gt;
+    &lt;/mysql&gt;
+&lt;/root&gt;
+</code></pre>
+Все достаточно просто: мы должны получить элемент по его имени, которое считаем, а после пройти по всем дочерним узлам. Для этого нужно пройтись по всем дочерним узлам всех дочерних узлов, которые являются элементами.
+
+<em>Решение данной задачи:</em>
+
+<pre class="lang-java line-numbers"><code>
+public class DOMExample {
+    public static void main(String[] args) throws ParserConfigurationException, SAXException, IOException {
+        // Ридер для считывания имени тега из консоли
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+
+        // Получение фабрики, чтобы после получить билдер документов.
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+
+        // Получили из фабрики билдер, который парсит XML, создает структуру Document в виде иерархического дерева.
+        DocumentBuilder builder = factory.newDocumentBuilder();
+
+        // Запарсили XML, создав структуру Document. Теперь у нас есть доступ ко всем элементам, каким нам нужно.
+        Document document = builder.parse(new File("resource/xml_file3.xml"));
+
+        // Считывание имени тега для поиска его в файле
+        String element = reader.readLine();
+
+        // Получение списка элементов, однако для удобства будем рассматривать только первое совпадение в документе.
+        // Так же заметьте, что мы ищем элемент внутри документа, а не рут элемента. Это сделано для того, чтобы рут элемент тоже искался.
+        NodeList matchedElementsList = document.getElementsByTagName(element);
+
+        // Даже если элемента нет, всегда будет возвращаться список, просто он будет пустым.
+        // Потому, чтобы утверждать, что элемента нет в файле, достаточно проверить размер списка.
+        if (matchedElementsList.getLength() == 0) {
+            System.out.println("Тег " + element + " не был найден в файле.");
+        } else {
+            // Получение первого элемента.
+            Node foundedElement = matchedElementsList.item(0);
+
+            System.out.println("Элемент был найден!");
+
+            // Если есть данные внутри, вызов метода для вывода всей информации
+            if (foundedElement.hasChildNodes())
+                printInfoAboutAllChildNodes(foundedElement.getChildNodes());
+        }
+    }
+
+    /**
+     * Рекурсивный метод, который будет выводить информацию про все узлы внутри всех узлов, которые пришли параметром, пока не будут перебраны все узлы.
+     * @param list Список узлов.
+     */
+    private static void printInfoAboutAllChildNodes(NodeList list) {
+        for (int i = 0; i &lt; list.getLength(); i++) {
+            Node node = list.item(i);
+
+            // У элементов есть два вида узлов - другие элементы или текстовая информация. Потому нужно разбираться две ситуации отдельно.
+            if (node.getNodeType() == Node.TEXT_NODE) {
+                // Фильтрация информации, так как пробелы и переносы строчек нам не нужны. Это не информация.
+                String textInformation = node.getNodeValue().replace("\n", "").trim();
+
+                if(!textInformation.isEmpty())
+                    System.out.println("Внутри элемента найден текст: " + node.getNodeValue());
+            }
+            // Если это не текст, а элемент, то обрабатываем его как элемент.
+            else {
+                System.out.println("Найден элемент: " + node.getNodeName() + ", его атрибуты:");
+
+                // Получение атрибутов
+                NamedNodeMap attributes = node.getAttributes();
+
+                // Вывод информации про все атрибуты
+                for (int k = 0; k &lt; attributes.getLength(); k++)
+                    System.out.println("Имя атрибута: " + attributes.item(k).getNodeName() + ", его значение: " + attributes.item(k).getNodeValue());
+            }
+
+            // Если у данного элемента еще остались узлы, то вывести всю информацию про все его узлы.
+            if (node.hasChildNodes())
+                printInfoAboutAllChildNodes(node.getChildNodes());
+        }
+    }
+}
+</code></pre>
+Все описание решения есть в комментариях, однако хотелось бы немного изобразить графически подход, который мы задействовали, на примере картинки из теории.
+<img data-id="70c9f07d-a868-4beb-a41a-7bacccd05ebb" data-max-width="960" alt="" src="https://cdn.javarush.com/images/article/70c9f07d-a868-4beb-a41a-7bacccd05ebb/1024.jpeg">Будем считать, что информацию нам нужно вывести про тег html. Как вы видите, нам нужно идти сверху-вниз от корня дерева. Все линии – это узлы. 
+<img data-id="1d372f2b-c7c8-41fa-8268-f382a7fb6191" data-max-width="566" alt="" src="https://cdn.javarush.com/images/article/1d372f2b-c7c8-41fa-8268-f382a7fb6191/1024.jpeg"><img data-id="d30fd0b0-8375-4067-b7a0-95c581f4ff9e" data-max-width="567" alt="" src="https://cdn.javarush.com/images/article/d30fd0b0-8375-4067-b7a0-95c581f4ff9e/1024.jpeg"><img data-id="f1290066-8377-4c23-ac95-392aa480b8a0" data-max-width="560" alt="" src="https://cdn.javarush.com/images/article/f1290066-8377-4c23-ac95-392aa480b8a0/1024.jpeg">В решении мы рекурсивно будем идти от начала нужного элемента по всем его узлам, и если какой-то из его узлов – элемент, то мы перебираем так же все узлы этого элемента.
+
+<em>Таким образом, после запуска кода мы получили следующие выходные данные для элемента root:</em>
+
+<pre class="lang-java line-numbers"><code>
+Элемент был найден!
+Найден элемент: oracle, его атрибуты:
+Найден элемент: connection, его атрибуты:
+Имя атрибута: value, его значение: jdbc:oracle:thin:@10.220.140.48:1521:test1
+Найден элемент: user, его атрибуты:
+Имя атрибута: value, его значение: secretOracleUsername
+Найден элемент: password, его атрибуты:
+Имя атрибута: value, его значение: 111
+Найден элемент: mysql, его атрибуты:
+Найден элемент: connection, его атрибуты:
+Имя атрибута: value, его значение: jdbc:mysql:thin:@10.220.140.48:1521:test1
+Найден элемент: user, его атрибуты:
+Имя атрибута: value, его значение: secretMySQLUsername
+Найден элемент: password, его атрибуты:
+Имя атрибута: value, его значение: 222
+</code></pre>
+Задача успешно решена!
+
+<strong>Задача №3 – из следующего XML файла, где сохранена информация про студентов, профессоров и сотрудников, нужно считать информацию и вывести её в консоль:</strong>
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;database&gt;
+    &lt;students&gt;
+        &lt;student name="Maksim" course="3" specialization="CE" /&gt;
+        &lt;student name="Stephan" course="1" specialization="CS" /&gt;
+        &lt;student name="Irvin" course="2" specialization="CE" /&gt;
+    &lt;/students&gt;
+
+    &lt;professors&gt;
+        &lt;professor name="Herald" experience="7 years in University" discipline="Math" /&gt;
+        &lt;professor name="Adam" experience="4 years in University" discipline="Programming" /&gt;
+        &lt;professor name="Anton" experience="6 years in University" discipline="English" /&gt;
+    &lt;/professors&gt;
+
+    &lt;service&gt;
+        &lt;member name="John" position="janitor" /&gt;
+        &lt;member name="Jordan" position="janitor" /&gt;
+        &lt;member name="Mike" position="janitor" /&gt;
+    &lt;/service&gt;
+&lt;/database&gt;
+</code></pre>
+Задача довольно простая, однако интересная. Для начала, нам нужно создать 4 класса: сотрудника, профессора и студента, а так же общий абстрактный класс Human, чтобы вынести переменную name из каждого класса под общий знаменатель:
+
+<strong>Абстрактный класс-родитель</strong>
+
+<pre class="lang-java line-numbers"><code>
+public abstract class Human {
+    private String name;
+
+    public Human(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+}
+</code></pre>
+<strong>Студент</strong>
+
+<pre class="lang-java line-numbers"><code>
+public class Student extends Human {
+    private String course, specialization;
+
+    public Student(String name, String course, String specialization) {
+        super(name);
+        this.course = course;
+        this.specialization = specialization;
+    }
+
+    public String getCourse() {
+        return course;
+    }
+
+    public String getSpecialization() {
+        return specialization;
+    }
+
+    public String toString() {
+        return "Голодный студент " + getName() + " " + course + "-го курса, обучающийся по специальности " + specialization;
+    }
+}
+</code></pre>
+<strong>Профессор</strong>
+
+<pre class="lang-java line-numbers"><code>
+public class Professor extends Human {
+    private String experience, discipline;
+
+    public Professor(String name, String experience, String discipline) {
+        super(name);
+        this.experience = experience;
+        this.discipline = discipline;
+    }
+
+    public String getExperience() {
+        return experience;
+    }
+
+    public String getDiscipline() {
+        return discipline;
+    }
+
+    public String toString() {
+        return "Профессор " + getName() + ", обладающий опытом: \"" + experience + "\", выкладает дисциплину " + discipline;
+    }
+}
+</code></pre>
+<strong>Сотрудник</strong>
+
+<pre class="lang-java line-numbers"><code>
+public class Member extends Human {
+    private String position;
+
+    public Member(String name, String position) {
+        super(name);
+        this.position = position;
+    }
+
+    public String getPosition() {
+        return position;
+    }
+
+    public String toString() {
+        return "Сотрудник обслуживающего персонала " + getName() + ", должность: " + position;
+    }
+}
+</code></pre>
+Теперь, когда наши классы готовы, нам достаточно написать код для получения всех элементов student, professor и member, а потом достать их атрибуты.
+
+Для хранения мы будем использовать коллекцию, которая будет хранить объекты общего для всех родительского класса – Human.
+
+<em>И так, решение данной задачи:</em>
+
+<pre class="lang-java line-numbers"><code>
+public class DOMExample {
+    // Коллекция для хранения всех людей
+    private static ArrayList&lt;Human&gt; humans = new ArrayList&lt;&gt;();
+
+    // Константы для элементов
+    private static final String PROFESSOR = "professor";
+    private static final String MEMBER = "member";
+    private static final String STUDENT = "student";
+
+    public static void main(String[] args) throws ParserConfigurationException, SAXException, IOException {
+        // Получение фабрики, чтобы после получить билдер документов.
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+
+        // Получили из фабрики билдер, который парсит XML, создает структуру Document в виде иерархического дерева.
+        DocumentBuilder builder = factory.newDocumentBuilder();
+
+        // Запарсили XML, создав структуру Document. Теперь у нас есть доступ ко всем элементам, каким нам нужно.
+        Document document = builder.parse(new File("resource/xml_file3.xml"));
+
+        // Получение информации про каждый элемент отдельно
+        collectInformation(document, PROFESSOR);
+        collectInformation(document, MEMBER);
+        collectInformation(document, STUDENT);
+
+        // Вывод информации
+        humans.forEach(System.out::println);
+    }
+
+    /**
+     * Метод ищет информацию про теги по имени element и вносит всю информацию в коллекцию humans.
+     * @param document Документ, в котором будем искать элементы.
+     * @param element Имя элемента, теги которого нужно найти. Должна быть одна из констант, которые определяются выше.
+     */
+    private static void collectInformation(Document document, final String element) {
+        // Получение всех элементов по имени тега.
+        NodeList elements = document.getElementsByTagName(element);
+
+        // Перебор всех найденных элементов
+        for (int i = 0; i &lt; elements.getLength(); i++) {
+            // Получение всех атрибутов элемента
+            NamedNodeMap attributes = elements.item(i).getAttributes();
+            String name = attributes.getNamedItem("name").getNodeValue();
+
+            // В зависимости от типа элемента, нам нужно собрать свою дополнительну информацию про каждый подкласс, а после добавить нужные образцы в коллекцию.
+            switch (element) {
+                case PROFESSOR: {
+                    String experience = attributes.getNamedItem("experience").getNodeValue();
+                    String discipline = attributes.getNamedItem("discipline").getNodeValue();
+
+                    humans.add(new Professor(name, experience, discipline));
+                } break;
+                case STUDENT: {
+                    String course = attributes.getNamedItem("course").getNodeValue();
+                    String specialization = attributes.getNamedItem("specialization").getNodeValue();
+
+                    humans.add(new Student(name, course, specialization));
+                } break;
+                case MEMBER: {
+                    String position = attributes.getNamedItem("position").getNodeValue();
+
+                    humans.add(new Member(name, position));
+                } break;
+            }
+        }
+    }
+}
+</code></pre>
+Заметьте, что нам достаточно только названия элемента, чтобы получить вообще все эти элементы из документа. Это значительно упрощает процесс поиска нужной информации.
+
+Вся информация про код помещена в комментарии. Нового ничего не было использовано, чего не было бы в предыдущих задачах.
+
+<em>Выходные данные кода:</em>
+
+<pre class="lang-java line-numbers"><code>
+Профессор Herald, обладающий опытом: "7 years in University", выкладает дисциплину Math
+Профессор Adam, обладающий опытом: "4 years in University", выкладает дисциплину Programming
+Профессор Anton, обладающий опытом: "6 years in University", выкладает дисциплину English
+Сотрудник обслуживающего персонала John, должность: janitor
+Сотрудник обслуживающего персонала Jordan, должность: janitor
+Сотрудник обслуживающего персонала Mike, должность: janitor
+Голодный студент Maksim 3-го курса, обучающийся по специальности CE
+Голодный студент Stephan 1-го курса, обучающийся по специальности CS
+Голодный студент Irvin 2-го курса, обучающийся по специальности CE
+</code></pre>
+Задача решена!
+
+<strong>Рекомендации, когда использовать DOM, а когда SAX</strong>
+
+Разница между данными инструментами в функциональности и скорости работы. Если вам нужен более гибкий функционал и вы можете позволить себе тратить производительность программы, то ваш выбор – DOM, если же ваша главная цель – сокращение затрат памяти, то DOM не лучший выбор, так как он считывает всю информацию из XML файла и сохраняет её. Потому, метод SAX последовательного считывания менее затратный.
+
+<strong>Коротко: если нужна производительность – SAX, функциональность – DOM.</strong>
+&lt;h2&gt;Заключение&lt;/h2&gt;У каждого программиста есть свои инструменты, и, в зависимости от задачи, нужно использовать те или иные инструменты. В статьях про SAX и DOM я ставил целью обучить вас извлекать информацию из XML файлов и обрабатывать их так, как вам это нужно.
+
+Однако, даже если вы прочитали данные статьи, вы не можете утверждать, что обучились использовать эти инструменты. Вы должны попрактиковаться, протестировать код из статей, разобраться в его работе и попробовать самим что-нибудь написать. Как никак, самое важное – практика.
+
+Последняя статья будет в ближайшие дни и, видимо, уже по окончанию срока конкурса, и будет посвящена JAXB. JAXB – инструмент для сохранения объектов в вашей программе в формат XML.
+
+На этом все, надеюсь, что эта статья была полезна, и успехов вам в программировании :)
+
+Предыдущая статья: <a href="https://javarush.com/groups/posts/650-konkurs-osnovih-xml-dlja-java-programmista---chastjh-31-iz-3---sax" target="_blank" rel="nofollow">[Конкурс] Основы XML для Java программиста - Часть 3.1 из 3 - SAX</a>

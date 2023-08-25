@@ -1,0 +1,359 @@
+Класс ArrayList в Java
+<p>----------------------------------------</p>
+Привет! В прошлых лекциях мы подробно разобрали такую структуру данных как массив и рассмотрели распространенные примеры работы с ними. Вообще, массивы — штука достаточно удобная и как ты уже заметил, с ними можно много чего делать :) Тем не менее, у массивов есть ...
+<p>----------------------------------------</p>
+Привет! В прошлых лекциях мы подробно разобрали такую структуру данных как массив и рассмотрели распространенные примеры работы с ними. Но у этой структуры данных есть ряд недостатков. Ответом на них в Java стало появление ArrayList.
+
+Если говорить максимально просто, то список ArrayList в Java — это “прокачанный” массив с большим количеством новых возможностей.<img data-id="65d69538-70e7-416c-8174-c914be0acf05" data-max-width="850" alt="Класс ArrayList - 1" src="https://cdn.javarush.com/images/article/65d69538-70e7-416c-8174-c914be0acf05/1024.jpeg"><h2>Чем Java Arraylist отличается от обычных массивов?</h2>Вообще, массивы — штука достаточно удобная и как ты уже заметил, с ними можно много чего делать :) Тем не менее, у массивов есть и ряд недостатков.
+<ul>
+<li>Ограниченный размер. Нужно уже на этапе создания массива знать, сколько ячеек он должен содержать. Недооценишь нужное количество — места не хватит. Переоценишь — массив останется полупустым, и это еще полбеды. Ведь получается, ты еще и выделишь под него больший объем памяти, чем нужно.</li>
+<li>У массива нет методов для добавления элементов. Всегда приходится явно указывать индекс ячейки, куда нужно добавить элемент. Если нечаянно указать уже занятую ячейку с каким-то нужным значением, оно перезапишется.</li>
+<li>Нет методов для удаления элемента. Значение можно только “обнулить”. </li>
+</ul>
+<pre class="lang-java line-numbers"><code>
+public class Cat {
+
+   private String name;
+
+   public Cat(String name) {
+       this.name = name;
+   }
+
+   public static void main(String[] args) {
+
+       Cat[] cats = new Cat[3];
+       cats[0] = new Cat("Томас");
+       cats[1] = new Cat("Бегемот");
+       cats[2] = new Cat("Филипп Маркович");
+
+       cats[1] = null;
+
+      
+      
+       System.out.println(Arrays.toString(cats));
+   }
+
+   @Override
+   public String toString() {
+       return "Cat{" +
+               "name='" + name + '\'' +
+               '}';
+   }
+}
+</code></pre>
+Вывод:
+
+<pre><code>
+[Cat{name='Томас'}, null, Cat{name='Филипп Маркович'}]
+</code></pre>
+Все эти недочеты можно устранить, используя ArrayList.
+
+Создается он очень просто:
+
+<pre class="lang-java line-numbers"><code>
+ArrayList&lt;Cat&gt; cats = new ArrayList&lt;Cat&gt;();
+</code></pre>
+Теперь мы создали список для хранения объектов <code>Cat</code>.
+
+<mark>Обрати внимание:</mark> мы не указываем размер ArrayList’a, поскольку он является автоматически расширяемым.
+
+Как такое возможно? Легко. Ты удивишься, но в основе ArrayList’a лежит самый обыкновенный массив :)
+
+Да, внутри у него находится массив, в котором и хранятся наши элементы. Но у ArrayList’a есть специальный механизм по работе с ним: 
+<ul>
+<li>Когда этот внутренний массив заполняется, ArrayList создает внутри себя новый массив. Его размер = (размер старого массива * 1,5) +1.</li>
+<li>Все данные копируются из старого массива в новый</li>
+<li>Старый массив удаляется сборщиком мусора.</li>
+</ul>Благодаря этому механизму в ArrayList’e (в отличие от массива) реализован метод для добавления нового элемента. Это метод <code>add()</code>.
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   ArrayList&lt;Cat&gt; cats = new ArrayList&lt;Cat&gt;();
+   cats.add(new Cat("Бегемот"));
+}
+</code></pre>
+Новый элемент добавляется в конец списка. Теперь риска переполнения нет, поэтому такой механизм полностью безопасен.
+
+Кстати, ArrayList умеет не только искать объект по индексу, но и наоборот — может найти индекс объекта в ArrayList’e по ссылке на объект!
+
+Для этого в нем реализован метод <code>indexOf()</code>:
+
+Мы передаем в него ссылку на нужный объект, и <code>indexOf()</code> возвращает нам его индекс:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   ArrayList&lt;Cat&gt; cats = new ArrayList&lt;&gt;();
+   Cat thomas = new Cat("Томас");
+   Cat behemoth = new Cat("Бегемот");
+   Cat philipp = new Cat("Филипп Маркович");
+   Cat pushok = new Cat("Пушок");
+
+   cats.add(thomas);
+   cats.add(behemoth);
+   cats.add(philipp);
+   cats.add(pushok);
+
+   int thomasIndex = cats.indexOf(thomas);
+   System.out.println(thomasIndex);
+}
+</code></pre>
+Вывод:
+
+<pre><code>
+0
+</code></pre>
+Все верно, объект <code>thomas</code> действительно хранится в ячейке <code>0</code>.
+
+У массивов есть не только недостатки, но и несомненные преимущества. Одно из них — поиск элемента по индексу. Поскольку мы указываем на индекс, то есть на конкретный адрес в памяти, такой поиск в массиве осуществляется очень быстро. ArrayList в Java тоже так умеет! Для этого в нем реализован метод <code>get()</code>:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   ArrayList&lt;Cat&gt; cats = new ArrayList&lt;&gt;();
+   Cat thomas = new Cat("Томас");
+   Cat behemoth = new Cat("Бегемот");
+   Cat philipp = new Cat("Филипп Маркович");
+   Cat pushok = new Cat("Пушок");
+
+   cats.add(thomas);
+   cats.add(behemoth);
+   cats.add(philipp);
+   cats.add(pushok);
+
+   Cat secondCat = cats.get(1);
+
+   System.out.println(secondCat);
+}
+</code></pre>
+Вывод:
+
+<pre><code>
+Cat{name='Бегемот'}
+</code></pre>
+Кроме того, можно легко узнать, содержит ли ArrayList какой-то конкретный объект, или нет. Это делается с помощью метода <code>contains()</code>:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   ArrayList&lt;Cat&gt; cats = new ArrayList&lt;&gt;();
+   Cat thomas = new Cat("Томас");
+   Cat behemoth = new Cat("Бегемот");
+   Cat philipp = new Cat("Филипп Маркович");
+   Cat pushok = new Cat("Пушок");
+
+   cats.add(thomas);
+   cats.add(behemoth);
+   cats.add(philipp);
+   cats.add(pushok);
+
+   cats.remove(pushok);
+   System.out.println(cats.contains(pushok));
+}
+</code></pre>
+Метод проверяет содержится ли элемент во внутреннем массиве ArrayList’a, и возвращает результат в виде <code>boolean</code> — <code>true</code> или <code>false</code>.
+
+Вывод:
+
+<pre><code>
+false
+</code></pre>
+И еще важное по поводу вставки.
+ArrayList позволяет вставлять данные не только в конец массива, но и в любую ячейку по индексу.
+
+Для этого у него есть два метода:
+<ul>
+<li><code>add(int index, Cat element)</code></li>
+<li><code>set(int index, Cat element)</code></li>
+</ul>В оба ты передаешь индекс ячейки, в которую нужно сделать вставку, и ссылку на сам объект.
+
+Разница в том, что вставка через <code>set()</code> затирает старое значение, хранящееся в ячейке.
+
+А вставка через <code>add()</code> сначала сдвигает все элементы начиная с <code>[index]</code> к концу массива, а в образовавшуюся пустую ячейку добавляет нужный тебе объект.
+
+Вот пример:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   ArrayList&lt;Cat&gt; cats = new ArrayList&lt;&gt;();
+   Cat thomas = new Cat("Томас");
+   Cat behemoth = new Cat("Бегемот");
+   Cat philipp = new Cat("Филипп Маркович");
+   Cat pushok = new Cat("Пушок");
+
+   cats.add(thomas);
+   cats.add(behemoth);
+
+   System.out.println(cats.toString());
+
+   cats.set(0, philipp);//Сейчас у нас список из 2 котов. Добавляем 3-го через set:
+
+   System.out.println(cats.toString());
+}
+</code></pre>
+Вывод:
+
+<pre><code>
+[[Cat{name='Томас'}, Cat{name='Бегемот'}]
+[Cat{name='Филипп Маркович'}, Cat{name='Бегемот'}]
+</code></pre>
+У нас был список из 2 котов, мы вставили еще одного через метод <code>set()</code> в ячейку <code>0</code>. В итоге старое значение, хранящееся в этой ячейке, было заменено на новое.
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   ArrayList&lt;Cat&gt; cats = new ArrayList&lt;&gt;();
+   Cat thomas = new Cat("Томас");
+   Cat behemoth = new Cat("Бегемот");
+   Cat philipp = new Cat("Филипп Маркович");
+   Cat pushok = new Cat("Пушок");
+
+   cats.add(thomas);
+   cats.add(behemoth);
+
+   System.out.println(cats.toString());
+
+   cats.add(0, philipp);//Сейчас у нас список из 2 котов. Добавляем 3-го через add
+
+   System.out.println(cats.toString());
+}
+</code></pre>
+А вот <code>add()</code> сработал иначе. Он сдвинул все элементы вправо и после этого записал новое значение в ячейку <code>0</code>.
+
+Вывод:
+
+<pre><code>
+[Cat{name='Томас'}, Cat{name='Бегемот'}]
+[Cat{name='Филипп Маркович'}, Cat{name='Томас'}, Cat{name='Бегемот'}]
+</code></pre>
+Чтобы полностью очистить список, используется метод <code>clear()</code>:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   ArrayList&lt;Cat&gt; cats = new ArrayList&lt;&gt;();
+   Cat thomas = new Cat("Томас");
+   Cat behemoth = new Cat("Бегемот");
+   Cat philipp = new Cat("Филипп Маркович");
+   Cat pushok = new Cat("Пушок");
+
+   cats.add(thomas);
+   cats.add(behemoth);
+   cats.add(philipp);
+   cats.add(pushok);
+
+   cats.clear();
+
+   System.out.println(cats.toString());
+}
+</code></pre>
+Вывод:
+
+<pre><code>
+[]
+</code></pre>
+Из списка было удалено все содержимое.
+
+Кстати, обрати внимание: в отличие от массивов, в ArrayList метод toString() переопределен и сразу выводит список в формате строки. В случае с массивами нам для этого приходилось использовать класс Arrays.
+
+И раз уж вспомнили о Arrays: в Java можно легко “переключаться” между массивом и ArrayList, то есть преобразовывать одно к другому. В классе Arrays для этого есть метод Arrays.asList(). С его помощью мы получаем содержимое массива в виде списка и передаем его в конструктор нашего ArrayList:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   Cat thomas = new Cat("Томас");
+   Cat behemoth = new Cat("Бегемот");
+   Cat philipp = new Cat("Филипп Маркович");
+   Cat pushok = new Cat("Пушок");
+
+   Cat[] catsArray = {thomas, behemoth, philipp, pushok};
+
+   ArrayList&lt;Cat&gt; catsList = new ArrayList&lt;&gt;(Arrays.asList(catsArray));
+   System.out.println(catsList);
+}
+</code></pre>
+Вывод:
+
+<pre><code>
+[Cat{name='Томас'}, Cat{name='Бегемот'}, Cat{name='Филипп Маркович'}, Cat{name='Пушок'}]
+</code></pre>
+Можно сделать и наоборот — получить массив из объекта ArrayList. Для этого используется метод toArray():
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   ArrayList&lt;Cat&gt; cats = new ArrayList&lt;&gt;();
+
+   Cat thomas = new Cat("Томас");
+   Cat behemoth = new Cat("Бегемот");
+   Cat philipp = new Cat("Филипп Маркович");
+   Cat pushok = new Cat("Пушок");
+
+   cats.add(thomas);
+   cats.add(behemoth);
+   cats.add(philipp);
+   cats.add(pushok);
+
+   Cat[] catsArray = cats.toArray(new Cat[0]);
+
+   System.out.println(Arrays.toString(catsArray));
+}
+</code></pre>
+Обрати внимание: в метод toArray() мы передали пустой массив. Это не ошибка. Внутри класса ArrayList данный метод реализован таким образом, что передача пустого массива увеличивает его производительность. Пока просто запомни это на будущее (но передать какой-то конкретный размер тоже можно, будет работать).
+
+Кстати про размер. Текущий размер списка можно узнать при помощи метода <code>size()</code>:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   ArrayList&lt;Cat&gt; cats = new ArrayList&lt;&gt;();
+
+
+   Cat thomas = new Cat("Томас");
+   Cat behemoth = new Cat("Бегемот");
+   Cat philipp = new Cat("Филипп Маркович");
+   Cat pushok = new Cat("Пушок");
+
+   cats.add(thomas);
+   cats.add(behemoth);
+   cats.add(philipp);
+   cats.add(pushok);
+
+   System.out.println(cats.size());
+}
+</code></pre>
+Здесь важно понимать, что в отличии от свойства <code>length</code> массива, метод ArrayList.size() возвращает именно число элементов, а не изначальную вместимость, ведь ее мы при создании ArrayList не указываем.
+
+Кстати, указать ее в общем-то можно. У ArrayList есть соответствующий конструктор. Но его поведение в плане добавления новых элементов от этого не изменится:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+
+   ArrayList&lt;Cat&gt; cats = new ArrayList&lt;&gt;(2);//создаем ArrayList с изначальной вместимостью 2
+
+
+   Cat thomas = new Cat("Томас");
+   Cat behemoth = new Cat("Бегемот");
+   Cat philipp = new Cat("Филипп Маркович");
+   Cat pushok = new Cat("Пушок");
+
+   cats.add(thomas);
+   cats.add(behemoth);
+   cats.add(philipp);
+   cats.add(pushok);
+
+   System.out.println(cats.size());
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+4
+</code></pre>
+Мы создали список на 2 элемента, но когда нам это понадобилось, он спокойно расширился.
+
+Другое дело, что если мы создали изначально очень маленький список, ему придется чаще проводить операцию расширения, а это затрачивает определенное количество ресурсов.
+
+В этой лекции мы почти не затронули процесс удаления элементов из ArrayList. Конечно, это не по причине забывчивости. Эта тема была выделена в отдельную лекцию, с которой ты сможешь ознакомиться дальше :)

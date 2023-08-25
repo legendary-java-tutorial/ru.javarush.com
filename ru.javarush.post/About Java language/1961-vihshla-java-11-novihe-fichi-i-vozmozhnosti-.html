@@ -1,0 +1,331 @@
+Вышла Java 11: новые фичи и возможности 
+<p>----------------------------------------</p>
+Это раньше новые версии Java появлялись редко и с задержками. Теперь же Oracle успешно держит заданный самой себе ритм «новая Java раз в полгода». Так что несколько дней назад, строго по графику, мы-таки получили Java SE 11 и реализацию JDK (Java Development Kit) ...
+<p>----------------------------------------</p>
+Это раньше новые версии Java появлялись редко и с задержками. Теперь же <em>Oracle</em> успешно держит заданный самой себе ритм «новая Java раз в полгода». Так что несколько дней назад, строго по графику, мы-таки получили <strong>Java SE 11</strong> и реализацию<strong> JDK</strong> (Java Development Kit).
+<img data-id="079a2d92-8f28-448f-b20b-7ebec06d293a" data-max-width="850" alt="Вышла Java 11: новые фичи и возможности  - 1" src="https://cdn.javarush.com/images/article/079a2d92-8f28-448f-b20b-7ebec06d293a/1024.jpeg">Как всегда, новая версия будет совместима со старыми, а поддержка Java 11 закончится не раньше декабря 2026 года. 
+
+<h2>Новые фичи Java SE 11 (видимые разработчикам)</h2>Напомним, в Java изменения вносятся посредством внедрения JEP «JDK Enchancement Proposal». <strong>JEP</strong> — это предложение по улучшению OpenJDK, которое могут утвердить, отложить или отклонить. То есть, по сути, сборник JEP’ов — стратегия развития OpenJDK. В квадратных скобках перед новой «фичей» мы укажем номер соответсвующего JEP.  
+
+<a href='http://openjdk.java.net/jeps/323' rel='nofollow' target='_blank'>[323] Local-Variable Syntax for Lambda Parameters</a> — var-синтаксис для лямбда-параметров 
+
+<a href='https://javarush.com/groups/posts/542-novaja-java-opjatjh-vstrechaem-java-10' target='_blank'>В Java 10 ввели ключевое слово var,</a> которое позволяло не указывать явно тип локальной переменной. Это упрощало код. <em>JEP 323</em> расширяет возможности использования такого синтаксиса по отношению к лямбда-выражениям. Простой пример: 
+
+<pre class='lang-java line-numbers'><code>
+list.stream ()
+                 .map ((var s) -> s.toLowerCase ())
+                 .collect (Collectors.toList ());
+</code></pre>
+Как пишет <strong>Саймон Риттер</strong>, известный Java-евангелист, опытный Java-программист заметит, что использование var в данном случае может быть лишним, поскольку код выше можно заменить следующим: 
+
+<pre class='lang-java line-numbers'><code>
+list.stream ()
+                  .map (s -> s.toLowerCase ())
+                  .collect (Collectors.toList ());
+</code></pre>
+Зачем, в таком случае, поддерживать var? Просто есть один особый случай — когда вы хотите добавить аннотацию к лямбда-параметру. Это невозможно сделать без участия какого-либо типа, и чтобы не использовать явный тип, мы можем упростить всё с помощью var следующим образом: 
+
+<pre class='lang-java line-numbers'><code>
+list.stream ()
+                 .map ((@ Notnull var s) -> s.toLowerCase ())
+                 .collect (Collectors.toList ());
+</code></pre>
+<a href='http://openjdk.java.net/jeps/330' rel='nofollow' target='_blank'>[330] Launch Single-File Source-Code Programs</a> 
+
+Усовершенствование Java-лаунчера для запуска программы в виде единого файла с Java-исходниками
+
+Java частенько критикуют за многословный синтаксис и многоступенчатую «церемонию» запуска даже тривиального приложения. Порой это отпугивает новичков. Для написания приложения, которое просто печатает «<em>Hello World!</em>», нужно написать класс с общедоступным статическим <code>void</code> основным методом и использовать метод <code>System.out.println</code>. Сделав это, вы должны скомпилировать код с помощью <em>javac</em>. Наконец, после этого вы можете запустить приложение, которое выведет злополучное приветствие (разумеется, интегрированная среда разработки, как <strong>IDEA</strong>, так и встроенная в <strong>JavaRush</strong>, выполняет эту «магию запуска приложения» самостоятельно — прим. ред.). Будем откровенны: в большинстве языков программирования реальный сценарий запуска программ выглядит гораздо проще. 
+
+JEP 330 устраняет необходимость компиляции однофайлового приложения, поэтому теперь, если вы пользуетесь командной строкой, просто введите 
+
+<pre class='lang-java line-numbers'><code>
+java HelloWorld.java
+</code></pre>
+
+Лаунчер Java определит, что файл содержит исходный код Java и скомпиллирует код в файл класса перед его выполнением.
+
+После или до имени файла с исходным кодом можно поместить параметры. Те, что помещены после имени, передаются в качестве параметров при выполнении приложения. Те, что помещены до имени, передаются в качестве параметров лаунчеру Java после компиляции кода. Параметры, относящиеся к компилятору (например, путь к классам), также будут переданы <em>javac</em> для компиляции.
+
+<em><strong>Пример. Строка:</strong></em>
+
+<pre class='lang-java line-numbers'><code>
+            java -classpath / home / foo / java Hello.java Bonjour
+</code></pre>
+<em><strong>будет эквивалентна таким строкам:</strong></em>
+
+<pre class='lang-java line-numbers'><code>
+            javac -classpath / home / foo / java Hello.java
+            java -classpath / home / foo / java Hello Bonjour
+</code></pre>
+<a href='http://openjdk.java.net/jeps/321' rel='nofollow' target='_blank'>[321] HTTP Client (Standard)</a> — поддержка HTTP Client API стандартизирована
+
+В JDK 9 был представлен новый<em> API</em> для поддержки протокола <em>HTTP Client (JEP 110)</em>. Поскольку в JDK 9 также внедрили платформу <em>Java Platform Module System (JPMS)</em>, этот API был включен как <a href='http://openjdk.java.net/jeps/11' rel='nofollow' target='_blank'>инкубаторный модуль</a> (это модули для предоставления разработчикам новых API, которые ещё не стали стандартом в Java SE, тогда как «действующие» API готовятся к удалению — разработчики могут испытать новые API и попробовать обеспечить обратную связь). После внесения необходимых изменений (этот API был обновлен в JDK 10), API может стать частью стандарта.
+
+Так вот, <em>API HTTP Client теперь официально входит в Java SE 11</em>. Это вводит новый модуль и пакет для<em> JDK, java.net.http</em>. Основные новые типы: 
+
+<em><strong>HttpClient
+HttpRequest
+HttpResponse
+WebSocket</strong></em>
+
+Этот API можно использовать синхронно или асинхронно. В асинхронном режиме используются <code>CompletionFutures</code> и <code>CompletionStages</code>.
+
+<a href='http://openjdk.java.net/jeps/320' rel='nofollow' target='_blank'>[320] Remove The Java EE and CORBA Modules</a> — удалены модули Java EE и COBRA
+
+Вместе с внедрением платформы <a href='https://jcp.org/en/jsr/detail?id=376' rel='nofollow' target='_blank'>Java Platform Module System (JPMS)</a> в девятой версии Java, появилась возможность разделить монолитный файл <strong>rt.jar</strong> на несколько модулей. Кроме того, JPMS позволяет создать среду выполнения Java, которая включает только модули, необходимые для вашего приложения, что существенно уменьшает её размер. С прозрачно определенными границами модулей стало гораздо проще удалить устаревшие части Java API — вот что делает JEP 320. Метамодуль <strong>java.se.ee</strong> включает в себя шесть модулей, которые не будут входить в стандарт Java SE 11 и не будут включены в JDK:
+
+<ul>
+<li>corba</li>
+<li>transaction</li>
+<li>activation</li>
+<li>xml.bind</li>
+<li>xml.ws</li>
+<li>xml.ws.annotation</li>
+</ul>
+Эти модули объявили устаревшими (deprecated) ещё в JDK 9, и не были включены по умолчанию в компиляцию или выполнение. Это значит, если вы пробовали скомпилировать или запустить приложение, использующее API этих модулей на JDK 9 или JDK 10, у вас ничего не вышло. Если вы используете API этих модулей в своем коде, вам нужно будет предоставить их в виде отдельного модуля или библиотеки. 
+
+<h2>Новые API</h2>Большое количество новых API в JDK 11 появилось благодаря включению в стандарт языка модуля <em>HTTP Client</em> и <em>Flight Recorder</em>. С полным списком API можно ознакомиться в следующем полном и обстоятельном <a href='https://gunnarmorling.github.io/jdk-api-diff/jdk10-jdk11-api-diff.html' rel='nofollow' target='_blank'>сравнении разных версий JDK</a>, составленном Гуннаром Морлингом. А в этой заметке перечислим некоторые новые методы, которые не входят в модули <em>java.net.http</em>,<em> jdk.jfr</em> и <em>java.security</em>. 
+
+<strong>java.lang.String</strong>
+
+Возможно, <strong>изменение в String</strong> — одно из самых важных в API JDK 11. Здесь есть несколько полезных новых методов.
+
+<ul>
+<li><code>boolean isBlank ()</code>: возвращает true, если строка пуста или содержит только пробелы, иначе false.</li><br />
+<li><code>Stream lines()</code>: возвращает поток строк, извлеченных из этой строки, разделенных терминаторами строк.</li><br />
+<li><code>String repeat (int)</code>: возвращает строку, значение которой представляет собой конкатенацию этой строки, повторяющуюся <em>int</em> раз.</li><br />
+<li><code>String strip ()</code>: Возвращает строку, из которой удалены все пробелы, которые находятся до первого символа, не являющегося пробелом, или после последнего.</li><br />
+<li><code>String stripLeading ()</code>: Возвращает строку, из которой удалены все пробелы, которые находятся до первого символа, не являющегося пробелом.</li><br />
+<li><code>String stripTrainling ()</code>: Возвращает строку, из которой удалены все пробелы, которые находятся после последнего символа, не являющегося пробелом.</li>
+</ul>
+Что-то похожее на <code>strip()</code> уже делал метод <code>trim ()</code>, только вот под пробелами эти методы понимают разные вещи. В случае <code>trim()</code> отсекаются только пробелы, а в <code>strip()</code> — ещё и спецсимволы, вроде табуляции.
+
+<strong>java.lang.StringBuffer
+java.lang.StringBuilder</strong>
+
+Оба этих класса содержат новый метод <code>compareTo ()</code>, который принимает <code>StringBuffer</code>/<code>StringBuilder</code> и возвращает <code>int</code>. Метод лексического сравнения аналогичен новому методу <codE>compareTo() CharSequence</code>.
+
+<strong>java.io.ByteArrayOutputStream</strong>
+<ul>
+<li><code>void writeBytes (byte [])</code>: записывает все байты параметра в выходной поток </li.</ul><strong>java.io.FileReader</strong></li></ul>
+Здесь появилось два новых конструктора, которые позволяют указать <code>Charset</code>.
+
+<strong>java.io.FileWriter</strong>
+
+Четыре новых конструктора, которые позволяют указать <code>Charse</code>t.
+
+<strong>java.io.InputStream</strong>
+<ul>
+<li><code>io.InputStream nullInputStream ()</code>: возвращает <code>InputStream</code>, который не считывает байты. Как использовать этот метод? Можете считать его чем-то вроде /dev/null для выбрасывания ненужного вам вывода или для внедрения ввода, который всегда возвращает нуль байтов.</ul><strong>java.io.OutputStream</strong>
+<ul>
+<li><code>io.OutputStream nullOutputStream ()</code></li></ul><strong>java.io.Reader</strong>
+<ul>
+<li><code>io.Reader nullReader ()</code></li></ul><strong>java.io.Writer</strong>
+<ul>
+<li><code>io.Writer nullWriter ()</code></li></ul><strong>java.lang.Character</strong>
+<ul>
+<li><code>String toString (int)</code>: это перегруженная форма существующего метода, но вместо char используется int. </li></ul><strong>java.lang.CharSequence</strong>
+<ul>
+<li><code>int compare (CharSequence, CharSequence)</code>: лексикографически сравнивает два экземпляра <code>CharSequence</code>. Возвращает отрицательное значение, нуль или положительное значение, если первая последовательность лексикографически меньше, равна или больше второй, соответственно.</li></ul><strong>java.lang.ref.Reference</strong>
+<ul>
+<il><code>lang.Object clone ()</code>: евангелист Java Саймон Риттер признается, что этот метод его смущает. Класс <code>Reference</code> не реализует интерфейс <code>Cloneable</code>, и этот метод всегда будет генерировать исключение <code>CloneNotSupportedException</code>. Однако эксперт предполагает, что этот метод пригодится для чего-то в будущем.</li></ul><strong>java.lang.Runtime
+java.lang.System</strong>
+
+Здесь новых методов нет. Упомянем только, что метод <code>runFinalizersOnExit ()</code> удален из обоих этих классов, что может вызвать проблемы с совместимостью.
+
+<strong>java.lang.Thread</strong>
+
+Никаких дополнительных методов, упомянем только, что <code>destroy ()</code> и <code>stop (Throwable)</code> были удалены. Однако <code>stop ()</code>, который не принимает аргументов, все еще в наличии. Помните об этом, поскольку вполне возможны проблемы с совместимостью.
+
+<strong>java.nio.ByteBuffer
+java.nio.CharBuffer
+java.nio.DoubleBuffer
+java.nio.FloatBuffer
+java.nio.LongBuffer
+java.nio.ShortBuffer</strong>
+
+Во все эти классы разработчики языка добавили метод <code>mismatch ()</code>, который находит и возвращает относительный индекс первого несоответствия между этим буфером и заданным буфером.
+
+<strong>java.nio.channels.SelectionKey</strong>
+<ul>
+<li><code>int interestOpsAnd (int)</code></li><br />
+<li><code>int interestOpsOr (int)</code></li>
+</ul><strong>java.nio.channels.Selector</strong>
+<ul>
+<li><code>int select (java.util.function.Consumer, long)</code>: выбирает и исполняет действие на клавишах, соответствующие каналы которых готовы для операций ввода-вывода. Параметр long — это тайм-аут.</li><br />
+<li><code>int select (java.util.function.Consumer)</code>: работает, как метод выше, только без таймаута.</li><br />
+<li><code>int selectNow (java.util.function.Consumer)</code>: работает, как метод выше, только он non-blocking.</li><br />
+</ul><strong>java.nio.file.Files</strong>
+<ul>
+<li><code>String readString (Path)</code>: считывает весь контент из файла в строку, декодируя байты в символы с использованием кодировки<em> UTF-8</em>.</li><br />
+<li><code>String readString (Path, Charset)</code>: работает, как метод выше, только декодирует байты в символы с помощью <code>Charset</code>.</li><br />
+<li><code>Path writeString (Path, CharSequence, java.nio.file. OpenOption [])</code>: если вы запишете последовательность символов <code>CharSequence</code> в файл, эти символы будут закодированы в байты (с помощью <em>UTF-8</em>).</li><br />
+<li><code>Path writeString (Path, CharSequence, java.nio.file. Charset, OpenOption [])</code>: работает, как метод выше, только кодировка символов в байты производится с помощью <code>Charset</code>.</li>
+</ul><strong>java.nio.file.Path</strong>
+<ul>
+<li>Путь (String, String []): возвращает путь (Path), преобразуя строку пути или последовательность строк, которые при объединении образуют строку пути.</li><br />
+<li>Путь (net.URI): возвращает путь преобразуя URI.</li>
+</ul><strong>java.util.Collection</strong>
+<ul>
+<li><code>Object [] toArray (java.util.function.IntFunction)</code>: возвращает массив, содержащий все элементы в этой коллекции, используя предоставленную генераторную функцию для распределения возвращаемого массива.</li></ul><strong>java.util.concurrent.PriorityBlockingQueue
+java.util.PriorityQueue</strong>
+<ul>
+<li><code>void forEach (java.util.function.Consumer)</code>: выполняет заданное действие для каждого элемента <em>Iterable</em> до тех пор, пока все элементы не будут обработаны, или действие не вызовет исключение.</li><br />
+<li><code>boolean removeAll (java.util.Collection)</code>: удаляет все элементы этой коллекции, которые также содержатся в указанной коллекции (дополнительная операция).</li><br />
+<li><code>boolean removeIf (java.util.function.Predicate)</code>: Удаляет все элементы этой коллекции, которые удовлетворяют заданному предикату.</li><br />
+<li><code>boolean retainAll (java.util.Collection)</code>: Сохраняет только элементы в этой коллекции, которые содержатся в указанной коллекции (дополнительная операция).</li>
+</ul><strong>java.util.concurrent.TimeUnit</strong>
+<ul>
+<li><code>long convert (java.time.Duration)</code>: конвертирует заданную продолжительность времени в этот юнит.</li></ul><strong>java.util.function.Predicate</strong>
+<ul>
+<li><codE>Predicate not(Predicate)</code>: возвращает предикат, который является отрицанием поставленного предиката.</li></ul>
+Например, следующий код: 
+
+<pre class='lang-java line-numbers'><code>
+lines.stream ()
+
+.filter (s ->! s.isBlank ())
+</code></pre>
+можно преобразовать в такой: 
+
+<pre class='lang-java line-numbers'><code>
+lines.stream ()
+
+.filter (Predicate.not (String :: ISBLANK))
+</code></pre>
+
+а если мы используем статический импорт, то вот что мы получим:
+
+<pre class='lang-java line-numbers'><code>
+lines.stream ()
+.filter (not(String :: ISBLANK))
+</code></pre>
+
+<em><strong>java.util.Optional
+java.util.OptionalInt
+java.util.OptionalDouble
+java.util.OptionalLong</strong></em>
+<ul>
+<li><code>boolean isEmpty ()</code>: Если значение отсутствует, возвращает <em>true</em>, в противном случае — <em>false</em>.</li></ul><strong>java.util.regex.Pattern</strong>
+<ul>
+<li><code>Predicate asMatchPredicate ()</code>: эксперт по Java Саймон Риттер полагает, что здесь может быть скрыто настоящее сокровище API JDK 11. Этот метод создает предикат, который проверяет, соответствует ли этот шаблон заданной строке ввода.</li></ul><strong>java.util.zip.Deflater</strong>
+<ul>
+<li><code>int deflate (ByteBuffer)</code>: сжимает входные данные и заполняет указанный буфер сжатыми данными.</li><br />
+<li><code>int deflate (ByteBuffer, int)</code>: сжимает входные данные и заполняет указанный буфер сжатыми данными. Возвращает фактическое количество сжатых данных.</li><br />
+<li><code>void setDictionary (ByteBuffer)</code>: устанавливает заданный словарь для сжатия в байты в данном буфере. Это перегруженная форма существующего метода, который теперь может принимать <code>ByteBuffer</code>, а не байтовый массив.</li><br />
+<li><codE>void setInput (ByteBuffer)</code>: Устанавливает входные данные для сжатия. Также является перегруженной формой существующего метода.</li>
+</ul><strong>java.util.zip.Inflater</strong>
+<ul>
+<li><code>int inflate (ByteBuffer)</code>: распаковывает байты в указанный буфер. Возвращает фактическое количество несжатых байтов.</li><br />
+<li><code>void setDictionary (ByteBuffer)</code>: устанавливает заданный словарь в байты в данном буфере. Является перегруженной формой существующего метода.</li><br />
+<li><code>void setInput (ByteBuffer)</code>: устанавливает входные данные для декомпрессии. Перегруженная форма существующего метода.</li></ul><strong>javax.print.attribute.standard.DialogOwner</strong>
+
+Это — новый класс в JDK 11 и он является классом атрибутов, используемый для поддержки запросов на страницу печати или настройки, должен отображаться поверх всех окон или определенного окна.
+
+<strong>javax.swing.DefaultComboBoxModel
+javax.swing.DefaultListModel</strong>
+<ul>
+<li><codE>void addAll (Collection)</code>: добавляет все элементы, присутствующие в коллекции.</li><br />
+<li><code>void addAll (int, Collection)</code>: добавляет все элементы, присутствующие в коллекции, начиная с указанного индекса.</li></ul><strong>javax.swing.ListSelectionModel</strong>
+<ul>
+<li><code>int [] getSelectedIndices ()</code>: возвращает массив всех выбранных индексов в выбранной модели в порядке возрастания.</li><br />
+<li><code>int getSelectedItemsCount ()</code>: возвращает количество выбранных элементов.</li></ul><strong>jdk.jshell.EvalException</strong>
+<ul>
+<li><code>shell.JShellException getCause ()</code>: возвращает причину throwable в исполняющем клиенте, представленном этим EvalException, или null, если причины не существует или она неизвестна.</li></ul>
+<h2>Недевелоперские фичи Java 11</h2>
+
+<a href='http://openjdk.java.net/jeps/181' rel='nofollow' target='_blank'>[181] Nest-Based Access Control</a>
+Java и другие языки поддерживают вложенные классы через внутренние классы. Чтобы это работало, компилятор должен выполнить определённые трюки. Например: 
+
+<pre class='lang-java line-numbers'><code>
+public class Outer {
+    private int outerInt;
+
+     class Inner {
+       public void printOuterInt() {
+         System.out.println("Outer int = " + outerInt);
+       }
+     }
+   }
+</code></pre>
+Компилятор модифицирует это, чтобы создать перед выполнением компиляции что-то вроде следующего:
+
+<pre class='lang-java line-numbers'><code>
+public class Outer {
+      private int outerInt;
+
+      public int access$000() {
+        return outerInt; 
+      }
+
+    }
+ 
+
+    class Inner$Outer {
+
+      Outer outer;
+
+      public void printOuterInt() {
+        System.out.println("Outer int = " + outer.access$000());
+      }
+    }
+</code></pre>
+Хотя по логике внутренний класс является частью того же самого кода, что и внешний класс, он скомпилирован как отдельный класс. Поэтому для этой операции требуется синтетический соединительный метод, который должен создать компилятором для обеспечения доступа к <em>private</em>-полю внешнего класса.
+
+Этот JEP представляет концепцию вложений (гнёзд), где два члена одного вложения (Outer and Inner из нашего примера) являются «друзьями по вложению». Для формата файла класса определены два новых атрибута — <em>NestHost</em> и <em>NestMembers</em>. Эти изменения полезны для других языков, поддерживающих вложенные классы и байткод.
+
+Эта функция представляет три новых метода для <strong>java.lang.Class</strong>:
+
+<strong>Class getNestHost ()
+Class [] getNestMembers ()
+boolean isNestmateOf (Class)</strong>
+
+<a href='http://openjdk.java.net/jeps/309' rel='nofollow' target='_blank'>[309] Dynamic Class-File Constants</a>
+
+Этот JEP описывает расширение формата файла класса для поддержки новой формы с постоянным пулом CONSTANT_Dynamic. Идея динамической константы кажется оксюмороном, но, по сути, вы можете думать о ней как о конечном значении в Java 11. Значение константы-пула не задано во время компиляции (в отличие от других констант), но использует метод начальной загрузки для определения значения во время выполнения. Поэтому значение является динамическим, но, поскольку его значение задано только один раз, оно также является постоянным.
+
+Эта функция в первую очередь нацелена на людей, разрабатывающих новые языки и компиляторы, которые будут генерировать байт-коды и файлы классов в качестве вывода для запуска на JVM. 
+
+<a href='http://openjdk.java.net/jeps/315' rel='nofollow' target='_blank'>[315] Improve Aarch64 Intrinsics</a>
+
+Этот JEP предложило сообщество Red Hat. Теперь JVM может использовать больше специализированных инструкций, доступных в наборе команд Arm 64. В частности, это улучшает работу методов <code>sin ()</code>, <code>cos ()</code> и <code>log ()</code> класса <strong>java.lang.Math</strong>.
+
+<a href='http://openjdk.java.net/jeps/318' rel='nofollow' target='_blank'>[318] Epsilon: A No-Op Garbage Collector</a>
+
+Как и в случае <em>JEP 315</em>, за появление сборщика мусора Epsilon можете благодарить Red Hat. Epsilon необычен хотя бы тем, что на самом деле он мусор не собирает! При создании новых объектов, он выделяет память, если это нужно, но не восстанавливает пространство, занятое незарегистрированными объектами.
+
+«<em>И в чём смысл?</em>», — спросите вы. Оказывается у такой «сборки мусора» есть два вида использования:
+
+<ol>
+<li>Прежде всего, этот сборщик мусора предназначен для того, чтобы новые алгоритмы GC были оценены с точки зрения их влияния на производительность. Идея состоит в том, чтобы запустить пример приложения с Epsilon и сгенерировать набор показателей. Включается новый алгоритм сборки мусора, запускаются те же тесты, а затем результаты сравниваются.</li><br />
+<li>Для очень коротких задач (считайте безсерверные функции в облаке), где вы можете гарантировать, что не превысите память, выделенную куче. Это может повысить производительность за счет отсутствия накладных расходов (включая сбор статистики, необходимой для принятия решения о запуске коллектора) в коде приложения. Если пространство кучи исчерпано, JVM может быть сконфигурирован с ошибкой одним из трех способов:
+
+<ul>
+<li>Вызывается обычный <code>OutOfMemoryError</code>.</li>
+<li>Выполнить сброс кучи</li>
+<li>Сбой жесткого диска JVM и, возможно, выполнение другой задачи (например, запуск отладчика).</li>
+</ul></ol><a href='http://openjdk.java.net/jeps/328' rel='nofollow' target='_blank'>[328]: Flight Recorder</a>
+
+<strong>Flight Recorder</strong> — это низкоуровневая структура сбора данных для JVM. До JDK 11 это была коммерческая функция в Oracle JDK binary. Теперь Oracle устраняет функциональные различия между Oracle JDK и одним билдом из OpenJDK.
+
+Вот что делает <strong>Flight Recorder</strong>: 
+<ul>
+<li>Предоставляет API для производства и потребления данных как событий</li>
+<li>Предоставляет буферный механизм и формат двоичных данных</li>
+<li>Разрешает настройку и фильтрацию событий</li>
+<li>Предоставлять события для ОС, JVM HotSpot и библиотек JDK</li>
+</ul>Здесь появилось два новых модуля: <strong>jdk.jfr</strong> и <strong>jdk.management.jfr</strong>.
+
+<a href='https://javarushco422-my.sharepoint.com/personal/masha_chip_javarush_co/Documents/Файлы чатов Microsoft Teams/JEP 329: ChaCha20 and Poly1305 Cryptographic Algorithms' rel='nofollow' target='_blank'>[329] Криптографические алгоритмы ChaCha20 и Poly1305</a>
+
+Этот <em>JEP</em> посвящен <em>обновлению шифров</em>, используемых JDK. В данном случае реализованы алгоритмы шифрования<em> ChaCha20</em> и <em>ChaCha20-Poly1305</em>, как указано в RFC 7539. <em>ChaCha20</em> — это относительно новый потоковый шифр, который может заменить старый, небезопасный шифр <em>RC4</em>. 
+
+<a href='http://openjdk.java.net/jeps/333' rel='nofollow' target='_blank'>[333] ZGC: A Scalable Low-Latency Garbage Collector</a>
+
+Экспериментальный масштабируемый сборщик мусора с низкой задержкой. Предназначен для использования с приложениями, для которых требуется большая (многогигабайтная) куча и низкая задержка. Он использует кучу одного поколения и выполняет большинство (но не все) работы по сборке мусора одновременно с приложением. 
+
+<a href='http://openjdk.java.net/jeps/332' rel='nofollow' target='_blank'>[332] Transport Layer Security (TLS) 1.3</a>
+
+<em>TLS 1.3 (RFC 8446)</em> — серьезная заплата протокола защиты транспортного уровня TLS, которая обеспечивает значительное повышение безопасности и производительности по сравнению с предыдущими версиями. JDK теперь поддерживает эту версию протокола. 
+
+<em>Материал основан на статье <a href='https://www.azul.com/90-new-features-and-apis-in-jdk-11/' rel='nofollow' target='_blank'>Саймона Риттера</a> и <a href='http://openjdk.java.net/' rel='nofollow' target='_blank'>официальной документации</a>.</em>

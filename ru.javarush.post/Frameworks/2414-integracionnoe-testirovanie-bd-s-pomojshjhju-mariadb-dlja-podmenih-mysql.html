@@ -1,0 +1,363 @@
+Интеграционное тестирование БД с помощью MariaDB для подмены MySql
+<p>----------------------------------------</p>
+Сегодня хотелось бы поговорить о тестировании, ибо чем больше код покрыт тестами, тем он считается качественней и надёжней. Затронем не модульное тестирование, а интеграционное тестирование баз данных...
+<p>----------------------------------------</p>
+
+<img data-id="9ccc291b-6aea-4a1e-9a3d-e7d5c4dd3af3" data-max-width="350" alt="Интеграционное тестирование БД с помощью MariaDB для подмены MySql - 1" src="https://cdn.javarush.com/images/article/9ccc291b-6aea-4a1e-9a3d-e7d5c4dd3af3/1024.jpeg">Сегодня хотелось бы поговорить о тестировании, ибо чем больше код покрыт тестами, тем он считается качественней и надёжней. Затронем не модульное тестирование, а интеграционное тестирование баз данных.
+
+В чём, собственно, разница между модульными тестами и интеграционными? 
+<img data-id="35afe198-9826-4ef1-a2e6-34d160fe7da2" data-max-width="850" alt="Интеграционное тестирование БД с помощью MariaDB для подмены MySql - 2" src="https://cdn.javarush.com/images/article/35afe198-9826-4ef1-a2e6-34d160fe7da2/1024.jpeg">Модульное(юнит) — это тестирование программы на уровне отдельно взятых модулей, методов или классов, то есть тесты быстрые и легкие, затрагивающие максимально делимые части функционала. О них ещё говорят «один тест на один метод».
+
+Интеграционные — более медленные и тяжеловесные, могут состоять из нескольких модулей и подъема дополнительного функционала.
+<img data-id="6270633c-1cfa-4b46-aefc-4e5802ab06bd" data-max-width="850" alt="Интеграционное тестирование БД с помощью MariaDB для подмены MySql - 3" src="https://cdn.javarush.com/images/article/6270633c-1cfa-4b46-aefc-4e5802ab06bd/1024.jpeg"><strong>Почему тесты для слоя dao (Data Access Object) — интеграционные?</strong> Потому, что для тестирования методов с запросами к БД нам нужно поднимать отдельную БД в оперативной памяти, подменяющую основную. Идея в том, что мы создаем нужные нам таблички, заполняем их тестовыми данными и проверяем корректность отработки методов класса-репозитория (ведь мы знаем, каким должен быть конечный результат в том или ином случае).
+
+Итак начнём. Темы по подключению БД уже давно изъезжены вдоль и поперек, и поэтому сегодня на этом останавливаться не хотелось бы, и рассмотрим лишь интересующие нас части программы.
+
+По умолчанию отталкиваться будем от того, что приложение у нас на Spring Boot, для слоя дао Spring JDBC (для большей наглядности), основная БД у нас MySQL, а подменять мы будем с помощью MariaDB (они максимально совместимы, и соответственно у скриптов MySQL никогда не будет конфликтов с диалектом MariaDB, как будет у H2).
+
+Также условно примем, что наша программа для управления и применения изменений схемы базы данных использует Liquibase, и соответственно, все примененные скрипты хранятся у нас в приложении.
+<h2>Структура проекта</h2>Показаны только затронутые части:
+<img data-id="261272f7-bc93-4174-ad23-5e6dec4c1162" data-max-width="312" alt="Интеграционное тестирование БД с помощью MariaDB для подмены MySql - 5" src="https://cdn.javarush.com/images/article/261272f7-bc93-4174-ad23-5e6dec4c1162/1024.jpeg">И да, мы сегодня будем создавать роботов))
+<img data-id="8d8d0ffa-8898-454b-a100-d3e31ef73e73" data-max-width="350" alt="Интеграционное тестирование БД с помощью MariaDB для подмены MySql - 6" src="https://cdn.javarush.com/images/article/8d8d0ffa-8898-454b-a100-d3e31ef73e73/1024.jpeg">Скрипт для таблицы, методы к которой бы будем тестить сегодня
+
+(create_table_robots.sql):
+
+<pre class="lang-java line-numbers"><code>
+CREATE TABLE `robots`
+(
+   `id`   BIGINT(20) NOT NULL AUTO_INCREMENT,
+   `name` CHAR(255) CHARACTER SET utf8 NOT NULL,
+   `cpu`  CHAR(255) CHARACTER SET utf8 NOT NULL,
+   `producer`  CHAR(255) CHARACTER SET utf8 NOT NULL,
+   PRIMARY KEY (`id`)
+) ENGINE = InnoDB
+ DEFAULT CHARSET = utf8;
+</code></pre>
+Сущность, представляющая данную таблицу:
+
+<pre class="lang-java line-numbers"><code>
+@Builder
+@Data
+public class Robot {
+
+   private Long id;
+
+   private String name;
+
+   private String cpu;
+
+   private String producer;
+}
+</code></pre>
+Интерфейс для тестируемого репозитория:
+
+<pre class="lang-java line-numbers"><code>
+public interface RobotDAO {
+
+   Robot findById(Long id);
+
+   Robot create(Robot robot);
+
+   List&lt;Robot&gt; findAll();
+
+   Robot update(Robot robot);
+
+   void delete(Long id);
+}
+</code></pre>
+Собственно здесь стандартные CRUD операции, без экзотики, поэтому рассмотрим реализацию не всех методов (ну этим никого уже не удивить), а некоторых — для большей лаконичности:
+
+<pre class="lang-java line-numbers"><code>
+@Repository
+@AllArgsConstructor
+public class RobotDAOImpl implements RobotDAO {
+
+   private static final String FIND_BY_ID = "SELECT id, name, cpu, producer FROM robots WHERE id = ?";
+
+   private static final String UPDATE_BY_ID = "UPDATE robots SET name = ?, cpu = ?, producer = ?  WHERE id = ?";
+
+   @Autowired
+   private final JdbcTemplate jdbcTemplate;
+
+   @Override
+   public Robot findById(Long id) {
+       return jdbcTemplate.queryForObject(FIND_BY_ID, robotMapper(), id);
+   }
+
+   @Override
+   public Robot update(Robot robot) {
+       jdbcTemplate.update(UPDATE_BY_ID,
+               robot.getName(),
+               robot.getCpu(),
+               robot.getProducer(),
+               robot.getId());
+
+       return robot;
+   }
+
+   private RowMapper&lt;Robot&gt; robotMapper() {
+       return (rs, rowNum) -&gt;
+               Robot.builder()
+                       .id(rs.getLong("id"))
+                       .name(rs.getString("name"))
+                       .cpu(rs.getString("cpu"))
+                       .producer(rs.getString("producer"))
+                       .build();
+   }
+</code></pre>
+Сделаем некоторое отступление и посмотрим, что у нас творится с зависимостями (представлены только те, что юзаются для продемонстрированной части приложения):
+
+<pre class="lang-java line-numbers"><code>
+&lt;dependencies&gt;
+   &lt;dependency&gt;
+       &lt;groupId&gt;org.mariadb.jdbc&lt;/groupId&gt;
+       &lt;artifactId&gt;mariadb-java-client&lt;/artifactId&gt;
+       &lt;version&gt;2.5.2&lt;/version&gt;
+       &lt;scope&gt;test&lt;/scope&gt;
+   &lt;/dependency&gt;
+   &lt;dependency&gt;
+       &lt;groupId&gt;org.craftercms.mariaDB4j&lt;/groupId&gt;
+       &lt;artifactId&gt;mariaDB4j-springboot&lt;/artifactId&gt;
+       &lt;version&gt;2.4.2.3&lt;/version&gt;
+       &lt;scope&gt;test&lt;/scope&gt;
+   &lt;/dependency&gt;
+   &lt;dependency&gt;
+       &lt;groupId&gt;org.projectlombok&lt;/groupId&gt;
+       &lt;artifactId&gt;lombok&lt;/artifactId&gt;
+       &lt;version&gt;1.18.10&lt;/version&gt;
+       &lt;scope&gt;provided&lt;/scope&gt;
+   &lt;/dependency&gt;
+   &lt;dependency&gt;
+       &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+       &lt;artifactId&gt;spring-boot-starter-test&lt;/artifactId&gt;
+       &lt;version&gt;2.2.1.RELEASE&lt;/version&gt;
+       &lt;scope&gt;test&lt;/scope&gt;
+   &lt;/dependency&gt;
+   &lt;dependency&gt;
+       &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+       &lt;artifactId&gt;spring-boot-starter-jdbc&lt;/artifactId&gt;
+       &lt;version&gt;2.2.1.RELEASE&lt;/version&gt;
+   &lt;/dependency&gt;
+&lt;/dependencies&gt;
+</code></pre>4  — зависимость для самой БД MariaDb
+10  — зависимость для коннекта с SpringBoot
+16  — Lombok (ну, я думаю все знают, что это за либа)
+22 — стартер для тестов (куда вшит необходимый нам JUnit)
+28 — стартер для работы с springJdbc
+
+Рассмотрим Spring контейнер с бинами, необходимыми для наших тестов (в частности и бин создания MariaDB):
+
+<pre class="lang-java line-numbers"><code>
+@Configuration
+public class TestConfigDB {
+
+   @Bean
+   public MariaDB4jSpringService mariaDB4jSpringService() {
+       return new MariaDB4jSpringService();
+   }
+
+   @Bean
+   public DataSource dataSource(MariaDB4jSpringService mariaDB4jSpringService) {
+       try {
+           mariaDB4jSpringService.getDB().createDB("testDB");
+       } catch (ManagedProcessException e) {
+         e.printStackTrace();
+       }
+
+       DBConfigurationBuilder config = mariaDB4jSpringService.getConfiguration();
+
+       return DataSourceBuilder
+               .create()
+               .username("root")
+               .password("root")
+               .url(config.getURL("testDB"))
+               .driverClassName("org.mariadb.jdbc.Driver")
+               .build();
+   }
+
+   @Bean
+   public JdbcTemplate jdbcTemplate(DataSource dataSource) {
+       return new JdbcTemplate(dataSource);
+   }
+}
+</code></pre>
+5 — главный компонент для подьёма MariaDB (для приложений на основе Spring Framework)
+10 — определение бина базы данных
+12 — задание имени создаваемой Базы данных
+17 — вытягиваем конфигурации для нашего случая
+19 — строим базу данных с помощью паттерна Builder (<a href="https://habr.com/ru/post/244521/" rel="nofollow" target="_blank">неплохой обзор на паттерн</a>)
+
+И наконец то, ради чего весь сыр-бор — это бин JdbcTemplate для связи с поднимаемой базой.
+
+Идея в том, что у нас будет основной класс для тестов дао, от которого будут наследоваться все классы-тесты дао, в чьи задачи входит:
+<ol>
+<li>запуск некоторых используемых в основной БД скриптов (скриптов создания таблиц, изменения колонок и прочих);</li>
+<li>запуск тестовых скриптов, заполняющих таблицы тестовыми данными;</li>
+<li>удаление таблиц.</li>
+</ol><pre class="lang-java line-numbers"><code>
+@SpringBootTest(classes = TestConfigDB.class)
+public abstract class DataBaseIT {
+
+   @Autowired
+   private JdbcTemplate jdbcTemplate;
+
+   public JdbcTemplate getJdbcTemplate() {
+       return jdbcTemplate;
+   }
+
+   public void fillDataBase(String[] initList) {
+       for (String x : initList) {
+           try {
+               jdbcTemplate.update(IOUtils.resourceToString("/db.migrations/" + x, StandardCharsets.UTF_8));
+           } catch (IOException e) {
+               e.printStackTrace();
+           }
+       }
+   }
+
+   public void cleanDataBase() {
+       getJdbcTemplate().update("DROP database testDB");
+       getJdbcTemplate().update("CREATE database testDB");
+       getJdbcTemplate().update("USE testDB");
+   }
+
+   public void fillTables(String[] fillList) {
+       for (String x : fillList) {
+           try {
+               Stream.of(
+                       IOUtils.resourceToString("/fill_scripts/" + x, StandardCharsets.UTF_8))
+                       .forEach(jdbcTemplate::update);
+           } catch (IOException e) {
+               e.printStackTrace();
+           }
+       }
+   }
+}
+</code></pre>
+1 — с помощью аннотации @SpringBootTest задаем тестовую конфигурацию
+11 — аргументом в данном методе передаем названия нужных нам таблиц, и он как ответственный трудяга будет нам их подгружать (что дает нам возможность этом метод переиспользовать, сколько душа пожелает)
+21 — это метод используем для чистки, а именно, удаления всех таблиц (и их данных) из БД
+27 — аргумент в данном методе — массив названий скриптов с тестовыми данными, которые будут подгруженны для тестирования определенного метода
+ 
+Наш скрипт с тестовыми данными:
+
+<pre class="lang-java line-numbers"><code>
+INSERT INTO robots(name, cpu, producer)
+VALUES ('Rex', 'Intel Core i5-9400F', 'Vietnam'),
+      ('Molly', 'AMD Ryzen 7 2700X', 'China'),
+      ('Ross', 'Intel Core i7-9700K', 'Malaysia')
+</code></pre>
+А теперь то, ради чего мы все сегодня и собрались.
+<h2>Класс для тестирования дао</h2><pre class="lang-java line-numbers"><code>
+@RunWith(SpringRunner.class)
+public class RobotDataBaseIT extends DataBaseIT {
+
+   private static RobotDAO countryDAO;
+
+   @Before
+   public void fillData() {
+       fillDataBase(new String[]{
+               "create_table_robots.sql"
+       });
+       countryDAO = new RobotDAOImpl(getJdbcTemplate());
+   }
+
+   @After
+   public void clean() {
+       cleanDataBase();
+   }
+
+   private RowMapper&lt;Robot&gt; robotMapper() {
+       return (rs, rowNum) -&gt;
+               Robot.builder()
+                       .id(rs.getLong("id"))
+                       .name(rs.getString("name"))
+                       .cpu(rs.getString("cpu"))
+                       .producer(rs.getString("producer"))
+                       .build();
+   }
+</code></pre>
+2 — наследуемся от основого класса для наших тестов
+4 — наш тестируемый репозиторий
+7 — метод, который будет запускаться до каждого теста
+8 — используем метод родительского класса, чтобы загрузить необходимые таблицы таблицы
+11 — инициализируем наш дао
+15 — метод, который будет запускаться после каждого теста, чистя нашу базу
+19 — реализация нашего RowMapper, аналог с класса дао
+
+Мы используем @Before и @After, которые юзатся до и после одного метода-теста, а могли бы взять какую-нибудь либу, позволяющую использовать аннотации, привязанные к началу выполнений тестов данного класса и концу. Например, <a href="https://bitbucket.org/radistao/before-after-spring-test-runner/src/master/" rel="nofollow" target="_blank">вот эту</a>, что значительно ускорило бы тесты, так как создавать таблицы и полностью их удалять нужно было бы гн каждый раз, а один раз на класс.
+
+Но мы так не делаем. Почему, спросите вы? А что если один из методов будет менять структуру таблицы? Например, удалять одну колонку.  В таком случае остальные методы могут либо не выполниться, либо должны отреагировать должным образом (например, создать колонку назад). Приходится признать, что это даёт ненужную нам связанность (зависимость) тестов друг от друга, что нам ни к чему.
+
+Но я отвлёкся, продолжаем….
+<h2>Тестирование метода findById</h2><pre class="lang-java line-numbers"><code>
+@Test
+public void findByIdTest() {
+   fillTables(new String[]{"fill_table_robots.sql"});
+
+   Long id = getJdbcTemplate().queryForObject("SELECT id FROM robots WHERE name = 'Molly'", Long.class);
+   Robot robot = countryDAO.findById(id);
+
+   assertThat(robot).isNotNull();
+   assertThat(robot.getId()).isEqualTo(id);
+   assertThat(robot.getName()).isEqualTo("Molly");
+   assertThat(robot.getCpu()).isEqualTo("AMD Ryzen 7 2700X");
+   assertThat(robot.getProducer()).isEqualTo("China");
+}
+</code></pre>
+3 — заполняем тестовыми данными таблицу
+5 — достаем id для нужной нам сущности
+6 — используем проверяемый метод
+8...12 — сверяем полученные данные с ожидаемыми
+<h2>Тест метода update</h2><pre class="lang-java line-numbers"><code>
+@Test
+public void updateTest() {
+   fillTables(new String[]{"fill_table_robots.sql"});
+
+   Long robotId = getJdbcTemplate().queryForObject("SELECT id FROM robots WHERE name = 'Rex'", Long.class);
+
+   Robot updateRobot = Robot.builder()
+           .id(robotId)
+           .name("Aslan")
+           .cpu("Intel Core i5-3470")
+           .producer("Narnia")
+           .build();
+
+   Robot responseRobot = countryDAO.update(updateRobot);
+   Robot updatedRobot = getJdbcTemplate().queryForObject(
+           "SELECT id, name, cpu, producer FROM robots WHERE id = ?",
+           robotMapper(),
+           robotId);
+
+   assertThat(updatedRobot).isNotNull();
+   assertThat(updateRobot.getName()).isEqualTo(responseRobot.getName());
+   assertThat(updateRobot.getName()).isEqualTo(updatedRobot.getName());
+   assertThat(updateRobot.getCpu()).isEqualTo(responseRobot.getCpu());
+   assertThat(updateRobot.getCpu()).isEqualTo(updatedRobot.getCpu());
+   assertThat(updateRobot.getProducer()).isEqualTo(responseRobot.getProducer());
+   assertThat(updateRobot.getProducer()).isEqualTo(updatedRobot.getProducer());
+   assertThat(responseRobot.getId()).isEqualTo(updatedRobot.getId());
+   assertThat(updateRobot.getId()).isEqualTo(updatedRobot.getId());
+}
+</code></pre>
+3 — заполняем тестовыми данными таблицу
+5 — достаем id обновляемой сущности
+7 — строим обновлённую сущность
+14 — юзаем проверяемый метод
+15 — достаём обновлённую сущность для сверки
+20...28 — сверяем полученные данные с ожидаемыми
+
+Тестирование метода update схоже с create. По крайней мере у меня.
+
+Извращаться со сверками можно как душе угодно: проверок много не бывает.
+
+Очень бы хотелось заметить и то, что тесты не гарантируют полной работоспособности или отсутствия багов. Тесты всего лишь обеспечивают соответствие реального результата работы программы (её фрагмента) ожидаемому. При этом проверка происходит только тех частей, для которых были написаны тесты. 
+<h2>Запускаем класс с тестами…</h2><img data-max-width="200" alt="Интеграционное тестирование БД с помощью MariaDB для подмены MySql - 7" src="https://cdn.javarush.com/images/article/de92a3ca-b8d0-4851-845f-9319f30828d8/original.jpeg">Победа)) Идём заваривать чай и доставать печеньки: мы это заслужили))
+<img data-max-width="200" alt="Интеграционное тестирование БД с помощью MariaDB для подмены MySql - 8" src="https://cdn.javarush.com/images/article/7cdd0ce2-ea39-4e8b-b499-522b2afb0fa0/original.jpeg"><h2>Полезные ссылки</h2><ul>
+<li><a href="https://www.javaguides.net/2019/08/spring-boot-spring-jdbc-mysql-crud-example.html" rel="nofollow" target="_blank">Неплохая статья по нерассмотреной части с этим стеком технологий.</a></li>
+<li><a href="https://javarush.com/groups/posts/2253-znakomstvo-s-maven-spring-mysql-hibernate-i-pervoe-crud-prilozhenie-chastjh-1" target="_blank">Любопытный цикл статей о Maven, Spring, MySQL, Hibernate.</a></li>
+<li><a href="https://habr.com/ru/post/120101/" rel="nofollow" target="_blank">Немного освежим память по юнит тестам.</a></li>
+<li><a href="https://habr.com/ru/company/haulmont/blog/454970/" rel="nofollow" target="_blank">Интересный пример интеграционного тестирования, но с подменой PostgreSQL.</a></li>
+<li><a href="https://xakep.ru/2011/05/26/55801/" rel="nofollow" target="_blank">Многие и не только в тестах используют MariaDB вместо MySql.</a></li>
+</ul>Кто дочитал — спасибо за внимание и…
+<img data-id="151b0636-70a0-46c3-80e0-8307327ef4dc" data-max-width="850" alt="Интеграционное тестирование БД с помощью MariaDB для подмены MySql - 9" src="https://cdn.javarush.com/images/article/151b0636-70a0-46c3-80e0-8307327ef4dc/1024.jpeg"><center><p> *эпичная музыка из Star Wars*</p><p></p></center>

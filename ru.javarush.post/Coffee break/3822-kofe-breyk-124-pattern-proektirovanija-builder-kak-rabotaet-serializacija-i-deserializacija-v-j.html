@@ -1,0 +1,182 @@
+Кофе-брейк #124. Паттерн проектирования Builder. Как работает сериализация и десериализация в Java
+<p>----------------------------------------</p>
+В этой статье мы узнаем, как проектировать и создавать объекты для класса, используя паттерн проектирования Builder...
+<p>----------------------------------------</p>
+<h2>Паттерн проектирования Builder в Java</h2>Источник: <a href="https://medium.com/javarevisited/builder-design-pattern-in-java-ce2893b7f901" rel="nofollow" target="_blank">Medium</a>
+
+В этой статье мы узнаем, как проектировать и создавать объекты для класса, используя паттерн проектирования <span class="code">Builder</span>.
+<img data-max-width="800" data-id="340f3c27-a52b-4482-961a-40fe651c6351" src="https://cdn.javarush.com/images/article/340f3c27-a52b-4482-961a-40fe651c6351/800.jpeg" alt="Кофе-брейк #124. Паттерн проектирования Builder. Как работает сериализация и десериализация в Java - 1"><h3>Зачем нам нужен паттерн проектирования Builder?</h3>Паттерн <span class="code">Builder</span> предназначен для создания объектов с использованием вложенного общедоступного статического класса, который имеет те же поля данных, что и внешний класс.
+
+Паттерн <span class="code">Builder</span> создали для решения проблем, которые имелись в паттернах проектирования <span class="code">Factory</span> и <span class="code">Abstract Factory</span>, когда объект класса содержит много значений полей и/или данных.
+
+Прежде чем мы перейдем к паттерну <span class="code">Builder</span>, давайте посмотрим, какие именно проблемы возникают с паттернами <span class="code">Factory</span> и <span class="code">Abstract Factory</span> для сценариев, где объект имеет много значений полей:<ol>
+
+    <li><p>Наличие слишком многих аргументов для передачи из клиентской программы в класс <span class="code">Factory</span> может приводить к возникновению ошибок, поскольку в большинстве случаев тип аргументов здесь один и тот же, а со стороны клиента трудно поддерживать порядок аргументов.</p></li>
+    <li><p>Некоторые параметры могут быть необязательными, но в паттерне <span class="code">Factory</span> мы вынуждены отправлять все параметры, а необязательные параметры необходимо отправлять как файлы <em>NULL</em>.</p></li>
+    <li><p>Если объект “тяжелый” и со сложной разработкой, то все эти трудности станут частью классов Factory, что часто приводит к путанице.</p></li>
+
+</ol>Вышеупомянутые проблемы можно решить, когда объект имеет большое количество параметров. Для этого нужно просто предоставить конструктору необходимые параметры, а затем различные <span class="code">setter</span>-методы для установки необязательных параметров.
+
+Учтите, что проблема с этим способом заключается в том, что состояние объекта останется <span class="text-bold">непоследовательным</span> (inconsistent), если все атрибуты четко не установлены.
+<h3>Что такое паттерн проектирования Builder?</h3>Паттерн <span class="code">Builder</span> решает проблему с большим количеством необязательных параметров и непоследовательных состояний, предоставляя способ пошагового создания объекта. Для этого используется метод, который фактически возвращает окончательный объект.
+<h3>Как реализовать паттерн проектирования Builder в Java?</h3>Если мы выполним указанные ниже шаги, то получим поэтапный процесс создания объекта и его получения:<ol>
+
+    <li><p>Создайте статический вложенный класс (<span class="code">static nested class</span>) как класс <span class="code">Builder</span>, а затем скопируйте все поля из внешнего класса в класс <span class="code">Builder</span>. Мы должны следовать соглашению об именах, поэтому если имя класса <span class="code">Person</span>, то класс <span class="code">Builder</span> должен называться как <span class="code">PersonBuilder</span>.</p></li>
+    <li><p>Класс <span class="code">Builder</span> должен иметь общедоступный конструктор со всеми необходимыми полями в качестве параметров.</p></li>
+    <li><p>Класс <span class="code">Builder</span> должен иметь методы для установки необязательных параметров, и он должен возвращать тот же объект <span class="code">Builder</span> после установки необязательного поля.</p></li>
+    <li><p>Последним шагом является предоставление метода <span class="code">build()</span> в классе <span class="code">Builder</span>, который будет возвращать объект, необходимый клиентской программе. Для этого нам нужно иметь частный конструктор в основном классе с классом <span class="code">Builder</span> в качестве аргумента.</p></li>
+
+</ol><h4>Пример:</h4>Давайте рассмотрим пример, чтобы получить четкое представление о паттерне проектирования <span class="code">Builder</span>.
+
+<pre class="language-java line-numbers"><code>
+public class Employee {
+
+    private String name;
+    private String company;
+    private boolean hasCar;//optional
+    private boolean hasBike;//optional
+
+    private Employee(EmployeeBuilder employeeBuilder) {
+        name = employeeBuilder.name;
+        company = employeeBuilder.company;
+        hasCar = employeeBuilder.hasCar;
+        hasBike = employeeBuilder.hasBike;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getCompany() {
+        return company;
+    }
+
+    public boolean isHasCar() {
+        return hasCar;
+    }
+
+    public boolean isHasBike() {
+        return hasBike;
+    }
+
+    public static class EmployeeBuilder {
+        private String name;
+        private String company;
+        private boolean hasCar;//optional
+        private boolean hasBike;//optional
+
+        //constructor for required fields
+        public EmployeeBuilder(String name, String company) {
+            this.name = name;
+            this.company = company;
+        }
+
+        //setter methods for optional fields
+        public EmployeeBuilder setHasCar(boolean hasCar) {
+            this.hasCar = hasCar;
+            return this;
+        }
+
+        public EmployeeBuilder setHasBike(boolean hasBike) {
+            this.hasBike = hasBike;
+            return this;
+        }
+
+        //Build the Employee object
+        public Employee build() {
+            return new Employee(this);
+        }
+    }
+}
+
+class TestBuilder {
+    public static void main(String[] args) {
+        //Building the object of Employee thru the build() method provided in EmployeeBuilder class.
+        Employee employee = new Employee.EmployeeBuilder("Vikram", "ABC").setHasBike(false).setHasBike(true).build();
+    }
+}
+</code></pre>
+Пример шаблона <span class="code">Builder</span>: в <a href="https://levelup.gitconnected.com/string-stringbuilder-and-stringbuffer-a-complete-guide-7029c1953f7e" rel="nofollow" target="_blank">java.lang.StringBuilder</a> и <a href="https://levelup.gitconnected.com/string-stringbuilder-and-stringbuffer-a-complete-guide-7029c1953f7e" rel="nofollow" target="_blank">java.lang.StringBuffer</a> использовали шаблон <span class="code">Builder</span> для построения объектов.
+<h2>Как работает сериализация и десериализация в Java</h2>Источник: <a href="https://medium.com/@yahayayusuf/serialization-and-deserialization-in-java-92031a62524b" rel="nofollow" target="_blank">Medium</a>
+
+Я перешел на Java в январе этого года после стажировки. До этого я в основном писал на PHP и немного на JavaScript. Ранее мне не приходилось сталкиваться с сериализацией, хотя на самом деле сериализация существует и в PHP. Правда, в Java она используется намного чаще. Сегодня я познакомлю вас, как работает сериализация и десериализация в Java и расскажу о нескольких способах их применения.
+<h3>Что такое сериализация и десериализация</h3>Сериализация — это преобразование объекта из класса в последовательность байтов на виртуальной машине Java (JVM) для передачи на другую виртуальную машину Java. Если виртуальная машина Java воссоздает объект из байтов, то этот процесс называется десериализацией.
+<h3>Пример сериализации и десериализации</h3><h4>Сериализация</h4>Давайте создадим класс, объект которого будет сериализован:
+
+<pre class="language-java line-numbers"><code>
+import java.io.*;
+
+public class Person implements Serializable{
+
+int id = 0;
+String name = "empty";
+
+public Person(int identity, String nomenclature) {
+
+name = nomenclature;
+id = identity;
+}
+}
+</code></pre>
+Класс <span class="code">Person</span> реализует <span class="code">Serializable</span>, чтобы его объект можно было сериализовать/десериализовать. Класс <span class="code">Person</span> имеет два поля: идентификатор и имя, которые изменяются от значения по умолчанию при создании экземпляра класса. В пакет <span class="code">Java.io</span> были импортированы интерфейс <span class="code">Serializable</span> и другие классы, используемые в программе.
+
+<pre class="language-java line-numbers"><code>
+public static void main(String[] args) throws FileNotFoundException, IOException {
+
+String filename = "filename here";
+Person person = new Person(1, "John");
+
+// serialization
+ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename));
+
+try {
+
+out.writeObject(person);
+System.out.println("Success");
+} catch(Exception e) {
+
+System.out.println("Unsuccessful");
+} finally {
+
+if(out != null) {
+
+out.close();
+}
+}
+}
+</code></pre>
+Как вы знаете, основной метод запускает сериализацию и выводит сообщение об успешном результате, в противном случае печатается сообщение об ошибке. Для сериализации объектов мы используем <span class="code">ObjectOutputStream</span> и метод <span class="code">writeObject</span>.
+<h4>Десериализация</h4><pre class="language-java line-numbers"><code>
+public static void main(String[] args) throws FileNotFoundException, IOException {
+
+String filename = "filename here";
+Person person = new Person(1, "John");
+
+// Deserialization
+ObjectInputStream in = new ObjectInputStream(new FileInputStream(filename));
+
+try {
+
+Person personObj = (Person)in.readObject();
+System.out.println("Person Id is " +personObj.id + " while name is " + personObj.name);
+} catch (Exception e) {
+
+e.printStackTrace();
+} finally {
+
+if(in != null) {
+
+in.close();
+}
+}
+}
+</code></pre>
+Десериализация является обратным действием по отношению к сериализации. Для восстановления объекта из последовательности байтов используется <span class="code">ObjectInputStream</span> и метод <span class="code">readObject</span>. Заметьте, что для обеспечения доступа к полям в классе <span class="code">Person</span> объект приведен к типу данных <span class="code">Person</span>.
+
+Объект класса, который не реализует интерфейс сериализации, не может быть сериализован. Поэтому любой класс, который ссылается на класс, реализующий интерфейс сериализации, должен сам реализовывать интерфейс сериализации, иначе будет выдано исключение.
+
+Сериализация не зависит от платформы, то есть сериализуемый поток байтов может десериализоваться другой виртуальной машиной Java.
+
+Статические и переходные поля не сериализуются, поэтому если у вас есть поле, которое вы не хотите сериализовать, сделайте его временным или статическим. В случае статического поля оно не сериализуется, потому что статическое поле принадлежит классу, а не объекту. Из-за этого переходное состояние предотвращает сериализацию поля. Сериализация применяется в Hibernate, JPA и RMI.
+
+Сериализацию также можно настроить. Это называется пользовательской сериализацией.

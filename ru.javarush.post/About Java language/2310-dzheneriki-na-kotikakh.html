@@ -1,0 +1,279 @@
+Дженерики на котиках
+<p>----------------------------------------</p>
+Дженерики - часть каждодневной работы при написании кода. И без понимания того, как это работает, писать код всё равно что писать наугад. Попробуем освежить в памяти, как работают дженерики, как это всё выглядит и куда подсмотреть за подробностями.
+<p>----------------------------------------</p>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="186" alt="Дженерики на котиках - 1" src="https://cdn.javarush.com/images/article/8f98b924-9b51-4f91-ab39-e8d5358ae565/original.jpeg"></div></div><h2>Введение</h2>Сегодня отличный день, чтобы вспомнить, что же мы знаем про Java.
+
+Согласно самому главному документу, т.е. спецификации языка Java (JLS — Java Language Specifiaction), Java является строго типизированным языком, о чём сказано в главе "<a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-4.html" target="_blank" rel="nofollow">Chapter 4. Types, Values, and Variables</a>". Что же это означает? Предположим, у нас есть главный метод:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+String text = "Hello world!";
+System.out.println(text);
+}
+</code></pre>
+Строгая типизация гарантирует, что при компиляции данного кода компилятор проверит, что если мы указали тип переменной text как String, то мы нигде не пытаемся использовать её как переменную другого типа (например как число Integer).
+
+Например, если мы вместо текста попытаемся сохранить значение <code>2L</code> (т.е. long вместо String), то в момент компиляции получим ошибку:
+
+<pre class="line-numbers"><code>
+Main.java:3: error: incompatible types: long cannot be converted to String
+String text = 2L;
+</code></pre>
+Т.е. строгая типизация позволяет обеспечить выполнение операций с объектами только тогда, когда эти операции правомерны для этих объектов. Это ещё называется типобезопасностью или "Type safety".
+
+Как сказано в JLS, в Java существует две категории типов: примитивные типы (primitive types) и ссылочные типы (reference types). Про примитивные типы можно вспомнить по обзорной статье: "<a href="https://javarush.com/groups/posts/630-primitivnihe-tipih-v-java--ne-takie-uzh-oni-i-primitivnihe" target="_blank" rel="nofollow">Примитивные типы в Java: Не такие уж они и примитивные</a>".
+
+Ссылочные типы могут быть представлены классом, интерфейсом или массивом. И сегодня нас будут интересовать именно ссылочные типы. И начнём с массивов:
+
+<pre class="lang-java line-numbers"><code>
+class Main {
+  public static void main(String[] args) {
+    String[] text = new String[5];
+    text[0] = "Hello";
+  }
+}
+</code></pre>
+Такой код выполняется без ошибки. Как мы знаем (например, по "<a href="https://docs.oracle.com/javase/tutorial/java/nutsandbolts/arrays.html" target="_blank" rel="nofollow">Oracle Java Tutorial: Arrays</a>"), массив — это контейнер, который хранить данные только одного типа. В данном случае — только строки.
+Попробуем добавить в массив long вместо String:
+
+<pre class="inline-block language-java"><code>text[1] = 4L;</code></pre>
+
+Выполним этот код (например, в <a href="https://repl.it/languages/java" target="_blank" rel="nofollow">Repl.it Online Java Compiler</a>) и получим ошибку:
+
+<pre class="inline-block language-java"><code>error: incompatible types: long cannot be converted to String</code></pre>
+
+Массив и типобезопасность языка не дали нам сохранить в массив то, что не подходит по типу. Вот оно проявление type safety. Нам сказали: "Исправь ошибку, а до тех пор я не скомпилирую код". И самое главное в этом — это происходит в момент компиляции, а не запуска программы. То есть ошибки мы видим сразу, а не "когда-нибудь".
+
+А раз уж мы вспомнили про массивы, то вспомним и про <a href="https://javarush.com/groups/posts/2308-korotko-o-glavnom---java-collections-framework" target="_blank" rel="nofollow">Java Collections Framework</a>. Там у нас были разные структуры. Например, списки. Давайте перепишем пример:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.*;
+class Main {
+  public static void main(String[] args) {
+    List text = new ArrayList(5);
+    text.add("Hello");
+    text.add(4L);
+    String test = text.get(0);
+  }
+}
+</code></pre>
+При компиляции его мы получим на строчке инициализации переменной <code>test</code> ошибку:
+
+<pre class="inline-block language-java"><code>incompatible types: Object cannot be converted to String</code></pre>
+
+В нашем случае, List может хранить любой объект (т.е. объект типа Object). Поэтому, компилятор говорит, что он на себя такой груз ответственности брать не может. Поэтому, нам надо явно указать тип, который мы получим из списка:
+
+<pre class="inline-block language-java"><code>String test = (String) text.get(0);</code></pre>
+
+Такое указание называется приведением типов (type conversion или type casting). И всё будет работать теперь замечательно, пока мы не попробуем достать элемент по индексу 1, т.к. он имеет тип Long. И мы получим справедливую ошибку, но уже во время работы программы (в Runtime):
+
+<pre class="line-numbers"><code>
+type conversion, typecasting
+Exception in thread "main" java.lang.ClassCastException: java.lang.Long cannot be cast to java.lang.String
+</code></pre>
+Как мы видим, здесь сразу несколько важных минусов. Во-первых, мы вынуждены сами "кастить" значение, полученное из списка, к классу String. Согласитесь, это некрасиво. Во-вторых, в случае ошибки, мы её увидим только тогда, когда программа будет выполнятся. Будь наш код сложнее, мы могли бы обнаружить такую ошибку далеко не сразу. 
+
+И стали разработчики думать, как сделать работу в таких ситуациях проще, а код нагляднее. И на свет родились они — Дженерики (Generics).
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="3b0774d5-22a4-411f-903d-fcab5c15ba37" data-max-width="282" alt="Дженерики на котиках - 2" src="https://cdn.javarush.com/images/article/3b0774d5-22a4-411f-903d-fcab5c15ba37/1024.jpeg"></div></div><h2>Generics</h2>Итак, дженерики. Что же это такое?
+
+Дженерик — это особый способ описание используемых типов, который сможет использовать в своей работе компилятор кода для обеспечения типобезопасности.
+
+Выглядит это примерно так:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="a9f5eff1-4fa0-4158-ba6d-6ebf79ea9d0d" data-max-width="311" alt="Дженерики на котиках - 3" src="https://cdn.javarush.com/images/article/a9f5eff1-4fa0-4158-ba6d-6ebf79ea9d0d/1024.jpeg"></div></div>А вот коротенький пример и объяснение его:
+
+<pre class="lang-java line-numbers"><code>
+import java.util.*;
+class Main {
+  public static void main(String[] args) {
+    List&lt;String&gt; text = new ArrayList&lt;String&gt;(5);
+    text.add("Hello");
+    text.add(4L);
+    String test = text.get(1);
+  }
+}
+</code></pre>
+В данном примере мы говорим, что у нас есть не просто <code>List</code>, а <code>List</code>, который работает ТОЛЬКО с объектами типа String. И никакими другими. Вот только что указано в скобках, то и можем хранить. Такие "скобки" называются "angle brackets", т.е. угловые (angle) скобки (brackets). Компилятор любезно за нас проверит, не допустили ли мы ошибок при работе со списком строк (список имеет имя text). Компилятор увидит, что мы пытаемся в список String положить наглым образом Long. И в момент компиляции выдаст ошибку:
+
+<pre class="inline-block language-java"><code>error: no suitable method found for add(long)</code></pre>
+
+Возможно, Вы вспомнили про то, что String — это наследник CharSequence. И решите сделать что-нибудь вроде:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+	ArrayList&lt;CharSequence&gt; text = new ArrayList&lt;String&gt;(5);
+	text.add("Hello");
+	String test = text.get(0);
+}
+</code></pre>
+Но так нельзя и мы получим ошибку:
+
+<code>error: incompatible types: ArrayList&lt;String&gt; cannot be converted to ArrayList&lt;CharSequence&gt;</code>
+
+Кажется странным, т.к. строка <code>CharSequence sec = "test";</code> не содержит ошибок. Давайте разбираться.
+
+Про такое поведение говорят: "Дженерики являются инвариантными". Что такое "инвариант"?
+
+Мне нравится, как про это сказано на википедии в статье "<a href="https://en.wikipedia.org/wiki/Covariance_and_contravariance_(computer_science)" target="_blank" rel="nofollow">Covariance and contravariance</a>":
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="efb6b127-f846-4d72-abd0-1674babb2fec" data-max-width="514" alt="Дженерики на котиках - 4" src="https://cdn.javarush.com/images/article/efb6b127-f846-4d72-abd0-1674babb2fec/1024.jpeg"></div></div>Таким образом, Инвариантность — это отсутствие наследования между производными типами. 
+
+Если Кошка — это подтип Животные, то Множество&lt;Кошки&gt; не является подтипом Множество&lt;Животные&gt; и Множество&lt;Животные&gt; не является подтипом Множество&lt;Кошки&gt;.
+
+Кстати, стоит сказать, что начиная с Java SE 7 появился так называемый "<a href="https://docs.oracle.com/javase/tutorial/java/generics/types.html#diamond" target="_blank" rel="nofollow">Diamond Operator</a>". Потому что две угловые скобки &lt;&gt; похожи на бриллиант. Это позволяет нам использовать дженерики следующим образом:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+  List&lt;String&gt; lines = new ArrayList&lt;&gt;();
+  lines.add("Hello world!");
+  System.out.println(lines);
+}
+</code></pre>
+Компилятор по данному коду понимает, что если мы указали в левой части, что <code>List</code> будет содержать объекты типа String, то в правой части мы подразумеваем, что хотим в переменную <code>lines</code> сохранить новый ArrayList, который будет хранить тоже объект того типа, который указан в левой части. Таким образом, компилятор из левой части понимает или выводит тип для правой части. Именно поэтому такое поведение называется выведением типа или "Type Inference" на английском.
+
+Стоит отметить ещё такую интересную вещь, как RAW Types или же "сырые типы". Т.к. дженерики были не всегда, а Java старается по возможности поддерживать обратную совместимость, то дженерики вынуждены как-то работать с кодом, где не указан никакой дженерик.
+
+Посмотрим пример:
+
+<pre class="inline-block language-java"><code>List&lt;CharSequence&gt; lines = new ArrayList&lt;String&gt;();</code></pre>
+
+Как мы помним, такая строчка не скомпилируется из-за инвариантности дженериков.
+
+<pre class="inline-block language-java"><code>List&lt;Object&gt; lines = new ArrayList&lt;String&gt;();</code></pre>
+
+И такая тоже не скомпилируется, по той же самой причине.
+
+<pre class="lang-java line-numbers"><code>
+List lines = new ArrayList&lt;String&gt;();
+List&lt;String&gt; lines2 = new ArrayList();
+</code></pre>
+Такие строчки скомпилируется и будут работать. Именно в них используется Raw Types, т.е. не указанные типы. Ещё раз стоит указать, что Raw Types в современном коде НЕ ДОЛЖНЫ быть использованы.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="85da96a2-66cc-4412-8042-59eb8dc91499" data-max-width="279" alt="Дженерики на котиках - 5" src="https://cdn.javarush.com/images/article/85da96a2-66cc-4412-8042-59eb8dc91499/1024.jpeg"></div></div><h2>Типизированные классы</h2>Итак, типизированные классы. Давайте увидим, как мы можем написать свой типизированный класс.
+
+Например, у нас есть иерархия классов:
+
+<pre class="lang-java line-numbers"><code>
+public static abstract class Animal {
+  public abstract void voice();
+}
+
+public static class Cat extends Animal {
+  public void voice(){
+    System.out.println("Meow meow");
+  }
+}
+
+public static class Dog extends Animal {
+  public void voice(){
+    System.out.println("Woof woof");
+  }
+}
+</code></pre>
+Мы хотим создать класс, реализующий контейнер для животных. Можно было бы написать класс, который будет содержать любых <code>Animal</code>. Это просто, понятно, НО... мешать собак и кошек плохо, они не дружат друг с другом. Кроме того, если кто-то получит такой контейнер, то он по ошибке может запустить из контейнера кошек в стаю собак... и до добра это не доведёт. И тут нам помогут дженерики.
+
+Например, напишем реализацию так:
+
+<pre class="lang-java line-numbers"><code>
+public static class Box&lt;T&gt; {
+  List&lt;T&gt; slots = new ArrayList&lt;&gt;();
+  public List&lt;T&gt; getSlots() {
+    return slots;
+  }
+}
+</code></pre>
+Наш класс будет работать с объектами типа, указанные дженериком с именем T. Это своего рода псевдоним. Т.к. дженерик указан у имени класса, то и получать его будем при объявлении класса:
+
+<pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+  Box&lt;Cat&gt; catBox = new Box&lt;&gt;();
+  Cat murzik = new Cat();
+  catBox.getSlots().add(murzik);
+}
+</code></pre>
+Как мы видим, мы указали что у нас <code>Box</code>, который работает только с <code>Cat</code>. Компилятор понял, что для <code>catBox</code> вместо дженерика <code>T</code> нужно подставить тип <code>Cat</code> везде, где указано имя дженерика <code>T</code>:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="616d06ed-0584-4675-a9fe-23d32bd9d264" data-max-width="344" alt="Дженерики на котиках - 6" src="https://cdn.javarush.com/images/article/616d06ed-0584-4675-a9fe-23d32bd9d264/1024.jpeg"></div></div>Т.е. именно благодаря <code>Box&lt;Cat&gt;</code> компилятор понимает, что <code>slots</code> на самом деле должен быть <code>List&lt;Cat&gt;</code>.
+
+Для <code>Box&lt;Dog&gt;</code> внутри будет <code>slots</code>, содержащий <code>List&lt;Dog&gt;</code>.
+
+Дженериков в объявлении типа может быть несколько, например:
+
+<pre class="inline-block language-java"><code>public static class Box&lt;T, V&gt; {</code></pre>
+
+Название дженерика может быть любым, хотя рекомендуется придерживаться некоторым негласным правилам — "Type Parameter Naming Conventions": Тип элемента — E, тип ключа — K, тип числа — N, T — для обозначения типа, V — для типа значения.
+
+Кстати, помните мы с вами говорили, что дженерики инвариантны, т.е. не сохраняют иерархию наследования. На самом деле, мы можем на это повлиять. То есть у нас есть возможность сделать дженерики КОвариантными, т.е. сохраняющими наследования в том же порядке. Такое поведение называется "Bounded Type", т.е. ограниченные типы.
+
+Например, наш класс <code>Box</code> мог бы содержать всех животных, тогда бы мы объявили дженерик следующим образом:
+
+<pre class="inline-block language-java"><code>public static class Box&lt;T extends Animal&gt; {</code></pre>То есть мы задали ограничили верхнюю границу классом <code>Animal</code>.
+
+Так же мы можем указать несколько типов после ключевого слова <code>extends</code>. Это будет означать, что тип, с которым мы будем работать, должен быть наследником некоторого класса и при этом реализовывать некоторый интерфейс. Например:
+
+<pre class="inline-block language-java"><code>public static class Box&lt;T extends Animal &amp; Comparable&gt; {</code></pre>
+
+В этом случае, если мы попробуем положить в такой <code>Box</code> что-то, что не является наследником <code>Animal</code> и не реализует <code>Comparable</code>, то во время компиляции мы получим ошибку:
+
+<pre class="inline-block language-java"><code>error: type argument Cat is not within bounds of type-variable T</code></pre>
+
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="024b36ef-cd3b-4916-86f2-5fad3fb340c3" data-max-width="260" alt="Дженерики на котиках - 7" src="https://cdn.javarush.com/images/article/024b36ef-cd3b-4916-86f2-5fad3fb340c3/1024.jpeg"></div></div><h2>Типизация методов</h2>Дженерики применяются не только в типах, но и в отдельных методах.
+
+Применение в методах можно увидеть в официальном tutorial: "<a href="https://docs.oracle.com/javase/tutorial/java/generics/methods.html" target="_blank" rel="nofollow">Generics Methods</a>". 
+<h3>Предыстория:</h3><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="7af6c352-c4bc-46e7-89e7-9f590464127c" data-max-width="631" alt="Дженерики на котиках - 8" src="https://cdn.javarush.com/images/article/7af6c352-c4bc-46e7-89e7-9f590464127c/1024.jpeg"></div></div>Посмотрим на эту картинку. Как видно, компилятор смотрит на сигнатуру метода и видит, что на вход мы принимаем какой-то неопределённый класс. Не по сигнатуре он определяет, что мы возвращаем какой-то объект, т.е. Object.
+
+Следовательно, если мы хотим создать, скажем, ArrayList, то нам надо делать так:
+
+<pre class="inline-block language-java"><code>ArrayList&lt;String&gt; object = (ArrayList&lt;String&gt;) createObject(ArrayList.class);</code></pre>
+
+Приходится самим явно писать, что на выходе будет ArrayList, что некрасиво и добавляет шанс сделать ошибку. Например, мы можем написать такой бред и это скомпилируется:
+
+<pre class="inline-block language-java"><code>ArrayList object = (ArrayList) createObject(LinkedList.class);</code></pre>
+
+Можем ли мы помочь компилятору? Да, дженерики нам это позволяют. Рассмотрим тот же пример:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="31d53314-bb81-4ce5-b0b5-4881979638e6" data-max-width="472" alt="Дженерики на котиках - 9" src="https://cdn.javarush.com/images/article/31d53314-bb81-4ce5-b0b5-4881979638e6/1024.jpeg"></div></div>Тогда, мы можем создать объект просто вот так:
+
+<pre class="inline-block language-java"><code>ArrayList&lt;String&gt; object = createObject(ArrayList.class);</code></pre>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="137" alt="Дженерики на котиках - 10" src="https://cdn.javarush.com/images/article/39ec85ee-3a2a-4969-a929-7cecee49e878/original.jpeg"></div></div><h2>WildCard</h2>Согласно Tutorial от Oracle по дженерикам, а именно разделу "<a href="https://docs.oracle.com/javase/tutorial/java/generics/wildcards.html" target="_blank" rel="nofollow">Wildcards</a>", мы можем описать "неизвестный тип" символом вопроса, так называемого question mark.
+
+Wildcard — удобный инструмент, чтобы смягчить некоторый ограничения дженериков. Например, как мы ранее разбирали, дженерики инвариантны. Это значит что хотя все классы являются наследниками (подтипами, subtypes) типа Object, но <code>List&lt;любой тип&gt;</code> не является подтипом <code>List&lt;Object&gt;</code>.
+
+НО, <code>List&lt;любой тип&gt;</code> является подтипом <code>List&lt;?&gt;</code>. Таким образом, мы можем написать следующий код:
+
+<pre class="lang-java line-numbers"><code>
+public static void printList(List&lt;?&gt; list) {
+  for (Object elem: list) {
+    System.out.print(elem + " ");
+  }
+  System.out.println();
+}
+</code></pre>
+Как и обычные дженерики (т.е. без использования wildcard'ов), дженерики с wildcard могут быть ограничены. Ограничение по верхней границе (Upper bounded wildcard) выглядит привычно:
+
+<pre class="lang-java line-numbers"><code>
+public static void printCatList(List&lt;? extends Cat&gt; list) {
+  for (Cat cat: list) {
+    System.out.print(cat + " ");
+  }
+  System.out.println();
+}
+</code></pre>
+Но можно ограничить и по нижней границе (Lower bound wildcard):
+
+<pre class="inline-block language-java"><code>public static void printCatList(List&lt;? super Cat&gt; list) {</code></pre>
+
+Таким образом метод начнёт принимать всех котов, а так же по иерархии выше (вплоть до Object).
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="208" alt="Дженерики на котиках - 11" src="https://cdn.javarush.com/images/article/b524f9ce-9fe7-4301-a769-49f7d95a48bb/original.jpeg"></div></div><h2>Стирание типов или Type Erasure</h2>Говоря про дженерики стоит знать про "Стирание типов". На самом деле стирание типов это про то, что дженерики — это информация для компилятора. Во время выполнения программы информации о дженериках больше нет, это и называется "стирание". Это стирание имеет тот эффект, что тип дженерика заменяется конкретным типом. Если дженерик не имел границы, то будет подставлен тип Object. Если же граница была указана (например <code>&lt;T extends Comparable&gt;</code>), то она и будет подставлена.
+
+Вот пример из Tutorial от Oracle: "<a href="https://docs.oracle.com/javase/tutorial/java/generics/genTypes.html" target="_blank" rel="nofollow">Erasure of Generic Types</a>":
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="55fc1a1a-b62c-4128-8aca-7300f2669fa6" data-max-width="661" alt="Дженерики на котиках - 12" src="https://cdn.javarush.com/images/article/55fc1a1a-b62c-4128-8aca-7300f2669fa6/1024.jpeg"></div></div>Как выше и было сказано, в данном примере дженерик <code>T</code> стёрт до своей границы, т.е. до <code>Comparable</code>.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="7b2447c6-482b-43d8-a4fb-b5dc4d794d6c" data-max-width="256" alt="Дженерики на котиках - 13" src="https://cdn.javarush.com/images/article/7b2447c6-482b-43d8-a4fb-b5dc4d794d6c/1024.jpeg"></div></div><h2>Заключение</h2>Дженерики — очень интересная тема. Надеюсь, данная тема Вас заинтересовала. Подводя итоги, можно сказать, что дженерики — прекрасное средство, которые получили разработчики, чтобы подсказывать компилятору дополнительную информацию для обеспечения типобезопасности с одной стороны и гибкости с другой.
+
+И если заинтересовала, то предлагаю к ознакомлению ресурсы, которые понравились самому:
+<ul>
+<li>coursehunters : "<a href="https://coursehunters.net/course/java-generics" target="_blank" rel="nofollow">java generics</a>"</li>
+<li>Oracle Tutorial: "<a href="https://docs.oracle.com/javase/tutorial/java/generics/index.html" target="_blank" rel="nofollow">Lesson: Generics (Updated)</a>"</li>
+<li>JavaRush: "<a href="https://javarush.com/groups/posts/2004-teorija-dzhenerikov-v-java-ili-gde-na-praktike-stavitjh-skobki" target="_blank" rel="nofollow">Теория дженериков в Java или как на практике ставить скобки</a>"</li>
+<li>Юрий Ткач: "<a href="https://www.youtube.com/watch?v=MniNZsyjH9E&amp;list=PL6jg6AGdCNaX1yIJpX4sgALBTmTVc_uOJ" target="_blank" rel="nofollow">Advanced Java - Generics</a>"</li>
+<li>Александр Маторин — "<a href="https://www.youtube.com/watch?v=_0c9Fd9FacU&amp;t=4s" target="_blank" rel="nofollow">Неочевидные Дженерики</a>"</li>
+<li>IBM Developer: "<a href="https://developer.ibm.com/tutorials/j-perry-generics/" target="_blank" rel="nofollow">Unit 20: Generics</a>"</li>
+<li>Хабр: "<a href="https://habr.com/ru/company/sberbank/blog/416413/" target="_blank" rel="nofollow">Пришел, увидел, обобщил: погружаемся в Java Generics</a>"</li>
+<li>Книга "<a href="https://www.amazon.com/Java-Generics-Collections-Development-Process-ebook/dp/B0026OR2HM" target="_blank" rel="nofollow">Java Generics and Collections</a>"</li>
+</ul>#Viacheslav

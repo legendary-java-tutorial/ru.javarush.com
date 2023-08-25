@@ -1,0 +1,110 @@
+Перечисления в Java (java enum)
+<p>----------------------------------------</p>
+Программируя мы часто сталкиваемся с необходимостью ограничить множество допустимых значений для некоторого типа данных. Так, например, день недели может иметь 7 разных значений, месяц в году – 12, а время года – 4. Для решения подобных задач ...
+<p>----------------------------------------</p>
+Программируя мы часто сталкиваемся с необходимостью ограничить множество допустимых значений для некоторого типа данных. Так, например, день недели может иметь 7 разных значений, месяц в году – 12, а время года – 4. Для решения подобных задач во многих языках программирования со статической типизацией предусмотрен специальный тип данных – перечисление (<code>enum</code>). В Java перечисление появилось не сразу. Специализированная языковая конструкция <code>enum</code> была введена начиная с версии 1.5. До этого момента программисты использовали другие методы для реализации перечислений.
+<img data-id="c061c13e-8b48-4c17-bd2e-8f912a922edf" data-max-width="850" alt="Перечисления в Java (java enum) - 1" src="https://cdn.javarush.com/images/article/c061c13e-8b48-4c17-bd2e-8f912a922edf/1024.jpeg"><h2>Конструкция enum</h2>Начнем с примера. Давайте опишем с помощью <code>enum</code> тип данных для хранения времени года:
+
+<pre class="lang-java line-numbers"><code>
+enum Season { WINTER, SPRING, SUMMER, AUTUMN }
+</code></pre>
+Ну и простой пример его использования:
+
+<pre class="lang-java line-numbers"><code>
+Season season = Season.SPRING;
+if (season == Season.SPRING) season = Season.SUMMER;
+System.out.println(season);
+</code></pre>
+В результате выполнения которого на консоль будет выведено <em><strong>SUMMER</strong></em>. Думаю, что пример очевиден и в пояснениях не нуждается.
+<h2>Перечисление — это класс</h2>Объявляя <code>enum</code> мы неявно создаем класс производный от <code>java.lang.Enum</code>. Условно конструкция <code>enum Season { ... }</code> эквивалентна <code>class Season extends java.lang.Enum { ... }</code>. И хотя явным образом наследоваться от <code>java.lang.Enum</code> нам не позволяет компилятор, все же в том, что <code>enum</code> наследуется, легко убедиться с помощью <code>reflection</code>:
+
+<pre class="lang-java line-numbers"><code>
+System.out.println(Season.class.getSuperclass());
+</code></pre>
+<strong>На консоль будет выведено:</strong>
+
+<pre class="lang-java line-numbers"><code>
+class java.lang.Enum
+</code></pre>
+Собственно наследование за нас автоматически выполняет компилятор Java. Далее давайте условимся называть класс, созданный компилятором для реализации перечисления — <code>enum</code>-классом, а возможные значения перечисляемого типа — элементами <code>enum</code>-a.
+<h2>Элементы перечисления — экземпляры <code>enum</code>-класса, доступные статически</h2>Элементы <code>enum Season (WINTER, SPRING и т.д.)</code> — это статически доступные экземпляры <code>enum</code>-класса <code>Season</code>. Их статическая доступность позволяет нам выполнять сравнение с помощью оператора сравнения ссылок <code>==</code>. Пример:
+
+<pre class="lang-java line-numbers"><code>
+Season season = Season.SUMMER;
+if (season == Season.AUTUMN) season = Season.WINTER;
+</code></pre><h2>Название и порядковый номер элемента enum</h2>Как уже было сказано ранее любой <code>enum</code>-класс наследует <code>java.lang.Enum</code>, который содержит ряд методов полезных для всех перечислений. Пример:
+
+<pre class="lang-java line-numbers"><code>
+Season season = Season.WINTER;
+System.out.println("season.name()=" + season.name() + " season.toString()=" + season.toString() + " season.ordinal()=" + season.ordinal());
+</code></pre>
+Будет выведено:
+
+<pre class="lang-java line-numbers"><code>
+season.name()=WINTER season.toString()=WINTER season.ordinal()=0
+</code></pre>
+Здесь показано использования методов <code>name()</code>, <code>toString()</code> и <code>ordinal()</code>. Семантика методов — очевидна. Следует обратить внимание, что данные методы <code>enum</code>-класс наследует из класса <code>java.lang.Enum</code>.
+
+<strong>Получение элемента <code>enum</code> по строковому представлению его имени</strong>Довольно часто возникает задача получить элемент <code>enum</code> по его строковому представлению. Для этих целей в каждом <code>enum</code>-классе компилятор автоматически создает специальный статический метод: <code>public static EnumClass valueOf(String name)</code>, который возвращает элемент перечисления <code>EnumClass</code> с названием, равным <code>name</code>. Пример использования:
+
+<pre class="lang-java line-numbers"><code>
+String name = "WINTER";
+Season season = Season.valueOf(name);
+</code></pre>
+В результате выполнения кода переменная season будет равна <code>Season.WINTER</code>. Cледует обратить внимание, что если элемент не будет найден, то будет выброшен <em>IllegalArgumentException</em>, а в случае, если <code>name</code> равен <code>null</code> — <em>NullPointerException</em>. Об этом, кстати, часто забывают. Почему-то многие твердо уверенны, что если функция принимает один аргумент и при некоторых условиях выбрасывает <em>IllegalArgumentException</em>, то при передачи туда <code>null</code>, также будет непременно выброшен <em>IllegalArgumentException</em>. Но это не относится к делу. Продолжим.
+
+<strong>Получение всех элементов перечисления</strong>
+
+Иногда необходимо получить список всех элементов <code>enum</code>-класса во время выполнения. Для этих целей в каждом <code>enum</code>-классе компилятор создает метод <code>public static EnumClass[] values()</code>. Пример использования:
+
+<pre class="lang-java line-numbers"><code>
+System.out.println(Arrays.toString(Season.values()));
+</code></pre>
+Получим вывод:
+
+<pre class="lang-java line-numbers"><code>
+[WINTER, SPRING, SUMMER, AUTUMN]
+</code></pre>
+Обратите внимание, что ни метод <code>valueOf()</code>, ни метод <code>values()</code> не определен в классе <code>java.lang.Enum</code>. Вместо этого они автоматически добавляются компилятором на этапе компиляции <code>enum</code>-класса.
+
+<strong>Добавляем свои методы в <code>enum</code>-класс</strong>
+
+У Вас есть возможность добавлять собственные методы как в <code>enum</code>-класс, так и в его элементы:
+<img data-id="9eb1f545-2846-4b1a-b9cc-3e60120b1f9a" data-max-width="691" alt="Перечисления в Java (java enum) - 2" src="https://cdn.javarush.com/images/article/9eb1f545-2846-4b1a-b9cc-3e60120b1f9a/1024.jpeg">То же, но с полиморфизмом:
+<img data-id="5950d3be-33fc-47d1-bf23-7761859254ae" data-max-width="681" alt="Перечисления в Java (java enum) - 3" src="https://cdn.javarush.com/images/article/5950d3be-33fc-47d1-bf23-7761859254ae/1024.jpeg">Последний пример демонстрирует использование наследования в <code>enum</code>. Об этом — далее.
+
+<strong>Наследование в <code>enum</code></strong>
+
+С помощью <code>enum</code> в Java можно реализовать иерархию классов, объекты которой создаются в единственном экземпляре и доступны статически. При этом элементы <code>enum</code> могут содержать собственные конструкторы. Приведем пример:
+<img data-id="47383dfd-eb3b-4d36-a31b-4760161e631c" data-max-width="681" alt="Перечисления в Java (java enum) - 4" src="https://cdn.javarush.com/images/article/47383dfd-eb3b-4d36-a31b-4760161e631c/1024.jpeg">Здесь объявляется перечисление <code>Type</code> с тремя элементами <code>INT</code>, <code>INTEGER</code> и <code>STRING</code>. Компилятор создаст следующие классы и объекты:
+<ul>
+    <li><code>Type</code> — класс производный от <code>java.lang.Enum</code></li>
+    <li><code>INT</code> — объект 1-го класса производного от <code>Type</code></li>
+    <li><code>INTEGER</code> — объект 2-го класса производного от <code>Type</code></li>
+    <li><code>STRING</code> — объект 3-го класса производного от <code>Type</code></li>
+</ul>Три производных класса будут созданы с полиморфным методом <code>Object parse(String)</code> и конструктором <code>Type(..., boolean)</code>. При этом объекты классов <code>INT</code>, <code>INTEGER</code> и <code>STRING</code> существуют в единственном экземпляре и доступны статически. В этом можно убедится:
+
+<pre class="lang-java line-numbers"><code>
+System.out.println(Type.class);
+System.out.println(Type.INT.getClass() + " " + Type.INT.getClass().getSuperclass());
+System.out.println(Type.INTEGER.getClass() + " " + Type.INTEGER.getClass().getSuperclass());
+System.out.println(Type.STRING.getClass()  + " " + Type.STRING.getClass().getSuperclass());
+</code></pre>
+<strong>Получим вывод:</strong>
+
+<pre class="lang-java line-numbers"><code>
+class Type
+class Type$1 class Type
+class Type$2 class Type
+class Type$3 class Type
+</code></pre>
+Видно, что компилятор создал класс <code>Type</code> и 3 <code>nested</code> класса, производных от <code>Type</code>.
+
+<div class="email-subscription"><iframe frameborder="0" src="https://secure.esputnik.com.ua/4Q0Ef6d2SOs" width="100%" height="200" scrolling="no"></iframe></div><h2>Декомпилированный enum-class с наследованием</h2>В подтверждение вышесказанному приведем еще результат декомпиляции перечисления <code>Type</code> из примера выше:
+<img data-id="47c1f378-dadd-491e-88ba-af3cd5a57850" data-max-width="712" alt="Перечисления в Java (java enum) - 5" src="https://cdn.javarush.com/images/article/47c1f378-dadd-491e-88ba-af3cd5a57850/1024.jpeg"><h2>Перечисления и параметрический полиморфизм</h2>У читателя может возникнуть вопрос: "<em>почему вышеуказанное перечисление Type не использует генерики (generics)?</em>". Дело в том, что в Java использование генериков в <code>enum</code> запрещено. Так следующий пример не скомпилируется:
+
+<pre class="lang-java line-numbers"><code>
+enum Type&lt;T&gt; {}
+</code></pre><h2>Дальнейшее изучение</h2>Для более глубокого понимания того, как работают перечисления в Java рекомендую ознакомиться с исходными кодами класса <code>java.lang.Enum</code>, а также воспользоваться декопмилятором Jad для изучения сгенерированного кода. Более того, изучение исходных кодов библиотеки Java абсолютно необходимо для понимания принципов работы многих механизмов в Java и полезно как эталон объектно-ориентированного дизайна.
+
+Cсылка на первоисточник: <a href="http://alexander.lds.lg.ua/2011/01/%D0%BF%D0%B5%D1%80%D0%B5%D1%87%D0%B8%D1%81%D0%BB%D0%B5%D0%BD%D0%B8%D1%8F-%D0%B2-java-java-enum/" rel="nofollow">http://alexander.lds.lg.ua/</a>

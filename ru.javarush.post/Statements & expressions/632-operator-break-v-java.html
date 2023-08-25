@@ -1,0 +1,232 @@
+Оператор break в Java
+<p>----------------------------------------</p>
+Три основных способа применения оператора break в java. Полезные замечания по чистому коду с использованием break. Сегодня мы рассмотрим такую возможность языка программирования Java, как оператор перехода break. Это первая статья на тему операторов перехода ...
+<p>----------------------------------------</p>
+Привет всем коллегам и просто интересующимся.
+
+<div class='row justify-content-center jr-image-wrap'><div class='col-12 col-sm-10 col-md-8'><img data-id="fab57cef-31b8-4c6c-a3ce-0986ed3b721c" data-max-width="710" alt="Оператор break в Java - 1" src="https://cdn.javarush.com/images/article/fab57cef-31b8-4c6c-a3ce-0986ed3b721c/1024.jpeg"></div></div>
+Сегодня мы рассмотрим такую возможность языка программирования Java, как оператор перехода break. Это первая статья на тему операторов перехода, так что если вам понравится, буду рад написать еще. Сразу хочу заметить, что эта статья рассчитана в первую очередь на начинающих разработчиков, и более продвинутые ученики могут не найти здесь чего-то нового для себя. Итак, поехали.
+
+В Java существует 2 способа изменить порядок выполнения инструкций программы: операторы перехода и механизм обработки исключений. К операторам перехода в java относят три оператора: break, continue и return. Сегодня же я предлагаю Вам рассмотреть подробнее оператор <code>break</code>. Механизм обработки исключений является столь обширной темой, что выходит за рамки данной статьи.
+
+Есть три способа применения оператора break в java.  Первый и самый популярный способ — использование <code>break</code> для досрочного выхода из цикла, например:
+
+<pre class="lang-java line-numbers"><code>
+public class SimpleExample {
+    public static void main(String[] args) {
+        findNumberInLoop(3);
+    }
+    public static void findNumberInLoop(int number){
+        for (int i = 0; i &lt; 10; i++) {
+            if (i == number) {
+                break;
+            }
+            System.out.println(i);
+        }
+        System.out.println("cycle was finished");
+    }
+}
+</code></pre>
+Этот пример выведет на экран:
+
+<pre class='lang-java line-numbers'><code>
+1
+2
+cycle was finished
+</code></pre>
+Это означает, что когда счетчик цикла <code>i</code> становится равным переданному параметру <code>number</code>, то есть числу 3, выполнение цикла прерывается досрочно.
+
+Если в программе есть несколько вложенных друг в друга  циклов, то break выводит только из самого внутреннего цикла, например:
+
+<pre class="lang-java line-numbers"><code>
+public class SimpleExample {
+    public static void main(String[] args) {
+        findNumberInLoop(3);
+    }
+    public static void findNumberInLoop(int number){
+        for(int i = 0; i &lt; 5; i++) {
+            for (int j =0; j &lt; 10; j++) {
+                if(j == number) {
+                    break;
+                }
+                System.out.print(j);
+            }
+            System.out.println();
+        }
+        System.out.println("cycles was finished");
+    }
+}
+</code></pre>
+Этот пример дает вывод:
+
+<pre class='lang-java line-numbers'><code>
+012
+012
+012
+012
+012
+cycles was finished
+</code></pre>
+Как видно из примера, внутренний цикл каждый раз прерывается на числе 3 (параметр <code>number</code>), а внешний цикл выполняется 5 раз, как было и задумано. В java можно использовать более одного оператора break внутри цикла, но этого делать не рекомендуется, так как очень сильно ухудшается читабельность и структура кода.
+
+Второй способ применения <code>break</code> заключается в использовании его для прерывания выполнения операторов в ветвях <code>switch</code>, например:
+
+<pre class="lang-java line-numbers"><code>
+public class SimpleExample {
+    public static void main(String[] args) {
+        square(2);
+    }
+
+    public static void square(int number){
+        switch (number){
+            case 1:
+                System.out.println(number*number);
+                break;
+            case 2:
+                System.out.println(number*number);
+                break;
+            case 3:
+                System.out.println(number*number);
+                break;
+        }
+        System.out.println("after switch");
+    }
+}
+</code></pre>
+Запуск этого примера даст вывод:
+
+<pre class='lang-java line-numbers'><code>
+4
+after switch
+</code></pre>
+Оператор break передал управление коду следующему за всем блоком <code>switch</code>. Если же не указать <code>break</code> в <code>switch</code> в данном примере:
+
+<pre class="lang-java line-numbers"><code>
+public class SimpleExample {
+    public static void main(String[] args) {
+        square(2);
+    }
+    public static void square(int number){
+        switch (number){
+            case 1:
+                System.out.println(number*number);
+            case 2:
+                System.out.println(number*number);
+            case 3:
+                System.out.println(number*number);
+        }
+        System.out.println("after switch");
+    }
+}
+</code></pre>
+Вывод будет не таким как ожидалось:
+
+<pre class='lang-java line-numbers'><code>
+4
+4
+after switch
+</code></pre>
+Это произошло потому, что после выполнения блока <code>case 2</code> программа продолжила выполнять все следующие за ним блоки <em>case</em>, что и дало нам соответствующий вывод.
+
+Иногда такая особенность оператора <code>switch </code>может быть нам выгодна, например:
+
+<pre class="lang-java line-numbers"><code>
+public class SimpleExample {
+    public static void main(String[] args) {
+        compare(2);
+        compare(7);
+        compare(12);
+    }
+    public static void compare(int number){
+        switch (number){
+            case 0:
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+                System.out.println("number is less than 5 or equal 5");
+                break;
+            case 6:
+            case 7:
+            case 8:
+            case 9:
+                System.out.println("number is greater than 5");
+                break;
+            default:
+                System.out.println("number is less than 0 or greater than 9");
+        }
+        System.out.println("after switch");
+    }
+}
+</code></pre>
+Данная программа реализует сравнение заданного числа с числом 5 и дает следующий вывод:
+
+<pre class='lang-java line-numbers'><code>
+after switch
+number is greater than 5
+after switch
+number is less than 0 or greater than 9
+after switch
+</code></pre>
+При первом вызове метода, оператор <code>switch</code> передает управление оператору <code>case 2</code> и далее до оператора <code>break</code> в <code>case 5</code>. Второй вызов происходит по аналогии с первым, но начинается c <code>case 7</code>.  Третий вызов же не находит подходящего значения среди всех case’ов, поэтому выполняется оператор <code>default</code>.
+
+Третий способ заключается в использовании оператора <code>break</code> вместо оператора <code>goto</code> из языка C. Для этого мы будем использовать особую форму оператора <code>break</code>, называемую <code>break</code> с меткой. Эта форма выглядит как <code>break метка;</code> Метка - это как правило любое подходящее из пространства имен java имя, предваряющее блок кода. При этом после применения этом блоке кода <code>break</code> с меткой приведет к тому, что код продолжит выполняться с места после блока с соответствующей меткой, например:
+
+<pre class="lang-java line-numbers"><code>
+public class SimpleExample {
+    public static void main(String[] args) {
+        howWeUseLabels(true);
+        System.out.println();
+        howWeUseLabels(false);
+    }
+    public static void howWeUseLabels(boolean bool) {
+        firstBlock:{
+            secondBlock:{
+                thirdBlock:{
+                    System.out.println("We will see it always");
+                    if(bool) {
+                        break secondBlock;
+                    }
+                    System.out.println("We won't see it if bool == true");
+                }
+                System.out.println("We won't see it if bool == true");
+            }
+            System.out.println("We will see it always");
+        }
+    }
+}
+</code></pre>
+Этот пример даст следующий вывод:
+
+<pre class='lang-java line-numbers'><code>
+We will see it always
+We will see it always
+
+We will see it always
+We won't see it if bool == true
+We won't see it if bool == true
+We will see it always
+</code></pre>
+После первого вызова метода, оператор <code>break</code> осуществляет передачу управления в конец блока <code>secondBlock</code>, выходя из <code>secondBlock</code> и <code>thirdBlock</code>, при этом выполняя еще один оператор <code>println()</code>, в конце <code>firstBlock</code>. После второго вызова на экран выводится все строки.
+
+Метки можно использовать также для обозначения циклов. При этом следует помнить, что переходить к метке можно только изнутри блока кода, обозначенного меткой, например такой код не скомпилируется:
+
+<pre class="lang-java line-numbers"><code>
+public class SimpleExample {
+    public static void main(String[] args) {
+        label:{
+            System.out.println("inside label");
+        }
+        if(true) {
+            break label;
+        }
+        System.out.println("This is error");
+    }
+}
+</code></pre>
+Замечания насчет чистоты кода и оператора <code>break</code>:
+
+Существует общепризнанный совет использовать оператор <code>break</code> очень осторожно, так как применение <code>break</code> усложняет понимание цикла и заставляет программиста заглянуть внутрь цикла, чтобы разобраться в нюансах его работы. Есть эвристического правило, что использовать <code>break </code> можно увереннее в более коротких циклах и с большей осторожностью в длинных и имеющих глубокую вложенность, так как это увеличивает вероятность ошибки и усложняет чтение и понимание вашего кода другими программистами. Как я уже писал выше, использование большого количества <code>break</code>, разбросанных по всему коду, говорит о том, что программист не до конца понимает, почему он написал свой код именно так.  Возможно, стоит рассмотреть рефакторинг такого цикла, путем разбиения на несколько более маленьких циклов. Старайтесь с осторожностью использовать <code>break</code>  с меткой в качестве замены <code>goto</code>, так как это усложняет структуру кода.
+
+Вот и все, что я хотел сегодня рассказать об операторе <code>break</code> в java. Буду рад конструктивной критике, а также готов написать продолжение про операторы <code>continue</code> и <code>return</code>, если Вам это интересно.

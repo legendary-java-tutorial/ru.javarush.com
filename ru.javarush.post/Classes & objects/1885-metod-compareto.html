@@ -1,0 +1,167 @@
+Метод compareTo
+<p>----------------------------------------</p>
+Для упорядочивания объектов одного типа, хранящихся в массиве или коллекции, разработчики Java придумали интерфейс Comparable. В нём объявлен всего один метод, compareTo. Интерфейс Comparable параметризирован типом объекта, который он принимает в качестве ...
+<p>----------------------------------------</p>
+Для упорядочивания объектов одного типа, хранящихся в массиве или коллекции, разработчики Java придумали интерфейс <code>Comparable</code>. В нём объявлен всего один метод, <code>compareTo</code>:
+
+<pre class="lang-java line-numbers"><code>
+ public interface Comparable&lt;T&gt; {
+    public int compareTo(T o);
+}
+</code></pre>
+<img data-id="b38bd40d-51c1-40ea-840b-2155b94a7e4c" data-max-width="850" alt="Метод compareTo - 1" src="https://cdn.javarush.com/images/article/b38bd40d-51c1-40ea-840b-2155b94a7e4c/1024.jpeg">Интерфейс <code>Comparable</code> параметризирован типом объекта, который он принимает в качестве параметра в метод <code>compareTo</code>. В данном случае мы предупреждаем компилятор, какие типы объектов собираемся сравнивать. Если условие идентичности типов не будет выполняться, то мы получим ошибку <code>ClassCastException</code>.
+
+Метод <code>compareTo</code> в Java сравнивает вызывающий объект с объектом, переданным в качестве параметра, и возвращает в результате выполнения сравнения целое число:
+<ul>
+<li>положительное, если вызывающий объект больше объекта, переданного в качестве параметра;</li>
+<li>отрицательное, если вызывающий объект меньше объекта, переданного в качестве параметра;</li>
+<li>нуль, если объекты равны.</li>
+</ul>Написание логики сравнения объектов – забота исключительно разработчика класса и определяется она желаемыми результатами при упорядочивании.
+<h2>Зачем нужен метод compareTo в Java?</h2>Программисту на Java очень часто приходиться иметь дело с массивами и списками объектов. При работе с большим количеством данных их зачастую удобно хранить в упорядоченном или отсортированном виде. Во-первых, это ускоряет работу с коллекцией при поиске нужной информации, во-вторых — упорядоченные данные визуально лучше воспринимаются.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="000bfe8b-b176-4fc4-adea-3addbd613a5d" data-max-width="710" alt="Метод compareTo - 2" src="https://cdn.javarush.com/images/article/000bfe8b-b176-4fc4-adea-3addbd613a5d/1024.jpeg"></div></div>Одним из самых простых и эффективных способов отсортировать массив объектов является метод <code>sort()</code> класса <code>Arrays</code>, а коллекцию объектов в виде списка – аналогичный метод класса <code>Collections</code>. 
+
+Для сортировки с помощью этих методов разработчики Java предоставили нам свободу в выборе способа задания критериев сортировки: с реализацией интерфейса <code>Comparable</code> в классе объектов, которые мы хотим упорядочить, или с использованием интерфейса <code>Comparator</code>.
+
+В первом случае методы сортировки принимают набор объектов в виде массива или списка:
+
+<pre class="lang-java line-numbers"><code>
+sort(T[]array)//сортировка массива
+sort(List&lt;T&gt; list)// сортировка списка
+</code></pre>
+а во втором – плюс еще реализацию интерфейса <code>Comparator</code>:
+
+<pre class="lang-java line-numbers"><code>
+sort(T[]array, Comparator &lt;? super T&gt; comparator)//сортировка массива
+sort(List&lt;T&gt; list, Comparator &lt;? super T&gt; comparator)// сортировка списка
+</code></pre>
+Интерфейс <code>Comparable</code> используется, когда мы хотим задать естественный (наиболее логичный с нашей точки зрения) порядок расположения объектов при сортировке. Он также является способом «зашить» алгоритм сравнения объектов этого класса на стадии его проектирования. 
+
+Например, с помощью реализации этого интерфейса, определены критерии естественного упорядочивания в классах-обертках основных примитивных типов: <code>Byte</code>, <code>Character</code>, <code>Long</code>, <code>Integer</code>, <code>Short</code>, <code>Double</code>, <code>Float</code>, <code>Boolean</code>, <code>String</code>. Это также означает, что в этих классах есть реализованный метод <code>compareTo</code>, который при необходимости мы можем использовать в программе.
+
+Давайте посмотрим на примере <strong>сравнения строк</strong>, как реализован этот метод в классе <code>String</code>. 
+
+<pre class="lang-java line-numbers"><code>
+String str1="Аарон";
+        String str2="АAPOH";
+        String str3="аарон";
+        String str4="ААрон";
+        String str5="аАрон";
+        String str6="Берта";
+        String str7="берта";
+String[] allStr=new String[]{str1,str2,str3,str4, str5,str6, str7};
+        Arrays.sort(allStr);
+        for (String s:allStr){
+            System.out.println(s);
+        }
+    }
+</code></pre>
+Если этот код выполнить в методе <code>main</code>, то получим такой результат:
+
+<pre class="lang-java line-numbers"><code>
+АAPOH
+ААрон
+Аарон
+Берта
+аАрон
+аарон
+берта
+</code></pre>
+Как видно из примера в классе <code>String</code>,  метод <code>compareTo</code> упорядочивает строки в алфавитном порядке, лексикографически и с учетом регистра. Именно такой порядок сравнения строк определен разработчиками класса <code>String</code> как естественный. Для более простого понимания, что такое лексикографический порядок, достаточно вспомнить, как расположены слова в языковых словарях.
+
+При <strong>сравнении чисел</strong> объекты упорядочиваются в порядке возрастания. Такая логика сравнения заложена в классах <code>Byte</code>, <code>Character</code>, <code>Long</code>, <code>Integer</code>, <code>Shor</code>, <code>Double</code>, <code>Float</code>.
+
+<h2>Реализуем сравнение в своем классе</h2>Посмотрим на примере как можно встроить возможность сравнения объектов в свой класс. При реализации метода <code>compareto</code> Java мы можем задать один или несколько критериев упорядочивания объектов, а также задействовать методы <code>compareto</code> из классов <code>String</code> и <code>Integer</code>.
+
+Например, для объектов класса <code>User</code> мы задаем сортировку по имени, а в случае равенства имен – по возрасту. Объекты будут располагаться в естественном порядке (по мере увеличения значения).
+
+Класс <code>User</code>:
+
+<pre class="lang-java line-numbers"><code>
+public class User  implements Comparable &lt;User&gt;{//добавляем возможность сравнивать объекты User
+
+    private String name;
+    private Integer age;
+    private String email;
+
+    public User(String name, int age, String email) {
+        this.name = name;
+        this.age = age;
+        this.email = email;
+    }
+
+    @Override
+//реализуем метод compareTo интерфейса Comparable
+    public int compareTo(User o) {
+
+//используем метод compareTo из класса String для сравнения имен
+        int result = this.name.compareTo(o.name);
+
+//если имена одинаковые -  сравниваем возраст,
+используя метод compareTo из класса Integer
+ 
+        if (result == 0) {
+            result = this.age.compareTo(o.age);
+        }
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                ", email='" + email + '\'' +
+                '}';
+    }
+</code></pre>
+Протестируем работу метода <code>compareTo</code>, реализованного в классе <code>User</code>, c помощью метода <code>sort</code> класса <code>Collections</code>:
+
+ <pre class="lang-java line-numbers"><code>
+public static void main(String[] args) {
+    User user = new User("Андрей", 19, "andryha@mail.ru");
+    User user2 = new User("Олег", 25, "oleg@mail.ru");
+    User user3 = new User("Андрей", 24,"opr@google.com");
+    User user4 = new User("Игорь", 16, "igor@mail.ru");
+    User user5 = new User("Андрей", 44,"stary@google.com");
+    List&lt;User&gt; list = new ArrayList&lt;&gt;();
+
+    list.add(user);
+    list.add(user2);
+    list.add(user3);
+    list.add(user4);
+    list.add(user5);
+
+    System.out.println("-------до сортировки--------");
+    for (User u : list) {
+        System.out.println(u);
+    }
+    System.out.println("-------после сортировки-----");
+    Collections.sort(list);
+    for (User u : list) {
+        System.out.println(u);
+    }
+}
+ }
+}
+</code></pre>
+Результат работы метода <code>main</code>:
+
+<pre class="lang-java line-numbers"><code>
+-------до сортировки--------
+{name='Андрей',&nbsp;&nbsp;age=19,&nbsp;&nbsp;email='andryha@mail.ru'}
+{name='Олег',&nbsp;&nbsp;&nbsp;&nbsp;age=25,&nbsp;&nbsp;email='oleg@mail.ru'}
+{name='Андрей',&nbsp;&nbsp;age=24,&nbsp;&nbsp;email='opr@google.com'}
+{name='Игорь',&nbsp;&nbsp;&nbsp;age=16,&nbsp;&nbsp;email='igor@mail.ru'}
+{name='Андрей',&nbsp;&nbsp;age=44,&nbsp;&nbsp;email='stary@google.com'}
+-------после сортировки-----
+{name='Андрей',&nbsp;&nbsp;age=19,&nbsp;&nbsp;email='andryha@mail.ru'}
+{name='Андрей',&nbsp;&nbsp;age=24,&nbsp;&nbsp;email='opr@google.com'}
+{name='Андрей',&nbsp;&nbsp;age=44,&nbsp;&nbsp;email='stary@google.com'}
+{name='Игорь',&nbsp;&nbsp;&nbsp;age=16,&nbsp;&nbsp;email='igor@mail.ru'}
+{name='Олег',&nbsp;&nbsp;&nbsp;&nbsp;age=25,&nbsp;&nbsp;email='oleg@mail.ru'}
+</code></pre>
+Итак, подведем итог. Если вы — сторонник порядка во всем и хотите без лишнего кода расположить ваши объекты в массиве или списке – используете интерфейс <code>Comparable</code>. Реализация его метода compareTo позволяет достаточно легко встроить механизм естественного упорядочивания объектов вашего класса. 
+
+Если вам приходится работать с коллекциями и массивами объектов стандартных классов, описанных в библиотеке Java, используйте уже готовые реализации <code>compareTo</code> в этих классах.
+
+<div class="email-subscription"><iframe frameborder="0" src="https://secure.esputnik.com.ua/4Q0Ef6d2SOs" width="100%" height="200" scrolling="no"></iframe></div>

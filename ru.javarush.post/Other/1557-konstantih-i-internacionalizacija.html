@@ -1,0 +1,190 @@
+Константы и интернационализация
+<p>----------------------------------------</p>
+При работе программа опирается в вычислениях или вводе-выводе используется не только переменные, но и явно прописанные константы. Допустим Вы обрабатываете финансовые данные и по ходу кода несколько раз выводите результаты (пусть в консоль) примерно таким образом...
+<p>----------------------------------------</p>
+При работе программа опирается в вычислениях или вводе-выводе используется не только переменные, но и явно прописанные константы. Допустим Вы обрабатываете финансовые данные и по ходу кода несколько раз выводите результаты (пусть в консоль) примерно таким образом:
+
+<img data-id="12da5ba1-75c1-41f4-b28c-9801f713c954" data-max-width="850" alt="Константы и интернационализация - 1" src="https://cdn.javarush.com/images/article/12da5ba1-75c1-41f4-b28c-9801f713c954/1024.jpeg"><pre class='lang-java line-numbers'><code>
+System.out.println("Итоговое количество =" + countLoans);
+...
+String strCount = "Итоговое количество :" + loans.calc(); 
+...
+System.out.println(strCount + strSumDesc);
+</code></pre>
+И это весьма плохо по нескольким причинам.
+<ol>
+<li><p>Нарушение принципа <strong>DRY</strong> (Don’t repeat yourself — не повторяй).<br />
+Дублирование текста и, как следствие, увеличение размеров скомпилированного кода. Также при этом возможны описки.</p></li>
+<li><p>Нарушение принципа <strong>KISS</strong> (keep it simple stupid — делайте вещи проще). <br />
+В случае необходимости изменения такого рода констант придется прошерстить весь код.</p></li>
+<li><p>Каждое изменение константы потребует перекомпиляции кода.</p></li>
+<li><p>Ввод мультиязычности потребует (при таком построении кода) много дополнительных конструкций к каждой такой константе.</p></li>
+</ol>Первые две причины устранит ввод констант с модификаторами <code>static final</code> и их инициализацией + применение их по ходу кода. Т.е. создаем:
+
+<pre class='lang-java line-numbers'><code>
+public class Constants {
+    public static final int COUNT_DEPARTMENTS = 20;
+    public static final String MSG_TOTAL_AMOUNT = "Итоговое количество";
+    ...
+}
+</code></pre>
+и применяем примерно как <code>System.out.println(Constants.MSG_TOTAL_AMOUNTCOUNT_DEPARTMENT + "= " + countLoans);</code> Если нам необходимо поменять фразу, мы <em>делаем только в одном месте</em>.
+
+Чтобы устранить третью причину можно воспользоваться классом <code>Properties</code>, более подробно есть на соответствующих лекциях JavaRush и некоторых  big-задачах второй половины 20-х уровней. Наиболее часто употребляемые переменные можно вынести как отдельные <code>public static final</code>, реже используемые. Получать через вызов метода <code>PROPS.getProperty()</code>.
+
+<pre class='lang-java line-numbers'><code>
+public class Constants {
+    public static final int COUNT_DEPARTMENTS;
+    public static final String MSG_TOTAL_AMOUNT;
+    public static final Properties PROPS;
+
+    static {
+        Logger log = LogManager.getLogger(Constants.class);
+        PROPS = new Properties();
+        try{
+            fis = new FileInputStream("confs/config.properties");
+            PROPS.load(fis);
+            fis.close();
+        } catch ( IOException e) {
+            log.error(e.getMessage());
+        }
+        MSG_TOTAL_AMOUNT = PROPS.getProperty("msg.total.amount");
+        COUNT_DEPARTMENTS = Integer.parseInt(PROPS.getProperty("count.departments"));
+        ...
+    }
+}
+</code></pre>
+Осталось разобраться с интернационализацией. Сделаем так, чтобы в <code>static</code> блоке происходила загрузка нужно файла <code>properties</code>. Для этого будем работать с <code>ResourceBundle</code>. Отметим, что из <code>ResourceBundle</code> стандартными методами можно считывать значения ключей, но не устанавливать их.
+
+Поэтому по прежнему храним в отдельном <code>Properties (config.properites)</code> файле параметры, не имеющие отношение к интернационализации (к тому же некоторые из низ возможно менять по ходу действия программы). Например, язык интерфейса. Удобный интерфейс IDEA нам поможет.
+
+Создаем его:
+<img data-id="6e3e500b-0dce-4447-9170-55b91cdd1ed0" data-max-width="550" alt="Константы и интернационализация - 2" src="https://cdn.javarush.com/images/article/6e3e500b-0dce-4447-9170-55b91cdd1ed0/1024.jpeg">Добавляем нужные языки:
+<img data-id="43a5e830-19b1-4b6e-b752-f65aebb505c6" data-max-width="550" alt="Константы и интернационализация - 3" src="https://cdn.javarush.com/images/article/43a5e830-19b1-4b6e-b752-f65aebb505c6/1024.jpeg">В структуре проекта для IDEA отображается как:
+<img data-id="4b0f7010-ee92-4738-ac55-743c2909590e" data-max-width="300" alt="Константы и интернационализация - 3" src="https://cdn.javarush.com/images/article/4b0f7010-ee92-4738-ac55-743c2909590e/1024.jpeg">Наполняем содержимым:
+<img data-id="2776b2b3-31a1-4913-b542-2d405e79364d" data-max-width="550" alt="Константы и интернационализация - 5" src="https://cdn.javarush.com/images/article/2776b2b3-31a1-4913-b542-2d405e79364d/1024.jpeg"><pre class='lang-java line-numbers'><code>
+public class Constants {
+    public static final int COUNT_DEPARTMENTS;
+    public static final String MSG_TOTAL_AMOUNT;
+    public static final Properties PROPS;
+    public static final ResourceBundle UI_LANGUAGE;
+
+    static {
+        Logger log = LogManager.getLogger(Constants.class);
+        PROPS = new Properties();
+        try{
+            fis = new FileInputStream("confs/config.properties");
+            PROPS.load(fis);
+            fis.close();
+        } catch ( IOException e) {
+            log.error(e.getMessage());
+        }
+        if (PROPS.getProperty("ui.language").equalsIgnoreCase("RUS"))
+            UI_LANGUAGE = ResourceBundle.getBundle("messages", CharsetControl.RUS);
+        else
+            UI_LANGUAGE = ResourceBundle.getBundle("messages", CharsetControl.ENG);
+        
+        MSG_TOTAL_AMOUNT = UI_LANGUAGE.getString("msg.total.amount");
+        COUNT_DEPARTMENTS = Integer.parseInt(PROPS.getProperty("count.departments")); 
+        ...
+    }
+}
+</code></pre>
+Мы добились, что язык интерфейса <em>меняется без вмешательства в код</em>. К тому же мы получили четкое <em>разделение труда</em>: можем отдать русский<code>properties</code>-файл переводчику-гуманитарию, который в удобном для себя текстовом редакторе его переведет. Нам останется только переименовать его в нужное имя файла и разместить обратно в <code>ResourceBundle</code>.
+
+Небольшое дополнение (использование <code>CharsetControl</code>):
+
+Properties файлы не чувствительны к кодировке (обрабатывают содержимое файла исключительно по одному байту, что равносильно использованию ISO8859-1) и кириллица в <code>Properties</code>-файла будет отображена некорректно. Чтобы избежать этого, можно:
+<ul>
+<li><p>Перегонять кириллические символы в ESCAPE-последовательности \uxxxx через native2ascii</p></li>
+<li><p>Помочь <code>Properties</code> передав ему необходимый <code>ResourceBundle.Control</code>, в котором нам необходимо перегрузить метод (код нашел на просторах интернета + немного модифицировал).</p></li></ul>Возможно кому то поможет:
+
+<pre class='lang-java line-numbers'><code>
+import java.io.*;
+import java.net.URL;
+import java.net.URLConnection;
+import java.nio.charset.Charset;
+import java.security.*;
+import java.util.*;
+
+public class CharsetControl extends ResourceBundle.Control {
+
+    public static final CharsetControl UTF_8 = new CharsetControl("utf8");
+    public static final CharsetControl RUS = new CharsetControl("cp1251");
+    public static final Locale    ENG = new Locale("en","GB");
+
+    private Charset charset;
+
+    public CharsetControl(String charset) {
+        this(Charset.forName(charset));
+    }
+
+    public CharsetControl(Charset charset) {
+        this.charset = charset;
+    }
+
+    public Charset getCharset() {
+        return charset;
+    }
+
+    @Override
+    public ResourceBundle newBundle(String baseName, Locale locale, String format, ClassLoader loader, boolean reload)
+            throws IllegalAccessException, InstantiationException, IOException {
+
+        String bundleName = toBundleName(baseName, locale);
+        ResourceBundle bundle = null;
+        if (format.equals("java.class")) {
+            try {
+                Class&lt;? extends ResourceBundle&gt; bundleClass  =
+                        (Class&lt;? extends ResourceBundle&gt;)loader.loadClass(bundleName);
+
+                if (ResourceBundle.class.isAssignableFrom(bundleClass)) {
+                    bundle = bundleClass.newInstance();
+                } else {
+                    throw new ClassCastException(bundleClass.getName()
+                            + " cannot be cast to ResourceBundle");
+                }
+            } catch (ClassNotFoundException e) {
+            }
+        } else if (format.equals("java.properties")) {
+            final String resourceName = toResourceName(bundleName, "properties");
+            final ClassLoader classLoader = loader;
+            final boolean reloadFlag = reload;
+            InputStream stream = null;
+            try {
+                stream = AccessController.doPrivileged(
+                        new PrivilegedExceptionAction&lt;InputStream&gt;() {
+                            public InputStream run() throws IOException {
+                                InputStream is = null;
+                                if (reloadFlag) {
+                                    URL url = classLoader.getResource(resourceName);
+                                    if (url != null) {
+                                        URLConnection connection = url.openConnection();
+                                        if (connection != null) {
+                                            connection.setUseCaches(false);
+                                            is = connection.getInputStream();
+                                        }
+                                    }
+                                } else {
+                                    is = classLoader.getResourceAsStream(resourceName);
+                                }
+                                return is;
+                            }
+                        });
+            } catch (PrivilegedActionException e) {
+                throw (IOException) e.getException();
+            }
+            if (stream != null) {
+                try {
+                    bundle = new PropertyResourceBundle(new InputStreamReader(stream, getCharset()));
+                } finally {
+                    stream.close();
+                }
+            }
+        } else {
+            throw new IllegalArgumentException("unknown format: " + format);
+        }
+        return bundle;
+    }
+}
+</code></pre>

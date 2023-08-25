@@ -1,0 +1,395 @@
+Подробный разбор класса ArrayList [Часть 1]
+<p>----------------------------------------</p>
+В данной статье будет детально рассмотрен класс ArrayList из каркаса коллекций Collections Framework, который пожалуй является наиболее простым для понимания, ввиду того что он основан на базе обычного массива. Практически наверняка на собеседовании Вам зададут вопрос...
+<p>----------------------------------------</p>
+В данной статье будет детально рассмотрен класс ArrayList из каркаса коллекций Collections Framework, который пожалуй является наиболее простым для понимания, ввиду того что он основан на базе обычного массива. Практически наверняка на собеседовании Вам зададут вопрос про этот класс и его реализацию в Java. Во второй части мы разберем оставшиеся методы и напишем свою реализацию динамического массива для чисел. 
+
+Класс ArrayList наследуется от класса AbstractList и реализует следующие интерфейсы: List, RandomAccess, Cloneable, Serializable. 
+
+<a href="https://javarush.com/groups/posts/2475-podrobnihy-razbor-klassa-arraylist-chastjh-2" target="_blank" rel="nofollow">Подробный разбор класса ArrayList [Часть 2]</a>
+<img data-max-width="850" alt="Подробный разбор класса ArrayList [Часть 1] - 1" src="https://cdn.javarush.com/images/article/b33a8edb-ecfe-4458-b337-7f02e4d659c0/original.jpeg">В классе ArrayList поддерживаются динамические массивы, которые могут наращиваться по мере надобности. Его необходимость и эффективность объясняется тем, что обычный массив имеет фиксированную длину: после того как он создан, он не может увеличиваться или уменьшаться, что накладывает ограничения в том случае, если неизвестно, насколько большой массив потребуется. По существу, класс ArrayList представляет собой списочный массив объектных ссылок переменной длины.
+
+Важно понимать, что автоматического уменьшения размера (количество ячеек) внутреннего массива при удалении элементов из него не происходит. На самом деле уменьшается значение переменной <code>size</code>, которая указывает на количество действительно имеющихся в массиве элементов.
+
+Допустим, мы создаём новый объект класса ArrayList и добавляем туда 5 элементов. По умолчанию создаётся массив на 10 элементов. В данном случае, так называемый capacity (размер/объем) нашего объекта будет равен 10, но вот значение переменной <code>size</code> будет равняться пяти. И при удалении элементов мы видим изменения значения переменной <code>size</code>, так как получить доступ к внутреннему массиву класса ArrayList  и узнать его длину <code>.length</code> мы не можем. Размер можно уменьшить с помощью дополнительного метода <code>trimToSize()</code>, речь о котором пойдет далее. 
+
+Рассмотрим поля класса.
+<ul>
+<li><p>Поле, отвечающее за объем динамического массива по умолчанию:</p>
+<pre class="lang-java line-numbers"><code>
+private static final int DEFAULT_CAPACITY = 10
+</code></pre>
+<p>При создании нового объекта new ArrayList&lt;&gt;() (конструктор без параметров) внутри создается массив на 10 элементов.</p></li>
+<li><p>Поле, в котором хранятся все элементы коллекции:</p>
+<pre class="lang-java line-numbers"><code>
+transient Object[] elementData
+</code></pre>
+<p>Помечено ключевым словом <code>transient</code> – поле не записывается в поток байт при применении стандартного алгоритма сериализации. Стоит отметить, что поле не отмечено ключевым словом <code>private</code>, а сделано это для того, чтобы облегчить доступ к этому полю из вложенных классов (например, SubList).</p></li>
+<li>Поле-счетчик, которое хранит в себе количество действительно находящихся в массиве элементов:<p></p>
+<pre class="lang-java line-numbers"><code>
+private int size
+</code></pre>
+<p>Значение увеличивается/уменьшается при выполнении таких операций, как вставка и удаление.</p></li>
+</ul>В классе есть ещё 3 поля, но по сути они являются дополнительными, поэтому рассматривать их смысла нет. 
+
+У класса имеется три конструктора:
+<ol>
+<li><code>public ArrayList()</code> – создает пустой списочный массив объемом в 10 элементов;</li>
+<li><code>public ArrayList(Collection &lt; ? extends E &gt;  c)</code> – создает списочный массив, инициализируемый элементами из переданной коллекции (если хотим создать новый ArrayList на базе какой-то коллекции);</li>
+<li><code>public ArrayList(int initialCapacity)</code> – создает списочный массив, имеющий начальную емкость. Если переданный параметр initialCapacity больше 0, то создается массив указанного размера (внутреннему полю elementData присваивается ссылка на новый массив типа Object размером initialCapacity). Если параметр равен 0, то в таком случае создается пустой массив. Если же заданный параметр меньше 0, то генерируется исключение IllegalArgumentException.</li>
+</ol>Создание объекта
+
+<pre class="lang-java line-numbers"><code>
+List &lt; String&gt; list = new ArrayList&lt;&gt;();
+</code></pre>
+Только что созданный объект <code>list</code>, содержит свойства (поля) <code>elementData</code> и <code>size</code>. Хранилище значений <code>elementData</code> есть не что иное, как массив определенного типа (указанного в generic – <code>&lt;&gt;</code>), в нашем случае <code>String[]</code>. Если вызывается конструктор без параметров, то по умолчанию будет создан массив для 10 элементов типа Object (с приведением к типу, разумеется). 
+<img data-max-width="800" src="/images/article/4f13f942-60d6-406e-b7ba-95e24fc0b7d0/original.jpeg" class="img-fluid" alt="Подробный разбор класса ArrayList [Часть 1] - 2">Добавление элементов
+
+Классическое добавление элементов в списочный массив осуществляется с помощью перегруженных вариантов метода <code>add()</code>.
+
+<pre class="lang-java line-numbers"><code>
+public boolean add(E элемент)
+</code></pre>
+Что ж, добавляем:
+
+<code>list.add("0");</code>
+<img data-max-width="800" src="/images/article/c8e18bf9-9689-4c7d-b7da-716d5ebd0029/original.jpeg" class="img-fluid" alt="Подробный разбор класса ArrayList [Часть 1] - 3">Внутри данного метода происходит вызов перегруженного варианта метода <code>add()</code>, помеченный как <code>private</code>, который в свою очередь на вход принимает три параметра: добавляемый элемент, внутренний массив и его размер (size). 
+
+В закрытом методе происходит проверка: если переданный параметр размера равен длине внутреннего массива (то есть массив заполнен), то массиву присваивается результат выполнения метода <code>grow(int minCapacity)</code> (методу передается текущее значение поля size + 1, т.к. необходимо учесть добавляемый элемент), в котором внутреннему массиву присваивается ссылка на новый созданный массив, полученный в результате копирования элементов исходного массива:
+
+<pre class="lang-java line-numbers"><code>
+Arrays.copyOf(elementData, newCapacity(minCapacity))
+</code></pre>
+В качестве второго параметра метода <code>copyOf</code> мы указываем результат работы метода <code>newCapacity(int minCapacity)</code>, внутри которого осуществляется вычисление нового размера массива. Он вычисляется по следующей формуле:
+
+<code>int newCapacity = oldCapacity + (oldCapacity &gt;&gt; 1)</code>
+
+Для массива с размером по умолчанию будет справедливо:
+
+<code>&gt;&gt; 1</code> – побитовый сдвиг вправо на единицу (оператор, который уменьшает число до его половины). По сути, означает деление на 2 в степени 1. Получается, что мы делим 10 на 2 и прибавляем 10. Итого, новая емкость массива равна 15, но так как мы добавляем 11 элемент, то 15+1 = 16.
+
+Вернемся к нашему списку и предположим, что мы уже добавили в него 10 элементов и пробуем добавить 11. Проверка покажет, что места в массиве нет. Соответственно создается новый массив и вызывается <code>Arrays.copyOf</code>, который внутри себя использует системный метод <code>System.arraycopy()</code>.
+<img data-max-width="1024" src="/images/article/88a6a607-2157-4937-b06d-13b026199d02/original.jpeg" class="img-fluid" alt="Подробный разбор класса ArrayList [Часть 1] - 4"><img data-max-width="1024" data-id="f1f0694f-7092-4aff-97dc-ffea7d1fcc6a" src="/images/article/f1f0694f-7092-4aff-97dc-ffea7d1fcc6a/1024.webp" class="img-fluid" alt="Подробный разбор класса ArrayList [Часть 1] - 5">Или вот такой наглядный пример из одной статьи на JavaRush:
+<img data-max-width="1024" src="/images/article/0ca8125b-2f86-49d0-b800-4eed9521ee2b/original.jpeg" class="img-fluid" alt="Подробный разбор класса ArrayList [Часть 1] - 6">После всех этих проверок и увеличения размера массива при необходимости далее в закрытом методе <code>add()</code> в конец массив добавляется новый элемент, а текущий параметр <code>size</code> увеличивается на единицу. Старый массив в дальнейшем будет обработан сборщиком мусора.
+
+Таким образом и работает динамический массив: при добавлении элементов мы проверяем, есть ли в нем еще место. Если место есть, то мы просто добавляем элемент в конец массива. Под концом подразумевается не последняя ячейка в массиве, а та ячейка, которая соответствует значению <code>size</code>. Добавили первый элемент в массив, он помещается в ячейку с индексом [0]. Значение поля <code>size</code> выросло на единицу и = 1. Добавляем следующий элемент: смотрим, что <code>size = 1</code>, соответственно элемент помещаем в ячейку с индексом [1] и так далее.
+
+Есть перегруженный вариант метода с двумя параметрами:
+
+<pre class="lang-java line-numbers"><code>
+public void add(int index, E element)
+</code></pre>
+Мы можем указать позицию (индекс) ячейки, в которую мы хотим добавить элемент. Сначала осуществляется проверка корректности указанного значения индекса, так как есть вероятность, что будет указан неверный индекс, который будет указывать на ячейку, где ничего нет, либо которой просто не существует. Проверка индексов: <code>index &gt; size || index &lt; 0</code> – если указанный индекс больше текущего размера массив или он меньше 0, то выбрасывается исключение <code>IndexOutOfBoundsException</code>. Далее в случае необходимости увеличивается размер массива, аналогично примеру выше. Вы, наверное, слышали, что при операциях добавления/удаления в массиве что-то куда-то сдвигается (либо вправо, либо влево). Так вот, сдвиг осуществляется с помощью копирования массива:
+
+<code>System.arraycopy(elementData, index, elementData, index + 1, s - index);</code>
+
+Все элементы, находящиеся справа от указанного индекса, будут сдвигаться на одну позицию вправо (index+1). И только после этого во внутренний массив под указанным индексом добавляется новый элемент. Так как мы сдвинули часть массива вправо на единицу (новый массив не создается), то нужная нам ячейка освободится для записи. Ссылка на старый массив стирается и в дальнейшем ей займется garbage collector.
+
+Вставляем "maserati" в ячейку [3], которая уже занята:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="850" alt="Подробный разбор класса ArrayList [Часть 1] - 7" src="https://cdn.javarush.com/images/article/a45286f5-11af-4e9f-8c35-a9ba31d5263b/original.jpeg"></div></div>Таким образом, когда происходит вставка элемента по индексу и при этом в массиве нет свободных мест, то вызов <code>System.arraycopy()</code> случится дважды: первый в <code>grow()</code>, второй в самом методе <code>add(index, value)</code>, что явно скажется на скорости всей операции добавления. В итоге, когда необходимо записать во внутренний массив ещё один элемент, а места там нет, то внутри ArrayList происходит вот что:
+<ul>
+<li>Создается новый массив размером, в 1.5 раза больше исходного, плюс один элемент.</li>
+<li>Все элементы из старого массива копируются в новый массив</li>
+<li>Новый массив сохраняется во внутренней переменной объекта ArrayList, а старый массив объявляется мусором.</li>
+</ul>Емкость объектов типа ArrayList можно увеличивать вручную с помощью метода: 
+
+<pre class="lang-java line-numbers"><code>
+public void ensureCapacity(int minCapacity)
+</code></pre>
+Увеличив емкость массива заранее, можно избежать дополнительного перераспределения оперативной памяти впоследствии. Метод увеличивает размер внутреннего массива, чтобы в него поместилось количество элементов, переданных в <code>minCapacity</code>. Метод <code>ensureCapacity()</code> не влияет на поле <code>size</code>, он влияет на <code>capacity</code> (размер) внутреннего массива. В очередной раз подчеркиваю, что <code>size</code> и <code>capacity</code> разные вещи и очень важно их не путать!
+
+Если требуется уменьшить размер базового массива, на основе которого строится объект типа ArrayList, до текущего количества действительно хранимых элементов, следует вызвать метод <code>trimToSize()</code>. После удаления элементов из коллекции <code>size()</code> покажет количество действительно существующих элементов, а <code>capacity</code> при этом не уменьшится! Предположим: мы ввели 100 элементов, удалили первые 50, <code>size</code> станет равным 50, а вот <code>capacity</code> так и останется 100. Чтобы уменьшить и <code>capacity</code>, необходимо использовать метод <code>trimToSize()</code>, который подгоняет весь наш capacity до текущего size. Как подгоняет? Копирует наш массив так, что там не остается пустых ячеек (длина нового массива просто равна полю size).
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="558" alt="Подробный разбор класса ArrayList [Часть 1] - 8" src="https://cdn.javarush.com/images/article/9789cab5-38be-4ed2-8161-02b25f7407a9/original.jpeg"></div></div>Также добавлять элементы в нашу коллекцию можно с помощью методов <code>addAll</code>.
+
+<pre class="lang-java line-numbers"><code>
+public boolean addAll(Collection&lt; ? extends E&gt; c)
+public boolean addAll(int index, Collection&lt; ? extends E&gt; collection);
+</code></pre>
+Первый вариант позволяет добавить все элементы из указанной в параметре метода коллекции (например, другого листа) в исходную коллекцию (вставка в конец), для которой был сделан вызов метода. Переданная коллекция (она же может быть и множеством) преобразуется в массив с помощью метода <code>toArray()</code>. Естественно, операция добавления осуществляется также с помощью копирования.
+
+Во втором осуществляется добавление всех элементов <code>collection</code> в список, начиная с индекса <code>index</code>. При этом все элементы сдвинутся вправо на количество элементов в списке <code>collection</code>.
+
+Удаление элементов
+
+В начале рассмотрим классические варианты удаления элементов из ArrayList.
+
+<pre class="lang-java line-numbers"><code>
+public E remove(int index)
+</code></pre>
+Осуществляет удаление по индексу и смещает все последующие (после элемента под указанным индексом) элементы влево, тем самым закрывая "дырки". Также возвращает удаленный элемент (E), который предварительно перед удалением записывается в дополнительную переменную, значение которой мы и получаем в результате работы вызова метода. Чтобы понять, что такое E, необходимо будет познакомиться с так называемыми обобщенными типами (generics). Обозначение E указывает на то, что метод возвращает тот тип данных, который был указан при создании объекта ArrayList (вспомните: <code>List &lt;String&gt; list</code>, соответственно в данном случае вместо E "подставится" <code>String</code>). Для общего понимания настоятельно рекомендую ознакомиться с обобщенными типами.
+
+Проверяется корректность введенного индекса и далее внутри метода происходит не совсем удаление элемента, а вызов приватного метода <code>fastRemove(Object[] es, int i)</code>, в котором уже происходит удаление. Методу на вход мы передаем наш массив и указанный индекс. Копируются элементы, используя <code>System.arraycopy()</code>, уменьшается размер массива, а далее присваиваем последнему элементу null. Стоит отметить, что новый массив не создается:
+
+<code>System.arraycopy(es, i + 1, es, i, size - 1 - i);</code>
+
+В наш же исходный массив (es) копируется та часть, которая находится правее позиции под указанным индексом (i+1), и располагается она, начиная с той самой позиции (i), где находился элемент, подлежащий удалению. Таким образом, мы осуществили сдвиг влево и затерли наш элемент. 
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="248" alt="Подробный разбор класса ArrayList [Часть 1] - 9" src="https://cdn.javarush.com/images/article/05be3f49-a31c-4436-b701-9b1a577d565f/original.jpeg"></div></div>Попробуем удалить элемент под индексом 3 из массива ниже:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="1003" alt="Подробный разбор класса ArrayList [Часть 1] - 10" src="https://cdn.javarush.com/images/article/0dd977aa-b094-41ae-be97-6e24ab98476e/original.jpeg"></div></div>Рассмотрим второй вариант метода:
+
+<pre class="lang-java line-numbers"><code>
+public boolean remove(Object o)
+</code></pre>
+Метод удаляет из списка переданный элемент <code>o</code>, а если точнее, то объект по указанной ссылке. Если элемент присутствует в списке, он удаляется, а все элементы смещаются влево. Если элемент существует в списке и успешно удален, метод возвращает true, в обратном случае — false.
+
+Аналогично варианту с удалением по индексу, вызывается метода <code>fastRemove()</code>, где происходят точно такие же действия. Разница в том, что в методе <code>remove(Object o)</code> предварительно дополнительно осуществляется поиск нужного объекта через метод <code>equals()</code> класса Object. При удалении по значению, в цикле просматриваются все элементы списка, до тех пор пока не будет найдено соответствие. Удален будет лишь первый найденный элемент.
+
+Подытожим: при удалении элементов из динамического массива, дырок как в обычном массиве не остается (удаленная ячейка не будет пустовать). Все последующие элементы (которые были правее от индекса) сдвигаются на одну позицию влево.
+
+Есть еще несколько дополнительных методов, с помощью которых можно в той или иной степени удалять элементы из списка. Рассмотрим их вкратце.
+
+Очищаем нашу коллекцию:
+
+<pre class="lang-java line-numbers"><code>
+public void clear()
+</code></pre>
+В простом цикле <code>for</code> перебираются все элементы массива, каждому из которых присваиваются null. 
+
+Удалить те элементы из нашей коллекции, которые содержатся в другой переданной коллекции можно так:
+
+<pre class="lang-java line-numbers"><code>
+public boolean removeAll(Collection&lt; ?&gt; c)
+</code></pre>
+Если необходимо удалить несколько элементов, наверное не стоит делать это в цикле по условию: удобнее и безопаснее воспользоваться методом <code>removeAll()</code>. Он принимает коллекцию элементов, которая будет удалена из списка. Коллекция должна содержать элементы того же типа, которые хранит целевой список. В обратном случае будет выброшен <code>ClassCastException</code>. Метод вернет true, если список был изменен в результате вызова метода.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="538" alt="Подробный разбор класса ArrayList [Часть 1] - 11" src="https://cdn.javarush.com/images/article/a3c8f44e-9582-4899-9ec0-2714489199d1/original.jpeg"></div></div>
+
+Удаляет элементы, не принадлежащие переданной коллекции:
+
+<pre class="lang-java line-numbers"><code>
+public boolean retainAll(Collection&lt; ?&gt; c)
+</code></pre><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="651" alt="Подробный разбор класса ArrayList [Часть 1] - 12" src="https://cdn.javarush.com/images/article/e39cc27c-3b3d-44bd-b7e3-11b4a1cb4ff7/original.jpeg"></div></div>Предположим, есть коллекция:
+
+<pre class="lang-java line-numbers"><code>
+List&lt; String&gt; listFirst = new ArrayList&lt;&gt;();  
+listFirst.add("White");  
+listFirst.add("Black");  
+listFirst.add("Red");  
+</code></pre>
+И вторая:
+
+<pre class="lang-java line-numbers"><code>
+List&lt; String&gt; listSecond = new ArrayList&lt;&gt;();  
+listSecond.add("Green");   
+listSecond.add("Red");   
+listSecond.add("White"); 
+</code></pre>
+Тогда после <code>listSecond.retainAll(listFirst)</code> в <code>listSecond</code> останется:
+
+<pre><code>
+"White"
+"Red"
+</code></pre>
+Так как удалился "Green", которого нет в <code>listFirst</code>.
+
+Но после <code>listSecond.removeAll(listFirst)</code> в <code>listSecond</code> останется:
+
+<pre><code>
+"Green"
+Удалились все элементы, которые есть в listFirst.
+</code></pre>
+Не принадлежащие переданной коллекции – значит, что если есть элементы, которых нет в переданной коллекции, то нужно удалить их из первой (к которой применяется метод). Принадлежащие переданной коллекции - соответственно, если есть элемент и в первой и во второй (переданной) коллекции, то дубль из первой уничтожается.
+
+<pre class="lang-java line-numbers"><code>
+protected void removeRange(int fromIndex, int toIndex)
+</code></pre>
+Удаляет из списка все элементы, которые находятся между начальным указанным индексом (включительно) и конечным указанным индексом (не включительно). Стоит отметить, что метод нельзя вызвать напрямую на объекте класса ArrayList. Чтобы его использовать необходимо унаследоваться от <code>AbstractList/ArrayList</code>. Метод также используется другим методом (subList, о котором пойдет речь далее). 
+
+<pre class="lang-java line-numbers"><code>
+public boolean removeIf(Predicate&lt; ? super E&gt; filter)
+</code></pre>
+Удаляет элементы из коллекции по заданному предикату. Cобственно предикат — эта некая функция/алгоритм/условие, на основании которой будут удалены один или несколько элементов, соответствующих заданному условию. <code>Predicate</code> — функциональный интерфейс (содержит всего один метод, поэтому может использоваться в виде лямбды), работает по принципу "принял один параметр — вернул boolean". По сути метод переопределяет реализацию из интерфейса <code>Collection</code> и реализует следующую "стратегию": он перебирает элементы и помечает те, которые соответствуют нашему <code>Predicate</code>; после он пробегается второй раз для удаления (и сдвига) элементов, которые были отмечены в первой итерации.
+
+Реализуем интерфейс <code>Predicate</code>, который будет выдавать true, если два объекта равны:
+
+<pre class="lang-java line-numbers"><code>
+class SamplePredicate&lt; T&gt; implements Predicate&lt; T&gt;{
+  T varc1;
+  public boolean test(T varc){
+     if(varc1.equals(varc)){
+       return true;
+  }
+  return false;
+  }
+}
+</code></pre>
+В другом классе создадим ArrayList из <code>String</code> и объект нашего класса, который реализует <code>Predicate</code>:
+
+<pre class="lang-java line-numbers"><code>
+ArrayList&lt; String&gt; color_list = new ArrayList&lt;&gt; ();
+SamplePredicate&lt; String&gt; filter = new SamplePredicate&lt;&gt; ();
+</code></pre>
+Запишем в переменную <code>varc1</code> значение "White":
+
+<pre class="lang-java line-numbers"><code>
+filter.varc1 = "White";
+</code></pre>
+Добавим в список несколько строк:
+
+<pre class="lang-java line-numbers"><code>
+color_list.add("White");
+color_list.add("Black");
+color_list.add("Red");
+color_list.add("White");
+color_list.add("Yellow");
+color_list.add("White");
+</code></pre>
+Выполним на списке метод <code>removeIf</code>, которому передадим наш объект с условием:
+
+<pre class="lang-java line-numbers"><code>
+color_list.removeIf(filter);
+</code></pre>
+В результате из списка будут удалены все строки со значением "White", так как наш "предикат" сравнивает их на равенство. Итоговый список: [Black, Red, Yellow].
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="485" alt="Подробный разбор класса ArrayList [Часть 1] - 13" src="https://cdn.javarush.com/images/article/2416ec6b-c789-4638-8036-96f431869cad/original.jpeg"></div></div>Замена элементов
+
+<pre class="lang-java line-numbers"><code>
+public E set(int index, E element)
+
+</code></pre>
+Осуществляет замену элемента в указанной позиции <code>index</code> на переданный <code>element</code>. Индекс также должен быть больше нуля и меньше индекса последнего элемента, иначе будет выброшено исключение <code>IndexOutOfBoundsException</code>. Никаких копирований внутреннего массива не происходит. Просто вместо элемента по указанному индексу вставляется новый элемент, т.е. перезаписываем значение. 
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="382" alt="Подробный разбор класса ArrayList [Часть 1] - 14" src="https://cdn.javarush.com/images/article/7c550e91-b3d7-4717-b697-c7400a3b835a/original.jpeg"></div></div>
+<pre class="lang-java line-numbers"><code>
+public void replaceAll(UnaryOperator&lt;e&gt; operator)
+</code></pre>
+Изменяет все элементы коллекции (можно с условием). В основном используется в сочетании с <a href="https://habr.com/ru/post/224593/" target="_blank" rel="nofollow">лямбдами</a> или <a href="https://javarush.com/groups/posts/2193-anonimnihe-klassih" target="_blank" rel="nofollow">анонимным классом</a> (но для наглядности на примере используем просто класс, реализующий интерфейс), который реализует интерфейс <code>UnaryOperator</code> и определяет его методы. 
+
+Реализуем интерфейс:
+
+<pre class="lang-java line-numbers"><code>
+class MyOperator&lt; T&gt; implements UnaryOperator&lt; T&gt;{
+   T varc1;
+   public T apply(T varc){
+     return varc1;
+  }
+}
+</code></pre>
+В другом классе создадим ArrayList из <code>String</code> и объект нашего класса, который реализует <code>UnaryOperator</code>:
+
+<pre class="lang-java line-numbers"><code>
+ArrayList&lt; String&gt; color_list = new ArrayList&lt;&gt; ();
+MyOperator&lt; String&gt; operator = new MyOperator&lt;&gt; ();
+</code></pre>
+Запишем в переменную <code>varc1</code> значение "White":
+
+<pre class="lang-java line-numbers"><code>
+operator.varc1 = "White";
+</code></pre>
+Добавим в список несколько строк:
+
+<pre class="lang-java line-numbers"><code>
+color_list.add("White");
+color_list.add("Black");
+color_list.add("Red");
+color_list.add("White");
+color_list.add("Yellow");
+color_list.add("White");
+</code></pre>
+Выполним на списке метод <code>replaceAll</code>, которому передадим наш объект <code>operator</code>:
+
+<pre class="lang-java line-numbers"><code>
+color_list.replaceAll(operator);
+</code></pre>
+В результате все значения в списке были заменены на "White": [White, White, White, White, White, White].
+
+А вот так например можно убрать все пробелы из строк, которые есть в коллекции:
+
+<pre class="lang-java line-numbers"><code>
+ArrayList&lt; String&gt; list = new ArrayList&lt;&gt;(Arrays.asList("A   ", "  B  ", "C"));
+list.replaceAll(String::trim);
+</code></pre>
+Прочие методы:
+
+Преобразовать списочный массив ArrayList в обычный массив можно с помощью метода:
+
+<pre class="lang-java line-numbers"><code>
+public Object[] toArray()
+
+</code></pre>
+или
+
+<pre class="lang-java line-numbers"><code>
+public &lt; T&gt; T[] toArray(T[] a)
+</code></pre> 
+— здесь тип возвращаемого массива определяется в <code>runtime</code>
+Этот метод позволит:
+<ol>
+<li>ускорить выполнение некоторых операций;</li>
+<li>передавать массив в качестве параметра методу, который не перегружается, чтобы принимать непосредственно коллекцию;</li>
+<li>интеграция нового кода, основанного на коллекциях, с унаследованным кодом, который не распознает коллекции.</li>
+</ol>Вернуть объект-копию массива:
+
+<pre class="lang-java line-numbers"><code>
+public Object clone() 
+</code></pre>
+Следует обратить внимание, что метод <code>clone()</code> возвращает тип Object, так что после его вызова потребуется сделать приведение к необходимому классу. При клонировании создается новый независимый объект. 
+
+Проверить коллекцию на наличие в ней объекта:
+
+<pre class="lang-java line-numbers"><code>
+public boolean contains(Object o)
+</code></pre>
+Осуществляет проверку наличия объекта в списке (внутри с помощью метода equals класса Object, т.е. сравнивает ссылки), возвращает true/false в зависимости от результата.
+
+Перебрать (обратиться к каждому элементу, а также выполнить какое-то действие) коллекцию помимо привычных циклов можно с помощью:
+
+<pre class="lang-java line-numbers"><code>
+public void forEach(Consumer&lt; ? super E&gt; action)
+</code></pre>
+Вот так мы можем вывести наш список:
+
+<pre class="lang-java line-numbers"><code>
+List&lt; Integer&gt; numbers = new ArrayList&lt;&gt;(Arrays.asList(10, 20, 50, 100, -5));
+numbers.forEach((number)-&gt; System.out.println(number));
+</code></pre>
+Без использования лямбд необходимо использовать анонимный класс и переопределять метод <code>accept</code> интерфейса <code>Consumer</code>:
+
+<pre class="lang-java line-numbers"><code>
+numbers.forEach(new Consumer&lt; Integer&gt;() {
+  @Override
+   public void accept(Integer integer) {
+      System.out.println(integer);
+          }
+});
+</code></pre>
+Получить элемент по его индексу:
+
+<pre class="lang-java line-numbers"><code>
+public E get(int index)
+</code></pre>
+Используется для произвольного доступа к элементам коллекции. Возвращает элемент, находящийся в списке под указанным индексом. Если <code>index &lt; 0</code> или <code>index &gt;=</code> максимального количества элементов списка, будет выброшено исключение <code>IndexOutOfBoundsException</code>. Это основной метод получения элемента из списка, и время извлечения элемента по индексу всегда будет одинаковым, независимо от размера ArrayList, так как происходит обращение к конкретной ячейке массива.
+
+Поиск индексов для указанных объектов:
+
+<pre class="lang-java line-numbers"><code>
+public int indexOf(Object o);
+public int lastIndexOf(Object o);
+</code></pre>
+Методы возвращают индекс первого (когда первый раз встречается заданный объект) или последнего вхождения (когда последний раз встречается заданный объект) элемента в списке. Если элемента не существует в списке, методы вернут -1.
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="595" alt="Подробный разбор класса ArrayList [Часть 1] - 16" src="https://cdn.javarush.com/images/article/7e2d9e2c-5977-4d21-90aa-c51dce550fc6/original.jpeg"></div></div><div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="579" alt="Подробный разбор класса ArrayList [Часть 1] - 17" src="https://cdn.javarush.com/images/article/f17a0d80-c12f-46af-8a11-4c7d05dd4df2/original.jpeg"></div></div>Проверить коллекцию на наличие в ней элементов:
+
+<pre class="lang-java line-numbers"><code>
+public boolean isEmpty();
+</code></pre>
+Метод возвращает true, если список пустой (смотрит, равно ли поле <code>size 0</code>), иначе – false. Если в списке содержатся только элементы null, метод вернет false. Иными словами, null элементы также учитываются этим методом.
+
+Узнать количество элементов в списке:
+
+<pre class="lang-java line-numbers"><code>
+public int size();
+</code></pre>
+Возвращает количество элементов в списке (значения поля size). Количество элементов может отличаться от объема списка (capacity).
+
+Получить итератор для списка:
+
+<pre class="lang-java line-numbers"><code>
+public Iterator&lt; E&gt; iterator();
+</code></pre>
+Возвращает итератор для списка для последующего использования в цикле или при любой другой обработке. Итератор реализует fail-fast поведение. Если он бежит по коллекции и замечает какие-то модификации в ней (которые были получены не с помощью методов итератора), он сразу выбрасывает исключение <code>ConcurrentModificationException</code>. У итератора есть так называемый <code>modification count</code>. Когда итератор пробегает по коллекции после каждого <code>next/hasNext/remove</code>, он проверяет этот счетчик. Если он не совпал с тем, что ожидал увидеть итератор, он бросает исключение. Подробно рассматривать итераторы здесь я не буду. 
+
+<pre class="lang-java line-numbers"><code>
+public ListIterator&lt; E&gt; listIterator() и public ListIterator&lt; E&gt; listIterator(int index)
+</code></pre>
+Возвращает list-итератор для списка для последующего использования в цикле или при любой другой обработке. Интерфейс <code>ListIterator</code> расширяет интерфейс <code>Iterator</code> для двустороннего обхода списка и видоизменения его элементов. В перегруженном варианте можно передать индекс, с которого начнется «обход». Индекс в данном случае обозначает первый элемент, с которого начнет свою работу метод <code>next()</code>, а при вызове метода <code>previous()</code> обход начнется с элемента под индексом «переданный индекс – 1». 
+
+<pre class="lang-java line-numbers"><code>
+public Spliterator &lt;E&gt; spliterator()
+</code></pre>
+В Java 8 внедрен новый тип итератора late binding (позднее связывание) и fail-fast, который называется итератором-разделителем. Итераторы-разделители позволяют перебирать последовательность элементов, но применяются они иным способом. Наиболее важной особенностью интерфейса <a href="https://easyjava.ru/java/java-8-stream-api-chast-shestaya-sobstvennyj-potok-na-samom-dele-net/" target="_blank" rel="nofollow">Spliterator</a> является его способность поддерживать параллельную итерацию отдельных частей последовательности элементов, а следовательно и параллельное программирование.

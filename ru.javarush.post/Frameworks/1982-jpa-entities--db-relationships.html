@@ -1,0 +1,275 @@
+JPA Entities and DB Relationships
+<p>----------------------------------------</p>
+Вы всё никак не разберетесь что за OMFG Entity и что за странные стрелочки нарисованные на UML диаграммах DB? Тогда давайте попробуем разобраться с этим horror shit раз и навсегда, по-мужски! Данный материал рассчитан на тех, кто уже имеет представление об организации баз ...
+<p>----------------------------------------</p>
+<h2>JPA Entities &amp;&amp; DB Relationships</h2>Доброго времени суток, коллеги!
+<div class='row justify-content-center jr-image-wrap'><div class='col-12 col-sm-10 col-md-8'><img data-id="cd591fae-ea63-4de4-b17a-da505b9f42de" data-max-width="710" alt="JPA Entities and DB Relationships - 1" src="https://cdn.javarush.com/images/article/cd591fae-ea63-4de4-b17a-da505b9f42de/1024.jpeg"></div></div>Данный материал рассчитан на тех, кто уже имеет представление об организации баз данных (дальше просто <a href="https://en.wikipedia.org/wiki/Database" target="_blank" rel="nofollow">DB</a> - "Database"), минимальные знания о том, как работает Object-Relational Mapping (дальше просто <a href="https://ru.wikipedia.org/wiki/ORM" target="_blank" rel="nofollow">ORM</a>), и его реализациях, таких как <a href="https://en.wikipedia.org/wiki/Hibernate_(framework)" target="_blank" rel="nofollow">Hibernate / JPA</a>. Если вы не знакомы с этим, советую начать с <a href="https://en.wikipedia.org/wiki/Java_Database_Connectivity" target="_blank" rel="nofollow">JDBC</a>, и только потом переходить к ORM-модели. Я предупредил, и ответственность за вашу психику после прочтения данной статьи без должной подготовки не несу! :)
+
+Начнем разбираться со всем по порядку. Во-первых, мы немного копнем в теорию, совсем чутка. Во-вторых, мы разберемся как этот shit проделать во всеми любимой Java. Также мы напишем с вами некий проект-шпаргалку, который закрепит наше понимание темы и послужит шаблоном <strong>КАК</strong> надо делать <a href="https://en.wikipedia.org/wiki/Data_mapping" target="_blank" rel="nofollow">mapping</a>. Итак, <em>Let's do it!</em>
+<h3>What is Entity?</h3>Сущность (<a href="https://www.ibm.com/support/knowledgecenter/en/SSWSR9_11.6.0/com.ibm.mdmhs.overview.doc/entityconcepts.html" target="_blank" rel="nofollow">Entity</a>)  — это некий объект из реальной жизни (например, машина), который имеет атрибуты (двери, <a href="https://www.google.com.ua/search?q=%D0%BA%D0%BE%D0%BB%D1%91%D1%81%D0%B0&amp;source=lnms&amp;tbm=isch&amp;sa=X&amp;ved=0ahUKEwilw9anwfHdAhUHXSwKHfZTBqEQ_AUIDigB&amp;biw=1920&amp;bih=948#imgrc=7ZYC5HIpJy27dM:" target="_blank" rel="nofollow">КОЛЁСА</a>, двигатель). DB Entity: в этом случае наша сущность хранится в DB, все просто. Зачем и каким образом мы засунули машину в базу данных — рассмотрим позже.
+<h3>What is DB Relationships?</h3>Давным давно, в тридевятом королевстве была создана <a href="https://en.wikipedia.org/wiki/Relational_database" target="_blank" rel="nofollow">реляционная DB</a>. В этой DB данные представлялись в виде табличек. Но и <a href="https://www.google.com.ua/search?q=%D0%BE%D1%81%D0%B5%D0%BB+%D0%B8%D0%B7+%D1%88%D1%80%D0%B5%D0%BA%D0%B0&amp;source=lnms&amp;tbm=isch&amp;sa=X&amp;ved=0ahUKEwjdq_2du_HdAhXBDSwKHROqBtUQ_AUIDigB&amp;biw=1920&amp;bih=948#imgrc=r4mY9BxLSMRi8M:" target="_blank" rel="nofollow">ослу из Шрека</a> было понятно, что нужно было сделать механизм взаимосвязи данных таблиц. В итоге появилось 4 DB <a href="https://www.lifewire.com/database-relationships-p2-1019758" target="_blank" rel="nofollow">relationships</a>:
+
+<ol>
+<li><a href="https://en.wikipedia.org/wiki/One-to-one_(data_model)" target="_blank" rel="nofollow">One-to-One</a></li>
+<li><a href="https://en.wikipedia.org/wiki/One-to-many_(data_model)" target="_blank" rel="nofollow">One-to-Many</a></li>
+<li><a href="https://en.wikipedia.org/wiki/One-to-many_(data_model)" target="_blank" rel="nofollow"> Many-to-One</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Many-to-many_(data_model)" target="_blank" rel="nofollow">Many-to-Many</a></li>
+</ol>
+Если вы все это видите впервые, предупреждаю еще раз — дальше будет хуже: задумайтесь о том, чтобы пойти погулять. Все эти отношения мы разберем на примере, и поймем разницу между ними.
+<h3>Horror Example</h3>У нас будет один проект у которого будет 5 branches: master, где будет описание проекта, и по 1 branch на каждую DB relationship. В каждой branch'e будут SQL скрипты создания DB и ее заполнение тестовыми данными, плюс Entity класс с annotation mapping'ом. Также будет для каждой branch'и Hibernate config файл. Я буду использовать <a href="http://www.h2database.com/html/main.html" target="_blank" rel="nofollow">H2</a> embeded DB для проекта, чтобы не отвлекаться на отдельные моменты облачных DB или внешних DB. Перейдя по ссылке, установите H2 DB себе на пылесос. Я опишу каждый шаг на 1 branch'e, остальные — лишь ключевые моменты. В конце мы подведем итоги. Поехали.
+
+<a href="https://github.com/qThegamEp/ForJavaRushPublication2" target="_blank" rel="nofollow">This</a> ссылка на master branch моего проекта.
+<h3>One-to-One Relationship</h3>Ссылка на branch <a href="https://github.com/qThegamEp/ForJavaRushPublication2/tree/OneToOne" target="_blank" rel="nofollow">тут</a>.
+<ol>
+<li><p>Нужно подключить H2 DB к нашему проекту. Здесь нужно подчеркнуть то, что нам нужна Ultimate IDEA для комфортной работы с DB и другими вещами. Если она у вас уже есть тогда идем непосредственно к подключению DB. Заходим в tab Database и делаем как на скрине:</p>
+<img data-id="29e56fe7-6f24-4adc-835c-0a02c75fc417" data-max-width="640" alt="JPA Entities and DB Relationships - 2" src="https://cdn.javarush.com/images/article/29e56fe7-6f24-4adc-835c-0a02c75fc417/1024.jpeg">
+<p>Далее переходим к настройкам DB. Вы можете ввести свои данные, и даже свою СУБД, повторюсь, H2 DB я использую для простоты.</p>
+<img data-id="0bed5079-8413-491c-8f8b-503bee351bd9" data-max-width="1092" alt="JPA Entities and DB Relationships - 3" src="https://cdn.javarush.com/images/article/0bed5079-8413-491c-8f8b-503bee351bd9/1024.jpeg">
+<p>Далее настроим схему. Этот шаг не обязателен но желателен, если у вас несколько схем в DB.</p>
+<img data-id="7efa67ac-5f4a-4cdc-ba72-6caab6778f5e" data-max-width="1092" alt="JPA Entities and DB Relationships - 4" src="https://cdn.javarush.com/images/article/7efa67ac-5f4a-4cdc-ba72-6caab6778f5e/1024.jpeg">
+</p>Применяем настройки, и в итоге у нас должно получиться что то вроде этого:</p>
+<img data-id="283319b6-3b5c-4724-a392-a3b9b37eab18" data-max-width="640" alt="JPA Entities and DB Relationships - 5" src="https://cdn.javarush.com/images/article/283319b6-3b5c-4724-a392-a3b9b37eab18/1024.jpeg"></li>
+<li><p>Базу данных мы создали, и настроили доступ к ней из IDEA. Теперь нужно создать таблички в ней и заполнить какими-то данными. Для примера я возьму две сущности: Author и Book. У книги может быть автор, может быть несколько авторов, а может и не быть. На этом примере мы создадим все виды связей. Но в данном пункте — One-to-One relationship. Создадим соответствующий скрипт, который <a href="https://github.com/qThegamEp/ForJavaRushPublication2/blob/OneToOne/src/main/resources/initDB.sql" target="_blank" rel="nofollow">создает DB Tables</a>:</p>
+<pre class="lang-sql line-numbers"><code>
+DROP TABLE IF EXISTS PUBLIC.BOOK;
+
+CREATE TABLE PUBLIC.BOOK (
+  ID         INTEGER      NOT NULL AUTO_INCREMENT,
+  NAME       VARCHAR(255) NOT NULL,
+  PRINT_YEAR INTEGER(4)   NOT NULL,
+  CONSTRAINT BOOK_PRIMARY_KEY PRIMARY KEY (ID)
+);
+
+DROP TABLE IF EXISTS PUBLIC.AUTHOR;
+
+CREATE TABLE PUBLIC.AUTHOR (
+  ID          INTEGER      NOT NULL AUTO_INCREMENT,
+  FIRST_NAME  VARCHAR(255) NOT NULL,
+  SECOND_NAME VARCHAR(255) NOT NULL,
+  BOOK_ID     INTEGER      NOT NULL UNIQUE,
+  CONSTRAINT AUTHOR_PRIMARY_KEY PRIMARY KEY (ID),
+  CONSTRAINT BOOK_FOREIGN_KEY FOREIGN KEY (BOOK_ID) REFERENCES BOOK (ID)
+);
+</code></pre>
+<p>И выполним его:</p>
+<img data-id="98d9ceb7-8764-4ea2-af9d-77e5259a8d28" data-max-width="404" alt="JPA Entities and DB Relationships - 6" src="https://cdn.javarush.com/images/article/98d9ceb7-8764-4ea2-af9d-77e5259a8d28/1024.jpeg">
+<p>Результат выполнения в консоле:</p>
+<img data-id="280c810e-b996-4b8a-81d1-968a7fb34788" data-max-width="1894" alt="JPA Entities and DB Relationships - 7" src="https://cdn.javarush.com/images/article/280c810e-b996-4b8a-81d1-968a7fb34788/1024.jpeg">
+<p>Результат в DB:</p>
+<img data-id="4cbd3b7f-8d63-4d35-a2ea-8d9bf4e8e34e" data-max-width="477" alt="JPA Entities and DB Relationships - 8" src="https://cdn.javarush.com/images/article/4cbd3b7f-8d63-4d35-a2ea-8d9bf4e8e34e/1024.jpeg"></li>
+<li><p>Давайте посмотрим на диаграмму наших таблиц. Для этого ПКМ на нашу DB:</p>
+<img data-id="e0364c77-10cd-4e72-b836-c2781a9e91f0" data-max-width="625" alt="JPA Entities and DB Relationships - 9" src="https://cdn.javarush.com/images/article/e0364c77-10cd-4e72-b836-c2781a9e91f0/1024.jpeg">
+<p>Результат:</p>
+<img data-id="0916ef83-005f-401d-86e4-77d7457b6d1b" data-max-width="431" alt="JPA Entities and DB Relationships - 10" src="https://cdn.javarush.com/images/article/0916ef83-005f-401d-86e4-77d7457b6d1b/1024.jpeg">
+<p>На <a href="https://en.wikipedia.org/wiki/Unified_Modeling_Language" target="_blank" rel="nofollow">UML</a> диаграмме мы можем видеть все primary keys и foreign keys, также видим связь наших таблиц.</p></li>
+<li><p>Напишем <a href="https://github.com/qThegamEp/ForJavaRushPublication2/blob/OneToOne/src/main/resources/populateDB.sql" target="_blank" rel="nofollow">скрипт который заполняет</a> нашу DB тестовыми данными:</p>
+<pre class="lang-sql line-numbers"><code>
+INSERT INTO PUBLIC.BOOK (NAME, PRINT_YEAR)
+VALUES ('First book', 2010),
+       ('Second book', 2011),
+       ('Third book', 2012);
+
+INSERT INTO PUBLIC.AUTHOR (FIRST_NAME, SECOND_NAME, BOOK_ID)
+VALUES ('Pablo', 'Lambado', 1),
+       ('Pazo', 'Zopa', 2),
+       ('Lika', 'Vika', 3);
+</code></pre>
+<p>То бишь, что получается? One-to-One relationship нужно тогда, когда сущность одной таблицы связанная с одной сущностью другой ( или вообще не связанная если NOT NULL убрать у BOOK_ID). В нашем примере у одной книжки ДОЛЖЕН быть один автор. Никак иначе.</p></li>
+<li><p>Теперь самое интересное, как связать Java класс с DB сущностями? Очень просто. Создадим два класса Book и Author. На примере я разберу 1 класс, и ключевые поля связи. Возьму за пример <a href="https://github.com/qThegamEp/ForJavaRushPublication2/blob/OneToOne/src/main/java/com/qthegamep/forjavarushpublication2/entity/Author.java" target="_blank" rel="nofollow">Author</a> класс:</p>
+<pre class="lang-java line-numbers"><code>
+@Data
+@Entity
+@DynamicInsert
+@DynamicUpdate
+@Table(name = "AUTHOR")
+public class Author {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "ID", nullable = false)
+    private Long id;
+
+    @Column(name = "FIRST_NAME", nullable = false)
+    private String firstName;
+
+    @Column(name = "SECOND_NAME", nullable = false)
+    private String secondName;
+
+    @OneToOne
+    @JoinColumn(name = "BOOK_ID", unique = true, nullable = false)
+    private Book book;
+}
+</code></pre></li></ol>
+Разберемся по порядку:
+<ol>
+<li>Все поля в классе повторяют атрибуты DB сущности.</li>
+<li><a href="https://projectlombok.org/features/Data" target="_blank" rel="nofollow">@Data</a> (из <a href="https://projectlombok.org/" target="_blank" rel="nofollow">Lombok'a</a>) говорит, что для каждого поля будет создан геттер и сеттер, будет переопределен equals, hashcode, и сгенерирован toString метод. </li>
+<li><a href="https://docs.oracle.com/javaee/7/api/javax/persistence/Entity.html" target="_blank" rel="nofollow">@Entity</a> говорит, что данный класс — сущность и связан с сущностью DB.</li>
+<li><a href="https://docs.jboss.org/hibernate/orm/5.2/javadocs/org/hibernate/annotations/DynamicInsert.html" target="_blank" rel="nofollow">@DynamicInsert</a> и <a href="https://docs.jboss.org/hibernate/orm/5.3/javadocs/org/hibernate/annotations/DynamicUpdate.html" target="_blank" rel="nofollow">@DynamicUpdate</a> говорят, что будут выполнятся динамические вставки и обновления в DB. Это более глубокие настройки Hibernate, которые пригодятся вам, что бы у вас был ПРАВИЛЬНЫЙ батчинг.</li>
+<li><a href="https://docs.oracle.com/javaee/7/api/javax/persistence/Table.html" target="_blank" rel="nofollow">@Table</a>(name = "AUTHOR") связывает класс Book с таблицей DB AUTHOR.</li>
+<li><a href="https://docs.oracle.com/javaee/6/api/javax/persistence/Id.html" target="_blank" rel="nofollow">@Id</a> говорит, что данное поле — primary key.</li>
+<li><a href="https://docs.oracle.com/javaee/6/api/javax/persistence/GeneratedValue.html" target="_blank" rel="nofollow">@GeneratedValue</a>(strategy = GenerationType.IDENTITY) — стратегия генерации primary key.</li>
+<li><a href="https://docs.oracle.com/javaee/5/api/javax/persistence/Column.html" target="_blank" rel="nofollow">@Column</a>(name = "ID", nullable = false) связывает поле с атрибутом DB, и также говорит, что данное поле DB не может быть null. Это также полезно при генерации таблиц из сущностей. Обратный процесс тому, как мы сейчас создаем наш проект, это нужно в тестовых DB для Unit тестов.</li>
+<li><a href="https://docs.oracle.com/javaee/6/api/javax/persistence/OneToOne.html" target="_blank" rel="nofollow">@OneToOne</a> говорит, что данное поле является полем отношения One-to-One.</li>
+<li><a href="https://docs.oracle.com/javaee/6/api/javax/persistence/JoinColumn.html" target="_blank" rel="nofollow">@JoinColumn</a>(name = "BOOK_ID", unique = true, nullable = false) — будет создана колонка BOOK_ID, которая является уникальной и not null.</li>
+</ol>С обратной стороны (в классе <a href="https://github.com/qThegamEp/ForJavaRushPublication2/blob/OneToOne/src/main/java/com/qthegamep/forjavarushpublication2/entity/Book.java" target="_blank" rel="nofollow">Book</a>) нам также нужно сделать связь One-to-One и указать поле, по которому происходит mapping. @OneToOne(mappedBy = "book") — в данном примере это поле book класса Author. JPA сам их свяжет.
+
+С первого взгляда может показаться что тут каша из аннотаций, но на самом деле это очень удобно и с опытом вы автоматом будете их ставить, даже не задумываясь.
+<ol>
+<li value="6"><p>Теперь настроим Hibernate. Для этого создадим <a href="https://github.com/qThegamEp/ForJavaRushPublication2/blob/OneToOne/src/main/resources/hibernate.cfg.xml" target="_blank" rel="nofollow">hibernate.cfg.xml</a> файл:</p>
+<pre class="lang-xml line-numbers"><code>
+&lt;?xml version='1.0' encoding='utf-8'?&gt;
+&lt;!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD//EN"
+        "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd"&gt;
+
+&lt;hibernate-configuration&gt;
+    &lt;session-factory&gt;
+        &lt;property name="hibernate.dialect"&gt;org.hibernate.dialect.H2Dialect&lt;/property&gt;
+        &lt;property name="hibernate.connection.driver_class"&gt;org.h2.Driver&lt;/property&gt;
+
+        &lt;property name="hibernate.connection.url"&gt;jdbc:h2:~/db/onetoone&lt;/property&gt;
+        &lt;property name="hibernate.connection.username"&gt;root&lt;/property&gt;
+        &lt;property name="hibernate.connection.password"/&gt;
+
+        &lt;property name="hibernate.hbm2ddl.auto"&gt;update&lt;/property&gt;
+
+        &lt;property name="hibernate.show_sql"&gt;true&lt;/property&gt;
+        &lt;property name="hibernate.format_sql"&gt;true&lt;/property&gt;
+        &lt;property name="hibernate.use_sql_comments"&gt;true&lt;/property&gt;
+
+        &lt;property name="hibernate.generate_statistics"&gt;true&lt;/property&gt;
+
+        &lt;property name="hibernate.jdbc.batch_size"&gt;50&lt;/property&gt;
+        &lt;property name="hibernate.jdbc.fetch_size"&gt;50&lt;/property&gt;
+
+        &lt;property name="hibernate.order_inserts"&gt;true&lt;/property&gt;
+        &lt;property name="hibernate.order_updates"&gt;true&lt;/property&gt;
+        &lt;property name="hibernate.jdbc.batch_versioned_data"&gt;true&lt;/property&gt;
+
+        &lt;mapping class="com.qthegamep.forjavarushpublication2.entity.Book"/&gt;
+        &lt;mapping class="com.qthegamep.forjavarushpublication2.entity.Author"/&gt;
+    &lt;/session-factory&gt;
+&lt;/hibernate-configuration&gt;
+</code></pre></li></ol>
+<a href="https://www.tutorialspoint.com/hibernate/hibernate_configuration.htm" target="_blank" rel="nofollow">Описание свойств</a>:
+<ol>
+<li>hibernate.dialect — диалект СУБД которую мы выбрали.</li>
+<li>hibernate.connection.driver_class — Driver класс нашей DB.</li>
+<li>hibernate.connection.url — utl нашей DB. Можно взять из первого пункта, где мы настраивали DB.</li>
+<li>hibernate.connection.username — имя юзера DB.</li>
+<li>hibernate.connection.password — пароль юзера DB.</li>
+<li>hibernate.hbm2ddl.auto — настройка генерации таблиц. Если update, то не генерирует, если она уже создана а лишь обновляет ее.</li>
+<li>hibernate.show_sql — показывать ли запросы DB.</li>
+<li>hibernate.format_sql — форматировать ли запросы DB. Если нет то они будт все в одну строчку. Рекомендую включать.</li>
+<li>hibernate.use_sql_comments — комментирует запросы DB. Если это Insert то пишет над запросом комментарий что запрос типа Insert.</li>
+<li>hibernate.generate_statistics - генерирует логи. Рекомендую, и рекомендую настроить логирование по максимуму. Чтение логов увеличит ваши шансы правильной работы с ORM.</li>
+<li>hibernate.jdbc.batch_size — Максимальный размер батча.</li>
+<li>hibernate.jdbc.fetch_size — Максимальный размер фетча.</li>
+<li>hibernate.order_inserts — разрешает динамические вставки.</li>
+<li>hibernate.order_updates — разрешает динамические обновления.</li>
+<li>hibernate.jdbc.batch_versioned_data — разрешает батчинг. Смотрите по своей СУБД: не все это поддерживают.</li>
+<li>mapping class — классы, которые являются нашими сущностями. Перечислять нужно все.</li></ol><ol><li value="7"><p>Теперь у нас сущность должна определиться. Можем это проверить в persistence tab'е:</p>
+<img data-max-width="142" alt="JPA Entities and DB Relationships - 11" src="https://cdn.javarush.com/images/article/4094f366-ca96-4568-9523-efbd252e0642/original.jpeg">
+<p>Результат:</p>
+<img data-id="1e14e004-abb9-4789-b003-aaab47b47ffd" data-max-width="518" alt="JPA Entities and DB Relationships - 12" src="https://cdn.javarush.com/images/article/1e14e004-abb9-4789-b003-aaab47b47ffd/1024.jpeg"></li>
+<li><p>Также нам нужно настроить assign data:</p>
+<img data-id="f522aba0-f862-4ea5-8481-bb5083dbdb3f" data-max-width="484" alt="JPA Entities and DB Relationships - 13" src="https://cdn.javarush.com/images/article/f522aba0-f862-4ea5-8481-bb5083dbdb3f/1024.jpeg">
+<img data-id="31afdbb8-db4d-42a5-b6a7-70a207901ca3" data-max-width="489" alt="JPA Entities and DB Relationships - 14" src="https://cdn.javarush.com/images/article/31afdbb8-db4d-42a5-b6a7-70a207901ca3/1024.jpeg">
+<p>Итоги: Мы сделали One-to-One mapping. Материал является ознакомительным, детали - в references.</p>
+</li></ol>
+<h3>One-to-Many Relationship</h3>Ссылка на branch <a href="https://github.com/qThegamEp/ForJavaRushPublication2/tree/OneToMany" target="_blank" rel="nofollow">тут</a>.
+
+Код я больше не буду выкладывать в статье, так как она и так уже слишком большая. Весь код смотрим на GitHub'e. 
+
+<ol>
+<li><p>В результате выполнения <a href="https://github.com/qThegamEp/ForJavaRushPublication2/blob/OneToMany/src/main/resources/initDB.sql" target="_blank" rel="nofollow">инициализирующего скрипта</a> у нас получится следующее:</p>
+<img data-id="52429633-2eea-4938-8eb5-39f9bc647e9c" data-max-width="496" alt="JPA Entities and DB Relationships - 15" src="https://cdn.javarush.com/images/article/52429633-2eea-4938-8eb5-39f9bc647e9c/1024.jpeg">
+<p>Чувствуете разницу с предыдущей таблицей?</p></li>
+<li><p>Диаграмма:</p>
+<img data-id="f31cfd4d-6296-47a2-a8e4-eb3d5e3d919c" data-max-width="320" alt="JPA Entities and DB Relationships - 16" src="https://cdn.javarush.com/images/article/f31cfd4d-6296-47a2-a8e4-eb3d5e3d919c/1024.jpeg">
+<p>One-to-Many Relationship — у нас у одного автора может быть несколько книг. Левой сущности соответствует одна или несколько правой.</p></li>
+<li><p>Отличие в mapping'e будет в аннотациях и полях:</p>
+<p>В <a href="https://github.com/qThegamEp/ForJavaRushPublication2/blob/OneToMany/src/main/java/com/qthegamep/forjavarushpublication2/entity/Author.java" target="_blank" rel="nofollow">Author</a> класса появляется поле:</p>
+<pre class="lang-java line-numbers"><code>
+@OneToMany(fetch = FetchType.LAZY, mappedBy = "author")
+private Set&lt;Book&gt; books;
+</code></pre>
+<p>Оно уже является сетом, так как у нас может быть несколько книг. <a href="https://docs.oracle.com/javaee/6/api/javax/persistence/OneToMany.html" target="_blank" rel="nofollow">@OneToMany</a> говорит о типе отношения. FetchType.Lazy говорит, что не нужно нам подгружать весь список книг если это не указанно в запросе. Также следует сказать, что данное поле НЕЛЬЗЯ добавлять в toString, иначе пойдем курить StackOverflowError. Об этом у меня заботится мой любимый Lombok:</p>
+<pre class="lang-java line-numbers"><code>
+@ToString(exclude = "books")
+</code></pre>
+<p>В классе <a href="https://github.com/qThegamEp/ForJavaRushPublication2/blob/OneToMany/src/main/java/com/qthegamep/forjavarushpublication2/entity/Book.java" target="_blank" rel="nofollow">Book</a> мы делаем обратную связь (Many-to-One):
+<pre class="lang-java line-numbers"><code>
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "AUTHOR_ID", nullable = false)
+    private Author author;
+</code></pre>
+<p>Здесь мы делаем вывод, что One-to-Many является зеркальным отображением Many-to-One и наоборот. Следует подчеркнуть, что Hibernate нечего не знает о двунаправленных связях. Для него это две разные связи: одна в одну сторону, другая — в противоположную.</p></li>
+<li><p>В <a href="https://github.com/qThegamEp/ForJavaRushPublication2/blob/OneToMany/src/main/resources/hibernate.cfg.xml" target="_blank" rel="nofollow">hibernate.cfg.xml</a> особо нечего не поменялось.</p></li>
+<li><p>Persistence:</p>
+<img data-id="2a3ea933-7f0a-4ea9-9a80-0e87c6b94f88" data-max-width="519" alt="JPA Entities and DB Relationships - 17" src="https://cdn.javarush.com/images/article/2a3ea933-7f0a-4ea9-9a80-0e87c6b94f88/1024.jpeg"></li></ol><h3>Many-to-One Relationship</h3>Так как Many-to-One является зеркальным отображением One-to-Many, отличий будет немного.
+
+Ссылка на branch <a href="https://github.com/qThegamEp/ForJavaRushPublication2/tree/ManyToOne" target="_blank" rel="nofollow">тут</a>.
+<ol>
+<li><p>В результате выполнения <a href="https://github.com/qThegamEp/ForJavaRushPublication2/blob/ManyToOne/src/main/resources/initDB.sql" target="_blank" rel="nofollow">инициализирующего скрипта</a> получим результат:</p>
+<img data-id="90a025cd-2a46-4cba-84f7-4841fb78caab" data-max-width="494" alt="JPA Entities and DB Relationships - 18" src="https://cdn.javarush.com/images/article/90a025cd-2a46-4cba-84f7-4841fb78caab/1024.jpeg"></li>
+<li><p>Диаграмма:</p>
+<img data-id="b4324a9d-e032-45af-aaa1-38af4ccdbe88" data-max-width="392" alt="JPA Entities and DB Relationships - 19" src="https://cdn.javarush.com/images/article/b4324a9d-e032-45af-aaa1-38af4ccdbe88/1024.jpeg"></li>
+<li><p>Отличие в mapping'e будет в аннотациях и полях:</p>
+<p>В классе <a href="https://github.com/qThegamEp/ForJavaRushPublication2/blob/ManyToOne/src/main/java/com/qthegamep/forjavarushpublication2/entity/Author.java" target="_blank" rel="nofollow">Author</a> больше нет сета, так как он переместился в <a href="https://github.com/qThegamEp/ForJavaRushPublication2/blob/ManyToOne/src/main/java/com/qthegamep/forjavarushpublication2/entity/Book.java" target="_blank" rel="nofollow">Book</a> класс.</p></li>
+<li><p><a href="https://github.com/qThegamEp/ForJavaRushPublication2/blob/ManyToOne/src/main/resources/hibernate.cfg.xml" target="_blank" rel="nofollow">hibernate.cfg.xml</a></p></li>
+<li><p>Persistence:</p>
+<img data-id="88d730a0-b441-4d95-af33-7008a85ad041" data-max-width="514" alt="JPA Entities and DB Relationships - 20" src="https://cdn.javarush.com/images/article/88d730a0-b441-4d95-af33-7008a85ad041/1024.jpeg"></li></ol><h3>Many-to-Many Relationship</h3>Перейдем к самому интересному отношению. Это отношение по всем правилам приличия и неприличия создается через дополнительную таблицу. Но данная таблица не является сущностью. Интересно, да? Взглянем на сей shit.
+
+Ссылка на branch <a href="https://github.com/qThegamEp/ForJavaRushPublication2/tree/ManyToMany" target="_blank" rel="nofollow">тут</a>.
+<ol>
+<li><p>Посмотрите на <a href="https://github.com/qThegamEp/ForJavaRushPublication2/blob/ManyToMany/src/main/resources/initDB.sql" target="_blank" rel="nofollow">инициализирующий скрипт</a>, здесь появляется дополнительная таблица HAS. У нас получается что то вроде author-has-book.</p>
+<p>В результате выполнения скрипта мы получим такие таблицы:</p>
+<img data-id="e1c1d73a-0667-45b8-be7f-77ab338fd3e5" data-max-width="486" alt="JPA Entities and DB Relationships - 21" src="https://cdn.javarush.com/images/article/e1c1d73a-0667-45b8-be7f-77ab338fd3e5/1024.jpeg"></li>
+<li><p>Диаграмма:</p>
+<img data-id="dc1ee1a9-b07b-4c53-a280-b1fa2dcbe968" data-max-width="524" alt="JPA Entities and DB Relationships - 22" src="https://cdn.javarush.com/images/article/dc1ee1a9-b07b-4c53-a280-b1fa2dcbe968/1024.jpeg">
+<p>В нашем примере получается, что у книги может быть много автором, и у автора может быть много книг. Они могут пересекаться.</p></li>
+<li><p>В классах mapping'a будут присутствовать сеты в классах. Но, как я уже сказал, таблица HAS — это не сущность.</p>
+<p>Класс <a href="https://github.com/qThegamEp/ForJavaRushPublication2/blob/ManyToMany/src/main/java/com/qthegamep/forjavarushpublication2/entity/Author.java" target="_blank" rel="nofollow">Author</a>:</p>
+<pre class="lang-java line-numbers"><code>
+@ManyToMany
+@JoinTable(name = "HAS",
+        joinColumns = @JoinColumn(name = "AUTHOR_ID", referencedColumnName = "ID"),
+        inverseJoinColumns = @JoinColumn(name = "BOOK_ID", referencedColumnName = "ID")
+)
+private Set&lt;Book&gt; books;
+</code></pre>
+<p><a href="https://docs.oracle.com/javaee/6/api/javax/persistence/ManyToMany.html" target="_blank" rel="nofollow">@ManyToMany</a> — вид отношения.</p>
+<p><a href="https://docs.oracle.com/javaee/7/api/javax/persistence/JoinTable.html" target="_blank" rel="nofollow">@JoinTable</a> — как раз таки и будет связывать  атрибут с дополнительной таблицей HAS. В ней мы указываем два атрибута, которые будут указывать на primary keys двух сущностей.</p>
+<p>Класс <a href="https://github.com/qThegamEp/ForJavaRushPublication2/blob/ManyToMany/src/main/java/com/qthegamep/forjavarushpublication2/entity/Book.java" target="_blank" rel="nofollow">Book</a>:</p>
+<pre class="lang-java line-numbers"><code>
+@ManyToMany(fetch = FetchType.LAZY, mappedBy = "books")
+private Set&lt;Author&gt; authors;
+</code></pre>
+<p>Тут указываем FetchType и поле, по которому будем мапиться.</p></li>
+<li><p>Наш <a href="https://github.com/qThegamEp/ForJavaRushPublication2/blob/ManyToMany/src/main/resources/hibernate.cfg.xml" target="_blank" rel="nofollow">hibernate.cfg.xml</a> снова-таки не притерпел изменений (я не учитываю то, что мы к каждой branch создавали новую DB).</p></li>
+<li><p>Persistence:</p>
+<img data-id="d2e93911-10b7-4963-935f-75c7cea4328e" data-max-width="516" alt="JPA Entities and DB Relationships - 23" src="https://cdn.javarush.com/images/article/d2e93911-10b7-4963-935f-75c7cea4328e/1024.jpeg"></li></ol><h3>Разбор полётов</h3>Итак, мы поверхностно рассмотрели виды DB relationships и разобрались как их реализовать в ORM модели. Мы написали тестовый проект, который демонстрирует все связи, и разобрались как конфигить hibernate / jpa. 
+
+Фух.
+
+<h3>Полезные ссылки</h3><ul>
+<li>Собственно сам <a href="https://github.com/qThegamEp/ForJavaRushPublication2" target="_blank" rel="nofollow">проект</a></li>
+<li><a href="https://github.com/qThegamEp/ForJavaRushPublication2/tree/OneToOne" target="_blank" rel="nofollow">One-to-One</a> branch</li>
+<li><a href="https://github.com/qThegamEp/ForJavaRushPublication2/tree/OneToMany" target="_blank" rel="nofollow">One-to-Many</a> branch</li>
+<li><a href="https://github.com/qThegamEp/ForJavaRushPublication2/tree/ManyToOne" target="_blank" rel="nofollow">Many-to-One</a> branch</li>
+<li><a href="https://github.com/qThegamEp/ForJavaRushPublication2/tree/ManyToMany" target="_blank" rel="nofollow">Many-to-Many</a> branch</li>
+<li><a href="https://www.tech-recipes.com/rx/56738/one-to-one-one-to-many-table-relationships-in-sql-server/" target="_blank" rel="nofollow">Read it</a></li>
+<li><a href="https://code.tutsplus.com/articles/sql-for-beginners-part-3-database-relationships--net-8561" target="_blank" rel="nofollow">And read it</a></li>
+</ul>
+Мои предыдущие статьи:
+<ul>
+<li><a href="https://javarush.com/groups/posts/594-continuous-integration" target="_blank" rel="nofollow">Continuous Integration</a></li>
+<li><a href="https://javarush.com/groups/posts/602-codecov" target="_blank" rel="nofollow">Code Coverage</a></li>
+<li><a href="https://javarush.com/groups/posts/612-markdown" target="_blank" rel="nofollow">Markdown</a></li>
+</ul>
+P.S. Могут быть ошибки, ОтЧиПяТкИ в тексте.
+P.P.S. Автор курил что-то странное во время написания данной статьи.
+
+Спасибо за внимание!

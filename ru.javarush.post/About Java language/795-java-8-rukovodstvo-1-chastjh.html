@@ -1,0 +1,410 @@
+Java 8. Руководство. 1 часть.
+<p>----------------------------------------</p>
+"Java еще жива - и люди начинают понимать это."
+Добро пожаловать в мое введение по Java 8. Это руководство проведет вас шаг за шагом, по всем новым возможностя
+<p>----------------------------------------</p>
+<h4><a href="https://twitter.com/mreinhold/status/429603588525281280" rel="nofollow" >"Java еще жива - и люди начинают понимать это."</a></h4>
+Добро пожаловать в мое введение по Java 8. Это руководство проведет вас шаг за шагом, по всем новым возможностям языка. Опираясь на короткие и простые примеры кода, вы узнаете как использовать <strong>default-методы интерфейсов</strong>, <strong>лямбда выражения</strong>, <strong>ссылочные методы</strong> и <strong>повторяемые аннотации</strong>. К концу статьи вы будете знакомы с последними изменениями в API, таких как потоки, функциональные интерфейсы, расширения ассоциаций и нового Date API.
+
+Никаких стен из скучного текста - только куча прокомментированных фрагментов кода. Наслаждайтесь!
+<cut>
+<h4>Default-методы для интерфейсов</h4>
+Java 8 позволяет нам добавлять не-абстрактные методы реализованные в интерфейсе благодаря использованию ключевого слова <em>default</em>. Эта возможность также известна как <strong>методы расширения</strong>. Вот наш первый пример:
+<code>interface Formula {
+    double calculate(int a);
+
+    default double sqrt(int a) {
+        return Math.sqrt(a);
+    }
+}
+</code>
+Помимо абстрактного метода <em>calculate</em>, интерфейс <em>Formula</em> также определяет default-метод <em>sqrt</em>. Классы реализующие интерфейс <em>Formula</em>, реализуют только абстрактный метод <em>calculate</em>. Default-метод <em>sqrt</em> может быть использован прямо из "коробки".
+<code>Formula formula = new Formula() {
+    @Override
+    public double calculate(int a) {
+        return sqrt(a * 100);
+    }
+};
+
+formula.calculate(100);     // 100.0
+formula.sqrt(16);           // 4.0
+</code>
+Объект <em>formula</em> реализован как анонимный объект. Код достаточно внушительный: 6 строк кода для простого вычисления <em>sqrt(a * 100)</em>. Как мы увидим далее в следующем разделе, есть более привлекательный путь реализации объектов с единственным методом в Java 8.
+
+<h4>Лямбда выражения</h4>
+Начнем с простого примера, как отсортировать массив строк в ранних версиях Java:
+<code>List<String> names = Arrays.asList("peter", "anna", "mike", "xenia");
+
+Collections.sort(names, new Comparator<String>() {
+    @Override
+    public int compare(String a, String b) {
+        return b.compareTo(a);
+    }
+});
+</code>
+Статистический вспомогательный метод <em>Collections.sort</em> принимает список и компаратор(<em>Comparator</em>), чтобы отсортировать элементы данного списка. Часто случается, что вы создаете анонимные компараторы и передаете их в методы сортировки.
+
+Вместо создания анонимных объектов на протяжении всего времени, Java 8 дарит возможность использовать гораздо меньший объем синтаксиса, <strong>лямбда выражения</strong>:
+<code>Collections.sort(names, (String a, String b) -> {
+    return b.compareTo(a);
+});
+</code>
+Как вы можете заметить, код гораздо короче и проще для чтения. 
+Но вот он становится еще короче:
+<code>Collections.sort(names, (String a, String b) -> b.compareTo(a));
+</code>
+Для метода-в-одну-линию вы можете избавиться от фигурных скобок <em>{}</em> и ключевого слова <em>return</em>.
+Но вот код становится еще более короче:
+<code>Collections.sort(names, (a, b) -> b.compareTo(a));
+</code>
+Java компилятор осведомлен о типах параметров, так что вы можете также не указывать и их. Теперь давайте погрузимся глубже в то, как лямбда выражения могут быть использованы в реалии.
+
+<h4>Функциональные интерфейсы</h4>
+Как лямбда выражения вписываются в систему типов Java? Каждая лямбда соответствует заданному типу, определенному с помощью интерфейса. А так называемый функциональный интерфейс должен содержать ровно один объявленный абстрактный метод. Каждое лямбда выражение данного типа, будет соответствовать этому абстрактному методу Поскольку default-метод не являются абстрактными методами, вы вольны добавлять default-методы к своему функциональному интерфейсу.
+
+Мы можем использовать произвольный интерфейс как лямбда выражение, при условии что этот интерфейс содержит только один абстрактный метод. Дабы гарантировать, что ваш интерфейс удовлетворяет таким условиям, вы должны добавить аннотацию <em>@FunctionalInterface</em>. Компилятор будет осведомлен данной аннотацией, что интерфейс должен содержать только один метод и в случае обнаружения второго абстрактного метода в данном интерфейсе, выдаст ошибку.
+
+Пример:
+<code>@FunctionalInterface
+interface Converter<F, T> {
+    T convert(F from);
+}
+</code>
+<code>Converter<String, Integer> converter = (from) -> Integer.valueOf(from);
+Integer converted = converter.convert("123");
+System.out.println(converted);    // 123
+</code>
+Имейте ввиду, что данный код также допустим, даже если бы аннотация <em>@FunctionalInterface</em> не была объявлена.
+
+<h4>Ссылки на методы и конструкторы</h4>
+Пример выше в дальнейшем может быть упрощен с помощью ссылки на статистический метод:
+<code>Converter<String, Integer> converter = Integer::valueOf;
+Integer converted = converter.convert("123");
+System.out.println(converted);   // 123
+</code>
+Java 8 позволяет передавать ссылки на методы и конструкторы с помощью ключевых символов <em><strong>::</strong></em>. Приведенный выше пример показывает как можно обращаться к статистическим методам. Но мы также можем ссылаться на методы объектов:
+<code>class Something {
+    String startsWith(String s) {
+        return String.valueOf(s.charAt(0));
+    }
+}
+</code>
+<code>Something something = new Something();
+Converter<String, String> converter = something::startsWith;
+String converted = converter.convert("Java");
+System.out.println(converted);    // "J"
+</code>
+Давайте взглянем, как использование <em><strong>::</strong></em> работает для конструкторов. Для начала определим пример с различными конструкторами:
+<code>class Person {
+    String firstName;
+    String lastName;
+
+    Person() {}
+
+    Person(String firstName, String lastName) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+    }
+}
+</code>
+Далее мы определяем интерфейс фабрики <em>PersonFactory</em>, для создания новых объектов <em>person</em>:
+<code>interface PersonFactory<P extends Person> {
+    P create(String firstName, String lastName);
+}
+</code>
+Вместо реализации фабрики вручную, мы объединяем все вместе с помощью ссылки на конструктор:
+<code>PersonFactory<Person> personFactory = Person::new;
+Person person = personFactory.create("Peter", "Parker");
+</code>
+Мы создаем ссылку на конструктор класса <em>Person</em> через <em>Person::new</em>. Компилятор Java автоматически вызовет подходящий конструктор, сравнивая сигнатуру конструкторов с сигнатурой метода <em>PersonFactory.create</em>.
+
+<h4>Лямбда области</h4>
+Организация доступа к переменным внешней области видимости из лямбда выражений, подобна доступу из анонимного объекта. Вы можете получить доступ к переменным с модификатором <em>final</em> из локальной области видимости, также как к полям экземпляров и статистическим переменным.
+
+<h6>Доступ к локальным переменным</h6>
+Мы можем прочитать локальную переменную с модификатором <em>final</em> из области видимости лямбда выражения:
+<code>final int num = 1;
+Converter<Integer, String> stringConverter =
+        (from) -> String.valueOf(from + num);
+
+stringConverter.convert(2);     // 3
+</code>
+Но в отличии от анонимных объектов, для обеспечения доступа из лямбда выражения к переменным, они не обязательно должны быть продекларированы с помощью <em>final</em>. Этот код также является верным:
+<code>int num = 1;
+Converter<Integer, String> stringConverter =
+        (from) -> String.valueOf(from + num);
+
+stringConverter.convert(2);     // 3
+</code>
+Однако переменная <em>num</em> должна оставаться неизменяемой, т.е. быть неявной <em>final</em>, для компиляции кода. Следующий код не будет компилироваться:
+<code>int num = 1;
+Converter<Integer, String> stringConverter =
+        (from) -> String.valueOf(from + num);
+num = 3;
+</code>
+Изменения <em>num</em> внутри лямбда выражения также недопустимы.
+
+<h6>Доступ к полям экземпляров и статистическим переменным</h6>
+В отличии от локальных переменных, поля экземпляров и статистические переменные мы можем считать и изменять внутри лямбда выражений. Такое поведение известно нам от анонимных объектов.
+<code>class Lambda4 {
+    static int outerStaticNum;
+    int outerNum;
+
+    void testScopes() {
+        Converter<Integer, String> stringConverter1 = (from) -> {
+            outerNum = 23;
+            return String.valueOf(from);
+        };
+
+        Converter<Integer, String> stringConverter2 = (from) -> {
+            outerStaticNum = 72;
+            return String.valueOf(from);
+        };
+    }
+}
+</code>
+<h6>Доступ к default-методам интерфейсов</h6>
+Помните пример с экземпляром <em>formula</em> из первого раздела? Интерфейс <em>Formula</em> определяет default-метод <em>sqrt</em>, который может быть доступен из каждого экземпляра <em>formula</em> включая анонимные объекты. Это не работает с лямбда выражениями.
+
+Default-метод не могут быть доступны внутри лямбда выражений. Следующий код, не компилируется:
+<code>Formula formula = (a) -> sqrt( a * 100);
+</code>
+
+<h4>Встроенные функциональные интерфейсы</h4>
+API JDK 1.8 содержит множество встроенных функциональных интерфейсов. Некоторые из них хорошо известны из предыдущих версий Java. Например <em>Comparator</em> или <em>Runnable</em>. Эти интерфейсы расширены, дабы включить поддержку "лямбды" с помощью аннотации <em>@FunctionalInterface</em>.
+
+Но API Java 8 также полон и новыми функциональными интерфейсами, что cделают вашу жизнь легче. Некоторые из этих интерфейсов хорошо известны из библиотеки <a href="https://code.google.com/p/guava-libraries/" rel="nofollow" >Google Guava</a>. Даже если вы знакомы с этой библиотекой, вы должны внимательно приглядеться как эти интерфейсы расширены, с помощью некоторых полезных методов расширения.
+
+<h6>Predicates</h6>
+Predicates это булевые функции с одним аргументом. Интерфейс содержит различные default-методы, для создание с помощью предикатов, сложных логических выражений(and, or, negate)
+<code>Predicate<String> predicate = (s) -> s.length() > 0;
+
+predicate.test("foo");              // true
+predicate.negate().test("foo");     // false
+
+Predicate<Boolean> nonNull = Objects::nonNull;
+Predicate<Boolean> isNull = Objects::isNull;
+
+Predicate<String> isEmpty = String::isEmpty;
+Predicate<String> isNotEmpty = isEmpty.negate();
+</code>
+<h6>Functions</h6>
+Functions принимают один аргумент и выдают результат. Default-методы могут использоваться для объединения нескольких функции вместе, в одну цепочку(compose, andThen).
+<code>Function<String, Integer> toInteger = Integer::valueOf;
+Function<String, String> backToString = toInteger.andThen(String::valueOf);
+
+backToString.apply("123");     // "123"
+</code>
+<h6>Suppliers</h6>
+Suppliers возвращают результат(экземпляр) того или иного типа. В отличии от функций, поставщики не принимают аргументов.
+<code>Supplier<Person> personSupplier = Person::new;
+personSupplier.get();   // new Person
+</code>
+<h6>Consumers</h6>
+Consumers олицетворяют методы интерфейса с единственным аргументом.
+<code>Consumer<Person> greeter = (p) -> System.out.println("Hello, " + p.firstName);
+greeter.accept(new Person("Luke", "Skywalker"));
+</code>
+<h6>Comparators</h6>
+Comparators известны нам из предыдущих версий Java. Java 8 позволяет добавлять различные дефолтные методы в интерфейсы.
+<code>Comparator<Person> comparator = (p1, p2) -> p1.firstName.compareTo(p2.firstName);
+
+Person p1 = new Person("John", "Doe");
+Person p2 = new Person("Alice", "Wonderland");
+
+comparator.compare(p1, p2);             // > 0
+comparator.reversed().compare(p1, p2);  // < 0
+</code>
+<h6>Optionals</h6>
+Интерфейс Optionals не является функциональным, но это отличная утилита для предотвращения <em>NullPointerException</em>. Это важный момент для следующего раздела, так что давайте быстро взглянем как работает данный интерфейс.
+
+Интерфейс Optional это простой контейнер для значений который могут быть <em>null</em> или не-null. Представьте что метод, может возвращать значение или ничего. В Java 8, вместо возврата <em>null</em>, вы возвращаете экземпляр <em>Optional</em>.
+<code>Comparator<Person> comparator = (p1, p2) -> p1.firstName.compareTo(p2.firstName);
+
+Person p1 = new Person("John", "Doe");
+Person p2 = new Person("Alice", "Wonderland");
+
+comparator.compare(p1, p2);             // > 0
+comparator.reversed().compare(p1, p2);  // < 0
+</code>
+<h4>Stream</h4>
+<em>java.util.Stream</em> представляет из себя последовательность элементов над которыми выполняется одна или множество операций. Каждая операция Stream является либо промежуточной, либо терминальной. Терминальные операции возвращают результат определенного типа, в то время как промежуточные операции возвращают сам объект stream, что позволяет создавать цепочку вызовов методов. Stream представляет собой интерфейс, подобно <em>java.util.Collection</em> для lists и sets(maps не поддерживаются).Каждая операция Stream может выполнятся либо последовательно, либо параллельно.
+
+Давайте взглянем как работает stream. Первое, мы создадим пример кода в форме списка strings:
+<code>List<String> stringCollection = new ArrayList<>();
+stringCollection.add("ddd2");
+stringCollection.add("aaa2");
+stringCollection.add("bbb1");
+stringCollection.add("aaa1");
+stringCollection.add("bbb3");
+stringCollection.add("ccc");
+stringCollection.add("bbb2");
+stringCollection.add("ddd1");
+</code>
+Коллекции в Java 8 расширены так, что вы можете достаточно просто создать streams вызовом <em>Collection.stream()</em> или <em>Collection.parallelStream()</em>. Следующий раздел разъяснит самые важные, простые stream операции.
+
+<h6>Filter</h6>
+Filter принимает предикаты для фильтрации всех элементов stream. Эта операция является промежуточной, что позволяет нам вызывать другие stream операции(например forEach) для полученного результата(отфильтрованного). ForEach принимает операцию, которая будет выполнена для каждого элемента уже отфильтрованного stream. ForEach является терминальной операцией. Далее, вызов других оперций невозможен.
+<code>stringCollection
+    .stream()
+    .filter((s) -> s.startsWith("a"))
+    .forEach(System.out::println);
+
+// "aaa2", "aaa1"
+</code>
+<h6>Sorted</h6>
+Sorted является промежуточной операцией, которая возвращает сортированное представление stream. Элементы сортируются в правильном порядке, если вы не укажите свой <em>Comparator</em>.
+<code>stringCollection
+    .stream()
+    .sorted()
+    .filter((s) -> s.startsWith("a"))
+    .forEach(System.out::println);
+
+// "aaa1", "aaa2"
+</code>
+Имейте в виду, что sorted создает сортированное представление stream не влияя на саму коллекцию. Порядок элементов <em>stringCollection</em> остается нетронутым:
+<code>System.out.println(stringCollection);
+// ddd2, aaa2, bbb1, aaa1, bbb3, ccc, bbb2, ddd1
+</code>
+<h6>Map</h6>
+Промежуточная операция map, конвертирует каждый элемент в другой объект с помощью полученной функции. Следующий пример конвертирует каждую строку в строку в верхнем регистре. Но вы также можете использовать map для преобразования каждого объекта в другой тип. Тип объектов резльутирующего stream зависит от типа функции, которую вы передаете в map.
+<code>stringCollection
+    .stream()
+    .map(String::toUpperCase)
+    .sorted((a, b) -> b.compareTo(a))
+    .forEach(System.out::println);
+
+// "DDD2", "DDD1", "CCC", "BBB3", "BBB2", "AAA2", "AAA1"
+</code>
+<h6>Match</h6>
+Различные операции соответствия могут быть использованы для проверки истинности определенного предиката в отношении stream. Все match операции являются терминальными и возвращают булевый результат.
+<code>boolean anyStartsWithA =
+    stringCollection
+        .stream()
+        .anyMatch((s) -> s.startsWith("a"));
+
+System.out.println(anyStartsWithA);      // true
+
+boolean allStartsWithA =
+    stringCollection
+        .stream()
+        .allMatch((s) -> s.startsWith("a"));
+
+System.out.println(allStartsWithA);      // false
+
+boolean noneStartsWithZ =
+    stringCollection
+        .stream()
+        .noneMatch((s) -> s.startsWith("z"));
+
+System.out.println(noneStartsWithZ);      // true
+</code>
+<h6>Count</h6>
+Count является терминальной операции, возвращающая количество элементов stream как <em>long</em>.
+<code>long startsWithB =
+    stringCollection
+        .stream()
+        .filter((s) -> s.startsWith("b"))
+        .count();
+
+System.out.println(startsWithB);    // 3
+</code>
+<h6>Reduce</h6>
+Это терминальная операция, выполняющая сокращение элементов stream с помощью переданной функцией.
+Результатом будет <em>Optional</em> содержащий сокращенное значение.
+<code>Optional<String> reduced =
+    stringCollection
+        .stream()
+        .sorted()
+        .reduce((s1, s2) -> s1 + "#" + s2);
+
+reduced.ifPresent(System.out::println);
+// "aaa1#aaa2#bbb1#bbb2#bbb3#ccc#ddd1#ddd2"
+</code>
+
+<h4>Parallel Streams</h4>
+Как уже упоминалось выше, stream бывают последовательными и параллельныеми. Операции последовательного stream выполняются в последовательном потоке, в то время как операции параллельного stream выполняются на множестве параллельных потоках.
+
+Следующий пример демонстрирует как легко увеличить производительность испоьльзуя параллельный stream.
+
+Для начала создадим большой список уникальных элементов:
+<code>int max = 1000000;
+List<String> values = new ArrayList<>(max);
+for (int i = 0; i < max; i++) {
+    UUID uuid = UUID.randomUUID();
+    values.add(uuid.toString());
+}
+</code>
+Сейчас мы определим время затраченное на сортировку stream данной коллекции.
+
+<h6>Последовательный stream</h6>
+<code>long t0 = System.nanoTime();
+
+long count = values.stream().sorted().count();
+System.out.println(count);
+
+long t1 = System.nanoTime();
+
+long millis = TimeUnit.NANOSECONDS.toMillis(t1 - t0);
+System.out.println(String.format("sequential sort took: %d ms", millis));
+
+// sequential sort took: 899 ms
+</code>
+<h6>Параллельный stream</h6>
+<code>long t0 = System.nanoTime();
+
+long count = values.parallelStream().sorted().count();
+System.out.println(count);
+
+long t1 = System.nanoTime();
+
+long millis = TimeUnit.NANOSECONDS.toMillis(t1 - t0);
+System.out.println(String.format("parallel sort took: %d ms", millis));
+
+// parallel sort took: 472 ms
+</code>
+Как вы можете заметить, оба фрагмента когда почти идентичны, но параллельная сортировка выполняется на 50% быстрее. Все что вам нужно, это изменить <em>stream()</em> на <em>parallelStream()</em>.
+
+<h4>Map</h4>
+Как уже было упомянуто, map'ы не поддерживают stream'ы. Вместо этого map стал поддерживать новые и полезные методы для решения обычных задач.
+<code>Map<Integer, String> map = new HashMap<>();
+
+for (int i = 0; i < 10; i++) {
+    map.putIfAbsent(i, "val" + i);
+}
+
+map.forEach((id, val) -> System.out.println(val));
+</code>
+Код выше должен быть интуитивно-понятен: <em>putIfAbsent</em> предостерегает нас от написания дополнительных проверок на null. <em>forEach</em> принимает функцию на выполнение для каждого из значений map.
+
+Этот пример показывает, как выполняются операции на значениях map, используя функции:
+<code>map.computeIfPresent(3, (num, val) -> val + num);
+map.get(3);             // val33
+
+map.computeIfPresent(9, (num, val) -> null);
+map.containsKey(9);     // false
+
+map.computeIfAbsent(23, num -> "val" + num);
+map.containsKey(23);    // true
+
+map.computeIfAbsent(3, num -> "bam");
+map.get(3);             // val33
+</code>
+Далее мы узнаем как удалить запись для данного ключа, только если он сопоставляется заданному значению:
+<code>map.remove(3, "val3");
+map.get(3);             // val33
+
+map.remove(3, "val33");
+map.get(3);             // null
+</code>
+Другой хороший метод:
+<code>map.getOrDefault(42, "not found");  // not found
+</code>
+Вполне легко производится слияние записей map:
+<code>map.merge(9, "val9", (value, newValue) -> value.concat(newValue));
+map.get(9);             // val9
+
+map.merge(9, "concat", (value, newValue) -> value.concat(newValue));
+map.get(9);             // val9concat
+</code>
+Слияние либо вставит ключ/значение в map, если для данного ключа отсутствует запись, либо будет вызвана функция слияния, которая изменит значение существующей записи.

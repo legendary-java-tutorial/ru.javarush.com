@@ -1,0 +1,244 @@
+Обработка исключений в контроллерах Spring Boot
+<p>----------------------------------------</p>
+В этой статье будет разбираться: «Обработка исключений в контроллерах Spring»
+<p>----------------------------------------</p>
+<strong><u><a href="https://javarush.com/groups/posts/3092-spring-ehto-nestrashno" target="_blank" rel="nofollow">СОДЕРЖАНИЕ ЦИКЛА СТАТЕЙ</a></u></strong>
+
+И снова здравствуйте! 
+Пришло время стряхнуть пыль с клавиатуры.
+
+Создаем spring-boot проект. 
+Из зависимостей мавена нам нужны:
+<pre class="language-java line-numbers"><code>
+&lt;properties&gt;
+    &lt;maven.compiler.source&gt;1.8&lt;/maven.compiler.source&gt;
+    &lt;maven.compiler.target&gt;1.8&lt;/maven.compiler.target&gt;
+    &lt;java.version&gt;1.8&lt;/java.version&gt;
+&lt;/properties&gt;
+
+&lt;parent&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-parent&lt;/artifactId&gt;
+    &lt;version&gt;2.2.0.RELEASE&lt;/version&gt;
+    &lt;relativePath/&gt;&lt;!-- lookup parent from repository --&gt;
+&lt;/parent&gt;
+&lt;dependencies&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-boot-starter-web&lt;/artifactId&gt;
+    &lt;/dependency&gt;
+&lt;/dependencies&gt;
+</code></pre>
+
+Прежде чем читать дальше, создайте структуру проекта:
+<img data-id="03144183-9c78-4623-8158-30d308296818" src="https://cdn.javarush.com/images/article/03144183-9c78-4623-8158-30d308296818/512.jpeg" alt="Обработка исключений в контроллерах Spring Boot - 1">
+
+BusinessException и CustomException:
+<pre class="language-java line-numbers"><code>
+public class BusinessException extends Exception{
+    public BusinessException(String message) {
+        super(message);
+    }
+}
+
+public class CustomException extends Exception{
+    public CustomException(String message) {
+        super(message);
+    }
+}
+</code></pre>
+и класс <em>Response</em>
+<pre class="language-java line-numbers"><code>
+public class Response {
+
+    private String message;
+
+    public Response() {
+    }
+
+    public Response(String message) {
+        this.message = message;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+}
+</code></pre>
+А теперь, я сделаю финт ушами, и передам слово Алексею Кутепову, в своей статье <a href="https://habr.com/ru/post/528116/" target="_blank" rel="nofollow">Обработка исключений в контроллерах Spring</a>  он нам расскажет, как эти файлы наполнить правильным содержимым. Читайте не торопясь, все примеры аккуратно переписываете к себе в проект, запускайте и тестируйте в постмане.
+
+Если в статье Алексея, у вас вызвала вопросы следующая строчка:
+<em>produces = APPLICATION_JSON_VALUE</em>, то знайте, что к обработке исключений она отношения не имеет, она говорит, что по умолчанию все методы этого контроллера будут отдавать JSON. При необходимости в конкретном методе это значение можно переопределить на другой <a href="https://docs.spring.io/spring-framework/docs/3.1.x/javadoc-api/org/springframework/http/MediaType.html" target="_blank" rel="nofollow">MediaType</a>  
+
+Если вы прочитали, идем дальше.
+
+В предлагаемой выше статье рассмотрены разные варианты обработчиков. Самый гибкий из них:  <em>@ControllerAdvice</em> – он позволяет изменить как код, так и тело стандартного ответа при ошибке. Кроме того, он позволяет в одном методе обработать сразу несколько исключений.
+
+Но это еще не все, если вы прочитаете дальше, то получите улучшенный <em>@</em><em>ControllerAdvice</em> совершенно бесплатно.
+
+Проведем подготовительные работы: хочу что бы в ответе выводились как кастомное так и стандартное сообщения об ошибке.
+
+Для этого внесем изменение в класс <em>Response</em>: добавим еще одно поле
+<pre class="language-java line-numbers"><code>
+private String debugMessage;
+</code></pre>
+
+Создадим дополнительный конструктор:
+<pre class="language-java line-numbers"><code>
+public Response(String message, String debugMessage) {
+    this.message = message;
+    this.debugMessage = debugMessage;
+}
+</code></pre>
+и не забудьте, создать Getter и Setter для нового поля.
+
+Теперь к делу.
+Напишем еще один контроллер:
+<pre class="language-java line-numbers"><code>
+@RestController
+public class Example7Controller {
+    @GetMapping(value = "/testExtendsControllerAdvice")
+    public ResponseEntity&lt;?&gt; testExtendsControllerAdvice(@RequestBody Response response) {
+        return  ResponseEntity.ok(response);
+    }
+}
+</code></pre>
+Протестируем в постман:
+На <u><em>http://localhost:8080/testExtendsControllerAdvice</em></u> отправим JSON
+<pre class="language-java line-numbers"><code>
+{
+    "message": "message"
+}
+</code></pre>
+В ответ получим статус 200 и тело
+<pre class="language-java line-numbers"><code>
+{
+    "message": "message",
+    "debugMessage": null
+}
+</code></pre>
+Теперь пошлем заведомо не правильный JSON
+<pre class="language-java line-numbers"><code>
+{
+    11"message": "message"
+}
+</code></pre>
+В ответ получим статус 400 (если забыли, что он значит, гляньте в интернете) и пустое тело ответа. Конечно же, никого это не устраивает, давайте с этим бороться.
+
+Ранее мы создавали <em>@ControllerAdvice</em> с нуля, но в Spring Boot существует заготовка – <em>ResponseEntityExceptionHandler</em>. В ней уже обработаны многие исключения, например: <em>NoHandlerFoundException</em>, <em>HttpMessageNotReadableException</em>, <em>MethodArgumentNotValidException</em> и другие. Данный класс занимается обработкой ошибок. У него куча методов, название которых построено по принципу <em>handle +</em> название исключения. Если мы хотим обработать какое-то базовое исключение, то наследуемся от этого класса и переопределяем нужный <a href="https://docs.spring.io/spring-framework/docs/3.2.x/javadoc-api/org/springframework/web/servlet/mvc/method/annotation/ResponseEntityExceptionHandler.html" target="_blank" rel="nofollow">метод</a>.  
+
+Доработаем класс дефолтного эдвайса
+<pre class="language-java line-numbers"><code>
+@ControllerAdvice
+public class DefaultAdvice extends ResponseEntityExceptionHandler {//унаследовались от обработчика-заготовки
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity&lt;Response&gt; handleException(BusinessException e) {
+        Response response = new Response(e.getMessage());
+        return new ResponseEntity&lt;&gt;(response, HttpStatus.OK);
+    }
+//Небольшое отступление: В обработчике выше, обратите внимание на HttpStatus.OK, 
+//он может быть и HttpStatus.BAD_REQUEST или другим, тут ограничений нет, 
+//попробуйте поменять статусы и потестить этот обработчик
+
+
+    @Override//переопределили метод родительского класса
+    protected ResponseEntity&lt;Object&gt; handleHttpMessageNotReadable
+            (HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatus status, WebRequest request) {
+        Response response = new Response("Не правильный JSON",ex.getMessage());
+        return new ResponseEntity&lt;&gt;(response, status);
+    }
+}
+</code></pre>
+Как вы заметили, был переопределен обработчик, отвечающий за <em>HttpMessageNotReadableException</em>. Это исключение возникает тогда, когда тело запроса, приходящего в метод контроллер, нечитаемое – например, некорректный JSON. За это исключение отвечает метод <em>handleHttpMessageNotReadable</em><em>()</em>.
+
+Еще раз сделаем запрос с некорректным JSON:
+на <u><em>http://localhost:8080/testExtendsControllerAdvice</em></u>
+
+<pre class="language-java line-numbers"><code>
+{
+    11"message": "message"
+}
+</code></pre>
+
+Получаем ответ с кодом 400 (Bad Request) и телом:
+<pre class="language-java line-numbers"><code>
+{
+    "message": "Не правильный JSON",
+    "debugMessage": "JSON parse error: Unexpected character ('1' (code 49)): was expecting double-quote to start field name; nested exception is com.fasterxml.jackson.core.JsonParseException: Unexpected character ('1' (code 49)): was expecting double-quote to start field name\n at [Source: (PushbackInputStream); line: 2, column: 6]"
+}
+</code></pre>Теперь ответ содержит не только корректный код, но и тело с информативными сообщениями.
+
+Проверим как работает с корректным JSON
+Запрос:
+<pre class="language-java line-numbers"><code>
+{
+    "message": "message"
+}
+</code></pre>
+
+Получили ответ:
+<pre class="language-java line-numbers"><code>
+{
+    "message": "message",
+    "debugMessage": null
+}
+</code></pre>
+
+Если честно, мне не нравиться что в ответе есть поле со значением <em>null</em>, сейчас быстренько это исправим.
+Переходим в класс <u><em>Response</em></u> и ставим аннотацию над нужным полем 
+<pre class="language-java line-numbers"><code>
+@JsonInclude(JsonInclude.Include.NON_NULL)
+private String debugMessage;
+</code></pre>
+Перезапускаем проект, делаем еще раз предыдущий запрос, в ответе получаем:
+<pre class="language-java line-numbers"><code>
+{
+    "message": "message"
+}
+</code></pre>
+Благодаря аннотации <u><em>@JsonInclude(JsonInclude.Include.NON_NULL)</em></u> это поле будет включено в ответ только в том случае, если мы его зададим. <em>@JsonInclude</em> входит в библиотеку аннотаций <em>Jackson</em>, очень полезно знать, что она может.
+Вот две статьи на выбор:
+<a href="https://coderlessons.com/tutorials/java-tekhnologii/vyuchit-annotatsii-dzheksona/dzhekson-annotatsii-kratkoe-rukovodstvo " target="_blank" rel="nofollow">Джексон аннотации.</a> 
+<a href="https://nsergey.com/jackson-annotations/" target="_blank" rel="nofollow">Автор переводил, но не допереводил</a>, гугл транслит отлично справиться. 
+
+<strong>Валидация</strong>
+Необходимо дополнить эту тему таким понятием как валидация. Просто говоря, это проверка что объект это тот объект который мы ожидаем. Например: если мы в приложении "Телефонный справочник"  должны проверять наличие телефонных номеров в БД, то прежде чем лезть в базу, логично проверять, а не ввел ли пользователь вместо цифр буквы.
+Три статьи по валидации, по возврастанию сложности:
+<a href="https://devmark.ru/article/spring-validation?from=/?page%3D2" target="_blank" rel="nofollow">Валидация бинов в Spring</a>
+<a href="https://habr.com/ru/post/343960/" target="_blank" rel="nofollow">Настройка валидации DTO в Spring Framework</a>
+<a href="https://habr.com/ru/post/536612/" target="_blank" rel="nofollow">Валидация данных в Spring Boot</a>
+
+С теорией, на сегодня закончили.
+
+<strong>Для тренировки предлагаю следующее задание:</strong> 
+
+Необходимо реализовать приложение NightclubBouncer (Вышибала ночного клуба).
+Требования:
+1)	Приложение должно принимать на вход JSON и делать запись в базу данных.
+Пример JSON:
+<pre class="language-java line-numbers"><code>
+{
+    "name": "Katy Perry"
+    “status”: “super star”
+}
+</code></pre>
+И в теле ответа должна быть надпись: Welcome + <em>name</em> !
+2)	У приложения должны быть реализованы методы: 
+  - вывод записи по <em>id</em> из БД в клиент (Postman). 
+  - удаление записи по полю: <em>name</em>.
+3)	Должен быть реализован маппинг из слоя <em>dto</em> в <em>entity</em> и обратно.
+4)	Приложение должно выбрасывать ошибку <em>KickInTheAssException</em> (ее нужно разработать самим) если поле <em>status</em>, во входящем JSON не равно: <em>super</em> <em>star</em>
+5)	Ошибка <em>KickInTheAssException</em> должна обрабатываться <em>ControllerAdvice</em>, и в теле ответа должно быть сообщение: «Don't let me see you here again!».
+ Статус ответа должен быть 400.
+6)	Стандартная ошибка <em>EntityNotFoundException</em>, возникающая, например, если в клуб зашла только Кэти Пери и сохранилась в базу с <em>id = 1</em>, а вы вызвали метод <em>«вывод записи по id»</em> и захотели вывести запись с <em>id = 2</em>, которой нет в базе. Эту ошибку необходимо обработать переопределенным методом класса <em>ResponseEntityExceptionHandler</em>, каким именно - предстоит разобраться вам самим. Ответ должен иметь соответствующий статус.
+7) Сделайте валидацию: простой вариант - поля JSON должны быть не null, по сложнее поле "name" должно состоять из двух слов латинского алфавита и они оба должны начинаться с заглавной буквы. Невалидные значения должны вызывать исключение, обработайте его любым способом, выведите соотвествующий код ошибки и сообщение об ошибке: No validate.
+
+И реализуйте это все без использования библиотеки Lombok, не включайте ее в зависимости проекта 😅
+
+
+

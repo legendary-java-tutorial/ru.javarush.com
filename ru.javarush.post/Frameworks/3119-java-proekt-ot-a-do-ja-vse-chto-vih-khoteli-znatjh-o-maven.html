@@ -1,0 +1,284 @@
+Все, что вы хотели знать о Maven - "Java-проект от А до Я"
+<p>----------------------------------------</p>
+Всем привет, дорогие друзья. Хочу сразу извиниться: помнится, я обещал, что буду писать по статье раз в неделю. Не получилось. Просто руки не дошли до того, чтобы сесть и нормально написать, а делать так-сяк не хочу. Ныть о причинах не...
+<p>----------------------------------------</p>
+Всем привет, дорогие друзья.
+
+Хочу сразу извиниться: помнится, я обещал, что буду писать по статье раз в неделю. Не получилось. Просто руки не дошли до того, чтобы сесть и нормально написать, а делать так-сяк не хочу. Ныть о причинах не буду, так как мне оно не нужно, и вам уж точно не интересно.
+
+Проект не мертв, он был в стазисе :) Мы продолжаем! И сегодняшний материал посвящен Мавену. 
+
+<img data-max-width="800" data-id="01d62097-74a3-4de8-99a0-47e4a07856dc" src="/images/article/01d62097-74a3-4de8-99a0-47e4a07856dc/800.jpeg" alt="&quot;Java-проект от А до Я&quot;: Все, что вы хотели знать о Maven - 1"><h2>Поговорим о Мавене</h2>Сперва его нужно установить. Разумеется так как у меня мак, показать установку я смогу только для мака. Только вот незадача. Я его давно уже установил, поэтому вам придется сделать это самостоятельно :)<table><tbody>
+
+<tr><td>Инструкция по установке Maven есть <a href="https://javarush.com/groups/posts/2523-chastjh-4osnovih-maven" target="_blank">в этом материале</a>.</td></tr>
+
+</tbody></table><h3>Зачем нам Мавен</h3>Мавен — это инструмент для сборки проекта, наряду с Gradle и Ant. Просто в силу того, что я буду использовать его в JRTB (JavaRush Telegram Bot), хочу ввести вас в курс дела. 
+
+Без системы сборки сейчас не создают ни одного проекта, потому что это упрощает нашу жизнь многократно. Это позволяет: <ul style="list-style: none;">
+	<li>• подтянуть все необходимые библиотеки (в терминах инструментов для сборки — зависимостей (то есть dependency));</li>
+	<li>• определить то, как именно нужно собирать проект и во что (например, хотим мы собирать в WAR или JAR или executable JAR);</li>
+	<li>• задать версию проекта в одном месте так, чтобы при сборке была указана она;</li>
+	<li>• описать проект и его жизненный цикл;</li>
+	<li>• добавлять так называется плагины (калька с английского слова Plugin);</li>
+	<li>• публиковать библиотеки в общем хранилище, чтобы другие проекты смогли подтянуть их как зависимости.</li>
+
+</ul>В общем, дел делает много, и все они полезные. 
+
+Скажу так: для начинающих инженеров не обязательно знать весь функционал от корочки до корочки. Здесь, как и с гитом, важно понимать основу и общие понятия.
+
+Этим мы и займемся. 
+
+Для нас Мавен начинается с XML файла в корне нашего проекта с именем <span class="text-bold">pom.xml</span>. Будем делать все на практике, поэтому для начала создадим наш первый проект в сообществе JavaRush Community.
+
+Чтобы сделать все по уму, я воспользуюсь <a href="https://github.com/template-repository/template-repository" rel="nofollow" target="_blank">шаблоном для репозитория</a>, где уже настроены базовые вещи, <a href="https://javarush.com/groups/posts/2478-optimiziruem-rabotu-so-svoimi-proektami-na-github-znakomstvo-s-github-template-repository" target="_blank">которые я описывал как-то на JR</a>.
+
+Чтобы создать, заходим в репозиторий с шаблоном и нажимаем кнопку <span class="text-bold">Use this template</span>:<img data-max-width="1080" data-id="82a3c3a4-1a27-42fb-a8df-836c36501680" src="/images/article/82a3c3a4-1a27-42fb-a8df-836c36501680/original.jpeg" alt="&quot;Java-проект от А до Я&quot;: Все, что вы хотели знать о Maven - 2">В результате у нас есть первый репозиторий в нашем сообществе :)
+
+Стягиваем проект себе локально. Для этого через идею заходим в <span class="text-bold">File -&gt; New -&gt; Project from Version Control</span>.
+
+В появившемся окне вводим ссылку на проект на гитхабе (результат будет лучше, если каждый создаст отдельно у себя такой же проект и пройдет все шаги со мной):<img data-max-width="800" data-id="87183ec0-5799-4c3b-8ad3-29b692901dd2" src="/images/article/87183ec0-5799-4c3b-8ad3-29b692901dd2/original.jpeg" alt="&quot;Java-проект от А до Я&quot;: Все, что вы хотели знать о Maven - 3">Нажимаем <span class="text-bold">Clone</span>, и <s>дело в шляпе</s> проект клонирован.<h3>pom.xml всему голова</h3>Все, что нужно, находится в pom.xml. Вся информация о проекте, ее разработчике и том, на каком удаленном репозитории хранится проект. 
+
+Нас на старте интересуют следующие блоки:
+
+<span class="code">&lt;project/&gt;</span> — это главный блок, в котором содержится вся информация о проекте. Все остальные будут явно или транзитивно находиться в нём. Внутри открывающегося тега написано что-то такое: 
+
+<pre class="language-java line-numbers"><code>
+&lt;project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://maven.apache.org/POM/4.0.0"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                     http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+</code></pre>
+И ко всему прочему следующая строка тоже пишется во всех помниках (сленг такой, мол, от pom.xml :)).
+
+<pre class="language-java line-numbers"><code>
+&lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+</code></pre>
+А вот дальше уже интереснее: будем описывать, как мы идентифицируем проект, который описывает наш помник. На примере моей библиотеки я опишу, а потом будем добавлять это в наш помник, в новосозданный проект:
+
+<pre class="language-java line-numbers"><code>
+&lt;groupId&gt;com.github.romankh3&lt;/groupId&gt;
+&lt;artifactId&gt;image-comparison&lt;/artifactId&gt;
+&lt;version&gt;4.4.0-SNAPSHOT&lt;/version&gt;
+&lt;packaging&gt;jar&lt;/packaging&gt;
+
+&lt;name&gt;Image Comparison&lt;/name&gt;
+</code></pre>
+Главное здесь:<ul style="list-style: none;">
+	<li>• <span class="code">groupId</span> — это идентификатор девелоперской организации или отдельного инженера. Обычно это домен в обратном порядке. Для примера здесь описан аккаунт <span class="text-bold">romankh3</span> на гитхабе. Это очень важно. Скажем, у Spring экосистемы это <span class="text-bold">com.springframework</span>. Так можно отличить оригинальный проект от чьего-то ответвления или просто по совпадению имени проекта.</li>
+	<li>• <span class="code">artifaceId</span> — это уже имя конкретного проекта, который описывается в этом помнике. </li>
+	<li>• <span class="code">version</span> — версия этого проекта. Здесь все ясно, как божий день: добавил новый функционал, починил старый, отрефакторил или сделал какие-то еще изменения — версию увеличил.</li>
+	<li>• <span class="code">packaging</span> — здесь мы описываем, как Мавен должен собирать наш проект. То ли в Jar, то ли в War, то ли <a href="https://maven.apache.org/pom.html#packaging" rel="nofollow" target="_blank">еще какие-то другие</a>.</li>
+	<li>• <span class="code">name</span> — здесь уже более приятное для глаз название проекта.</li>
+</ul>Есть еще некоторые вещи, которые вовсе не обязательны к заполнению — Мавен заработает и без них, — но если нужно опубликовать библиотеку для общего пользования, добавить их точно стоит. 
+
+Какие это вещи?<ul style="list-style: none;">
+	<li>• путь к репозиторию проекта, откуда его можно скачать
+<p></p><pre class="language-java line-numbers"><code>
+&lt;url&gt;https://romankh3.github.io/image-comparison/&lt;/url&gt;
+</code></pre><p></p></li>
+	<li>• лицензия, под которой этот проект распространяется. Причем она может быть не одна, и поэтому задать нужно таким образом:
+<p></p><pre class="language-java line-numbers"><code>
+&lt;licenses&gt;
+ &lt;license&gt;
+   &lt;name&gt;The Apache Software License, Version 2.0&lt;/name&gt;
+   &lt;url&gt;http://www.apache.org/licenses/LICENSE-2.0.txt&lt;/url&gt;
+ &lt;/license&gt;
+&lt;/licenses&gt;
+</code></pre><p></p></li>
+	<li>• информация о разработчиках, которые проект создавали/создают:
+<p></p><pre class="language-java line-numbers"><code>
+&lt;developers&gt;
+ &lt;developer&gt;
+   &lt;id&gt;romankh3&lt;/id&gt;
+   &lt;name&gt;Roman Beskrovnyi&lt;/name&gt;
+   &lt;email&gt;roman.beskrovnyy@gmail.com&lt;/email&gt;
+ &lt;/developer&gt;
+&lt;/developers&gt;
+</code></pre><p></p></li>
+	<li>• блок scm, который описывает, как можно получить доступ к проекту:
+<p></p><pre class="language-java line-numbers"><code>
+&lt;scm&gt;
+&lt;connection&gt;git@github.com:romankh3/image-comparison.git&lt;/connection&gt;
+&lt;developerConnection&gt;git@github.com:romankh3/image-comparison.git&lt;/developerConnection&gt;
+ &lt;url&gt;https://github.com/romankh3/image-comparison&lt;/url&gt;
+&lt;/scm&gt;
+</code></pre><p></p></li>
+</ul>После того, как мы описали общую информацию, можно добавлять блок с зависимостями (dependencies):
+
+<pre class="language-java line-numbers"><code>
+&lt;dependencies&gt;
+   &lt;dependency&gt;
+       &lt;groupId&gt;org.mockito&lt;/groupId&gt;
+       &lt;artifactId&gt;mockito-core&lt;/artifactId&gt;
+       &lt;version&gt;2.26.0&lt;/version&gt;
+       &lt;scope&gt;test&lt;/scope&gt;
+   &lt;/dependency&gt;
+   &lt;dependency&gt;
+       &lt;groupId&gt;org.junit.jupiter&lt;/groupId&gt;
+       &lt;artifactId&gt;junit-jupiter-api&lt;/artifactId&gt;
+       &lt;version&gt;5.5.2&lt;/version&gt;
+       &lt;scope&gt;test&lt;/scope&gt;
+   &lt;/dependency&gt;
+&lt;dependency&gt;
+   	&lt;groupId&gt;com.github.romankh3&lt;/groupId&gt;
+   	&lt;artifactId&gt;image-comparison&lt;/artifactId&gt;
+   	&lt;version&gt;4.3.0&lt;/version&gt;
+&lt;scope&gt;test&lt;/scope&gt;
+&lt;/dependency&gt;
+&lt;/dependencies&gt;
+</code></pre>
+Здесь я добавил две библиотеки для тестирования: они всегда нужны. Как вы могли уже заметить, у зависимостей есть Scope — область применения. В нашем случае указан <span class="text-bold">test</span>, что значит, что в главном коде мы просто не увидим эту зависимость.
+
+Далее, чтобы все было по красоте, можно воспользоваться отдельным тегом для выведения версий <span class="code">&lt;properties/&gt;</span>:
+
+<pre class="language-java line-numbers"><code>
+&lt;properties&gt;
+   &lt;mockito.version&gt;2.26.0&lt;/mockito.version&gt;
+   &lt;junit.version&gt;5.5.2&lt;/junit.version&gt;
+   &lt;image.comparison.version&gt;4.3.0&lt;/image.comparison.version&gt;
+&lt;/properties&gt;
+</code></pre>
+Так что блок депенденси можно обновить, используя конструкцию <span class="text-bold">${PROPERTY_NAME}</span>:
+
+<pre class="language-java line-numbers"><code>
+&lt;dependencies&gt;
+   &lt;dependency&gt;
+       &lt;groupId&gt;org.mockito&lt;/groupId&gt;
+       &lt;artifactId&gt;mockito-core&lt;/artifactId&gt;
+       &lt;version&gt;${mockito.version}&lt;/version&gt;
+       &lt;scope&gt;test&lt;/scope&gt;
+   &lt;/dependency&gt;
+   &lt;dependency&gt;
+       &lt;groupId&gt;org.junit.jupiter&lt;/groupId&gt;
+       &lt;artifactId&gt;junit-jupiter-api&lt;/artifactId&gt;
+       &lt;version&gt;${junit.version}&lt;/version&gt;
+       &lt;scope&gt;test&lt;/scope&gt;
+   &lt;/dependency&gt;
+   &lt;dependency&gt;
+       &lt;groupId&gt;com.github.romankh3&lt;/groupId&gt;
+       &lt;artifactId&gt;image-comparison&lt;/artifactId&gt;
+       &lt;version&gt;${image.comparison.version}&lt;/version&gt;
+       &lt;scope&gt;test&lt;/scope&gt;
+   &lt;/dependency&gt;
+&lt;/dependencies&gt;
+</code></pre>
+Далее идет большой блок <span class="code">&lt;build/&gt;</span>, в котором находится важный блок <span class="code">&lt;plugins/&gt;</span>, при помощи которого можно настраивать процесс сборки. Внутри блока <span class="code">&lt;plugins/&gt;</span> можно добавить один и больше плагинов, как например здесь:
+
+<pre class="language-java line-numbers"><code>
+&lt;build&gt;
+   &lt;plugins&gt;
+       &lt;plugin&gt;
+           &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+           &lt;artifactId&gt;maven-source-plugin&lt;/artifactId&gt;
+           &lt;version&gt;3.2.0&lt;/version&gt;
+           &lt;executions&gt;
+               &lt;execution&gt;
+                   &lt;id&gt;attach-sources&lt;/id&gt;
+                   &lt;goals&gt;
+                       &lt;goal&gt;jar&lt;/goal&gt;
+                   &lt;/goals&gt;
+               &lt;/execution&gt;
+           &lt;/executions&gt;
+       &lt;/plugin&gt;
+   &lt;/plugins&gt;
+&lt;/build&gt;
+</code></pre>
+Здесь видно, что я добавил два плагина — <span class="text-bold">maven-source-plugin</span> и <span class="text-bold">maven-javadoc-plugin</span>. В каждом из плагинов есть настройки, атрибуты (параметры), которые можно задавать, тем самым настраивая плагины. Для нас в будущем это будет интересно. Пока что запомним и пойдем дальше. 
+
+Таким же образом, как и для зависимостей вынесем версии плагинов в <span class="code">&lt;properties/&gt;</span>.
+
+Исходя из этого, можно создать следующий помник:
+
+<pre class="language-java line-numbers"><code>
+&lt;project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://maven.apache.org/POM/4.0.0"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                     http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+   &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+   &lt;groupId&gt;com.github.javarushcommunity&lt;/groupId&gt;
+   &lt;artifactId&gt;maven-demo&lt;/artifactId&gt;
+   &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+   &lt;packaging&gt;jar&lt;/packaging&gt;
+
+   &lt;name&gt;Maven Demo Project&lt;/name&gt;
+
+   &lt;url&gt;https://github.com/javarushcommunity/maven-demo/&lt;/url&gt;
+
+   &lt;properties&gt;
+       &lt;mockito.version&gt;2.26.0&lt;/mockito.version&gt;
+       &lt;junit.version&gt;5.5.2&lt;/junit.version&gt;
+       &lt;maven.compiler.source&gt;1.8&lt;/maven.compiler.source&gt;
+       &lt;maven.compiler.target&gt;1.8&lt;/maven.compiler.target&gt;
+       &lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
+       &lt;source.plugin.version&gt;3.2.0&lt;/source.plugin.version&gt;
+   &lt;/properties&gt;
+
+   &lt;dependencies&gt;
+       &lt;dependency&gt;
+           &lt;groupId&gt;org.mockito&lt;/groupId&gt;
+           &lt;artifactId&gt;mockito-core&lt;/artifactId&gt;
+           &lt;version&gt;${mockito.version}&lt;/version&gt;
+           &lt;scope&gt;test&lt;/scope&gt;
+       &lt;/dependency&gt;
+       &lt;dependency&gt;
+           &lt;groupId&gt;org.junit.jupiter&lt;/groupId&gt;
+           &lt;artifactId&gt;junit-jupiter-api&lt;/artifactId&gt;
+           &lt;version&gt;${junit.version}&lt;/version&gt;
+           &lt;scope&gt;test&lt;/scope&gt;
+       &lt;/dependency&gt;
+   &lt;/dependencies&gt;
+
+   &lt;build&gt;
+       &lt;plugins&gt;
+           &lt;plugin&gt;
+               &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+               &lt;artifactId&gt;maven-source-plugin&lt;/artifactId&gt;
+               &lt;version&gt;${source.plugin.version}&lt;/version&gt;
+               &lt;executions&gt;
+                   &lt;execution&gt;
+                       &lt;id&gt;attach-sources&lt;/id&gt;
+                       &lt;goals&gt;
+                           &lt;goal&gt;jar&lt;/goal&gt;
+                       &lt;/goals&gt;
+                   &lt;/execution&gt;
+               &lt;/executions&gt;
+           &lt;/plugin&gt;
+           &lt;plugin&gt;
+               &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+               &lt;artifactId&gt;maven-javadoc-plugin&lt;/artifactId&gt;
+               &lt;version&gt;${javadoc.plugin.version}&lt;/version&gt;
+               &lt;executions&gt;
+                   &lt;execution&gt;
+                       &lt;id&gt;attach-javadocs&lt;/id&gt;
+                       &lt;goals&gt;
+                           &lt;goal&gt;jar&lt;/goal&gt;
+                       &lt;/goals&gt;
+                   &lt;/execution&gt;
+               &lt;/executions&gt;
+           &lt;/plugin&gt;
+       &lt;/plugins&gt;
+   &lt;/build&gt;
+&lt;/project&gt;
+</code></pre><h3>Maven lifecycle</h3>У Мавена есть такая вещь, как maven lifecycle. Стоит сказать, что это набор задач (task), которые может выполнить мавен. Задачи могут быть и другие, помимо maven lifecycle.
+
+О чем идет речь?
+
+Есть набор команд, при помощи которых можно собирать проект (<span class="text-bold">билдить</span>… опять, конечно, калька с английского, но без этого никуда), удалять билды, которые собрал Мавен, устанавливать в Maven local так, чтобы можно было локально подтягивать себе проект как зависимость, и так далее. Сейчас поговорим обо всем подробнее.
+
+Перед тем, как написать свое мнение по поводу этих команд, решил почитать, что пишут в интернетах об этом деле… и понял, что описано очень сложно. Нам для работы, для начальной работы, нужно <span class="text-bold">несколько команд</span>.
+
+Опишем их:<ul style="list-style: none;">
+	<li>• <span class="text-bold">compile</span> — компилировать проект. Это первый этап: в ходе него можно посмотреть, нет ли ошибок компиляции в проекте. Иногда бывает разная чехарда с работой в IDEA, из-за чего появляются проблемы с компиляцией там, где их не должно быть. Так что эта команда расставит все точки над i.</li>
+	<li>• <span class="text-bold">test</span> — запускает все тесты, которые работают над JUnit и находятся там, где их ожидает Мавен (<span class="text-bold">src/test/java</span> ваш капитан).</li>
+	<li>• <span class="text-bold">package</span> — это следующая команда, которая включает две предыдущие: то есть, внутри нее вначале запускается команда <span class="text-bold">compile</span>, потом на скомпилированный проект натравливается команда <span class="text-bold">test</span>, ну и если все ок и здесь, запускается создание архива (того архива, который мы выбираем в &lt;packaging/&gt;))</li>
+	<li>• <span class="text-bold">install</span> — когда мы устанавливаем Мавен на машину, у нас появляется локальный гит-репозиторий, в котором хранятся библиотеки, которые мы скачиваем для проектов. Но прелесть Мавена заключается еще и в том, что мы при помощи команды <span class="text-bold">install</span> можем добавить наш проект в локальный гит-репозиторий и локально использовать наш проект как зависимость. Не верите? Попробуйте :) Таким образом можно достаточно быстро посмотреть, как будет выглядеть ваш проект как зависимость у другого.</li>
+	<li>• <span class="text-bold">deploy</span> — это венец всего, что было до этого. Команда, которая дарит возможность добавлять проект не только в локальный репозиторий как install, но и на удаленный, откуда каждый человек с доступом сможет использовать его как зависимость. </li>
+	<li>• <span class="text-bold">verify</span> — команда, которая все проверит и скажет, готов ли проект к деплою. </li>
+	<li>• <span class="text-bold">clean</span> — разумеется, скомпилированные файлы и архив где-то должны храниться. Для этого у Мавена есть папка <span class="text-bold">target</span>. Это данные, которые проекту не нужны. И перед тем, как собирать проект заново, хорошо бы удалить все, что было до этого. Вот для этого и служит команда <span class="text-bold">clean</span>.</li>
+
+</ul><h3>Maven Plugins</h3>Хотел еще поговорить о плагинах, но статья и так уже вышла большая. Будет вам домашним заданием. Разберитесь, что это такое и как этим пользоваться.
+
+<a href="https://javarush.com/groups/posts/3120-java-proekt-ot-a-do-ja-vse-chto-vih-khoteli-znatjh-o-maven-chastjh-2" target="_blank">В продолжении статьи</a> разберемся с Maven на практике.
+
+<h4><a href="https://javarush.com/groups/posts/2935-java-proekt-ot-a-do-ja-pishem-realjhnihy-proekt-dlja-portfolio#articles" target="_blank">Список всех материалов серии в начале этой статьи.</a></h4>

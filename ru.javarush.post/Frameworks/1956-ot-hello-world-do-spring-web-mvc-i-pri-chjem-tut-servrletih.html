@@ -1,0 +1,259 @@
+От Hello World до Spring Web MVC и при чём тут сервлеты
+<p>----------------------------------------</p>
+Spring воспринимается как магия, а слово "сервлеты" чем-то древним и "наверно, этим не пользуются". Надеюсь, данный обзор поможет понять, что Servlet API наше всё, а Spring грамотно использует средства Servlet API, чтобы участвовать в жизненном цикле нашего приложения.
+<p>----------------------------------------</p>
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="b723a6bf-6207-4193-aeb3-7ae0b5ed8f90" data-max-width="270" alt="От Hello World до Spring Web MVC и при чём тут сервлеты - 1" src="https://cdn.javarush.com/images/article/b723a6bf-6207-4193-aeb3-7ae0b5ed8f90/1024.jpeg"></div></div>
+<h2>Вступление</h2>Как мы знаем, успех к Java пришёл именно благодаря эволюции программного обеспечения, которое стремится в сеть.
+Поэтому, и мы возьмём за основу обычное консольное приложение "<strong>Hello World</strong>" и поймём, что ему нужно, чтобы стать из консольного приложения сетевым приложением.
+
+Итак, для начала нужно создать Java проект. Программисты люди ленивые. В доисторические времена, когда одни охотились на мамонтов, другие сидели и пытались не запутаться во всём многообразии Java библиотек, структурах каталогов. Чтобы разработчик мог управлять процессом создания приложения, чтобы он смог просто написать "хочу библиотеку такую-то версии 2" придумали специальные средства — системы сборки. Две самые известные из них: <a href="https://maven.apache.org/" target="_blank" rel="nofollow">Maven</a> и <a href="https://gradle.org/" target="_blank" rel="nofollow">Gradle</a>. Для данной статьи мы воспользуемся Gradle.
+
+Если раньше нам пришлось бы самим создать структуру каталогов, то сейчас Gradle при помощи плагина <a href="https://docs.gradle.org/current/userguide/build_init_plugin.html" target="_blank" rel="nofollow">Gradle Init Plugin</a> позволяет создать Java проект со структурой каталогов и базовым Main классом в одну команду:
+
+<code>gradle init --type java-application</code>
+
+Данная команда выполняет инициализацию (init) для нас Java-приложение (java-application) с консольным Hello World.
+После завершения в каталоге появится файл — <strong>build.gradle</strong>. Это наш <strong>build script</strong> — то есть некий сценарий создания приложения с описанием того, какие действия для этого нужно выполнять.
+
+Откроем его и добавим в него строку: <code>jar.baseName = 'webproject'</code>
+
+Gradle позволяет выполнять различные действия над проектом и эти действия называются <a href="https://docs.gradle.org/current/userguide/tutorial_using_tasks.html#sec:projects_and_tasks" target="_blank" rel="nofollow">tasks</a>. При помощи выполнения команды (task'а) <code>gradle build</code> в каталоге <strong>/build/libs</strong> будет создан JAR файл. И, как Вы догадались, имя ему теперь будет <strong>webproject.jar</strong>.
+
+Но если мы выполним <code>java -jar ./build/libs/webproject.jar</code>, то получим ошибку: <code>no main manifest attribute</code>.
+
+Всё потому, что для java приложения нужно приложить некий манифест — это такое описание, как работать с приложением, как его воспринимать.
+
+Тогда JVM, которая и будет выполнять java приложение будет знать, какой класс является точкой входа в программу и другую информацию (например, classpath).
+
+Если внимательнее присмотреться к содержимому build скрипта, то мы увидим подключаемые плагины. Например: <code>apply plugin: 'java'</code>
+
+Если зайти на страницу плагина <a href="https://docs.gradle.org/current/userguide/java_plugin.html#sub:manifest" target="_blank" rel="nofollow">Gradle Java Plugin</a>, то можем увидеть, что мы можем сконфигурировать манифест:
+
+<pre class="lang-java line-numbers"><code>
+jar {
+    manifest {
+        attributes 'Main-Class': 'App'
+    }
+}
+</code></pre>
+Главный класс, точку входа в программу, для нас сгенерировал Gradle Init Plugin. И она даже указана в параметре mainClassName. Но нам это не подошло, т.к. этот параметр относится к другому плагину, <a href="https://docs.gradle.org/current/userguide/application_plugin.html" target="_blank" rel="nofollow">Gradle Application Plugin</a>.
+
+Итак, у нас есть Java приложение, которые выводит Hello World на экран. Java приложение это упаковывается в JAR (Java ARchive). Оно простое, консольное, не актуальное. Как же превратить его в веб-приложение?
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-max-width="213" alt="От Hello World до Spring Web MVC и при чём тут сервлеты - 2" src="https://cdn.javarush.com/images/article/0210276e-5e74-4175-a25a-a0c69bfb8b3f/original.jpeg"></div></div><h2>Servlet API</h2>Для того, чтобы Java смогла работать с сетью ещё в далёкие времена появилась спецификация, называемая <strong>Servlet API</strong>. Именно данная спецификация описывается клиент-серверное взаимодействие, получение сообщения от клиента (например, браузера) и отправку ответа (например, с текстом страницы).
+
+Естественно, с тех пор много что поменялось, но суть в том, что чтобы Java приложение стало веб-приложением используется Servlet API.
+
+Чтобы не рассуждать голословно, возьмём в руки ту самую спецификацию: <a href="http://download.oracle.com/otndocs/jcp/servlet-3_1-fr-eval-spec/index.html" target="_blank" rel="nofollow">JSR-000340 JavaTM Servlet 3.1</a>.
+
+Прежде всего, нас интересует "<strong>Chapter 1: Overview</strong>". В ней описываются основные понятия, которые мы должны уяснить себе.
+
+Во-первых, что такое серврлет? В главе "<strong>1.1 What is a Servlet?</strong>" сказано, что <b>Servlet</b> — это Java компонент, который управляется контейнером и который генерирует динамическое содержание. Как и другие Java компоненты сервлет является Java классом, который скомпилирован в байт-код и который может быть загружен в веб-сервер, использующий технологию Java.
+
+Важно, что сервлеты взаимодействуют с веб-клиентом (например, браузером) в рамках парадигмы запрос/ответ (request/response), которую реализует Servlet Container.
+
+Получается, что Servlet'ы живут в каком-то Servlet Container'е. Что это?
+
+В главе "<strong>1.2 What is a Servlet Container?</strong>" сказано, что <strong>Servlet Container</strong> — это некоторая часть веб-сервера или сервера приложений, которая предоставляет сетевые сервисы через которые посылаются запросы и ответы посылаются. Этот самый Servlet Container управляет жизненным циклом сервлетов.
+
+Все Servlet Container'ы обязаны поддерживать протокол HTTP как минимум, но могут поддерживать и другие. Например, HTTPS.
+
+Так же важно, что именно Servlet Container может накладывать на окружение, в котором выполняются сервлеты, какие-либо связанные с безопасностью ограничения.
+
+Важно так же, что согласно "<strong>10.6 Web Application Archive File</strong>" веб-приложение должно быть упаковано в WAR (Web ARchive) файл.
+
+То есть теперь нам нужно удалить наши jar и application плагины на что-то другое. И это — <a href="https://docs.gradle.org/current/userguide/war_plugin.html" target="_blank" rel="nofollow">Gradle WAR plugin</a>.
+
+А вместо jar.baseName указать war.baseName
+
+Т.к. мы не используем больше jar плагин, то мы удалили и настройки manifest. Когда мы запускали JAR — виртуальной машине джава (JVM) нужно было через манифест подсказать, как работать с нашим приложением. Потому что JVM выполняла его. Веб-приложение, судя по всему, выполняем некий веб-сервер. Получается, ему надо как-то подсказать, как работать с нашим веб-приложением? И оказывается что да. У веб-приложений свой, особенный манифест. Называется он <strong>Deployment Descriptor</strong>. Ему отведен целый раздел: "<strong>14. Deployment Descriptor</strong>".
+
+Есть важный раздел: "<strong>Chapter 10: Web Applications</strong>". Он рассказывает о том, что из себя представляет веб-приложение с точки зрения Servlet API. 
+
+Например, в  главе "<strong>10.5 Directory Structure</strong>" указано, где должен быть Deployment Descriptor: <code>/WEB-INF/web.xml</code>.
+Куда разместить WEB-INF? Как сказано в Gradle WAR plugin, он добавляет новый <a href="https://docs.gradle.org/current/userguide/war_plugin.html#sec:war_project_layout" target="_blank" rel="nofollow">layout</a>:  
+<code>src/main/webapp</code> . Поэтому создадим такой каталог, внутри создадим каталог WEB-INF, а внутри создадим файл web.xml.
+
+Важно, чтобы каталог назывался WEB-INF, а не META-INF !
+
+Скопируем себе из "<strong>14.5.1 A Basic Example</strong>" пример XML:
+<div class='row justify-content-center jr-image-wrap'><div class='col-12 col-sm-10 col-md-8'><img data-id="f06c92fd-5b73-4558-af50-c84f0bafde97" data-max-width="550" alt="От Hello World до Spring Web MVC и при чём тут сервлеты - 3" src="https://cdn.javarush.com/images/article/f06c92fd-5b73-4558-af50-c84f0bafde97/1024.jpeg"></div></div>Как мы видим, для конфигурации используется XML документ. XML документ, чтобы считаться корректным (Valid) должен соответствовать какой-нибудь "схеме". Можно считать это своего рода интерфейсом для XML документа. В схеме указано, какие элементы могуть быть в XML документе, какого типа данные могут задавать элемент, порядок, обязательность и прочие аспекты. В скопированном из документации примере указана версия 2.5, а мы хотим использовать версию 3.1. Естественно, спецификация с изменением версий менялась, добавлялись новые возможности. Поэтому схему нужно использовать не ту, что использовали для версии 2.5 (web-app_2_5.xsd). 
+
+Какую же схему использовать для версии 3.1? В этом нам поможет документация, глава "<strong>14.3 Deployment Descriptor</strong>", в которой указано <code>specification is available at http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd</code>
+
+То есть нам надо заменить везде ссылку на схему на указанную xsd, не забыв поменять <code>version="2.5"</code> на 3.1, а так же изменить везде namespace (xmlns и в xsi:schemaLocation). Они указывают, в рамках какого пространства имён мы будем работать (если очень просто, то какие имена элементов мы можем использовать). Если открыть файл схемы, то в targetNamespace будет указан тот самый namespace, который мы должны указывать:
+<div class='row justify-content-center jr-image-wrap'><div class='col-12 col-sm-10 col-md-8'><img data-id="b22b4fd2-4a11-4551-a8ff-f785a06b2272" data-max-width="550" alt="От Hello World до Spring Web MVC и при чём тут сервлеты - 4" src="https://cdn.javarush.com/images/article/b22b4fd2-4a11-4551-a8ff-f785a06b2272/1024.jpeg"></div></div>Как мы помним, в Manifest Jar-файла мы писали, какой класс мы хотим использовать. Что же делать тут? Тут нужно указать, какой класс сервлета мы хотим использовать, когда получим запрос от веб-клиента. Описание можно прочитать в главе "<strong>14.4 Deployment Descriptor Diagram</strong>".
+
+Выглядеть это будет следующим образом:
+<div class='row justify-content-center jr-image-wrap'><div class='col-12 col-sm-10 col-md-8'><img data-id="4f4e2698-f0f8-44f6-b483-c4799c28e7bc" data-max-width="550" alt="От Hello World до Spring Web MVC и при чём тут сервлеты - 5" src="https://cdn.javarush.com/images/article/4f4e2698-f0f8-44f6-b483-c4799c28e7bc/1024.jpeg"></div></div>Тут всё просто. Объявляется серверлет, а дальше производится его маппинг на некоторый шаблон. В данном случае, на /app.
+
+Когда сработает шаблон, на выполнение будет запущен метод сервлета.
+
+Для красоты класс App стоит перенести в пакет, не забыв поправить xml конфигурацию.
+
+Но и это ещё не всё. App должен быть сервлетом. Что это значит, быть серврлетом? Это значит, что мы должны наследоваться от <strong>HttpServlet</strong>'а.
+
+Пример можно подсмотреть в главе "<strong>8.1.1 @WebServlet</strong>". В соответствии с ним наш App класс станет выглядеть так:
+
+<pre class="lang-java line-numbers"><code>
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
+public class App extends HttpServlet {
+    public String getGreeting() {
+        return "Hello world.";
+    }
+	
+	public void doGet(HttpServletRequest request, HttpServletResponse response) {
+		response.setContentType("text/html");
+		try {
+			response.getWriter().println(getGreeting());
+		} catch (IOException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+}
+</code></pre>
+Но наш проект ещё не готов. Потому что мы теперь зависим от Servlet API версии 3.1. А это значит, что в нашем build скрипте надо указать зависимость от Servlet API. JVM ведь надо знать, что то что Вы написали в коде правильно, как это использовать. Как мы помним, спецификация — это по своей сути только интерфейсы, описывающие, как это всё должно работать. А реализации лежат на стороне веб-сервера. Поэтому без Servlet API будет 
+Находим нужную библиотеку на Maven Central: <a href="https://mvnrepository.com/artifact/javax.servlet/javax.servlet-api/3.1.0" target="_blank" rel="nofollow">javax.servlet-api</a>.
+
+И добавляем запись в блок <a href="https://docs.gradle.org/current/userguide/declaring_dependencies.html" target="_blank" rel="nofollow">dependencies</a>. В Maven repository, как Вы видели, указано provided. Перед использованием зависимости необходимо указать scope. В Gradle нет scope с именем "provided", зато там есть scope "<a href="https://blog.gradle.org/introducing-compile-only-dependencies" target="_blank" rel="nofollow">compile only</a>". 
+
+Поэтому укажем: <code>providedCompile 'javax.servlet:javax.servlet-api:3.1.0'</code>
+
+Уф, вроде всё? Gradle Build соберёт наш проект в WAR файл. И что же дальше с ним делать?
+
+Для начала, нам нужен Web Server. В гугле пишем "<strong>web server java list</strong>" и видим список веб-серверов. Выберем из этого списка, например, <strong>TomCat</strong>.
+
+Переходим на сайт <a href="http://tomcat.apache.org" target="_blank" rel="nofollow">Apache Tomcat</a>, скачиваем последнюю версию (на текущий момент 9 версия) в виде zip архива (если для Windows).
+
+Распаковываем в какой-нибудь каталог. Ура, у нас есть веб-сервер. Из каталога веб-сервера в подгаталоге <strong>bin</strong> выполняем из командной строки <strong>catalina</strong> и видим доступные опции. Выполним: <code>catalina start</code>.
+
+У каждого веб-сервера есть каталог, за которым веб-сервер следит. Если там появляется файл веб-приложения, то веб-сервер начинает его у себя устанавливать. Такая установка называется развёртыванием или деплоем (<em><strong>deploy</strong></em>). Да да, именно поэтому "<strong>deployment descriptor</strong>". То есть как нужно правильно развернуть приложение. В Tomcat такой каталог — <strong>webapps</strong>. Скопируем туда war, который мы сделали при помощи gradle build.
+
+После этого в логе мы увидим что-то вроде:
+
+<code>Deployment of web application archive [tomcat\webapps\webproject.war] has finished in [время] ms</code>
+
+Чтобы понимать ещё лучше, в каталоге tomcat отредактируем файл <code>\conf\tomcat-users.xml</code>, добавив следующие строки:
+<div class='row justify-content-center jr-image-wrap'><div class='col-12 col-sm-10 col-md-8'><img data-id="5c283d82-21be-4563-bb61-fead9ccca873" data-max-width="550" alt="От Hello World до Spring Web MVC и при чём тут сервлеты - 6" src="https://cdn.javarush.com/images/article/5c283d82-21be-4563-bb61-fead9ccca873/1024.jpeg"></div></div>Теперь перезапускаем сервер (catalina stop, catalina start) и переходим по адресу <code>http://127.0.0.1:8080/manager</code>
+
+Тут мы увидим пути всех приложений. Нашему webproject скорей всего дали путь /webproject.
+
+Что это за путь?
+
+В спецификации в главе "<strong>10.1 Web Applications Within Web Servers</strong>" сказано, что веб-приложение ассоциируется с некоторым путём внутри приложения (в данном случае, это /webproject). Все запросы через этот путь будут ассоциированы с одним и тем же ServletContext'ом. Данный путь ещё  называется <strong>contextRoot</strong>.
+
+А согласно "<strong>10.2 Relationship to ServletContext</strong>" сервлет контейнер соотносит веб-приложение и ServletContext один к одному. То есть у каждого веб-приложения свой ServletContext.
+
+Что же такое <strong>ServletContext</strong>? Как гласит спецификация, <strong>ServletContext</strong> — это некоторый объект, который предоставляет сервлетам некое представление о приложении, в котором они выполняются, "<strong>view of the application</strong>". Подробнее про <strong>Servlet Context</strong> рассказывается в главе 4 спецификации Servlet API.
+
+Удивительно, что Servlet API в версии 3.1 больше не требует обязательного присутствия web.xml. Например, можно задать серврлет при помощи аннотаций:
+
+<pre class="lang-java line-numbers"><code>
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
+@WebServlet("/app2")
+public class App2 extends HttpServlet {
+
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        response.setContentType("text/html");
+        response.getWriter().println("app2");
+    }
+}
+</code></pre>
+По теме так же рекомендуются: "<a href="http://javastudy.ru/interview/jee-servlet-api-questions/" target="_blank" rel="nofollow">Собеседование по Java EE — JEE Servlet API (вопросы и ответы)</a>".
+
+Итак, у нас есть Servlet — он отвечает за то, какой ответ выдать веб-клиенту. У нас есть ServletContainer, который получает запросы от пользователя, соотносит путь, к которму обратились, с путём к сервлету и если соответствие найдено - выполняет Servlet. Хорошо. Какое же место в этой картине мира занимает <a href='https://javarush.com/groups/posts/476-spring-dlja-lenivihkh-osnovih-bazovihe-koncepcii-i-primerih-s-kodom-chastjh-1' target='_blank'>Spring</a>?
+<h2>Spring Web MVC</h2>Отлично, у нас есть веб-приложение. Теперь нам нужно подключить Spring. Как же нам это сделать.
+
+Во-первых, нужно разобраться с тем, как правильно подключить Spring к проекту.
+
+Оказывается, раньше можно было это делать в сооветствии с документацией проекта <a href="https://platform.spring.io/platform/" target="_blank" rel="nofollow">Spring platform</a> , но теперь "<strong>The Platform will reach the end of its supported life on 9 April 2019</strong>", то есть не желательно её использовать, т.к. скоро она перестанет поддерживаться. 
+
+Единственный выход — "<strong>Users of the Platform are encourage to start using Spring Boot's dependency management</strong>". Поэтому перейдём в документацию <strong>Spring Boot</strong>. Уточню, что мы не используем сам Spring Boot, а только Dependency Management от Spring Boot. То есть проект Spring Boot может предоставлять знание о том, какие версии библиотек нужно использовать (в том числе Spring MVC).
+
+Там найдём <a href="https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/html/#managing-dependencies-using-in-isolation" target="_blank" rel="nofollow">3.2. Using Spring Boot’s dependency management in isolation</a>.
+
+Согласно документации в build скрипт добавляем:
+
+<pre class="lang-java line-numbers"><code>
+plugins {
+    id 'org.springframework.boot' version '2.0.4.RELEASE' apply false
+}
+apply plugin: 'io.spring.dependency-management'
+</code></pre>
+и
+
+<pre class="lang-java line-numbers"><code>
+dependencyManagement {
+    imports {
+        mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
+    }
+}
+</code></pre>
+Как видно, мы указали <code>apply false</code>, т.е. не применяем сам Spring Boot, но используем от туда управление зависимостями. Такое управление зависимостями так же называют BOM — "<strong>Bill Of Materials</strong>".
+
+Теперь мы готовы подключать сам проект Spring Web MVC. Spring Web MVC является частью проекта <a href="https://docs.spring.io/spring/docs/current/spring-framework-reference/" target="_blank" rel="nofollow">Spring Framework</a> и нас интересует раздел "<a href="https://docs.spring.io/spring/docs/current/spring-framework-reference/web.html#spring-web" target="_blank" rel="nofollow">Web Servlet</a>".
+
+Добавим зависимость в build script: <code>compile 'org.springframework:spring-webmvc'</code>. Как мы видим, мы выставили scope compile, т.к. веб-сервер не предоставляет нам Spring. Наш проект вынужден включать библиотеку Spring внутрь себя.
+
+Далее нам важно прочитать раздел "<a href="https://docs.spring.io/spring/docs/current/spring-framework-reference/web.html#mvc-servlet" target="_blank" rel="nofollow">1.2. DispatcherServlet</a>" , где сказано, что <strong>Spring MVC</strong> построен вокруг шаблона "<strong>Front controller</strong>", когда есть некий центральный сервлет, который предоставляет конфигурацию и делегирование другим компонентам. Dispatcher можно перевести как диспетчер.
+
+Итак, первым делом в web.xml объявляем:
+<div class='row justify-content-center jr-image-wrap'><div class='col-12 col-sm-10 col-md-8'><img data-id="78d99f38-c00f-44b0-b491-9fe218f762b5" data-max-width="550" alt="От Hello World до Spring Web MVC и при чём тут сервлеты - 7" src="https://cdn.javarush.com/images/article/78d99f38-c00f-44b0-b491-9fe218f762b5/1024.jpeg"></div></div>Как мы видим, это на самом деле обычный Listener, определённый в спецификации Servlet API. Если быть более точным, то это ServletContextListener, то есть он срабатывает на инициализацию Servlet Context'а для нашего веб приложения.
+
+Далее надо указать настройку, которая расскажет Spring, где лежит его особый xml конфиг с настройками:
+<div class='row justify-content-center jr-image-wrap'><div class='col-12 col-sm-10 col-md-8'><img data-id="8a7d93ae-b558-407a-a839-e029f91bad32" data-max-width="550" alt="От Hello World до Spring Web MVC и при чём тут сервлеты - 8" src="https://cdn.javarush.com/images/article/8a7d93ae-b558-407a-a839-e029f91bad32/1024.jpeg"></div></div>Как видно, это просто обычная настройка, которая хранится на уровне Servlet Context, но которая будет использована Spring'ом при инициализации Application Context.
+
+Теперь нужно объявить вместо всех сервлетов один единственный диспетчер, распределяющий все остальные запросы.
+<div class='row justify-content-center jr-image-wrap'><div class='col-12 col-sm-10 col-md-8'><img data-id="23a68c78-0742-4750-b2ff-c92ccefc4c04" data-max-width="550" alt="От Hello World до Spring Web MVC и при чём тут сервлеты - 9" src="https://cdn.javarush.com/images/article/23a68c78-0742-4750-b2ff-c92ccefc4c04/1024.jpeg"></div></div>И тут никакой магии. Если мы посмотрим — это HttpServlet, просто в котором Spring выполняет много всего, что делает его фрэймворком.
+
+Осталось соотнести (смапить) определённый шаблон url с сервлетом:
+<div class='row justify-content-center jr-image-wrap'><div class='col-12 col-sm-10 col-md-8'><img data-id="a0ac1ad8-472d-4720-9e79-f6e10018b08f" data-max-width="550" alt="От Hello World до Spring Web MVC и при чём тут сервлеты - 10" src="https://cdn.javarush.com/images/article/a0ac1ad8-472d-4720-9e79-f6e10018b08f/1024.jpeg"></div></div>Всё как мы делали ранее.
+
+Теперь давайте создадим что-нибудь, что должен показать наш веб-сервер. Например, создадим в нашем WEB-INF подкаталог pages, а там файл hello.jsp. Содержимое может быть самым примитивным. Например, внутри тегов html тег h1 с текстом "<a href="http://www.learn-html.org/en/Hello,_World!" target="_blank" rel="nofollow">Hello World</a>".
+
+И не забудем создать файл <code>applicationContext.xml</code>, который мы указали ранее. Возьмём пример из документации Spring: "<a href="https://docs.spring.io/spring/docs/current/spring-framework-reference/core.html#beans-scanning-autodetection" target="_blank" rel="nofollow">1.10.3. Automatically detecting classes and registering bean definitions</a>".
+<div class='row justify-content-center jr-image-wrap'><div class='col-12 col-sm-10 col-md-8'><img data-id="ff786718-ade1-44df-ae2d-c8fc2235f980" data-max-width="550" alt="От Hello World до Spring Web MVC и при чём тут сервлеты - 11" src="https://cdn.javarush.com/images/article/ff786718-ade1-44df-ae2d-c8fc2235f980/1024.jpeg"></div></div>Т.к. мы включаем таким образом автоопределение, то мы можем теперь создать 2 класса (они будут считаться Spring Bean'ами из-за использования специальных Spring аннотаций), которые Spring теперь сам создаст и выполнит с их помощью донастройку нашего приложения:
+<ol>
+<li><p>Веб-конфигурация для примера конфигурирования в Java стиле:</p>
+
+<pre class="lang-java line-numbers"><code>
+@Configuration
+@EnableWebMvc
+public class WebConfig implements WebMvcConfigurer {
+    @Override
+    public void configureViewResolvers(ViewResolverRegistry registry) {
+        registry.jsp("/WEB-INF/pages/", ".jsp");
+    }
+    @Override
+    public void configureDefaultServletHandling(DefaultServletHandlerConfigurer configurer) {
+        configurer.enable();
+    }
+}
+</code></pre>
+<p>Данный пример описан в документации Spring Framework: "<a href="https://docs.spring.io/spring/docs/current/spring-framework-reference/web.html#mvc-config" target="_blank" rel="nofollow">1.11. MVC Config</a>".</p>
+
+<p>Здесь мы регистрируем ViewResolver, который будет помогать определить, как находиться jsp страницы. Второй метод обеспечивает включение "<a href="https://docs.spring.io/spring/docs/current/spring-framework-reference/web.html#mvc-default-servlet-handler" target="_blank" rel="nofollow">Default servlet</a>".</p>
+
+<p>Подробнее можно прочитать про это тут: "<a href="http://qaru.site/questions/240071/what-is-the-need-and-use-of-mvcdefault-servlet-handler" target="_blank" rel="nofollow">В чем заключается необходимость и использование default-servlet-handler</a>".</p></li>
+<li><p>Контроллер HelloController для описания маппинга запросов на определённый JSP</p>
+
+<pre class="lang-java line-numbers"><code>
+@Controller
+public class HelloController {
+    @GetMapping("/hello")
+    public String handle(Model model) {
+        return "hello";
+    }
+}
+</code></pre>
+<p>Здесь мы использовали аннотацию @Controller, описанную в документации в главе "<a href="https://docs.spring.io/spring/docs/current/spring-framework-reference/web.html#mvc-controller" target="_blank" rel="nofollow">1.4. Annotated Controllers</a>".</p>
+</li></ol>Теперь, когда наше приложение будет развёрнуто, то когда мы отправим запрос <code>/webproject/hello</code> (где /webproject — это context root), то сначала будет отрабатывать DispatcherServlet. Он, как главный диспетчер, определит, что мы /* подходит под текущий запрос, значит это DispatcherServlet должен что-то делать. Дальше он пройдётся по всем маппингам, которые найдёт. Увидит, что есть HelloController с методом handle, который замаплен на /hello и выполнит его. Данный метод вернёт текст "hello". Данный текст получит ViewResolver, который расскажет серверу, где искать jsp файлы, которые необходимо отобразить клиенту. Таким образом в конечном итоге клиент получит ту самую заветную страницу.
+<h2>Заключение</h2>Надеюсь, из статьи будет понятно, что слово "контекст" — это не страшно. Что спецификации, оказываются, очень полезны. А документация — наш друг, а не враг. Надеюсь, будет понятно, на чём основана работа Spring, как он подключается и при чём тут Servlet API.

@@ -1,0 +1,42 @@
+Java 7 try-with-resources
+<p>----------------------------------------</p>
+Начиная с седьмой версии Java предлагает улучшенное управление ресурсами, которые должны быть закрыты после окончания работы с ними. К таким ресурсам относятся, например, файлы потоки, соединения с базами данных и сокетами. Этой цели служит специальная языковая ...
+<p>----------------------------------------</p>
+Начиная с седьмой версии Java предлагает улучшенное управление ресурсами, которые должны быть закрыты после окончания работы с ними. К таким ресурсам относятся, например, файлы потоки, соединения с базами данных и сокетами. Этой цели служит специальная языковая конструкция try-with-resources. Для того чтобы это автоматическое закрытие работало создан специальный интерфейс <code>AutoCloseable</code>. 
+<img data-id="d422c039-05f6-4f6f-b1e2-598eaa081fdd" data-max-width="850" alt="Java 7 try-with-resources - 1" src="https://cdn.javarush.com/images/article/d422c039-05f6-4f6f-b1e2-598eaa081fdd/1024.jpeg">В Java 7 все классы ресурсов реализуют этот интерфейс. Его сигнатура выглядит следующим образом:
+
+<pre class='lang-java line-numbers'><code>
+public interface AutoCloseable {
+    void close() throws Exception;
+}
+</code></pre>
+Интерфейс объявляет метод <code>close()</code>, который автоматически вызывается для объектов, обслуживаемых конструкцией <code>try-with-resources</code>.
+
+Несмотря на то, что классы ресурсов в Java 7 реализуют этот интерфейс, множество библиотек, которыми вы пользуетесь этого не делают, поскольку библиотеку еще не обновили для работы с интерфейсом <em>AutoCloseable</em> или же вы просто не имеете возможности обновить библиотеку.
+
+В большинстве случаев это решается просто. Наследуйте класс ресурса, который должен участвовать в конструкции <code>try-with-resources</code>. Возьмем для примера <code>ITextRenderer</code> (из проекта Flying Saucer). После окончания работы с <code>ITextRenderer</code>, должен быть вызван метод <code>finishPDF()</code>. Обычно вы бы делали это в блоке <code>finally</code>. Но создавая новый класс, расширяющий <code>ITextRenderer</code> и реализующий интерфейс <code>AutoCloseable</code>, вы можете включить его в конструкцию <code>try-with-resources</code>. Новый класс <code>AutoCloseableITextRenderer</code> будет при этом выглядеть так:
+
+<pre class='lang-java line-numbers'><code>
+public class AutoCloseableITextRenderer extends ITextRenderer implements AutoCloseable {
+    @Override
+    public void close() {
+        super.finishPDF();
+    }
+}
+</code></pre>
+Расширение оригинального класса в потомке, является наиболее разумным решением, поскольку новый класс по прежнему будет <code>ITextRenderer</code>. В случае, если исходный класс объявлен как <code>final</code>, необходимо использовать композицию. И вот как при этом будет выглядеть использование:
+
+<pre class='lang-java line-numbers'><code>
+try (final AutoCloseableITextRenderer iTextRenderer = new AutoCloseableITextRenderer()) {
+            ByteArrayOutputStream out; // contains the data to be converted to PDF, not shown here.
+            iTextRenderer.setDocumentFromString(new String(out.toByteArray()));
+            iTextRenderer.layout();
+            iTextRenderer.createPDF(pdfOutputStream);
+            pdfOutputStream.flush();
+        }
+</code></pre>
+Вот и все.
+
+Пожалуйста, обратите внимание, что я не выбрасывал исключение из метода <code>close()</code> в классе <code>AutoCloseableITextRenderer</code>. В Javadoc интерфейса <code>AutoCloseable</code> по этому поводу сказано следующее:
+
+Хотя в метод интерфейса декларирован выбрасывать исключения <code>Exception</code>, реализующим этот метод настоятельно рекомендуется использовать при реализации метода более специфические классы исключений, или вообще не выбрасывать исключений, если метод <code>close()</code> не может упасть.

@@ -1,0 +1,253 @@
+For и For-Each Loop: сказ о том, как я итерировался, итерировался, да не выитерировался
+<p>----------------------------------------</p>
+Циклы относятся к базовым структурам языка программирования. Они позволяют перебирать содержимое, на них строятся алгоритмы сортировки. В Java циклы, естественно, тоже есть. Причём они предлагают разные ...
+<p>----------------------------------------</p>
+<h2>Вступление</h2><strong>Циклы</strong> — это одна из базовых структур языков программирования. Например, на сайте Oracle есть раздел "<a href="https://docs.oracle.com/javase/tutorial/java/nutsandbolts/index.html" target="_blank" rel="nofollow">Lesson: Language Basics</a>", в котором циклам отведён отдельный урок "<a href="https://docs.oracle.com/javase/tutorial/java/nutsandbolts/for.html" target="_blank" rel="nofollow">The for Statement</a>".
+
+Освежим в памяти основное:
+
+Цикл состоит из трёх выражений (statements): <em>инициализация</em> (initialization), <em>условие</em> (termination) и <em>инкремент</em> (increment):
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="24e2be60-87ff-40e1-8024-94737f1d446f" data-max-width="384" alt="For и For-Each Loop: сказ о том, как я итерировался, итерировался, да не выитерировался - 1" src="https://cdn.javarush.com/images/article/24e2be60-87ff-40e1-8024-94737f1d446f/1024.jpeg"></div></div>Интересно, что все они являются опциональными, то есть мы можем, если захотим, написать:
+
+<pre class="lang-java line-numbers"><code>
+for (;;){
+}
+</code></pre>
+Правда, в таком случае мы получим бесконечный цикл, т.к. у нас не указано условие выхода из цикла (termination).
+
+Выражение инициализации выполняется только один раз, перед выполнением всего цикла. Стоит всегда помнить, что у цикла своя область видимости. Это значит, что <em>initialization</em>, <em>termination</em>, <em>increment </em>и тело цикла видят одни и те же переменные. Область видимости всегда легко определить по фигурным скобкам. Всё, что внутри скобок не видно снаружи скобок, однако всё, что снаружи скобок видно внутри скобок.
+
+<strong>Инициализация</strong> — просто выражение. Например, вместо инициализации переменной можно вообще сделать вызов метода, который ничего не будет возвращать. Или просто пропустить, оставив перед первой точкой с запятой пустое место.
+
+Следующее выражение указывает <strong>условие выхода</strong> (termintation). Пока оно <em>true</em>, цикл выполняется. А если <em>false</em> — новая итерация не начнётся. Если посмотреть на картинку ниже, на ней мы при компиляции получаем ошибку и IDE будет ругаться: наше выражение в цикле недостижимо. Поскольку у нас не будет ни одной итерации в цикле, мы сразу выйдем, т.к. false:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="d1597f69-e273-486f-9327-03e427e51624" data-max-width="285" alt="For и For-Each Loop: сказ о том, как я итерировался, итерировался, да не выитерировался - 2" src="https://cdn.javarush.com/images/article/d1597f69-e273-486f-9327-03e427e51624/1024.jpeg"></div></div>За выражением в <em>termination statement</em> стоит следить: от этого напрямую зависит, не будет ли в вашем приложении бесконечных циклов.
+
+<strong>Инкремент</strong> — самое простое выражение. Оно выполняется после каждой успешной итерации цикла. И это выражение также можно пропустить. Например:
+
+<pre class="lang-java line-numbers"><code>
+int outerVar = 0;
+for (;outerVar &lt; 10;) {
+	outerVar += 2;
+	System.out.println("Value = " + outerVar);
+}
+</code></pre>
+Как видно из примера, каждую итерацию цикла мы будем делать прирост с шагом 2, но только пока значение <code>outerVar</code> меньше 10. Кроме того, поскольку выражение в <em>increment statement </em>на самом деле просто выражение, в нём может быть всё что угодно.
+
+Поэтому вместо инкремента никто не запрещает использовать декремент, т.е. уменьшать значение.
+
+Стоит всегда следить за написанием инкремента. <code>+=</code> выполняет сначала увеличение, а потом присвоение, а вот если в примере выше написать наоборот, мы получим бесконечный цикл, ведь переменная <code>outerVar</code> никогда не получит изменённое значение: оно в случае <code>=+</code> будет вычисляться после присвоения. 
+
+Кстати, с инкрементом вида <code>++</code> так же. Например, у нас был цикл:
+
+<pre class="lang-java line-numbers"><code>
+String[] names = {"John","Sara","Jack"};
+for (int i = 0; i &lt; names.length; ++i) {
+	System.out.println(names[i]);
+}
+</code></pre>
+Цикл работал и проблем не было. Но тут пришёл человек-рефакторинг. Он не разобрался с инкрементом и просто сделал так:
+
+<pre class="lang-java line-numbers"><code>
+String[] names = {"John","Sara","Jack"};
+for (int i = 0; i &lt; names.length;) {
+	System.out.println(names[++i]);
+}
+</code></pre>
+Если знак инкремента стоит перед значением, это значит, что сначала оно увеличится, а потом вернётся в то место, где указано. В данном примере из массива мы сразу начнём доставать элемент под индексом 1, пропустив первый. А потом на индексе 3 упадём с ошибкой "<strong>java.lang.ArrayIndexOutOfBoundsException</strong>". Как вы догадались, раньше это работало просто потому, что инкремент вызывается после выполнения итерации. При переносе этого выражения в итерацию всё сломалось.
+
+Как оказывается, даже в простом цикле можно наломать дров ) Если есть массив, может можно как-то проще вывести все элементы?
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="5acafa67-e12d-4ff9-9df0-6fc9cf154e69" data-max-width="421" alt="For и For-Each Loop: сказ о том, как я итерировался, итерировался, да не выитерировался - 3" src="https://cdn.javarush.com/images/article/5acafa67-e12d-4ff9-9df0-6fc9cf154e69/1024.jpeg"></div></div><h3>For each loop</h3>Начиная с Java 1.5 разработчики Java дали нам конструкцию <code>for each loop</code>, описанную на сайте Oracle в Guide под названием "<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/language/foreach.html" target="_blank" rel="nofollow">The For-Each Loop</a>" или для версии <a href="https://docs.oracle.com/javase/1.5.0/docs/guide/language/foreach.html" target="_blank" rel="nofollow">1.5.0</a>.
+
+В общем случае, будет выглядеть следующим образом:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="cc016321-e38c-49f4-8618-514102482fc2" data-max-width="406" alt="For и For-Each Loop: сказ о том, как я итерировался, итерировался, да не выитерировался - 4" src="https://cdn.javarush.com/images/article/cc016321-e38c-49f4-8618-514102482fc2/1024.jpeg"></div></div>В Java Language Specification (JLS) можно ознакомиться с описанием этой конструкции, чтобы точно убедиться, что это никакая не магия. Описана данная конструкция в главе "<a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-14.html#jls-14.14.2" target="_blank" rel="nofollow">14.14.2. The enhanced for statement</a>".
+
+Как видно, <em>for each loop</em> можно использовать с массивами и с теми, кто реализует интерфейс<em> java.lang.Iterable</em>. То есть, если очень хочется, вы можете реализовать интерфейс <em>java.lang.Iterable </em>и <em>for each loop</em> можно будет использовать и с вашим классом.
+
+Вы сразу скажете "Так, объект итерирования, но ведь массив не объект. Вроде". И будете не правы, т.к. в Java массивы являются динамически создаваемыми объектами. Об этом нам говорит спецификация языка: "<a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-10.html" target="_blank" rel="nofollow">In the Java programming language, arrays are objects</a>". В общем случае, массивы это немного JVM магии, т.к. то, как устроен массив внутри, неизвестно и находится где-то внутри виртуальной машины Java. Кому интересно, может почитать ответы на stackoverflow: "<a href="https://stackoverflow.com/questions/2910774/how-does-array-class-work-in-java" target="_blank" rel="nofollow">How does array class work in Java?</a>".
+
+Получается, что если мы используем не массив, то мы должны использовать что-то, что реализует <em>Iterable</em>. Например:
+
+<pre class="lang-java line-numbers"><code>
+List&lt;String&gt; names = Arrays.asList("John", "Sara", "Jack");
+for (String name : names) {
+	System.out.println("Name = " + name);
+}
+</code></pre>
+Тут можно просто запомнить, что если мы используем коллекции (<strong>java.util.Collection</strong>), благодаря этому получаем точно и <strong>Iterable</strong>.
+
+Если объект имеет класс, реализующий Iterable, он обязуется предоставлять при вызове метода iterator некий Итератор, который будет выполнять итерацию по содержимому этого объекта. Код выше, например, будет иметь примерно следующий байткод (в IntelliJ Idea вы можете выполнить "View" -&gt; "Show bytecode" :
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="48c1b29e-f93b-423b-87b5-e526b843313b" data-max-width="461" alt="For и For-Each Loop: сказ о том, как я итерировался, итерировался, да не выитерировался - 5" src="https://cdn.javarush.com/images/article/48c1b29e-f93b-423b-87b5-e526b843313b/1024.jpeg"></div></div>Как видите, действительно используется итератор. Если бы не <em>for each loop</em>, нам пришлось бы писать самим что-то вроде:
+
+<pre class="lang-java line-numbers"><code>
+List&lt;String&gt; names = Arrays.asList("John", "Sara", "Jack");
+for (Iterator i = names.iterator(); /* continue if */ i.hasNext(); /* skip increment */) {
+	String name = (String) i.next();
+	System.out.println("Name = " + name);
+}
+</code></pre>
+<h3>Iterator</h3>Как мы видели выше, интерфейс <em>Iterable</em> говорит, что для экземпляров некоторого объекта можно получить итератор, с помощью которого можно итерироваться по содержимому. Опять же, можно сказать, что это принцип единственной ответственности из <a href="https://javarush.com/groups/posts/osnovnye-principy-dizajna-klassov-solid-v-java" target="_blank">SOLID</a>. Структура данных сама по себе не должна управлять обходом, но может дать того, кто должен.
+
+Базовая реализация <em>Iterator</em>'а сводится к тому, что он объявлен обычно как внутренний класс, который имеет доступ к содержимому внешнего и предоставляет нужный элемент, содержащийся во внешнем классе. Вот пример из класса <code>ArrayList</code> того, как итератор возвращает элемент:
+
+<pre class="lang-java line-numbers"><code>
+public E next() {
+            checkForComodification();
+            int i = cursor;
+            if (i &gt;= size)
+                throw new NoSuchElementException();
+            Object[] elementData = ArrayList.this.elementData;
+            if (i &gt;= elementData.length)
+                throw new ConcurrentModificationException();
+            cursor = i + 1;
+            return (E) elementData[lastRet = i];
+}
+</code></pre>
+Как мы видим, при помощи <code>ArrayList.this</code> итератор получает доступ ко внешнему классу и его переменной <code>elementData</code>, после чего возвращает элемент от туда.
+
+Итак, получение итератора происходит очень просто:
+
+<pre class="lang-java line-numbers"><code>
+List&lt;String&gt; names = Arrays.asList("John", "Sara", "Jack");
+Iterator&lt;String&gt; iterator = names.iterator();
+</code></pre>
+Работа его сводится к тому, что мы можем проверить, есть ли элементы дальше (метод <strong>hasNext</strong>), получить следующий элемент (метод <strong>next</strong>) и метод <strong>remove</strong>, который удаляет последний полученный через <em>next</em> элемент. Метод <em>remove</em> является опциональным и то, что он будет реализован, не гарантировано.
+
+На самом деле, с развитием Java дорабатываются и интерфейсы. Поэтому, в Java 8 появился ещё и метод <code>forEachRemaining</code>, позволяющий выполнить некоторые действия над оставшимися непосещёнными итератором элементами какое-то действие.
+
+Что в итераторе и в коллекциях есть интересного? Например, есть класс <code><strong>AbstractList</strong></code>. Это абстрактный класс, который является родительским для <code>ArrayList</code> и <code>LinkedList</code>. И интересен он нам из-за такого поля, как <strong>modCount</strong>. Каждое изменение содержимого списка изменяется. И что нам с того? А то, что итератор следит, чтобы при работе не произошло изменение коллекции, по которой он итерируется. Как вы понимаете, реализация итератора для списков находится там же, где и <em>modcount</em>, то есть в классе <code>AbstractList</code>.
+
+Рассмотрим простой пример:
+
+<pre class="lang-java line-numbers"><code>
+List&lt;String&gt; names = Arrays.asList("John", "Sara", "Jack");
+names = new ArrayList(names);
+Iterator&lt;String&gt; iterator = names.iterator();
+names.add("modcount++");
+System.out.println(iterator.next());
+</code></pre>
+Тут первая интересность, хоть и не по теме. На самом деле <code>Arrays.asList</code> возвращает свой особый <code>ArrayList</code> (<strong>java.util.Arrays.ArrayList</strong>).
+
+У него не реализованы методы добавления, по этому он является немодифицируемым. Про него написано в JavaDoc: <strong>fixed-size</strong>.
+
+Но на самом деле, он более чем <em>fixed-size</em>. Он в том числе<em> immutable</em>, то есть неизменяемый; remove на нём тоже не сработает.
+
+А еще мы получим ошибку, т.к. создав итератор, мы запомнили в нём <em>modcount</em>. Потом мы изменили "снаружи" (т.е. не через итератор) состояние коллекции и выполнили метод итератора. Поэтому, получим ошибку: <strong>java.util.ConcurrentModificationException</strong>.
+
+Чтобы это избежать, изменение при итерировании нужно выполнять через сам итератор, а не через обращение к коллекции:
+
+<pre class="lang-java line-numbers"><code>
+List&lt;String&gt; names = Arrays.asList("John", "Sara", "Jack");
+names = new ArrayList(names);
+Iterator&lt;String&gt; iterator = names.iterator();
+iterator.next();
+iterator.remove();
+System.out.println(iterator.next());
+</code></pre>
+Как вы понимаете, если перед <code>iterator.remove()</code> не выполнить <code>iterator.next()</code>, то т.к. итератор не указывает ни на один элемент, то мы получим ошибку. В примере же итератор перейдёт на элемент <em>John</em>, удалит его, а затем получит элемент <em>Sara</em>.
+
+И тут всё бы было хорошо, но вот ведь незадача, опять есть "нюансы" )<em> java.util.ConcurrentModificationException</em> будет только тогда, когда <code>hasNext()</code> возвращает <em>true</em>. То есть удалить через саму коллекцию последний элемент, то итератор не упадёт. Подробнее тут лучше посмотреть доклад про Java паззлеры с "<a href="https://youtu.be/g7B1dyARu6M?t=350" target="_blank" rel="nofollow">#ITsubbotnik Секция JAVA: Java пазлеры</a>".
+
+Столь подробный разговор мы завели по той простой причине, что ровно все те же нюансы действуют при <code>for each loop</code>, т.к. внутри "под капотом" используется наш любимый итератор. И все эти нюансы действуют и там. Единственное, у нас не будет доступа к итератору, и мы не сможем безопасно удалить элемент.
+
+Кстати, как вы понимаете, состояние запоминается в момент создания итератора. И безопасное удаление работает только там, где вызван. То есть такой вариант не пройдёт:
+
+<pre class="lang-java line-numbers"><code>
+Iterator&lt;String&gt; iterator1 = names.iterator();
+Iterator&lt;String&gt; iterator2 = names.iterator();
+iterator1.next();
+iterator1.remove();
+System.out.println(iterator2.next());
+</code></pre>
+Потому что для iterator2 удаление через iterator1 было "внешним", то есть выполнялось где-то снаружи и он про это ничего не знает.
+
+В тему итераторов хотелось бы ещё отметить вот что. Специально для реализаций интерфейса <code>List</code> сделали особый, расширенный итератор. И назвали его <code>ListIterator</code>. Он позволяет продвигаться не только вперёд, но и назад, а также позволяет узнавать индекс предыдущего элемента и следующего. Кроме того, позволяет заменить текущий элемент или вставить новый на позицию, между текущим положением итератора и следующим. Как вы догадались, <code>ListIterator</code> позволено сделать так как для <code>List</code> реализован доступ по индексу.
+
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="e82f24ec-52a8-49e1-aa97-2aea05b06e8e" data-max-width="324" alt="For и For-Each Loop: сказ о том, как я итерировался, итерировался, да не выитерировался - 6" src="https://cdn.javarush.com/images/article/e82f24ec-52a8-49e1-aa97-2aea05b06e8e/1024.jpeg"></div></div>
+<h3>Java 8 и итерирование</h3>Выход в свет Java 8 упростила многим жизнь. Не обошли стороной и итерацию по содержимому объектов.
+Чтобы понять, как это работает, надо сказать пару слов вот про что. В Java 8 появился класс <em>java.util.function.Consumer</em>. Вот пример:
+
+<pre class="lang-java line-numbers"><code>
+Consumer consumer = new Consumer() {
+	@Override
+	public void accept(Object o) {
+		System.out.println(o);
+	}
+};
+</code></pre>
+<em>Consumer</em> является функциональным интерфейсом, что означает, что внутри интерфейса есть всего 1 нереализованный абстрактный метод, требующий обязательной реализации в тех классах, которые укажут implements данного интерфейса. Это позволяет использовать такую магическую штуку как лямбда. Эта статья не про это, но надо понимать, почему мы можем это использовать. Так вот, при помощи лямбд, выше указанный <em>Consumer</em> можно переписать вот так:
+
+<code>Consumer consumer = (obj) -&gt; System.out.println(obj);</code>
+
+Это означает, что Java видит, что на вход будет передано нечто под именем obj, а дальше для этого obj будет выполнено выражение после -&gt;.
+А что касается итерирования, то теперь мы можем делать так:
+
+<pre class="lang-java line-numbers"><code>
+List&lt;String&gt; names = Arrays.asList("John", "Sara", "Jack");
+Consumer consumer = (obj) -&gt; System.out.println(obj);
+names.forEach(consumer);
+</code></pre>
+Если вы перейдёте в метод <code>forEach</code>, то увидите, что всё до безумия просто. Там всеми любимый нами <code>for-each loop</code>:
+
+<pre class="lang-java line-numbers"><code>
+default void forEach(Consumer&lt;? super T&gt; action) {
+        Objects.requireNonNull(action);
+        for (T t : this) {
+            action.accept(t);
+        }
+}
+</code></pre>
+Также есть возможность при помощи итератора красиво удалить элемент, например:
+
+<pre class="lang-java line-numbers"><code>
+List&lt;String&gt; names = Arrays.asList("John", "Sara", "Jack");
+names = new ArrayList(names);
+Predicate predicate = (obj) -&gt; obj.equals("John");
+names.removeIf(predicate);
+</code></pre>
+В данном случае метод <em>removeIf </em>принимает на вход не <em>Consumer</em>, а <em>Predicate</em>. Он возвращает <em>boolean</em>. В данном случае если предикат говорит "<em>true</em>", тогда выполнится удаление элемента.
+
+Интересно, что не всё очевидно и здесь )) Ну а как вы хотите? Надо же людям дать простор для создания паззлеров на конференции.
+
+Например, возьмём такой код удаления всего, до чего сможет дойти итератор после какого-то итерирования:
+
+<pre class="lang-java line-numbers"><code>
+List&lt;String&gt; names = Arrays.asList("John", "Sara", "Jack");
+names = new ArrayList(names);
+Iterator&lt;String&gt; iterator = names.iterator();
+iterator.next(); // Курсор на John
+while (iterator.hasNext()) {
+    iterator.next(); // Следующий элемент
+    iterator.remove(); // Удалили его
+}
+System.out.println(names);
+</code></pre>
+Хорошо, тут всё работает. Но мы помним, что Java 8 ведь. Поэтому, попробуем упростить код:
+
+<pre class="lang-java line-numbers"><code>
+List&lt;String&gt; names = Arrays.asList("John", "Sara", "Jack");
+names = new ArrayList(names);
+Iterator&lt;String&gt; iterator = names.iterator();
+iterator.next(); // Курсор на John
+iterator.forEachRemaining(obj -&gt; iterator.remove());
+System.out.println(names);
+</code></pre>
+Правда же стало красивее? Однако, тут будет <strong>java.lang.IllegalStateException</strong>. И причиной тут... ошибка в Java. Оказывается, она исправлена, но в JDK 9. Вот ссылка на таск в OpenJDK: <a href="https://bugs.openjdk.java.net/browse/JDK-8168745" target="_blank" rel="nofollow">Iterator.forEachRemaining vs. Iterator.remove</a>.
+
+Естественно, это уже обсуждалось: <a href="https://stackoverflow.com/questions/29210510/why-iterator-foreachremaining-doesnt-remove-element-in-the-consumer-lambda" target="_blank" rel="nofollow">Why iterator.forEachRemaining doesnt remove element in the Consumer lambda?</a>  
+
+Ну и ещё один способ — непосредственно через Stream API:
+
+<pre class="lang-java line-numbers"><code>
+List&lt;String&gt; names = new ArrayList(Arrays.asList("John", "Sara", "Jack"));
+Stream&lt;String&gt; stream = names.stream();
+stream.forEach(obj -&gt; System.out.println(obj));
+</code></pre>
+<h2>Выводы</h2>Как мы видели из всего материала выше, цикл <code>for-each loop</code> — всего лишь "синтаксический сахар" над итератором. Однако, он теперь много где используется. Кроме того, нужно любое средство использовать с осторожностью. Например, безобидный <code>forEachRemaining</code> может крыть неприятные сюрпризы. И это ещё раз доказывает, что unit тесты нужны. Хороший тест смог бы выявить такой кейс использования в вашем коде.
+
+Что можно посмотреть/почитать по теме:
+<ul>
+<li>Видео с конференции: "<a href="https://youtu.be/g7B1dyARu6M?t=350" target="_blank" rel="nofollow">#ITsubbotnik Секция JAVA: Java пазлеры</a>"</li>
+<li>Видео с конференции: "<a href="https://youtu.be/lhXQZGuNyUk?t=930" target="_blank" rel="nofollow">Java 8 Puzzlers.Зураб Белый</a>"</li>
+<li>Хорошая статья на Java Rush: "<a href="https://javarush.com/groups/posts/1884-pattern-iterator" target="_blank" rel="nofollow">Паттерн Iterator</a>"</li></ul>
+
+#Viacheslav

@@ -1,0 +1,406 @@
+Разбираем по полочкам класс StringUtils
+<p>----------------------------------------</p>
+Всем привет, мои дорогие читатели. Я стараюсь писать о том, что реально мне интересно и что волнует в данный момент. Поэтому сегодня будет легкое чтиво, которое в будущем пригодится вам как справочник: поговорим о StringUtils...
+<p>----------------------------------------</p>
+Всем привет, мои дорогие читатели. Я стараюсь писать о том, что реально мне интересно и что волнует в данный момент. Поэтому сегодня будет легкое чтиво, которое в будущем пригодится вам как справочник: поговорим о <span class="code">StringUtils</span>.
+<img data-max-width="800" data-id="b2df86ca-527e-4f50-8e62-458bf93fda33" src="https://cdn.javarush.com/images/article/b2df86ca-527e-4f50-8e62-458bf93fda33/800.jpeg" alt="Разбираем по полочкам класс StringUtils - 1">Так уж случилось, что в свое время я обошел вниманием библиотеку <span class="text-bold">Apache Commons Lang 3</span>. Это библиотека со вспомогательными класса для работы с разными объектами. Такой себе сборник полезных методов для работы со строками, коллекциями, и так далее.
+
+На нынешнем проекте, где мне пришлось более детально поработать со строками в переводе бизнес-логики 25-летней давности (из COBOL на Java), обнаружилось, что у меня были недостаточно глубокие знания о <span class="text-bold">классе StringUtils</span>. Поэтому приходилось создавать все самому. Что я имею в виду? То, что определенные задачи с манипуляцией со строками можно не писать самому, а воспользоваться уже готовым решением.
+
+Чем плохо писать самому? Как минимум тем, что это больше кода, который уже давно написан. Не в меньшей степени остро стоит вопрос о тестировании того кода, который написан дополнительно. Когда мы используем библиотеку, которая зарекомендовала себя как качественную, мы ожидаем, что она уже протестирована и не нужно писать множество вариантов тестов, чтобы проверить ее. 
+
+Так уж вышло, что набор методов для работы со строкой у джавы не такой уж и большой. Реально не хватает многих методов, которые были бы полезны для работы. 
+
+Также этот класс создан для обеспечения проверок на NullPointerException. 
+
+План нашей статьи будет такой:<ol>
+<li value="0"><a href="#0">Как подключить?</a></li>
+<li><a href="#1">Примеры из моей работы: как не зная о таком полезном классе я создавал свой <s>велосипед</s> костыль.</a></li>
+<li><a href="#2">Разбираем другие методы, которые мне показались интересными.</a></li>
+<li><a href="#3">Подводим итог.</a></li>
+
+</ol>Все случаи будут добавлены в <a href="https://github.com/javarushcommunity/stringutils-demo" rel="nofollow" target="_blank">отдельный репозиторий</a> в организации Javarush Community на GitHub. Там будут отдельно записаны примеры и тесты для них.<h2 id="0">0. Как подключить</h2>Те, кто идет со мной нога в ногу, уже более-менее знакомы и с гитом, и с мавеном, так что далее я буду опираться на эти знания и не повторяться. 
+
+Тем же, кто пропустил мои предыдущие статьи или только присоединился к чтению — вот материалы о <a href="https://javarush.com/groups/posts/3119-java-proekt-ot-a-do-ja-vse-chto-vih-khoteli-znatjh-o-maven" target="_blank">мавене</a> и <a href="https://javarush.com/groups/posts/2683-nachalo-rabotih-s-git-podrobnihy-gayd-dlja-novichkov" target="_blank">гите</a>. 
+
+Конечно, без системы сборки (мавен, гредл) можно также подключить все ручками, но это дико в наше время и так делать точно не нужно: лучше сразу учиться делать все правильно.
+
+Поэтому для работы с мавеном вначале добавляем соответствующую зависимость:
+
+<pre class="language-java line-numbers"><code>
+&lt;dependency&gt;
+   &lt;groupId&gt;org.apache.commons&lt;/groupId&gt;
+   &lt;artifactId&gt;commons-lang3&lt;/artifactId&gt;
+   &lt;version&gt;${apache.common.version}&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+Где <span class="text-bold">${apache.common.version}</span> — это версия этой библиотеки. 
+
+Далее, чтобы импортировать в каком-то классе, добавляем импорт:
+
+<pre class="language-java line-numbers"><code>
+import org.apache.commons.lang3.StringUtils;
+</code></pre>
+И все, дело в шляпе))<h2 id="1">1. Примеры из реального проекта</h2><h3><ul><li>leftPad метод</li></ul></h3>Первый пример вообще сейчас кажется настолько глупым, что очень хорошо, что мои коллеги знали о <span class="code">StringUtils.leftPad</span> и подсказали мне.
+
+Какая была задача: код был построен так, что нужно было сделать трансформацию данных, если они пришли не совсем корректно. Ожидалось, что строковое поле должно состоять только из цифр, т.е. если его длина его 3, а значение — 1, то запись должно быть “001”. То есть, сперва нужно удалить все пробелы, а потом замостить уже это нулями. 
+
+Еще примеров, чтобы была понятна суть задачи:
+из “12 “ -&gt; “012”
+из “1  “ -&gt; “001”
+И так далее.
+
+Что сделал я? Описал это в классе <a href="https://github.com/javarushcommunity/stringutils-demo/blob/master/src/main/java/com/github/javarushcommunity/stringutilsdemo/LeftPadExample.java" rel="nofollow" target="_blank">LeftPadExample</a>. 
+
+Я написал метод, который это все проделает:
+
+<pre class="language-java line-numbers"><code>
+public static String ownLeftPad(String value) {
+   String trimmedValue = value.trim();
+
+   if(trimmedValue.length() == value.length()) {
+       return value;
+   }
+
+   StringBuilder newValue = new StringBuilder(trimmedValue);
+
+   IntStream.rangeClosed(1, value.length() - trimmedValue.length())
+           .forEach(it -&gt; newValue.insert(0, "0"));
+   return newValue.toString();
+}
+</code></pre>
+За основу взял идею, что мы можем просто получить разницу между оригинальным и обрезанным значением и заполнить впереди нулями. Для этого я использовал <span class="code">IntStream</span>, чтобы n раз сделать одну и ту же операцию. И это точно нужно тестировать. 
+
+А вот что можно было сделать, если бы я знал заранее о методе <span class="code">StringUtils.leftPad</span>:
+
+<pre class="language-java line-numbers"><code>
+public static String apacheCommonLeftPad(String value) {
+   return StringUtils.leftPad(value.trim(), value.length(), "0");
+}
+</code></pre>
+Как видите, кода намного меньше, при этом еще и используется всеми подтвержденная библиотека.
+
+Для этого дела я создал два теста в классе <a href="https://github.com/javarushcommunity/stringutils-demo/blob/master/src/test/java/com/github/javarushcommunity/stringutilsdemo/LeftPadExampleTest.java" rel="nofollow" target="_blank">LeftPadExampleTest</a> (обычно когда планируют тестировать какой-то класс, создают в таком же пакете, только в src/test/java, класс с таким же именем+Test). 
+
+Эти тесты проверяют то один метод, чтобы он правильно трансформировал значение, то другой. Конечно, тестов нужно бы написать намного больше, но тема тестирования в нашем случае не главная:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.stringutilsdemo;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@DisplayName("Unit-level testing for LeftPadExample")
+class LeftPadExampleTest {
+
+   @DisplayName("Should transform by using ownLeftPad method as expected")
+   @Test
+   public void shouldTransformOwnLeftPadAsExpected() {
+       //given
+       String value = "1   ";
+       String expectedTransformedValue = "0001";
+
+       //when
+       String transformedValue = LeftPadExample.ownLeftPad(value);
+
+       //then
+       Assertions.assertEquals(expectedTransformedValue, transformedValue);
+   }
+
+   @DisplayName("Should transform by using StringUtils method as expected")
+   @Test
+   public void shouldTransformStringUtilsLeftPadAsExpected() {
+       //given
+       String value = "1   ";
+       String expectedTransformedValue = "0001";
+
+       //when
+       String transformedValue = LeftPadExample.apacheCommonLeftPad(value);
+
+       //then
+       Assertions.assertEquals(expectedTransformedValue, transformedValue);
+   }
+
+}
+</code></pre>
+Могу пока что сделать несколько комментариев по поводу тестов. Написаны они по JUnit 5:<ol>
+
+<li>Тест будет восприниматься как тест, если у него есть соответствующая аннотация — @Test.</li>
+<li>Если в имени сложно описать работу теста или же описание длинное и его неудобно читать, можно добавить аннотацию @DisplayName и сделать в ней нормальное описание, которое будет видно при запуске тестов.</li>
+<li>При написании тестов я использую BDD подход, в котором разделяю тесты на логические части:<ol type="a">
+<li>//given — блок настройки данных перед тестом;</li>
+<li>//when — блок, где запускается та часть кода, которую мы тестируем;</li>
+<li>//then — блок, в котором проходят проверки результатов работы блока when.</li></ol></li>
+
+</ol>Если их запустить, они подтвердят, что все работает как ожидается.<h3><ul><li>stripStart метод</li></ul></h3>Здесь мне нужно было решить вопрос со строкой, в начале которой могли быть пробелы и запятые. После трансформации их не должно было быть в новом значении.
+
+Постановка задачи ясна как никогда. Несколько примеров закрепит наше понимание:
+
+“, , books” -&gt; “books”
+“,,,books” -&gt; “books”
+b , books” -&gt; “b , books”
+
+Как и для случая с leftPad, добавил класс <a href="https://github.com/javarushcommunity/stringutils-demo/blob/master/src/test/java/com/github/javarushcommunity/stringutilsdemo/StripStartExampleExample.java" rel="nofollow" target="_blank">StrimStartExample</a>, в котором два метода.
+
+Один — с собственным решением:
+
+<pre class="language-java line-numbers"><code>
+public static String ownStripStart(String value) {
+   int index = 0;
+   List<string> commaSpace = asList(" ", ",");
+   for (int i = 0; i &lt; value.length(); i++) {
+       if (commaSpace.contains(String.valueOf(value.charAt(i)))) {
+           index++;
+       } else {
+           break;
+       }
+   }
+   return value.substring(index);
+}
+</string></code></pre>
+Здесь идея заключалась в том, чтобы найти тот индекс, начиная с которого уже нет пробелов и запятых. Если их вовсе не было в начале, то индекс будет ноль.
+
+И второй — с решением через <span class="code">StringUtils</span>:
+
+<pre class="language-java line-numbers"><code>
+public static String apacheCommonLeftPad(String value) {
+   return StringUtils.stripStart(value, StringUtils.SPACE + COMMA);
+}
+</code></pre>
+Здесь мы передаем первым аргументом информацию о том, с какой строкой работаем, а во втором передаем строку, состоящую из символов, которые нужно пропустить.
+
+Точно так же создаем <a href="https://github.com/javarushcommunity/stringutils-demo/blob/master/src/test/java/com/github/javarushcommunity/stringutilsdemo/StripStartExampleTest.java" rel="nofollow" target="_blank">StripStartExampleTest</a> класс:
+
+<pre class="language-java line-numbers"><code>
+package com.github.javarushcommunity.stringutilsdemo;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+@DisplayName("Unit-level testing for StripStartExample")
+class StripStartExampleTest {
+
+   @DisplayName("Should transform by using stripStart method as expected")
+   @Test
+   public void shouldTransformOwnStripStartAsExpected() {
+       //given
+       String value = ", , books";
+       String expectedTransformedValue = "books";
+
+       //when
+       String transformedValue = StripStartExample.ownStripStart(value);
+
+       //then
+       Assertions.assertEquals(expectedTransformedValue, transformedValue);
+   }
+
+   @DisplayName("Should transform by using StringUtils method as expected")
+   @Test
+   public void shouldTransformStringUtilsStripStartAsExpected() {
+       //given
+       String value = ", , books";
+       String expectedTransformedValue = "books";
+
+       //when
+       String transformedValue = StripStartExample.apacheCommonLeftPad(value);
+
+       //then
+       Assertions.assertEquals(expectedTransformedValue, transformedValue);
+   }
+}
+</code></pre><h3><ul><li>isEmpty метод</li></ul></h3>Этот метод, конечно, намного проще, но от этого он не менее полезный. Он расширяет возможности метода <span class="code">String.isEmpty()</span>, в который еще добавляется проверка на null. Зачем? Чтобы не было NullPointerException, то есть, во избежание вызова методов переменной, которая является <span class="text-bold">null</span>.
+
+Поэтому чтобы не писать:
+
+<pre class="language-java line-numbers"><code>
+if(value != null &amp;&amp; value.isEmpty()) {
+   //doing something
+}
+</code></pre>
+Можно просто сделать так:
+
+<pre class="language-java line-numbers"><code>
+if(StringUtils.isEmpty(value)) {
+   //doing something
+}
+</code></pre>
+Плюс этого метода в том, что сразу видно где какой метод используются.<h2 id="2">2. Разбор других методов класса StringUtils</h2>Теперь поговорим о тех методах, которые на мой взгляд тоже заслуживают внимания.
+
+Говоря в общем о <span class="code">StringUtils</span>, стоит сказать, что он предоставляет null безопасные методы-аналоги тех, что есть в классе <span class="code">String</span> (как в случае с методом <span class="code">isEmpty</span>).
+
+Пройдемся по ним:<h3><ul><li>compare метод</li></ul></h3>Такой метод есть в <span class="code">String </span> и будет NullPointerException, если в сравнении двух строк одна из них будет null. Чтобы избежать уродских проверок в нашем коде, можем использовать метод <span class="code">StringUtils.compare(String str1, String str2)</span>: он возвращает int как результат сравнения. Что обозначают эти значения?
+
+int = 0, если они одинаковы (или оба null).
+int &lt; 0, if str1 меньше, чем str2.
+int &gt; 0, if str1 больше, чем str2.
+
+Также если посмотреть на их документацию, то в Javadoc этого метода представлены следующие варианты развития событий:
+
+<pre class="language-java line-numbers"><code>
+       StringUtils.compare(null, null)   = 0
+       StringUtils.compare(null , "a")   &lt; 0
+       StringUtils.compare("a", null)    &gt; 0
+       StringUtils.compare("abc", "abc") = 0
+       StringUtils.compare("a", "b")     &lt; 0
+       StringUtils.compare("b", "a")     &gt; 0
+       StringUtils.compare("a", "B")     &gt; 0
+       StringUtils.compare("ab", "abc")  &lt; 0
+</code></pre><h3><ul><li>contains... методы</li></ul></h3>Здесь разработчики утилиты разгулялись на славу. Какой хочешь метод есть.
+Я решил их собрать воедино:<ol>
+
+<li><p><span class="code">contains</span> — метод, проверяющий, есть ли предполагаемая строка внутри другой строки. Чем это полезно? Можно использовать этот метод, если нужно удостовериться, что есть какое-то слово в тексте. </p>
+
+
+<p>Примеры:
+</p><pre class="language-java line-numbers"><code>
+       StringUtils.contains(null, *)     = false
+       StringUtils.contains(*, null)     = false
+       StringUtils.contains("", "")      = true
+       StringUtils.contains("abc", "")   = true
+       StringUtils.contains("abc", "a")  = true
+       StringUtils.contains("abc", "z")  = false
+</code></pre><p></p>
+
+<p>Опять-таки, NPE (Null Pointer Exception) безопасность присутствует.</p></li>
+
+<li><pp><span class="code">containsAny</span> — метод, проверяющий, есть ли хоть какой-то символ из представленных в строке. Также полезная вещь: часто приходится такое выполнять.<p></p>
+
+<p>Примеры из документации:</p>
+<pre class="language-java line-numbers"><code>
+       StringUtils.containsAny(null, *)                  = false
+       StringUtils.containsAny("", *)                    = false
+       StringUtils.containsAny(*, null)                  = false
+       StringUtils.containsAny(*, [])                    = false
+       StringUtils.containsAny("zzabyycdxx", ['z', 'a']) = true
+       StringUtils.containsAny("zzabyycdxx", ['b', 'y']) = true
+       StringUtils.containsAny("zzabyycdxx", ['z', 'y']) = true
+       StringUtils.containsAny("aba", ['z'])             = false
+</code></pre><p></p></pp></li>
+
+<li><p><span class="code">containsIgnoreCase</span> — полезное расширение для метода <span class="code">contains</span>. Действительно, чтобы проверить такой случай без этого метода, придется перебрать несколько вариантов. А так гармонично будет использован только один метод. </p></li>
+
+<p>Несколько примеров из доки:
+</p><pre class="language-java line-numbers"><code>
+       StringUtils.containsIgnoreCase(null, *) = false
+       StringUtils.containsIgnoreCase(*, null) = false
+       StringUtils.containsIgnoreCase("", "") = true
+       StringUtils.containsIgnoreCase("abc", "") = true
+       StringUtils.containsIgnoreCase("abc", "a") = true
+       StringUtils.containsIgnoreCase("abc", "z") = false
+       StringUtils.containsIgnoreCase("abc", "A") = true
+       StringUtils.containsIgnoreCase("abc", "Z") = false
+</code></pre><p></p>
+
+<li><p><span class="code">containsNone</span> — уже судя по названию можно понять, что проверяется. Строк внутри не должно быть. Полезная вещь, определенно. Быстрый поиск каких-то неугодных символов ;). В нашем <a href="https://javarush.com/groups/java-proektih" target="_blank">телеграм-боте</a> будем фильтровать маты, не пройдем мимо этих забавных методов. </p>
+
+<p>И примеры, куда ж без них:
+</p><pre class="language-java line-numbers"><code>
+       StringUtils.containsNone(null, *)       = true
+       StringUtils.containsNone(*, null)       = true
+       StringUtils.containsNone("", *)         = true
+       StringUtils.containsNone("ab", '')      = true
+       StringUtils.containsNone("abab", 'xyz') = true
+       StringUtils.containsNone("ab1", 'xyz')  = true
+       StringUtils.containsNone("abz", 'xyz')  = false
+</code></pre><p></p></li>
+
+</ol><h3><ul><li>defaultString метод</li></ul></h3>Серия методов, которые помогают избежать добавления лишнего ифчика в случае, если строка null и нужно поставить какое-то значение по умолчанию. Вариантов есть много, на любой вкус.
+
+Главный среди них — <span class="code">StringUtils.defaultString(final String str, final String defaultStr)</span> — в случае, если str равно null, мы просто передадим <span class="code">defaultStr</span> значение.
+
+Примеры из документации:
+
+<pre class="language-java line-numbers"><code>
+       StringUtils.defaultString(null, "NULL")  = "NULL"
+       StringUtils.defaultString("", "NULL")    = ""
+       StringUtils.defaultString("bat", "NULL") = "bat"
+</code></pre>
+Его очень удобно использовать, когда создаешь POJO класс с данными.<h3><ul><li>deleteWhitespace метод</li></ul></h3>Это интересный метод, хоть и вариантов его применения не так уж и много. Вместе с тем, если такой случай представится, метод точно будет оченьполезным.
+
+Он удаляет все пробелы из строки. Где бы этот пробел ни был, от него не останется и следа)))
+
+Примеры из доки:
+<pre class="language-java line-numbers"><code>
+       StringUtils.deleteWhitespace(null)         = null
+       StringUtils.deleteWhitespace("")           = ""
+       StringUtils.deleteWhitespace("abc")        = "abc"
+       StringUtils.deleteWhitespace("   ab  c  ") = "abc"
+</code></pre><h3><ul><li>endsWith метод</li></ul></h3>Говорит сам за себя. Это очень полезный метод: он проверяет, заканчивается ли строка предлагаемой строкой или нет. Часто такое такое нужно. Конечно можно написать проверку и самому, но использовать уже готовый метод явно удобнее и лучше.
+
+Примеры:
+
+<pre class="language-java line-numbers"><code>
+       StringUtils.endsWith(null, null)      = true
+       StringUtils.endsWith(null, "def")     = false
+       StringUtils.endsWith("abcdef", null)  = false
+       StringUtils.endsWith("abcdef", "def") = true
+       StringUtils.endsWith("ABCDEF", "def") = false
+       StringUtils.endsWith("ABCDEF", "cde") = false
+       StringUtils.endsWith("ABCDEF", "")    = true
+</code></pre>
+Как видим, все заканчивается на пустую строку))) Думаю, что этот пример <span class="code">(StringUtils.endsWith("ABCDEF", "")    = true)</span> просто идет как бонус, ведь это ж абсурд)
+
+Также есть там и метод, который игнорирует регистр.<h3><ul><li>equals метод</li></ul></h3>Отличный пример null безопасного метода, который сравнивает две строки. Что бы мы туда ни положили, ответ будет, и будет без ошибок. 
+
+Примеры:
+
+<pre class="language-java line-numbers"><code>
+       StringUtils.equals(null, null)   = true
+       StringUtils.equals(null, "abc")  = false
+       StringUtils.equals("abc", null)  = false
+       StringUtils.equals("abc", "abc") = true
+       StringUtils.equals("abc", "ABC") = false
+</code></pre>
+Разумеется, есть и <span class="code">equalsIgnoreCase</span> — выполняется все ровно так же, только игнорируем регистр. Посмотрим?
+
+<pre class="language-java line-numbers"><code>
+       StringUtils.equalsIgnoreCase(null, null)   = true
+       StringUtils.equalsIgnoreCase(null, "abc")  = false
+       StringUtils.equalsIgnoreCase("abc", null)  = false
+       StringUtils.equalsIgnoreCase("abc", "abc") = true
+       StringUtils.equalsIgnoreCase("abc", "ABC") = true
+</code></pre><h3><ul><li>equalsAny метод</li></ul></h3>Идем дальше и расширяем метод <span class="code">equals</span>. Допустим, вместо нескольких проверок на равенство, мы хотим выполнить одну. Вот для этого мы можем передать строку, с которой будут сравнивать и набор строк, если какая-то из них будет равна предлагаемой — то будет TRUE. 
+
+Передаем строку и коллекцию строк, чтобы сравнить их между собой (первую строку со строками из коллекции). Сложно? Вот примеры из доки, которые помогут понять, что имеется в виду:
+
+<pre class="language-java line-numbers"><code>
+       StringUtils.equalsAny(null, (CharSequence[]) null) = false
+       StringUtils.equalsAny(null, null, null)    = true
+       StringUtils.equalsAny(null, "abc", "def")  = false
+       StringUtils.equalsAny("abc", null, "def")  = false
+       StringUtils.equalsAny("abc", "abc", "def") = true
+       StringUtils.equalsAny("abc", "ABC", "DEF") = false
+</code></pre>
+Также есть <span class="code">equalsAnyIgnoreCase</span>. И примеры для него:
+
+<pre class="language-java line-numbers"><code>
+       StringUtils.equalsAnyIgnoreCase(null, (CharSequence[]) null) = false
+       StringUtils.equalsAnyIgnoreCase(null, null, null)    = true
+       StringUtils.equalsAnyIgnoreCase(null, "abc", "def")  = false
+       StringUtils.equalsAnyIgnoreCase("abc", null, "def")  = false
+       StringUtils.equalsAnyIgnoreCase("abc", "abc", "def") = true
+       StringUtils.equalsAnyIgnoreCase("abc", "ABC", "DEF") = true
+</code></pre><h2 id="3">Итог</h2>В итоге мы уходим со знанием того, что такое <span class="code">StringUtils</span>, какие в нем есть полезные методы. Ну и с осознанием, что есть вот такие полезные вещи и не нужно городить каждый раз костыли в местах, где можно было бы закрыть вопрос при помощи готового решения. 
+
+В целом мы разобрали только часть методов. Если будет желание, я могу продолжить: там их еще много, и они реально заслуживают внимания. Если есть идеи, как это еще можно подать, пожалуйста, пишите — я всегда открыт к новым идеям.
+
+Документация к методам написана очень качественно, добавлены тестовые примеры с результатами, что помогает лучше понять работу метода. Поэтому не чураемся чтения документации: она развеет ваши сомнения по поводу функционала утилиты.
+
+Чтобы получить новый опыт кодинга, советую посмотреть, как делают и пишут утильные классы. Это будет полезно в будущем, так как обычно на каждом проекте есть свои утильные классы, и опыт их написания пригодится. 
+
+Традиционно предлагаю подписаться на гитхабе на <a href="https://github.com/romankh3" rel="nofollow" target="_blank">мой аккаунт</a>)
+
+Тех, кто не знает о моем проекте с телеграмм-ботом — вот ссылка на <a href="https://javarush.com/groups/posts/2935-java-proekt-ot-a-do-ja-pishem-realjhnihy-proekt-dlja-portfolio" target="_blank">первую статью</a>. 
+
+Всем спасибо за чтение. Внизу добавил несколько полезных ссылок.<table><tbody>
+
+<tr><th>Полезные ссылки</th></tr>
+<tr><td><ul><li><a href="https://github.com/javarushcommunity/stringutils-demo" rel="nofollow" target="_blank">Проект с примерами из статьи</a></li>
+<li>Medium: <a href="https://medium.com/@knoldus/stringutils-apache-common-lang3-47093a1eca7e" rel="nofollow" target="_blank">StringUtils — Apache common Lang3</a></li>
+<li>Baeldung: <a href="https://www.baeldung.com/string-processing-commons-lang" rel="nofollow" target="_blank">String Processing with Apache Commons Lang 3</a></li>
+<li>JavaRush: <a href="https://javarush.com/groups/posts/2683-nachalo-rabotih-s-git-podrobnihy-gayd-dlja-novichkov" target="_blank">Начало работы с Git: подробный гайд для новичков</a></li>
+<li>JavaRush: <a href="https://javarush.com/groups/posts/3119-java-proekt-ot-a-do-ja-vse-chto-vih-khoteli-znatjh-o-maven" target="_blank">"Java-проект от А до Я": Все, что вы хотели знать о Maven</a></li></ul></td></tr></tbody></table>

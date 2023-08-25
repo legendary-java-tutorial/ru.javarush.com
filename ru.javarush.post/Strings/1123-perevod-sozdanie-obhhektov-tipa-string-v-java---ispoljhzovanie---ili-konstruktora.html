@@ -1,0 +1,131 @@
+Перевод: Создание объектов типа String в Java — использование " " или конструктора?
+<p>----------------------------------------</p>
+Оригинал: Create Java String Using ” ” or Constructor? By  X Wang. В Java строка может быть создана с использованием двух способов. В чём же разница между использованием двойных кавычек...
+<p>----------------------------------------</p>
+Оригинал: <a href='https://www.programcreek.com/2014/03/create-java-string-by-double-quotes-vs-by-constructor/' rel='nofollow' target='_blank'>Create Java String Using ” ” or Constructor?</a> By  X Wang
+<img data-id="43ce39eb-5dbe-4fa2-bca9-5c58eacd5793" data-max-width="850" alt="Перевод: Создание объектов типа String в Java — использование " src="https://cdn.javarush.com/images/article/43ce39eb-5dbe-4fa2-bca9-5c58eacd5793/1024.jpeg">В Java строка может быть создана с использованием двух способов:
+
+<pre class='lang-java line-numbers'><code>
+String x = "abc";
+String y = new String("abc");
+</code></pre>
+В чём же разница между использованием двойных кавычек и использованием конструктора?
+<h2>1. Двойные Кавычки vs. Конструктор</h2>На этот вопрос можно ответить, рассмотрев два простых примера.
+
+Пример 1:
+
+<pre class='lang-java line-numbers'><code>
+String a = "abcd";
+String b = "abcd";
+System.out.println(a == b);  // True
+System.out.println(a.equals(b)); // True
+</code></pre>
+<code>a==b</code> истинно потому, что <code>a</code> и <code>b</code> ссылаются на один и тот же объект — строку, объявленную как литерал
+(строковый литерал далее) в области методов  (отсылаем читателя к источнику на нашем ресурсе: <a href='https://javarush.com/groups/posts/975-top-8-diagramm-dlja-ponimanija-java' target='_blank'>Топ 8 диаграмм для понимания Java</a>, диаграмма 8).
+ 
+Когда один и тот же строковый литерал создан более одного раза, в памяти сохраняется только одна копия строки, только лишь один ее экземпляр (в нашем случае "abcd"). Это называется "интернирование строк". Все строковые константы, обрабатываемые на этапе компиляции, в Java интернируются автоматически.
+
+Пример 2:
+
+<pre class='lang-java line-numbers'><code>
+String c = new String("abcd");
+String d = new String("abcd");
+System.out.println(c == d);  // False
+System.out.println(c.equals(d)); // True
+</code></pre>
+<code>c==d</code> ложно потому, что <code>c</code> и <code>d</code> ссылаются на два различных объекта в памяти (в куче). Различные объекты 
+всегда имеют разные ссылки.
+ 
+Эта диаграмма иллюстрирует две вышеописанные ситуации:
+<img data-id="5dd3a362-7638-42dc-b414-d40a20b67e32" data-max-width="650" alt="Перевод: Создание объектов типа String в Java — использование " src="https://cdn.javarush.com/images/article/5dd3a362-7638-42dc-b414-d40a20b67e32/1024.jpeg"><h2>2. Интернирование строк на этапе выполнения программы</h2>Автор благодарит LukasEder (комментарий ниже принадлежит ему):
+
+Интернирование строк может происходить также и во время выполнения программы, даже если две строки созданы с помощью конструкторов:
+
+<pre class='lang-java line-numbers'><code>
+String c = new String("abcd").intern();
+String d = new String("abcd").intern();
+System.out.println(c == d);  // Now true
+System.out.println(c.equals(d)); // True
+</code></pre>
+<h2>3. Когда же использовать двойные кавычки и когда — конструкторы</h2>Вследствие того, что литерал "abcd" всегда имеет тип String, использование конструктора создаст дополнительно ненужный объект. Таким образом, двойные кавычки должны быть использованы, если вам необходимо просто создать строку. 
+
+Если вам действительно необходимо создать новый объект в куче, вы должны использовать конструктор. <a href='https://www.programcreek.com/2013/09/the-substring-method-in-jdk-6-and-jdk-7/' rel='nofollow' target='_blank'>Здесь (оригинал)</a> показаны варианты использования. (Переведенный текст привожу далее. Но все же весьма рекомендую ознакомиться с кодом комментаторов по этой ссылке.)
+<h2>Метод substring() в JDK 6 и JDK 7</h2><a href='https://www.programcreek.com/2013/09/the-substring-method-in-jdk-6-and-jdk-7/' rel='nofollow' target='_blank'>The substring() Method in JDK 6 and JDK 7</a> By  X Wang 
+
+Метод <code>substring(int beginIndex, int endIndex)</code> в JDK 6 и JDK 7 различаются. Знание этих отличий может помочь вам лучше использовать этот метод. Ради удобства прочтения далее под <code>substring()</code> будем подразумевать полный синтаксис, т.е. <code>substring(int beginIndex, int endIndex)</code>.
+<h3>1. Что делает substring()?</h3>Метод <code>substring(int beginIndex, int endIndex)</code> возвращает строку, которая начинается с символа под
+номером <code>beginIndex</code> и заканчивается символом под номером <code>endIndex-1</code>.
+
+<pre class='lang-java line-numbers'><code>
+String x = "abcdef";
+x = x.substring(1,3);
+System.out.println(x);
+</code></pre>
+<strong>Output: </strong>
+
+<pre class='lang-java line-numbers'><code>
+bc
+</code></pre>
+<h3>2. Что происходит при вызове substring()?</h3>Вы можете знать, что вследствие неизменяемости <code>x</code>, при присвоении x результата <code>x.substring(1,3)</code>, <code>x</code> указывает на полностью новую строку (см. диаграмму):
+<img data-id="933a0dba-7a5c-420d-a842-6005247de9ae" data-max-width="650" alt="Перевод: Создание объектов типа String в Java — использование " src="https://cdn.javarush.com/images/article/933a0dba-7a5c-420d-a842-6005247de9ae/1024.jpeg">Однако же, эта диаграмма не полностью правильна; она не демонстрирует, что на самом деле происходит в куче. То, что в самом деле происходит, когда вызывается <code>substring()</code>, отличается в JDK 6 и JDK 7.
+<h3>3. substring() в JDK 6</h3>Строковый тип поддерживается массивом типа <code>char</code>. В JDK 6 класс <code>String</code> содержит 3 поля: <code>char value[]</code>, <code>int offset</code>, <code>int count</code>. Они используются для хранения реального массива символов, индекса первого символа в массиве, числа символов в строке.
+
+Когда вызван метод <code>substring()</code>, он создает новую строку, но значение переменной все еще указывает на тот же самый массив в куче. Разница между двумя строками заключается в их числе символов и значении индекса начального символа в массиве.
+<img data-id="c8bb798b-674a-4bce-966c-fef32de161fe" data-max-width="650" alt="Перевод: Создание объектов типа String в Java — использование " src="https://cdn.javarush.com/images/article/c8bb798b-674a-4bce-966c-fef32de161fe/1024.jpeg">Нижеприведенный код упрощен и только содержит только основное для демонстрации проблемы.
+
+<pre class='lang-java line-numbers'><code>
+//JDK 6
+String(int offset, int count, char value[]) {
+	this.value = value;
+	this.offset = offset;
+	this.count = count;
+}
+ 
+public String substring(int beginIndex, int endIndex) {
+	//check boundary
+	return  new String(offset + beginIndex, endIndex - beginIndex, value);
+}
+</code></pre><h3>4. Проблема, вызванная substring() в JDK 6</h3>Если у вас есть ОЧЕНЬ длинная строка, но вам нужна только маленькая ее часть, которую вы получаете каждый раз используя <code>substring()</code>. Это вызовет проблемы при исполнении, с того момента как вам нужна
+маленькая часть, вы все равно вынуждены хранить всю строку целиком. Для JDK 6 решение состоит в приведенном коде, который приведет строку к настоящей подстроке:
+
+<pre class='lang-java line-numbers'><code>
+x = x.substring(x, y) + ""
+</code></pre>
+Пользователь <em>STepeR</em> сформулировал вопрос (см. его комментарий), и показалось нужным дополнить п.4. "Проблема, вызванная <code>substring()</code> в JDK 6" более обширным примером. Надеюсь, это и будет ответом и поможет другим быстрее разобраться, в чем же суть проблемы. Вот код:
+
+<pre class='lang-java line-numbers'><code>
+String a = "aLongLongString";
+String b = a.substring(1, 2);
+String c = a.substring(2, 6);
+</code></pre>
+ Итак, в JDK 7 объекты <code>b</code>,<code>с</code> типа <code>String</code>, созданные в результате вызова метода <code>substring()</code> объекта a типа <code>String</code>, будут ссылаться на два вновь созданных массива в хипе — <code>L</code> для <code>b</code>, <code>ongL</code> для <code>c</code>. Эти два новых массива будут хранитья в хипе НАРЯДУ с исходным массивом <code>aLongLongString</code>, на который ссылается a. Т.е. исходный массив никуда не исчезает. Теперь возвратимся к JDK 6.
+
+В JDK 6 в хипе находится один-единственный массив <code>aLongLongString</code>. После выполнения строчек кода
+
+<pre class='lang-java line-numbers'><code>
+String b = a.substring(1, 2);
+String c = a.substring(2, 6);
+</code></pre>
+объекты <code>b</code>, <code>c</code> ссылаются все на тот же массив в хипе, соответствующий объекту <code>a</code>: <code>b</code> — на элементы с 1-го индекса до 2-го, <code>c</code> — на элементы со 2-го индекса до 6-го (нумерация начинается с 0-го,напоминание). Т.е. очевидно, что всякое дальнейшее обращение к переменным <code>b</code> или c в JDK 6 на самом деле приведет к "отсчитыванию" нужных элементов исходного массива в хипе. В JDK 7 всякое дальнейшее обращение к переменным <code>b</code> или c вызовет обращение к нужным массивам меньшего размера, которые уже созданы и "живут" в хипе. Т.е. явно JDK 7 в подобных ситуациях использует физически больше памяти.
+
+Но давайте представим возможный вариант: переменным <code>b</code> и <code>c</code> присвоены некие подстроки переменной <code>a</code>, и в дальнейшем все используют только их — объекты <code>b</code> и <code>c</code>. К переменной a просто уже никто не обращается, на нее нету ссылок (именно это имеет ввиду автор статьи). В итоге в какой-то момент времени срабатывает сборщик мусора, и (в самом общем виде, конечно) получаем 2 различных ситуации:
+
+<strong>JDK 6</strong>: уничтожен (garbage collected) объект <code>a</code>, НО - исходный громадный массив в хипе жив; его постоянно используют <code>b</code> и <code>c</code>. 
+
+<strong>JDK 7:</strong> уничтожен объект a вместе с исходным массивом в хипе.
+
+Вот этот момент в JDK 6 может привести к утечке памяти (memory leak).
+<h3>5. substring() в JDK 7</h3>В JDK 7 метод улучшен. В JDK 7 <code>substring()</code> в самом деле создает новый массив в куче.
+<img data-id="0909e7ed-3010-4ed9-bef5-7f030f04ca83" data-max-width="650" alt="Перевод: Создание объектов типа String в Java — использование " src="https://cdn.javarush.com/images/article/0909e7ed-3010-4ed9-bef5-7f030f04ca83/1024.jpeg"><pre class='lang-java line-numbers'><code>
+//JDK 7
+public String(char value[], int offset, int count) {
+	//check boundary
+	this.value = Arrays.copyOfRange(value, offset, offset + count);
+}
+ 
+public String substring(int beginIndex, int endIndex) {
+	//check boundary
+	int subLen = endIndex - beginIndex;
+	return new String(value, beginIndex, subLen);
+}
+</code></pre>

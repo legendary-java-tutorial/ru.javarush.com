@@ -1,0 +1,167 @@
+Параллельные операции над массивами в Java 8 - перевод
+<p>----------------------------------------</p>
+перевод статьи
+//Parallel Array Operations in Java 8
+//By Eric Bruno, March 25, 2014
+drdobbs.com/jvm/parallel-array-operations-in-java-8/240166287
+//E
+<p>----------------------------------------</p>
+перевод статьи
+<h6>//Parallel Array Operations in Java 8
+//By Eric Bruno, March 25, 2014
+//drdobbs.com/jvm/parallel-array-operations-in-java-8/240166287
+//Eric Bruno работает в финансовом секторе и ведёт блоги для сайта Dr. Dobb's.</h6>
+
+
+Новый релиз Java упрощает параллельное взаимодействие с массивами - что приводит к значительно улучшенной производительности с минимумом написания кода.
+
+Сейчас, Oracle выпускает Java SE 8 - что является огромным шагом вперёд в плане языка. Одна из важных деталей этого релиза - улучшенная concurrency(параллельность), часть которой появляется в базовом классе java.util.Arrays. В этот класс добавлены новые методы, которые я и буду описывать в этой статье. Некоторые из этих них используются в другой новой фиче JDK8 - в lambda(лямбдах). Но перейдем к делу.
+
+<h5>Arrays.paralellSort()</h5>
+
+Множество особенностей parallelSort базируется на параллельном алгоритме сортировки слиянием, который рекурсивно разделяет массив на части, сортирует их, а потом рекомбинирует их одновременно в итоговый массив. Используя его вместо существующего, последовательного метода Arrays.sort выражается в улучшенной производительности и эффективности при сортировке больших массивов. <cut>Например, код ниже использует последовательную сортировку sort() и параллельную parallelSort() для того чтобы отсортировать один и тот же массив данных:
+<code>public class ParallelSort {
+    public static void main(String[] args) {
+        ParallelSort mySort = new ParallelSort();
+         
+        int[] src = null;
+ 
+        System.out.println("\nSerial sort:");
+        src = mySort.getData();
+        mySort.sortIt(src, false);
+ 
+        System.out.println("\nParallel sort:");
+        src = mySort.getData();
+        mySort.sortIt(src, true);
+    }
+     
+    public void sortIt(int[] src, boolean parallel) {
+        try {
+            System.out.println("--Array size: " + src.length);
+             
+            long start = System.currentTimeMillis();
+            if ( parallel == true ) {
+                Arrays.parallelSort(src);
+            }
+            else {
+                Arrays.sort(src);
+            }
+            long end = System.currentTimeMillis();
+ 
+            System.out.println(
+                "--Elapsed sort time: " + (end-start));
+        }
+        catch ( Exception e ) {
+            e.printStackTrace();
+        }
+    }
+     
+    private int[] getData() {
+        try {
+            File file = new File("src/parallelsort/myimage.png");
+            BufferedImage image = ImageIO.read(file);
+            int w = image.getWidth();
+            int h = image.getHeight();
+            int[] src = image.getRGB(0, 0, w, h, null, 0, w);
+            int[] data = new int[src.length * 20];
+            for ( int i = 0; i < 20; i++ ) {
+                System.arraycopy(
+                    src, 0, data, i*src.length, src.length);
+            }
+            return data;
+        }
+        catch ( Exception e ) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+}</code>
+Для проверки, я загрузил чистые данные из изображения в массив, что заняло 46,083,360 байт(а у вас будет зависеть от изображений которые будете использовать). Метод с последовательной сортировкой занял почти 3,000 миллисекунд для того чтобы отсортировать массив на моём 4х ядерном ноутбуке, в то время как метод параллельной сортировки занял максимум порядка 700 миллисекунд. Согласитесь, не часто случается чтобы новое обновление языка улучшало бы производительность класса в 4 раза.
+
+
+<h5>Arrays.parallelPrefix()</h5>
+
+Метод parallelPrefix применяет заданную математическую функцию к элементам массива в совокупности, обрабатывая результаты внутри массива параллельно. Это намного более эффективно на современном многоядерном железе, по сравнению с последовательными операциями на больших массивах. Есть много реализаций этого метода для разных базовых типов операций над данными(например IntBinaryOperator, DoubleBinaryOperator, LongBinaryOperator и так далее), также как и для различных типов математических операторов. Приведу пример суммирования с накоплением на параллельном массиве, использующего тот же самый большой массив, как и в предыдущем примере, который завершается примерно за 100 миллисекунд на моём 4х ядерном ноутбуке.
+<code>    public class MyIntOperator implements IntBinaryOperator {
+        @Override
+        public int applyAsInt(int left, int right) {
+            return left+right;
+        }
+    }
+ 
+    public void accumulate() {
+        int[] src = null;
+ 
+        // accumulate test
+        System.out.println("\nParallel prefix:");
+        src = getData();
+        IntBinaryOperator op = new ParallelSort.MyIntOperator();
+        long start = System.currentTimeMillis();
+ 
+        Arrays.parallelPrefix(src, new MyIntOperator());
+         
+        long end = System.currentTimeMillis();
+        System.out.println("--Elapsed sort time: " + (end-start));
+    }
+    ...
+}</code>
+<h5>
+Arrays.parallelSetAll()</h5>
+
+Новый метод parallelSetAll() создает массив и устанавливает каждому элементу массива значение в соответствии с генерирующей эти значения функцией, используя параллельность для повышения эфективности. Этот метод основан на лямбдах(называемых "замыканиями"(closures) в других языках)<strong>(и, да, тут ошибка автора, ибо лямбды и замыкания это разные вещи)</strong><em></em>, и которые являются еще одной новинкой JDK8, которую мы обсудим в будущих статьях. Будет достаточно заметить, лямбды, чей синтаксис легко опознать по оператору ->, производящему операцию над правой частью после стрелки для всех переданных ему элементов. В примере кода, представленном ниже - действие производится для каждого элемента в массиве, проиндексированного по i.
+Array.parallelSetAll() генерирует элементы массива. Например, следующий код заполняет большой массив случайными integer-значениями:
+<code>public void createLargeArray() {
+    Integer[] array = new Integer[1024*1024*4]; // 4M
+    Arrays.parallelSetAll(
+        array, i -> new Integer( new Random().nextInt()));
+}</code>
+Для создания более сложного генератора элементов массива(например, такого что генерировал бы значения на основе считывания с датчиков из реального мира), можно использовать код близкий к следующему:
+<code>public void createLargeArray() {
+   Integer[] array = new Integer[1024*1024*4]; // 4M
+   Arrays.parallelSetAll(
+       array, i -> new Integer(
+           customGenerator(getNextSensorValue())));
+   }
+     
+    public int customGenerator(int arg){
+        return arg + 1; //  some fancy formula here...
+    }
+ 
+    public int getNextSensorValue() {
+        // Just random for illustration
+        return new Random().nextInt();
+    }</code>
+Мы начнем с getNextSensorValue, который в реальности будет запрашивать датчик(например термометр) вернуть ему текущее значение. Здесь же для примера генерируется случайное значение. 
+Следующий customGenerator() метод генерирует массив элементов с использованием выбранной логики на основе выбранного вами случая. Вот небольшое дополнение, но для реальных случаев, тут было бы что-нибудь посложнее.
+
+<h5>Что такое Spliterator?</h5>
+
+Другое дополнение к классу Arrays, которое использует параллельность и лямбды - это Spliterator, который используется для итерации и разделения массива. Его действие не ограничено только массивами - он также хорошо работает и для классов Collection и IO каналов. Spliterator'ы работают на основе автоматического разбиения массива на различные части, а новый Spliterator устанавливается для того чтобы производить операции над этими связанными подмассивами. 
+Его название составленно из Iterator(итератора), который "разделяет"(splits) его работу по перемещению-итерации на части. Используя наши, всё те же, данные, мы можем произвести раздельноитерированное(splititerated) действие над нашим массивом следующим образом:
+<code>public void spliterate() {
+    System.out.println("\nSpliterate:");
+    int[] src = getData();
+    Spliterator<Integer> spliterator = Arrays.spliterator(src);
+    spliterator.forEachRemaining( n -> action(n) );
+}
+ 
+public void action(int value) {
+    System.out.println("value:"+value);
+    // Perform some real work on this data here...
+}</code>
+Выполнение действий над данными таким образом использует плюсы параллельности. Вы можете также задать параметры сплититератора, такие как минимальный размер каждого подмассива.
+
+<h5>
+Stream - обработка</h5>
+
+Наконец, из массива(Array), вы можете создавать объект Stream, который позволяет производить параллельную обработку на выборке данных как целом, обобщенном в последовательность-поток(stream). Разница между коллекцией(Collection) данных и последовательностью-потоком(Stream) из новой JDK8 такая что коллекции позволяют работать с элементами по-отдельности, когда как последовательность-поток не позволяет. Например, с использованием коллекций, вы можете добавлять элементы, удалять, и вставлять в середину. Последовательность-поток Stream не позволяет манипулировать отдельными элементами из набора данных, но вместо этого позволяет выполнять функции над данными как одним целом. Вы можете выполнять такие полезные операции как вытащить только конкретные значения(игнорируя повторы) из набора, операции преобразования данных, нахождение минимумов и максимумов массива, функций map-reduce(используются при распределённых вычислениях), и других математических операциях. Следующий простой пример использует concurrency для параллельной обработки массива данных и суммирования элементов.
+<code>public void streamProcessing() {
+    int[] src = getData();
+    IntStream stream = Arrays.stream(src);
+    int sum = stream.sum();
+    System.out.println("\nSum: " + sum);
+}</code>
+<h5>
+Заключение</h5>
+
+Java 8 определённо будет одним из самых полезных обновлений языка. Параллельные фичи, упомянутые здесь, лямбды, и множество других расширений, будут предметом рассмотрения на нашем сайте в других обзорах на Java 8.

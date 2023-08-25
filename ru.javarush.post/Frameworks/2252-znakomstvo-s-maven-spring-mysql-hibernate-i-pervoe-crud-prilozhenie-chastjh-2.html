@@ -1,0 +1,446 @@
+Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 2)
+<p>----------------------------------------</p>
+Добрый день. В этой статье я хотел бы поделиться своим первым знакомством с такими вещами как Maven, Spring, Hibernate, MySQL и Tomcat в процессе создания простого CRUD приложения. Это вторая часть из 4...
+<p>----------------------------------------</p>
+Добрый день.
+
+В этой статье я хотел бы поделиться своим первым знакомством с такими вещами как Maven, Spring, Hibernate, MySQL и Tomcat в процессе создания простого CRUD приложения. Это вторая часть из 4. Статья рассчитана в первую очередь на тех, кто уже прошел здесь 30-40 уровней, но за пределы чистой джавы пока не выбирался и только начинает (или собирается начинать) выходить в открытый мир со всеми этими технологиями, фреймворками и прочими незнакомыми словами.
+
+<img data-id="794c70dd-f48a-4296-928f-67358130d4b0" data-max-width="850" alt="" src="https://cdn.javarush.com/images/article/794c70dd-f48a-4296-928f-67358130d4b0/1024.jpeg">Это вторая часть статьи "Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение".
+
+Первую часть можно увидеть перейдя по этой ссылке:  
+<a href="https://javarush.com/groups/posts/2253-znakomstvo-s-maven-spring-mysql-hibernate-i-pervoe-crud-prilozhenie-chastjh-1" target="_blank" rel="nofollow">Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 1)</a>
+<h3>Содержание:</h3><ul>
+<li><a href="#Data-Access-Object">Data Access Object</a></li>
+<li><a href="#Service">Service</a></li>
+<li><a href="#Контроллер-и-представления">Контроллер и представления</a></li>
+<li><a href="#Repository-и-Service-как-компоненты-Spring">Repository и Service как компоненты Spring</a></li>
+</ul>Ну что ж, будем двигаться дальше, попробуем теперь наколдовать целое хранилище фильмов. В нашем маленьком и простеньком приложении конечно можно просто тупо запилить всю логику прямо в контроллере, но, как уже отмечалось, лучше сразу учиться делать все правильно. Поэтому сообразим несколько слоев. У нас будет <strong>DAO</strong>, отвечающий за работу с данными, <strong>Service</strong>, где будет всякая разная прочая логика, ну и <strong>Controller</strong> будет только обрабатывать запросы и вызывать нужные методы сервиса.
+<h2 id="Data-Access-Object">Data Access Object</h2><strong>Data Access Object (DAO)</strong> — это такой паттерн проектирования. Смысл в том, чтобы создать специальную прослойку, которая будет отвечать исключительно за доступ к данным (работа с базой данных или другим механизмом хранения). В пакете <code>dao</code> создадим интерфейс <code>FilmDAO</code> в котором будут такие методы как добавить, удалить и т.д. Я их назвал несколько иначе, но они соответствуют основным <strong>CRUD</strong> операциям (<strong>C</strong>reate, <strong>R</strong>ead, <strong>U</strong>pdate, <strong>D</strong>elete).
+<table class="table table--striped">
+<tr>
+<td><p>Тут стоит отметить, что помимо DAO существует еще и такой подход как Repository, они, вроде как, очень похожи, оба используются для работы с данными. Я пока не разобрался, какие у этих подходов особенности и какая между ними разница. Поэтому я возможно здесь ошибаюсь и это следует называть именно репозиторием, а не дао, а может это вообще что-то среднее. Но в большинстве примеров, которые я видел и изучал, это называют именно DAO, так что и я, пожалуй, назову так же. При этом, возможно, где-то далее по тексту употреблю слово репозиторий. В любом случае, если я с этим где-то не прав, прошу меня простить.</p>
+</td>
+</tr>
+</table><pre class="lang-java line-numbers"><code>
+package testgroup.filmography.dao;
+
+import testgroup.filmography.model.Film;
+
+import java.util.List;
+
+public interface FilmDAO {
+    List&ltFilm&gt; allFilms();
+    void add(Film film);
+    void delete(Film film);
+    void edit(Film film);
+    Film getById(int id);
+}
+</code></pre>
+Теперь нам нужна его реализация. Подключать базу данных пока не будем, все еще страшновато. Чтобы потренироваться и попривыкнуть для начала имитируем хранилище в памяти, создадим список с несколькими фильмами. Для хранения списка будем использовать не <code>List</code>, а <code>Map</code>, чтобы было удобно получать конкретный фильм по его <code>id</code>, не перебирая для этого весь список. Для генерации <code>id</code> используем <em>AtomicInteger</em>. Создадим класс <code>FilmDAOImpl</code>, реализуем все методы и заполним мапу. Что-то вроде этого.
+
+<pre class="lang-java line-numbers"><code>
+package testgroup.filmography.dao;
+
+import testgroup.filmography.model.Film;
+
+import java.util.*;
+
+public class FilmDAOImpl implements FilmDAO {
+    private static final AtomicInteger AUTO_ID = new AtomicInteger(0);
+    private static Map&lt;Integer, Film&gt; films = new HashMap&lt;&gt;();
+
+    static {
+        Film film1 = new Film();
+        film1.setId(AUTO_ID.getAndIncrement());
+        film1.setTitle("Inception");
+        film1.setYear(2010);
+        film1.setGenre("sci-fi");
+        film1.setWatched(true);
+        films.put(film1.getId(), film1);
+
+        // + film2, film3, film4, ...
+    }
+    @Override
+    public List&lt;Film&gt; allFilms() {
+        return new ArrayList&lt;&gt;(films.values());
+    }
+
+    @Override
+    public void add(Film film) {
+        film.setId(AUTO_ID.getAndIncrement());
+        films.put(film.getId(), film);
+    }
+
+    @Override
+    public void delete(Film film) {
+        films.remove(film.getId());
+    }
+
+    @Override
+    public void edit(Film film) {
+        films.put(film.getId(), film);
+    }
+
+    @Override
+    public Film getById(int id) {
+        return films.get(id);
+    }
+}
+</code></pre><h2 id="Service">Service</h2>Теперь добавим сервисный слой. В принципе в данном примере вполне можно обойтись и без него, ограничившись DAO, приложение будет очень простое и какой-то сложной логики в сервисе не планируется. Но вдруг потом в будущем захочется добавить в проект всяких сложностей и интересностей, поэтому для полноты картины все-таки пусть будет. Пока же в нем просто будут вызываться методы из DAO. В пакете <code>service</code> создадим интерфейс <code>FilmService</code>.
+
+<pre class="lang-java line-numbers"><code>
+package testgroup.filmography.service;
+
+import testgroup.filmography.model.Film;
+
+import java.util.List;
+
+public interface FilmService {
+    List&lt;Film&gt; allFilms();
+    void add(Film film);
+    void delete(Film film);
+    void edit(Film film);
+    Film getById(int id);
+}
+</code></pre>
+И его реализация:
+
+<pre class="lang-java line-numbers"><code>
+package testgroup.filmography.service;
+
+import testgroup.filmography.dao.FilmDAO;
+import testgroup.filmography.dao.FilmDAOImpl;
+import testgroup.filmography.model.Film;
+
+import java.util.List;
+
+public class FilmServiceImpl implements FilmService {
+    private FilmDAO filmDAO = new FilmDAOImpl();
+
+    @Override
+    public List&lt;Film&gt; allFilms() {
+        return filmDAO.allFilms();
+    }
+
+    @Override
+    public void add(Film film) {
+        filmDAO.add(film);
+    }
+
+    @Override
+    public void delete(Film film) {
+        filmDAO.delete(film);
+    }
+
+    @Override
+    public void edit(Film film) {
+        filmDAO.edit(film);
+    }
+
+    @Override
+    public Film getById(int id) {
+        return filmDAO.getById(id);
+    }
+}
+</code></pre>
+Структура проекта теперь выглядит следующим образом:
+<div class="row justify-content-center jr-image-wrap"><div class="col-12 col-sm-10 col-md-8"><img data-id="2c402ef5-3c3a-48bd-b992-b52a6ebce893" data-max-width="315" alt="Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 2) - 1" src="https://cdn.javarush.com/images/article/2c402ef5-3c3a-48bd-b992-b52a6ebce893/1024.jpeg"></div></div><h2 id="Контроллер-и-представления">Контроллер и представления</h2>Поработаем теперь над методами контроллера и наполнением страниц. 
+
+При наполнении страниц нам понадобятся некоторые приемы. Например чтобы вывести список фильмов нужен цикл, если, допустим, хотим менять какую-то надпись, в зависимости от параметров, нужны условия и т.д. Формат JSP (JavaServer Pages) позволяет использовать вставки java-кода, с которыми это все можно реализовать. Но использовать на странице java-код вперемешку с HTML-кодом не хочется. Это было бы, как минимум, очень некрасиво. 
+
+К счастью, для решения этой проблемы существует такая замечательная штука как <strong>JSTL</strong> (JavaServer Pages Standard Tag Library) или Стандартная Библиотека Тегов JSP. Она позволяет использовать в наших jsp-страницах целую кучу дополнительных тегов для самых разных нужд. Подключим ее в <code>pom.xml</code>:
+
+<pre class="lang-java line-numbers"><code>
+&lt;dependency&gt;
+      &lt;groupId&gt;jstl&lt;/groupId&gt;
+      &lt;artifactId&gt;jstl&lt;/artifactId&gt;
+      &lt;version&gt;1.2&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+Теперь займемся контроллером. Первым делом уберем оттуда создание объекта <code>Film</code>, это делалось для пробы и больше нам не нужно. Добавим туда сервис и будем вызывать его методы. 
+
+<pre class="lang-java line-numbers"><code>
+public class FilmController {
+    private FilmService filmService = new FilmServiceImpl();
+</code></pre>
+Ну и соответственно сделаем методы для каждого случая, добавить, удалить и т.д. Сначала метод для отображения главной страницы со списком фильмов:
+
+<pre class="lang-java line-numbers"><code>
+@RequestMapping(method = RequestMethod.GET)
+    public ModelAndView allFilms() {
+        List&lt;Film&gt; films = filmService.allFilms();
+        ModelAndView modelAndView = new ModelAndView();
+        modelAndView.setViewName("films");
+        modelAndView.addObject("filmsList", films);
+        return modelAndView;
+    }
+</code></pre>
+Тут ничего нового. Получаем список фильмов из сервиса и добавляем его в модель. Теперь сделаем главную страницу, <code>films.jsp</code>, которую возвращает этот метод:
+
+<pre class="lang-java line-numbers"><code>
+&lt;%@ page contentType="text/html;charset=UTF-8" language="java" %&gt;
+&lt;%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %&gt;
+&lt;html&gt;
+&lt;head&gt;
+&lt;title&gt;FILMS&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+
+&lt;h2&gt;Films&lt;/h2&gt;
+&lt;table&gt;
+    &lt;tr&gt;
+        &lt;th&gt;id&lt;/th&gt;
+        &lt;th&gt;title&lt;/th&gt;
+        &lt;th&gt;year&lt;/th&gt;
+        &lt;th&gt;genre&lt;/th&gt;
+        &lt;th&gt;watched&lt;/th&gt;
+        &lt;th&gt;action&lt;/th&gt;
+    &lt;/tr&gt;
+    &lt;c:forEach var="film" items="${filmsList}"&gt;
+        &lt;tr&gt;
+            &lt;td&gt;${film.id}&lt;/td&gt;
+            &lt;td&gt;${film.title}&lt;/td&gt;
+            &lt;td&gt;${film.year}&lt;/td&gt;
+            &lt;td&gt;${film.genre}&lt;/td&gt;
+            &lt;td&gt;${film.watched}&lt;/td&gt;
+            &lt;td&gt;
+                &lt;a href="/edit/${film.id}"&gt;edit&lt;/a&gt;
+                &lt;a href="/delete/${film.id}"&gt;delete&lt;/a&gt;
+            &lt;/td&gt;
+        &lt;/tr&gt;
+    &lt;/c:forEach&gt;
+&lt;/table&gt;
+
+&lt;h2&gt;Add&lt;/h2&gt;
+&lt;c:url value="/add" var="add"/&gt;
+&lt;a href="${add}"&gt;Add new film&lt;/a&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+Рассмотрим эту страницу подробнее, что тут вообще к чему.
+
+<em><strong>&lt;%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %&gt;</strong></em> — тут подключается JSTL core, которая включает основные теги создания циклов, условий и т.д.
+<ul>
+<li><code><strong>&lt;table&gt;</strong></code> — тег для создания таблицы.</li>
+<li><code><strong>&lt;tr&gt;</strong></code> — строка таблицы</li>
+<li><code><strong>&lt;th&gt;</strong></code> — заголовок столбца</li>
+<li><code><strong>&lt;td&gt;</strong></code> — ячейка таблицы</li>
+</ul>Сначала делаем строку-шапку таблицы, с названиями столбцов. Затем <code>&lt;c:forEach var="film" items="${filmsList}"&gt;</code> — в цикле (который мы взяли из JSTL core) пробегаемся по всем элементам переданного списка (<code>filmsList</code>), для каждого элемента (<code>film</code>) создаем новую строку и в каждую ячейку записываем соответствующее значение. Тут есть один момент, запись вроде <code>film.id</code> нужно понимать как <code>film.getId()</code>, т.е. не напрямую к полю обращение, а именно геттер вызывается. В последнем столбце (<code>action</code>) делаем ссылки для удаления и редактирования (соответствующие методы сейчас сделаем). Ну и внизу ссылка на метод добавления нового фильма.
+
+Вот как это выглядит:
+<img data-id="f3aff555-6b40-4567-a1fe-5276215e54ed" data-max-width="850" alt="" src="https://cdn.javarush.com/images/article/f3aff555-6b40-4567-a1fe-5276215e54ed/1024.jpeg">Далее займемся методом, который будет возвращать страницу редактирования конкретного фильма:
+
+<pre class="lang-java line-numbers"><code>
+@RequestMapping(value = "/edit/{id}", method = RequestMethod.GET)
+    public ModelAndView editPage(@PathVariable("id") int id) {
+        Film film = filmService.getById(id);
+        ModelAndView modelAndView = new ModelAndView();
+        modelAndView.setViewName("editPage");
+        modelAndView.addObject("film", film);
+        return modelAndView;
+    }
+</code></pre>
+Здесь появилось кое-что новенькое — это аннотация <code>@PathVariable</code>. Она указывает на то, что данный параметр (<code>int id</code>) получается из адресной строки. Чтобы указать место этого параметра в адресной строке используется конструкция <code>{id}</code> (кстати, если имя переменной совпадает, как в данном случае, то в скобках это можно не указывать, а написать просто <code>@PathVariable int id</code>). 
+
+Итак, на главной странице мы сделали ссылки для каждого фильма с указанием <code>id</code>:
+
+<pre class="lang-java line-numbers"><code>
+&lt;a href="/edit/${film.id}"&gt;edit&lt;/a&gt;
+</code></pre>
+Затем это значение присваивается параметру метода и далее по нему мы через сервис из репозитория получаем конкретный фильм и добавляем его в модель.
+
+Это был метод для получения страницы редактирования, теперь нужен метод для самого редактирования:
+
+<pre class="lang-java line-numbers"><code>
+@RequestMapping(value = "/edit", method = RequestMethod.POST)
+    public ModelAndView editFilm(@ModelAttribute("film") Film film) {
+        ModelAndView modelAndView = new ModelAndView();
+        modelAndView.setViewName("redirect:/");
+        filmService.edit(film);
+        return modelAndView;
+    }
+</code></pre>
+В методе <code>editPage</code> мы добавили в модель атрибут:
+
+<pre class="lang-java line-numbers"><code>
+modelAndView.addObject("film", filmService.getById(id));
+</code></pre>
+И теперь с помощью аннотации <code>@ModelAttribute</code> мы получаем этот атрибут и можем его изменить. Метод запроса <code>POST</code> потому что здесь мы будем передавать данные. "<code>redirect:/</code>" означает, что после выполнения данного метода мы будем перенаправлены на адрес "<code>/</code>", т.е. запустится метод <code>allFilms</code> и мы вернемся на главную страницу.
+
+Теперь сделаем саму страницу <code>editPage.jsp</code>:
+
+<pre class="lang-java line-numbers"><code>
+&lt;%@ page contentType="text/html;charset=UTF-8" language="java" %&gt;
+&lt;%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;Edit&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;c:url value="/edit" var="var"/&gt;
+&lt;form action="${var}" method="POST"&gt;
+    &lt;input type="hidden" name="id" value="${film.id}"&gt;
+    &lt;label for="title"&gt;Title&lt;/label&gt;
+    &lt;input type="text" name="title" id="title"&gt;
+    &lt;label for="year"&gt;Year&lt;/label&gt;
+    &lt;input type="text" name="year" id="year"&gt;
+    &lt;label for="genre"&gt;Genre&lt;/label&gt;
+    &lt;input type="text" name="genre" id="genre"&gt;
+    &lt;label for="watched"&gt;Watched&lt;/label&gt;
+    &lt;input type="text" name="watched" id="watched"&gt;
+    &lt;input type="submit" value="Edit film"&gt;
+&lt;/form&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre><ul>
+<li><code><strong>&lt;form&gt;</strong></code> — форма для сбора и отправки данных, с указанием кто их будет обрабатывать (<code><strong>/edit</strong></code>)</li>
+<li><code><strong>&lt;input&gt;</strong></code> — элементы интерфейса для взаимодействия с пользователем (кнопки, поля ввода и т.д.)</li>
+<li><code><strong>&lt;label&gt;</strong></code> — текстовая метка</li>
+</ul>Итак, при нажатии кнопки <code>&lt;input type="submit" value="Edit film"&gt;</code> данные из формы будут отправлены на сервер (специально добавлено невидимое поле со значением <code>id</code>, чтобы сервер знал какую именно запись в БД нужно обновить). В методе <code>editFilm</code> они будут присвоены соответствующим полям атрибута <code>film</code>. Затем мы вернемся на главную страницу с обновленным списком.
+
+Выглядит страница редактирования так:
+<img data-id="b8f6f6fc-b97c-48a4-91ef-17d935d3471e" data-max-width="850" alt="" src="https://cdn.javarush.com/images/article/b8f6f6fc-b97c-48a4-91ef-17d935d3471e/1024.jpeg">Теперь займемся добавлением новых фильмов в список. Для этого также понадобится форма для ввода и отправки данных. Можно сделать форму на главной странице или можно сделать отдельную страницу, наподобие <code>editPage.jsp</code>. Но, с другой стороны, форма для добавления ведь будет точно такая же, как и для редактирования, т.е. 4 поля для ввода и кнопка отправки. Так зачем тогда создавать новую страницу, снова используем <code>editPage.jsp</code>.
+
+Метод для получения страницы:
+
+<pre class="lang-java line-numbers"><code>
+@RequestMapping(value = "/add", method = RequestMethod.GET)
+    public ModelAndView addPage() {
+        ModelAndView modelAndView = new ModelAndView();
+        modelAndView.setViewName("editPage");
+        return modelAndView;
+    }
+</code></pre>
+В методе <code>editPage</code> мы дополнительно передавали атрибут, чтобы потом его изменить, а тут мы просто получаем страницу.
+
+И метод для добавления:
+
+<pre class="lang-java line-numbers"><code>
+@RequestMapping(value = "/add", method = RequestMethod.POST)
+    public ModelAndView addFilm(@ModelAttribute("film") Film film) {
+        ModelAndView modelAndView = new ModelAndView();
+        modelAndView.setViewName("redirect:/");
+        filmService.add(film);
+        return modelAndView;
+    }
+</code></pre>
+Поскольку атрибут мы сюда не передавали, здесь будет создан новый объект <code>Film</code>. Ну а так здесь в принципе ничего нового.
+
+Стоит также обратить внимание, что у нас оба метода доступны по адресу "<code>/add</code>". Это возможно благодаря тому, что они реагируют на разные типы запроса. Переходя по ссылке на главной странице мы делаем GET-запрос, что приводит нас в метод <code>addPage</code>. А когда на странице добавления мы жмем кнопку отправки данных, делается POST-запрос, за это уже отвечает метод <code>addFilm</code>.
+
+Для добавления нового фильма мы решили использовать ту же страницу, что и для редактирования. Но там ведь данные отправляются на адрес "<code>/edit</code>":
+
+<pre class="lang-java line-numbers"><code>
+&lt;c:url value="/edit" var="var"/&gt;
+&lt;form action="${var}" method="POST"&gt;
+    &lt;input type="submit" value="Edit film"&gt;
+&lt;/form&gt;
+</code></pre>
+Нам нужно немного подправить страницу, чтобы она вела себя по-разному для добавления и редактирования. Для решения этого вопроса воспользуемся условиями из все той же библиотеки JSTL core:
+
+<pre class="lang-java line-numbers"><code>
+&lt;%@ page contentType="text/html;charset=UTF-8" language="java" %&gt;
+&lt;%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;c:if test="${empty film.title}"&gt;
+        &lt;title&gt;Add&lt;/title&gt;
+    &lt;/c:if&gt;
+    &lt;c:if test="${!empty film.title}"&gt;
+        &lt;title&gt;Edit&lt;/title&gt;
+    &lt;/c:if&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;c:if test="${empty film.title}"&gt;
+    &lt;c:url value="/add" var="var"/&gt;
+&lt;/c:if&gt;
+&lt;c:if test="${!empty film.title}"&gt;
+    &lt;c:url value="/edit" var="var"/&gt;
+&lt;/c:if&gt;
+&lt;form action="${var}" method="POST"&gt;
+    &lt;c:if test="${!empty film.title}"&gt;
+        &lt;input type="hidden" name="id" value="${film.id}"&gt;
+    &lt;/c:if&gt;
+    &lt;label for="title"&gt;Title&lt;/label&gt;
+    &lt;input type="text" name="title" id="title"&gt;
+    &lt;label for="year"&gt;Year&lt;/label&gt;
+    &lt;input type="text" name="year" id="year"&gt;
+    &lt;label for="genre"&gt;Genre&lt;/label&gt;
+    &lt;input type="text" name="genre" id="genre"&gt;
+    &lt;label for="watched"&gt;Watched&lt;/label&gt;
+    &lt;input type="text" name="watched" id="watched"&gt;
+    &lt;c:if test="${empty film.title}"&gt;
+        &lt;input type="submit" value="Add new film"&gt;
+    &lt;/c:if&gt;
+    &lt;c:if test="${!empty film.title}"&gt;
+        &lt;input type="submit" value="Edit film"&gt;
+    &lt;/c:if&gt;
+&lt;/form&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+Т.е. мы просто проверяем поле <code>film.title</code>. Если оно пустое, значит это новый фильм, мы должны заполнить для него все данные и добавить в список. Если это поле не пустое, значит это фильм из списка и его нужно просто изменить. Т.о. получаем два варианта нашей странички:
+<img data-id="f7e79949-4682-49ad-b407-15d3662158e3" data-max-width="850" alt="" src="https://cdn.javarush.com/images/article/f7e79949-4682-49ad-b407-15d3662158e3/1024.jpeg">Ну и последний метод контроллера для удаления фильма из списка:
+
+<pre class="lang-java line-numbers"><code>
+@RequestMapping(value="/delete/{id}", method = RequestMethod.GET)
+    public ModelAndView deleteFilm(@PathVariable("id") int id) {
+        ModelAndView modelAndView = new ModelAndView();
+        modelAndView.setViewName("redirect:/");
+        Film film = filmService.getById(id);
+        filmService.delete(film);
+        return modelAndView;
+    }
+</code></pre>
+Думаю, нет нужды тут что-то комментировать, все это уже рассмотрели. Ссылки на этот адрес на главной странице мы уже сделали.
+
+Ну что ж, тут вроде как все готово, можно еще раз запустить и посмотреть, как все работает.
+<h2 id="Repository-и-Service-как-компоненты-Spring">Repository и Service как компоненты Spring</h2>Сделаем еще одну небольшую поправку. Дело в том, что сейчас наши хранилище и сервис это просто классы, и чтобы их использовать приходится самим создавать объект класса (<code>new FilmServiceImpl()</code>). Но у нас ведь не просто так подключен <strong>Spring</strong>, так пусть он сам это дело и контролирует. 
+
+Чтобы отдать наши классы под управление Spring'а, нужно обозначить, что они являются компонентами. Для этого отметим их специальными аннотациями:
+
+<pre class="lang-java line-numbers"><code>
+@Repository
+public class FilmDAOImpl implements FilmDAO {
+</code></pre>
+<pre class="lang-java line-numbers"><code>
+@Service
+public class FilmServiceImpl implements FilmService {
+</code></pre>
+Аннотации <code>@Repository</code> и <code>@Service</code>, так же как и <code>@Controller</code> являются производными от <code>@Component</code>. В чем конкретные особенности и различия этих трех аннотаций и чем они отличаются от простого компонента стоит почитать отдельно в документации или гайдах. Пока же достаточно знать, что эти аннотации сообщают Spring о том, что данные классы являются репозиторием и сервисом соответственно.
+
+И теперь нам больше не нужно самим создавать конкретные объекты этих классов:
+
+<pre class="lang-java line-numbers"><code>
+private FilmService filmService = new FilmServiceImpl(); 
+</code></pre>
+Вместо этого можно пометить поле специальной аннотацией и Spring сам подберет подходящую реализацию:
+
+<pre class="lang-java line-numbers"><code>
+@Autowired
+private FilmService filmService;
+</code></pre>
+Аннотация <code>@Autowired</code> (автосвязывание) сообщает Spring о том, что он должен покопаться у себя в контексте и подставить сюда подходящий бин. Очень удобно. Если до этого мы использовали интерфейсы, чтобы не беспокоиться насчет конкретной реализации методов, то теперь нам не нужно беспокоиться даже насчет реализации самого интерфейса и даже знать ее название.
+
+Идея подсказывает, что использовать автосвязывание на поле не рекомендуется, лучше использовать конструктор или сеттер. Подробнее об этом почитаем в документации. Для нас в принципе это не важно, можно смело оставлять так. Но, раз уж идея просит, то уважим, чтоб все было красиво и без всяких желтых предупреждений. В классе контроллера создадим сеттер и пометим аннотацией его:
+
+<pre class="lang-java line-numbers"><code>
+@Controller
+public class FilmController {
+    
+    private FilmService filmService;
+
+    @Autowired
+    public void setFilmService(FilmService filmService) {
+        this.filmService = filmService;
+    }
+</code></pre>
+И аналогично делаем сеттер для <code>FilmDAO</code> в классе <code>FilmServiceImpl</code>.
+
+<em><strong>Продолжение следует...</strong></em>
+
+<a href="https://javarush.com/groups/posts/2253-znakomstvo-s-maven-spring-mysql-hibernate-i-pervoe-crud-prilozhenie-chastjh-1" target="_blank" rel="nofollow">Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 1)</a>
+Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 2)
+<a href="https://javarush.com/groups/posts/2251-znakomstvo-s-maven-spring-mysql-hibernate-i-pervoe-crud-prilozhenie-chastjh-3" target="_blank" rel="nofollow">Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 3)</a>
+<a href="https://javarush.com/groups/posts/2250-znakomstvo-s-maven-spring-mysql-hibernate-i-pervoe-crud-prilozhenie-chastjh-4" target="_blank" rel="nofollow">Знакомство с Maven, Spring, MySQL, Hibernate и первое CRUD приложение (часть 4)</a>

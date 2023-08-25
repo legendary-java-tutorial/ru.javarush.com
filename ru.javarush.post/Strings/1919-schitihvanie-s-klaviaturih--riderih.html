@@ -1,0 +1,238 @@
+Считывание с клавиатуры — «ридеры»
+<p>----------------------------------------</p>
+Привет! В лекциях и задачах мы научились выводить данные в консоль, и наоборот — считывать данные с клавиатуры. На самом деле, любая программа чаще всего существует не сама по себе. Она может общаться с другими программами, системами, интернетом и т.д ...
+
+<p>----------------------------------------</p>
+Привет! В лекциях и задачах мы научились выводить данные в консоль, и наоборот — считывать данные с клавиатуры. 
+
+<img data-max-width="800" data-id="ca05c0a5-0198-4e45-b2f9-8753df08c852" src="/images/article/ca05c0a5-0198-4e45-b2f9-8753df08c852/800.webp" class="img-fluid" alt="Считывание с клавиатуры — «ридеры» - 1">Ты даже научился использовать для этого сложную конструкцию:
+
+<pre class="lang-java line-numbers"><code>
+BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+</code></pre> 
+Но на один вопрос мы так и не ответили. 
+<h2>А как это вообще работает?</h2>На самом деле, любая программа чаще всего существует не сама по себе. Она может общаться с другими программами, системами, интернетом и т.д.
+
+Под словом “общаться” мы в первую очередь подразуемеваем “обмениваться данными”. То есть, принимать какие-то данные извне, а собственные данные — наоборот, куда-то отправлять.
+
+Примеров обмена данными между программами много даже в повседневной жизни.
+
+Так, на многих сайтах ты можешь вместо регистрации авторизоваться при помощи своего аккаунта в Facebook или Twitter. В этой ситуации две программы, скажем, Twitter и сайт, на котором ты пытаешься зарегистрироваться, обмениваются необходимыми данными между собой, после чего ты видишь конечный результат — успешную авторизацию.
+
+Для описания процесса обмена данными в программировании часто используется термин “<span class="text-bold">поток</span>”.
+
+Откуда вообще взялось такое название? “Поток” больше ассоциируется с рекой или ручьем, чем с программированием. На самом деле, это неспроста :)
+
+Поток — это, по сути, перемещающийся кусок данных. То есть в программировании по потоку “течет” не вода, а данные в виде байтов и символов.
+
+Из потока данных мы можем получать данные частями и что-то с ними делать.
+
+Опять же, применим "водно-текучую" аналогию: из реки можно зачерпнуть воды, чтобы сварить суп, потушить пожар или полить цветы.
+
+При помощи потоков ты можешь работать с любыми источниками данных: интернет, файловая система твоего компьютера или что-то еще — без разницы. Потоки — инструмент универсальный. Они позволяют программе получать данные отовсюду (входящие потоки) и отправлять их куда угодно (исходящие). Их задача одна — брать данные в одном месте и отправлять в другое.
+
+<span class="text-bold">Потоки делятся на два вида:</span>
+<ol>
+<li>Входящий поток (<span class="text-bold">Input</span>) — используется для приема данных</li>
+<li>Исходящий поток (<span class="text-bold">Output</span>) — для отправки данных.</li>
+</ol>Входящий поток данных в Java реализован в классе <span class="text-bold"><code>InputStream</code></span>, исходящий — в классе <span class="text-bold"><code>OutputStream</code></span>.
+
+Но есть и другой способ деления потоков. Они делятся не только на входящие и исходящие, но также на <span class="text-bold">байтовые</span> и <span class="text-bold">символьные</span>. Тут смысл понятен и без разъяснений: байтовый поток передает информацию в виде набора байт, а символьный — в виде набора символов.
+
+В этой лекции мы подробно остановимся на входящих потоках. А информацию про исходящие я приложу ссылки в конце, и ты сможешь прочитать об этом сам:)
+
+Итак, наш код:
+
+<pre class="lang-java line-numbers"><code>
+BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+</code></pre>
+Ты, наверное, еще во время чтения лекций подумал, что выглядит это довольно устрашающе? :) Но это только до тех пор, пока мы не разобрались, как эта штука работает. Сейчас исправим!
+
+Начнем с конца.
+
+<code>System.in</code> — это объект класса <code>InputStream</code>, о котором мы говорили в начале. Это входящий поток, и он привязан к системному устройству ввода данных — клавиатуре.
+
+Вы с ним, кстати, косвенно знакомы. Ведь ты часто используешь в работе его “коллегу” — <code>System.out</code>! <code>System.out</code> — это системный поток <span class="text-bold">вывода</span> данных, он используется для вывода на консоль в том самом методе <code>System.out.println()</code>, которым ты постоянно пользуешься:)
+
+<code>System.out</code> — поток для отправки данных на консоль, а <code>System.in</code> — для получения данных с клавиатуры. Все просто:)
+
+Более того: чтобы считать данные с клавиатуры, мы можем обойтись без этой большой конструкции и написать просто: <code>System.in.read()</code>;
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) throws IOException {
+
+       while (true) {
+           int x = System.in.read();
+           System.out.println(x);
+       }
+   }
+}
+</code></pre>
+В классе <code>InputStream</code> (а <code>System.in</code>, напомню, является объектом класса <code>InputStream</code>) есть метод <code>read()</code>, который позволяет считывать данные.
+
+Одна проблема: он считывает <span class="text-bold">байты</span>, а не <span class="text-bold">символы</span>. Попробуем считать с клавиатуры русскую букву “Я”.
+
+Вывод в консоль:
+
+<pre><code>
+<span class="text-red">Я</span>
+208
+175
+10
+</code></pre>
+Русские буквы занимают в памяти компьютера 2 байта (в отличие от английских, которые занимают всего 1). В данном случае из потока считалось 3 байта: два первых обозначают нашу букву “Я”, и еще один — перенос строки (Enter).
+
+Поэтому вариант использовать “голый” <code>System.in</code> нам не подойдет.
+
+Человек (за редкими исключениями!) не умеет читать байты. Тут-то нам на помощь и приходит следующий класс — <code>InputStreamReader</code>!
+
+Давай разберемся, что это за зверь такой.
+
+<pre class="lang-java line-numbers"><code>
+BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
+</code></pre>
+Мы передаем поток <code>System.in</code> объекту <code>InputStreamReader</code>.
+
+В общем-то, если перевести его название на русский, все выглядит очевидно — “считыватель входящих потоков”.
+
+Собственно, именно для этого он и нужен! Мы создаем объект класса <code>InputStreamReader</code> и передаем ему входящий поток, из которого он должен считывать данные. В данном случае...
+
+<pre class="lang-java line-numbers"><code>
+new InputStreamReader(System.in)
+</code></pre>
+...мы говорим ему: “ты будешь считывать данные из системного входящего потока (с клавиатуры)”.
+
+Но это не единственная его функция!
+
+<code>InputStreamReader</code> не только получает данные из потока. Он еще и <span class="text-bold">преобразует байтовые потоки в символьные</span>. Иными словами, тебе уже не нужно самому заботиться о переводе считанных данных с “компьютерного” языка на “человеческий” — <code>InputStreamReader</code> сделает все за тебя.
+
+<code>InputStreamReader</code>, конечно, может читать данные не только из консоли, но и из других мест. Например, из файла:
+
+<pre class="lang-java line-numbers"><code>
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
+public class Main {
+
+   public static void main(String[] args) throws IOException {
+       InputStreamReader inputStreamReader = new InputStreamReader(new FileInputStream("C:\\Users\\username\\Desktop\\testFile.txt"));
+   }
+}
+</code></pre>
+Здесь мы создали входящий поток данных <code>FileInputStream</code> (это одна из разновидностей <code>InputStream</code>), передали в него путь к файлу, а сам поток передали <code>InputStreamReader</code>’у.
+
+Теперь он сможет читать данные из этого файла, если файл по этому пути существует, конечно.
+
+Для чтения данных (неважно откуда, из консоли, файла или откуда-то еще) в классе <code>InputStreamReader</code> тоже используется метод <code>read()</code>.
+
+В чем же разница между <code>System.in.read()</code> и <code>InputStreamReader.read()</code>?
+
+Давай попробуем считать ту же самую букву “Я” с помощью <span class="text-bold"><code>InputStreamReader</code></span>.
+
+Напомню, вот что считал <code>System.in.read()</code>:
+
+<pre><code>
+<span class="text-red">Я</span>
+208
+175
+10
+</code></pre>
+А как ту же самую работу проделает <code>InputStreamReader</code>?
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) throws IOException {
+
+       InputStreamReader reader = new InputStreamReader(System.in);
+       while (true) {
+           int x = reader.read();
+           System.out.println(x);
+       }
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+<span class="text-red">Я</span>
+1071
+10
+</code></pre>
+Разница видна сразу. Последний байт — для переноса строки — остался без изменений (число 10), а вот считанная буква “Я” была преобразована в единый код “1071”. Это и есть считывание по символам! 
+
+Если вдруг не веришь, что код 1071 обозначает букву “Я” — в этом легко убедиться:)
+
+<pre class="lang-java line-numbers"><code>
+import java.io.IOException;
+
+public class Main {
+
+   public static void main(String[] args) throws IOException {
+
+       char x = 1071;
+       System.out.println(x);
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+Я
+</code></pre>
+Но если <code>InputStreamReader</code> так хорош, зачем нужен еще <code>BufferedReader</code>? <code>InputStreamReader</code> умеет и считывать данные, и  конвертировать байты в символы — а что нам еще нужно-то? Зачем еще один Reader? :/
+
+Ответ очень прост — для большей <span class="text-bold">производительности</span> и большего <span class="text-bold">удобства</span>.
+
+Начнем с производительности.
+
+<span class="text-bold"><a href="https://javarush.com/groups/posts/593-bufferedreader-i-bufferedwritter" target="_blank">BufferedReader</a></span> при считывании данных использует специальную область — буфер, куда “складывает” прочитанные символы. В итоге, когда эти символы понадобятся нам в программе — они будут взяты из буфера, а не напрямую из источника данных (клавиатуры, файла и т.п.), а это экономит очень много ресурсов. 
+
+Чтобы понять как это работает — представь, для примера, работу курьера в крупной компании.
+
+Курьер сидит в офисе и ждет, когда ему принесут посылки на доставку.
+
+Каждый раз, получив новую посылку, он может сразу же отправляться в дорогу. Но посылок в течение дня может быть много, и ему придется каждый раз мотаться между офисом и адресами.
+
+Вместо этого курьер поставил в офисе коробку, куда все желающие складывают свои посылки. Теперь курьер может спокойно взять коробку и отправляться по адресам — он сэкономит очень много времени, ведь ему не придется каждый раз возвращаться в офис.
+
+Коробка в этом примере как раз является буфером, а офис — источником данных. Курьеру намного проще при доставке брать письмо из общей коробки, чем каждый раз ехать в офис. Еще и бензин сэкономит. Так же и в программе — гораздо менее затратно по ресурсам брать данные из буфера, а не обращаться всякий раз к источнику данных.  
+
+Поэтому <code>BufferedReader</code>+<code>InputStreamReader</code> работает быстрее, чем просто <code>InputStreamReader</code>.
+
+С производительностью разобрались, а что с удобством?
+
+Главный плюс в том, что <code>BufferedReader</code> умеет читать данные не только по одному символу (хотя метод <code>read()</code> для этих целей у него тоже есть), а еще и целыми строками! Делается это с помощью метода <code>readLine()</code>;
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) throws IOException {
+
+       BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+       String s = reader.readLine();
+       System.out.println("Мы считали с клавиатуры эту строку:");
+       System.out.println(s);
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+<span class="text-red">JavaRush — лучший сайт для изучения Java!</span>
+Мы считали с клавиатуры эту строку:
+JavaRush — лучший сайт для изучения Java!
+</code></pre>
+Это особенно удобно в случае чтения большого объема данных. Одну-две строчки текста еще можно считать посимвольно. А вот считать “Войну и мир” по одной букве будет уже несколько проблематично :)
+Теперь работа потоков стала гораздо более понятной для тебя. Для дальнейшего изучения — вот тебе дополнительный источник:
+<ul>
+<li><a href="https://javarush.com/groups/posts/2020-vvod-vihvod-v-java-klassih-fileinputstream-fileoutputstream-bufferedinputstream" target="_blank">Ввод-вывод в Java. Классы FileInputStream, FileOutputStream, BufferedInputStream</a></li>
+</ul>Здесь ты можешь прочитать подробнее о входящих и исходящих потоках.
+
+Видеообзор <code>BufferedReader</code>’a от одного из наших учеников. Да-да, наши ученики не только учатся сами, но и записывают обучающие видео для других! Не забудь поставить лайк и подписаться на наш канал :)
+<div class="row"><div class="col col-md-10 col-lg-8"><div class="embed-responsive embed-responsive-16by9" style="white-space: normal"><iframe width="560" height="315" src="https://www.youtube.com/embed/PZa7LEY_7LM?rel=0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen=""></iframe></div></div></div><ul><li><a href="https://javarush.com/quests/lectures/questcore.level09.lecture06" target="_blank">BufferedReader/InputStreamReader</a> — одна из лекций JavaRush, посвященная <code>BufferedReader</code> и <code>InputStreamReader</code></li>
+<li><a href="https://docs.oracle.com/javase/7/docs/api/java/io/InputStreamReader.html" rel="nofollow" target="_blank">Class InputStreamReader</a></li>
+<li><a href="https://docs.oracle.com/javase/7/docs/api/java/io/BufferedReader.html" rel="nofollow" target="_blank">Class BufferedReader</a> — документация Oracle о классах <code>BufferedReader</code> и <code>InputStreamReader</code>.</li></ul>Лучше с самого начала учебы приучать себя к чтению официальной документации. Она является главным источником знаний по языку, и большинство ответов всегда можно найти там.

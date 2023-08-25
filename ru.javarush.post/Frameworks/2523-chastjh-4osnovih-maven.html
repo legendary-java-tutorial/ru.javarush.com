@@ -1,0 +1,191 @@
+Часть 4. Основы Maven
+<p>----------------------------------------</p>
+Maven — инструмент для управления и сборки проектов — настоящий помощник Java-программиста. Он облегчает жизнь девелоперу на всех стадиях работы: от создания структуры проекта и подключения необходимых библиотек до развертывания продукта на сервере...
+<p>----------------------------------------</p>
+Этот материал — часть цикла “Введение в Enterprise-разработку”. Предыдущие статьи:
+
+<ul>
+<li><a href="https://javarush.com/groups/posts/2514-vvedenie-v-enterprise-razrabotku" target="_blank">о сети</a>;</li>
+<li><a href="https://javarush.com/groups/posts/2519-chastjh-2-pogovorim-nemnogo-ob-arkhitekture-po" target="_blank">об архитектуре ПО</a>;</li>
+<li><a href="https://javarush.com/groups/posts/2521-chastjh-3-protokolih-httphttps" target="_blank">о протоколах HTTP/HTTPS</a>.</li>
+</ul><img data-max-width="850" alt="Часть 4. Основы Maven - 1" src="https://cdn.javarush.com/images/article/2e744a00-6e59-4eef-bc0f-9dd4f6f28d2e/original.jpeg"><span class="text-bold">Maven</span> — инструмент для управления и сборки проектов — настоящий помощник Java-программиста. 
+
+Он облегчает жизнь девелоперу на всех стадиях работы: от создания структуры проекта и подключения необходимых библиотек до развертывания продукта на сервере. При работе с любым фреймворком придется использовать Maven. Поэтому давай сегодня разберем его основные функции и посмотрим, как их нужно использовать.
+<h2>Пошаговая установка Maven</h2><ol>
+<li><p>Для начала нужно установить Maven, скачав его по <a href="https://maven.apache.org/download.cgi" rel="nofollow" target="_blank">этой ссылке</a>.</p></li>
+<li><p>Далее необходимо распаковать скачанный архив и установить переменной окружения M2_HOME ссылку на местонахождение распакованного архива. Например, C:\Program Files\maven\</p></li>
+<li><p>Чтобы проверить, что все установилось, в командной строке пропиши:</p>
+<p><em>mvn -version</em></p></li>
+<li><p>Если отобразится информация о версии Maven, Java и т.д., все готово к работе.</p></li>
+<li><p>Теперь открой IntelliJIDEA и создай новый проект. В первом же окне выбери Maven:</p>
+<img data-max-width="800" data-id="c8d42550-6e0a-47fc-b8ea-da0a4ef4098f" src="/images/article/c8d42550-6e0a-47fc-b8ea-da0a4ef4098f/800.jpeg" class="img-fluid" alt="Часть 4. Основы Maven - 2"></li>
+<li><p>Нажми Next и заполни следующее диалоговое окно:</p>
+<img data-max-width="800" data-id="211509da-b9e2-44a8-9225-0e12738e69e8" src="/images/article/211509da-b9e2-44a8-9225-0e12738e69e8/800.jpeg" class="img-fluid" alt="Часть 4. Основы Maven - 3"></li>
+<li><p>Далее стандартно создай проект в необходимом месте.</p>
+<p>После того, как проект создался, обрати внимание на его структуру:</p>
+<img data-max-width="250" alt="Часть 4. Основы Maven - 4" src="https://cdn.javarush.com/images/article/314e7ce9-a88e-4633-9bbe-cff5718b8467/original.jpeg"></li></ol>Это <span class="text-bold">cтандартная структура для Maven-проекта</span>:<ul>
+<li>в папке <em>src/main/java</em> содержатся java-классы;</li>
+<li>в <em>src/main/resources</em> — ресурсы, которые использует наше приложение (HTML-страницы, картинки, таблицы стилей и тд);</li>
+<li><em>src/test</em> — для тестов.</li>
+</ul>Еще обрати внимание на файл под название <span class="text-bold">pom.xml</span>. Это и есть <span class="text-bold">главный файл для управления Мавеном</span>. Все описание проекта содержится здесь. Пока там не слишком много информации, но сейчас мы будем ее добавлять.
+<h2>Управление зависимостями в Maven</h2>Возможно, ты встречал словосочетание “менеджер зависимостей” или “dependency manager”. Мавен все это умеет. Благодаря Мавену тебе не нужно тратить кучу времени на поиски нужной библиотеки в интернете, качать ее, а потом подключать к проекту: достаточно добавить необходимую в список зависимостей Мавена.
+
+<span class="text-bold">Зависимости записываются в XML-ноду dependencies</span> 
+
+Скажем, тебе в проекте нужна библиотека Apache Commons IO для упрощенной работы с файлами. Чтобы добавить библиотеку, напиши пять строк в pom.xml:
+
+<pre class="lang-java line-numbers"><code>
+&lt;dependency&gt;
+   &lt;groupId&gt;commons-io&lt;/groupId&gt;
+   &lt;artifactId&gt;commons-io&lt;/artifactId&gt;
+   &lt;version&gt;2.6&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+Теперь твой pom.xml должен выглядеть так:
+
+<pre class="lang-java line-numbers"><code>
+  &lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+   &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+   &lt;groupId&gt;example.com&lt;/groupId&gt;
+   &lt;artifactId&gt;example&lt;/artifactId&gt;
+   &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+
+   &lt;dependencies&gt;
+       &lt;dependency&gt;
+           &lt;groupId&gt;commons-io&lt;/groupId&gt;
+           &lt;artifactId&gt;commons-io&lt;/artifactId&gt;
+           &lt;version&gt;2.6&lt;/version&gt;
+       &lt;/dependency&gt;
+   &lt;/dependencies&gt;
+&lt;/project&gt;
+</code></pre>
+После этого разреши IntelliJ IDEA импортировать зависимость (диалоговое окно должно появиться в правом нижнем углу). Теперь библиотека готова к использованию:
+
+<pre class="lang-java line-numbers"><code>
+import org.apache.commons.io.FileUtils;
+
+import java.io.File;
+
+public class TestMaven {
+   public static void main(String[] args) {
+       File tempDirectory = FileUtils.getTempDirectory();
+   }
+}
+</code></pre>
+Все последующие зависимости тоже должны записываться внутри тега &lt;dependencies&gt;.
+
+У тебя может возникнуть вопрос: как узнать информацию, которую нужно указывать о библиотеке внутри тега &lt;dependency&gt;? Тут все просто. В таких случаях всегда задаются три параметра: groupId, artifactId и version. 
+
+Узнать эти параметры можно двумя способами:
+<ol><li><p>На сайте библиотеки. Если нам нужен Apache Commons IO, переходим на официальный сайт, выбираем вкладку Dependency Information. <a href="https://commons.apache.org/proper/commons-io/dependency-info.html" rel="nofollow" target="_blank">Здесь</a> есть вся необходимая информация — ее можно просто скопировать и добавить в наш раздел dependencies.</p></li>
+<li><p>В <a href="https://mvnrepository.com/" rel="nofollow" target="_blank">Maven-репозитории</a>. В поиске введи “apache commons io”, и ты увидишь все доступные версии библиотеки. После выбора нужной, просто скопируй:</p>
+
+<pre class="lang-java line-numbers"><code>
+&lt;dependency&gt;
+           &lt;groupId&gt;commons-io&lt;/groupId&gt;
+           &lt;artifactId&gt;commons-io&lt;/artifactId&gt;
+           &lt;version&gt;2.6&lt;/version&gt;
+       &lt;/dependency&gt;
+</code></pre>
+<p>и добавь в свой pom.xml.</p></li></ol><h2>Виды Maven-репозиториев</h2>Стоит еще раз упомянуть Мавен-репозиторий, потому что их на самом деле у нас два — <a href="https://mvnrepository.com/" rel="nofollow" target="_blank">внешний</a> (глобальный) и локальный, у тебя на компьютере. 
+
+Все библиотеки, которые ты добавляешь в свои проекты, сохраняются в локальном репозитории. Когда Maven добавляет необходимую зависимость в проект, он сначала проверяет локальный репозиторий на наличие такой библиотеки, и только если не находит ее там — обращается к внешнему.
+
+Как видишь, можно использовать Мавен для добавления зависимостей, но это не все, что он умеет делать. 
+
+<div class="email-subscription"><iframe frameborder="0" src="https://secure.esputnik.com.ua/4Q0Ef6d2SOs" width="100%" height="200" scrolling="no"></iframe></div><h2>Сборка Java-проекта с помощью Maven</h2>Возможно, новичку эта возможность покажется бессмысленной. Зачем это нужно, если есть IDE? Но нет! Во-первых, на сервере, на котором придется собирать приложение, может не быть не то что среды разработки, но и графического интерфейса. Во-вторых, на больших проектах Мавен лучше справляется с задачами по сборке проекта.
+
+Поэтому не будем томить себя ожиданием, а рассмотрим процесс сборки приложения с использованием Maven.
+<h3>Фазы</h3>Процесс построения приложения называют жизненным циклом Maven-проекта, и состоит он из фаз (phase). Посмотреть на них ты можешь в IDEA, нажав на Maven&gt;example&gt;Lifecycle в правом верхнем углу:
+<img data-max-width="300" alt="Часть 4. Основы Maven - 5" src="https://cdn.javarush.com/images/article/c9ae0e2d-85bf-4af2-8136-529635e1542e/original.jpeg">Как видишь, существует 9 фаз:<ol>
+<li>clean — удаляются все скомпилированные файлы из каталога target (место, в котором сохраняются готовые артефакты);</li>
+<li>validate — идет проверка, вся ли информация доступна для сборки проекта;</li>
+<li>compile — компилируются файлы с исходным кодом;</li>
+<li>test — запускаются тесты;</li>
+<li>package — упаковываются скомпилированные файлы (в jar, war и т.д. архив);</li>
+<li>verify — выполняются проверки для подтверждения готовности упакованного файла;</li>
+<li>install — пакет помещается в локальный репозиторий. Теперь он может использоваться другими проектами как внешняя библиотека;</li>
+<li>site — создается документация проекта;</li>
+<li>deploy — собранный архив копируется в удаленный репозиторий.</li>
+</ol>Все фазы выполняются последовательно: нельзя запустить, скажем, четвертую фазы, пока не завершены фазы 1-3. 
+
+Выполнить запуск фазы можно двумя способами:
+<ul>
+<li><p>через командную строку:</p>
+<p><em>mvn package</em></p>
+<img data-max-width="300" alt="Часть 4. Основы Maven - 6" src="https://cdn.javarush.com/images/article/3b91f9a6-46bd-4398-b4ab-209a529c12fa/original.jpeg"></li>
+<li><p>используя Intellij IDEA:</p>
+<img data-max-width="300" alt="Часть 4. Основы Maven - 7" src="https://cdn.javarush.com/images/article/a0b55764-2fdf-43c0-b27c-ba47085c12a9/original.jpeg">
+<p>До запуска package выполняются фазы validate, compile, test. Исключение — фаза clean. Ее желательно вызывать перед каждой новой сборкой проекта. Фазы можно перечислить через пробел:</p>
+<p><em>mvn clean package.</em></p></li>
+</ul>Также <span class="text-bold">у каждой фазы</span> есть пре- и пост-фазы: например, pre-deploy, post-deploy, pre-clean, post-clean, но используются они довольно редко.
+
+Кроме этого, у каждой фазы есть цели (goal). Стандартные цели заложены по умолчанию, дополнительные добавляются Maven-плагинами.
+
+Иногда во время какой-то фазы нужно выполнить дополнительный функционал. Для этого существуют Maven-плагины. Список официальных плагинов можно посмотреть <a href="https://maven.apache.org/plugins/" rel="nofollow" target="_blank">на сайте Мавена</a>. Но знай, что еще есть много пользовательских плагинов, которые можно найти на сторонних ресурсах. Ну и естественно, при какой-то экзотической необходимости, у тебя всегда остается возможность <span class="text-bold">написать такой плагин самому</span>. 
+<h3>Плагины</h3>Чтобы добавить Мавен-плагин в проект, его описание, аналогично зависимостям, нужно поместить в pom.xml в тег &lt;build&gt; и &lt;plugins&gt;.
+
+Например, нам нужен плагин для проверки того, что все наши внешние библиотеки используют самые последнии версии. Немного поискав интернете, можно найти <a href="https://github.com/khmarbaise/uptodate-maven-plugin" rel="nofollow" target="_blank">этот плагин</a> с инструкцией использования. 
+
+Установим его groupId, artifactId и version. Пропишем, какие цели он должен выполнить и на какой фазе. В нашем случае проверка зависимостей в текущем pom.xml установлена на фазе validate. 
+
+Теперь наш “помник” выглядит так:
+
+<pre class="lang-java line-numbers"><code>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+   &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+   &lt;groupId&gt;example.com&lt;/groupId&gt;
+   &lt;artifactId&gt;example&lt;/artifactId&gt;
+   &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+
+   &lt;build&gt;
+       &lt;plugins&gt;
+           &lt;plugin&gt;
+               &lt;groupId&gt;com.soebes.maven.plugins&lt;/groupId&gt;
+               &lt;artifactId&gt;uptodate-maven-plugin&lt;/artifactId&gt;
+               &lt;version&gt;0.2.0&lt;/version&gt;
+               &lt;executions&gt;
+                   &lt;execution&gt;
+                       &lt;goals&gt;
+                           &lt;goal&gt;dependency&lt;/goal&gt;
+                       &lt;/goals&gt;
+                       &lt;phase&gt;validate&lt;/phase&gt;
+                   &lt;/execution&gt;
+               &lt;/executions&gt;
+           &lt;/plugin&gt;
+       &lt;/plugins&gt;
+   &lt;/build&gt;
+
+   &lt;dependencies&gt;
+       &lt;dependency&gt;
+           &lt;groupId&gt;commons-io&lt;/groupId&gt;
+           &lt;artifactId&gt;commons-io&lt;/artifactId&gt;
+           &lt;version&gt;2.6&lt;/version&gt;
+       &lt;/dependency&gt;
+   &lt;/dependencies&gt;
+&lt;/project&gt;
+</code></pre>
+Мы все так же можем продолжать работу над нашим проектом. Но давай попробуем поменять версию Apache Commons IO на 2.0 и запустить сборку проекта. 
+
+Получим:
+
+<code class="terminal">[ERROR] Failed to execute goal com.soebes.maven.plugins:uptodate-maven-plugin:0.2.0:dependency (default) on project example: There is a more up-to-date version ( 2.6 ) of the dependency commons-io:commons-io:2.0 available. -&gt; [Help 1]
+</code>
+Здесь у нас ошибка сборки, вызванная плагином. В сообщении к ошибке указано, что мы используем 2.0 версию при наличии 2.6.
+
+Вообще, Мавен очень полезный инструмент. Возможно, поначалу он покажется трудным в использовании, но практикуйся, создавай свои проекты под управлением Мавена, и через некоторое время ты будешь очень доволен результатом. 
+
+В этой статье нарочно упущено много деталей о Мавене — мы сконцентрировались на самом необходимом. Но совершенству нет предела: почитать больше о Maven можно <a href="https://maven.apache.org/" rel="nofollow" target="_blank">на официальном сайте продукта</a>.
+<a href="https://javarush.com/groups/posts/2529-chastjh-5-servletih-pishem-prostoe-veb-prilozhenie" target="_blank">
+Часть 5. Сервлеты. Пишем простое веб-приложение</a>
+<a href="https://javarush.com/groups/posts/2533-chastjh-6-konteynerih-servletov" target="_blank">Часть 6. Контейнеры сервлетов</a>
+<a href="https://javarush.com/groups/posts/2536-chastjh-7-znakomstvo-s-patternom-mvc-model-view-controller" target="_blank">Часть 7. Знакомство с паттерном MVC (Model-View-Controller)</a>
+<a href="https://javarush.com/groups/posts/2537-chastjh-8-pishem-neboljhshoe-prilozhenie-na-spring-boot" target="_blank">Часть 8. Пишем небольшое приложение на spring-boot</a>

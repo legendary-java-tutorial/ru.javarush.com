@@ -1,0 +1,340 @@
+Из 8 в 13: полный обзор версий Java. Часть 1
+<p>----------------------------------------</p>
+Котята, всем привет)) Итак, сегодня у нас на дворе 2020-й год, и до выхода Java 14 осталось совсем немного. Готовую версию стоит ждать 17 марта, анализировать, что там пришло свеженького и интересного уже будем постфактум, ну а сегодня хотелось бы освежить память...
+<p>----------------------------------------</p>
+<div class="featured-content">
+	<a href="https://javarush.com/s/university_ua_dynamic_banners_logged_in_v1" target="_blank">
+		<picture>
+			<source srcset="/assets/images/site/featured-content/java-university/ua-mobile.webp, /assets/images/site/featured-content/java-university/ua-mobile@2x.webp 1.2x" type="image/webp" media="(max-width: 575px)">
+			<source srcset="/assets/images/site/featured-content/java-university/ua.webp, /assets/images/site/featured-content/java-university/ua@2x.webp 1.2x" type="image/webp" media="(min-width: 576px)">
+			<source srcset="/assets/images/site/featured-content/java-university/ua-mobile.png, /assets/images/site/featured-content/java-university/ua-mobile@2x.png 1.2x" type="image/png" media="(max-width: 575px)">
+			<source srcset="/assets/images/site/featured-content/java-university/ua.png, /assets/images/site/featured-content/java-university/ua@2x.png 1.2x" type="image/png" media="(min-width: 576px)">
+			<img src="/assets/images/site/featured-content/java-university/ua.png" alt="Java-університет" border="0">
+		</picture>
+	</a>
+	<div class="featured-content__close"></div>
+</div>
+Котята, всем привет))
+
+Итак, сегодня у нас на дворе 2020-й год, и до выхода Java 14 осталось совсем немного.
+
+Готовую версию стоит ждать 17 марта, анализировать, что там пришло свеженького и интересного уже будем постфактум, ну а сегодня хотелось бы освежить память по предыдущим версиям Java. Что нового они нам принесли? Давайте посмотрим. А начнем обзор с Java 8, так как она ещё довольно актуальна и юзается в большинстве проектов.
+
+<img data-max-width="450" alt="Из 8 в 13: полный обзор версий Java. Часть 1 - 1" src="https://cdn.javarush.com/images/article/20a5b739-c7c2-440e-b2a4-e52cc24148d5/original.jpeg">Ранее новые версии выходили раз в 3-5 лет, но в последнее время у Oracle иной подход — «новая Java раз в полгода». И вот, каждые полгода мы наблюдаем выпуск фич.
+
+Хорошо это или плохо — каждый видит по-своему. Например мне это не сильно нравится, так как у новых версий не так уж и много новых фич, но при этом версии растут, как грибы после дождя. Моргнул пару раз на проекте с Java 8, а там уже и Java 16 вышла (зато когда она выходит редко, происходит накопление новых фич, и в итоге это событие долгожданное, как праздник: все обсуждают новые плюшки и ты никак не пройдёшь мимо этого).
+Итак давайте начнём!
+<h2>Java 8</h2><h3>Functional Interface</h3>Что это? Функциональный интерфейс — это интерфейс, содержащий один нереализованный (абстрактный) метод.
+
+<span class="text-bold">@FunctionalInterface</span> — необязательная аннотация, которая ставится над таким интерфейсом. Нужна для проверки того, соответствует ли он требованиям функционального интерфейса (наличие только одного абстрактного метода).
+
+Но как всегда у нас есть некоторые оговорки: default и static методы не попадают под эти требования. Поэтому может быть несколько таких методов + один абстрактный, и интерфейс будет функциональным. Также он может содержать методы класса Object, которые не влияют на определение интерфейса как функционального.
+
+Добавлю пару слов о default и static методах:
+<ol>
+<li><p>Методы с модификатором <span class="text-bold">default</span> позволяют добавлять новые методы в интерфейсы, не нарушая их существующую реализацию.</p>
+<pre class="lang-java line-numbers"><code>
+public interface Something {
+  default void someMethod {
+      System.out.println("Some text......");
+  }
+}
+</code></pre>
+<p>Да-да, мы добавляем реализованный метод в интерфейс, и при имплементации данного метода его можно не переопределять, а использовать как унаследованный. Но если класс реализует два интерфейса с данным методом, у нас будет ошибка компиляции, а если реализует интерфейсы и наследует класс с определенным одинаковым методом, метод класса родителя будет перекрывать методы интерфейса и эксепшен не вылезет.</p></li>
+<li><p>Методы static в интерфейсе работают так же, как и <span class="text-bold">static</span> методы в классе.  Не забываем: наследовать <span class="text-bold">static</span> методы нельзя, как нельзя вызывать и <span class="text-bold">static</span> метод из класса-наследника.</p></li></ol>Итак, ещё пара слов о функциональных интерфейсах и едем дальше. Вот основные перечни ФИ (остальные — это их разновидности):
+<ul><p>Predicate — принимает аргументом некоторое значение T, возвращает boolean.</p>
+<p>Пример: <code>boolean someMethod(T t);</code></p>
+<li><p>Consumer — принимает аргумент типа Т, ничего не возвращает (void).</p>
+<p>Пример: <code>void someMethod(T t);</code></p></li>
+<li><p>Supplier — ничего не принимает на вход, но возвращает некоторое значение T.</p>
+<p>Пример: <code>T someMethod();</code></p></li>
+<li><p>Function — принимает на вход параметр типа Т, возвращает значение типа R.</p>
+<p>Пример: <code>R someMethod(T t);</code></p></li>
+<li><p>UnaryOperator — принимает аргумент Т и возвращает значение типа Т.</p>
+<p>Пример: <code>T someMethod(T t);</code></p></li>
+</ul><h3>Stream</h3>Стримы — это способ обрабатывать структуры данных в функциональном стиле. Как правило это коллекции (но можно использовать их в других, менее распространённых ситуациях). Более понятным языком, Stream — это поток данных, который мы обрабатываем как бы работая со всеми данными одновременно, а не перебором, как при for-each.
+
+Давайте рассмотрим небольшой пример. Предположим, у нас есть набор чисел, которые мы хотим отфильтровать (меньше 50), увеличить на 5, и из оставшихся вывести в консоль первые 4 числа. 
+
+Как бы мы это провернули раньше:
+
+<pre class="lang-java line-numbers"><code>
+List&lt;Integer&gt; list = Arrays.asList(46, 34, 24, 93, 91, 1, 34, 94);
+
+int count = 0;
+
+for (int x : list) {
+
+  if (x &gt;= 50) continue;
+
+  x += 5;
+
+  count++;
+
+  if (count &gt; 4) break;
+
+  System.out.print(x);
+
+}
+</code></pre>
+Вроде кода не так ужи много, а логика уже немного путанная. Посмотрим, как это будет выглядеть с помощью стрима:
+
+<pre class="lang-java line-numbers"><code>
+Stream.of(46, 34, 24, 93, 91, 1, 34, 94)
+
+      .filter(x -&gt; x &lt; 50)
+
+      .map(x -&gt; x + 5)
+
+      .limit(4)
+
+      .forEach(System.out::print);
+</code></pre>
+Stream-ы сильно упрощают жизнь, сокращая объем кода и делая его более читаемым.
+
+Кто желает более детально углубиться в эту тему вот неплохая (я бы даже сказал отличная) <a href="https://javarush.com/groups/posts/2203-stream-api" target="_blank">статья на эту тему</a>.
+<h3>Lambda</h3>Пожалуй, самой важной и долгожданной фичей является появление лямбд.
+
+<span class="text-bold">Что такое лямбда?</span> Это блок кода, который можно передать в различные места, исходя из этого он может быть выполнен позже столько раз, сколько потребуется. Звучит довольно запутанно, не так ли?
+
+Проще говоря, с помощью лямбд, можно реализовывать метод функционального интерфейса (такая себе реализация анонимного класса):
+
+<pre class="lang-java line-numbers"><code>
+Runnable runnable = () -&gt; { System.out.println("I'm running !");};
+
+new Thread(runnable).start();
+</code></pre>
+Как шустро и без лишней волокиты мы реализовали метод run(). И да: Runnable — это функциональный интерфейс.
+
+Также лямбды использую в работе со стримами (как в примерах со стримами выше).
+
+Не будем сильно углубляться, так как можно нырнуть довольно глубоко, оставлю пару ссылочек, чтобы ребята, кто в душе тот ещё копатель, мог “поковыряться” на ура:
+<ul>
+<li><a href="https://habr.com/ru/post/224593/" rel="nofollow" target="_blank">статья о лямбда-выражениях в Java 8 на Хабре</a></li>
+<li><a href="https://alexkosarev.name/2019/03/11/lambdas-in-java/" rel="nofollow" target="_blank">статья о лямбда-выражениях в Java</a> в блоге Александра Косарева</li>
+</ul><h3>foreach</h3>В Java 8 появился новый foreach, который работает с потоком данных как и стрим.
+
+Вот пример:
+
+<pre class="lang-java line-numbers"><code>
+List&lt;Integer&gt; someList = Arrays.asList(1, 3, 5, 7, 9);
+
+someList.forEach(x -&gt; System.out.println(x));
+</code></pre>
+(аналог someList.stream().foreach(…))
+<h3>Method reference</h3>Ссылочные методы — это новый полезный синтаксис, созданный чтобы ссылаться на существующие методы или конструкторы Java-классов или объектов через ::
+
+Ссылки на методы бывают четырех видов:
+<ol>
+<li><p>Ссылка на конструктор:</p>
+<p><code>SomeObject obj =  SomeObject::new</code></p></li>
+<li><p>Ссылка на статический метод:</p>
+<p><code>SomeObject::someStaticMethod</code></p></li>
+<li><p>Ссылка на нестатический метод объекта определенного типа:</p>
+<p><code>SomeObject::someMethod</code></p></li>
+<li><p>Ссылка на обычный(нестатический) метод конкретного объекта</p>
+<p><code>obj::someMethod</code></p></li>
+</ol>Часто ссылки на методы используются в стримах вместо лямбд (ссылочные методы быстрее лямбд, но уступают в читаемости).
+
+<pre class="lang-java line-numbers"><code>
+someList.stream()
+
+        .map(String::toUpperCase)
+
+      .forEach(System.out::println);
+</code></pre>
+Для тех, кто хочет больше информации по ссылочным методам:
+<ul>
+<li><a href="https://ru.stackoverflow.com/questions/969552/%d0%9a%d0%b0%d0%ba-%d1%80%d0%b5%d0%b0%d0%bb%d0%b8%d0%b7%d0%be%d0%b2%d0%b0%d0%bd%d1%8b-%d1%81%d1%81%d1%8b%d0%bb%d0%ba%d0%b8-%d0%bd%d0%b0-%d0%bc%d0%b5%d1%82%d0%be%d0%b4%d1%8b-%d0%b2-java-8-%d0%b2%d0%bd%d1%83%d1%82%d1%80%d0%b8-jvm" rel="nofollow" target="_blank">Как реализованы ссылки на методы в Java 8 внутри JVM?</a></li>
+<li><a href="https://vertex-academy.com/tutorials/ru/java-8-ssylki-na-metody/" rel="nofollow" target="_blank">Ссылки на методы</a></li>
+</ul><h3>API Time</h3>Появилась новая библиотека  для работы с датами и временем — java.time.
+<img data-max-width="450" alt="Из 8 в 13: полный обзор версий Java. Часть 1 - 2" src="https://cdn.javarush.com/images/article/f7edd5ee-a80c-4c2e-806d-c4b4e0d4f3ba/original.jpeg">Новый API схож с любой Joda-Time.
+
+Наиболее значимые разделы этого API:
+<ul>
+<li><span class="text-bold">LocalDate</span> — это конкретная дата, как пример — 2010-01-09;</li>
+<li><span class="text-bold">LocalTime</span> — время, учитывающее часовой пояс — 19:45:55 (аналог LocalDate);</li>
+<li><span class="text-bold">LocalDateTime</span> — комбо LocalDate + LocalTime — 2020-01-04 15:37:47;</li>
+<li><span class="text-bold">ZoneId</span> — представляет часовые пояса;</li>
+<li><span class="text-bold">Clock</span> — с помощью этого типа можно достучаться до текущего времени и дате.</li>
+</ul>Вот пара действительно интересных статей на эту тему:
+<ul>
+<li>Java и время: <a href="https://habr.com/ru/post/274811/" rel="nofollow" target="_blank">часть первая</a> и <a href="https://habr.com/ru/post/274905/" rel="nofollow" target="_blank">вторая</a> на Хабре</li>
+<li><a href="https://www.codeflow.site/ru/article/java-8-date-time-intro" rel="nofollow" target="_blank">Введение в API даты/времени в Java 8</a></li>
+</ul><h3>Optional</h3>Это новый класс в пакете <span class="text-bold">java.util</span>, обёртка (контейнер) для значений, фишкой которой является то, что она также может безопасно содержать <span class="text-bold">null</span>.
+
+Получение optional:
+
+<code>Optional&lt;String&gt; someOptional = Optional.of("Something");</code>
+
+Если в <span class="text-bold">Optional.of</span> передавать <span class="text-bold">null</span>, у нас упадёт наше любимое <span class="text-bold">NullPointerException</span>.
+
+Для таких случаев юзают:
+
+<code>Optional&lt;String&gt; someOptional = Optional.ofNullable("Something");</code>
+
+— в этом методе можно не бояться null.
+
+Далее, создание изначально пустого Optional:
+
+<code>Optional&lt;String&gt; someOptional = Optional.empty();</code>
+
+Для проверки, пуст ли он, юзаем:
+
+<code>someOptional.isPresent();</code>
+
+вернёт нам true или false.
+
+Выполнить определенное действие, если значение есть, и ничего не делать, если значения нет:
+
+<code>someOptional.ifPresent(System.out::println);</code>
+
+Обратный метод, возвращающий переданное значение, если Optional пуст (такой себе запасной план):
+
+<code>System.out.println(someOptional.orElse("Some default content"));</code>
+
+Продолжать можно очень и очень долго (благо, в Optional добавили методов как с щедрой руки), всё же на этом останавливаться не будем. Лучше я для затравочки пару ссылочек оставлю:
+<ul>
+<li><a href="https://sboychenko.ru/java-optional/" rel="nofollow" target="_blank">Java Optional — отец холиваров</a></li>
+<li><a href="https://habr.com/ru/post/346782/" rel="nofollow" target="_blank">Optional: Кот Шрёдингера в Java 8</a></li>
+<li><a href="https://habr.com/ru/post/225641/" rel="nofollow" target="_blank">Новый класс Optional в Java 8, не панацея от NullPointerException</a></li>
+</ul>Мы пробежались по самым известным нововведениям в Java 8 — это далеко не всё. Если вы хотите знать больше, то это я оставил для вас:
+<ul>
+<li>Особенности Java 8: максимальное руководство на JavaRush — <a href="https://javarush.com/groups/posts/1037-osobennosti-java-8--maksimaljhnoe-rukovodstvo-chastjh-1" target="_blank">часть первая</a> и <a href="https://javarush.com/groups/posts/1040-osobennosti-java-8--maksimaljhnoe-rukovodstvo-chastjh-2" target="_blank">вторая</a>;</li>
+<li><a href="https://habr.com/ru/post/216431/" rel="nofollow" target="_blank">Новое в Java 8 на Хабре</a>;</li>
+<li><a href="http://bazhenov.me/blog/2014/07/20/java-8-top10.html" rel="nofollow" target="_blank">Топ-10 фич Java 8, о которых не говорят</a>;</li>
+<li><a href="https://howtodoinjava.com/java-8-tutorial/" rel="nofollow" target="_blank">Java 8 Tutorial</a>.</li>
+</ul><h2>Java 9</h2>Итак, 21 сентября 2017 года мир увидел JDK 9. Данная Java 9 поставляется с богатым набором функций. Хотя нет новых концепций языка, новые API и диагностические команды определенно будут интересны разработчикам. 
+<img data-max-width="450" alt="Из 8 в 13: полный обзор версий Java. Часть 1 - 4" src="https://cdn.javarush.com/images/article/5c390dfc-cd62-423c-8ebb-f544debf77f3/original.jpeg"><h3>JShell (REPL — read-eval-print loop)</h3>Это реализация в Java интерактивной консоли, которая используется для тестирования функционала и использования в консоли разных конструкций, например интерфейсов, классов, enum,  операторов и т.д.
+
+Для запуска <span class="text-bold">JShell</span> нужно лишь написать в терминале — jshell.
+
+Далее можно писать все, что позволит нам фантазия:
+<img data-max-width="450" alt="Из 8 в 13: полный обзор версий Java. Часть 1 - 5" src="https://cdn.javarush.com/images/article/333a6536-f196-46c0-a097-be9b0429400c/original.jpeg">С помощью JShell можно создавать методы верхнего уровня и использовать их внутри той же сессии. Методы будут работать, как и статические методы, за исключением того, что ключевое слово <em>static</em> можно упустить
+
+Подробнее — в <a href="https://proselyte.net/tutorials/java9/repl-jshell/" rel="nofollow" target="_blank">руководстве по Java 9. REPL (JShell)</a>.
+<h3>Private</h3>Начиная с 9 версии Java, у нас появилась возможность использовать private методы в интерфейсах (default и static методы, так как другие мы попросту не можем переопределить из-за недостаточного доступа).
+
+<code>private static void someMethod(){}</code>
+
+<code>try-with-resources</code>
+
+Была модернизирована возможность обработки исключений Try-With-Resources:
+ 
+<pre class="lang-java line-numbers"><code>
+BufferedReader reader = new BufferedReader(new FileReader("....."));
+  try (reader2) {
+  ....
+}
+</code></pre><h3>Модульность (<a href="http://openjdk.java.net/projects/jigsaw/" rel="nofollow" target="_blank">Jigsaw</a>)</h3>Модуль — это группа взаимосвязанных пакетов и ресурсов вместе с новым файлом дескриптора модуля. Данный подход используется, чтобы ослабить связанность кода. Ослабление связи — ключевой фактор для удобства поддержки и расширяемости кода.
+
+Модульность реализуется на разных уровнях:
+<ol>
+<li>Языка программирования.</li>
+<li>Виртуальной машины.</li>
+<li>Стандартного java API.</li>
+</ol>JDK 9 поставляется с 92 модулями: мы можем юзать их или создать свои.
+
+Вот пара ссылок для более глубокого ознакомления:
+<ul>
+<li><a href="https://proselyte.net/tutorials/java9/modularity/" rel="nofollow" target="_blank">Руководство по Java 9. Модульность</a>;</li>
+<li><a href="https://habr.com/ru/company/piter/blog/354532/" rel="nofollow" target="_blank">Модули Java 9 и внедрение зависимостей: используем Guice</a>.</li>
+</ul><h3>Immutable Collection</h3>В Java 9 стало возможным создание и заполнение коллекции одной строкой, при этом делая её immutable (ранее для создания immutable коллекции нам нужно было создать коллекцию, заполнить её данными, и вызов метода, например — Collections.unmodifiableList).
+
+Пример, такого создания:
+
+<code>List someList = List.of("first","second","third");</code>
+<h3>Другие нововведения:</h3><ul>
+<li>расширен Optional (добавлены новые методы);</li>
+<li>появились интерфейсы ProcessHandle и ProcessHandle для управления действиями операционной системы;</li>
+<li>G1 — дефолтный сборщик мусора;</li>
+<li>HTTP клиент с поддержкой как HTTP/2 протокола  и WebSocket;</li>
+<li>расширен Stream;</li>
+<li>добавлен фреймворк Reactive Streams API (для реактивного программирования);</li>
+</ul>Для более полного погружения в Java 9 советую почитать:
+<ul>
+<li><a href="https://habr.com/ru/post/342170/" rel="nofollow" target="_blank">Обзор Java 9</a> на Хабре</li>
+<li><a href="https://habr.com/ru/company/otus/blog/341058/" rel="nofollow" target="_blank">Java 9. Что нового?</a></li>
+<li><a href="https://www.codeflow.site/ru/article/new-java-9" rel="nofollow" target="_blank">Java 9: новые возможности</a></li>
+<li><a href="https://habr.com/ru/post/350774/" rel="nofollow" target="_blank">Java 9 — Вы уже перешли? Нет? И не надо ...!?</a></li>
+<li><a href="https://jug.ru/2018/03/sander-mak-on-java-modules/" rel="nofollow" target="_blank">Сандер Мак о переходе к Java-модулям</a></li>
+</ul><h2>Java 10</h2>Итак, спустя шесть месяцев после выпуска Java 9, в марте 2018 года (помню как вчера), на сцену выходит Java 10.
+<img data-max-width="450" alt="Из 8 в 13: полный обзор версий Java. Часть 1 - 6" src="https://cdn.javarush.com/images/article/6a237fb3-b46a-4862-88b5-17995333c67d/original.jpeg"><h3>var</h3>Теперь мы можем не предоставлять тип данных. Мы помечаем сообщение как var, и компилятор определяет тип сообщения по типу инициализатора, присутствующего справа. Данная фича доступна только для локальных переменных с инициализатором: ее нельзя использовать для аргументов методов, типов возвращаемых данных и т.д., так как там нет инициализатора для возможности определения типа.
+
+Пример var (для типа String):
+
+<pre class="lang-java line-numbers"><code>
+var message = "Some message…..";
+System.out.println(message);
+</code></pre>
+var не является ключевым словом: по сути это зарезервированное имя типа, как и <em>int</em>.
+
+Пользова от <em>var</em> большая: объявления типов забирают на себя много внимания, не принося никакой пользы, а эта фича сэкономит время. Но в тоже время, если переменная получается из длинной цепочки методов, код становится менее читаемым, так как сходу неясно, что за объект там лежит.
+
+Посвящается тем, кто хочет ближе познакомиться с данным функционалом:
+<ul>
+<li><a href="https://www.baeldung.com/java-10-local-variable-type-inference" rel="nofollow" target="_blank">Java 10 LocalVariable Type-Inference</a></li>
+<li><a href="https://habr.com/ru/post/346214/" rel="nofollow" target="_blank">Первый контакт с «var» в Java 10</a></li>
+<li><a href="https://habr.com/ru/post/438206/" rel="nofollow" target="_blank">26 рекомендаций по использованию типа var в Java</a></li>
+</ul>
+<h3>JIT-compiler (GraalVM)</h3>Без лишних предисловий напомню: при запуске команды javac, приложение Java компилируется из Java-кода в байткод JVM, который является бинарным представлением приложения. Но обычный процессор компьютера не может просто так выполнить байткод JVM.
+
+Для работы вашей программы JVM нужен ещё один компилятор уже для этого байткода, который преобразуется в машинный код, который процессор уже в состоянии использовать.
+
+В сравнении с  javac, этот компилятор намного более сложный, но и в результате выдает более высококачественный машинный код.
+
+На данный момент <em>OpenJDK</em> содержит виртуальную машину HotSpot, у которой, в свою очередь, есть два основных JIT-компилятора.
+
+Первый — C1(<em>клиентский компилятор</em>), создан для более высокоскоростной работы, но при этом страдает оптимизация кода.
+
+Второй — C2 (серверный компилятор). Страдает уже скорость выполнения, но при этом код более оптимизирован.
+
+Когда используется какой? С1 отлично подходит для настольных приложений, где нежелательны долгие паузы JIT-компилятора, а С2 — для долгоработающих серверных программ, в которых вполне сносно потратить больше времени на компиляцию.
+
+<span class="text-bold">Многоуровневая компиляция</span> — это когда сперва компиляция проходит с помощью С1, а результат проходит через С2 (используется для большей оптимизации).
+
+<span class="text-bold">GraalVM</span> — это  проект, созданный для полной замены HotSpot. Мы можем рассматривать Graal как несколько связанных проектов: новый JIT-компилятор для HotSpot и новую виртуальную машину polyglot.
+
+Особенность данного JIT-компилятора заключается в том, что он написан на Java. Преимущество Graal компилятора — безопасность, то есть не сбои, а исключения, а не утечки памяти. Также мы будем иметь хорошую поддержку IDE, и мы сможем юзать отладчики, профилировщики или другие удобные инструменты. Помимо этого, компилятор вполне себе может быть независимым от HotSpot, и он сможет создавать более быструю JIT-скомпилированную версию самого себя.
+
+<span class="text-bold">Копателям:</span><ul>
+<li><a href="https://www.codeflow.site/ru/article/graal-java-jit-compiler" rel="nofollow" target="_blank">Глубокое погружение в новый JIT-компилятор Java</a></li>
+<li><a href="https://habr.com/ru/company/billing/blog/351682/" rel="nofollow" target="_blank">Graal: как использовать новый JIT-компилятор JVM в реальной жизни</a></li>
+<li><a href="https://habr.com/ru/post/419637/" rel="nofollow" target="_blank">Как работает Graal — JIT-компилятор JVM на Java</a></li>
+</ul><h3>Паралельный G1</h3>Сборщик мусора G1 конечно крут, спору нет, но есть и слабое место: он выполняет однопоточный полный цикл GC. В то время, когда вам нужна вся мощь  оборудования, которое вы можете собрать для поиска неиспользуемых объектов, мы ограничиваемся одним потоком. 
+
+В Java 10 это исправили.Теперь GC теперь работает со всеми ресурсами, которые мы к нему добавляем (то есть, становится многопоточным).
+
+Для этого разработчики языка улучшили изоляцию основных исходников от GC , создав для GC хороший чистый интерфейс.  Разработчикам данной милоты —  OpenJDK, пришлось конкретно разгрести свалку в коде, чтобы не только максимально упростить создание новых GC, но и дать возможность быстро отключать ненужные GC из сборки. Один из основных критериев успеха — отсутствие просадки по скорости работы после всех этих улучшений.
+
+<span class="text-bold">Смотрим ещё:</span>
+<ul>
+<li><a href="https://www.codeflow.site/ru/article/java-10-performance-improvements" rel="nofollow" target="_blank">Улучшения производительности Java 10</a></li>
+<li><a href="https://www.javaspecialists.eu/archive/Issue256.html" rel="nofollow" target="_blank">Java 10: Parallel Full GC in G1GC</a></li>
+</ul><span class="text-bold">Другие нововведения:</span><ol>
+<li>Вводится чистый интерфейс сборщика мусора (Garbage-Collector Interface). Благодаря этому улучшается изоляция исходного кода от разных сборщиков мусора, давая возможность интегрировать альтернативные сборщики быстро и «безболезненно»;</li>
+<li>Объединение исходников JDK в один репозиторий;</li>
+<li>Коллекции получили новый метод — <em>copyOf (Collection)</em>, который возвращает неизменную копию это коллекции;</li>
+<li><em>Optional</em> (и его разновидности) получил новый метод <em>.orElseThrow()</em>;</li>
+<li>Отныне JVM знают о том, что они запускаются в контейнере Docker, и будут извлекать специфичную для контейнера конфигурацию, а не запрашивать саму операционную систему.</li></ol>Вот еще несколько материалов для более детального ознакомления с Java 10:
+<ul>
+<li><a href="https://www.baeldung.com/java-10-overview" rel="nofollow" target="_blank">Guide to Java 10</a></li>
+<li><a href="https://javarevisited.blogspot.com/2018/03/java-10-released-10-new-features-java.html" rel="nofollow" target="_blank">10 JDK 10 features Java developers should know</a></li>
+<li>Что нового в Java 10: <a href="https://blog.gypsyengineer.com/ru/tech-ru/what-is-new-in-java-10-ru.html" rel="nofollow" target="_blank">часть первая</a> и <a href="https://blog.gypsyengineer.com/ru/tech-ru/what-is-new-in-java-10-part-two.html" rel="nofollow" target="_blank">вторая</a></li>
+</ul>Раньше меня сильно путало то, что некоторые версии Java назывались 1.x. хотелось бы внести некую ясность: версии Java до 9 просто имели другую схему именования. Например, Java 8 также могут называть <em>1.8</em> , Java 5 — <em>1.5</em> и т. д.
+
+А сейчас мы видим, что с переходом на выпуски с Java 9 схема названий также изменилась, и версии Java больше не имеют префикса 1.x.
+
+Вот и конец первой части: мы прошлись по новым интересным фичам java 8-10. Давайте продолжим наше знакомство с самым свеженьким в <a href="https://javarush.com/groups/posts/2549-iz-8-v-13-polnihy-obzor-versiy-java-chastjh-2" target="_blank">следующем посте</a>.
+<div class="featured-content">
+	<a href="https://javarush.com/s/internship_ua_dynamic_banners_logged_in_v1" target="_blank">
+		<picture>
+			<source srcset="/assets/images/site/featured-content/internship/ua-mobile.webp, /assets/images/site/featured-content/internship/ua-mobile@2x.webp 1.2x" type="image/webp" media="(max-width: 575px)">
+			<source srcset="/assets/images/site/featured-content/internship/ua.webp, /assets/images/site/featured-content/internship/ua@2x.webp 1.2x" type="image/webp" media="(min-width: 576px)">
+			<source srcset="/assets/images/site/featured-content/internship/ua-mobile.png, /assets/images/site/featured-content/internship/ua-mobile@2x.png 1.2x" type="image/png" media="(max-width: 575px)">
+			<source srcset="/assets/images/site/featured-content/internship/ua.png, /assets/images/site/featured-content/internship/ua@2x.png 1.2x" type="image/png" media="(min-width: 576px)">
+			<img src="/assets/images/site/featured-content/internship/ua.png" alt="Стажування JavaRush" border="0">
+		</picture>
+	</a>
+	<div class="featured-content__close"></div>
+</div>

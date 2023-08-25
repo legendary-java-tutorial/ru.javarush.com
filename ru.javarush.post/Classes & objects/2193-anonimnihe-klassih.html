@@ -1,0 +1,257 @@
+Анонимные классы в Java
+<p>----------------------------------------</p>
+Привет! На сегодняшнем занятии мы продолжим рассматривать тему вложенных классов. Пришла очередь последней группы — анонимных внутренних классов. Как и локальные классы, о которых мы говорили в прошлой лекции, анонимные —подвид внутренних классов...
+<p>----------------------------------------</p>
+Привет! На сегодняшнем занятии мы продолжим рассматривать тему вложенных классов. Пришла очередь последней группы — анонимных внутренних классов в Java.
+
+Давай вернемся к нашей схеме:
+<img data-max-width="800" data-id="70d01355-803c-4aad-a8cb-19da0a4023f6" src="/images/article/70d01355-803c-4aad-a8cb-19da0a4023f6/800.jpeg" class="img-fluid" alt="Анонимные классы - 2">Как и локальные классы, о которых мы говорили в прошлой лекции, анонимные —подвид внутренних классов. У них также есть несколько сходств и отличий между собой.
+
+Но для начала давай разберемся: а почему они, собственно, называются «анонимными»?
+
+Для этого рассмотрим простой пример.
+
+Представь, что у нас есть основная программа, которая постоянно работает и что-то делает. Мы хотим создать для этой программы систему мониторинга из нескольких модулей. 
+
+Один модуль будет отслеживать общие показатели работы и вести лог, второй — фиксировать и регистрировать ошибки в журнале ошибок, третий — отслеживать подозрительную активность: например, попытки несанкционированного доступа и прочие связанные с безопасностью вещи.
+
+Поскольку все три модуля должны, по сути, просто стартовать в начале программы и работать в фоновом режиме, будет хорошей идеей создать для них общий интерфейс:
+
+<pre class="lang-java line-numbers"><code>
+public interface MonitoringSystem {
+  
+   public void startMonitoring();
+}
+</code></pre>
+Его будут имплементировать 3 конкретных класса:
+
+<pre class="lang-java line-numbers"><code>
+public class GeneralIndicatorsMonitoringModule implements MonitoringSystem {
+   
+@Override
+   public void startMonitoring() {
+       System.out.println("Мониторинг общих показателей стартовал!");
+   }
+}
+
+
+public class ErrorMonitoringModule implements MonitoringSystem {
+
+   @Override
+   public void startMonitoring() {
+       System.out.println("Мониторинг отслеживания ошибок стартовал!");
+   }
+}
+
+
+public class SecurityModule implements MonitoringSystem {
+
+   @Override
+   public void startMonitoring() {
+       System.out.println("Мониторинг безопасности стартовал!");
+   }
+}
+</code></pre>
+Казалось бы, все в порядке. У нас есть довольно внятная система из нескольких модулей. У каждого из них есть собственное поведение. Если нам понадобятся новые модули, мы сможем их добавить, ведь у нас есть интерфейс, который достаточно легко имплементировать. 
+
+Но давай подумаем о том, как будет работать наша система мониторинга.
+<img data-max-width="800" data-id="764cf910-c57b-40ff-8cda-46b3195bc250" src="/images/article/764cf910-c57b-40ff-8cda-46b3195bc250/800.jpeg" class="img-fluid" alt="Анонимные классы - 3">По сути, мы должны просто создать 3 объекта — <code>GeneralIndicatorsMonitoringModule</code>, <code>ErrorMonitoringModule</code>, <code>SecurityModule</code> — и вызвать метод <code>startMonitoring()</code> у каждого из них. 
+
+То есть, все, что нужно сделать — создать 3 объекта и вызвать у них 1 метод.
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) {
+
+       GeneralIndicatorsMonitoringModule generalModule = new GeneralIndicatorsMonitoringModule();
+       ErrorMonitoringModule errorModule = new ErrorMonitoringModule();
+       SecurityModule securityModule = new SecurityModule();
+
+       generalModule.startMonitoring();
+       errorModule.startMonitoring();
+       securityModule.startMonitoring();
+   }
+}
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+Мониторинг общих показателей стартовал!
+Мониторинг отслеживания ошибок стартовал!
+Мониторинг безопасности стартовал!
+</code></pre>
+И для такой небольшой работы мы написали целую систему: 3 класса и один интерфейс! И все это — ради 6 строк кода.
+
+С другой стороны, какие у нас варианты? 
+
+Да, не очень здорово, что мы понаписали таких вот «одноразовых» классов. Но как мы можем это исправить?
+
+Здесь нам и приходят на помощь <span class="text-bold">анонимные внутренние классы</span>!
+
+Вот как они выглядят в нашем случае:
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   public static void main(String[] args) {
+
+       MonitoringSystem generalModule = new MonitoringSystem() {
+           @Override
+           public void startMonitoring() {
+               System.out.println("Мониторинг общих показателей стартовал!");
+           }
+       };
+
+       
+
+           MonitoringSystem errorModule = new MonitoringSystem() {
+           @Override
+           public void startMonitoring() {
+               System.out.println("Мониторинг отслеживания ошибок стартовал!");
+           }
+       };
+
+       MonitoringSystem securityModule = new MonitoringSystem() {
+           @Override
+           public void startMonitoring() {
+               System.out.println("Мониторинг безопасности стартовал!");
+           }
+       };
+
+       generalModule.startMonitoring();
+       errorModule.startMonitoring();
+       securityModule.startMonitoring();
+   }
+}
+</code></pre>
+Давай разбираться, что тут происходит!
+
+Выглядит так, как будто мы создаем объект интерфейса:
+
+<pre class="lang-java line-numbers"><code>
+MonitoringSystem generalModule = new MonitoringSystem() {
+   
+@Override
+   public void startMonitoring() {
+       System.out.println("Мониторинг общих показателей стартовал!");
+   }
+};
+</code></pre>
+Но ведь мы давно знаем, что создавать объекты интерфейсов нельзя!
+
+Так и есть, нельзя. На самом деле мы этого и не делаем.
+
+В тот момент, когда мы пишем:
+
+<pre class="lang-java line-numbers"><code>
+MonitoringSystem generalModule = new MonitoringSystem() {
+   
+};
+</code></pre>
+внутри Java-машины происходит следующее:
+<ol>
+<li>Создается безымянный Java-класс, реализующий интерфейс <code>MonitoringSystem</code>.</li>
+<li>Компилятор, увидев такой класс, требует от тебя реализовать все методы интерфейса <code>MonitoringSystem</code> (мы это и сделали 3 раза).</li>
+<li>Создается один объект этого класса. Обрати внимание на код:</li></ol><pre class="lang-java line-numbers"><code>
+MonitoringSystem generalModule = new MonitoringSystem() {
+   
+};
+</code></pre>
+В конце стоит точка с запятой! Она стоит там не просто так. Мы одновременно объявляем класс (посредством фигурных скобок) и создаем его объект с помощью <code>();</code>
+
+Каждый из наших трех объектов переопределил метод <code>startMonitoring()</code> по-своему.
+
+В конце мы просто вызываем этот метод у каждого из них:
+
+<pre class="lang-java line-numbers"><code>
+generalModule.startMonitoring();
+errorModule.startMonitoring();
+securityModule.startMonitoring();
+</code></pre>
+Вывод в консоль:
+
+<pre><code>
+Мониторинг общих показателей стартовал!
+Мониторинг отслеживания ошибок стартовал!
+Мониторинг безопасности стартовал!
+</code></pre>
+Вот и все! Мы выполнили свою задачу: создали три объекта <code>MonitoringSystem</code>, переопределили его тремя разными способами и вызвали трижды.
+Все три модуля успешно запущены и работают.
+
+При этом структура нашей программы стала намного проще! Ведь классы <code>GeneralIndicatorsMonitoringModule</code>, <code>ErrorMonitoringModule</code>, <code>SecurityModule</code> теперь вообще можно удалить из программы!
+
+Они нам просто не нужны — мы прекрасно справились и без них.
+Если каждому из наших анонимных классов-модулей понадобится какое-то отличающееся поведение, свои специфические методы, которых нет у других, мы легко можем дописать их:
+
+<pre class="lang-java line-numbers"><code>
+MonitoringSystem generalModule = new MonitoringSystem() {
+  
+   @Override
+   public void startMonitoring() {
+       System.out.println("Мониторинг общих показателей стартовал!");
+   }
+  
+   public void someSpecificMethod() {
+
+       System.out.println("Специфический метод только для первого модуля");
+   }
+};
+</code></pre>
+В документации Oracle приведена хорошая <a href="https://docs.oracle.com/javase/tutorial/java/javaOO/anonymousclasses.html#accessing" rel="nofollow" target="_blank">рекомендация</a>: «Применяйте анонимные классы, если вам нужен локальный класс для одноразового использования».
+
+Анонимный класс — это полноценный внутренний класс. Поэтому у него есть доступ к переменным внешнего класса, в том числе к статическим и приватным:
+
+<pre class="lang-java line-numbers"><code>
+public class Main {
+
+   private static int currentErrorsCount = 23;
+
+   public static void main(String[] args) {
+
+       MonitoringSystem errorModule = new MonitoringSystem() {
+          
+           @Override
+           public void startMonitoring() {
+               System.out.println("Мониторинг отслеживания ошибок стартовал!");
+           }
+
+           public int getCurrentErrorsCount() {
+
+               return currentErrorsCount;
+           }
+       };
+   }
+}
+</code></pre>
+Есть у них кое-что общее и с локальными классами: они видны только внутри того метода, в котором определены. В примере выше, любые попытки обратиться к объекту <code>errorModule</code> за пределами метода <code>main()</code> будут неудачными.
+
+И еще одно важное ограничение, которое досталось анонимным классам от их «предков» — внутренних классов: <span class="text-bold">анонимный класс не может содержать статические переменные и методы</span>. 
+
+Если мы попробуем сделать метод <code>getCurrentErrorsCount()</code> из примера выше статическим, компилятор выбросит ошибку:
+
+<pre class="lang-java line-numbers"><code>
+//ошибка! Inner classes cannot have static declarations
+public static int getCurrentErrorsCount() {
+
+   return currentErrorsCount;
+}
+</code></pre>
+Тот же результат мы получим, если попробуем объявить статическую переменную:
+
+<pre class="lang-java line-numbers"><code>
+MonitoringSystem errorModule = new MonitoringSystem() {
+
+   //ошибка! Inner classes cannot have static declarations!
+   static int staticInt = 10;
+
+   @Override
+   public void startMonitoring() {
+       System.out.println("Мониторинг отслеживания ошибок стартовал!");
+   }
+
+};
+</code></pre>
+Напоследок могу порекомендовать тебе отличное видео по теме анонимных классов, где данная тема объясняется максимально просто и понятно :)<div class="row"><div class="col col-md-10 col-lg-8"><div class="embed-responsive embed-responsive-16by9" style="white-space: normal"><iframe width="560" height="315" src="https://www.youtube.com/embed/ndnubpPzkNE" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen=""></iframe></div></div></div>А наше сегодняшнее занятие подошло к концу! И хотя мы разобрали последнюю группу вложенных классов, с этой темой мы еще не закончили. 
+
+Что же мы будем изучать по вложенным классам дальше? Скоро ты обязательно узнаешь! :)
